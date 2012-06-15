@@ -407,6 +407,7 @@ next case (goal19 x2 y2 z2 e2 x y z e) thus ?case
 }
 qed(auto)
 
+termination (eqvt) by lexicographic_order
 
 abbreviation
   LetBe :: "var\<Rightarrow>exp\<Rightarrow>exp\<Rightarrow>exp" ("let _ be _ in _ " [100,100,100] 100)
@@ -436,8 +437,25 @@ type_synonym heap = "var \<rightharpoonup> exp"
 inductive reds :: "heap \<Rightarrow> exp \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool" ("_ : _ \<Down> _ : _" [60,60,60,60] 60)
 where
   Lambda: "\<Gamma> : (Lam [x]. e) \<Down> \<Gamma> : (Lam [x]. e)" 
- | Application: "\<lbrakk> \<Gamma> : e \<Down> \<Delta> : (Lam [x]. e') ; \<Delta> : e' \<Down> \<Theta> : z\<rbrakk> \<Longrightarrow> \<Gamma> : App e x \<Down> \<Theta> : z"
+ | Application: "\<lbrakk>  \<Gamma> : e \<Down> \<Delta> : (Lam [y]. e') ; \<Delta> : e'[y ::= x] \<Down> \<Theta> : z\<rbrakk> \<Longrightarrow> \<Gamma> : App e x \<Down> \<Theta> : z" 
+ | Variable: "\<lbrakk>\<Gamma> x = Some e ; \<Gamma>(x := None) : e \<Down> \<Delta> : z \<rbrakk> \<Longrightarrow> \<Gamma> : Var x \<Down> \<Delta>(x \<mapsto> z) : z"
+ | LetANil: "\<Gamma> : body \<Down> \<Delta> : z \<Longrightarrow> \<Gamma> : (Let ANil body) \<Down> \<Delta> : z"
+ | LetACons: "\<Gamma>(x \<mapsto> e) : Let as body \<Down> \<Delta> : z \<Longrightarrow> \<Gamma> : (Let (ACons v e as) body) \<Down> \<Delta> : z"
+
+
+lemma fun_upd[eqvt]: "p \<bullet> (fun_upd f x y) = fun_upd (p \<bullet> f) (p \<bullet> x) (p \<bullet> y)"
+by  (auto simp add:permute_fun_def fun_eq_iff)
+equivariance reds
+nominal_inductive reds.
+
+lemma eval_test:
+  "empty : (Let (ACons x (Lam [y]. Var y) ANil) (Var x)) \<Down> empty(x \<mapsto> (Lam [y]. Var y)) : (Lam [y]. Var y)"
+by (auto intro!: Lambda Application Variable LetANil LetACons)
+
+lemma eval_test2:
+  "empty : (Let (ACons x (Lam [y]. Var y) ANil) (App (Var x) x)) \<Down> empty(x \<mapsto> (Lam [y]. Var y)) : (Lam [y]. Var y)"
+by (auto intro!: Lambda Application Variable LetANil LetACons)
+
 
 end
-
 
