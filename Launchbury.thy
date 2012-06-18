@@ -1,5 +1,5 @@
 theory Launchbury
-  imports Main  "./Nominal/Nominal/Nominal2" "~~/src/HOL/Library/Product_Lattice"
+  imports Main  "./Nominal/Nominal/Nominal2"
 begin
 
 atom_decl var
@@ -88,37 +88,6 @@ where "f2 \<equiv>
                         p (Inl (e, y, z)) (Inl (subst (e, y, z))) \<and>
                         p (Inr (as, y, z)) (Inr (subst_assn (as, y, z)))))"
 
-definition f3 where
- "f3 \<equiv>(\<lambda> p .
-  ((\<lambda> x1 x2.
-                    (\<exists> x y z.
-                        x1 = (Var x, y, z) \<and> x2 = (Var (x[y::v=z]))) \<or>
-                    (\<exists>subst e v y z.
-                        x1 = (App e v, y, z) \<and>
-                        x2 = (App (subst (e, y, z)) (v[y::v=z])) \<and>
-                        fst p (e, y, z) (subst (e, y, z))) \<or>
-                    (\<exists>subst subst_assn as y z body.
-                        x1 = (Launchbury.Let as body, y, z) \<and>
-                        x2 = (Launchbury.Let
-                              (subst_assn (as, y, z))
-                              (subst (body, y, z))) \<and>
-                        set (bn as) \<sharp>* (y, z) \<and>
-                        snd p (as, y, z) (subst_assn (as, y, z)) \<and>
-                        fst p (body, y, z) (subst (body, y, z))) \<or>
-                    (\<exists>subst x y z e.
-                        x1 = (Lam [x]. e, y, z) \<and>
-                        x2 = (Lam [x]. (subst (e, y, z))) \<and>
-                        atom x \<sharp> (y, z) \<and>
-                        fst p ((e, y, z)) ((subst (e, y, z))))
-  ),(\<lambda> x1 x2.                     
-                    (\<exists> y z. x1 = (ANil, y, z) \<and> x2 = ANil) \<or>
-                    (\<exists>subst subst_assn as y z v e.
-                        x1 = (ACons v e as, y, z) \<and>
-                        x2 = (ACons v (subst (e, y, z)) (subst_assn (as, y, z))) \<and>
-                        fst p ((e, y, z)) ((subst (e, y, z))) \<and>
-                        snd p ((as, y, z)) ((subst_assn (as, y, z))))
-   ))
-)"
 
 ML {*
 fun mono_tac ctxt n =
@@ -229,7 +198,42 @@ next
 qed
 qed
 
-(* Suggestion for a product-base fixed point, unused *)
+(*
+Suggestion for a product-base fixed point, unused 
+
+definition f3 where
+ "f3 \<equiv>(\<lambda> p .
+  ((\<lambda> x1 x2.
+                    (\<exists> x y z.
+                        x1 = (Var x, y, z) \<and> x2 = (Var (x[y::v=z]))) \<or>
+                    (\<exists>subst e v y z.
+                        x1 = (App e v, y, z) \<and>
+                        x2 = (App (subst (e, y, z)) (v[y::v=z])) \<and>
+                        fst p (e, y, z) (subst (e, y, z))) \<or>
+                    (\<exists>subst subst_assn as y z body.
+                        x1 = (Launchbury.Let as body, y, z) \<and>
+                        x2 = (Launchbury.Let
+                              (subst_assn (as, y, z))
+                              (subst (body, y, z))) \<and>
+                        set (bn as) \<sharp>* (y, z) \<and>
+                        snd p (as, y, z) (subst_assn (as, y, z)) \<and>
+                        fst p (body, y, z) (subst (body, y, z))) \<or>
+                    (\<exists>subst x y z e.
+                        x1 = (Lam [x]. e, y, z) \<and>
+                        x2 = (Lam [x]. (subst (e, y, z))) \<and>
+                        atom x \<sharp> (y, z) \<and>
+                        fst p ((e, y, z)) ((subst (e, y, z))))
+  ),(\<lambda> x1 x2.                     
+                    (\<exists> y z. x1 = (ANil, y, z) \<and> x2 = ANil) \<or>
+                    (\<exists>subst subst_assn as y z v e.
+                        x1 = (ACons v e as, y, z) \<and>
+                        x2 = (ACons v (subst (e, y, z)) (subst_assn (as, y, z))) \<and>
+                        fst p ((e, y, z)) ((subst (e, y, z))) \<and>
+                        snd p ((as, y, z)) ((subst_assn (as, y, z))))
+   ))
+)"
+
+
 definition conv where
   "conv \<equiv> (\<lambda> fp. (\<lambda> x1 x2. sum_case (\<lambda> x1. sum_case (\<lambda> x2. fst fp x1 x2) (\<lambda> x2. False) x2) (\<lambda> x1. (sum_case (\<lambda> x2. False) (\<lambda> x2. snd fp x1 x2) x2)) x1))"
 
@@ -242,6 +246,7 @@ lemma sumC_rewrite:
   (sum_case (\<lambda>x1 . Inl (THE_default undefined (fst (lfp f3) x1)))
             (\<lambda>x2 . Inr (THE_default undefined (snd (lfp f3) x2))))"
 oops
+*)
 
 (* Helper lemmas provided by Christian Urban *)
 
@@ -409,6 +414,11 @@ qed(auto)
 
 termination (eqvt) by lexicographic_order
 
+lemma shows
+  True and bn_subst[simp]: "set (bn as) \<sharp>* (y, z) \<Longrightarrow> bn (subst_assn as y z) = bn as"
+by(induct rule:subst_subst_assn.induct)
+  (auto simp add: exp_assn.bn_defs fresh_star_insert)
+
 abbreviation
   LetBe :: "var\<Rightarrow>exp\<Rightarrow>exp\<Rightarrow>exp" ("let _ be _ in _ " [100,100,100] 100)
 where
@@ -432,30 +442,189 @@ lemma alpha_test3:
 done
 
 
-type_synonym heap = "var \<rightharpoonup> exp"
+(* type_synonym heap = "(var \<times> exp) list" *)
 
-inductive reds :: "heap \<Rightarrow> exp \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool" ("_ : _ \<Down> _ : _" [60,60,60,60] 60)
+nominal_datatype 
+heapexp = Heap heap::heap body::exp binds "hbn heap" in heap body
+and
+heap =  HNil | HCons var exp heap ("'(_ \<mapsto> _') ## _" [65,65,65] 65)
+binder
+  hbn
+where "hbn HNil = []" | "hbn (HCons x t h) = (atom x) # (hbn h)"
+
+function elemLookup :: "heap \<Rightarrow> var \<Rightarrow> exp option" (infix "\<cdot>" 62)
+  where
+    "HNil \<cdot> x = None"
+    | "(v \<mapsto> e) ## h \<cdot> x = (if x = v then Some e else h \<cdot> x)"
+apply(case_tac x)
+apply(case_tac a rule: heapexp_heap.exhaust(2))
+apply auto
+done
+termination by lexicographic_order
+
+lemma elemLookup_eqvt[eqvt]:
+ fixes \<pi>::perm
+ shows "\<pi> \<bullet> (h \<cdot> x) = (\<pi> \<bullet> h) \<cdot> (\<pi> \<bullet> x)"
+by(induct h x rule:elemLookup.induct) (auto simp add:elemLookup.simps)
+
+
+function removeHeap :: "heap \<Rightarrow> var \<Rightarrow> heap" ("_ with _ removed" [80,80] 80)
+where "HNil with x removed = HNil"
+| "((v \<mapsto> e) ## h) with x removed = (if v = x then h with x removed else (v \<mapsto> e) ## h with x removed)"
+apply(case_tac x)
+apply(case_tac a rule: heapexp_heap.exhaust(2))
+apply auto
+done
+termination by lexicographic_order
+
+lemma removeHeap_eqvt[eqvt]:
+ fixes \<pi>::perm
+ shows "\<pi> \<bullet> (removeHeap x y) = removeHeap (\<pi> \<bullet> x) (\<pi> \<bullet> y)"
+by(induct x y rule:removeHeap.induct) (auto simp add:removeHeap.simps)
+
+
+inductive reds :: "heap \<Rightarrow> exp \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool" ("_ : _ \<Down> _ : _" [50,50,50,50] 50)
 where
   Lambda: "\<Gamma> : (Lam [x]. e) \<Down> \<Gamma> : (Lam [x]. e)" 
  | Application: "\<lbrakk>  \<Gamma> : e \<Down> \<Delta> : (Lam [y]. e') ; \<Delta> : e'[y ::= x] \<Down> \<Theta> : z\<rbrakk> \<Longrightarrow> \<Gamma> : App e x \<Down> \<Theta> : z" 
- | Variable: "\<lbrakk>\<Gamma> x = Some e ; \<Gamma>(x := None) : e \<Down> \<Delta> : z \<rbrakk> \<Longrightarrow> \<Gamma> : Var x \<Down> \<Delta>(x \<mapsto> z) : z"
+ | Variable: "\<lbrakk>\<Gamma> \<cdot> x = Some e; \<Gamma> with x removed : e \<Down> \<Delta> : z \<rbrakk> \<Longrightarrow> \<Gamma> : Var x \<Down> (x \<mapsto> z) ## \<Delta> : z"
  | LetANil: "\<Gamma> : body \<Down> \<Delta> : z \<Longrightarrow> \<Gamma> : (Let ANil body) \<Down> \<Delta> : z"
- | LetACons: "\<Gamma>(x \<mapsto> e) : Let as body \<Down> \<Delta> : z \<Longrightarrow> \<Gamma> : (Let (ACons v e as) body) \<Down> \<Delta> : z"
+ | LetACons: "(v \<mapsto> e) ## \<Gamma> : Let as body \<Down> \<Delta> : z \<Longrightarrow> \<Gamma> : (Let (ACons v e as) body) \<Down> \<Delta> : z"
 
 
 lemma fun_upd[eqvt]: "p \<bullet> (fun_upd f x y) = fun_upd (p \<bullet> f) (p \<bullet> x) (p \<bullet> y)"
 by  (auto simp add:permute_fun_def fun_eq_iff)
+
 equivariance reds
-nominal_inductive reds.
+
+nominal_inductive reds .
+(*
+  avoids Application: "y"
+apply (auto simp add: fresh_star_def fresh_Pair exp_assn.fresh)
+*)
+
 
 lemma eval_test:
-  "empty : (Let (ACons x (Lam [y]. Var y) ANil) (Var x)) \<Down> empty(x \<mapsto> (Lam [y]. Var y)) : (Lam [y]. Var y)"
+  "HNil : (Let (ACons x (Lam [y]. Var y) ANil) (Var x)) \<Down> (x \<mapsto> Lam [y]. Var y) ## HNil : (Lam [y]. Var y)"
 by (auto intro!: Lambda Application Variable LetANil LetACons)
+
+lemma fresh_upd[intro]:
+  assumes "atom x \<sharp> \<Gamma>(y := None)" and "atom x \<sharp> e"
+  shows "atom x \<sharp> \<Gamma>(y \<mapsto> e)"
+sorry
+
+lemma fresh_delete:
+  assumes "atom x \<sharp> \<Gamma>"
+  shows "atom x \<sharp> \<Gamma>(y := None)"
+apply (simp add: fresh_def)
+apply (simp add: supp_def)
+oops
+
+lemma fresh_remove:
+  assumes "atom x \<sharp> \<Gamma>"
+  shows "atom x \<sharp> (removeAll e \<Gamma>)"
+using assms
+by(induct \<Gamma>)(auto simp add: fresh_Cons)
+
+lemma fresh_removeHeap:
+  assumes "atom x \<sharp> \<Gamma>"
+  shows "atom x \<sharp> \<Gamma> with v removed"
+using assms
+by(induct \<Gamma> v rule:removeHeap.induct)(auto simp add: heapexp_heap.fresh)
+
+lemma fresh_list_elem:
+  assumes "atom x \<sharp> \<Gamma>"
+  and "e \<in> set \<Gamma>"
+  shows "atom x \<sharp> e"
+using assms
+by(induct \<Gamma>)(auto simp add: fresh_Cons)
+
+lemma fresh_heap_elem:
+  assumes "atom x \<sharp> \<Gamma>"
+  and "\<Gamma> \<cdot> v = Some e"
+  shows "atom x \<sharp> e"
+using assms
+by(induct \<Gamma> v rule:elemLookup.induct)(auto simp add: heapexp_heap.fresh split_if_eq1)
+
 
 lemma eval_test2:
-  "empty : (Let (ACons x (Lam [y]. Var y) ANil) (App (Var x) x)) \<Down> empty(x \<mapsto> (Lam [y]. Var y)) : (Lam [y]. Var y)"
+  "HNil : (Let (ACons x (Lam [y]. Var y) ANil) (App (Var x) x)) \<Down> (x \<mapsto> Lam [y]. Var y) ## HNil : (Lam [y]. Var y)"
 by (auto intro!: Lambda Application Variable LetANil LetACons)
 
+lemma subst_is_fresh:
+assumes "atom y \<sharp> z"
+shows
+  "atom y \<sharp> e[y ::= z]"
+and
+ "set (bn as) \<sharp>* (y, z) \<Longrightarrow> atom y \<sharp> (subst_assn as y z)"
+thm subst_subst_assn.induct
+using assms
+by(induct e y z and as y z rule:subst_subst_assn.induct)
+  (auto simp add:exp_assn.fresh fresh_at_base fresh_star_Pair exp_assn.bn_defs fresh_star_insert)
+
+lemma
+ subst_pres_fresh: "(atom x \<sharp> e \<and> atom x \<sharp> z) --> atom x \<sharp> e[y ::= z]"
+and
+ "(atom x \<sharp> as \<and> atom x \<sharp> z \<and> atom x \<notin> set (bn as)) --> (atom x \<sharp> (subst_assn as y z))"
+by(induct e y z and as y z rule:subst_subst_assn.induct)
+  (auto simp add:exp_assn.fresh fresh_at_base fresh_star_Pair exp_assn.bn_defs fresh_star_insert)
+
+lemma reds_fresh:"\<lbrakk> \<Gamma> : e \<Down> \<Delta> : z ; atom (x::var) \<sharp> (\<Gamma>, e) \<rbrakk> \<Longrightarrow> atom x \<sharp> (\<Delta>, z)"
+thm reds.induct
+thm reds.strong_induct
+proof(induct rule: reds.induct)
+print_cases
+
+case (Application \<Gamma> e \<Delta> y e' x' \<Theta> z)
+  have "atom x \<sharp> \<Gamma>" "atom x \<sharp> e" "atom x \<sharp> x'" using Application.prems by (auto simp add: exp_assn.fresh fresh_Pair)  
+  hence "atom x \<sharp> \<Delta>" "atom x \<sharp> (Lam [y]. e')" using Application.hyps(2)  by auto
+  show ?case
+  proof(cases "x = y")
+    case False
+      (* Can be solved directly:
+      show "atom x \<sharp> (\<Theta>, z)" using Application False by (auto simp add:exp_assn.fresh fresh_Pair  subst_pres_fresh[rule_format])
+      *)
+      hence "atom x \<sharp> e'" using `atom x \<sharp> (Lam [y]. e')` by (auto simp add: exp_assn.fresh)
+      hence "atom x \<sharp> e'[y ::= x']" using `atom x \<sharp> x'` by (auto intro: subst_pres_fresh[rule_format])
+      thus "atom x \<sharp> (\<Theta>, z)" using Application.hyps(4) `atom x \<sharp> \<Delta>` by auto
+    next
+    case True
+      hence "atom x \<sharp> e'[y ::= x']" using  `atom x \<sharp> x'` by (auto intro: subst_is_fresh)
+      thus "atom x \<sharp> (\<Theta>, z)" using Application.hyps(4) `atom x \<sharp> \<Delta>` by auto
+  qed
+next
+
+case(Variable \<Gamma> v e \<Delta> z)
+  print_facts
+  have "atom x \<sharp> \<Gamma>" and "atom x \<sharp> v" using Variable.prems by (auto simp add: fresh_Pair exp_assn.fresh)
+  hence "atom x \<sharp> \<Gamma> with v removed" and "atom x \<sharp> e" using `\<Gamma> \<cdot> v = Some e` by(auto intro: fresh_removeHeap dest:fresh_heap_elem)
+  hence "atom x \<sharp> (\<Delta>, z)" using Variable.hyps(3) by (auto simp add: fresh_Pair)
+  thus "atom x \<sharp> ((v \<mapsto> z) ## \<Delta>, z)" using `atom x \<sharp> (\<Delta>, z)` `atom x \<sharp> v` by (auto simp add: fresh_Pair heapexp_heap.fresh)
+next
+
+case(LetANil \<Gamma> body \<Delta> z)
+  thus ?case by (auto simp add: exp_assn.fresh fresh_Pair exp_assn.bn_defs)
+
+next
+case(LetACons v e \<Gamma> as body \<Delta> z)
+  hence  "atom x \<sharp> \<Gamma>" and "atom x \<sharp> Let (ACons v e as) body" by (auto simp add: fresh_Pair)
+  
+  show ?case
+  proof(cases "atom x \<in> set (bn (ACons v e as))")
+    thm exp_assn.fresh
+    case False
+      hence "atom x \<sharp> v" and "atom x \<sharp> e" and "atom x \<sharp> as" and "atom x \<sharp> body"
+        using `atom x \<sharp> Let (ACons v e as) body`
+        by (auto simp add: exp_assn.fresh exp_assn.bn_defs)
+      thus ?thesis
+        using `atom x \<sharp> \<Gamma>` and LetACons.hyps(2)
+        by (auto simp add: fresh_Pair heapexp_heap.fresh exp_assn.fresh)
+    next
+    case True
+      print_facts
+
+
+qed
 
 end
 
