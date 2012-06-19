@@ -4,15 +4,6 @@ begin
 
 type_synonym heap = "(var \<times> exp) list"
 
-
-lemma fun_upd[eqvt]: "p \<bullet> (fun_upd f x y) = fun_upd (p \<bullet> f) (p \<bullet> x) (p \<bullet> y)"
-by  (auto simp add:permute_fun_def fun_eq_iff)
-
-lemma fresh_upd[intro]:
-  assumes "atom x \<sharp> \<Gamma>(y := None)" and "atom x \<sharp> e"
-  shows "atom x \<sharp> \<Gamma>(y \<mapsto> e)"
-sorry
-
 lemma fresh_delete:
   assumes "atom x \<sharp> \<Gamma>"
   shows "atom x \<sharp> \<Gamma>(y := None)"
@@ -51,14 +42,32 @@ and
 by(induct e y z and as y z rule:subst_subst_assn.induct)
   (auto simp add:exp_assn.fresh fresh_at_base fresh_star_Pair exp_assn.bn_defs fresh_star_insert)
 
+nominal_primrec  asToHeap :: "assn \<Rightarrow> heap" 
+ where ANilToHeap: "asToHeap ANil = []"
+ | AConsToHeap: "asToHeap (ACons v e as) = (v, e) # asToHeap as"
+unfolding eqvt_def asToHeap_graph_def
+apply rule
+apply perm_simp
+apply rule
+apply rule
+apply(case_tac x rule: exp_assn.exhaust(2))
+apply auto
+done
+termination(eqvt) by lexicographic_order
+
+lemmas asToHeap_induct = asToHeap.induct[case_names ANilToHeap AConsToHeap]
+
+lemma asToHeap_eqvt[eqvt]:
+ fixes \<pi>::perm
+ shows "\<pi> \<bullet> (asToHeap as) = asToHeap (\<pi> \<bullet> as)"
+by(induct as rule:asToHeap.induct) (auto simp add:asToHeap.simps)
 
 inductive reds :: "heap \<Rightarrow> exp \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool" ("_ : _ \<Down> _ : _" [50,50,50,50] 50)
 where
   Lambda: "\<Gamma> : (Lam [x]. e) \<Down> \<Gamma> : (Lam [x]. e)" 
  | Application: "\<lbrakk>  \<Gamma> : e \<Down> \<Delta> : (Lam [y]. e') ; \<Delta> : e'[y ::= x] \<Down> \<Theta> : z\<rbrakk> \<Longrightarrow> \<Gamma> : App e x \<Down> \<Theta> : z" 
  | Variable: "\<lbrakk> (x,e) \<in> set \<Gamma>; removeAll (x, e) \<Gamma> : e \<Down> \<Delta> : z \<rbrakk> \<Longrightarrow> \<Gamma> : Var x \<Down> (x, z) # \<Delta> : z"
- | LetANil: "\<Gamma> : body \<Down> \<Delta> : z \<Longrightarrow> \<Gamma> : (Let ANil body) \<Down> \<Delta> : z"
- | LetACons: "\<lbrakk>  (v, e) # \<Gamma> : Let as body \<Down> \<Delta> : z \<rbrakk> \<Longrightarrow> \<Gamma> : (Let (ACons v e as) body) \<Down> \<Delta> : z"
+ | Let: "asToHeap as @ \<Gamma> : body \<Down> \<Delta> : z \<Longrightarrow> \<Gamma> : Let as body \<Down> \<Delta> : z"
 
 equivariance reds
 
@@ -75,72 +84,94 @@ apply (auto simp add: fresh_star_def fresh_Pair exp_assn.fresh)
 
 lemma eval_test:
   "[] : (Let (ACons x (Lam [y]. Var y) ANil) (Var x)) \<Down> [(x, Lam [y]. Var y)] : (Lam [y]. Var y)"
-apply(auto intro!: Lambda Application Variable LetANil LetACons
+apply(auto intro!: Lambda Application Variable Let
  simp add: fresh_Pair fresh_Cons fresh_Nil exp_assn.fresh)
 done
 
 lemma eval_test2:
   "[] : (Let (ACons x (Lam [y]. Var y) ANil) (App (Var x) x)) \<Down> [(x, Lam [y]. Var y)] : (Lam [y]. Var y)"
-by (auto intro!: Lambda Application Variable LetANil LetACons)
+by (auto intro!: Lambda Application Variable Let)
 
-lemma reds_fresh:"
-  \<lbrakk> \<Gamma> : e \<Down> \<Delta> : z;
-  atom (x::var) \<sharp> (\<Gamma>, e);
-  x \<notin> fst ` (set \<Gamma>)
-  \<rbrakk> \<Longrightarrow> (atom x \<sharp> (\<Delta>, z) \<and> x \<notin> fst ` (set \<Delta>))"
+lemma reds_doesnt_forget:
+  "\<Gamma> : e \<Down> \<Delta> : z \<Longrightarrow> fst ` set \<Gamma> \<subseteq> fst ` set \<Delta>"
 proof(induct rule: reds.induct)
-case (Lambda \<Gamma> x e) thus ?case ..
+case(Variable v e \<Gamma> \<Delta> z)
+  show ?case
+  proof
+    fix x
+    assume "x \<in> fst ` set \<Gamma>"
+    then obtain "e'" where "(x, e') \<in> set \<Gamma>" by auto
+    show "x \<in> fst ` set ((v, z) # \<Delta>)"
+    proof(cases "x = v")
+    case True 
+      thus ?thesis by simp
+    next
+    case False
+      print_facts
+      with `x \<in> fst \` set \<Gamma>`
+      have "x \<in> fst ` set (removeAll (v,e) \<Gamma>)" by auto
+      hence "x \<in> fst ` set \<Delta>" using Variable.hyps(3) by auto
+      thus ?thesis by simp
+    qed
+  qed
+qed (auto)
+
+
+lemma reds_fresh:" \<lbrakk> \<Gamma> : e \<Down> \<Delta> : z;
+   atom (x::var) \<sharp> (\<Gamma>, e)
+  \<rbrakk> \<Longrightarrow> atom x \<sharp> (\<Delta>, z) \<or> x \<in> fst ` (set \<Delta>)"
+proof(induct rule: reds.induct)
+case (Lambda \<Gamma> x e) thus ?case by auto
 next
 case (Application \<Gamma> e \<Delta> y e' x' \<Theta> z)
-  have "atom x \<sharp> \<Gamma>" "atom x \<sharp> e" "atom x \<sharp> x'" using Application.prems(1) by (auto simp add: exp_assn.fresh fresh_Pair)  
-  hence "atom x \<sharp> \<Delta>" "atom x \<sharp> (Lam [y]. e')" "x \<notin> fst ` (set \<Delta>) " using Application.hyps(2) Application.prems(2) by auto
-  show ?case
-  proof(cases "x = y")
+  hence "atom x \<sharp> (\<Delta>, Lam [y]. e') \<or> x \<in> fst ` (set \<Delta>)" by (auto simp add: exp_assn.fresh fresh_Pair)
+
+  thus ?case
+  proof
+    assume  "atom x \<sharp> (\<Delta>, Lam [y]. e')"
+    show ?thesis
+    proof(cases "x = y")
     case False
-      (* Can be solved directly:
-      show "atom x \<sharp> (\<Theta>, z)" using Application False by (auto simp add:exp_assn.fresh fresh_Pair  subst_pres_fresh[rule_format])
-      *)
-      hence "atom x \<sharp> e'" using `atom x \<sharp> (Lam [y]. e')` by (auto simp add: exp_assn.fresh)
-      hence "atom x \<sharp> e'[y ::= x']" using `atom x \<sharp> x'` by (auto intro: subst_pres_fresh[rule_format])
-      thus ?thesis using Application.hyps(4) `atom x \<sharp> \<Delta>` `x \<notin> fst \` (set \<Delta>)` by auto
+      hence "atom x \<sharp> e'" using `atom x \<sharp> (\<Delta>, Lam [y]. e')`
+        by (auto simp add:fresh_Pair exp_assn.fresh)
+      hence "atom x \<sharp> e'[y ::= x']" using Application.prems
+        by (auto intro: subst_pres_fresh[rule_format] simp add: fresh_Pair exp_assn.fresh)
+      thus ?thesis using Application.hyps(4) `atom x \<sharp> (\<Delta>, Lam [y]. e')` by auto
     next
     case True
-      hence "atom x \<sharp> e'[y ::= x']" using  `atom x \<sharp> x'` by (auto intro: subst_is_fresh)
-      thus ?thesis using Application.hyps(4) `atom x \<sharp> \<Delta>` `x \<notin> fst \` (set \<Delta>)` by auto
+      hence "atom x \<sharp> e'[y ::= x']" using `atom x \<sharp> (\<Delta>, Lam [y]. e')` Application.prems
+        by (auto intro:subst_is_fresh simp add: fresh_Pair exp_assn.fresh)
+      thus ?thesis using Application.hyps(4) `atom x \<sharp> (\<Delta>, Lam [y]. e')` by auto
+    qed
+  next
+    assume "x \<in> fst ` (set \<Delta>)"
+    thus ?thesis using reds_doesnt_forget[OF Application.hyps(3)] by auto
   qed
 next
 
 case(Variable v e \<Gamma> \<Delta> z)
-  print_facts
   have "atom x \<sharp> \<Gamma>" and "atom x \<sharp> v" using Variable.prems(1) by (auto simp add: fresh_Pair exp_assn.fresh)
   hence "atom x \<sharp> removeAll (v,e) \<Gamma>" and "atom x \<sharp> e" using `(v,e) \<in> set \<Gamma>` by(auto intro: fresh_remove dest:fresh_list_elem)
-  hence "atom x \<sharp> (\<Delta>, z)" and "x \<notin> fst ` (set \<Delta>)" using Variable.hyps(3) Variable.prems(2) by (auto simp add: fresh_Pair)
+  hence "atom x \<sharp> (\<Delta>, z) \<or> x \<in> fst ` set \<Delta>"  using Variable.hyps(3) by (auto simp add: fresh_Pair)
   thus ?case using `atom x \<sharp> v` by (auto simp add: fresh_Pair fresh_Cons fresh_at_base)
 next
 
-case(LetANil \<Gamma> body \<Delta> z)
-  thus ?case by (auto simp add: exp_assn.fresh fresh_Pair exp_assn.bn_defs)
-
-next
-case(LetACons v e \<Gamma> as body \<Delta> z)
-  hence  "atom x \<sharp> \<Gamma>" and "atom x \<sharp> Let (ACons v e as) body" by (auto simp add: fresh_Pair)
-  
+case (Let as \<Gamma> body \<Delta> z)
   show ?case
-  proof(cases "atom x \<in> set (bn (ACons v e as))")
-    thm exp_assn.fresh
+    proof (cases "atom x \<in> set(bn as)")
     case False
-      hence "atom x \<sharp> v" and "atom x \<sharp> e" and "atom x \<sharp> as" and "atom x \<sharp> body"
-        using `atom x \<sharp> Let (ACons v e as) body`
-        by (auto simp add: exp_assn.fresh exp_assn.bn_defs)
-      thus ?thesis
-        apply -
-        apply (rule LetACons.hyps(2))
-        using `atom x \<sharp> \<Gamma>` and LetACons.prems(2)
-        by (auto simp add: fresh_Pair fresh_Cons  exp_assn.fresh fresh_at_base)
+      hence "atom x \<sharp> as" using Let.prems by(auto simp add: fresh_Pair exp_assn.fresh)      
+      hence "atom x \<sharp> asToHeap as"
+        by(induct as rule:asToHeap_induct)(auto simp add: fresh_Nil fresh_Cons fresh_Pair exp_assn.fresh)
+      show ?thesis
+        apply(rule Let.hyps(2))
+        using Let.prems `atom x \<sharp> asToHeap as` False
+        by (auto simp add: fresh_Pair exp_assn.fresh fresh_append)
     next
     case True
-      print_facts
-      show ?thesis sorry
+      hence "x \<in> fst ` set(asToHeap as)" 
+        by(induct as rule:asToHeap_induct)(auto simp add: exp_assn.bn_defs)      
+      thus ?thesis using reds_doesnt_forget[OF Let.hyps(1)] by auto
     qed
 qed
 
