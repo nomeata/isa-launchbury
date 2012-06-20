@@ -4,6 +4,13 @@ begin
 
 type_synonym heap = "(var \<times> exp) list"
 
+definition heapVars
+  where "heapVars h = fst ` set h"
+
+lemma [simp]:"heapVars (a @ b) = heapVars a \<union> heapVars b"
+  and [simp]:"heapVars ((v,e) # h) = insert v (heapVars h)"
+  by (auto simp add: heapVars_def)
+
 lemma fresh_delete:
   assumes "atom x \<sharp> \<Gamma>"
   shows "atom x \<sharp> \<Gamma>(y := None)"
@@ -93,24 +100,23 @@ lemma eval_test2:
 by (auto intro!: Lambda Application Variable Let)
 
 lemma reds_doesnt_forget:
-  "\<Gamma> : e \<Down> \<Delta> : z \<Longrightarrow> fst ` set \<Gamma> \<subseteq> fst ` set \<Delta>"
+  "\<Gamma> : e \<Down> \<Delta> : z \<Longrightarrow> heapVars \<Gamma> \<subseteq> heapVars \<Delta>"
 proof(induct rule: reds.induct)
 case(Variable v e \<Gamma> \<Delta> z)
   show ?case
   proof
     fix x
-    assume "x \<in> fst ` set \<Gamma>"
-    then obtain "e'" where "(x, e') \<in> set \<Gamma>" by auto
-    show "x \<in> fst ` set ((v, z) # \<Delta>)"
+    assume "x \<in> heapVars \<Gamma>"
+    show "x \<in> heapVars ((v, z) # \<Delta>)"
     proof(cases "x = v")
     case True 
       thus ?thesis by simp
     next
     case False
       print_facts
-      with `x \<in> fst \` set \<Gamma>`
-      have "x \<in> fst ` set (removeAll (v,e) \<Gamma>)" by auto
-      hence "x \<in> fst ` set \<Delta>" using Variable.hyps(3) by auto
+      with `x \<in> heapVars \<Gamma>`
+      have "x \<in> heapVars (removeAll (v,e) \<Gamma>)" by (auto simp add: heapVars_def)
+      hence "x \<in> heapVars \<Delta>" using Variable.hyps(3) by auto
       thus ?thesis by simp
     qed
   qed
@@ -119,12 +125,12 @@ qed (auto)
 
 lemma reds_fresh:" \<lbrakk> \<Gamma> : e \<Down> \<Delta> : z;
    atom (x::var) \<sharp> (\<Gamma>, e)
-  \<rbrakk> \<Longrightarrow> atom x \<sharp> (\<Delta>, z) \<or> x \<in> fst ` (set \<Delta>)"
+  \<rbrakk> \<Longrightarrow> atom x \<sharp> (\<Delta>, z) \<or> x \<in> heapVars \<Delta>"
 proof(induct rule: reds.induct)
 case (Lambda \<Gamma> x e) thus ?case by auto
 next
 case (Application \<Gamma> e \<Delta> y e' x' \<Theta> z)
-  hence "atom x \<sharp> (\<Delta>, Lam [y]. e') \<or> x \<in> fst ` (set \<Delta>)" by (auto simp add: exp_assn.fresh fresh_Pair)
+  hence "atom x \<sharp> (\<Delta>, Lam [y]. e') \<or> x \<in> heapVars \<Delta>" by (auto simp add: exp_assn.fresh fresh_Pair)
 
   thus ?case
   proof
@@ -144,7 +150,7 @@ case (Application \<Gamma> e \<Delta> y e' x' \<Theta> z)
       thus ?thesis using Application.hyps(4) `atom x \<sharp> (\<Delta>, Lam [y]. e')` by auto
     qed
   next
-    assume "x \<in> fst ` (set \<Delta>)"
+    assume "x \<in> heapVars \<Delta>"
     thus ?thesis using reds_doesnt_forget[OF Application.hyps(3)] by auto
   qed
 next
@@ -152,7 +158,7 @@ next
 case(Variable v e \<Gamma> \<Delta> z)
   have "atom x \<sharp> \<Gamma>" and "atom x \<sharp> v" using Variable.prems(1) by (auto simp add: fresh_Pair exp_assn.fresh)
   hence "atom x \<sharp> removeAll (v,e) \<Gamma>" and "atom x \<sharp> e" using `(v,e) \<in> set \<Gamma>` by(auto intro: fresh_remove dest:fresh_list_elem)
-  hence "atom x \<sharp> (\<Delta>, z) \<or> x \<in> fst ` set \<Delta>"  using Variable.hyps(3) by (auto simp add: fresh_Pair)
+  hence "atom x \<sharp> (\<Delta>, z) \<or> x \<in> heapVars \<Delta>"  using Variable.hyps(3) by (auto simp add: fresh_Pair)
   thus ?case using `atom x \<sharp> v` by (auto simp add: fresh_Pair fresh_Cons fresh_at_base)
 next
 
@@ -169,7 +175,7 @@ case (Let as \<Gamma> body \<Delta> z)
         by (auto simp add: fresh_Pair exp_assn.fresh fresh_append)
     next
     case True
-      hence "x \<in> fst ` set(asToHeap as)" 
+      hence "x \<in> heapVars (asToHeap as)" 
         by(induct as rule:asToHeap_induct)(auto simp add: exp_assn.bn_defs)      
       thus ?thesis using reds_doesnt_forget[OF Let.hyps(1)] by auto
     qed
