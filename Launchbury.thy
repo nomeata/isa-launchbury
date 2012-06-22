@@ -1,15 +1,6 @@
 theory Launchbury
-imports Terms
+imports Terms Heap
 begin
-
-type_synonym heap = "(var \<times> exp) list"
-
-definition heapVars
-  where "heapVars h = fst ` set h"
-
-lemma [simp]:"heapVars (a @ b) = heapVars a \<union> heapVars b"
-  and [simp]:"heapVars ((v,e) # h) = insert v (heapVars h)"
-  by (auto simp add: heapVars_def)
 
 lemma fresh_delete:
   assumes "atom x \<sharp> \<Gamma>"
@@ -49,25 +40,6 @@ and
 by(induct e y z and as y z rule:subst_subst_assn.induct)
   (auto simp add:exp_assn.fresh fresh_at_base fresh_star_Pair exp_assn.bn_defs fresh_star_insert)
 
-nominal_primrec  asToHeap :: "assn \<Rightarrow> heap" 
- where ANilToHeap: "asToHeap ANil = []"
- | AConsToHeap: "asToHeap (ACons v e as) = (v, e) # asToHeap as"
-unfolding eqvt_def asToHeap_graph_def
-apply rule
-apply perm_simp
-apply rule
-apply rule
-apply(case_tac x rule: exp_assn.exhaust(2))
-apply auto
-done
-termination(eqvt) by lexicographic_order
-
-lemmas asToHeap_induct = asToHeap.induct[case_names ANilToHeap AConsToHeap]
-
-lemma asToHeap_eqvt[eqvt]:
- fixes \<pi>::perm
- shows "\<pi> \<bullet> (asToHeap as) = asToHeap (\<pi> \<bullet> as)"
-by(induct as rule:asToHeap.induct) (auto simp add:asToHeap.simps)
 
 inductive reds :: "heap \<Rightarrow> exp \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool" ("_ : _ \<Down> _ : _" [50,50,50,50] 50)
 where
