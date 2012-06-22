@@ -59,23 +59,20 @@ begin
   done
 end
 
-consts permutation_of :: "('a \<rightharpoonup> 'b)  \<Rightarrow> ('a \<rightharpoonup> 'b) \<Rightarrow> bool"
-
-lemma is_perm: "\<lbrakk> dom m1 = dom m2 ; ran m1 = ran m2  \<rbrakk> \<Longrightarrow>  permutation_of m1 m2" sorry
-
 lemma perm_finite: "finite (dom m1) \<Longrightarrow> finite {m1. dom m1 = dom m2 \<and> ran m1 = ran m2}" sorry
 
-
 lemma supp_set_elem_finite:
-  assumes "m \<in> S"
+  assumes "finite S"
+  and "(m::'a::fs) \<in> S"
   and "y \<in> supp m"
   shows "y \<in> supp S"
-sorry
+  using assms supp_of_finite_sets
+  by auto
 
 lemma finite_range:"finite (dom m) \<Longrightarrow> finite (ran m)" sorry
 
-lemma supp_fmap_raw:
-  assumes "finite (dom m)"
+lemma supp_fmap_raw:  
+  assumes "finite (dom (m:: 'a::fs \<rightharpoonup> 'b::fs))"
   shows  "supp m = (supp (dom m) \<union> supp (ran m))"
 proof-
 have "finite (ran m)" using assms by (rule finite_range)
