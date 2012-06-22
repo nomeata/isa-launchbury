@@ -30,7 +30,6 @@ lemma ran_perm[simp]:
   "\<pi> \<bullet> (ran f) = ran (\<pi> \<bullet> f)"
 proof
   have 1: "\<And>\<pi> f. ran (\<pi> \<bullet> f) \<subseteq> \<pi> \<bullet> (ran f)"
-  using [[show_sorts]]
   proof
     fix \<pi> :: perm and f :: "'c::pt \<rightharpoonup> 'd::pt " and y:: 'd
     assume "y \<in> ran (\<pi> \<bullet> f)"
@@ -62,67 +61,99 @@ end
 
 consts permutation_of :: "('a \<rightharpoonup> 'b)  \<Rightarrow> ('a \<rightharpoonup> 'b) \<Rightarrow> bool"
 
-lemma have_permutation:
-  assumes "permutation_of m' m"
-  obtains mp where "mp permutes (dom m)" and "m' = m \<circ> mp"
-sorry
-
 lemma is_perm: "\<lbrakk> dom m1 = dom m2 ; ran m1 = ran m2  \<rbrakk> \<Longrightarrow>  permutation_of m1 m2" sorry
 
-lemma perm_finite: "finite (dom m1) \<Longrightarrow> finite {m1. permutation_of m1 m2}" sorry
+lemma perm_finite: "finite (dom m1) \<Longrightarrow> finite {m1. dom m1 = dom m2 \<and> ran m1 = ran m2}" sorry
 
-definition proinj_on :: "('a \<Rightarrow> 'b) \<Rightarrow> 'b set \<Rightarrow> bool"
-  where "proinj_on f A = (\<forall> x\<in>A. finite (f -` {x}))" 
 
-lemma finite_vimage_IntI_proinj:
-  "finite F \<Longrightarrow> proinj_on h A \<Longrightarrow> finite (h -` (F \<inter> A))" sorry
+lemma supp_set_elem_finite:
+  assumes "m \<in> S"
+  and "y \<in> supp m"
+  shows "y \<in> supp S"
+sorry
 
-lemma vimage_Collect:"f -` {a} = {b. f b = a}" by auto
+lemma finite_range:"finite (dom m) \<Longrightarrow> finite (ran m)" sorry
 
 lemma supp_fmap_raw:
   assumes "finite (dom m)"
   shows  "supp m = (supp (dom m) \<union> supp (ran m))"
 proof-
+have "finite (ran m)" using assms by (rule finite_range)
 { 
-  fix x 
+  fix x
 
   let ?f = "(\<lambda>b . (x \<rightleftharpoons> b) \<bullet> m)"
 
-  assume "x \<notin> supp (ran m)" and "x \<notin> supp (dom m)" and "dom m \<noteq> {}"
+  assume "x \<notin> supp (ran m)" and "x \<notin> supp (dom m)"
 
-  from `x \<notin> supp (ran m)`
-  have fin_point: "\<And> mp d. d \<in> dom m \<Longrightarrow> finite {b. ?f b = m \<circ> mp}"
-    sorry
-  have inter: "\<And> mp . {b. ?f b = m \<circ> mp} \<subseteq> (\<Inter> d \<in> dom m. {b. (?f b) d = (m \<circ> mp) d})"
+  { fix m'
+    assume "dom m = dom m'" and "ran m = ran m'"
+    assume "m' \<noteq> m"
+    then obtain d where "m' d \<noteq> m d" by auto
+    hence "d \<in> dom m" and "d \<in> dom m'" using `dom m = dom m'` by (auto simp add: dom_def)
+    
+    have "x \<notin> supp d" using `finite (dom m)` `x \<notin> supp (dom m)` `d \<in> dom m`
+      by (metis supp_set_elem_finite)
+      
+    have "{b. ?f b d = m' d} = {b. (x \<rightleftharpoons> b) \<bullet> m ( (x \<rightleftharpoons> b) \<bullet> d) = m' d}"
+      by (simp add: permute_fun_def)
+    also have "... =  (\<Union> d' \<in> dom m . {b . (x \<rightleftharpoons> b) \<bullet> d = d' \<and> (x \<rightleftharpoons> b) \<bullet> m d' = m' d})"
+      using `d \<in> dom m'` `dom m = dom m'`  apply auto
+      by (metis Some_eqvt  domD domI permute_swap_cancel2)
+    finally
+    have "finite ({b. ?f b d = m' d})" 
+      apply (rule ssubst)  
+      proof
+        fix d'
+        assume "d' \<in> dom m"
+        
+        have "d \<noteq> d' \<or> m d' \<noteq> m' d"
+          using `m' d \<noteq> m d` by auto
+        moreover 
+        { assume  "d \<noteq> d'" 
+          hence "finite {b . (x \<rightleftharpoons> b) \<bullet> d = d'}" using `x \<notin> supp d`
+            by (auto elim!: finite_subset[rotated] simp add: supp_def)
+        }
+        moreover
+        { assume  "d = d'" and "m d' \<noteq> m' d"
+          
+          have "the (m d') \<in> ran m" using `d' \<in> dom m` 
+            by (auto simp add: ran_def)
+          hence "x \<notin> supp (the (m d'))" using `finite (ran m)` `ran m = ran m'` `x \<notin> supp (ran m)`
+            by (metis supp_set_elem_finite)
+          hence "x \<notin> supp (m d')" using `d' \<in> dom m`
+            by (auto simp add: ran_def supp_Some)
+          hence "finite {b. (x \<rightleftharpoons> b) \<bullet> m d' = m' d}" using `m d' \<noteq> m' d`
+            by (auto elim!: finite_subset[rotated] simp add: supp_def)
+        }
+        ultimately
+        have "finite {b . (x \<rightleftharpoons> b) \<bullet> d = d'} \<or> finite {b. (x \<rightleftharpoons> b) \<bullet> m d' = m' d}" by auto
+        thus "finite {b . (x \<rightleftharpoons> b) \<bullet> d = d' \<and> (x \<rightleftharpoons> b) \<bullet> m d' = m' d}" by auto
+      next
+        show "finite (dom m)" by fact
+      qed 
+    hence "finite ({b. ?f b = m'})"
+      by (auto elim: finite_subset[rotated])
+  }
+  moreover
+    have "finite {m'. dom m' = dom m \<and> ran m' = ran m}" using perm_finite[OF `finite (dom m)`] .
+    hence "finite {m'. dom m' = dom m \<and> ran m' = ran m \<and> m' \<noteq> m}"
+      by (auto elim!: finite_subset[rotated]) 
+  ultimately
+  have "finite (\<Union> {{b. (x \<rightleftharpoons> b) \<bullet> m = m'} | m'. dom m' = dom m \<and> ran m' = ran m \<and> m' \<noteq> m})"
     by auto
-  have  "\<And>mp. \<lbrakk> mp permutes dom m;  m \<circ> mp \<noteq> m \<rbrakk> \<Longrightarrow> finite ({b. ?f b = m \<circ> mp})"
-    using `dom m \<noteq> {}` fin_point
-    by (metis all_not_in_conv)
-  hence  "\<And>m'. \<lbrakk> permutation_of m' m;  m' \<noteq> m \<rbrakk> \<Longrightarrow> finite ({b. ?f b = m'})"
-    by -(erule have_permutation, auto)
-  hence "proinj_on ?f {m'. permutation_of m' m \<and> m' \<noteq> m}" unfolding proinj_on_def
-    by (auto simp add: vimage_Collect)
-
-  from `x \<notin> supp (ran m)` and `x \<notin> supp (dom m)`
+  hence "finite {b. dom (?f b) = dom m \<and> ran (?f b) = ran m \<and> ?f b \<noteq> m}"
+    by (auto elim!: finite_subset[rotated])
+ 
+  with `x \<notin> supp (ran m)` and `x \<notin> supp (dom m)`
   have "x \<notin> supp m" 
     unfolding supp_def
     apply simp
     apply (rule finite_subset[of _ "
           {b. dom ((x \<rightleftharpoons> b) \<bullet> m) \<noteq> dom m} \<union> {b. ran ((x \<rightleftharpoons> b) \<bullet> m) \<noteq> ran m} 
-              \<union> {b. permutation_of ((x \<rightleftharpoons> b) \<bullet> m) m \<and> (x \<rightleftharpoons> b) \<bullet> m \<noteq> m}"])
-    apply rule
-    apply simp
-    apply (intro strip)
-    apply (rule is_perm)
-    apply assumption+
-
-    using finite_vimage_IntI_proinj[OF perm_finite[OF `finite (dom m)`] `proinj_on _ _`, of m]
-    by (auto simp add:Collect_conj_eq)
+              \<union> {b. dom (?f b) = dom m \<and> ran (?f b) = ran m \<and> ?f b \<noteq> m}"])
+    by auto
 } moreover
-{ assume "dom m = {}"
-  have "supp m = {}" and "supp (dom m) = {}" and "supp (ran m) = {}" sorry
-} 
-moreover
 { fix x
   have "{b. (x \<rightleftharpoons> b) \<bullet> dom m \<noteq> dom m} \<subseteq> {b. (x \<rightleftharpoons> b) \<bullet> m \<noteq> m}" by auto
   hence "x \<in> supp (dom m) \<Longrightarrow> x \<in> supp m"
