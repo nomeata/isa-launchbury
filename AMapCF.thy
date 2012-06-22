@@ -4,7 +4,7 @@ begin
 
 default_sort type
 
-typedef ('a, 'b) fmap = "{x :: 'a \<rightharpoonup> 'b. finite (dom x) }"
+typedef (open) ('a, 'b) fmap = "{x :: 'a \<rightharpoonup> 'b. finite (dom x) }"
   proof show "empty \<in> {x. finite (dom x)}" by simp qed
 
 setup_lifting type_definition_fmap
@@ -17,35 +17,32 @@ lemma fmap_eqI[intro]:
   assumes "fdom a = fdom b"
   and "\<forall>x \<in> fdom a. the (lookup a x) = the (lookup b x)"
   shows "a = b"
-proof-
-  {
-  assume d: "dom (Rep_fmap a) = dom (Rep_fmap b)"
-  assume eq: "\<forall>x \<in> dom (Rep_fmap a). the (Rep_fmap a x) = the (Rep_fmap b x)"
-  have "Rep_fmap a = Rep_fmap b"
+using assms
+proof(transfer)
+  fix a b :: "('a \<rightharpoonup> 'b)"
+  assume d: "dom a = dom b"
+  assume eq: "\<forall>x \<in> dom a. the (id a x) = the (id b x)"
+  show "a = b"
   proof
     fix x
-    show "Rep_fmap a x = Rep_fmap b x"
-    proof(cases "Rep_fmap a x")
+    show "a x = b x"
+    proof(cases "a x")
     case None
-      hence "x \<notin> dom (Rep_fmap a)" by (simp add: dom_def)
-      hence "x \<notin> dom (Rep_fmap b)" using d by simp
-      hence "Rep_fmap b x = None"  by (simp add: dom_def)
+      hence "x \<notin> dom a" by (simp add: dom_def)
+      hence "x \<notin> dom b" using d by simp
+      hence " b x = None"  by (simp add: dom_def)
       thus ?thesis using None by simp
     next
     case (Some y)
-      hence d': "x \<in> dom (Rep_fmap a)" by (simp add: dom_def)
-      hence "the (Rep_fmap a x) = the (Rep_fmap b x)" using eq by auto
+      hence d': "x \<in> dom ( a)" by (simp add: dom_def)
+      hence "the ( a x) = the ( b x)" using eq by auto
       moreover
-      have "x \<in> dom (Rep_fmap b)" using Some d' d by simp
-      then obtain y' where "Rep_fmap b x = Some y'" by (auto simp add: dom_def)
+      have "x \<in> dom ( b)" using Some d' d by simp
+      then obtain y' where " b x = Some y'" by (auto simp add: dom_def)
       ultimately
-      show "Rep_fmap a x = Rep_fmap b x" using Some by auto
+      show " a x =  b x" using Some by auto
     qed
   qed
-  }
-  thus ?thesis
-    using assms
-    by (auto simp add: fdom_def lookup_def Rep_fmap_inject)
 qed
 
 
@@ -94,7 +91,7 @@ lemma fmap_lub_raw_dom[simp]: "dom (fmap_lub_raw S) = dom (S 0)"
   by (auto simp add: fmap_lub_raw_def dom_def)  
 
 lift_definition fmap_lub :: "(nat \<Rightarrow> ('key, 'value::po) fmap) \<Rightarrow> ('key, 'value) fmap" is "fmap_lub_raw"
-  unfolding Lifting.invariant_def fmap_def
+  unfolding Lifting.invariant_def
   apply auto
   apply (erule  meta_allE[of _ 0])
   apply auto[1]
@@ -110,10 +107,9 @@ lemma fmap_below_dom:
   unfolding below_fmap_def by simp
 
 lemma is_lub_fmap:
-  "chain (S::nat => ('a::type, 'b::cpo) fmap)
-    ==> range S <<| fmap_lub S"
+  assumes "chain (S::nat => ('a::type, 'b::cpo) fmap)"
+  shows "range S <<| fmap_lub S"
 proof(rule is_lubI)
-  assume "chain S"
 
   def d \<equiv> "fdom (S 0)"
   have [simp]:"\<And>i . fdom (S i) = d"
