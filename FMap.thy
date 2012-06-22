@@ -11,6 +11,8 @@ setup_lifting type_definition_fmap
 
 lift_definition fdom :: "('key, 'value) fmap \<Rightarrow> 'key set" is "dom" ..
 
+lift_definition fran :: "('key, 'value) fmap \<Rightarrow> 'value set" is "ran" ..
+
 lift_definition lookup :: "('key, 'value) fmap \<Rightarrow> 'key \<Rightarrow> 'value option" is "(\<lambda> x. x)" ..
 
 lift_definition fempty :: "('key, 'value) fmap" is Map.empty by simp
@@ -199,7 +201,6 @@ next
 }
 qed
 
-
 instance fmap :: (type, cpo) cpo
 apply default
 proof
@@ -208,4 +209,34 @@ proof
   thus "range S <<| fmap_lub S"
     by (rule is_lub_fmap)
 qed
+
+lemma chain_iterate_from [simp]: "x \<sqsubseteq> F\<cdot>x \<Longrightarrow> chain (\<lambda>i. iterate i\<cdot>F\<cdot>x)"
+by (rule chainI, unfold iterate_Suc2, rule monofun_cfun_arg)
+
+definition
+  "fix1" :: "'a \<rightarrow> ('a::cpo \<rightarrow> 'a) \<rightarrow> 'a" where
+  "fix1 = (\<Lambda> x F. \<Squnion>i. iterate i\<cdot>F\<cdot>x)"
+
+lift_definition fmap_extend :: "('a, 'b::cpo) fmap \<Rightarrow> ('a, 'b) fmap  \<Rightarrow> ('a, 'b) fmap"
+  is "\<lambda>m1 m2 x. (
+    case m1 x of
+      Some y1 \<Rightarrow> 
+        (case m2 x of
+          Some y2 \<Rightarrow> Some (lub {y1,y2})
+          | None \<Rightarrow> Some y1
+        )
+      | None \<Rightarrow> 
+        (case m2 x of
+          Some y2 \<Rightarrow> Some y2
+          | None \<Rightarrow> None
+        )
+     )"
+  apply (rule_tac B = "dom fun1 \<union> dom fun2" in  finite_subset)
+  by (auto simp add: map_def split add: option.split_asm)
+
+
+definition fix_extend :: "('a, 'b::cpo) fmap \<Rightarrow> (('a, 'b) fmap \<Rightarrow> ('a, 'b) fmap) \<Rightarrow> ('a, 'b) fmap"
+  where
+  "fix_extend h nh = fix1\<cdot>h\<cdot>(\<Lambda> h'. fmap_extend h' (nh h') )"
+
 end

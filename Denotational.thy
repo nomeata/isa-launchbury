@@ -1,5 +1,5 @@
 theory Denotational
-  imports Terms Heap FMap "~~/src/HOL/HOLCF/HOLCF"
+  imports Terms Heap FMap "FMap-Nominal" "~~/src/HOL/HOLCF/HOLCF"
 begin
 
 default_sort cpo
@@ -30,38 +30,6 @@ begin
   done
 end
 
-lemma dom_perm[simp]:
-  "dom (\<pi> \<bullet> f) = \<pi> \<bullet> (dom f)"
-proof
-  have 1: "\<And>\<pi> f. dom (\<pi> \<bullet> f) \<subseteq> \<pi> \<bullet> (dom f)"
-  proof
-    fix \<pi> f x
-    assume "x \<in> dom (\<pi> \<bullet> f)"
-    then obtain y where "(\<pi> \<bullet> f) x = Some y" by auto
-    hence "\<pi> \<bullet> (f (-\<pi> \<bullet> x)) = Some y"  by (auto simp add: permute_fun_def)
-    hence "f (-\<pi> \<bullet> x) = -\<pi> \<bullet> Some y" by (metis permute_minus_cancel(2))
-    hence "f (-\<pi> \<bullet> x) = Some (-\<pi> \<bullet> y)" by simp
-    hence "-\<pi> \<bullet> x \<in> dom f" by auto
-    thus "x \<in> \<pi> \<bullet> (dom f)" by (metis (full_types) mem_permute_iff permute_minus_cancel(2))
-  qed
-  show "dom (\<pi> \<bullet> f) \<subseteq> \<pi> \<bullet> (dom f)" using 1 .
-
-  have "dom (-\<pi> \<bullet> (\<pi> \<bullet> f)) \<subseteq> -\<pi> \<bullet> dom (\<pi> \<bullet> f)" using 1 .
-  hence "dom f \<subseteq> -\<pi> \<bullet> dom (\<pi> \<bullet> f)" by simp
-  hence "\<pi> \<bullet> dom f \<subseteq> \<pi> \<bullet> (-\<pi> \<bullet> dom (\<pi> \<bullet> f))" by (metis permute_pure subset_eqvt)
-  thus  "\<pi> \<bullet> dom f \<subseteq> dom (\<pi> \<bullet> f)" by simp
-qed
-
-instantiation "fmap" :: (pt,pt) pt
-begin
-  lift_definition permute_fmap :: "perm \<Rightarrow> ('a::pt,'b::pt) fmap \<Rightarrow> ('a,'b) fmap"
-    is "\<lambda> p f . p \<bullet> f" by simp
-  
-  instance
-  apply(default)
-  apply(transfer, simp)+
-  done
-end
 
 class pure_cpo = Nominal2_Base.pure + cpo
 
@@ -120,7 +88,7 @@ instance
   done
 end
 
-function heapToEnv :: "heap \<Rightarrow> (exp \<Rightarrow> Value)  \<Rightarrow> Env"
+function heapToEnv :: "heap \<Rightarrow> (exp \<Rightarrow> Value) \<Rightarrow> Env"
 where
   "heapToEnv [] _ = fempty"
 | "heapToEnv ((x,e)#h) eval = (heapToEnv h eval) (x f\<mapsto> eval e)"
@@ -134,9 +102,9 @@ and
 where
   "atom x \<sharp> \<rho> ==> \<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub> = Fn \<cdot> (\<Lambda> v. (\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>))"
 | "\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> \<down>Fn \<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub> "
-| "\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub> = \<rho>\<cdot>x"
+| "\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub> = the (lookup \<rho> x)"
 | "\<lbrakk> Let as body\<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> Let as body\<rbrakk>\<^bsub>\<lbrace> asToHeap as \<rbrace>\<rho>\<^esub>"
-| "\<lbrace> h \<rbrace>\<rho> = (\<mu> \<rho>'. lub{\<rho>, heapToEnv h (\<lambda> e . \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)})"
+| "\<lbrace> h \<rbrace>\<rho> = fix_extend \<rho> (\<lambda> \<rho>'. heapToEnv h (\<lambda> e . \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
 proof-
 have eqvt_at_ESem: "\<And> a b . eqvt_at ESem_HSem_sumC (Inl (a, b)) \<Longrightarrow> eqvt_at (\<lambda>(a, b). ESem a b) (a, b)" sorry
 have eqvt_at_HSem: "\<And> a b . eqvt_at ESem_HSem_sumC (Inr (a, b)) \<Longrightarrow> eqvt_at (\<lambda>(a, b). HSem a b) (a, b)" sorry
