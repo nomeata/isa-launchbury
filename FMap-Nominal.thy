@@ -69,7 +69,11 @@ lemma supp_set_elem_finite:
   using assms supp_of_finite_sets
   by auto
 
-lemma finite_range:"finite (dom m) \<Longrightarrow> finite (ran m)" sorry
+lemma finite_range:
+  assumes "finite (dom m)"
+  shows "finite (ran m)"
+  apply (rule finite_subset[OF _ finite_imageI[OF assms, of "\<lambda> x . the (m x)"]])
+  by (auto simp add: ran_def dom_def image_def)
 
 lemma supp_fmap_raw:  
   assumes "finite (dom (m:: 'a::fs \<rightharpoonup> 'b::fs))"
