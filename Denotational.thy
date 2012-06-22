@@ -30,6 +30,39 @@ begin
   done
 end
 
+lemma dom_perm[simp]:
+  "dom (\<pi> \<bullet> f) = \<pi> \<bullet> (dom f)"
+proof
+  have 1: "\<And>\<pi> f. dom (\<pi> \<bullet> f) \<subseteq> \<pi> \<bullet> (dom f)"
+  proof
+    fix \<pi> f x
+    assume "x \<in> dom (\<pi> \<bullet> f)"
+    then obtain y where "(\<pi> \<bullet> f) x = Some y" by auto
+    hence "\<pi> \<bullet> (f (-\<pi> \<bullet> x)) = Some y"  by (auto simp add: permute_fun_def)
+    hence "f (-\<pi> \<bullet> x) = -\<pi> \<bullet> Some y" by (metis permute_minus_cancel(2))
+    hence "f (-\<pi> \<bullet> x) = Some (-\<pi> \<bullet> y)" by simp
+    hence "-\<pi> \<bullet> x \<in> dom f" by auto
+    thus "x \<in> \<pi> \<bullet> (dom f)" by (metis (full_types) mem_permute_iff permute_minus_cancel(2))
+  qed
+  show "dom (\<pi> \<bullet> f) \<subseteq> \<pi> \<bullet> (dom f)" using 1 .
+
+  have "dom (-\<pi> \<bullet> (\<pi> \<bullet> f)) \<subseteq> -\<pi> \<bullet> dom (\<pi> \<bullet> f)" using 1 .
+  hence "dom f \<subseteq> -\<pi> \<bullet> dom (\<pi> \<bullet> f)" by simp
+  hence "\<pi> \<bullet> dom f \<subseteq> \<pi> \<bullet> (-\<pi> \<bullet> dom (\<pi> \<bullet> f))" by (metis permute_pure subset_eqvt)
+  thus  "\<pi> \<bullet> dom f \<subseteq> dom (\<pi> \<bullet> f)" by simp
+qed
+
+instantiation "fmap" :: (pt,pt) pt
+begin
+  lift_definition permute_fmap :: "perm \<Rightarrow> ('a::pt,'b::pt) fmap \<Rightarrow> ('a,'b) fmap"
+    is "\<lambda> p f . p \<bullet> f" by simp
+  
+  instance
+  apply(default)
+  apply(transfer, simp)+
+  done
+end
+
 class pure_cpo = Nominal2_Base.pure + cpo
 
 instance pure_cpo \<subseteq> cont_pt
@@ -64,7 +97,6 @@ find_theorems cont "if _ then _ else _ "
 
 
 lemma cfun_upd_eqvt[eqvt]: "p \<bullet> (cfun_upd f (x::'a::{cont_pt,discrete_cpo}) y) = cfun_upd (p \<bullet> f) (p \<bullet> x) (p \<bullet> y)"
-using [[show_sorts]]
 by (auto simp add:permute_cfun_def cfun_eq_iff cfun_upd_def)
 
 domain Value = Fn (lazy "Value \<rightarrow> Value")
@@ -77,7 +109,7 @@ abbreviation Fn_project_abbr (infix "\<down>Fn" 55)
 
 lemma "Fn\<cdot>(\<Lambda> x . \<bottom>) \<noteq> \<bottom>" by simp
 
-type_synonym Env = "var \<rightarrow> Value"
+type_synonym Env = "(var, Value) fmap"
 
 instantiation Value :: pure_cpo
 begin
@@ -90,8 +122,8 @@ end
 
 function heapToEnv :: "heap \<Rightarrow> (exp \<Rightarrow> Value)  \<Rightarrow> Env"
 where
-  "heapToEnv [] _ = \<bottom>"
-| "heapToEnv ((x,e)#h) eval = (heapToEnv h eval) (x :\<cdot>= eval e)"
+  "heapToEnv [] _ = fempty"
+| "heapToEnv ((x,e)#h) eval = (heapToEnv h eval) (x f\<mapsto> eval e)"
 by (pat_completeness, auto)
 termination by lexicographic_order
 
@@ -100,7 +132,7 @@ nominal_primrec
 and
   HSem :: "heap => Env => Env" ("\<lbrace> _ \<rbrace>_"  [60,60] 60) 
 where
-  "atom x \<sharp> \<rho> ==> \<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub> = Fn \<cdot> (\<Lambda> v. (\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x :\<cdot>= v)\<^esub>))"
+  "atom x \<sharp> \<rho> ==> \<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub> = Fn \<cdot> (\<Lambda> v. (\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>))"
 | "\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> \<down>Fn \<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub> "
 | "\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub> = \<rho>\<cdot>x"
 | "\<lbrakk> Let as body\<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> Let as body\<rbrakk>\<^bsub>\<lbrace> asToHeap as \<rbrace>\<rho>\<^esub>"
