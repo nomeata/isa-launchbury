@@ -1,5 +1,5 @@
-theory AMapCF
-  imports "~~/src/HOL/HOLCF/HOLCF"  "~~/src/HOL/Library/DAList"
+theory FMap
+  imports "~~/src/HOL/HOLCF/HOLCF"
 begin
 
 default_sort type
@@ -11,7 +11,14 @@ setup_lifting type_definition_fmap
 
 lift_definition fdom :: "('key, 'value) fmap \<Rightarrow> 'key set" is "dom" ..
 
-lift_definition lookup :: "('key, 'value) fmap \<Rightarrow> 'key \<Rightarrow> 'value option" is "id" ..
+lift_definition lookup :: "('key, 'value) fmap \<Rightarrow> 'key \<Rightarrow> 'value option" is "(\<lambda> x. x)" ..
+
+lift_definition fempty :: "('key, 'value) fmap" is Map.empty by simp
+
+lift_definition
+  fmap_upd :: "('key, 'value) fmap \<Rightarrow> 'key \<Rightarrow> 'value \<Rightarrow> ('key, 'value) fmap" ("_'(_ f\<mapsto> _')" [900,900]900)
+  is "\<lambda> m x v. m( x \<mapsto> v)"  by simp
+
 
 lemma fmap_eqI[intro]:
   assumes "fdom a = fdom b"
@@ -21,7 +28,7 @@ using assms
 proof(transfer)
   fix a b :: "('a \<rightharpoonup> 'b)"
   assume d: "dom a = dom b"
-  assume eq: "\<forall>x \<in> dom a. the (id a x) = the (id b x)"
+  assume eq: "\<forall>x \<in> dom a. the (a x) = the (b x)"
   show "a = b"
   proof
     fix x
@@ -78,7 +85,7 @@ lemma fmap_belowI:
       \<rbrakk>  \<Longrightarrow> y \<sqsubseteq> y2"
   shows "a \<sqsubseteq> b"
   using assms
-  by (metis below_fmap_def AMapCF.lookup.rep_eq domIff fdom.rep_eq not_None_eq the.simps)
+  by (metis below_fmap_def lookup.rep_eq domIff fdom.rep_eq not_None_eq the.simps)
 
 
 definition fmap_lub_raw where

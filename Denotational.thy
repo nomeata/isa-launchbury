@@ -1,5 +1,5 @@
 theory Denotational
-  imports Terms Heap "~~/src/HOL/HOLCF/HOLCF"
+  imports Terms Heap FMap "~~/src/HOL/HOLCF/HOLCF"
 begin
 
 default_sort cpo
