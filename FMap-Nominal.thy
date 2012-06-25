@@ -1,5 +1,5 @@
 theory "FMap-Nominal"
-  imports FMap "./Nominal/Nominal/Nominal2" "~~/src/HOL/Library/Permutations"
+  imports FMap "./Nominal/Nominal/Nominal2" "~~/src/HOL/Library/Permutations" "~~/src/HOL/Library/FuncSet"
 begin
 
 lemma dom_perm:
@@ -59,7 +59,27 @@ begin
   done
 end
 
-lemma perm_finite: "finite (dom m1) \<Longrightarrow> finite {m1. dom m1 = dom m2 \<and> ran m1 = ran m2}" sorry
+lemma map_between_finite:
+  assumes "finite A"
+  and "finite B"
+  shows "finite {m. dom m = A \<and> ran m = B}"
+proof (rule finite_imageD[OF finite_subset])
+  def f  \<equiv> "\<lambda> m. (\<lambda> x \<in> A. (the (m x) :: 'b))"
+  def g  \<equiv> "\<lambda> f x. (if x \<in> A then Some (f x :: 'b) else None)"
+  show "f ` {m. dom m = A \<and> ran m = B} \<subseteq> extensional_funcset A B"
+    by (auto simp add: extensional_funcset_def ran_def f_def)
+  show "finite (extensional_funcset A B)"
+    by (rule finite_extensional_funcset[OF assms])
+  show "inj_on f {m. dom m = A \<and> ran m = B}"
+    apply(rule inj_on_inverseI[of _ g])
+    unfolding f_def g_def
+    apply (auto simp add: dom_def fun_eq_iff)
+    by (metis not_Some_eq)
+qed
+
+
+lemma perm_finite: "finite (dom m2) \<Longrightarrow> finite {m1. dom m1 = dom m2 \<and> ran m1 = ran m2}"
+  by (rule map_between_finite[OF _ finite_range])
 
 lemma supp_set_elem_finite:
   assumes "finite S"
@@ -69,13 +89,7 @@ lemma supp_set_elem_finite:
   using assms supp_of_finite_sets
   by auto
 
-lemma finite_range:
-  assumes "finite (dom m)"
-  shows "finite (ran m)"
-  apply (rule finite_subset[OF _ finite_imageI[OF assms, of "\<lambda> x . the (m x)"]])
-  by (auto simp add: ran_def dom_def image_def)
-
-lemma supp_fmap_raw:  
+lemma supp_map_union:
   assumes "finite (dom (m:: 'a::fs \<rightharpoonup> 'b::fs))"
   shows  "supp m = (supp (dom m) \<union> supp (ran m))"
 proof-
@@ -168,28 +182,27 @@ have "finite (ran m)" using assms by (rule finite_range)
 show ?thesis by auto
 qed
 
+lemma supp_fmap_transfer[transfer_rule]:
+  "(cr_fmap ===> op =) supp supp"
+  unfolding fun_rel_def cr_fmap_def supp_def 
+  by (simp add: permute_fmap.rep_eq[symmetric] Rep_fmap_inject)
+
 lemma supp_fmap:
-  "supp m = (supp (fdom m) \<union> supp (fran m))"
+  "supp (m:: ('a::fs, 'b::fs) fmap) = (supp (fdom m) \<union> supp (fran m))"
+apply transfer
+apply (erule supp_map_union)
 proof-
-{ fix x 
-  assume "x \<in> supp m"
-  assume "x \<notin> supp (fdom m)"
-  have "x \<in> supp (fran m)" sorry
-} moreover
-{ fix x
-  assume "x \<in> supp (fdom m)"
-  hence "x \<in> supp m" sorry
-} moreover
-{ fix x
-  assume "x \<in> supp (fran m)"
-  hence "x \<in> supp m" sorry
-} ultimately
-show ?thesis by auto
+  show "Transfer.Rel (op = ===> set_rel op =) supp supp"
+    by (metis Rel_eq_refl fun_rel_eq set_rel_eq)
+  next
+  show "Transfer.Rel (op = ===> set_rel op =) supp supp"
+    by (metis Rel_eq_refl fun_rel_eq set_rel_eq)
+  next
+  show "Transfer.Rel (op = ===> set_rel op = ===> op =) op = op ="
+    by (metis Rel_eq_refl fun_rel_eq set_rel_eq)
 qed
 
-
 instance "fmap" :: (fs,fs) fs
-apply default
-sorry
+  by (default, auto intro: finite_sets_supp simp add: supp_fmap)
 
 end

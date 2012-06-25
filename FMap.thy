@@ -21,6 +21,17 @@ lift_definition
   fmap_upd :: "('key, 'value) fmap \<Rightarrow> 'key \<Rightarrow> 'value \<Rightarrow> ('key, 'value) fmap" ("_'(_ f\<mapsto> _')" [900,900]900)
   is "\<lambda> m x v. m( x \<mapsto> v)"  by simp
 
+lemma finite_range:
+  assumes "finite (dom m)"
+  shows "finite (ran m)"
+  apply (rule finite_subset[OF _ finite_imageI[OF assms, of "\<lambda> x . the (m x)"]])
+  by (auto simp add: ran_def dom_def image_def)
+
+lemma finite_fdom[simp]: "finite (fdom m)"
+  by transfer
+
+lemma finite_fran[simp]: "finite (fran m)"
+  by (transfer, rule finite_range)
 
 lemma fmap_eqI[intro]:
   assumes "fdom a = fdom b"
