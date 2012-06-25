@@ -59,6 +59,14 @@ begin
   done
 end
 
+lemma lookup_eqvt[eqvt]:
+  "\<pi> \<bullet> lookup m x = lookup (\<pi> \<bullet> m) (\<pi> \<bullet> x)"
+  by (transfer, auto simp add: permute_fun_def)
+
+lemma fempty_eqvt[eqvt, simp]:
+  "\<pi> \<bullet> fempty = fempty"
+  by (transfer, auto simp add: permute_fun_def)
+
 lemma map_between_finite:
   assumes "finite A"
   and "finite B"

@@ -26,9 +26,7 @@ termination(eqvt) by lexicographic_order
 
 lemmas asToHeap_induct = asToHeap.induct[case_names ANilToHeap AConsToHeap]
 
-lemma asToHeap_eqvt[eqvt]:
- fixes \<pi>::perm
- shows "\<pi> \<bullet> (asToHeap as) = asToHeap (\<pi> \<bullet> as)"
-by(induct as rule:asToHeap.induct) (auto)
-
+lemma asToHeap_eqvt: "eqvt asToHeap"
+  unfolding eqvt_def
+  by (auto simp add: permute_fun_def asToHeap.eqvt)
 end
