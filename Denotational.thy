@@ -122,45 +122,30 @@ next
 case (goal3 P x) 
   show ?case
   proof(cases x)
-    case (Inl a)
-      show ?thesis
-      proof(cases a)
-        case (Pair e \<rho>)
-          show ?thesis 
-          using Pair Inl goal3
-          apply (rule_tac y=e in exp_assn.exhaust(1))
-          apply auto[1]
-          apply blast
-          apply blast
-          using [[show_sorts]]
-          apply (rule_tac y=e and c = \<rho> in exp_assn.strong_exhaust(1))
-          
-          
-          
-          thm exp_assn.strong_exhaust(1)
-          proof(cases e P rule: exp_assn.strong_exhaust(1))
-            case (goal1 v) thus ?thesis using  Inl Pair goal3(3) by auto next
-            case (goal2 e x) thus ?thesis using  Inl Pair goal3(2) by auto next
-            case goal3 thus ?thesis using  Inl Pair goal3(2) by auto next
-          using Pair Inl goal3
-
-
-          apply simp
-  apply(case_tac x)
-  apply(case_tac a)
-  thm exp_assn.strong_exhaust(1)
-  apply(rule_tac y = aa and c = ba in exp_assn.strong_exhaust(1), (auto simp add:fresh_star_def))[1]
-  (* 
-  apply(case_tac b)
-  apply(case_tac a)
-  *)
-  apply auto
-  sorry
-
+  case (Inl a)
+    show ?thesis
+    proof(cases a)
+    case (Pair e \<rho>)
+      show ?thesis 
+        using Pair Inl goal3
+        apply (rule_tac y=e in exp_assn.exhaust(1))
+        apply auto[1]
+        apply blast
+        apply blast
+        apply (rule_tac y=e and c = \<rho> in exp_assn.strong_exhaust(1))
+        apply (auto simp add: fresh_star_def)
+        by metis
+    qed
+  next
+  case (Inr a) thus ?thesis using goal3
+    apply(case_tac a)
+    apply auto
+    done
+  qed
 next
 case (goal4 x \<rho> e x' \<rho>' e')
-  have eqvt1: "(\<And>xa. eqvt_at (\<lambda>(a, b). ESem a b) (e, \<rho>(x :\<cdot>= xa)))" using goal4 by -(rule eqvt_at_ESem)
-  have eqvt2: "(\<And>xa. eqvt_at (\<lambda>(a, b). ESem a b) (e', \<rho>'(x' :\<cdot>= xa)))"  using goal4 by -(rule eqvt_at_ESem)
+  have eqvt1: "(\<And>xa. eqvt_at (\<lambda>(a, b). ESem a b) (e, \<rho>(x f\<mapsto> xa)))" using goal4 by -(rule eqvt_at_ESem)
+  have eqvt2: "(\<And>xa. eqvt_at (\<lambda>(a, b). ESem a b) (e', \<rho>'(x' f\<mapsto> xa)))"  using goal4 by -(rule eqvt_at_ESem)
 
   have tmp2: "[[atom x]]lst. e = [[atom x']]lst. e'" and rho_eq:"\<rho> = \<rho>'"  using goal4(7) by auto  
 
@@ -170,7 +155,7 @@ case (goal4 x \<rho> e x' \<rho>' e')
     using goal4 `\<rho> = \<rho>'`
     by (auto simp add: swap_fresh_fresh)
 
-  have tmp: "\<And> xa. ESem e (\<rho>(x :\<cdot>= xa)) = ESem e' (\<rho>'(x' :\<cdot>= xa))"
+  have tmp: "\<And> xa. ESem e (\<rho>(x f\<mapsto> xa)) = ESem e' (\<rho>'(x' f\<mapsto> xa))"
     using eqvt1 eqvt2 tmp2 rho_eq goal4(5) goal4(6)
     using [[show_types]]
     apply (simp add: Abs1_eq_iff')
@@ -182,7 +167,8 @@ case (goal4 x \<rho> e x' \<rho>' e')
     apply auto
 
     apply (erule_tac x = "(atom x' \<rightleftharpoons> atom x)" in allE)
-    apply (auto simp add: cfun_upd_eqvt permute_Value_def all_fresh)
+    find_theorems "_(_f\<mapsto>_)" name:eqvt
+    apply (auto simp add: fmap_upd_eqvt permute_Value_def all_fresh)
     done
 
 
@@ -190,7 +176,7 @@ case (goal4 x \<rho> e x' \<rho>' e')
     apply (simp only: meta_eq_to_obj_eq[OF ESem_def, symmetric, unfolded fun_eq_iff]
       meta_eq_to_obj_eq[OF HSem_def, symmetric, unfolded fun_eq_iff])
     (* No _sum any more at this point! *)
-    by (auto simp add: tmp)
+    by (subst tmp, rule)
 next
  
 apply_end(auto)

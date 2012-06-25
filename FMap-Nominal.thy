@@ -205,4 +205,7 @@ qed
 instance "fmap" :: (fs,fs) fs
   by (default, auto intro: finite_sets_supp simp add: supp_fmap)
 
+lemma fmap_upd_eqvt[eqvt]: "p \<bullet> (fmap_upd f x y) = fmap_upd (p \<bullet> f) (p \<bullet> x) (p \<bullet> y)"
+  by (transfer, auto simp add:permute_fun_def fun_eq_iff)
+
 end
