@@ -25,6 +25,12 @@ lift_definition
 lemma fmap_upd_fdom[simp]: "fdom (h ( x f\<mapsto> v)) = insert x (fdom h)"
   by (transfer, auto)
 
+lemma the_lookup_fmap_upd[simp]: "the (lookup (h (x f\<mapsto> v)) x) = v"
+  by (transfer, auto)
+
+lemma the_lookup_fmap_upd_other[simp]: "x' \<noteq> x \<Longrightarrow> the (lookup (h (x f\<mapsto> v)) x') = the (lookup h x')"
+  by (transfer, auto)
+
 lemma finite_range:
   assumes "finite (dom m)"
   shows "finite (ran m)"

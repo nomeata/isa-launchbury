@@ -261,6 +261,10 @@ where
 by (pat_completeness, auto)
 termination by lexicographic_order
 
+lemma cont2cont_heapToEnv[simp, cont2cont]:
+  "(\<And> e. cont (\<lambda>\<rho>. eval \<rho> e)) \<Longrightarrow> cont (\<lambda> \<rho>. heapToEnv h (eval \<rho>))"
+  by(induct h, auto)
+
 lemma heapToEnv_eqvt[eqvt]:
   "\<pi> \<bullet> heapToEnv h eval = heapToEnv (\<pi> \<bullet> h) (\<pi> \<bullet> eval)"
   by (induct h eval rule:heapToEnv.induct, auto simp add: fmap_upd_eqvt  permute_fun_def)
@@ -272,26 +276,15 @@ definition heapExtend :: "Env \<Rightarrow> heap \<Rightarrow> (Env \<Rightarrow
   where
   "heapExtend \<rho> h eval = fmap_update \<rho> (fix1 (fmap_bottom (fst ` set h))  (\<Lambda> \<rho>'. heapToEnv h (eval \<rho>')))"
 
-lemma heapExtend_eqvt[eqvt]:
-  "\<pi> \<bullet> heapExtend \<rho> h eval = heapExtend (\<pi> \<bullet> \<rho>) (\<pi> \<bullet> h) (\<pi> \<bullet> eval)"
+lemma heapExtend_eqvt:
+  "(\<And>e. cont (\<lambda>\<rho>. eval \<rho> e)) \<Longrightarrow> \<pi> \<bullet> heapExtend \<rho> h eval = heapExtend (\<pi> \<bullet> \<rho>) (\<pi> \<bullet> h) (\<pi> \<bullet> eval)"
 unfolding heapExtend_def
-apply (subst fmap_update_eqvt)
-apply (subst fix1_eqvt)
- apply (subst beta_cfun)
-  defer
- apply (rule fmap_belowI')
-  apply simp
- apply simp
-apply (subst fmap_bottom_eqvt)
- apply simp
-apply (subst Lam_eqvt)
- defer
-apply perm_simp
-apply rule
-(* Goal here: cont (\<lambda>\<rho>'. heapToEnv h (eval \<rho>'))  *)
-
-sorry
-
+  apply (subst fmap_update_eqvt)
+  apply (subst fix1_eqvt)
+  apply (auto intro: fmap_belowI' simp add: fmap_bottom_eqvt  Lam_eqvt)
+  apply perm_simp
+  apply rule
+  done
 
 nominal_primrec
   ESem :: "exp \<Rightarrow> Env \<Rightarrow> Value" ("\<lbrakk> _ \<rbrakk>\<^bsub>_\<^esub>"  [60,60] 60)

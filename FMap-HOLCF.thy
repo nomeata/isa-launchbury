@@ -219,6 +219,74 @@ proof-
   done
 qed
 
+lemma fmap_upd_cont[simp,cont2cont]:
+  assumes "cont f" and "cont h"
+  shows "cont (\<lambda> x. fmap_upd (f x) v (h x) :: ('a, 'b::cpo) fmap)"
+proof (intro contI2  monofunI fmap_belowI')
+  fix x1 x2 :: 'c
+  assume "x1 \<sqsubseteq> x2"
+  hence "f x1 \<sqsubseteq> f x2" by -(erule cont2monofunE[OF `cont f`])
+  thus "fdom (f x1(v f\<mapsto> h x1)) = fdom (f x2(v f\<mapsto> h x2))"
+    by (simp add: fmap_below_dom)
+
+  (*  have finite_transfer[transfer_rule]: "(op = ===> op =) \<sqsubseteq> \<sqsubseteq>" 
+  unfolding fun_rel_eq by (rule refl) *)
+
+  fix v'
+  assume "v' \<in> fdom (f x1(v f\<mapsto> h x1))"  and "v' \<in> fdom (f x2(v f\<mapsto> h x2))"
+  thus "the (lookup (f x1(v f\<mapsto> h x1)) v') \<sqsubseteq> the (lookup (f x2(v f\<mapsto> h x2)) v')"
+  proof(cases "v = v'")
+    case True
+    thus ?thesis
+      using cont2monofunE[OF `cont h` `x1 \<sqsubseteq> x2`]
+      by (transfer, auto)
+  next
+    case False
+    moreover
+    with ` v' \<in> fdom (f x1(v f\<mapsto> h x1))` `v' \<in> fdom (f x2(v f\<mapsto> h x2))`
+    have "v' \<in> fdom (f x1)" and "v' \<in> fdom (f x2)" by auto
+    moreover
+    have "the (lookup (f x1) v') \<sqsubseteq> the (lookup (f x2) v')"
+      by (rule fmap_belowE[OF cont2monofunE[OF `cont f` `x1 \<sqsubseteq> x2`]])
+    ultimately
+    show  ?thesis  by (transfer, simp)
+  qed
+
+next
+  fix Y
+  assume c1: "chain (Y :: nat \<Rightarrow> 'c)"
+  assume c2: "chain (\<lambda>i. f (Y i)(v f\<mapsto> h (Y i)))"
+  have "Y 0 \<sqsubseteq> Lub Y" by (metis is_ub_thelub[OF c1])
+  hence "f (Y 0) \<sqsubseteq> f (Lub Y)" by (rule cont2monofunE[OF `cont f`])
+  hence "fdom (f (Y 0)) = fdom (f (Lub Y))" by (rule fmap_below_dom)
+
+  thus "fdom (f (\<Squnion> i. Y i)(v f\<mapsto> h (\<Squnion> i. Y i))) = fdom (\<Squnion> i. f (Y i)(v f\<mapsto> h (Y i)))"
+    by (simp add: chain_fdom(2)[OF c2])
+
+  fix v'
+  assume "v' \<in> fdom (f (\<Squnion> i. Y i)(v f\<mapsto> h (\<Squnion> i. Y i)))"
+    and "v' \<in> fdom (\<Squnion> i. f (Y i)(v f\<mapsto> h (Y i)))"
+
+  hence v'dom: "v' \<in> fdom (f (Y 0)(v f\<mapsto> h (Y 0)))"
+    by (simp add: chain_fdom(2)[OF c2])
+
+  show "the (lookup (f (\<Squnion> i. Y i)(v f\<mapsto> h (\<Squnion> i. Y i))) v') \<sqsubseteq> the (lookup (\<Squnion> i. f (Y i)(v f\<mapsto> h (Y i))) v') "
+  proof(cases "v = v'")
+    case True
+    thus ?thesis
+      using lookup_cont[OF c2 v'dom]  cont2contlubE[OF `cont h` c1]
+      by simp
+  next
+    case False
+    hence v'dom3: "v' \<in> fdom (f (Y 0))" using v'dom by auto
+
+    show ?thesis
+      using False lookup_cont[OF c2 v'dom] cont2contlubE[OF `cont f` c1]
+            lookup_cont[OF ch2ch_cont[OF `cont f` `chain Y`] v'dom3]
+      by simp
+  qed
+qed      
+
 
 primrec iterate :: "nat => ('a::cpo -> 'a) \<Rightarrow> ('a -> 'a)" where
     "iterate 0 F = (\<Lambda> x. x)"
