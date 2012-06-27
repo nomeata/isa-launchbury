@@ -57,77 +57,73 @@ lemma range_eqvt: "\<pi> \<bullet> range Y = range (\<pi> \<bullet> Y)"
 
 instance "fmap" :: (cont_pt, cont_pt) cont_pt
 apply default
-proof(rule contI2, rule monofunI)
+proof(intro contI2 monofunI fmap_belowI')
   fix \<pi> m1 m2
   assume "m1 \<sqsubseteq> (m2 :: ('a, 'b) fmap)"
   hence "fdom m1 = fdom m2"
     by (rule fmap_below_dom)
-  show "\<pi> \<bullet> m1 \<sqsubseteq> \<pi> \<bullet> m2"
-  proof (rule fmap_belowI')
-    show "fdom (\<pi> \<bullet> m1) = fdom (\<pi> \<bullet> m2)"
-      using `fdom m1 = fdom m2`
-      by (simp add: fdom_perm del: fdom_perm_rev)
-  next
-    fix x
-    assume "x \<in> fdom (\<pi> \<bullet> m1)" and "x \<in> fdom (\<pi> \<bullet> m2)"
-    moreover
-    obtain x2 where "x = \<pi> \<bullet> x2" by (metis eqvt_bound)
-    ultimately
-    have "x2 \<in> fdom m1" "x2 \<in> fdom m2"
-      using `x \<in> fdom (\<pi> \<bullet> m1)` `x \<in> fdom (\<pi> \<bullet> m2)`
-      by (simp add: fdom_perm mem_permute_iff del: fdom_perm_rev)+
 
-    have "the (lookup (\<pi> \<bullet> m1) x) = \<pi> \<bullet> the (lookup m1 x2)"
-      by (simp add: the_lookup_eqvt[OF `x2 \<in> fdom m1`]  `x = _`)
-    also have "... \<sqsubseteq> \<pi> \<bullet> the (lookup m2 x2)"
-      by -(subst perm_cont_simp, rule fmap_belowE[OF `m1 \<sqsubseteq> m2`])
-    also have "... \<sqsubseteq> the (lookup (\<pi> \<bullet> m2) x)"
-      using `x = _`
-      by (simp add: the_lookup_eqvt[OF `x2 \<in> fdom m2`]  )
-    finally show "the (lookup (\<pi> \<bullet> m1) x) \<sqsubseteq> the (lookup (\<pi> \<bullet> m2) x)".
-  qed
+  show "fdom (\<pi> \<bullet> m1) = fdom (\<pi> \<bullet> m2)"
+    using `fdom m1 = fdom m2`
+    by (simp add: fdom_perm del: fdom_perm_rev)
+
+  fix x
+  assume "x \<in> fdom (\<pi> \<bullet> m1)" and "x \<in> fdom (\<pi> \<bullet> m2)"
+  moreover
+  obtain x2 where "x = \<pi> \<bullet> x2" by (metis eqvt_bound)
+  ultimately
+  have "x2 \<in> fdom m1" "x2 \<in> fdom m2"
+    using `x \<in> fdom (\<pi> \<bullet> m1)` `x \<in> fdom (\<pi> \<bullet> m2)`
+    by (simp add: fdom_perm mem_permute_iff del: fdom_perm_rev)+
+
+  have "the (lookup (\<pi> \<bullet> m1) x) = \<pi> \<bullet> the (lookup m1 x2)"
+    by (simp add: the_lookup_eqvt[OF `x2 \<in> fdom m1`]  `x = _`)
+  also have "... \<sqsubseteq> \<pi> \<bullet> the (lookup m2 x2)"
+    by -(subst perm_cont_simp, rule fmap_belowE[OF `m1 \<sqsubseteq> m2`])
+  also have "... \<sqsubseteq> the (lookup (\<pi> \<bullet> m2) x)"
+    using `x = _`
+    by (simp add: the_lookup_eqvt[OF `x2 \<in> fdom m2`]  )
+  finally show "the (lookup (\<pi> \<bullet> m1) x) \<sqsubseteq> the (lookup (\<pi> \<bullet> m2) x)".
+
 next
   fix \<pi> Y
   assume "chain (Y\<Colon>nat \<Rightarrow> ('a, 'b) fmap)"
   assume "chain (\<lambda>i. \<pi> \<bullet> Y i)"
   
-  show "\<pi> \<bullet> (\<Squnion> i. Y i) \<sqsubseteq> (\<Squnion> i. \<pi> \<bullet> Y i) "
-  proof(rule fmap_belowI')
-    show "fdom (\<pi> \<bullet> (\<Squnion> i. Y i)) = fdom (\<Squnion> i. \<pi> \<bullet> Y i)"
+  show "fdom (\<pi> \<bullet> (\<Squnion> i. Y i)) = fdom (\<Squnion> i. \<pi> \<bullet> Y i)"
       by (simp add: chain_fdom(2)[OF `chain (\<lambda>i. \<pi> \<bullet> Y i)`] chain_fdom(2)[OF `chain Y`] fdom_perm del: fdom_perm_rev)
-  next
-    fix x
-    assume "x \<in> fdom (\<pi> \<bullet> (\<Squnion> i. Y i))"
-    moreover
-    obtain x2 where "x = \<pi> \<bullet> x2" by (metis eqvt_bound)
-    ultimately
-    have "x2 \<in> fdom (\<Squnion> i. Y i)"
-      using `x \<in> fdom (\<pi> \<bullet> (\<Squnion> i. Y i))` 
-      by (simp add: fdom_perm mem_permute_iff del: fdom_perm_rev)+
-    hence "x2 \<in> fdom (Y 0)"
-      by (simp add: chain_fdom(2)[OF `chain Y`])
-      
-    assume  "x \<in> fdom (\<Squnion> i. \<pi> \<bullet> Y i) "
-    hence "x \<in> fdom (\<pi> \<bullet> Y 0)"
-      by (simp add: chain_fdom(2)[OF `chain (\<lambda>i. \<pi> \<bullet> Y i)`])
 
-    have "the (lookup (\<pi> \<bullet> (\<Squnion> i. Y i)) x) = \<pi> \<bullet> (the (lookup (\<Squnion> i. Y i) x2))"
-      by (simp add: the_lookup_eqvt[OF `x2 \<in> fdom (\<Squnion> i. Y i)`]  `x = _`)
-    also have "... = \<pi> \<bullet> (\<Squnion>i. (the (lookup (Y i) x2)))"
-      by (subst lookup_cont[OF `chain Y` `x2 \<in> fdom (Y 0)`], rule refl)
-    also have "... = (\<Squnion>i. \<pi> \<bullet> (the (lookup (Y i) x2)))"
-      by (rule cont2contlubE[OF perm_cont, OF lookup_chain[OF `chain Y` `x2 \<in> fdom (Y 0)`]])
-    also have "... = (\<Squnion>i. the (lookup (\<pi> \<bullet> (Y i)) x))"
-      using `x2 \<in> fdom (Y 0)` chain_fdom(1)[OF `chain Y`] `x = _`
-      apply (subst the_lookup_eqvt)
-      apply auto
-      done
-    also have "... = the (lookup (\<Squnion>i. \<pi> \<bullet> (Y i)) x)"
-      by (subst lookup_cont[OF `chain (\<lambda>i. \<pi> \<bullet> Y i)` `x \<in> fdom (\<pi> \<bullet> Y 0)`], rule refl)
-    finally
-    have "the (lookup (\<pi> \<bullet> (\<Squnion> i. Y i)) x) = the (lookup (\<Squnion> i. \<pi> \<bullet> Y i) x)" .
-    thus "the (lookup (\<pi> \<bullet> (\<Squnion> i. Y i)) x) \<sqsubseteq> the (lookup (\<Squnion> i. \<pi> \<bullet> Y i) x)" by auto
-  qed
+  fix x
+  assume "x \<in> fdom (\<pi> \<bullet> (\<Squnion> i. Y i))"
+  moreover
+  obtain x2 where "x = \<pi> \<bullet> x2" by (metis eqvt_bound)
+  ultimately
+  have "x2 \<in> fdom (\<Squnion> i. Y i)"
+    using `x \<in> fdom (\<pi> \<bullet> (\<Squnion> i. Y i))` 
+    by (simp add: fdom_perm mem_permute_iff del: fdom_perm_rev)+
+  hence "x2 \<in> fdom (Y 0)"
+    by (simp add: chain_fdom(2)[OF `chain Y`])
+    
+  assume  "x \<in> fdom (\<Squnion> i. \<pi> \<bullet> Y i) "
+  hence "x \<in> fdom (\<pi> \<bullet> Y 0)"
+    by (simp add: chain_fdom(2)[OF `chain (\<lambda>i. \<pi> \<bullet> Y i)`])
+
+  have "the (lookup (\<pi> \<bullet> (\<Squnion> i. Y i)) x) = \<pi> \<bullet> (the (lookup (\<Squnion> i. Y i) x2))"
+    by (simp add: the_lookup_eqvt[OF `x2 \<in> fdom (\<Squnion> i. Y i)`]  `x = _`)
+  also have "... = \<pi> \<bullet> (\<Squnion>i. (the (lookup (Y i) x2)))"
+    by (subst lookup_cont[OF `chain Y` `x2 \<in> fdom (Y 0)`], rule refl)
+  also have "... = (\<Squnion>i. \<pi> \<bullet> (the (lookup (Y i) x2)))"
+    by (rule cont2contlubE[OF perm_cont, OF lookup_chain[OF `chain Y` `x2 \<in> fdom (Y 0)`]])
+  also have "... = (\<Squnion>i. the (lookup (\<pi> \<bullet> (Y i)) x))"
+    using `x2 \<in> fdom (Y 0)` chain_fdom(1)[OF `chain Y`] `x = _`
+    apply (subst the_lookup_eqvt)
+    apply auto
+    done
+  also have "... = the (lookup (\<Squnion>i. \<pi> \<bullet> (Y i)) x)"
+    by (subst lookup_cont[OF `chain (\<lambda>i. \<pi> \<bullet> Y i)` `x \<in> fdom (\<pi> \<bullet> Y 0)`], rule refl)
+  finally
+  have "the (lookup (\<pi> \<bullet> (\<Squnion> i. Y i)) x) = the (lookup (\<Squnion> i. \<pi> \<bullet> Y i) x)" .
+  thus "the (lookup (\<pi> \<bullet> (\<Squnion> i. Y i)) x) \<sqsubseteq> the (lookup (\<Squnion> i. \<pi> \<bullet> Y i) x)" by auto
 qed
 
 
@@ -272,9 +268,6 @@ lemma heapToEnv_eqvt[eqvt]:
 lemma heapToEnv_fdom[simp]:"fdom (heapToEnv h eval) = fst ` set h"
   by (induct h eval rule:heapToEnv.induct, auto)
 
-lemma fmap_bottom_lookup[simp]: "\<lbrakk> x \<in> S ; finite S \<rbrakk> \<Longrightarrow> lookup (fmap_bottom S) x = Some \<bottom>"
-  by (transfer, auto)
-
 definition heapExtend :: "Env \<Rightarrow> heap \<Rightarrow> (Env \<Rightarrow> exp \<Rightarrow> Value)  \<Rightarrow> (var, Value) fmap"
   where
   "heapExtend \<rho> h eval = fmap_update \<rho> (fix1 (fmap_bottom (fst ` set h))  (\<Lambda> \<rho>'. heapToEnv h (eval \<rho>')))"
@@ -284,15 +277,15 @@ lemma heapExtend_eqvt[eqvt]:
 unfolding heapExtend_def
 apply (subst fmap_update_eqvt)
 apply (subst fix1_eqvt)
-apply (subst beta_cfun)
-defer
-apply (rule fmap_belowI')
-apply simp
-apply simp
+ apply (subst beta_cfun)
+  defer
+ apply (rule fmap_belowI')
+  apply simp
+ apply simp
 apply (subst fmap_bottom_eqvt)
-apply simp
+ apply simp
 apply (subst Lam_eqvt)
-defer
+ defer
 apply perm_simp
 apply rule
 (* Goal here: cont (\<lambda>\<rho>'. heapToEnv h (eval \<rho>'))  *)

@@ -351,6 +351,9 @@ lemma fmap_bottom_fdom[simp]:"finite S \<Longrightarrow> fdom (fmap_bottom S) = 
   apply auto
   by (metis option.simps(3))
 
+lemma fmap_bottom_lookup[simp]: "\<lbrakk> x \<in> S ; finite S \<rbrakk> \<Longrightarrow> lookup (fmap_bottom S) x = Some \<bottom>"
+  by (transfer, auto)
+
 definition fix_extend :: "('a, 'b::pcpo) fmap \<Rightarrow> 'a set \<Rightarrow> (('a, 'b) fmap \<Rightarrow> ('a, 'b) fmap) \<Rightarrow> ('a, 'b) fmap"
   where
   "fix_extend h S nh = fmap_update h (fix1 (fmap_bottom S)  (\<Lambda> h'. (nh (fmap_update h h') )))"
