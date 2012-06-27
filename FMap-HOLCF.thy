@@ -26,6 +26,16 @@ next
 qed
 end
 
+lemma fmap_belowI':
+  assumes "fdom a = fdom b"
+    and "\<And> x. \<lbrakk>
+      x \<in> fdom a;
+      x \<in> fdom b
+      \<rbrakk>  \<Longrightarrow> the (lookup a x) \<sqsubseteq> the (lookup b x)"
+  shows "a \<sqsubseteq> b"
+  using assms
+  by (metis below_fmap_def)
+
 lemma fmap_belowI:
   assumes "fdom a = fdom b"
     and "\<And> x y y2. \<lbrakk>
@@ -38,6 +48,15 @@ lemma fmap_belowI:
   using assms
   by (metis below_fmap_def lookup.rep_eq domIff fdom.rep_eq not_None_eq the.simps)
 
+lemma fmap_belowE:
+  assumes "m1 \<sqsubseteq> m2"
+  shows "the (lookup m1 x) \<sqsubseteq> the (lookup m2 x)"
+  apply (cases "x \<in> fdom m1")
+  using assms
+  apply (metis below_fmap_def)
+  using assms unfolding below_fmap_def
+  apply (transfer, auto)
+  done
 
 definition fmap_lub_raw where
   "fmap_lub_raw S = (\<lambda> x. 
@@ -62,7 +81,7 @@ lemma fmap_below_dom:
   unfolding below_fmap_def by simp
 
 lemma is_lub_fmap:
-  assumes "chain (S::nat => ('a::type, 'b::cpo) fmap)"
+  assumes "chain (S::nat => ('a, 'b::cpo) fmap)"
   shows "range S <<| fmap_lub S"
 proof(rule is_lubI)
 
@@ -156,6 +175,51 @@ proof
     by (rule is_lub_fmap)
 qed
 
+lemma unfold_lub_fmap:  "chain (Y::nat => ('a, 'b::cpo) fmap) \<Longrightarrow> lub (range Y) = fmap_lub Y"
+  by (rule lub_eqI, rule is_lub_fmap)
+
+lemma chain_fdom:
+  assumes "chain (Y :: nat \<Rightarrow> ('a\<Colon>type, 'b\<Colon>cpo) fmap) "
+  shows "fdom (Y i) = fdom (Y 0)" and "fdom (\<Squnion> i. Y i) = fdom (Y 0)"
+using [[show_sorts]]
+proof-
+    have "Y 0 \<sqsubseteq> Y i" apply (rule chain_mono[OF `chain Y`]) by simp
+    thus "fdom (Y i) = fdom (Y 0)" by-(drule fmap_below_dom, rule sym)
+    moreover
+    have "Y 0 \<sqsubseteq> (\<Squnion>i . Y i)"  by (rule is_ub_thelub[OF `chain Y`])
+    thus "fdom (\<Squnion> i. Y i) = fdom (Y 0)" by-(drule fmap_below_dom, rule sym)
+qed
+
+lemma lookup_chain:
+  assumes "chain (Y :: nat \<Rightarrow> ('a, 'b::cpo) fmap)"
+  and "x \<in> fdom (Y j)"
+  shows "chain(\<lambda> i . the (lookup (Y i) x))"
+proof(rule chainI)
+  fix i 
+  have [simp]:"fdom (Y i) = fdom (Y 0)" and
+       [simp]:"fdom (Y (Suc i)) = fdom (Y 0)" and
+       [simp]:"fdom (Y j) = fdom (Y 0)"
+       by (intro chain_fdom[OF `chain Y`])+
+  have "Y i \<sqsubseteq> Y (Suc i)" using `chain _` by (rule chainE)
+  thus "the (lookup (Y i) x) \<sqsubseteq> the (lookup (Y (Suc i)) x)"
+    using `x \<in> _`
+    by (simp add: below_fmap_def)
+qed
+
+lemma lookup_cont:
+  assumes "chain (Y :: nat \<Rightarrow> ('a, 'b::cpo) fmap)"
+  and "x \<in> fdom (Y j)"
+  shows "the (lookup (\<Squnion> i. Y i) x) = (\<Squnion> i. the (lookup (Y i) x))"
+proof-
+  have "x \<in> fdom (Y 0)" using chain_fdom(1)[OF `chain Y`] `x \<in> fdom (Y j)` by blast 
+  thus ?thesis
+  unfolding unfold_lub_fmap[OF `chain Y`]
+  apply transfer
+  apply (auto simp add: not_None_eq fmap_lub_raw_def)
+  done
+qed
+
+
 primrec iterate :: "nat => ('a::cpo -> 'a) \<Rightarrow> ('a -> 'a)" where
     "iterate 0 F = (\<Lambda> x. x)"
   | "iterate (Suc n) F = (\<Lambda> x. F\<cdot>(iterate n F\<cdot>x))"
@@ -240,6 +304,7 @@ qed
 
 definition max where "max x y = (if x \<sqsubseteq> y then y else x)"
 
+(*
 lift_definition fmap_extend :: "('a, 'b::cpo) fmap \<Rightarrow> ('a, 'b) fmap  \<Rightarrow> ('a, 'b) fmap"
   is "\<lambda>m1 m2 x. (
     case m1 x of
@@ -256,10 +321,38 @@ lift_definition fmap_extend :: "('a, 'b::cpo) fmap \<Rightarrow> ('a, 'b) fmap  
      )"
   apply (rule_tac B = "dom fun1 \<union> dom fun2" in  finite_subset)
   by (auto simp add: map_def split add: option.split_asm)
+*)
+
+lift_definition fmap_update :: "('a, 'b::cpo) fmap \<Rightarrow> ('a, 'b) fmap  \<Rightarrow> ('a, 'b) fmap"
+  is "\<lambda>m1 m2 x. (
+    case m2 x of Some y1 \<Rightarrow> Some y1 | None \<Rightarrow> m1 x 
+     )"
+  apply (rule_tac B = "dom fun1 \<union> dom fun2" in  finite_subset)
+  by (auto simp add: map_def split add: option.split_asm)
+
+lift_definition fmap_extend :: "('a, 'b::pcpo) fmap \<Rightarrow> 'a set  \<Rightarrow> ('a, 'b) fmap"
+  is "\<lambda> m1 S. (if finite S then (\<lambda> x. if x \<in> S then Some \<bottom> else m1 x) else empty)"
+  apply (case_tac "finite set")
+  apply (rule_tac B = "dom fun \<union> set" in   finite_subset)
+  apply auto
+  done
 
 
-definition fix_extend :: "('a, 'b::cpo) fmap \<Rightarrow> (('a, 'b) fmap \<Rightarrow> ('a, 'b) fmap) \<Rightarrow> ('a, 'b) fmap"
+
+lift_definition fmap_bottom :: "'a set  \<Rightarrow> ('a, 'b::pcpo) fmap"
+  is "\<lambda> S. (if finite S then (\<lambda> x. if x \<in> S then Some \<bottom> else None) else empty)"
+  apply (case_tac "finite set")
+  apply (rule_tac B = "set" in  finite_subset)
+  apply (auto simp add: dom_def)
+  done
+
+lemma fmap_bottom_fdom[simp]:"finite S \<Longrightarrow> fdom (fmap_bottom S) = S"
+  apply transfer
+  apply auto
+  by (metis option.simps(3))
+
+definition fix_extend :: "('a, 'b::pcpo) fmap \<Rightarrow> 'a set \<Rightarrow> (('a, 'b) fmap \<Rightarrow> ('a, 'b) fmap) \<Rightarrow> ('a, 'b) fmap"
   where
-  "fix_extend h nh = fix1 h (\<Lambda> h'. fmap_extend h' (nh h') )"
+  "fix_extend h S nh = fmap_update h (fix1 (fmap_bottom S)  (\<Lambda> h'. (nh (fmap_update h h') )))"
 
 end

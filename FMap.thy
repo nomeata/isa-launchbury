@@ -15,9 +15,15 @@ lift_definition lookup :: "('key, 'value) fmap \<Rightarrow> 'key \<Rightarrow> 
 
 lift_definition fempty :: "('key, 'value) fmap" is Map.empty by simp
 
+lemma fempty_fdom[simp]: "fdom fempty = {}"
+  by (transfer, auto)
+
 lift_definition
   fmap_upd :: "('key, 'value) fmap \<Rightarrow> 'key \<Rightarrow> 'value \<Rightarrow> ('key, 'value) fmap" ("_'(_ f\<mapsto> _')" [900,900]900)
   is "\<lambda> m x v. m( x \<mapsto> v)"  by simp
+
+lemma fmap_upd_fdom[simp]: "fdom (h ( x f\<mapsto> v)) = insert x (fdom h)"
+  by (transfer, auto)
 
 lemma finite_range:
   assumes "finite (dom m)"
@@ -62,5 +68,6 @@ proof(transfer)
     qed
   qed
 qed
+
 
 end

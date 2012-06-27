@@ -63,9 +63,31 @@ lemma lookup_eqvt[eqvt]:
   "\<pi> \<bullet> lookup m x = lookup (\<pi> \<bullet> m) (\<pi> \<bullet> x)"
   by (transfer, auto simp add: permute_fun_def)
 
+lemma mem_transfer[transfer_rule]: "(op = ===> op = ===> op =) op \<in> op \<in>" 
+  apply (rule fun_relI)+
+  apply (simp)
+  done
+
+lemma the_lookup_eqvt:
+  "x \<in> fdom m \<Longrightarrow> \<pi> \<bullet> the (lookup m x) = the (lookup (\<pi> \<bullet> m) (\<pi> \<bullet> x))"
+  by (transfer fixing: x, auto simp add: dom_def permute_fun_def)
+
 lemma fempty_eqvt[eqvt, simp]:
   "\<pi> \<bullet> fempty = fempty"
   by (transfer, auto simp add: permute_fun_def)
+
+lemma permute_transfer[transfer_rule]: "(op = ===> cr_fmap ===> cr_fmap) permute permute" 
+  apply (rule fun_relI)+
+  apply (auto simp add: cr_fmap_def permute_fmap_def simp del: dom_perm_rev simp add: dom_perm Rep_fmap[simplified] Abs_fmap_inverse)
+  done
+
+lemma permute_transfer2[transfer_rule]: "(op = ===> op = ===> op =) permute (permute :: perm \<Rightarrow> ('a::pt) set \<Rightarrow> 'a set)" 
+  unfolding fun_rel_eq by (rule refl)
+
+lemma fdom_perm: "fdom (\<pi> \<bullet> f) = \<pi> \<bullet> (fdom f)"
+  apply transfer by (rule dom_perm)
+lemmas fdom_perm_rev[simp] = fdom_perm[symmetric]
+
 
 lemma map_between_finite:
   assumes "finite A"
