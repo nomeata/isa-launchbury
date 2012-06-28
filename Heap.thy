@@ -11,6 +11,11 @@ lemma [simp]:"heapVars (a @ b) = heapVars a \<union> heapVars b"
   and [simp]:"heapVars ((v,e) # h) = insert v (heapVars h)"
   by (auto simp add: heapVars_def)
 
+function asToHeap_raw :: "assn_raw \<Rightarrow> (var \<times> exp_raw) list"
+where ANilToHeap_raw: "asToHeap_raw ANil_raw = []"
+ | AConsToHeap_raw: "asToHeap_raw (ACons_raw v e as) = (v, e) # asToHeap_raw as"
+ by (pat_completeness, auto)
+
 nominal_primrec  asToHeap :: "assn \<Rightarrow> heap" 
  where ANilToHeap: "asToHeap ANil = []"
  | AConsToHeap: "asToHeap (ACons v e as) = (v, e) # asToHeap as"
