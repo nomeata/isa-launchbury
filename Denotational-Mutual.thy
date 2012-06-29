@@ -1,6 +1,7 @@
-theory Denotational
+theory "Denotational-Mutual"
   imports "Denotational-Common"
 begin
+
 
 nominal_primrec
   ESem :: "exp \<Rightarrow> Env \<Rightarrow> Value" ("\<lbrakk> _ \<rbrakk>\<^bsub>_\<^esub>"  [60,60] 60)
@@ -15,6 +16,7 @@ where
 proof-
 have eqvt_at_ESem: "\<And> a b . eqvt_at ESem_HSem_sumC (Inl (a, b)) \<Longrightarrow> eqvt_at (\<lambda>(a, b). ESem a b) (a, b)" sorry
 have eqvt_at_HSem: "\<And> a b . eqvt_at ESem_HSem_sumC (Inr (a, b)) \<Longrightarrow> eqvt_at (\<lambda>(a, b). HSem a b) (a, b)" sorry
+thm exp_assn.strong_exhaust(1)
 {
 
 case goal1 thus ?case
