@@ -2,8 +2,7 @@ theory "Denotational-Fixrec"
   imports "Denotational-Common"
 begin
 
-
-instantiation exp :: discrete_cpo
+instantiation exp :: discr_pt
 begin
   definition  [simp]: "(x::exp) \<sqsubseteq> y \<longleftrightarrow> x = y"
   instance by default simp

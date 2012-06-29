@@ -14,7 +14,8 @@ case goal1 thus ?case
   unfolding eqvt_def ESem_graph_def
   apply rule
   apply perm_simp
-  sorry (* :-( *)
+  apply rule
+  done
 next
 case (goal3 P x) 
   show ?case
@@ -86,7 +87,7 @@ case (goal13 as \<rho> body as' \<rho>' body')
          unfolding permute_fun_def
          apply  (simp add: eqvt[unfolded eqvt_at_def, simplified, rule_format]   asToHeap.eqvt)
          (* Goal:  \<And>e. \<pi> \<bullet> \<rho> = \<rho> \<Longrightarrow> cont (\<lambda>x1. ESem_sumC (e, x1)) *)
-         sorry
+         done
     qed
   thus "ESem_sumC (Terms.Let as body, heapExtend \<rho> (asToHeap as) (\<lambda>x0 x1. ESem_sumC (x0, x1))) =
       ESem_sumC (Terms.Let as' body', heapExtend \<rho>' (asToHeap as') (\<lambda>x0 x1. ESem_sumC (x0, x1)))" using `\<rho>' = \<rho>`  by simp

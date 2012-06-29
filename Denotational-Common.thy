@@ -4,6 +4,7 @@ begin
 
 default_sort cpo
 
+
 instantiation var :: discrete_cpo
 begin
   definition  [simp]: "(x::var) \<sqsubseteq> y \<longleftrightarrow> x = y"
@@ -74,17 +75,42 @@ lemma heapToEnv_fdom[simp]:"fdom (heapToEnv h eval) = fst ` set h"
 
 definition heapExtend :: "Env \<Rightarrow> heap \<Rightarrow> (exp \<Rightarrow> Env \<Rightarrow> Value)  \<Rightarrow> (var, Value) fmap"
   where
-  "heapExtend \<rho> h eval = fmap_update \<rho> (fix1 (fmap_bottom (fst ` set h))  (\<Lambda> \<rho>'. heapToEnv h (\<lambda> e. eval e \<rho>')))"
+  "heapExtend \<rho> h eval =
+    (if (\<forall>e. cont (eval e)) then fmap_update \<rho> (fix1 (fmap_bottom (fst ` set h)) (\<Lambda> \<rho>' . heapToEnv h (\<lambda> e. eval e \<rho>'))) else fempty)"
 
-lemma heapExtend_eqvt:
-  "(\<And>e. cont (eval e)) \<Longrightarrow> \<pi> \<bullet> heapExtend \<rho> h eval = heapExtend (\<pi> \<bullet> \<rho>) (\<pi> \<bullet> h) (\<pi> \<bullet> eval)"
-unfolding heapExtend_def
+lemma perm_still_cont[simp]: "cont (\<pi> \<bullet> f) = cont (f :: ('a :: cont_pt) \<Rightarrow> ('b :: cont_pt))"
+proof
+  have imp:"\<And> (f :: 'a \<Rightarrow> 'b) \<pi>. cont f \<Longrightarrow> cont (\<pi> \<bullet> f)"
+    unfolding permute_fun_def
+    by (metis cont_compose perm_cont)
+  show "cont f \<Longrightarrow> cont (\<pi> \<bullet> f)" using imp[of "f" "\<pi>"].
+  show "cont (\<pi> \<bullet> f) \<Longrightarrow> cont (f)" using imp[of "\<pi> \<bullet> f" "-\<pi>"] by simp
+qed
+
+lemma perm_still_cont3[simp]: "(\<forall>e. cont ((\<pi> \<bullet> f) e)) = (\<forall> e. cont ((f :: (exp \<Rightarrow> Env \<Rightarrow> Value)) e))"
+proof
+  have imp:"\<And> (f :: (exp \<Rightarrow> Env \<Rightarrow> Value)) \<pi>. (\<forall>e. cont (f e)) \<Longrightarrow> (\<forall> e. cont ((\<pi> \<bullet> f) e))"
+    unfolding permute_fun_def
+    apply rule
+    apply (erule_tac x = "-\<pi> \<bullet> e" in allE)
+    by (metis cont_compose perm_cont) 
+  show "(\<forall> e. cont (f e)) \<Longrightarrow> (\<forall> e. cont ((\<pi> \<bullet> f) e))" using imp[of "f" "\<pi>"].
+  show "(\<forall> e. cont ((\<pi> \<bullet> f) e)) \<Longrightarrow> (\<forall> e. cont (f e))" using imp[of "\<pi> \<bullet> f" "-\<pi>"] by simp
+qed
+
+
+lemma heapExtend_eqvt[eqvt]:
+  "\<pi> \<bullet> heapExtend \<rho> h eval = heapExtend (\<pi> \<bullet> \<rho>) (\<pi> \<bullet> h) (\<pi> \<bullet> eval)"
+  apply (cases "\<forall> e. cont (eval e)")
+  unfolding heapExtend_def
+  apply (simp_all only: if_P if_not_P perm_still_cont3 simp_thms(35) if_False)
   apply (subst fmap_update_eqvt)
   apply (subst fix1_eqvt)
   apply (auto intro: fmap_belowI')[1]
-  apply (auto simp add: fmap_bottom_eqvt  Lam_eqvt)
+  apply (auto simp add: fmap_bottom_eqvt  Lam_eqvt)[1]
   apply perm_simp
   apply rule
+  apply auto
   done
 
 end

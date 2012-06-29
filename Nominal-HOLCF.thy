@@ -32,6 +32,7 @@ lemma perm_bottom[simp,eqvt]: "\<pi> \<bullet> \<bottom> = (\<bottom>::'a::{cont
   thus "\<pi> \<bullet> \<bottom> = (\<bottom>::'a::{cont_pt,pcpo})" by simp
 qed
 
+
 instantiation "cfun" :: (cont_pt, cont_pt) pt
 begin
   definition "p \<bullet> (f :: 'a  \<rightarrow> 'b) = (\<Lambda> x. p \<bullet> (f \<cdot> (- p \<bullet> x)))"
@@ -42,6 +43,19 @@ begin
   apply (simp add: permute_cfun_def cfun_eqI minus_add)
   done
 end
+
+(*
+Is this possible?
+lemma permute_fun_eq: "permute p = (\<lambda> f x. permute p (f (permute (-p) x)))"
+  by (rule, rule, auto simp add: permute_fun_def)
+
+instance "fun" :: (cont_pt, cont_pt) cont_pt
+  apply (default)
+  apply (subst permute_fun_eq)
+  using [[show_sorts]]
+  apply (rule perm_cont2cont)
+  apply (intro cont2cont)
+*)
 
 lemma permute_cfun_eq: "permute p = (\<lambda> f. (Abs_cfun (permute p)) oo f oo (Abs_cfun (permute (-p))))"
   by (rule, rule cfun_eqI, auto simp add: permute_cfun_def)
