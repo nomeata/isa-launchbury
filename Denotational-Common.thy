@@ -81,10 +81,10 @@ lemma heapExtend_eqvt:
 unfolding heapExtend_def
   apply (subst fmap_update_eqvt)
   apply (subst fix1_eqvt)
-  apply (auto intro: fmap_belowI' simp add: fmap_bottom_eqvt  Lam_eqvt)
+  apply (auto intro: fmap_belowI')[1]
+  apply (auto simp add: fmap_bottom_eqvt  Lam_eqvt)
   apply perm_simp
   apply rule
   done
-
 
 end
