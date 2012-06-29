@@ -414,10 +414,8 @@ lift_definition fmap_bottom :: "'a set  \<Rightarrow> ('a, 'b::pcpo) fmap"
   apply (auto simp add: dom_def)
   done
 
-lemma fmap_bottom_fdom[simp]:"finite S \<Longrightarrow> fdom (fmap_bottom S) = S"
-  apply transfer
-  apply auto
-  by (metis option.simps(3))
+lemma fdom_fmap_bottom[simp]: "finite S \<Longrightarrow> fdom (fmap_bottom S) = S"
+  by (transfer, auto simp add: dom_def)
 
 lemma fmap_bottom_lookup[simp]: "\<lbrakk> x \<in> S ; finite S \<rbrakk> \<Longrightarrow> lookup (fmap_bottom S) x = Some \<bottom>"
   by (transfer, auto)
