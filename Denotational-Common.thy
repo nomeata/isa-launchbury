@@ -63,7 +63,7 @@ by (pat_completeness, auto)
 termination by lexicographic_order
 
 lemma cont2cont_heapToEnv[simp, cont2cont]:
-  "(\<And> e. cont (\<lambda>\<rho>. eval \<rho> e)) \<Longrightarrow> cont (\<lambda> \<rho>. heapToEnv h (eval \<rho>))"
+  "(\<And> e . e \<in> snd ` set h \<Longrightarrow> cont (\<lambda>\<rho>. eval \<rho> e)) \<Longrightarrow> cont (\<lambda> \<rho>. heapToEnv h (eval \<rho>))"
   by(induct h, auto)
 
 lemma heapToEnv_eqvt[eqvt]:
@@ -73,10 +73,16 @@ lemma heapToEnv_eqvt[eqvt]:
 lemma heapToEnv_fdom[simp]:"fdom (heapToEnv h eval) = fst ` set h"
   by (induct h eval rule:heapToEnv.induct, auto)
 
+lemma heapToEnv_cong[fundef_cong]:
+  "\<lbrakk> heap1 = heap2 ;  (\<And> e. e \<in> snd ` set heap2 \<Longrightarrow> eval1 e = eval2 e) \<rbrakk>
+    \<Longrightarrow>  heapToEnv heap1 eval1 = heapToEnv heap2 eval2"
+ by (induct heap2 eval2 arbitrary:heap1 rule:heapToEnv.induct, auto)
+
+
 definition heapExtend :: "Env \<Rightarrow> heap \<Rightarrow> (exp \<Rightarrow> Env \<Rightarrow> Value)  \<Rightarrow> (var, Value) fmap"
   where
   "heapExtend \<rho> h eval =
-    (if (\<forall>e. cont (eval e)) then fmap_update \<rho> (fix1 (fmap_bottom (fst ` set h)) (\<Lambda> \<rho>' . heapToEnv h (\<lambda> e. eval e \<rho>'))) else fempty)"
+    (if (\<forall>e \<in> snd ` set h. cont (eval e)) then fmap_update \<rho> (fix1 (fmap_bottom (fst ` set h)) (\<Lambda> \<rho>' . heapToEnv h (\<lambda> e. eval e \<rho>'))) else fempty)"
 
 lemma perm_still_cont[simp]: "cont (\<pi> \<bullet> f) = cont (f :: ('a :: cont_pt) \<Rightarrow> ('b :: cont_pt))"
 proof
@@ -98,19 +104,56 @@ proof
   show "(\<forall> e. cont ((\<pi> \<bullet> f) e)) \<Longrightarrow> (\<forall> e. cont (f e))" using imp[of "\<pi> \<bullet> f" "-\<pi>"] by simp
 qed
 
+lemma perm_still_cont4[simp]: "(\<forall>e \<in> snd ` set (\<pi> \<bullet> h). cont ((\<pi> \<bullet> f) e)) = (\<forall> e \<in> snd `set h. cont ((f :: (exp \<Rightarrow> Env \<Rightarrow> Value)) e))"  
+  (is "?lhs = ?rhs")
+proof
+  have imp:"\<And> h (f :: (exp \<Rightarrow> Env \<Rightarrow> Value)) \<pi>. (\<forall>e \<in> snd ` set h. cont (f e)) \<Longrightarrow> (\<forall> e \<in> snd `set (\<pi> \<bullet> h). cont ((\<pi> \<bullet> f) e))"
+    unfolding permute_fun_def
+    apply rule
+    apply (erule_tac x = "-\<pi> \<bullet> e" in ballE)
+    apply (rule cont_compose[OF perm_cont])
+    apply (erule cont_compose)
+    apply (rule cont_compose[OF perm_cont])
+    apply auto[1]
+    apply (erule notE)
+    apply (subst image_iff)
+    apply (erule imageE)
+    apply (rule_tac x = "-\<pi> \<bullet> x" in bexI)
+    apply auto[1]
+    apply (subst (asm) set_eqvt[symmetric])
+    by (metis (full_types) mem_permute_iff permute_minus_cancel(1))    
+  show "?rhs \<Longrightarrow> ?lhs" using imp[of "h" "f" "\<pi>"].
+  show "?lhs \<Longrightarrow> ?rhs" using imp[of "\<pi> \<bullet> h" "\<pi> \<bullet> f" "-\<pi>"] by simp
+qed
+
 
 lemma heapExtend_eqvt[eqvt]:
   "\<pi> \<bullet> heapExtend \<rho> h eval = heapExtend (\<pi> \<bullet> \<rho>) (\<pi> \<bullet> h) (\<pi> \<bullet> eval)"
-  apply (cases "\<forall> e. cont (eval e)")
+  apply (cases "\<forall> e \<in> snd ` set h. cont (eval e)")
+   unfolding heapExtend_def
+   apply (simp_all only: if_P if_not_P perm_still_cont4 simp_thms(35) if_False)
+   apply (subst fmap_update_eqvt)
+   apply (subst fix1_eqvt)
+    apply (rule fmap_belowI')
+     apply (subst beta_cfun)
+      apply (rule cont2cont)
+      apply auto[1]
+     apply simp
+    apply simp
+    apply (subst Lam_eqvt)
+     apply (rule cont2cont)
+     apply auto[1]
+    apply (auto simp add: fmap_bottom_eqvt)[1]
+    apply perm_simp
+    apply rule
+   apply auto
+  done 
+
+lemma heapExtend_cong[fundef_cong]:
+  "\<lbrakk> env1 = env2 ; heap1 = heap2 ;  (\<And> e. e \<in> snd ` set heap2 \<Longrightarrow> eval1 e = eval2 e) \<rbrakk>
+      \<Longrightarrow> heapExtend env1 heap1 eval1 = heapExtend env2 heap2 eval2"
   unfolding heapExtend_def
-  apply (simp_all only: if_P if_not_P perm_still_cont3 simp_thms(35) if_False)
-  apply (subst fmap_update_eqvt)
-  apply (subst fix1_eqvt)
-  apply (auto intro: fmap_belowI')[1]
-  apply (auto simp add: fmap_bottom_eqvt  Lam_eqvt)[1]
-  apply perm_simp
-  apply rule
-  apply auto
-  done
+  by (auto cong:heapToEnv_cong)
+
 
 end

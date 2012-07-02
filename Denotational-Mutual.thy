@@ -11,12 +11,11 @@ where
   "atom x \<sharp> \<rho> ==> \<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub> = Fn \<cdot> (\<Lambda> v. (\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>))"
 | "\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> \<down>Fn \<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub> "
 | "\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub> = the (lookup \<rho> x)"
-| "set (bn as) \<sharp>* \<rho> \<Longrightarrow>\<lbrakk> Let as body\<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> Let as body\<rbrakk>\<^bsub>\<lbrace> asToHeap as \<rbrace>\<rho>\<^esub>"
+| "set (bn as) \<sharp>* \<rho> \<Longrightarrow>\<lbrakk> Let as body\<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> body\<rbrakk>\<^bsub>\<lbrace> asToHeap as \<rbrace>\<rho>\<^esub>"
 | "\<lbrace> h \<rbrace>\<rho> = heapExtend \<rho> h ESem"
 proof-
 have eqvt_at_ESem: "\<And> a b . eqvt_at ESem_HSem_sumC (Inl (a, b)) \<Longrightarrow> eqvt_at (\<lambda>(a, b). ESem a b) (a, b)" sorry
 have eqvt_at_HSem: "\<And> a b . eqvt_at ESem_HSem_sumC (Inr (a, b)) \<Longrightarrow> eqvt_at (\<lambda>(a, b). HSem a b) (a, b)" sorry
-thm exp_assn.strong_exhaust(1)
 {
 
 case goal1 thus ?case
@@ -92,19 +91,18 @@ case (goal16 as \<rho> body as' \<rho>' body')
       meta_eq_to_obj_eq[OF HSem_def, symmetric, unfolded fun_eq_iff])
     (* No _sum any more at this point! *)
     proof- 
-      assume eqvt1: "eqvt_at (\<lambda>(a, b). ESem a b) (Terms.Let as body, HSem (asToHeap as) \<rho>)"
-      assume eqvt2: "eqvt_at (\<lambda>(a, b). ESem a b) (Terms.Let as' body', HSem (asToHeap as') \<rho>')"
+      assume eqvt1: "eqvt_at (\<lambda>(a, b). ESem a b) (body, HSem (asToHeap as) \<rho>)"
+      assume eqvt2: "eqvt_at (\<lambda>(a, b). ESem a b) ( body', HSem (asToHeap as') \<rho>')"
       assume eqvt3: "eqvt_at (\<lambda>(a, b). HSem a b) (asToHeap as, \<rho>)"
       assume eqvt4: "eqvt_at (\<lambda>(a, b). HSem a b) (asToHeap as', \<rho>')"
       assume fresh1: "set (bn as) \<sharp>* \<rho>" and fresh2: "set (bn as') \<sharp>* \<rho>'"
       assume "Inl (Terms.Let as body, \<rho>) = Inl (Terms.Let as' body', \<rho>')"
       hence tmp: "[bn as]lst. (body, as) = [bn as']lst. (body', as')" and rho:"\<rho>' = \<rho>" by auto
 
-      thm Abs_lst_fcb[of bn _ _ _ _ "(\<lambda> as (body, as'). ESem (Let as' body) (HSem (asToHeap as) \<rho>))" , OF tmp, simplified]
+      thm Abs_lst_fcb[of bn _ _ _ _ "(\<lambda> as (body, as'). ESem body (HSem (asToHeap as) \<rho>))" , OF tmp, simplified]
       thm Abs_lst_fcb2[of "(bn as)" _ "(bn as')"]
-      have "ESem (Terms.Let as body) (HSem (asToHeap as) \<rho>) =
-            ESem (Terms.Let as' body') (HSem (asToHeap as') \<rho>)"
-        apply (rule Abs_lst_fcb[of bn _ _ _ _ "(\<lambda> as (body, as'). ESem (Let as' body) (HSem (asToHeap as) \<rho>))" , OF tmp, simplified])
+      have "ESem body (HSem (asToHeap as) \<rho>) = ESem body' (HSem (asToHeap as') \<rho>)"
+        apply (rule Abs_lst_fcb[of bn _ _ _ _ "(\<lambda> as (body, as'). ESem body (HSem (asToHeap as) \<rho>))" , OF tmp, simplified])
         apply (rule pure_fresh)+
         using fresh2[unfolded rho]
         apply (clarify)
@@ -120,16 +118,23 @@ case (goal16 as \<rho> body as' \<rho>' body')
             apply (rule perm_supp_eq)
             apply (auto intro: perm_supp_eq simp add: fresh_star_def)
             done            
-          thus "\<pi> \<bullet> ESem (Terms.Let as body) (HSem (asToHeap as) \<rho>) = ESem (Terms.Let (\<pi> \<bullet> as) (\<pi> \<bullet> body)) (HSem (asToHeap (\<pi> \<bullet> as)) \<rho>)"
+          thus "\<pi> \<bullet> ESem body (HSem (asToHeap as) \<rho>) = ESem (\<pi> \<bullet> body) (HSem (asToHeap (\<pi> \<bullet> as)) \<rho>)"
              by (simp only: eqvt1[unfolded eqvt_at_def, simplified, rule_format]
                             eqvt3[unfolded eqvt_at_def, simplified, rule_format]
                             asToHeap.eqvt)
         qed
-        thus "Inl (ESem (Terms.Let as body) (HSem (asToHeap as) \<rho>)) =
-              Inl (ESem (Terms.Let as' body') (HSem (asToHeap as') \<rho>'))" using `\<rho>' = \<rho>`
+        thus "Inl (ESem body (HSem (asToHeap as) \<rho>)) =
+              Inl (ESem body' (HSem (asToHeap as') \<rho>'))" using `\<rho>' = \<rho>`
         by simp
     qed
 }
 qed auto
+
+lemma [simp]:"set (bn as) \<sharp>* \<rho> \<Longrightarrow> list_size (\<lambda>p. size (snd p)) (asToHeap as) < Suc (size as + size body)"
+  by(induct as rule:exp_assn.inducts(2), auto simp add: exp_assn.bn_defs fresh_star_insert)
+
+termination (eqvt) by lexicographic_order
+
+
 
 end

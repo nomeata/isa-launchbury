@@ -2,6 +2,12 @@ theory Denotational
   imports "Denotational-Common"
 begin
 
+term heapExtend
+lemma heapExtend_cong[fundef_cong]:
+  "\<lbrakk> env1 = env2 ; heap1 = heap2 ;  (\<And> e. e \<in> snd ` set heap2 \<Longrightarrow> eval1 e = eval2 e) \<rbrakk>
+      \<Longrightarrow> heapExtend env1 heap1 eval1 = heapExtend env2 heap2 eval2"
+      sorry
+
 nominal_primrec
   ESem :: "exp \<Rightarrow> Env \<Rightarrow> Value" ("\<lbrakk> _ \<rbrakk>\<^bsub>_\<^esub>"  [60,60] 60)
 where
@@ -93,5 +99,9 @@ case (goal13 as \<rho> body as' \<rho>' body')
       ESem_sumC (Terms.Let as' body', heapExtend \<rho>' (asToHeap as') (\<lambda>x0 x1. ESem_sumC (x0, x1)))" using `\<rho>' = \<rho>`  by simp
 qed auto
 
+
+termination (eqvt) proof
+
+find_theorems ESem
 
 end
