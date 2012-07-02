@@ -51,23 +51,19 @@ next
   hence "x2 \<in> fdom (Y 0)"
     by (simp add: chain_fdom(2)[OF `chain Y`])
     
-  assume  "x \<in> fdom (\<Squnion> i. \<pi> \<bullet> Y i) "
-  hence "x \<in> fdom (\<pi> \<bullet> Y 0)"
-    by (simp add: chain_fdom(2)[OF `chain (\<lambda>i. \<pi> \<bullet> Y i)`])
-
   have "the (lookup (\<pi> \<bullet> (\<Squnion> i. Y i)) x) = \<pi> \<bullet> (the (lookup (\<Squnion> i. Y i) x2))"
     by (simp add: the_lookup_eqvt[OF `x2 \<in> fdom (\<Squnion> i. Y i)`]  `x = _`)
   also have "... = \<pi> \<bullet> (\<Squnion>i. (the (lookup (Y i) x2)))"
-    by (subst lookup_cont[OF `chain Y` `x2 \<in> fdom (Y 0)`], rule refl)
+    by (subst lookup_cont[OF `chain Y`], rule refl)
   also have "... = (\<Squnion>i. \<pi> \<bullet> (the (lookup (Y i) x2)))"
-    by (rule cont2contlubE[OF perm_cont, OF lookup_chain[OF `chain Y` `x2 \<in> fdom (Y 0)`]])
+    by (rule cont2contlubE[OF perm_cont, OF lookup_chain[OF `chain Y`]])
   also have "... = (\<Squnion>i. the (lookup (\<pi> \<bullet> (Y i)) x))"
     using `x2 \<in> fdom (Y 0)` chain_fdom(1)[OF `chain Y`] `x = _`
     apply (subst the_lookup_eqvt)
     apply auto
     done
   also have "... = the (lookup (\<Squnion>i. \<pi> \<bullet> (Y i)) x)"
-    by (subst lookup_cont[OF `chain (\<lambda>i. \<pi> \<bullet> Y i)` `x \<in> fdom (\<pi> \<bullet> Y 0)`], rule refl)
+    by (subst lookup_cont[OF `chain (\<lambda>i. \<pi> \<bullet> Y i)`], rule refl)
   finally
   have "the (lookup (\<pi> \<bullet> (\<Squnion> i. Y i)) x) = the (lookup (\<Squnion> i. \<pi> \<bullet> Y i) x)" .
   thus "the (lookup (\<pi> \<bullet> (\<Squnion> i. Y i)) x) \<sqsubseteq> the (lookup (\<Squnion> i. \<pi> \<bullet> Y i) x)" by auto

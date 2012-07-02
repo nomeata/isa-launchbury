@@ -135,6 +135,51 @@ lemma [simp]:"set (bn as) \<sharp>* \<rho> \<Longrightarrow> list_size (\<lambda
 
 termination (eqvt) by lexicographic_order
 
+lemma sharp_Env: "atom (x::var) \<sharp> (\<rho> :: Env) \<longleftrightarrow> x \<notin> fdom \<rho>"
+  apply (subst fresh_def)
+  apply (simp  add: supp_fmap)
+  apply (subst (1 2) fresh_def[symmetric])
+  apply (simp add: fresh_finite_set_at_base[OF finite_fdom] pure_fresh)
+  done
+
+lemma sharp_star_Env: "set (bn as) \<sharp>* (\<rho> :: Env) \<longleftrightarrow> (\<forall> x \<in> fst`set (asToHeap as) . x \<notin> fdom \<rho>)"
+  by(induct rule:asToHeap.induct, auto simp add: fresh_star_def exp_assn.bn_defs sharp_Env)
+
+lemma ESem_cont':"Y0 = Y 0 \<Longrightarrow> chain Y \<Longrightarrow> range (\<lambda>i. \<lbrakk> e \<rbrakk>\<^bsub>Y i\<^esub>) <<| \<lbrakk> e \<rbrakk>\<^bsub>(\<Squnion> i. Y i)\<^esub> " and True
+proof(nominal_induct e and avoiding: Y0  arbitrary: Y rule:exp_assn.strong_induct)
+case (Lam x e Y0 Y)
+  have [simp]: "\<And> i. fdom (Y i) = fdom (Lub Y)"
+    by (metis chain_fdom `chain Y`)
+  have [simp]:"\<And> i. atom x \<sharp> Y i" and [simp]:"atom x \<sharp> Lub Y"  using Lam.hyps(1) Lam.prems(1)
+    unfolding sharp_Env by auto
+  have "cont (ESem e)" using Lam.hyps(2) by (rule contI, auto)
+  have  "cont (\<lambda> \<rho>. Fn\<cdot>(\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>))"
+    by (intro cont2cont cont_compose[OF `cont (ESem e)`])
+  from contE[OF this, OF Lam.prems(2)]
+  show ?case
+    by simp
+next
+case (App e v Y0 Y)
+  have "cont (ESem e)" using App.hyps(1) by (rule contI, auto)
+  thus ?case
+    by (auto intro:contE[OF _ App.prems(2)])
+next
+case (Var v Y0 Y)
+  have "cont (\<lambda> \<rho>. ESem (Var v) \<rho>)" by auto
+  thus ?case
+    by (rule contE[OF _ Var.prems(2)])    
+next
+case (Let as e Y0 Y)
+  have [simp]: "\<And> i. fdom (Y i) = fdom (Lub Y)"
+    by (metis chain_fdom `chain Y`)
+  have [simp]:"\<And> i. set (bn as) \<sharp>* Y i" and [simp]: "set (bn as) \<sharp>* Lub Y"  using Let.hyps(1) Let.prems(1)
+    unfolding sharp_star_Env by auto
+  have "cont (ESem e)" using Let.hyps(3) by (rule contI, auto)
+  show ?case
+    by (simp, intro contE[OF _ Let.prems(2)] cont2cont cont_compose[OF `cont (ESem e)`])
+qed simp
+
+lemma ESem_cont: "cont (ESem e)"  using ESem_cont'[OF refl] by (rule contI)
 
 
 end
