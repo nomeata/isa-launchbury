@@ -112,6 +112,41 @@ lemma  True and [simp]:"(a, b) \<in> set (asToHeap as) \<Longrightarrow> size b 
 
 termination (eqvt) by lexicographic_order
 
+lemma ESem_cont':"Y0 = Y 0 \<Longrightarrow> chain Y \<Longrightarrow> range (\<lambda>i. \<lbrakk> e \<rbrakk>\<^bsub>Y i\<^esub>) <<| \<lbrakk> e \<rbrakk>\<^bsub>(\<Squnion> i. Y i)\<^esub> " and True
+proof(nominal_induct e and avoiding: Y0  arbitrary: Y rule:exp_assn.strong_induct)
+case (Lam x e Y0 Y)
+  have [simp]: "\<And> i. fdom (Y i) = fdom (Lub Y)"
+    by (metis chain_fdom `chain Y`)
+  have [simp]:"\<And> i. atom x \<sharp> Y i" and [simp]:"atom x \<sharp> Lub Y"  using Lam.hyps(1) Lam.prems(1)
+    unfolding sharp_Env by auto
+  have "cont (ESem e)" using Lam.hyps(2) by (rule contI, auto)
+  have  "cont (\<lambda> \<rho>. Fn\<cdot>(\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>))"
+    by (intro cont2cont cont_compose[OF `cont (ESem e)`])
+  from contE[OF this, OF Lam.prems(2)]
+  show ?case
+    by simp
+next
+case (App e v Y0 Y)
+  have "cont (ESem e)" using App.hyps(1) by (rule contI, auto)
+  thus ?case
+    by (auto intro:contE[OF _ App.prems(2)])
+next
+case (Var v Y0 Y)
+  have "cont (\<lambda> \<rho>. ESem (Var v) \<rho>)" by auto
+  thus ?case
+    by (rule contE[OF _ Var.prems(2)])    
+next
+case (Let as e Y0 Y)
+  have [simp]: "\<And> i. fdom (Y i) = fdom (Lub Y)"
+    by (metis chain_fdom `chain Y`)
+  have [simp]:"\<And> i. set (bn as) \<sharp>* Y i" and [simp]: "set (bn as) \<sharp>* Lub Y"  using Let.hyps(1) Let.prems(1)
+    unfolding sharp_star_Env by auto
+  have "cont (ESem e)" using Let.hyps(3) by (rule contI, auto)
+  show ?case
+    by (simp, intro contE[OF _ Let.prems(2)] cont2cont cont_compose[OF `cont (ESem e)`])
+qed simp
+
+lemma ESem_cont: "cont (ESem e)"  using ESem_cont'[OF refl] by (rule contI)
 
 
 end
