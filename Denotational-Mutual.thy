@@ -135,16 +135,6 @@ lemma [simp]:"set (bn as) \<sharp>* \<rho> \<Longrightarrow> list_size (\<lambda
 
 termination (eqvt) by lexicographic_order
 
-lemma sharp_Env: "atom (x::var) \<sharp> (\<rho> :: Env) \<longleftrightarrow> x \<notin> fdom \<rho>"
-  apply (subst fresh_def)
-  apply (simp  add: supp_fmap)
-  apply (subst (1 2) fresh_def[symmetric])
-  apply (simp add: fresh_finite_set_at_base[OF finite_fdom] pure_fresh)
-  done
-
-lemma sharp_star_Env: "set (bn as) \<sharp>* (\<rho> :: Env) \<longleftrightarrow> (\<forall> x \<in> fst`set (asToHeap as) . x \<notin> fdom \<rho>)"
-  by(induct rule:asToHeap.induct, auto simp add: fresh_star_def exp_assn.bn_defs sharp_Env)
-
 lemma ESem_cont':"Y0 = Y 0 \<Longrightarrow> chain Y \<Longrightarrow> range (\<lambda>i. \<lbrakk> e \<rbrakk>\<^bsub>Y i\<^esub>) <<| \<lbrakk> e \<rbrakk>\<^bsub>(\<Squnion> i. Y i)\<^esub> " and True
 proof(nominal_induct e and avoiding: Y0  arbitrary: Y rule:exp_assn.strong_induct)
 case (Lam x e Y0 Y)

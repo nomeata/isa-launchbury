@@ -55,6 +55,16 @@ instance
   done
 end
 
+lemma sharp_Env: "atom (x::var) \<sharp> (\<rho> :: Env) \<longleftrightarrow> x \<notin> fdom \<rho>"
+  apply (subst fresh_def)
+  apply (simp  add: supp_fmap)
+  apply (subst (1 2) fresh_def[symmetric])
+  apply (simp add: fresh_finite_set_at_base[OF finite_fdom] pure_fresh)
+  done
+
+lemma sharp_star_Env: "set (bn as) \<sharp>* (\<rho> :: Env) \<longleftrightarrow> (\<forall> x \<in> fst`set (asToHeap as) . x \<notin> fdom \<rho>)"
+  by(induct rule:asToHeap.induct, auto simp add: fresh_star_def exp_assn.bn_defs sharp_Env)
+
 function heapToEnv :: "heap \<Rightarrow> (exp \<Rightarrow> Value) \<Rightarrow> Env"
 where
   "heapToEnv [] _ = fempty"
