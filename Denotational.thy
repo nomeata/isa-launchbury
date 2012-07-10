@@ -2,19 +2,13 @@ theory Denotational
   imports "Denotational-Common"
 begin
 
-term heapExtend
-lemma heapExtend_cong[fundef_cong]:
-  "\<lbrakk> env1 = env2 ; heap1 = heap2 ;  (\<And> e. e \<in> snd ` set heap2 \<Longrightarrow> eval1 e = eval2 e) \<rbrakk>
-      \<Longrightarrow> heapExtend env1 heap1 eval1 = heapExtend env2 heap2 eval2"
-      sorry
-
 nominal_primrec
   ESem :: "exp \<Rightarrow> Env \<Rightarrow> Value" ("\<lbrakk> _ \<rbrakk>\<^bsub>_\<^esub>"  [60,60] 60)
 where
   "atom x \<sharp> \<rho> ==> \<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub> = Fn \<cdot> (\<Lambda> v. (\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>))"
 | "\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> \<down>Fn \<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub> "
 | "\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub> = the (lookup \<rho> x)"
-| "set (bn as) \<sharp>* \<rho> \<Longrightarrow>\<lbrakk> Let as body\<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> Let as body\<rbrakk>\<^bsub>heapExtend \<rho> (asToHeap as) ESem\<^esub>"
+| "set (bn as) \<sharp>* \<rho> \<Longrightarrow>\<lbrakk> Let as body\<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk>body\<rbrakk>\<^bsub>heapExtend \<rho> (asToHeap as) ESem\<^esub>"
 proof-
 case goal1 thus ?case
   unfolding eqvt_def ESem_graph_def
@@ -60,48 +54,64 @@ case (goal4 x \<rho> e x' \<rho>' e')
 next
 
 case (goal13 as \<rho> body as' \<rho>' body')
-  assume eqvt: "\<And> a b. eqvt_at ESem_sumC (a, b)"
+  assume eqvt1: "\<And> e x. e \<in> snd ` set (asToHeap as) \<Longrightarrow> eqvt_at ESem_sumC (e, x)"
+    and eqvt2:"eqvt_at ESem_sumC (body, heapExtend \<rho> (asToHeap as) (\<lambda>x0 x1. ESem_sumC (x0, x1)))"
+    and eqvt3:"\<And>e x. e \<in> snd ` set (asToHeap as') \<Longrightarrow> eqvt_at ESem_sumC (e, x)"
+    and eqvt4:"eqvt_at ESem_sumC (body', heapExtend \<rho>' (asToHeap as') (\<lambda>x0 x1. ESem_sumC (x0, x1)))"
+
   assume fresh1: "set (bn as) \<sharp>* \<rho>" and fresh2: "set (bn as') \<sharp>* \<rho>'"
   assume "(Terms.Let as body, \<rho>) =  (Terms.Let as' body', \<rho>')"
   hence tmp: "[bn as]lst. (body, as) = [bn as']lst. (body', as')" and rho:"\<rho>' = \<rho>" by auto
 
-  thm Abs_lst_fcb[of bn _ _ _ _ "(\<lambda> as (body, as'). ESem_sumC (Let as' body, heapExtend \<rho> (asToHeap as) (\<lambda>x0 x1. ESem_sumC (x0, x1))))" , OF tmp, simplified]
-  thm Abs_lst_fcb2[of "(bn as)" _ "(bn as')"]
-  have "ESem_sumC (Terms.Let as body, heapExtend \<rho> (asToHeap as) (\<lambda>x0 x1. ESem_sumC (x0, x1))) =
-        ESem_sumC (Terms.Let as' body', heapExtend \<rho> (asToHeap as') (\<lambda>x0 x1. ESem_sumC (x0, x1)))"
-    apply (rule Abs_lst_fcb[of bn _ _ _ _ "(\<lambda> as (body, as'). ESem_sumC (Let as' body, heapExtend \<rho> (asToHeap as) (\<lambda>x0 x1. ESem_sumC (x0, x1))))" , OF tmp, simplified])
+  have "ESem_sumC (body, heapExtend \<rho> (asToHeap as) (\<lambda>x0 x1. ESem_sumC (x0, x1))) =
+        ESem_sumC (body', heapExtend \<rho> (asToHeap as') (\<lambda>x0 x1. ESem_sumC (x0, x1)))"
+    apply (rule Abs_lst_fcb[of bn _ _ _ _ "(\<lambda> as (body, as'). ESem_sumC (body, heapExtend \<rho> (asToHeap as) (\<lambda>x0 x1. ESem_sumC (x0, x1))))" , OF tmp, simplified])
     apply (rule pure_fresh)+
+    apply (erule conjE)
     using fresh2[unfolded rho]
-    apply (clarify)
     proof-
       fix \<pi>
-      assume "set (bn (\<pi> \<bullet> as)) \<sharp>* \<rho>" with fresh1
-      have "(set (bn as) \<union> set (bn (\<pi> \<bullet> as))) \<sharp>* \<rho>" by (metis fresh_star_Un)
+      assume body: "\<pi> \<bullet> body = body'"
+      assume as: "\<pi> \<bullet> as = as'"
+      assume "set (bn as') \<sharp>* \<rho>" with fresh1
+      have "(set (bn as) \<union> set (bn as')) \<sharp>* \<rho>" by (metis fresh_star_Un)
       moreover
-      assume "supp \<pi> \<subseteq> set (bn as) \<union> set (bn (\<pi> \<bullet> as))"
+      assume "supp \<pi> \<subseteq> set (bn as) \<union> set (bn as')"
       ultimately
       have "\<pi> \<bullet> \<rho> = \<rho>"
+        using as
         apply -
         apply (rule perm_supp_eq)
         apply (auto intro: perm_supp_eq simp add: fresh_star_def)
         done            
-      thus "\<pi> \<bullet> ESem_sumC (Terms.Let as body, heapExtend \<rho> (asToHeap as) (\<lambda>x0 x1. ESem_sumC (x0, x1))) =
-             ESem_sumC (Terms.Let (\<pi> \<bullet> as) (\<pi> \<bullet> body), heapExtend \<rho> (asToHeap (\<pi> \<bullet> as)) (\<lambda>x0 x1. ESem_sumC (x0, x1)))"
-         apply  (simp add: eqvt[unfolded eqvt_at_def, simplified, rule_format]   asToHeap.eqvt)
-         apply (subst heapExtend_eqvt)
+      thus "\<pi> \<bullet> ESem_sumC (body, heapExtend \<rho> (asToHeap as) (\<lambda>x0 x1. ESem_sumC (x0, x1))) =
+             ESem_sumC (body', heapExtend \<rho> (asToHeap as') (\<lambda>x0 x1. ESem_sumC (x0, x1)))"
+         using as body
+         apply (simp add: eqvt2[unfolded eqvt_at_def, simplified, rule_format]   asToHeap.eqvt heapExtend_eqvt)
+         apply (subst heapExtend_cong)
+         prefer 4
+         apply (rule refl)+
+         apply (simp add: permute_fun_def)
+         apply rule
+         apply (subst eqvt1[unfolded eqvt_at_def, simplified, rule_format])
          defer
-         unfolding permute_fun_def
-         apply  (simp add: eqvt[unfolded eqvt_at_def, simplified, rule_format]   asToHeap.eqvt)
-         (* Goal:  \<And>e. \<pi> \<bullet> \<rho> = \<rho> \<Longrightarrow> cont (\<lambda>x1. ESem_sumC (e, x1)) *)
+         apply simp
+         apply (subst mem_permute_iff[symmetric, of _ _ "\<pi>"])
+         apply (simp add: image_eqvt)
+         apply perm_simp
+         using as
+         apply simp
          done
     qed
-  thus "ESem_sumC (Terms.Let as body, heapExtend \<rho> (asToHeap as) (\<lambda>x0 x1. ESem_sumC (x0, x1))) =
-      ESem_sumC (Terms.Let as' body', heapExtend \<rho>' (asToHeap as') (\<lambda>x0 x1. ESem_sumC (x0, x1)))" using `\<rho>' = \<rho>`  by simp
+  thus "ESem_sumC (body, heapExtend \<rho> (asToHeap as) (\<lambda>x0 x1. ESem_sumC (x0, x1))) =
+      ESem_sumC (body', heapExtend \<rho>' (asToHeap as') (\<lambda>x0 x1. ESem_sumC (x0, x1)))" using `\<rho>' = \<rho>`  by simp
 qed auto
 
+lemma  True and [simp]:"(a, b) \<in> set (asToHeap as) \<Longrightarrow> size b < Suc (size as + size body)"
+  by(induct and as rule:exp_assn.inducts, auto simp add: exp_assn.bn_defs fresh_star_insert)
 
-termination (eqvt) proof
+termination (eqvt) by lexicographic_order
 
-find_theorems ESem
+
 
 end
