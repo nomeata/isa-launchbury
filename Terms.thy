@@ -264,7 +264,7 @@ nominal_primrec  (default "sum_case (\<lambda>x. Inl undefined) (\<lambda>x. Inr
                   invariant "\<lambda> a r . (\<forall> as y z . ((a = Inr (as, y, z) \<and> set (bn as) \<sharp>* (y, z)) \<longrightarrow> bn (Sum_Type.Projr r) = bn as))")
   subst :: "exp \<Rightarrow> var \<Rightarrow> var \<Rightarrow> exp" ("_[_::=_]" [1000,100,100] 1000)
 and
-  subst_assn :: "assn \<Rightarrow> var \<Rightarrow> var \<Rightarrow> assn"
+  subst_assn :: "assn \<Rightarrow> var \<Rightarrow> var \<Rightarrow> assn" ("_[_::a=_]" [1000,100,100] 1000)
 where
   "(Var x)[y ::= z] = (Var (x[y ::v= z]))"
  |"(App e v)[y ::= z] = (App (e[y ::= z]) (v[y ::v= z]))"
