@@ -93,7 +93,7 @@ definition heapExtend :: "Env \<Rightarrow> heap \<Rightarrow> (exp \<Rightarrow
   where
   "heapExtend \<rho> h eval =
     (if (\<forall>e \<in> snd ` set h. cont (eval e))
-    then fmap_update \<rho> (fix1 (fmap_bottom (fst ` set h)) (\<Lambda> \<rho>' . heapToEnv h (\<lambda> e. eval e \<rho>')))
+    then fmap_update \<rho> (fix1 (fmap_bottom (fst ` set h)) (\<Lambda> \<rho>' . heapToEnv h (\<lambda> e. eval e (fmap_update \<rho> \<rho>'))))
     else fempty)"
 
 lemma perm_still_cont[simp]: "cont (\<pi> \<bullet> f) = cont (f :: ('a :: cont_pt) \<Rightarrow> ('b :: cont_pt))"
@@ -148,13 +148,15 @@ lemma heapExtend_eqvt[eqvt]:
    apply (subst fix1_eqvt)
     apply (rule fmap_belowI')
      apply (subst beta_cfun)
-      apply (rule cont2cont)
-      apply auto[1]
+      apply (rule cont2cont)+
+      apply (rule cont_compose) back
+      apply auto[2]
      apply simp
     apply simp
     apply (subst Lam_eqvt)
      apply (rule cont2cont)
-     apply auto[1]
+     apply (rule cont_compose) back
+     apply auto[2]
     apply (auto simp add: fmap_bottom_eqvt)[1]
     apply perm_simp
     apply rule
@@ -167,8 +169,13 @@ lemma heapExtend_cong[fundef_cong]:
   unfolding heapExtend_def
   by (auto cong:heapToEnv_cong)
 
+
 lemma heapExtend_cont[simp,cont2cont]: "cont (\<lambda>\<rho>. heapExtend \<rho> h eval)"
   unfolding heapExtend_def
-  by (cases "\<forall> e \<in> snd ` set h.  cont (eval e)", auto)
-
+  apply (cases "\<forall> e \<in> snd ` set h.  cont (eval e)")
+  apply (simp_all only: if_P if_not_P perm_still_cont4 simp_thms(35) if_False)
+  apply (intro cont2cont)
+  apply (rule cont_compose[where c = "eval e", standard, where eval = eval]) 
+  apply auto
+  done
 end
