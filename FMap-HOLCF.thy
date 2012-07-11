@@ -409,6 +409,11 @@ proof -
     by (simp add: fix1_def)
 qed
 
+lemma fix1_cont:"cont (fix1 x)" sorry
+
+lemmas fix1_cont2cont[simp,cont2cont] = cont_compose[OF fix1_cont]
+
+
 definition max where "max x y = (if x \<sqsubseteq> y then y else x)"
 
 (*
