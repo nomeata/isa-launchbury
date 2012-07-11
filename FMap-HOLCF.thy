@@ -437,21 +437,21 @@ lift_definition fmap_update :: "('a, 'b::cpo) fmap \<Rightarrow> ('a, 'b) fmap  
   apply (rule_tac B = "dom fun1 \<union> dom fun2" in  finite_subset)
   by (auto simp add: map_def split add: option.split_asm)
 
+lemma fdom_fmap_update[simp]: "fdom (fmap_update m1 m2) = fdom m1 \<union> fdom m2"
+  by (transfer, auto simp add: dom_def split:option.split)
+
 lemma lookup_fmap_update1[simp]: "x \<in> fdom m2 \<Longrightarrow> the (lookup (fmap_update m1 m2) x) = the (lookup m2 x)"
   by (transfer, auto)
 
 lemma lookup_fmap_update2[simp]:  "x \<notin> fdom m2 \<Longrightarrow> the (lookup (fmap_update m1 m2) x) = the (lookup m1 x)"
   by (transfer, auto simp add: dom_def )
 
-lemma fmap_update_cont2cont[simp, cont2cont]:
-  assumes "cont f"
-  shows "cont (\<lambda> x. fmap_update (f x) (m :: ('a, 'b::cpo) fmap))"
-proof(rule cont_compose[OF _ assms], rule fmap_contI)
+lemma fmap_update_cont1: "cont (\<lambda> x. fmap_update x (m::('a, 'b::cpo) fmap))"
+proof(rule fmap_contI)
   fix x y :: "('a, 'b::cpo) fmap"
   assume "x \<sqsubseteq> y"
   hence "fdom x = fdom y" by (rule fmap_below_dom)
-  thus "fdom (fmap_update x m) = fdom (fmap_update y m)"
-    by (transfer, auto simp add: dom_def split:option.split) 
+  thus "fdom (fmap_update x m) = fdom (fmap_update y m)"  by simp 
 next
   fix x y :: "('a, 'b::cpo) fmap"
   assume "x \<sqsubseteq> y"
@@ -466,6 +466,36 @@ next
   show "the (lookup (fmap_update (\<Squnion> i. Y i) m) x) \<sqsubseteq> the (lookup (\<Squnion> i. fmap_update (Y i) m) x)"
     by (cases "x \<in> fdom m", auto simp add: lookup_cont[OF c2] lookup_cont[OF c1])
 qed
+
+lemma fmap_update_cont2: "cont (\<lambda> x. fmap_update m (x::('a, 'b::cpo) fmap))"
+proof(rule fmap_contI)
+  fix x y :: "('a, 'b::cpo) fmap"
+  assume "x \<sqsubseteq> y"
+  hence "fdom x = fdom y" by (rule fmap_below_dom)
+  thus "fdom (fmap_update m x) = fdom (fmap_update m y)" by simp
+next
+  fix x y :: "('a, 'b::cpo) fmap"
+  assume "x \<sqsubseteq> y"
+  hence "fdom x = fdom y" by (rule fmap_below_dom)
+  fix z :: 'a  
+  show "the (lookup (fmap_update m x) z) \<sqsubseteq> the (lookup (fmap_update m y) z)"
+    using `x \<sqsubseteq> y` `fdom x = fdom y`
+    by(cases "z \<in> fdom x", auto elim: fmap_belowE)
+next
+  fix Y :: "nat \<Rightarrow> ('a, 'b::cpo) fmap"
+  assume c1: "chain Y" and c2: "chain (\<lambda>i. fmap_update m (Y i))"
+    hence [simp]:"\<And> i. fdom (Y i) =  fdom (\<Squnion> i . Y i)"
+      by (metis chain_fdom(1) chain_fdom(2))
+  fix x :: 'a
+  show "the (lookup (fmap_update m (\<Squnion> i. Y i)) x) \<sqsubseteq> the (lookup (\<Squnion> i. fmap_update m (Y i)) x)"
+    by (cases "x \<in> fdom (\<Squnion> i . Y i)", auto simp add: lookup_cont[OF c2] lookup_cont[OF c1])
+qed
+
+lemma fmap_update_cont2cont[simp, cont2cont]:
+  assumes "cont f"
+  assumes "cont g"
+  shows "cont (\<lambda> x. fmap_update (f x) (g x :: ('a, 'b::cpo) fmap))"
+by (rule cont_apply[OF assms(1) fmap_update_cont1 cont_compose[OF fmap_update_cont2 assms(2)]])
 
 lift_definition fmap_extend :: "('a, 'b::pcpo) fmap \<Rightarrow> 'a set  \<Rightarrow> ('a, 'b) fmap"
   is "\<lambda> m1 S. (if finite S then (\<lambda> x. if x \<in> S then Some \<bottom> else m1 x) else empty)"
