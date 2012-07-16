@@ -31,6 +31,9 @@ lemma the_lookup_fmap_upd[simp]: "the (lookup (h (x f\<mapsto> v)) x) = v"
 lemma the_lookup_fmap_upd_other[simp]: "x' \<noteq> x \<Longrightarrow> the (lookup (h (x f\<mapsto> v)) x') = the (lookup h x')"
   by (transfer, auto)
 
+lemma fdomIff: "(a : fdom m) = (lookup m a ~= None)"
+ by (transfer, auto)
+
 lemma finite_range:
   assumes "finite (dom m)"
   shows "finite (ran m)"
@@ -75,5 +78,12 @@ proof(transfer)
   qed
 qed
 
+lemma fmap_upd_twist: "a ~= c ==> (m(a f\<mapsto> b))(c f\<mapsto> d) = (m(c f\<mapsto> d))(a f\<mapsto> b)"
+  apply (rule fmap_eqI)
+  apply auto[1]
+  apply rule
+  apply (case_tac "x = a", auto)
+  apply (case_tac "x = c", auto)
+  done
 
 end

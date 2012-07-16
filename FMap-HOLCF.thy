@@ -17,12 +17,12 @@ next
   assume "x \<sqsubseteq> y" "y \<sqsubseteq> z"
   thus "x \<sqsubseteq> z"
   apply (auto simp add: below_fmap_def)
-  by (metis below.r_trans)
+  by (metis fdomIff option.simps(3) rev_below_trans the.simps)
 next
   fix x y :: "('a, 'b) fmap"
   assume "x \<sqsubseteq> y" "y \<sqsubseteq> x"
   thus "x = y"
-  by (auto simp add: below_fmap_def po_eq_conv)
+  by (metis "FMap-HOLCF.below_fmap_def" fmap_eqI po_eq_conv)
 qed
 end
 
@@ -326,6 +326,9 @@ next
   qed
 qed      
 
+lemma fdom_pred_adm[intro]: "adm (\<lambda> a. P (fdom a))" 
+  by (rule admI, metis chain_fdom(2))
+
 
 primrec iterate :: "nat => ('a::cpo -> 'a) \<Rightarrow> ('a -> 'a)" where
     "iterate 0 F = (\<Lambda> x. x)"
@@ -413,29 +416,24 @@ lemma fix1_cont:"cont (fix1 x)" sorry
 
 lemmas fix1_cont2cont[simp,cont2cont] = cont_compose[OF fix1_cont]
 
+lemma[simp]: "(fix1 x (\<Lambda> _. x)) = x"
+  by (rule fix1_ind, auto)
 
-definition max where "max x y = (if x \<sqsubseteq> y then y else x)"
+lemma fdom_fix1[simp]: assumes "x \<sqsubseteq> F\<cdot>x" shows "fdom (fix1 x F) = fdom x"
+  apply (rule fix1_ind[OF fdom_pred_adm refl assms])
+  using  fmap_below_dom[OF monofun_cfun_arg[of x _ F]]  fmap_below_dom[OF assms]
+  by auto
 
-(*
-lift_definition fmap_extend :: "('a, 'b::cpo) fmap \<Rightarrow> ('a, 'b) fmap  \<Rightarrow> ('a, 'b) fmap"
-  is "\<lambda>m1 m2 x. (
-    case m1 x of
-      Some y1 \<Rightarrow> 
-        (case m2 x of
-          Some y2 \<Rightarrow> Some (lub {y1,y2})
-          | None \<Rightarrow> Some y1
-        )
-      | None \<Rightarrow> 
-        (case m2 x of
-          Some y2 \<Rightarrow> Some y2
-          | None \<Rightarrow> None
-        )
-     )"
-  apply (rule_tac B = "dom fun1 \<union> dom fun2" in  finite_subset)
-  by (auto simp add: map_def split add: option.split_asm)
-*)
+lemma fix1_cong: 
+  assumes "a \<sqsubseteq> F \<cdot> a" and "a \<sqsubseteq> G \<cdot> a"
+      and "\<And> x. fdom x = fdom a \<Longrightarrow> F\<cdot>x = G\<cdot>x"
+  shows "fix1 a F = fix1 a G"
+  apply (rule parallel_fix1_ind[OF _ assms(1) assms(2) refl])
+  apply auto[1]
+  by (metis fmap_below_dom assms(3))
 
-lift_definition fmap_update :: "('a, 'b::cpo) fmap \<Rightarrow> ('a, 'b) fmap  \<Rightarrow> ('a, 'b) fmap"
+
+lift_definition fmap_update :: "('a, 'b) fmap \<Rightarrow> ('a, 'b) fmap  \<Rightarrow> ('a, 'b) fmap"
   is "\<lambda>m1 m2 x. (
     case m2 x of Some y1 \<Rightarrow> Some y1 | None \<Rightarrow> m1 x 
      )"
@@ -450,6 +448,9 @@ lemma lookup_fmap_update1[simp]: "x \<in> fdom m2 \<Longrightarrow> the (lookup 
 
 lemma lookup_fmap_update2[simp]:  "x \<notin> fdom m2 \<Longrightarrow> the (lookup (fmap_update m1 m2) x) = the (lookup m1 x)"
   by (transfer, auto simp add: dom_def )
+
+lemma [simp]: "fmap_update \<rho> fempty = \<rho>"
+  by (transfer, auto)
 
 lemma fmap_update_cont1: "cont (\<lambda> x. fmap_update x (m::('a, 'b::cpo) fmap))"
 proof(rule fmap_contI)
@@ -502,6 +503,17 @@ lemma fmap_update_cont2cont[simp, cont2cont]:
   shows "cont (\<lambda> x. fmap_update (f x) (g x :: ('a, 'b::cpo) fmap))"
 by (rule cont_apply[OF assms(1) fmap_update_cont1 cont_compose[OF fmap_update_cont2 assms(2)]])
 
+lemma fmap_update_upd_swap: 
+  "x \<notin> fdom \<rho>' \<Longrightarrow> fmap_update (\<rho>(x f\<mapsto> z)) \<rho>' = (fmap_update \<rho> \<rho>')(x f\<mapsto> z)"
+  apply (rule fmap_eqI[rule_format])
+  apply auto[1]
+  apply (case_tac "x = xa")
+  apply auto[1]
+  apply (case_tac "xa \<in> fdom \<rho>'")
+  apply (auto)
+  done
+
+
 lift_definition fmap_extend :: "('a, 'b::pcpo) fmap \<Rightarrow> 'a set  \<Rightarrow> ('a, 'b) fmap"
   is "\<lambda> m1 S. (if finite S then (\<lambda> x. if x \<in> S then Some \<bottom> else m1 x) else empty)"
   apply (case_tac "finite set")
@@ -522,8 +534,98 @@ lemma fdom_fmap_bottom[simp]: "finite S \<Longrightarrow> fdom (fmap_bottom S) =
 lemma fmap_bottom_lookup[simp]: "\<lbrakk> x \<in> S ; finite S \<rbrakk> \<Longrightarrow> lookup (fmap_bottom S) x = Some \<bottom>"
   by (transfer, auto)
 
+lemma[simp]: "fmap_bottom {} = fempty"
+  by (rule, auto)
+
+lemma fmap_bottom_below[simp]:
+  "S = fdom \<rho> \<Longrightarrow> fmap_bottom S \<sqsubseteq> \<rho>"
+ by(rule fmap_belowI, auto)
+
+
 definition fix_extend :: "('a, 'b::pcpo) fmap \<Rightarrow> 'a set \<Rightarrow> (('a, 'b) fmap \<Rightarrow> ('a, 'b) fmap) \<Rightarrow> ('a, 'b) fmap"
   where
   "fix_extend h S nh = fmap_update h (fix1 (fmap_bottom S)  (\<Lambda> h'. (nh (fmap_update h h') )))"
+
+
+instantiation fmap :: (type,pcpo) order
+begin
+  definition "(\<rho>::('a,'b) fmap) \<le> \<rho>' = ((fdom \<rho> \<subseteq> fdom \<rho>') \<and> (\<forall>x \<in> fdom \<rho>. lookup \<rho> x \<noteq> Some \<bottom> \<longrightarrow> lookup \<rho> x = lookup \<rho>' x))"
+  definition "(\<rho>::('a,'b) fmap) < \<rho>' = (\<rho> \<noteq> \<rho>' \<and> \<rho> \<le> \<rho>')"
+
+lemma fmap_less_eqI[intro]:
+  assumes assm1: "fdom (\<rho>::('a,'b) fmap) \<subseteq> fdom \<rho>'"
+    and assm2:  "\<And> x. \<lbrakk> x \<in> fdom \<rho> ; x \<in> fdom \<rho>' ; lookup \<rho> x \<noteq> Some \<bottom> \<rbrakk> \<Longrightarrow> the (lookup \<rho> x) = the (lookup \<rho>' x) "
+   shows "\<rho> \<le> \<rho>'"
+ unfolding less_eq_fmap_def
+ apply rule
+ apply fact
+ apply rule+
+ apply (frule subsetD[OF `_ \<subseteq> _`])
+ apply (frule (2) assm2)
+ apply (auto iff: fdomIff)
+ done
+
+lemma fmap_less_eqD:
+  assumes "(\<rho>::('a,'b) fmap) \<le> \<rho>'"
+  assumes "x \<in> fdom \<rho>"
+  assumes "lookup \<rho> x \<noteq> Some \<bottom>"
+  shows "lookup \<rho> x = lookup \<rho>' x"
+  using assms
+  unfolding less_eq_fmap_def by auto
+
+
+lemma fmap_antisym: assumes  "(x:: ('a,'b) fmap) \<le> y" and "y \<le> x" shows "x = y "
+proof(rule fmap_eqI[rule_format])
+    show "fdom x = fdom y" using `x \<le> y` and `y \<le> x` unfolding less_eq_fmap_def by auto
+    
+    fix v
+    assume "v \<in> fdom x"
+    hence "v \<in> fdom y" using `fdom _ = _` by simp
+
+    { assume "lookup x v \<noteq> Some \<bottom>"
+      hence "the (lookup x v) = the (lookup y v)"
+        using `x \<le> y` `v \<in> fdom x` unfolding less_eq_fmap_def by simp
+    }
+    moreover
+    { assume "lookup y v \<noteq> Some \<bottom>"
+      hence "the (lookup x v) = the (lookup y v)"
+        using `y \<le> x` `v \<in> fdom y` unfolding less_eq_fmap_def by simp
+    }
+    ultimately
+    show "the (lookup x v) = the (lookup y v)"
+      using `v \<in> fdom x` `v \<in> fdom y`
+      by (auto iff: fdomIff, blast)
+  qed
+
+lemma fmap_trans: assumes  "(x:: ('a,'b) fmap) \<le> y" and "y \<le> z" shows "x \<le> z"
+proof
+  show "fdom x \<subseteq> fdom z" using `x \<le> y` and `y \<le> z` unfolding less_eq_fmap_def
+    by -(rule order_trans [of _ "fdom y"], auto)
+  
+  fix v
+  assume "v \<in> fdom x" and "v \<in> fdom z"
+  hence "v \<in> fdom y" using `x \<le> y`  unfolding less_eq_fmap_def by auto
+  assume "lookup x v \<noteq> Some \<bottom>"
+  hence "lookup y v = lookup x v"
+    using `x \<le> y` `v \<in> fdom x` unfolding less_eq_fmap_def by auto
+  moreover
+  hence "lookup y v \<noteq> Some \<bottom>"
+    using `lookup x v \<noteq> Some \<bottom>` by simp
+  hence "lookup y v = lookup z v"
+    by (rule fmap_less_eqD[OF `y \<le> z`  `v \<in> fdom y`])
+  ultimately
+  show "the (lookup x v) = the (lookup z v)" by auto
+qed
+
+instance
+  apply default
+  using fmap_antisym apply (auto simp add: less_fmap_def)[1]
+  apply (auto simp add: less_eq_fmap_def)[1]
+  using fmap_trans apply assumption
+  using fmap_antisym apply assumption
+  done
+end
+
+
 
 end

@@ -34,4 +34,8 @@ lemmas asToHeap_induct = asToHeap.induct[case_names ANilToHeap AConsToHeap]
 lemma asToHeap_eqvt: "eqvt asToHeap"
   unfolding eqvt_def
   by (auto simp add: permute_fun_def asToHeap.eqvt)
+
+lemma [simp]: "fst ` set (asToHeap as) = assn_vars as"
+  by (induct as rule:asToHeap.induct, auto)
+
 end
