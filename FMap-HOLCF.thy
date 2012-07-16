@@ -340,13 +340,12 @@ by (induct n) simp_all
 lemma chain_iterate_from [simp]: "x \<sqsubseteq> F\<cdot>x \<Longrightarrow> chain (\<lambda>i. iterate i F\<cdot>x)"
 by (rule chainI, unfold iterate_Suc2, rule monofun_cfun_arg)
 
-
 lemma iterate_stays_above: "x \<sqsubseteq> F\<cdot>x \<Longrightarrow> x \<sqsubseteq> iterate n F \<cdot> x"
   apply (rule nat_induct)
   apply simp
   by (metis "FMap-HOLCF.iterate_Suc2" monofun_cfun_arg rev_below_trans)
 
-lemma iterate_cont2cont[simp,cont2cont]: "\<lbrakk> cont F; \<And> y. x \<sqsubseteq> F y \<cdot> x \<rbrakk> \<Longrightarrow> cont (\<lambda>y. iterate i (F y)\<cdot>x) "
+lemma iterate_cont2cont[simp,cont2cont]: "\<lbrakk> cont F; cont G\<rbrakk> \<Longrightarrow> cont (\<lambda>y. iterate i (F y)\<cdot>(G y)) "
   by (induct i, auto)
 
 definition
