@@ -29,7 +29,7 @@ where
   Lambda: "\<Gamma> : (Lam [x]. e) \<Down>\<^bsub>L\<^esub> \<Gamma> : (Lam [x]. e)" 
  | Application: "\<lbrakk> atom y \<sharp> (\<Gamma>,e,x,L,\<Delta>,\<Theta>,z) ; \<Gamma> : e \<Down>\<^bsub>x#L\<^esub> \<Delta> : (Lam [y]. e') ; \<Delta> : e'[y ::= x] \<Down>\<^bsub>L\<^esub> \<Theta> : z\<rbrakk> \<Longrightarrow> \<Gamma> : App e x \<Down>\<^bsub>L\<^esub> \<Theta> : z" 
  | Variable: "\<lbrakk> (x,e) \<in> set \<Gamma>; removeAll (x, e) \<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z \<rbrakk> \<Longrightarrow> \<Gamma> : Var x \<Down>\<^bsub>L\<^esub> (x, z) # \<Delta> : z"
- | Let: "set (bn as) \<sharp>* L \<Longrightarrow> asToHeap as @ \<Gamma> : body \<Down>\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> \<Gamma> : Let as body \<Down>\<^bsub>L\<^esub> \<Delta> : z"
+ | Let: "set (bn as) \<sharp>* (\<Gamma>, L) \<Longrightarrow> asToHeap as @ \<Gamma> : body \<Down>\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> \<Gamma> : Let as body \<Down>\<^bsub>L\<^esub> \<Delta> : z"
 
 equivariance reds
 
@@ -87,14 +87,14 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e') thus ?case by auto
 next
 case (Variable  x e \<Gamma> L \<Delta> z) thus ?case by (auto simp add: heapVars_def, metis fst_conv imageI)
 next
-case (Let as L \<Gamma> body \<Delta> z)
+case (Let as \<Gamma> L body \<Delta> z)
   print_facts
   have "x \<notin> heapVars \<Gamma>" by fact moreover
   have "x \<notin> heapVars (asToHeap as)"
-    using `set (bn as) \<sharp>* L` and `x \<in> set L`
+    using `set (bn as) \<sharp>* (\<Gamma>, L)` and `x \<in> set L`
     apply -
     apply (induct as rule: asToHeap.induct)
-    apply (auto simp add: exp_assn.bn_defs fresh_star_insert)
+    apply (auto simp add: exp_assn.bn_defs fresh_star_insert fresh_star_Pair)
     by (metis finite_set fresh_finite_set_at_base fresh_set)  ultimately
   have "x \<notin> heapVars (asToHeap as @ \<Gamma>)" by (auto simp del:fst_set_asToHeap)  
   thus ?case
