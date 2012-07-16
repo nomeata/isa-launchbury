@@ -22,16 +22,6 @@ lemma fresh_list_elem:
 using assms
 by(induct \<Gamma>)(auto simp add: fresh_Cons)
 
-lemma subst_is_fresh:
-assumes "atom y \<sharp> z"
-shows
-  "atom y \<sharp> e[y ::= z]"
-and
- "set (bn as) \<sharp>* (y, z) \<Longrightarrow> atom y \<sharp> (subst_assn as y z)"
-thm subst_subst_assn.induct
-using assms
-by(induct e y z and as y z rule:subst_subst_assn.induct)
-  (auto simp add:exp_assn.fresh fresh_at_base fresh_star_Pair exp_assn.bn_defs fresh_star_insert)
 
 lemma
  subst_pres_fresh: "(atom x \<sharp> e \<and> atom x \<sharp> z) --> atom x \<sharp> e[y ::= z]"

@@ -504,4 +504,14 @@ termination (eqvt) by lexicographic_order
 lemma assn_vars_finite[simp]: "finite (assn_vars as)"
  by(induct as rule: assn_vars.induct, auto)
 
+lemma subst_is_fresh[simp]:
+assumes "atom y \<sharp> z"
+shows
+  "atom y \<sharp> e[y ::= z]"
+and
+ "set (bn as) \<sharp>* (y, z) \<Longrightarrow> atom y \<sharp> (subst_assn as y z)"
+using assms
+by(induct e y z and as y z rule:subst_subst_assn.induct)
+  (auto simp add:exp_assn.fresh fresh_at_base fresh_star_Pair exp_assn.bn_defs fresh_star_insert)
+
 end
