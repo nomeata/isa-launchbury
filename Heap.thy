@@ -9,6 +9,7 @@ definition heapVars
 
 lemma [simp]:"heapVars (a @ b) = heapVars a \<union> heapVars b"
   and [simp]:"heapVars ((v,e) # h) = insert v (heapVars h)"
+  and [simp]:"heapVars [] = {}"
   by (auto simp add: heapVars_def)
 
 function asToHeap_raw :: "assn_raw \<Rightarrow> (var \<times> exp_raw) list"
@@ -35,7 +36,7 @@ lemma asToHeap_eqvt: "eqvt asToHeap"
   unfolding eqvt_def
   by (auto simp add: permute_fun_def asToHeap.eqvt)
 
-lemma [simp]: "fst ` set (asToHeap as) = assn_vars as"
+lemma fst_set_asToHeap[simp]: "fst ` set (asToHeap as) = assn_vars as"
   by (induct as rule:asToHeap.induct, auto)
 
 end

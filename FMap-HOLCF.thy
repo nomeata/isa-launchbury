@@ -550,6 +550,72 @@ definition fix_extend :: "('a, 'b::pcpo) fmap \<Rightarrow> 'a set \<Rightarrow>
   where
   "fix_extend h S nh = fmap_update h (fix1 (fmap_bottom S)  (\<Lambda> h'. (nh (fmap_update h h') )))"
 
+instantiation fmap :: (type,pcpo) order
+begin
+  definition "(\<rho>::('a,'b) fmap) \<le> \<rho>' = ((fdom \<rho> \<subseteq> fdom \<rho>') \<and> (\<forall>x \<in> fdom \<rho>. lookup \<rho> x = lookup \<rho>' x))"
+  definition "(\<rho>::('a,'b) fmap) < \<rho>' = (\<rho> \<noteq> \<rho>' \<and> \<rho> \<le> \<rho>')"
+
+lemma fmap_less_eqI[intro]:
+  assumes assm1: "fdom (\<rho>::('a,'b) fmap) \<subseteq> fdom \<rho>'"
+    and assm2:  "\<And> x. \<lbrakk> x \<in> fdom \<rho> ; x \<in> fdom \<rho>'  \<rbrakk> \<Longrightarrow> the (lookup \<rho> x) = the (lookup \<rho>' x) "
+   shows "\<rho> \<le> \<rho>'"
+ unfolding less_eq_fmap_def
+ apply rule
+ apply fact
+ apply rule+
+ apply (frule subsetD[OF `_ \<subseteq> _`])
+ apply (frule  assm2)
+ apply (auto iff: fdomIff)
+ done
+
+lemma fmap_less_eqD:
+  assumes "(\<rho>::('a,'b) fmap) \<le> \<rho>'"
+  assumes "x \<in> fdom \<rho>"
+  shows "lookup \<rho> x = lookup \<rho>' x"
+  using assms
+  unfolding less_eq_fmap_def by auto
+
+
+lemma fmap_antisym: assumes  "(x:: ('a,'b) fmap) \<le> y" and "y \<le> x" shows "x = y "
+proof(rule fmap_eqI[rule_format])
+    show "fdom x = fdom y" using `x \<le> y` and `y \<le> x` unfolding less_eq_fmap_def by auto
+    
+    fix v
+    assume "v \<in> fdom x"
+    hence "v \<in> fdom y" using `fdom _ = _` by simp
+
+    thus "the (lookup x v) = the (lookup y v)"
+      using `x \<le> y` `v \<in> fdom x` unfolding less_eq_fmap_def by simp
+  qed
+
+lemma fmap_trans: assumes  "(x:: ('a,'b) fmap) \<le> y" and "y \<le> z" shows "x \<le> z"
+proof
+  show "fdom x \<subseteq> fdom z" using `x \<le> y` and `y \<le> z` unfolding less_eq_fmap_def
+    by -(rule order_trans [of _ "fdom y"], auto)
+  
+  fix v
+  assume "v \<in> fdom x" and "v \<in> fdom z"
+  hence "v \<in> fdom y" using `x \<le> y`  unfolding less_eq_fmap_def by auto
+  hence "lookup y v = lookup x v"
+    using `x \<le> y` `v \<in> fdom x` unfolding less_eq_fmap_def by auto
+  moreover
+  have "lookup y v = lookup z v"
+    by (rule fmap_less_eqD[OF `y \<le> z`  `v \<in> fdom y`])
+  ultimately
+  show "the (lookup x v) = the (lookup z v)" by auto
+qed
+
+instance
+  apply default
+  using fmap_antisym apply (auto simp add: less_fmap_def)[1]
+  apply (auto simp add: less_eq_fmap_def)[1]
+  using fmap_trans apply assumption
+  using fmap_antisym apply assumption
+  done
+end
+
+
+(*
 
 instantiation fmap :: (type,pcpo) order
 begin
@@ -629,7 +695,7 @@ instance
   using fmap_antisym apply assumption
   done
 end
-
+*)
 
 
 end
