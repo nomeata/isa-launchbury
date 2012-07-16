@@ -340,6 +340,15 @@ by (induct n) simp_all
 lemma chain_iterate_from [simp]: "x \<sqsubseteq> F\<cdot>x \<Longrightarrow> chain (\<lambda>i. iterate i F\<cdot>x)"
 by (rule chainI, unfold iterate_Suc2, rule monofun_cfun_arg)
 
+
+lemma iterate_stays_above: "x \<sqsubseteq> F\<cdot>x \<Longrightarrow> x \<sqsubseteq> iterate n F \<cdot> x"
+  apply (rule nat_induct)
+  apply simp
+  by (metis "FMap-HOLCF.iterate_Suc2" monofun_cfun_arg rev_below_trans)
+
+lemma iterate_cont2cont[simp,cont2cont]: "\<lbrakk> cont F; \<And> y. x \<sqsubseteq> F y \<cdot> x \<rbrakk> \<Longrightarrow> cont (\<lambda>y. iterate i (F y)\<cdot>x) "
+  by (induct i, auto)
+
 definition
   "fix1" :: "'a \<Rightarrow> ('a::cpo \<rightarrow> 'a) \<Rightarrow> 'a" where
   "fix1 x F = (\<Squnion>i. iterate i F\<cdot>x)"
@@ -357,11 +366,6 @@ lemma fix_eq: "x \<sqsubseteq> F\<cdot>x \<Longrightarrow>  fix1 x F = F\<cdot>(
   apply (erule chain_iterate_from)
   apply simp
   done
-
-lemma iterate_stays_above: "x \<sqsubseteq> F\<cdot>x \<Longrightarrow> x \<sqsubseteq> iterate n F \<cdot> x"
-  apply (rule nat_induct)
-  apply simp
-  by (metis "FMap-HOLCF.iterate_Suc2" monofun_cfun_arg rev_below_trans)
 
 lemma fix1_ind: "\<lbrakk> adm P; P x; x \<sqsubseteq> F\<cdot>x; \<And>y. \<lbrakk>x \<sqsubseteq> y ; P y\<rbrakk> \<Longrightarrow> P (F\<cdot>y) \<rbrakk> \<Longrightarrow> P (fix1 x F)"
   unfolding fix1_def
@@ -412,9 +416,9 @@ proof -
     by (simp add: fix1_def)
 qed
 
-lemma fix1_cont:"cont (fix1 x)" sorry
+lemma fix1_cont2cont[simp,cont2cont]:"\<lbrakk> cont F ; \<And> y. x \<sqsubseteq> F y \<cdot> x \<rbrakk> \<Longrightarrow> cont (\<lambda>y. fix1 x (F y))"
+  unfolding fix1_def by auto
 
-lemmas fix1_cont2cont[simp,cont2cont] = cont_compose[OF fix1_cont]
 
 lemma[simp]: "(fix1 x (\<Lambda> _. x)) = x"
   by (rule fix1_ind, auto)

@@ -169,13 +169,20 @@ lemma heapExtend_cong[fundef_cong]:
   unfolding heapExtend_def
   by (auto cong:heapToEnv_cong)
 
-
 lemma heapExtend_cont[simp,cont2cont]: "cont (\<lambda>\<rho>. heapExtend \<rho> h eval)"
   unfolding heapExtend_def
   apply (cases "\<forall> e \<in> snd ` set h.  cont (eval e)")
   apply (simp_all only: if_P if_not_P perm_still_cont4 simp_thms(35) if_False)
   apply (intro cont2cont)
   apply (rule cont_compose[where c = "eval e", standard, where eval = eval]) 
-  apply auto
+  apply auto[1]
+  apply simp
+  apply (subst beta_cfun)
+  apply (intro cont2cont)
+  apply (rule cont_compose[where c = "eval e", standard, where eval = eval]) 
+  apply auto[1]
+  apply simp
+  apply simp
+  apply simp
   done
 end
