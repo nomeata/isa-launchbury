@@ -29,6 +29,7 @@ case (Lambda \<Gamma> x e)
   case 1 show ?case by simp
   case 2 show ?case by simp
 next
+
 case (Application y \<Gamma> e x L \<Delta> \<Theta> z e') case 1
   have "\<lbrakk> App e x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> \<down>Fn \<lbrakk> Var x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
     by simp also
@@ -48,6 +49,9 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e') case 1
   show ?case .
   case 2 show ?case using `\<lbrace>\<Gamma>\<rbrace>\<rho> \<le> _` `\<lbrace>\<Delta>\<rbrace>\<rho> \<le> _`  by simp
 next
+
+case (Variable x e \<Gamma> L \<Delta> z \<rho>)
+print_facts
 
 
 oops
