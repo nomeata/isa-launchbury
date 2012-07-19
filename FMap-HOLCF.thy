@@ -418,7 +418,6 @@ qed
 lemma fix1_cont2cont[simp,cont2cont]:"\<lbrakk> cont F ; cont G ; \<And> y. G y \<sqsubseteq> (F y) \<cdot> (G y) \<rbrakk> \<Longrightarrow> cont (\<lambda>y. fix1 (G y) (F y))"
   unfolding fix1_def by auto
 
-
 lemma[simp]: "(fix1 x (\<Lambda> _. x)) = x"
   by (rule fix1_ind, auto)
 
@@ -446,10 +445,10 @@ lift_definition fmap_update :: "('a, 'b) fmap \<Rightarrow> ('a, 'b) fmap  \<Rig
 lemma fdom_fmap_update[simp]: "fdom (fmap_update m1 m2) = fdom m1 \<union> fdom m2"
   by (transfer, auto simp add: dom_def split:option.split)
 
-lemma lookup_fmap_update1[simp]: "x \<in> fdom m2 \<Longrightarrow> the (lookup (fmap_update m1 m2) x) = the (lookup m2 x)"
+lemma lookup_fmap_update1[simp]: "x \<in> fdom m2 \<Longrightarrow> lookup (fmap_update m1 m2) x = lookup m2 x"
   by (transfer, auto)
 
-lemma lookup_fmap_update2[simp]:  "x \<notin> fdom m2 \<Longrightarrow> the (lookup (fmap_update m1 m2) x) = the (lookup m1 x)"
+lemma lookup_fmap_update2[simp]:  "x \<notin> fdom m2 \<Longrightarrow> lookup (fmap_update m1 m2) x = lookup m1 x"
   by (transfer, auto simp add: dom_def )
 
 lemma [simp]: "fmap_update \<rho> fempty = \<rho>"
@@ -695,6 +694,4 @@ instance
   done
 end
 *)
-
-
 end
