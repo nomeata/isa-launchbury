@@ -415,7 +415,7 @@ proof -
     by (simp add: fix1_def)
 qed
 
-lemma fix1_cont2cont[simp,cont2cont]:"\<lbrakk> cont F ; \<And> y. x \<sqsubseteq> F y \<cdot> x \<rbrakk> \<Longrightarrow> cont (\<lambda>y. fix1 x (F y))"
+lemma fix1_cont2cont[simp,cont2cont]:"\<lbrakk> cont F ; cont G ; \<And> y. G y \<sqsubseteq> (F y) \<cdot> (G y) \<rbrakk> \<Longrightarrow> cont (\<lambda>y. fix1 (G y) (F y))"
   unfolding fix1_def by auto
 
 
