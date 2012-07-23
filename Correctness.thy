@@ -51,10 +51,65 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e') case 1
 next
 
 case (Variable x e \<Gamma> L \<Delta> z \<rho>)
-print_facts
+  have xnot1: "x \<notin> fst ` set (removeAll (x, e) \<Gamma>)" sorry
+  have xnot2: "x \<notin> fst ` set \<Delta>" sorry
 
+  case 2
+  have "\<lbrace>\<Gamma>\<rbrace>\<rho> = \<lbrace>(x,e) # removeAll (x,e) \<Gamma>\<rbrace>\<rho>" sorry also
+  have "... = fix1 (fmap_bottom (fdom \<rho> \<union> fst ` set ((x, e) # removeAll (x, e) \<Gamma>)))
+                   (\<Lambda> \<rho>'a. fmap_update \<rho>
+                            (fmap_restr (fst ` set (removeAll (x, e) \<Gamma>)) (\<lbrace>removeAll (x, e) \<Gamma>\<rbrace>\<rho>'a)(x f\<mapsto> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'a\<^esub>)))"                           
+    by (rule iterative_HSem[OF xnot1]) also
+  have "... = fix1 (fmap_bottom (fdom \<rho> \<union> fst ` set ((x, e) # removeAll (x, e) \<Gamma>)))
+                   (\<Lambda> \<rho>'a. fmap_update \<rho>
+                            (fmap_restr (fst ` set (removeAll (x, e) \<Gamma>)) (\<lbrace>removeAll (x, e) \<Gamma>\<rbrace>\<rho>'a)(x f\<mapsto> \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>removeAll (x, e) \<Gamma>\<rbrace>\<rho>'a\<^esub>)))" sorry also
+  have "... = fix1 (fmap_bottom (fdom \<rho> \<union> fst ` set ((x, e) # removeAll (x, e) \<Gamma>)))
+                   (\<Lambda> \<rho>'a. fmap_update \<rho>
+                            (fmap_restr (fst ` set (removeAll (x, e) \<Gamma>)) (\<lbrace>removeAll (x, e) \<Gamma>\<rbrace>\<rho>'a)(x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>'a\<^esub>)))"
+    by (subst  Variable.hyps(3), rule refl) also
+  have "... \<le> fix1 (fmap_bottom (fdom \<rho> \<union> fst ` set ((x, e) # removeAll (x, e) \<Gamma>)))
+                   (\<Lambda> \<rho>'a. fmap_update \<rho>
+                            (fmap_restr (fst ` set (removeAll (x, e) \<Gamma>)) (\<lbrace>\<Delta>\<rbrace>\<rho>'a)(x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>'a\<^esub>)))"
+    using Variable.hyps(4)
+    sorry also
+  have "... \<le> fix1 (fmap_bottom (fdom \<rho> \<union> fst ` set ((x, z) # \<Delta>) ))
+                   (\<Lambda> \<rho>'a. fmap_update \<rho>
+                            (fmap_restr (fst ` set \<Delta>) (\<lbrace>\<Delta>\<rbrace>\<rho>'a)(x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>'a\<^esub>)))"
+    sorry also
+  have "... \<le> fix1 (fmap_bottom (fdom \<rho> \<union> fst ` set ((x, z) # \<Delta>) ))
+                   (\<Lambda> \<rho>'a. fmap_update \<rho>
+                            (fmap_restr (fst ` set \<Delta>) (\<lbrace>\<Delta>\<rbrace>\<rho>'a)(x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<rho>'a\<^esub>)))"
+    sorry also
+  have  "... = \<lbrace>(x, z) # \<Delta>\<rbrace>\<rho>"
+    by (rule iterative_HSem[OF xnot2,symmetric])
+  finally show part2: ?case.
+  case 1
+  have "\<lbrakk> Var x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = the (lookup (\<lbrace>\<Gamma>\<rbrace>\<rho>) x)" by simp also
+  have "... = the (lookup (\<lbrace>(x, z) # \<Delta>\<rbrace>\<rho>) x)"
+    using part2 sorry also
+  have "... = \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>(x,z) # \<Delta>\<rbrace>\<rho>\<^esub>"
+    by (subst HSem_unroll, auto)
+  finally show ?case.
+next
 
-oops
+case (Let as \<Gamma> L body \<Delta> z \<rho>)
+  have "set (bn as) \<sharp>* \<rho>" sorry
+  with `set (bn as) \<sharp>* \<Gamma>`
+  have "set (bn as) \<sharp>* (\<lbrace>\<Gamma>\<rbrace>\<rho>)" sorry  
+
+  case 1
+  have "\<lbrakk> Let as body \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk> body \<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
+    by (rule Esem_simps4[OF `set (bn as) \<sharp>* (\<lbrace>\<Gamma>\<rbrace>\<rho>)`]) also
+  have "... = \<lbrakk> body \<rbrakk>\<^bsub>\<lbrace>asToHeap as @ \<Gamma>\<rbrace>\<rho>\<^esub>" sorry also
+  have "... = \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>" by fact
+  finally show ?case .
+
+  case 2
+  have "\<lbrace>\<Gamma>\<rbrace>\<rho> \<le> \<lbrace>asToHeap as @ \<Gamma>\<rbrace>\<rho>" sorry also
+  have "... \<le> \<lbrace>\<Delta>\<rbrace>\<rho>" by fact
+  finally show ?case .
+
+qed
 
 end
 

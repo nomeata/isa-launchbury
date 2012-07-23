@@ -218,6 +218,35 @@ lemma HSem_def''': "\<lbrace>\<Gamma>\<rbrace>\<rho> = fix1 ((fmap_bottom (fdom 
   apply simp
   done
 
+lemma [simp]:"fdom (\<lbrace>\<Gamma>\<rbrace>\<rho>) = fdom \<rho> \<union> fst ` set \<Gamma>"
+  unfolding HSem_def' by auto
+
+lemma [simp]: "x \<notin> fst ` set \<Gamma> \<Longrightarrow> lookup (\<lbrace>\<Gamma>\<rbrace>\<rho>) x = lookup \<rho> x"
+  unfolding HSem_def' by auto
+
+
+
+lift_definition fmap_restr :: "'a set \<Rightarrow> ('a, 'b) fmap => ('a, 'b) fmap"
+  is "\<lambda> S m. (if finite S then (restrict_map m S) else empty)" by auto
+
+lemma lookup_fmap_restr: "finite S \<Longrightarrow> x \<in> S \<Longrightarrow> the (lookup (fmap_restr S m) x) = the (lookup m x)"
+  by (transfer, auto)
+
+lemma [transfer_rule]:"(op = ===> set_rel op = ===> op =) op = op ="
+  unfolding set_rel_eq fun_rel_eq by (rule refl)
+
+lemma [transfer_rule]: "(op = ===> set_rel op = ===> set_rel op =) op \<inter> op \<inter> "
+  unfolding set_rel_eq fun_rel_eq by (rule refl)
+
+lemma fdom_fmap_restr[simp]: "finite S \<Longrightarrow> fdom (fmap_restr S m) = fdom m \<inter> S"
+  by (transfer, simp)
+
+lemma fdom_fmap_restr_Hsem[simp]: "fdom (fmap_restr (fst ` set \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>\<rho>')) = fst ` set \<Gamma>"
+  by auto
+
+lemma fmap_restr_cont:  "cont (fmap_restr S)" sorry
+lemmas fmap_restr_cont2cont[simp,cont2cont] = cont_compose[OF fmap_restr_cont]
+
 
 
 lemma fmap_upd_overwrite[simp]: "f (x f\<mapsto> y) (x f\<mapsto> z) = f (x f\<mapsto> z)"
@@ -273,11 +302,6 @@ lemma tmp:"fmap_update \<rho> ((iterate i F) \<cdot> x) = (iterate i (\<Lambda> 
 lemmas tmp2 =  cont2contlubE[of "\<lambda> y. (iterate i (\<Lambda> \<rho>'. fmap_update \<rho> ((y)(x f\<mapsto> G \<rho>'))))\<cdot>x0", standard]
 thm tmp2
 
-lemma [simp]:"fdom (\<lbrace>\<Gamma>\<rbrace>\<rho>) = fdom \<rho> \<union> fst ` set \<Gamma>"
-  unfolding HSem_def' by auto
-
-lemma [simp]: "x \<notin> fst ` set \<Gamma> \<Longrightarrow> lookup (\<lbrace>\<Gamma>\<rbrace>\<rho>) x = lookup \<rho> x"
-  unfolding HSem_def' by auto
 
 lemma fix1_mono: "x \<sqsubseteq> F\<cdot>x \<Longrightarrow> x \<sqsubseteq> G\<cdot>x \<Longrightarrow>(\<And> y. x \<sqsubseteq> y \<Longrightarrow> F\<cdot>y \<sqsubseteq> G\<cdot>y) \<Longrightarrow> fix1 x F \<sqsubseteq> fix1 x G"
   apply (rule parallel_fix1_ind)
@@ -328,10 +352,15 @@ lemma  fmap_update_belowI:
   apply auto[1]
   by (metis fdomIff lookup_fmap_update1 lookup_fmap_update2 the.simps)
 
+lemma HSem_unroll: "\<lbrace>\<Gamma>\<rbrace>\<rho> = fmap_update \<rho> (heapToEnv \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>))"
+  apply(subst (1 2) HSem_def''')
+  apply(subst fix_eq)
+  apply auto
+  done
 
-lemma 
+lemma iterative_HSem:
   assumes "x \<notin> fst ` set \<Gamma>"
-  shows "\<lbrace>(x,e) # \<Gamma>\<rbrace>\<rho> = fix1 (fmap_bottom (fdom \<rho> \<union> fst ` set ((x,e) # \<Gamma>))) (\<Lambda> \<rho>'. fmap_update \<rho> ((\<lbrace>\<Gamma>\<rbrace>\<rho>')(x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)))" (is "_ = fix1 _ ?R")
+  shows "\<lbrace>(x,e) # \<Gamma>\<rbrace>\<rho> = fix1 (fmap_bottom (fdom \<rho> \<union> fst ` set ((x,e) # \<Gamma>))) (\<Lambda> \<rho>'. fmap_update \<rho> ((fmap_restr (fst ` set \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>\<rho>'))(x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)))" (is "_ = fix1 _ ?R")
 apply (subst HSem_def''')
 proof(rule below_antisym)
   let "fix1 ?x0 ?L" = "fix1 (fmap_bottom (fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>))) (\<Lambda> \<rho>'. fmap_update \<rho> (heapToEnv ((x, e) # \<Gamma>) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)))"
@@ -342,12 +371,10 @@ proof(rule below_antisym)
     apply (rule fmap_bottom_below)
     by (auto)*)
   have "?x0 \<sqsubseteq> ?R\<cdot>?x0" 
-    apply (auto intro!: fmap_bottom_below)
-    by (metis fst_conv imageI)
+    by simp
 
 {
   show "fix1 ?x0 ?L \<sqsubseteq> fix1 ?x ?R"
-  thm fix_least_below[OF `?x0 \<sqsubseteq> ?L\<cdot>?x0`]
   proof(rule fix_least_below[OF `?x0 \<sqsubseteq> ?L\<cdot>?x0`])
     let "?y" = "fix1 ?x ?R"
     show  "?x0 \<sqsubseteq> ?y"
@@ -356,12 +383,8 @@ proof(rule below_antisym)
       apply auto
       done
 
-    have large_fdom[simp]: "fdom ((\<lbrace>\<Gamma>\<rbrace>?y)(x f\<mapsto> \<lbrakk> e \<rbrakk>\<^bsub>?y\<^esub>)) = fdom \<rho> \<union> insert x (fst ` set \<Gamma>)"
-      apply simp
-      apply (subst fdom_fix1)
-      apply (rule fmap_bottom_below)
-      apply auto
-      done
+    have large_fdom[simp]: "fdom ((fmap_restr (fst ` set \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>?y))(x f\<mapsto> \<lbrakk> e \<rbrakk>\<^bsub>?y\<^esub>)) = insert x (fst ` set \<Gamma>)"
+      by simp
 
     have "?L\<cdot>?y \<sqsubseteq> ?R\<cdot>?y"
     proof (rule fmap_belowI')
@@ -377,10 +400,12 @@ proof(rule below_antisym)
         proof (cases "x' \<in> fdom (heapToEnv ((x, e) # \<Gamma>) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>?y\<^esub>))")
         case True
           moreover
-          hence "x' \<in> fdom ((\<lbrace>\<Gamma>\<rbrace>?y)(x f\<mapsto> \<lbrakk> e \<rbrakk>\<^bsub>?y\<^esub>))" by auto
+          hence "x' \<in> fdom ((fmap_restr (fst ` set \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>?y))(x f\<mapsto> \<lbrakk> e \<rbrakk>\<^bsub>?y\<^esub>))" by auto
           moreover
-          { fix x'
-            assume "x' \<in> fst ` set \<Gamma>"
+          hence "x' \<in> fst ` set \<Gamma>" using F1 by auto
+          moreover
+          {
+            (*
             have "the (lookup (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>?y\<^esub>)) x')  \<sqsubseteq>
               the (lookup (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>fmap_update ?y (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>fmap_bottom (fdom ?y \<union> fst ` set \<Gamma>)\<^esub>))\<^esub>)) x') "
               
@@ -394,52 +419,84 @@ proof(rule below_antisym)
             have "?rhs \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>?y"
               unfolding HSem_def'''
               by (rule iterate_below_fix[of _ _ "Suc 1"], simp)
-            hence "the (lookup ?rhs x') \<sqsubseteq> the (lookup (\<lbrace>\<Gamma>\<rbrace>?y) x')"
+            have "?rhs \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>?y"
+              unfolding HSem_def'''
+              by (rule iterate_below_fix[of _ _ "Suc 1"], simp)
+            hence "the (lookup ?rhs x') \<sqsubseteq> the (lookup ((fmap_restr (fst ` set \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>?y))) x')"
+              apply (subst lookup_fmap_restr[OF _ `x' \<in> fst \` set \<Gamma>`])
+              apply auto[1]              
               by (rule fmap_belowE)
-            also
-            note this = calculation 
+            finally
+            have "the (lookup (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>?y\<^esub>)) x') \<sqsubseteq> the (lookup ((fmap_restr (fst ` set \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>?y))) x')".
+
+            have "fmap_update ?y (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>?y\<^esub>)) \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>?y"
+              thm fix1_ind
+              apply (rule fix1_ind[OF _ _ `?x0 \<sqsubseteq> ?R\<cdot>?x0`]) back back back back back
+              apply auto[1]
+
+              (* Base case *)
+              apply (subst (2) HSem_unroll)
+              apply (rule cont2monofunE) back back              
+              apply auto[1]
+              apply (rule fmap_bottom_below)
+              apply auto[1]
+
+              apply (subst (3) HSem_unroll)
+              apply simp
+              apply (rule cont2monofunE) back back
+              apply auto[1]
+              apply (erule rev_below_trans)
+              
+
+
+
+
+            have "the (lookup (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>?y\<^esub>)) x') \<sqsubseteq> the (lookup ((fmap_restr (fst ` set \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>?y))) x')"
+              using  `x' \<in> fst \` set \<Gamma>`  `x' \<noteq> x`
+              apply (subst (2) HSem_def'')
+              apply simp
+              apply (subst lookup_fmap_restr[OF _ `x' \<in> fst \` set \<Gamma>`])
+              apply simp
+              apply (rule fix1_ind) back
+              defer
+              apply (subst fix_eq)
+              apply auto[1]
+              apply simp
+              apply (rule cont2monofunE) back back back
+              apply simp
+              apply (rule fmap_bottom_below)
+              apply auto[1]
+              apply (rule fmap_bottom_below)
+              apply auto[1]
+              
+              apply (subst fix_eq) apply auto[1]
+              
+              apply simp
+              apply (rule cont2monofunE) back back back 
+              apply simp
+              apply auto[1]
+              thm fmap_belowE[OF below_trans[OF _ iterate_below_fix[of _ _ "1", simplified]]]
+              apply (rule  fmap_belowE[OF below_trans[OF _ iterate_below_fix[of _ _ "1", simplified]]])
+              apply simp
+              find_theorems "fix"
+              apply (subst (3) fix_eq)
+              apply auto[1]
+              apply simp
+              sorry
+            have "the (lookup (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>?y\<^esub>)) x') \<sqsubseteq> the (lookup ?y x')" sorry
+            *)
+            have "the (lookup (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>?y\<^esub>)) x') \<sqsubseteq> the (lookup (?R \<cdot> ?y) x')" sorry
           }
           ultimately
           show ?thesis using `x' \<noteq> x` by simp
         next
-        case False note F2 = this
-          show ?thesis
-          proof (cases "x' \<in> fdom \<rho>")
-          case True with F1 F2
-            have "x' \<in> fdom ((\<lbrace>\<Gamma>\<rbrace>?y)(x f\<mapsto> \<lbrakk> e \<rbrakk>\<^bsub>?y\<^esub>))"
-              apply (subst large_fdom)
-              apply auto
-              done
-            (* have "?y \<sqsubseteq> ?L \<cdot> ?y" sorry *)
-            with F1 F2
-            have "the (lookup (?R\<cdot>?y) x') = the (lookup \<rho> x')"
-              apply simp
-              apply (subst fix_eq_start[symmetric])
-              apply (auto intro!: fmap_bottom_below, metis fst_conv imageI)[1]
-              apply simp              
-              apply (rule fix1_ind)
-              apply auto[1]
-              apply (subst lookup_fmap_update1)
-              apply simp
-              
-
-            with  F1 F2 show ?thesis by simp
-          next
-            case False with F1 F2
-            have "x' \<notin> fdom ((\<lbrace>\<Gamma>\<rbrace>?y)(x f\<mapsto> \<lbrakk> e \<rbrakk>\<^bsub>?y\<^esub>))"
-              apply (subst large_fdom)
-              apply auto
-              done
-            with F1 F2 show ?thesis by auto
-          qed
+        case False with F1 show ?thesis by auto
         qed
       qed
     qed
     thus "?L\<cdot>?y \<sqsubseteq> ?y"
       apply (subst (asm)  fix_eq[symmetric])
-      apply (auto intro!:fmap_bottom_below)
-      apply (metis fst_conv imageI)
-      done
+      by (auto intro!:fmap_bottom_below)
   qed
 next
   show "fix1 ?x0 ?R \<sqsubseteq> fix1 ?x0 ?L"
@@ -458,7 +515,7 @@ next
       next
       case False note F1 = this
         show ?thesis
-        proof (cases "x' \<in> fdom ((\<lbrace>\<Gamma>\<rbrace>(fix1 ?x0 ?L)))")
+        proof (cases "x' \<in> fst ` set \<Gamma>")
         case True
           from `x \<notin> fst \` set \<Gamma>`
           have "fmap_update (fix1 ?x0 ?L) (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>(fix1 ?x0 ?L)\<^esub>)) \<sqsubseteq> (fix1 ?x0 ?L)"
@@ -480,15 +537,15 @@ next
             apply (rule fmap_bottom_below)
             apply auto
             done
-          hence "\<lbrace>\<Gamma>\<rbrace>(fix1 ?x0 ?L) \<sqsubseteq> (fix1 ?x0 ?L)"
+          hence "(\<lbrace>\<Gamma>\<rbrace>(fix1 ?x0 ?L)) \<sqsubseteq> (fix1 ?x0 ?L)"
             unfolding HSem_def'''
             by auto
           with True F1
           show ?thesis
             apply simp
-            apply (rule cont2monofunE) back back
-            apply auto[1]
-            apply assumption
+            apply (subst lookup_fmap_restr)
+            apply auto[2]
+            apply (erule fmap_belowE)
             done
        next
        case False note F2 = this
@@ -503,187 +560,6 @@ next
   qed
 }
 qed
-
-lemma 
-  assumes "x \<notin> fst ` set \<Gamma>"
-  shows "\<lbrace>(x,e) # \<Gamma>\<rbrace>\<rho> = fix1 (fmap_update \<rho> (fmap_bottom (fst ` set ((x,e) # \<Gamma>)))) (\<Lambda> \<rho>'. fmap_update \<rho> ((\<lbrace>\<Gamma>\<rbrace>\<rho>')(x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)))" (is "_ = fix1 _ ?R")
-apply (subst HSem_def'')
-proof(rule below_antisym)
-  let "fix1 ?x0 ?L" = "fix1 (fmap_update \<rho> (fmap_bottom (fst ` set ((x, e) # \<Gamma>)))) (\<Lambda> \<rho>'. fmap_update \<rho> (heapToEnv ((x, e) # \<Gamma>) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)))"
-
-  have "?x0 \<sqsubseteq> ?L\<cdot>?x0"
-    by (auto intro: cont2monofunE[OF fmap_update_cont2])
-  (* have "?x0 \<sqsubseteq> ?R\<cdot>?x0" 
-    apply (rule fmap_bottom_below)
-    by (auto)*)
-  have "?x0 \<sqsubseteq> ?R\<cdot>?x0" 
-    by (auto intro: fmap_update_belowI)
-
-{
-  show "fix1 ?x0 ?L \<sqsubseteq> fix1 ?x ?R"
-  proof(rule fix1_mono[OF `?x0 \<sqsubseteq> ?L\<cdot>?x0` `?x0 \<sqsubseteq> ?R\<cdot>?x0`])
-    fix y
-    assume  "?x0 \<sqsubseteq> y"
-
-    show "?L\<cdot>y \<sqsubseteq> ?R\<cdot>y"
-    proof (rule fmap_belowI')
-      show "fdom (?L\<cdot>y) = fdom (?R\<cdot>y)" using fmap_below_dom[OF `?x0 \<sqsubseteq> y`] by auto
-    next
-      fix x'
-      assume "x' \<in> fdom (?L\<cdot>y)" and "x' \<in> fdom (?R\<cdot>y)"
-      show "the (lookup (?L\<cdot>y) x') \<sqsubseteq> the (lookup (?R\<cdot>y) x')"
-      proof (cases "x' = x")
-        case True thus ?thesis by auto
-      next
-        case False note F1 = this thus ?thesis
-        proof (cases "x' \<in> fdom (heapToEnv ((x, e) # \<Gamma>) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>y\<^esub>))")
-        case True
-          moreover
-          hence "x' \<in> fdom ((\<lbrace>\<Gamma>\<rbrace>y)(x f\<mapsto> \<lbrakk> e \<rbrakk>\<^bsub>y\<^esub>))" by auto
-          moreover
-          { fix x'
-            assume "x' \<in> fst ` set \<Gamma>"
-            have "the (lookup (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>y\<^esub>)) x')  \<sqsubseteq>
-              the (lookup (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>fmap_update y (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>fmap_bottom (fdom y \<union> fst ` set \<Gamma>)\<^esub>))\<^esub>)) x') "
-              
-              sorry
-            also have "... \<sqsubseteq> the (lookup (fmap_update y (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>fmap_update y (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>fmap_bottom (fdom y \<union> fst ` set \<Gamma>)\<^esub>))\<^esub>))) x')"
-              using `x' \<in> fst \` set \<Gamma>` by simp
-            also have "... = the (lookup (iterate (Suc 1) (\<Lambda> \<rho>'. fmap_update y (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)))\<cdot>(fmap_bottom (fdom y \<union> fst ` set \<Gamma>))) x')"
-                (is "_ = the (lookup ?rhs _)")
-              by simp
-            also
-            have "?rhs \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>y"
-              unfolding HSem_def'''
-              by (rule iterate_below_fix[of _ _ "Suc 1"], simp)
-            hence "the (lookup ?rhs x') \<sqsubseteq> the (lookup (\<lbrace>\<Gamma>\<rbrace>y) x')"
-              by (rule fmap_belowE)
-            also
-            note this = calculation 
-          }
-          ultimately
-          show ?thesis using `x' \<noteq> x` by simp
-        next
-        case False note F2 = this
-          show ?thesis 
-          proof (cases "x' \<in> fdom ((\<lbrace>\<Gamma>\<rbrace>y)(x f\<mapsto> \<lbrakk> e \<rbrakk>\<^bsub>y\<^esub>))")
-            have "y \<sqsubseteq> ?L \<cdot> y" sorry
-            case True with F1 F2 show ?thesis
-              using fmap_belowE[OF `?x0 \<sqsubseteq> y`, of x']
-              by simp
-          next
-            case False with F1 F2 show ?thesis by auto
-          qed
-        qed
-      qed
-    qed
-  qed
-next
-  show "fix1 ?x0 ?R \<sqsubseteq> fix1 ?x0 ?L"
-  proof (rule fix_least_below[OF `?x0 \<sqsubseteq> ?R\<cdot>?x0`])
-    show "?x0 \<sqsubseteq> fix1 ?x0 ?L" by (rule start_below_fix1[OF `?x0 \<sqsubseteq> ?L\<cdot>?x0`])
-  next
-    show "?R\<cdot>(fix1 ?x0 ?L) \<sqsubseteq> fix1 ?x0 ?L"
-    proof (rule fmap_belowI')
-      show "fdom (?R\<cdot>(fix1 ?x0 ?L)) = fdom (fix1 ?x0 ?L)" apply (simp add:fdom_fix1)
-        apply (subst fdom_fix1)
-        apply (rule fmap_update_belowI)
-        apply auto[1]
-        apply auto[1]
-        apply auto[1]
-        apply (subst fdom_fix1)
-        apply (rule fmap_update_belowI)
-        apply auto[4]
-        done        
-    next
-      fix x'
-      assume "x' \<in> fdom (?R\<cdot>(fix1 ?x0 ?L))" and "x' \<in> fdom (fix1 ?x0 ?L)"
-      show "the (lookup (?R\<cdot>(fix1 ?x0 ?L)) x') \<sqsubseteq> the (lookup ((fix1 ?x0 ?L)) x')"
-      proof (cases "x' = x")
-      case True thus ?thesis
-        apply (subst (2) fix_eq)
-        apply (rule fmap_update_belowI)
-        apply auto
-        done
-      next
-      case False note F1 = this
-        show ?thesis
-        proof (cases "x' \<in> fdom ((\<lbrace>\<Gamma>\<rbrace>(fix1 ?x0 ?L)))")
-        case True
-          from `x \<notin> fst \` set \<Gamma>`
-          have "fmap_update (fix1 ?x0 ?L) (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>(fix1 ?x0 ?L)\<^esub>)) \<sqsubseteq> (fix1 ?x0 ?L)"
-            apply -
-            apply (rule fmap_update_belowI[OF _ _ below_refl])
-            apply (subst (1 2) fdom_fix1)
-             apply (auto intro:fmap_update_belowI)[1]
-             apply auto[1]
-            apply (subst (2) fix_eq)
-              apply (auto intro:fmap_update_belowI)[1]
-            apply (subst beta_cfun)
-            apply auto[1]
-            apply (subgoal_tac "a \<noteq> x")
-            apply auto
-            done
-          hence "fix1 (fmap_bottom (fdom ((fix1 ?x0 ?L)) \<union> fst ` set  \<Gamma>)) (\<Lambda> y. fmap_update (fix1 ?x0 ?L) (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>y\<^esub>))) \<sqsubseteq> (fix1 ?x0 ?L)"
-            apply -
-            apply (rule fix_least_below)
-            apply (rule fmap_bottom_below)
-            apply (subst (1 2) fdom_fix1)
-             apply (auto intro:fmap_update_belowI)[1]
-             apply simp
-             apply (subst  fdom_fix1)
-              apply (auto intro:fmap_update_belowI)[1]
-              apply simp
-            apply (rule fmap_bottom_below)
-            apply (subst (1 2) fdom_fix1)
-             apply (auto intro:fmap_update_belowI)[1]
-             apply auto[1]
-            apply simp
-            done
-          hence "\<lbrace>\<Gamma>\<rbrace>(fix1 ?x0 ?L) \<sqsubseteq> (fix1 ?x0 ?L)"
-            unfolding HSem_def'''
-            by assumption
-          with True F1
-          show ?thesis
-            apply simp
-            apply (rule cont2monofunE) back back
-            apply auto[1]
-            apply assumption
-            done
-       next
-       case False note F2 = this
-         with F1 show ?thesis
-          apply (subst (2) fix_eq)
-          apply (auto intro: fmap_update_belowI)
-          done
-       qed
-     qed
-   qed
-  qed
-}
-qed
-
-
-(* Alterative definition from 5.2.1 *)
-lemma "\<lbrace>(x,e) # \<Gamma>\<rbrace>\<rho> = fix1 (fmap_update \<rho> (fmap_bottom (fst ` set ((x,e) # \<Gamma>)))) (\<Lambda> \<rho>'. fmap_update \<rho> ((\<lbrace>\<Gamma>\<rbrace>\<rho>')(x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)))"
-unfolding HSem_def''
-unfolding fix1_def
-
-(* apply (subst tmp2) *)
-
-apply (subst cont2contlubE[OF fmap_upd_cont[OF cont_id cont_const]])
-apply (auto intro!:  ch2ch_cont[OF fmap_update_cont2] chain_iterate_from cont2monofunE[OF fmap_update_cont2])[1]
-apply (subst cont2contlubE[OF fmap_update_cont2])
-apply (auto intro!: ch2ch_cont[OF fmap_upd_cont[OF cont_id cont_const], OF chain_iterate_from] cont2monofunE[OF fmap_update_cont2])[1]
-apply (subst lub_LAM[symmetric])
-apply (auto intro!: ch2ch_cont[OF fmap_upd_cont[OF cont_id cont_const]]  ch2ch_cont[OF fmap_update_cont2] chain_iterate_from cont2monofunE[OF fmap_update_cont2])[1]
-apply (intro cont2cont)
-apply (subst  cont2contlubE[OF iterate_cont2cont[OF cont_id cont_const]])  
-apply (auto intro!:ch2ch_LAM ch2ch_cont[OF fmap_upd_cont[OF cont_id cont_const]]  ch2ch_cont[OF fmap_update_cont2] chain_iterate_from cont2monofunE[OF fmap_update_cont2])[1]
-
-apply (subst tmp)
-apply simp
-oops
 
 
 lemma HSem_fdom[simp]:"fdom (\<lbrace>\<Gamma>\<rbrace>\<rho>) = fst ` set \<Gamma> \<union> fdom \<rho>"
@@ -776,7 +652,6 @@ case (ANil \<rho> x y) thus ?case by auto
 next
 case(ACons var exp as \<rho> x y)  thus ?case by auto
 qed
-*)
 
 
 end
