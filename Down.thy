@@ -278,4 +278,151 @@ by (simp add: down_def fdown_def cont_Idown cont_Ifdown1 cont_Ifdown2 cont2cont_
 lemma fdown3 [simp]: "fdown\<cdot>down\<cdot>x = x"
 by (cases x, simp_all)
 
+(* End of dual of Up.thy, now various lemmas of later HOLCF theories follow. *)
+
+
+subsection {* Map function for top-adjoint cpo *}
+
+definition
+  d_map :: "('a -> 'b) -> 'a d -> 'b d"
+where
+  "d_map = (\<Lambda> f. fdown\<cdot>(down oo f))"
+
+lemma d_map_strict [simp]: "d_map\<cdot>f\<cdot>\<top> = \<top>"
+unfolding d_map_def by simp
+
+lemma d_map_up [simp]: "d_map\<cdot>f\<cdot>(down\<cdot>x) = down\<cdot>(f\<cdot>x)"
+unfolding d_map_def by simp
+
+lemma d_map_ID: "d_map\<cdot>ID = ID"
+unfolding d_map_def by (simp add: cfun_eq_iff eta_cfun)
+
+lemma d_map_map: "d_map\<cdot>f\<cdot>(d_map\<cdot>g\<cdot>p) = d_map\<cdot>(\<Lambda> x. f\<cdot>(g\<cdot>x))\<cdot>p"
+by (induct p) simp_all
+
+lemma d_map_oo: "d_map\<cdot>(f oo g) = d_map\<cdot>f oo d_map\<cdot>g"
+by (simp add: cfcomp1 d_map_map eta_cfun)
+
+lemma ep_pair_d_map: "ep_pair e p \<Longrightarrow> ep_pair (d_map\<cdot>e) (d_map\<cdot>p)"
+apply default
+apply (case_tac x, simp, simp add: ep_pair.e_inverse)
+apply (case_tac y, simp, simp add: ep_pair.e_p_below)
+done
+
+lemma deflation_d_map: "deflation d \<Longrightarrow> deflation (d_map\<cdot>d)"
+apply default
+apply (case_tac x, simp, simp add: deflation.idem)
+apply (case_tac x, simp, simp add: deflation.below)
+done
+
+lemma finite_deflation_d_map:
+  assumes "finite_deflation d" shows "finite_deflation (d_map\<cdot>d)"
+proof (rule finite_deflation_intro)
+  interpret d: finite_deflation d by fact
+  have "deflation d" by fact
+  thus "deflation (d_map\<cdot>d)" by (rule deflation_d_map)
+  have "{x. d_map\<cdot>d\<cdot>x = x} \<subseteq> insert \<top> ((\<lambda>x. down\<cdot>x) ` {x. d\<cdot>x = x})"
+    by (rule subsetI, case_tac x, simp_all)
+  thus "finite {x. d_map\<cdot>d\<cdot>x = x}"
+    by (rule finite_subset, simp add: d.finite_fixes)
+qed
+
+subsubsection {* top-adjoint cpo *}
+
+lemma approx_chain_d_map:
+  assumes "approx_chain a"
+  shows "approx_chain (\<lambda>i. d_map\<cdot>(a i))"
+  using assms unfolding approx_chain_def
+  by (simp add: lub_APP d_map_ID finite_deflation_d_map)
+
+
+instance d :: (pcpo) pcpo
+  apply default
+  apply (rule_tac x = "Idown \<bottom>" in exI)
+  apply rule
+  apply (case_tac y rule:d.exhaust)
+  apply auto
+  done
+
+instance d :: (bifinite) bifinite
+  apply default
+  using bifinite
+  by (auto dest: approx_chain_d_map)
+
+definition "d_emb = udom_emb (\<lambda>i. d_map\<cdot>(udom_approx i))"
+definition "d_prj = udom_prj (\<lambda>i. d_map\<cdot>(udom_approx i))"
+
+lemma ep_pair_d: "ep_pair d_emb d_prj"
+  unfolding d_emb_def d_prj_def
+  by (simp add: ep_pair_udom approx_chain_d_map)
+
+definition d_defl :: "udom defl \<rightarrow> udom defl"
+  where "d_defl = defl_fun1 d_emb d_prj d_map"
+
+lemma cast_d_defl:
+  "cast\<cdot>(d_defl\<cdot>A) =
+    d_emb oo d_map\<cdot>(cast\<cdot>A) oo d_prj"
+using ep_pair_d finite_deflation_d_map
+unfolding d_defl_def by (rule cast_defl_fun1)
+
+instantiation d :: ("domain") "domain"
+begin
+
+definition
+  "emb = d_emb oo d_map \<cdot> emb"
+
+definition
+  "prj = d_map \<cdot> prj oo d_prj"
+
+definition
+  "defl (t::'a d itself) = d_defl\<cdot>DEFL('a)"
+
+definition
+  "(liftemb :: 'a d u \<rightarrow> udom u) = u_map\<cdot>emb"
+
+definition
+  "(liftprj :: udom u \<rightarrow> 'a d u) = u_map\<cdot>prj"
+
+definition
+  "liftdefl (t::'a d itself) = liftdefl_of\<cdot>DEFL('a d)"
+
+instance proof
+  show "ep_pair emb (prj :: udom \<rightarrow> 'a d)"
+    unfolding emb_d_def prj_d_def
+    by (intro ep_pair_comp ep_pair_d ep_pair_d_map ep_pair_emb_prj)
+  show "cast\<cdot>DEFL('a d) = emb oo (prj :: udom \<rightarrow> 'a d)"
+    unfolding emb_d_def prj_d_def defl_d_def cast_d_defl
+    by (simp add: cast_DEFL oo_def cfun_eq_iff d_map_map)
+qed (fact liftemb_d_def liftprj_d_def liftdefl_d_def)+
+
+end
+
+lemma DEFL_d:
+  "DEFL(('a::domain) d) = d_defl\<cdot>DEFL('a)"
+by (rule defl_d_def)
+
+lemma isodefl_d:
+  "isodefl d1 t1  \<Longrightarrow>  isodefl (d_map\<cdot>d1) (d_defl\<cdot>t1)"
+apply (rule isodeflI)
+apply (simp add: cast_d_defl cast_isodefl)
+apply (simp add: emb_d_def prj_d_def)
+apply (simp add: d_map_map isodefl_strict)
+done
+
+
+lemmas [domain_defl_simps] = DEFL_d
+
+lemmas [domain_map_ID] = d_map_ID
+
+lemmas [domain_isodefl] = isodefl_d
+
+lemmas [domain_deflation] = deflation_d_map
+
+
+setup {*
+  Domain_Take_Proofs.add_rec_type (@{type_name "d"}, [true])
+*}
+
+
+
 end
