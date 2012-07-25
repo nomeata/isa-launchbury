@@ -7,7 +7,7 @@
 header {* The type of lifted values *}
 
 theory Down
-imports "HOLCF-Join"
+imports "HOLCF-Top"
 begin
 
 default_sort cpo
@@ -422,7 +422,6 @@ lemmas [domain_deflation] = deflation_d_map
 setup {*
   Domain_Take_Proofs.add_rec_type (@{type_name "d"}, [true])
 *}
-
 
 
 end
