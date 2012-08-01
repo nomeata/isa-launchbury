@@ -4,49 +4,13 @@ begin
 
 lemma dom_perm:
   "dom (\<pi> \<bullet> f) = \<pi> \<bullet> (dom f)"
-proof
-  have 1: "\<And>\<pi> f. dom (\<pi> \<bullet> f) \<subseteq> \<pi> \<bullet> (dom f)"
-  proof
-    fix \<pi> f x
-    assume "x \<in> dom (\<pi> \<bullet> f)"
-    then obtain y where "(\<pi> \<bullet> f) x = Some y" by auto
-    hence "\<pi> \<bullet> (f (-\<pi> \<bullet> x)) = Some y"  by (auto simp add: permute_fun_def)
-    hence "f (-\<pi> \<bullet> x) = -\<pi> \<bullet> Some y" by (metis permute_minus_cancel(2))
-    hence "f (-\<pi> \<bullet> x) = Some (-\<pi> \<bullet> y)" by simp
-    hence "-\<pi> \<bullet> x \<in> dom f" by auto
-    thus "x \<in> \<pi> \<bullet> (dom f)" by (metis (full_types) mem_permute_iff permute_minus_cancel(2))
-  qed
-  show "dom (\<pi> \<bullet> f) \<subseteq> \<pi> \<bullet> (dom f)" using 1 .
-
-  have "dom (-\<pi> \<bullet> (\<pi> \<bullet> f)) \<subseteq> -\<pi> \<bullet> dom (\<pi> \<bullet> f)" using 1 .
-  hence "dom f \<subseteq> -\<pi> \<bullet> dom (\<pi> \<bullet> f)" by simp
-  hence "\<pi> \<bullet> dom f \<subseteq> \<pi> \<bullet> (-\<pi> \<bullet> dom (\<pi> \<bullet> f))" by (metis permute_pure subset_eqvt)
-  thus  "\<pi> \<bullet> dom f \<subseteq> dom (\<pi> \<bullet> f)" by simp
-qed
+  unfolding dom_def by (perm_simp) (simp)
 
 lemmas dom_perm_rev[simp] = dom_perm[symmetric]
 
 lemma ran_perm[simp]:
   "\<pi> \<bullet> (ran f) = ran (\<pi> \<bullet> f)"
-proof
-  have 1: "\<And>\<pi> f. ran (\<pi> \<bullet> f) \<subseteq> \<pi> \<bullet> (ran f)"
-  proof
-    fix \<pi> :: perm and f :: "'c::pt \<rightharpoonup> 'd::pt " and y:: 'd
-    assume "y \<in> ran (\<pi> \<bullet> f)"
-    then obtain x where "(\<pi> \<bullet> f) x = Some y" by (auto simp add: ran_def)
-    hence "\<pi> \<bullet> (f (-\<pi> \<bullet> x)) = Some y"  by (auto simp add: permute_fun_def)
-    hence "f (-\<pi> \<bullet> x) = -\<pi> \<bullet> Some y" by (metis permute_minus_cancel(2))
-    hence "f (-\<pi> \<bullet> x) = Some (-\<pi> \<bullet> y)" by simp
-    hence "-\<pi> \<bullet> y \<in> ran f" by (auto simp add: ran_def)
-    thus "y \<in> \<pi> \<bullet> (ran f)" by (metis (full_types) mem_permute_iff permute_minus_cancel(2))
-  qed
-  show "ran (\<pi> \<bullet> f) \<subseteq> \<pi> \<bullet> (ran f)" using 1 .
-
-  have "ran (-\<pi> \<bullet> (\<pi> \<bullet> f)) \<subseteq> -\<pi> \<bullet> ran (\<pi> \<bullet> f)" using 1 .
-  hence "ran f \<subseteq> -\<pi> \<bullet> ran (\<pi> \<bullet> f)" by simp
-  hence "\<pi> \<bullet> ran f \<subseteq> \<pi> \<bullet> (-\<pi> \<bullet> ran (\<pi> \<bullet> f))" by (metis permute_pure subset_eqvt)
-  thus  "\<pi> \<bullet> ran f \<subseteq> ran (\<pi> \<bullet> f)" by simp
-qed
+  unfolding ran_def by (perm_simp) (simp)
 
 instantiation "fmap" :: (pt,pt) pt
 begin
