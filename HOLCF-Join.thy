@@ -84,6 +84,33 @@ end
 lemma (in Top_cpo) meet_empty[simp]: "\<Sqinter>{} = (\<top>::'a)"
     by (metis glb_eqI is_glbI is_lb_empty maximal)
 
+lemma (in cpo) Meet_insert: "S >>| l \<Longrightarrow> {x, l} >>| l2 \<Longrightarrow> insert x S >>| l2"
+  apply (rule is_glbI)
+  apply (metis is_glb_above_iff is_glb_def is_lb_insert)
+  by (metis is_glb_above_iff is_glb_def is_glb_singleton is_lb_insert)
+
+class Finite_Meet_cpo = cpo +
+  assumes binary_meet_exists: "\<exists> l. l \<sqsubseteq> x \<and> l \<sqsubseteq> y \<and> (\<forall> z. (z \<sqsubseteq> x \<and> z \<sqsubseteq> y) \<longrightarrow> z \<sqsubseteq> l)"
+begin
+
+  lemma binary_meet_exists': "\<exists>l. {x, y} >>| l"
+    using binary_meet_exists[of x y]
+    unfolding is_glb_def is_lb_def
+    by auto
+
+  lemma finite_meet_exists:
+    assumes "S \<noteq> {}"
+    and "finite S"
+    shows "\<exists>x. S >>| x"
+  using `S \<noteq> {}`
+  apply (induct rule: finite_induct[OF `finite S`])
+  apply (erule notE, rule refl)[1]
+  apply (case_tac "F = {}")
+  apply (metis is_glb_singleton)
+  apply (metis Meet_insert binary_meet_exists')
+  done
+end
+
 class Nonempty_Meet_cpo = cpo +
   assumes nonempty_meet_exists: "S \<noteq> {} \<Longrightarrow> \<exists>x. S >>| x"
 
@@ -263,5 +290,69 @@ proof(default)
   qed
 qed
 
+class Finite_Meet_bifinite_cpo = Finite_Meet_cpo + bifinite
+
+lemma is_ub_range:
+     "S >| u \<Longrightarrow> Rep_cfun f ` S >| f \<cdot> u"
+  apply (rule is_lbI)
+  apply (erule imageE)
+  by (metis monofun_cfun_arg is_lbD)
+
+lemma (in approx_chain) lub_approx_arg: "(\<Squnion>i. approx i \<cdot> u ) = u"
+  by (metis chain_approx lub_ID_reach lub_approx)
+
+instance Finite_Meet_bifinite_cpo \<subseteq> Nonempty_Meet_cpo
+proof (default)
+  from bifinite obtain approx :: "nat \<Rightarrow> 'a \<rightarrow> 'a" where "approx_chain approx" by auto
+  fix S
+  assume "(S :: 'a set) \<noteq> {}"
+  have "\<And>i. \<exists> l . Rep_cfun (approx i) ` S >>|l"
+    apply (rule finite_meet_exists)
+    using `S \<noteq> {}` apply auto[1]
+    using  finite_deflation.finite_range[OF approx_chain.finite_deflation_approx[OF `approx_chain approx`]]
+    by (metis (full_types) image_mono rev_finite_subset top_greatest)
+  then obtain Y where Y_is_glb: "\<And>i. Rep_cfun (approx i) ` S >>| Y i" by metis
+  
+  have "chain Y"
+    apply (rule chainI)
+    apply (subst is_glb_above_iff[OF Y_is_glb])
+    apply (rule is_lbI)
+    apply (erule imageE)
+    apply (erule ssubst)
+    apply (rule rev_below_trans[OF monofun_cfun_fun[OF chainE[OF approx_chain.chain_approx[OF `approx_chain approx`]]]])
+    apply (rule is_lbD[OF is_glbD1[OF Y_is_glb]])
+    apply (erule imageI)
+    done
+  
+  have "S >| Lub Y"
+  proof(rule is_lbI, rule lub_below[OF `chain Y`])
+    fix x i
+    assume "x \<in> S"
+    hence "Y i \<sqsubseteq> approx i \<cdot> x"
+      by (rule imageI[THEN is_lbD[OF is_glbD1[OF Y_is_glb]]])
+    also have "approx i \<cdot> x \<sqsubseteq> x"
+      by (rule  approx_chain.approx_below[OF `approx_chain approx`])
+    finally
+    show "Y i \<sqsubseteq> x".
+  qed
+
+  have "S >>| Lub Y"
+  proof (rule is_glbI[OF `S >| Lub Y`])
+    fix u
+    assume "S >| u"
+    hence "\<And> i. Rep_cfun (approx i) ` S >| approx i \<cdot> u"
+      by (rule is_ub_range)
+    hence "\<And> i.  approx i \<cdot> u \<sqsubseteq> Y i"
+      by (rule is_glbD2[OF Y_is_glb])
+    hence "(\<Squnion>i. approx i \<cdot> u ) \<sqsubseteq> Lub Y" 
+      by (rule lub_mono[OF
+            ch2ch_Rep_cfunL[OF approx_chain.chain_approx[OF `approx_chain approx`]]
+            `chain Y`
+            ])
+    thus "u \<sqsubseteq> Lub Y" 
+      by (metis approx_chain.lub_approx_arg[OF `approx_chain approx`])
+  qed
+  thus "\<exists>x. S >>| x"..
+qed
 
 end
