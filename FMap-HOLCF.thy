@@ -515,6 +515,34 @@ lemma fmap_update_upd_swap:
   apply (auto)
   done
 
+(* A definition of fmap_meep that requires compatible fmaps *)
+
+lift_definition fmap_meet :: "('a, 'b::po) fmap \<Rightarrow> ('a, 'b) fmap  \<Rightarrow> ('a, 'b) fmap"
+  is "\<lambda>m1 m2 x. (
+    case m1 x of
+      Some x1 \<Rightarrow> case m2 x of
+        Some x2 => Some (lub {x1,x2})
+        | None => Some x1
+      | None \<Rightarrow> m2 x 
+     )"
+  apply (rule_tac B = "dom fun1 \<union> dom fun2" in  finite_subset)
+  by (auto simp add: map_def split add: option.split_asm)
+
+lemma fdom_fmap_meet[simp]: "fdom (fmap_meet m1 m2) = fdom m1 \<union> fdom m2"
+  by (transfer, auto simp add: dom_def split:option.split)
+
+lemma [simp]: "fmap_meet \<rho> fempty = \<rho>"
+  by (transfer, auto split:option.split)
+
+lemma [simp]: "fmap_meet fempty \<rho> = \<rho>"
+  by (transfer, auto split:option.split)
+
+definition compatible :: "'a::po \<Rightarrow> 'a \<Rightarrow> bool"
+  where "compatible x y = (\<exists> z. {x, y} <<| z)"
+
+definition compatible_fmap :: "('a, 'b::po) fmap  \<Rightarrow> ('a, 'b) fmap \<Rightarrow> bool"
+  where "compatible_fmap m1 m2 = (\<forall> z \<in> fdom m1 \<inter> fdom m2 . compatible (the (lookup m1 z)) (the (lookup m2 z)))"
+
 
 lift_definition fmap_extend :: "('a, 'b::pcpo) fmap \<Rightarrow> 'a set  \<Rightarrow> ('a, 'b) fmap"
   is "\<lambda> m1 S. (if finite S then (\<lambda> x. if x \<in> S then Some \<bottom> else m1 x) else empty)"
