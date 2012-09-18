@@ -25,12 +25,15 @@ theorem correctness:
   using assms
 proof(nominal_induct avoiding: \<rho>  rule:reds.strong_induct)
 print_cases
-case (Lambda \<Gamma> x e)
+case Lambda
+  print_cases
   case 1 show ?case by simp
   case 2 show ?case by simp
 next
 
-case (Application y \<Gamma> e x L \<Delta> \<Theta> z e') case 1
+case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' \<rho>)
+
+  case 1
   have "\<lbrakk> App e x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> \<down>Fn \<lbrakk> Var x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
     by simp also
   have "... = \<lbrakk> Lam [y]. e' \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub> \<down>Fn \<lbrakk> Var x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
@@ -55,14 +58,15 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
   have xnot2: "x \<notin> fst ` set \<Delta>" sorry
 
   case 2
-  have "\<lbrace>\<Gamma>\<rbrace>\<rho> = \<lbrace>(x,e) # removeAll (x,e) \<Gamma>\<rbrace>\<rho>" sorry also
+  have "\<lbrace>\<Gamma>\<rbrace>\<rho> = \<lbrace>(x,e) # removeAll (x,e) \<Gamma>\<rbrace>\<rho>" sorry also (* Distinctness and reordering lemma needed *)
   have "... = fix1 (fmap_bottom (fdom \<rho> \<union> fst ` set ((x, e) # removeAll (x, e) \<Gamma>)))
                    (\<Lambda> \<rho>'a. fmap_update \<rho>
                             (fmap_restr (fst ` set (removeAll (x, e) \<Gamma>)) (\<lbrace>removeAll (x, e) \<Gamma>\<rbrace>\<rho>'a)(x f\<mapsto> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'a\<^esub>)))"                           
-    by (rule iterative_HSem[OF xnot1]) also
+    by (rule iterative_HSem[OF xnot1]) also (* Alternative definition needs to be proven *)
   have "... = fix1 (fmap_bottom (fdom \<rho> \<union> fst ` set ((x, e) # removeAll (x, e) \<Gamma>)))
                    (\<Lambda> \<rho>'a. fmap_update \<rho>
-                            (fmap_restr (fst ` set (removeAll (x, e) \<Gamma>)) (\<lbrace>removeAll (x, e) \<Gamma>\<rbrace>\<rho>'a)(x f\<mapsto> \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>removeAll (x, e) \<Gamma>\<rbrace>\<rho>'a\<^esub>)))" sorry also
+                            (fmap_restr (fst ` set (removeAll (x, e) \<Gamma>)) (\<lbrace>removeAll (x, e) \<Gamma>\<rbrace>\<rho>'a)(x f\<mapsto> \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>removeAll (x, e) \<Gamma>\<rbrace>\<rho>'a\<^esub>)))"
+    sorry also (* Unfolding a bit under the fixed point, as in 5.2.1 *)
   have "... = fix1 (fmap_bottom (fdom \<rho> \<union> fst ` set ((x, e) # removeAll (x, e) \<Gamma>)))
                    (\<Lambda> \<rho>'a. fmap_update \<rho>
                             (fmap_restr (fst ` set (removeAll (x, e) \<Gamma>)) (\<lbrace>removeAll (x, e) \<Gamma>\<rbrace>\<rho>'a)(x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>'a\<^esub>)))"
@@ -71,29 +75,34 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
                    (\<Lambda> \<rho>'a. fmap_update \<rho>
                             (fmap_restr (fst ` set (removeAll (x, e) \<Gamma>)) (\<lbrace>\<Delta>\<rbrace>\<rho>'a)(x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>'a\<^esub>)))"
     using Variable.hyps(4)
+    (* \<le> and fix1 *)
     sorry also
   have "... \<le> fix1 (fmap_bottom (fdom \<rho> \<union> fst ` set ((x, z) # \<Delta>) ))
                    (\<Lambda> \<rho>'a. fmap_update \<rho>
                             (fmap_restr (fst ` set \<Delta>) (\<lbrace>\<Delta>\<rbrace>\<rho>'a)(x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>'a\<^esub>)))"
+    (* Extending the domain *)
     sorry also
   have "... \<le> fix1 (fmap_bottom (fdom \<rho> \<union> fst ` set ((x, z) # \<Delta>) ))
                    (\<Lambda> \<rho>'a. fmap_update \<rho>
                             (fmap_restr (fst ` set \<Delta>) (\<lbrace>\<Delta>\<rbrace>\<rho>'a)(x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<rho>'a\<^esub>)))"
+    (* Again 5.2.1 *)
     sorry also
   have  "... = \<lbrace>(x, z) # \<Delta>\<rbrace>\<rho>"
     by (rule iterative_HSem[OF xnot2,symmetric])
   finally show part2: ?case.
+
   case 1
   have "\<lbrakk> Var x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = the (lookup (\<lbrace>\<Gamma>\<rbrace>\<rho>) x)" by simp also
   have "... = the (lookup (\<lbrace>(x, z) # \<Delta>\<rbrace>\<rho>) x)"
-    using part2 sorry also
+    using part2 (* Definition of \<le> and existence of x in \<Gamma> *)
+    sorry also
   have "... = \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>(x,z) # \<Delta>\<rbrace>\<rho>\<^esub>"
     by (subst HSem_unroll, auto)
   finally show ?case.
 next
 
 case (Let as \<Gamma> L body \<Delta> z \<rho>)
-  have "set (bn as) \<sharp>* \<rho>" sorry
+  have "set (bn as) \<sharp>* \<rho>" sorry (* Problem: How to achieve this? *)
   with `set (bn as) \<sharp>* \<Gamma>`
   have "set (bn as) \<sharp>* (\<lbrace>\<Gamma>\<rbrace>\<rho>)" sorry  
 
