@@ -445,11 +445,11 @@ lemma fmap_update_upd_swap:
 
 (* A definition of fmap_meep that requires compatible fmaps *)
 
-lift_definition fmap_meet :: "('a, 'b::po) fmap \<Rightarrow> ('a, 'b) fmap  \<Rightarrow> ('a, 'b) fmap"
+lift_definition fmap_meet :: "('a, 'b::pcpo) fmap \<Rightarrow> ('a, 'b) fmap  \<Rightarrow> ('a, 'b) fmap"
   is "\<lambda>m1 m2 x. (
     case m1 x of
       Some x1 \<Rightarrow> case m2 x of
-        Some x2 => Some (lub {x1,x2})
+        Some x2 => Some (x1 \<squnion> x2)
         | None => Some x1
       | None \<Rightarrow> m2 x 
      )"
