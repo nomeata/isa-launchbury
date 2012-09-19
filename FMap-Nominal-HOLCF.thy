@@ -73,16 +73,72 @@ lemma fix1_eqvt[simp,eqvt]:
   "\<pi> \<bullet> fix1 x f = fix1 (\<pi> \<bullet> x) (\<pi> \<bullet> f)"
 proof(cases "x \<sqsubseteq> f \<cdot> x")
   case True thus ?thesis
+  apply -
+  using [[show_types]] [[show_sorts]]
+  apply (rule parallel_fix1_ind)
+  apply auto[1]
   by -(rule parallel_fix1_ind, auto dest:cont2monofunE[OF perm_cont] simp add: Cfun_app_eqvt)
 next
   case False thus ?thesis
   unfolding fix1_def
   apply (subst if_not_P, assumption)
   apply (subst if_not_P)
-  apply (metis if_not_P Cfun_app_eqvt perm_cont_simp)
+  apply (metis Cfun_app_eqvt perm_cont_simp)
+  apply rule
+  done
+qed
+
+lemma funpow_eqvt[simp,eqvt]:
+  "\<pi> \<bullet> ((f :: 'a \<Rightarrow> 'a::pt) ^^ n) = (\<pi> \<bullet> f) ^^ (\<pi> \<bullet> n)"
+ apply (induct n)
+ find_theorems compow name:Nat
+ apply (auto simp add: permute_fun_def permute_pure)[1]
+ apply (auto simp add: permute_pure)
+ by (metis (no_types) eqvt_lambda permute_fun_app_eq)
+
+lemma chain_shift_funpow[simp]: 
+  "chain (\<lambda>i. (f ^^ i) x) \<Longrightarrow> chain (\<lambda>i. f ((f ^^ i) x))"
+proof-
+  have tmp: "\<And> i. f ((f ^^ i) x) = (f ^^ (Suc i)) x"
+    by (metis funpow.simps(2) o_apply)
+  show "chain (\<lambda>i. (f ^^ i) x) \<Longrightarrow> chain (\<lambda>i. f ((f ^^ i) x))"
+    apply (subst tmp)
+    by (rule chain_shift[of _ 1, simplified])
+qed
+
+lemma chainFrom_eqvt[simp,eqvt]:
+  "chainFrom f (x :: 'a :: cont_pt) \<Longrightarrow> chainFrom (\<pi> \<bullet> f) (\<pi> \<bullet> x)"
+  unfolding chainFrom_def
+  apply (auto simp only:funpow_eqvt[symmetric, simplified permute_pure] permute_fun_app_eq[symmetric] perm_cont_simp)
+  apply (subst Lub_eqvt[symmetric])
+  apply (rule cpo, rule chainI, auto)[1]
+  apply (subst Lub_eqvt[symmetric])
+  apply (rule cpo, rule chain_shift_funpow, rule chainI, auto)[1]
+  apply (auto simp only:funpow_eqvt[symmetric, simplified permute_pure] permute_fun_app_eq[symmetric] perm_cont_simp)
+  done  
+
+lemma fixR_eqvt[simp,eqvt]:
+  "\<pi> \<bullet> fixR (x::'a::cont_pt) f = fixR (\<pi> \<bullet> x) (\<pi> \<bullet> f)"
+proof(cases "chainFrom f x")
+  case True thus ?thesis
+  apply -
+  apply (rule parallel_fixR_ind)
+  apply auto[1]
+  apply assumption
+  apply (erule chainFrom_eqvt)
+  apply rule
+  apply (simp add: permute_fun_app_eq)
+  done
+next
+  case False thus ?thesis
+  unfolding fixR_def
+  apply (subst if_not_P, assumption)
+  apply (subst if_not_P)
+  apply (metis chainFrom_eqvt permute_minus_cancel(2))
   apply rule
   done
 qed  
+
 
 lemma finite_transfer[transfer_rule]: "(op = ===> op =) finite finite" 
   unfolding fun_rel_eq by (rule refl)
@@ -93,6 +149,28 @@ lemma fmap_bottom_eqvt:
 
 lemma fmap_update_eqvt[eqvt]:
   "\<pi> \<bullet> fmap_update m1 (m2 :: ('a::{cont_pt,cpo}, 'b::{cont_pt,cpo}) fmap) = fmap_update (\<pi> \<bullet> m1) (\<pi> \<bullet> m2)"
+  by (transfer, perm_simp, rule refl)
+
+(*
+lemma ex_perm:
+  "(\<exists> x. P (\<pi> \<bullet> x)) = (\<exists> x. P x)"
+  by (metis eqvt_bound)
+*)
+
+lemma meet_eqvt[simp,eqvt]:
+  "\<pi> \<bullet> meet (x::'a::{cont_pt,pcpo}) y = meet (\<pi> \<bullet> x) (\<pi> \<bullet> y)"
+proof (cases "\<exists> z. {x, y} <<| z")
+case False
+  hence "\<not> (\<exists> z. {\<pi> \<bullet> x, \<pi> \<bullet> y} <<| z)" by (metis perm_is_lub_simp empty_eqvt insert_eqvt eqvt_bound)
+  thus ?thesis using False unfolding meet_def by auto
+next
+case True
+  hence "\<exists> z. {\<pi> \<bullet> x, \<pi> \<bullet> y} <<| z" by (metis perm_is_lub_simp empty_eqvt insert_eqvt)
+  thus ?thesis using True unfolding meet_def by (auto simp add: empty_eqvt insert_eqvt)
+qed
+
+lemma fmap_meet_eqvt[eqvt]:
+  "\<pi> \<bullet> fmap_meet m1 (m2 :: ('a::{pt}, 'b::{cont_pt, pcpo}) fmap) = fmap_meet (\<pi> \<bullet> m1) (\<pi> \<bullet> m2)"
   by (transfer, perm_simp, rule refl)
 
 end
