@@ -69,9 +69,20 @@ next
   thus "the (lookup (\<pi> \<bullet> (\<Squnion> i. Y i)) x) \<sqsubseteq> the (lookup (\<Squnion> i. \<pi> \<bullet> Y i) x)" by auto
 qed
 
-lemma fix1_eqvt:
-  "x \<sqsubseteq> f\<cdot>x \<Longrightarrow> \<pi> \<bullet> fix1 x f = fix1 (\<pi> \<bullet> x) (\<pi> \<bullet> f)"
-  by (rule parallel_fix1_ind)(auto dest:cont2monofunE[OF perm_cont] simp add: Cfun_app_eqvt)
+lemma fix1_eqvt[simp,eqvt]:
+  "\<pi> \<bullet> fix1 x f = fix1 (\<pi> \<bullet> x) (\<pi> \<bullet> f)"
+proof(cases "x \<sqsubseteq> f \<cdot> x")
+  case True thus ?thesis
+  by -(rule parallel_fix1_ind, auto dest:cont2monofunE[OF perm_cont] simp add: Cfun_app_eqvt)
+next
+  case False thus ?thesis
+  unfolding fix1_def
+  apply (subst if_not_P, assumption)
+  apply (subst if_not_P)
+  apply (metis if_not_P Cfun_app_eqvt perm_cont_simp)
+  apply rule
+  done
+qed  
 
 lemma finite_transfer[transfer_rule]: "(op = ===> op =) finite finite" 
   unfolding fun_rel_eq by (rule refl)
