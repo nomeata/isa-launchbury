@@ -1,5 +1,5 @@
 theory "FMap-HOLCF"
-  imports FMap "HOLCF-Binary-Meet" "Fix1"
+  imports FMap "HOLCF-Binary-Meet" "Fix1" "FixRestr"
 begin
 
 default_sort type
@@ -333,6 +333,26 @@ lemma fdom_fix1[simp]: assumes "x \<sqsubseteq> F\<cdot>x" shows "fdom (fix1 x F
   apply (rule fix1_ind[OF fdom_pred_adm refl assms])
   using  fmap_below_dom[OF monofun_cfun_arg[of x _ F]]  fmap_below_dom[OF assms]
   by auto
+
+lemma fdom_chainFrom_funpow[simp]: "chainFrom F x ==> fdom ((F^^i) x) = fdom x"
+  apply (induct i)
+  apply simp
+  by (metis FixRestr.iterate_stays_above fmap_below_dom)
+
+lemma fdom_chainFrom_funpow2[simp]: "chainFrom F x ==> fdom (F ((F^^i) x)) = fdom x"
+  by (metis fdom_chainFrom_funpow funpow.simps(2) o_apply)
+
+lemma fdom_fixR[simp]: assumes "chainFrom F x" shows "fdom (fixR x F) = fdom x"
+  apply (rule fixR_ind[OF fdom_pred_adm refl assms])
+  by (simp add: fdom_chainFrom_funpow2[OF assms])
+
+lemma fixR_cong: 
+  assumes "chainFrom F a" and "chainFrom G a"
+      and "\<And> x. fdom x = fdom a \<Longrightarrow> F x = G x"
+  shows "fixR a F = fixR a G"
+  apply (rule parallel_fixR_ind[OF _ assms(1) assms(2) refl])
+  apply auto[1]
+  by (metis fmap_below_dom assms(3))
 
 lemma fix1_cong: 
   assumes "a \<sqsubseteq> F \<cdot> a" and "a \<sqsubseteq> G \<cdot> a"
