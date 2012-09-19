@@ -1,6 +1,6 @@
 theory "Nominal-HOLCF"
 imports
-  "Nominal/Nominal/Nominal2" "~~/src/HOL/HOLCF/HOLCF"
+  "Nominal/Nominal/Nominal2" "Nominal-Utils" "~~/src/HOL/HOLCF/HOLCF"
 begin
 
 class cont_pt = 
@@ -58,6 +58,11 @@ qed
 lemma lub_eqvt[simp]:
   "(\<exists> z. S <<| (z::'a::{cont_pt})) \<Longrightarrow> \<pi> \<bullet> lub S = lub (\<pi> \<bullet> S)"
   by (metis lub_eqI perm_is_lub_simp)
+
+lemma Lub_eqvt: "(\<exists> z. range F <<| z) \<Longrightarrow> \<pi> \<bullet> (\<Squnion> n ::nat. ((F n) :: 'a :: cont_pt)) = (\<Squnion> n. \<pi> \<bullet> (F n))"
+  apply (subst lub_eqvt, assumption)
+  apply (metis permute_set_eq_image range_composition)
+  done
 
 instantiation "cfun" :: (cont_pt, cont_pt) pt
 begin
