@@ -151,11 +151,33 @@ lemma fmap_update_eqvt[eqvt]:
   "\<pi> \<bullet> fmap_update m1 (m2 :: ('a::{cont_pt,cpo}, 'b::{cont_pt,cpo}) fmap) = fmap_update (\<pi> \<bullet> m1) (\<pi> \<bullet> m2)"
   by (transfer, perm_simp, rule refl)
 
-(*
-lemma ex_perm:
-  "(\<exists> x. P (\<pi> \<bullet> x)) = (\<exists> x. P x)"
+lemma compatible_eqvt[eqvt]:
+  "compatible x y \<Longrightarrow> compatible (\<pi> \<bullet> (x::'a::cont_pt)) (\<pi> \<bullet> y)"
+  unfolding compatible_def
+  apply (erule exE)
+  apply (drule perm_is_lub_eqvt[of _ _ \<pi>])
+  apply (simp only: insert_eqvt empty_eqvt)
+  apply (erule exI)
+  done
+
+lemma permute_under_all:
+  "(\<forall> x . P (\<pi> \<bullet> x)) \<Longrightarrow> (\<forall> x. P x)"
   by (metis eqvt_bound)
-*)
+
+lemma permute_under_ball:
+  "(\<forall> x \<in> (- \<pi> \<bullet> S). P (\<pi> \<bullet> x)) \<Longrightarrow> (\<forall> x \<in> S . P x)"
+  by (metis mem_eqvt permute_minus_cancel(1) permute_pure) 
+
+lemma compatible_fmap_eqvt[eqvt]:
+  "compatible_fmap m1 (m2 :: ('a::pt, 'b::cont_pt) fmap) \<Longrightarrow> compatible_fmap (\<pi> \<bullet> m1) (\<pi> \<bullet> m2)"
+  unfolding compatible_fmap_def
+  apply (rule permute_under_ball[of \<pi>])
+  apply rule
+  apply (simp add: inter_eqvt)
+  apply (erule_tac x = z in ballE)
+  apply (simp only: the_lookup_eqvt[symmetric] compatible_eqvt)
+  apply auto
+  done
 
 lemma meet_eqvt[simp,eqvt]:
   "\<pi> \<bullet> meet (x::'a::{cont_pt,pcpo}) y = meet (\<pi> \<bullet> x) (\<pi> \<bullet> y)"
