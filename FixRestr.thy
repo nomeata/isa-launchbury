@@ -42,7 +42,7 @@ lemma fix_eq: "chainFrom F x \<Longrightarrow> fixR x F = F (fixR x F)"
   apply (simp add: chain_def)
   done
 
-lemma fixR_ind: "\<lbrakk> adm P; P x; chainFrom F x; \<And>y. \<lbrakk>x \<sqsubseteq> y ; P y\<rbrakk> \<Longrightarrow> P (F y) \<rbrakk> \<Longrightarrow> P (fixR x F)"
+lemma fixR_ind: "\<lbrakk> adm P; P x; chainFrom F x; \<And>i. \<lbrakk>x \<sqsubseteq> (F^^i) x ; P ((F^^i) x)\<rbrakk> \<Longrightarrow> P (F ((F^^i) x)) \<rbrakk> \<Longrightarrow> P (fixR x F)"
   unfolding fixR_def
   apply (subst if_P, assumption)
   apply (erule admD)
