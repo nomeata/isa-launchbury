@@ -15,12 +15,35 @@ class discr_pt =
 instance discr_pt \<subseteq> cont_pt
  by (default, auto)
 
+lemma perm_rel_lemma:
+  assumes "\<And> \<pi> x y. r (\<pi> \<bullet> x) (\<pi> \<bullet> y) \<Longrightarrow> r x y"
+  shows "r (\<pi> \<bullet> x) (\<pi> \<bullet> y) \<longleftrightarrow> r x y" (is "?l \<longleftrightarrow> ?r")
+proof
+  show "?l \<Longrightarrow> ?r" by fact
+next
+  assume "r x y"
+  hence "r (- \<pi> \<bullet> \<pi> \<bullet> x) (- \<pi> \<bullet> \<pi> \<bullet> y)" by simp
+  thus "?l" by (rule assms)
+qed
 
 lemma (in cont_pt) perm_cont_simp[simp]: "\<pi> \<bullet> x \<sqsubseteq> \<pi> \<bullet> y \<longleftrightarrow> x \<sqsubseteq> y"
   apply rule
   apply (drule cont2monofunE[OF perm_cont, of _ _ "-\<pi>"], simp)[1]
   apply (erule cont2monofunE[OF perm_cont, of _ _ "\<pi>"])
   done
+
+lemma perm_is_ub_simp[simp]: "\<pi> \<bullet> S <| \<pi> \<bullet> (x::'a::{cont_pt}) \<longleftrightarrow> S <| x"
+  by (auto simp add: is_ub_def permute_set_def)
+
+lemma perm_is_ub_eqvt[simp,eqvt]: "S <| (x::'a::{cont_pt}) ==> \<pi> \<bullet> S <| \<pi> \<bullet> x"
+  by simp
+
+lemma perm_is_lub_simp[simp]: "\<pi> \<bullet> S <<| \<pi> \<bullet> (x::'a::{cont_pt}) \<longleftrightarrow> S <<| x"
+  apply (rule perm_rel_lemma)
+  by (metis is_lubI is_lubD1 is_lubD2 perm_cont_simp perm_is_ub_simp)
+
+lemma perm_is_lub_eqvt[simp,eqvt]: "S <<| (x::'a::{cont_pt}) ==> \<pi> \<bullet> S <<| \<pi> \<bullet> x"
+  by simp
 
 lemmas perm_cont2cont[simp,cont2cont] = cont_compose[OF perm_cont]
 
@@ -32,6 +55,9 @@ lemma perm_bottom[simp,eqvt]: "\<pi> \<bullet> \<bottom> = (\<bottom>::'a::{cont
   thus "\<pi> \<bullet> \<bottom> = (\<bottom>::'a::{cont_pt,pcpo})" by simp
 qed
 
+lemma lub_eqvt[simp]:
+  "(\<exists> z. S <<| (z::'a::{cont_pt})) \<Longrightarrow> \<pi> \<bullet> lub S = lub (\<pi> \<bullet> S)"
+  by (metis lub_eqI perm_is_lub_simp)
 
 instantiation "cfun" :: (cont_pt, cont_pt) pt
 begin
