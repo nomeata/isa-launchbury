@@ -17,7 +17,7 @@ next
   assume "x \<sqsubseteq> y" "y \<sqsubseteq> z"
   thus "x \<sqsubseteq> z"
   apply (auto simp add: below_fmap_def)
-  by (metis fdomIff option.simps(3) rev_below_trans the.simps)
+  by (metis rev_below_trans)
 next
   fix x y :: "('a, 'b) fmap"
   assume "x \<sqsubseteq> y" "y \<sqsubseteq> x"
