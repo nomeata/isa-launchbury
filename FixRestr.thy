@@ -185,4 +185,38 @@ lemma[simp]: "chainFrom (\<lambda>_. x) x"
 lemma[simp]: "(fixR x (\<lambda> _. x)) = x"
   by (rule fixR_ind, auto)
 
+(*
+lemma fix_least_below: "x \<sqsubseteq> F \<cdot> x \<Longrightarrow> x \<sqsubseteq> y \<Longrightarrow> F\<cdot>y \<sqsubseteq> y \<Longrightarrow> fix1 x F \<sqsubseteq> y"
+  apply (simp add: fix1_def)
+  apply (rule lub_below)
+  apply (erule chain_iterate_from)
+  apply (induct_tac i)
+  apply simp
+  apply simp
+  apply (erule rev_below_trans) back
+  apply (erule monofun_cfun_arg)
+  done
+
+lemmas start_below_fix1[simp] = iterate_below_fix[where n = 0, simplified]
+
+lemma fix1_alt_start:
+  assumes "x \<sqsubseteq> y" and "y \<sqsubseteq> F \<cdot> x"
+  shows "fix1 x F = fix1 y F"
+proof(rule below_antisym)
+  have "x \<sqsubseteq> F \<cdot> x" using assms by (metis below.r_trans)
+  have "y \<sqsubseteq> F \<cdot> y" using assms by (metis monofun_cfun_arg rev_below_trans)
+  show "fix1 x F \<sqsubseteq> fix1 y F"
+    by (rule parallel_fix1_ind[OF _ `x \<sqsubseteq> F \<cdot> x` `y \<sqsubseteq> F \<cdot> y`], auto intro: monofun_cfun_arg assms(1))
+  show "fix1 y F \<sqsubseteq> fix1 x F"
+    apply (rule fix_least_below[OF `y \<sqsubseteq> F \<cdot> y`])    
+    apply (subst fix_eq[OF `x \<sqsubseteq> F\<cdot>x`])
+    apply (rule below_trans[OF  `y \<sqsubseteq> F \<cdot> x`])
+    apply (rule monofun_cfun_arg)
+    apply (rule start_below_fix1[OF `x \<sqsubseteq> F\<cdot>x`])
+    apply (subst fix_eq[OF `x \<sqsubseteq> F\<cdot>x`, symmetric])
+    apply (rule below_refl)
+    done
+qed
+*)
+
 end

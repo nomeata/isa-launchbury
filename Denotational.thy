@@ -177,37 +177,6 @@ lemma HSem_def'': "\<lbrace>\<Gamma>\<rbrace>\<rho> = fix1 (fmap_update \<rho> (
   apply (rule parallel_fix1_ind)
   by (auto intro: cont2monofunE[OF fmap_update_cont2])
 
-lemma fix_least_below: "x \<sqsubseteq> F \<cdot> x \<Longrightarrow> x \<sqsubseteq> y \<Longrightarrow> F\<cdot>y \<sqsubseteq> y \<Longrightarrow> fix1 x F \<sqsubseteq> y"
-  apply (simp add: fix1_def)
-  apply (rule lub_below)
-  apply (erule chain_iterate_from)
-  apply (induct_tac i)
-  apply simp
-  apply simp
-  apply (erule rev_below_trans) back
-  apply (erule monofun_cfun_arg)
-  done
-
-lemmas start_below_fix1[simp] = iterate_below_fix[where n = 0, simplified]
-
-lemma fix1_alt_start:
-  assumes "x \<sqsubseteq> y" and "y \<sqsubseteq> F \<cdot> x"
-  shows "fix1 x F = fix1 y F"
-proof(rule below_antisym)
-  have "x \<sqsubseteq> F \<cdot> x" using assms by (metis below.r_trans)
-  have "y \<sqsubseteq> F \<cdot> y" using assms by (metis monofun_cfun_arg rev_below_trans)
-  show "fix1 x F \<sqsubseteq> fix1 y F"
-    by (rule parallel_fix1_ind[OF _ `x \<sqsubseteq> F \<cdot> x` `y \<sqsubseteq> F \<cdot> y`], auto intro: monofun_cfun_arg assms(1))
-  show "fix1 y F \<sqsubseteq> fix1 x F"
-    apply (rule fix_least_below[OF `y \<sqsubseteq> F \<cdot> y`])    
-    apply (subst fix_eq[OF `x \<sqsubseteq> F\<cdot>x`])
-    apply (rule below_trans[OF  `y \<sqsubseteq> F \<cdot> x`])
-    apply (rule monofun_cfun_arg)
-    apply (rule start_below_fix1[OF `x \<sqsubseteq> F\<cdot>x`])
-    apply (subst fix_eq[OF `x \<sqsubseteq> F\<cdot>x`, symmetric])
-    apply (rule below_refl)
-    done
-qed
 
 lemma HSem_def''': "\<lbrace>\<Gamma>\<rbrace>\<rho> = fix1 ((fmap_bottom (fdom \<rho> \<union> fst ` set \<Gamma>))) (\<Lambda> \<rho>'. fmap_update \<rho> (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)))"
   unfolding HSem_def''
@@ -223,7 +192,6 @@ lemma [simp]:"fdom (\<lbrace>\<Gamma>\<rbrace>\<rho>) = fdom \<rho> \<union> fst
 
 lemma [simp]: "x \<notin> fst ` set \<Gamma> \<Longrightarrow> lookup (\<lbrace>\<Gamma>\<rbrace>\<rho>) x = lookup \<rho> x"
   unfolding HSem_def' by auto
-
 
 
 lift_definition fmap_restr :: "'a set \<Rightarrow> ('a, 'b) fmap => ('a, 'b) fmap"
@@ -295,44 +263,6 @@ lemma tmp:"fmap_update \<rho> ((iterate i F) \<cdot> x) = (iterate i (\<Lambda> 
 lemmas tmp2 =  cont2contlubE[of "\<lambda> y. (iterate i (\<Lambda> \<rho>'. fmap_update \<rho> ((y)(x f\<mapsto> G \<rho>'))))\<cdot>x0", standard]
 thm tmp2
 
-
-lemma fix1_mono: "x \<sqsubseteq> F\<cdot>x \<Longrightarrow> x \<sqsubseteq> G\<cdot>x \<Longrightarrow>(\<And> y. x \<sqsubseteq> y \<Longrightarrow> F\<cdot>y \<sqsubseteq> G\<cdot>y) \<Longrightarrow> fix1 x F \<sqsubseteq> fix1 x G"
-  apply (rule parallel_fix1_ind)
-  apply auto
-  by (metis monofun_cfun_arg rev_below_trans)
-
-lemma fix_eq_start: assumes "x \<sqsubseteq> F \<cdot> x" shows "fix1 (F \<cdot> x) F = fix1 x F"
-proof-
-  have "fix1 (F \<cdot> x) F = (\<Squnion> i . iterate i F \<cdot> (F \<cdot> x))" unfolding fix1_def by rule also
-  have "... = (\<Squnion> i . iterate (Suc i) F \<cdot> x)" by (subst iterate_Suc2, rule refl) also
-  have "... = (\<Squnion> i . iterate i  F \<cdot> x)"
-    apply (rule lub_range_shift[where j = 1, simplified])
-    apply (rule chain_iterate_from[OF assms])
-    done also
-    have "... = fix1 x F" unfolding fix1_def by rule finally
-  show ?thesis.
-qed
-  
-
-lemma fix1_mono_strong: "x \<sqsubseteq> F\<cdot>x \<Longrightarrow> x \<sqsubseteq> G\<cdot>x \<Longrightarrow>
-  (\<And> y. x \<sqsubseteq> y \<Longrightarrow> F \<cdot> x \<sqsubseteq> y \<Longrightarrow> F\<cdot>y \<sqsubseteq> G\<cdot>y)
-  \<Longrightarrow> fix1 x F \<sqsubseteq> fix1 x G"
-  sorry
-(*
-  apply (subst fix_eq_start[symmetric])
-  apply assumption
-  apply (rule parallel_fix1_ind)
-  apply auto[1]
-find_theorems name:cfun  name:mono
-  apply(erule monofun_cfun_arg)
-  apply assumption
-  
-  apply(erule monofun_cfun_arg)
-  
-  apply (rule fix1_mono)
-*)
-
-definition compatible where "compatible x F = (x \<sqsubseteq> fmap_update x (F x))"
 
 lemma  fmap_update_belowI:
   assumes "fdom x \<union> fdom y = fdom z"
