@@ -249,13 +249,6 @@ lemmas fmap_restr_cont2cont[simp,cont2cont] = cont_compose[OF fmap_restr_cont]
 
 
 
-lemma fmap_upd_overwrite[simp]: "f (x f\<mapsto> y) (x f\<mapsto> z) = f (x f\<mapsto> z)"
-  by (transfer, auto) 
-
-lemma fmap_update_rho[simp]: "fmap_update \<rho> (fmap_update \<rho> x) = fmap_update \<rho> x"
-  by (transfer, auto split add: option.split)
-
-
 lemma fmap_upd_fix1: 
   assumes above: "x0 \<sqsubseteq> F\<cdot>x0"
     and permute: "\<And>z. (F\<cdot>z)(x f\<mapsto> y) = F\<cdot>(z(x f\<mapsto> y))"

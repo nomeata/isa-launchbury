@@ -31,6 +31,9 @@ lemma the_lookup_fmap_upd[simp]: "the (lookup (h (x f\<mapsto> v)) x) = v"
 lemma the_lookup_fmap_upd_other[simp]: "x' \<noteq> x \<Longrightarrow> the (lookup (h (x f\<mapsto> v)) x') = the (lookup h x')"
   by (transfer, auto)
 
+lemma fmap_upd_overwrite[simp]: "f (x f\<mapsto> y) (x f\<mapsto> z) = f (x f\<mapsto> z)"
+  by (transfer, auto) 
+
 lemma fdomIff: "(a : fdom m) = (lookup m a ~= None)"
  by (transfer, auto)
 

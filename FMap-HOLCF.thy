@@ -382,6 +382,9 @@ lemma lookup_fmap_update2[simp]:  "x \<notin> fdom m2 \<Longrightarrow> lookup (
 lemma [simp]: "fmap_update \<rho> fempty = \<rho>"
   by (transfer, auto)
 
+lemma fmap_update_rho[simp]: "fmap_update \<rho> (fmap_update \<rho> x) = fmap_update \<rho> x"
+  by (transfer, auto split add: option.split)
+
 lemma fmap_update_cont1: "cont (\<lambda> x. fmap_update x (m::('a, 'b::cpo) fmap))"
 proof(rule fmap_contI)
   fix x y :: "('a, 'b::cpo) fmap"
