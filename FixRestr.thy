@@ -94,6 +94,85 @@ proof -
     by (simp add: fixR_def)
 qed
 
+definition
+  adm_on :: "('a set) \<Rightarrow> ('a::cpo => bool) \<Rightarrow> bool" where
+  "adm_on S P = (\<forall>Y. (\<forall>i. Y i \<in> S) \<longrightarrow> chain Y \<longrightarrow> (\<forall>i. P (Y i)) \<longrightarrow> P (\<Squnion>i. Y i))"
+
+
+definition
+  chain_on :: "('a set) \<Rightarrow> ('a => 'a) => 'a => bool" where
+  "chain_on S F x = ((\<forall>i. (F^^i) x \<in> S) \<and> (\<Squnion>i. (F^^i) x) \<in> S)"
+
+lemma chain_on_funpow:
+  "chain_on S F x \<Longrightarrow> (F^^i) x \<in> S" unfolding chain_on_def by auto
+
+lemma adm_onD:
+  assumes "adm_on S P"
+  and "\<And>i. Y i \<in> S"
+  and "chain Y"
+  and"\<And>i. P (Y i)"
+  shows "P (\<Squnion>i. Y i)"
+using assms
+unfolding adm_on_def by auto
+
+lemma adm_on_iterD: 
+  assumes "adm_on S P"
+  and "chain_on S F x"
+  and "chainFrom F x"
+  and P: "\<And>i. P ((F^^i) x)"
+  shows "P (\<Squnion>i. (F^^i) x)"
+proof-
+  from `chain_on S F x` have "\<forall>i. (F^^i) x \<in> S" unfolding chain_on_def by auto
+  moreover
+  from `chainFrom F x` have "chain (\<lambda>i. (F^^i) x)" by (metis chainFrom_chain)
+  ultimately
+  show ?thesis using `adm_on S P` unfolding adm_on_def
+    using P by metis
+qed
+
+
+lemma parallel_fixR_ind_on:
+  assumes adm: "adm_on (S1 \<times> S2) (\<lambda>x. P (fst x) (snd x))"
+  assumes aboveF: "chainFrom F x1"
+  assumes chainF: "chain_on S1 F x1"
+  assumes aboveG: "chainFrom G x2"
+  assumes chainG: "chain_on S2 G x2"
+  assumes base: "P x1 x2"
+  assumes step: "!!y z. \<lbrakk> y \<in> S1 ; z \<in> S2; P y z \<rbrakk> \<Longrightarrow> P (F y) (G z)"
+  shows "P (fixR x1 F) (fixR x2 G)"
+proof -
+  from adm have adm': "adm_on (S1 \<times> S2) (split P)"
+    unfolding split_def .
+  { fix i
+    have "P ((F^^i) x1) ((G^^i) x2)"
+    proof(induct i)
+    case 0 thus ?case by (simp add: base)
+    next
+    case (Suc i)
+      have "((F ^^ i) x1) \<in> S1" by (rule chain_on_funpow[OF chainF])
+      moreover
+      have "((G ^^ i) x2) \<in> S2" by (rule chain_on_funpow[OF chainG])
+      ultimately
+      show ?case using Suc by (simp add: step)
+    qed
+  }
+  hence "!!i. split P ((F^^i) x1, (G^^i) x2)"
+    by simp
+  hence "split P (\<Squnion>i. ((F^^i) x1, (G^^i) x2))"
+    apply -
+    apply (rule adm_onD [OF adm'])
+    apply (auto intro: ch2ch_Pair simp add: chainFrom_chain[OF aboveF] chainFrom_chain[OF aboveG] chain_on_funpow[OF chainF] chain_on_funpow[OF chainG])
+    done
+  hence "split P (\<Squnion>i. ((F^^i) x1), \<Squnion>i. (G^^i) x2)"
+    by (simp add: lub_Pair chainFrom_chain[OF aboveF] chainFrom_chain[OF aboveG])
+  hence "P (\<Squnion>i. (F^^i) x1) (\<Squnion>i. (G^^i) x2)"
+    by simp
+  thus "P (fixR x1 F) (fixR x2 G)"
+    using aboveF aboveG
+    by (simp add: fixR_def)
+qed
+
+
 (*
 lemma fix1_cont2cont[simp,cont2cont]:"\<lbrakk> cont F ; cont G ; \<And> y. G y \<sqsubseteq> (F y) \<cdot> (G y) \<rbrakk> \<Longrightarrow> cont (\<lambda>y. fix1 (G y) (F y))"
   unfolding fix1_def by auto
@@ -102,7 +181,6 @@ lemma fix1_cont2cont[simp,cont2cont]:"\<lbrakk> cont F ; cont G ; \<And> y. G y 
 lemma[simp]: "chainFrom (\<lambda>_. x) x"
   unfolding chainFrom_def
   by (metis funpow_swap1 lub_const po_eq_conv)
-
 
 lemma[simp]: "(fixR x (\<lambda> _. x)) = x"
   by (rule fixR_ind, auto)
