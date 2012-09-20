@@ -468,12 +468,24 @@ lemma [simp]: "fmap_meet \<rho> fempty = \<rho>"
 lemma [simp]: "fmap_meet fempty \<rho> = \<rho>"
   by (transfer, auto split:option.split)
 
-definition compatible :: "'a::po \<Rightarrow> 'a \<Rightarrow> bool"
-  where "compatible x y = (\<exists> z. {x, y} <<| z)"
+lift_definition compatible_fmap :: "('a, 'b::pcpo) fmap  \<Rightarrow> ('a, 'b) fmap \<Rightarrow> bool"
+  is "\<lambda> m1 m2 . (\<forall> z \<in> dom m1 \<inter> dom m2 . compatible (the (m1 z)) (the (m2 z)))"..
 
-definition compatible_fmap :: "('a, 'b::po) fmap  \<Rightarrow> ('a, 'b) fmap \<Rightarrow> bool"
-  where "compatible_fmap m1 m2 = (\<forall> z \<in> fdom m1 \<inter> fdom m2 . compatible (the (lookup m1 z)) (the (lookup m2 z)))"
+lemma compatible_fmap_def':
+  "compatible_fmap m1 m2 = (\<forall> z \<in> fdom m1 \<inter> fdom m2 . compatible (the (lookup m1 z)) (the (lookup m2 z)))"
+  apply transfer..
 
+lemma [simp]:
+  "compatible_fmap fempty \<rho>" 
+  "compatible_fmap \<rho> fempty"
+  by (transfer, simp)+
+
+lemma fmap_meet_rho[simp]:
+  "compatible_fmap \<rho> x \<Longrightarrow> fmap_meet \<rho> (fmap_meet \<rho> x) = fmap_meet \<rho> x"
+  apply (transfer)
+  apply rule
+  apply (case_tac "\<rho> xa", case_tac "x xa")
+  by (auto simp add: domIff Ball_def split add:option.split)
 
 lift_definition fmap_extend :: "('a, 'b::pcpo) fmap \<Rightarrow> 'a set  \<Rightarrow> ('a, 'b) fmap"
   is "\<lambda> m1 S. (if finite S then (\<lambda> x. if x \<in> S then Some \<bottom> else m1 x) else empty)"

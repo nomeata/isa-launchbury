@@ -152,7 +152,7 @@ lemma fmap_update_eqvt[eqvt]:
   by (transfer, perm_simp, rule refl)
 
 lemma compatible_eqvt[eqvt]:
-  "compatible x y \<Longrightarrow> compatible (\<pi> \<bullet> (x::'a::cont_pt)) (\<pi> \<bullet> y)"
+  "compatible x y \<Longrightarrow> compatible (\<pi> \<bullet> (x::'a::{cont_pt,pcpo})) (\<pi> \<bullet> y)"
   unfolding compatible_def
   apply (erule exE)
   apply (drule perm_is_lub_eqvt[of _ _ \<pi>])
@@ -169,8 +169,8 @@ lemma permute_under_ball:
   by (metis mem_eqvt permute_minus_cancel(1) permute_pure) 
 
 lemma compatible_fmap_eqvt[eqvt]:
-  "compatible_fmap m1 (m2 :: ('a::pt, 'b::cont_pt) fmap) \<Longrightarrow> compatible_fmap (\<pi> \<bullet> m1) (\<pi> \<bullet> m2)"
-  unfolding compatible_fmap_def
+  "compatible_fmap m1 (m2 :: ('a::pt, 'b::{cont_pt,pcpo}) fmap) \<Longrightarrow> compatible_fmap (\<pi> \<bullet> m1) (\<pi> \<bullet> m2)"
+  unfolding compatible_fmap_def'
   apply (rule permute_under_ball[of \<pi>])
   apply rule
   apply (simp add: inter_eqvt)
