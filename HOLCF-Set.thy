@@ -60,9 +60,35 @@ lemma monofun_onE:
   "[|monofun_on f; x\<in> S; y \<in> S; x \<sqsubseteq> y|] ==> f x \<sqsubseteq> f y"
 by (simp add: monofun_on_def)
 
+lemma monofun_onI: 
+  "[|\<And>x y. \<lbrakk> x \<in> S; y \<in> S; x \<sqsubseteq> y \<rbrakk> \<Longrightarrow> f x \<sqsubseteq> f y|] ==> monofun_on f"
+by (simp add: monofun_on_def)
+
+lemma cont_onE:
+  "[|cont_on f; chain_on Y|] ==> range (\<lambda>i. f (Y i)) <<| f (\<Squnion>i. Y i)"
+by (simp add: cont_on_def)
+
+lemma bin_chain_on: "\<lbrakk> x\<in>S; y\<in>S; x \<sqsubseteq> y\<rbrakk> \<Longrightarrow> chain_on (\<lambda>i. if i=0 then x else y)"
+  by (simp add: chain_on_def)
+
+lemma binchain_cont_on:
+  "\<lbrakk>cont_on f; x \<in> S; y \<in> S ; x \<sqsubseteq> y\<rbrakk> \<Longrightarrow> range (\<lambda>i::nat. f (if i = 0 then x else y)) <<| f y"
+apply (subgoal_tac "f (\<Squnion>i::nat. if i = 0 then x else y) = f y")
+apply (erule subst)
+apply (erule cont_onE)
+apply (erule (2) bin_chain_on)
+apply (rule_tac f=f in arg_cong)
+apply (erule is_lub_bin_chain [THEN lub_eqI])
+done
+
 lemma cont_on2mono_on:
   "cont_on F \<Longrightarrow> monofun_on F"
-  sorry
+apply (rule monofun_onI)
+apply (drule (3) binchain_cont_on)
+apply (drule_tac i=0 in is_lub_rangeD1)
+apply simp
+done
+
 
 lemma adm_onD:
   assumes "adm_on P"
@@ -120,11 +146,39 @@ interpretation subpcpo_syn S for S.
 
 lemma chain_on_product:
   assumes "chain_on S1 Y" and "chain_on S2 Z"
-  shows "chain_on (S1 \<times> S2) (\<lambda> i. (Y i, Z i))" sorry
+  shows "chain_on (S1 \<times> S2) (\<lambda> i. (Y i, Z i))"
+  using assms by (auto simp add: chain_on_def)
 
 lemma subpcpo_product:
   assumes "subpcpo S1" and "subpcpo S2"
-  shows "subpcpo (S1 \<times> S2)" sorry
+  shows "subpcpo (S1 \<times> S2)"
+proof-
+  interpret subpcpo S1 by fact
+  interpret s2!: subpcpo S2  by fact
+ 
+  { fix Y :: "nat \<Rightarrow> ('a \<times>'b)"
+    assume "chain Y"
+    hence "chain (\<lambda> i. (fst (Y i)))" and  "chain (\<lambda> i. (snd (Y i)))"
+      by (auto simp add: chain_def fst_monofun snd_monofun)
+    moreover
+    assume "\<And> i. Y i \<in> S1 \<times> S2"
+    hence "\<And> i. fst (Y i) \<in> S1" and  "\<And> i. snd (Y i) \<in> S2"
+      by (metis mem_Sigma_iff surjective_pairing)+
+    ultimately
+    have "(\<Squnion> i. fst (Y i)) \<in> S1" and "(\<Squnion> i. snd (Y i)) \<in> S2" using pcpo s2.pcpo by auto
+    hence "(\<Squnion> i. Y i) \<in> S1 \<times> S2" by (auto simp add: lub_prod[OF `chain Y`])
+  }
+  moreover
+  have "(bottom_of S1, bottom_of S2) \<in> S1 \<times> S2" by simp
+  moreover
+  { fix y
+    assume "y \<in> S1 \<times> S2"
+    hence "(bottom_of S1, bottom_of S2) \<sqsubseteq> y"
+      by (metis (full_types) Pair_below_iff bottom_of_minimal mem_Sigma_iff prod.exhaust s2.bottom_of_minimal)
+  }
+  ultimately
+  show ?thesis unfolding subpcpo_def by metis
+qed
 
 lemma parallel_fix_on_ind:
   assumes pcpo1: "subpcpo S1"
