@@ -88,14 +88,6 @@ next
   done
 qed
 
-lemma funpow_eqvt[simp,eqvt]:
-  "\<pi> \<bullet> ((f :: 'a \<Rightarrow> 'a::pt) ^^ n) = (\<pi> \<bullet> f) ^^ (\<pi> \<bullet> n)"
- apply (induct n)
- find_theorems compow name:Nat
- apply (auto simp add: permute_fun_def permute_pure)[1]
- apply (auto simp add: permute_pure)
- by (metis (no_types) eqvt_lambda permute_fun_app_eq)
-
 lemma chain_shift_funpow[simp]: 
   "chain (\<lambda>i. (f ^^ i) x) \<Longrightarrow> chain (\<lambda>i. f ((f ^^ i) x))"
 proof-

@@ -53,5 +53,12 @@ proof-
   thus ?thesis by simp
 qed
 
+lemma funpow_eqvt[simp,eqvt]:
+  "\<pi> \<bullet> ((f :: 'a \<Rightarrow> 'a::pt) ^^ n) = (\<pi> \<bullet> f) ^^ (\<pi> \<bullet> n)"
+ apply (induct n)
+ apply (auto simp add: permute_fun_def permute_pure)[1]
+ apply (auto simp add: permute_pure)
+ by (metis (no_types) eqvt_lambda permute_fun_app_eq)
+
 
 end
