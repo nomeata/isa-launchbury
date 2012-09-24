@@ -104,6 +104,15 @@ lemma Cfun_app_eqvt[eqvt]:
   unfolding permute_cfun_def
   by auto
 
+lemma chain_eqvt[eqvt]:
+  fixes F :: "nat \<Rightarrow> 'a::cont_pt"
+  shows "chain F \<Longrightarrow> chain (\<pi> \<bullet> F)"
+  apply (rule chainI)
+  apply (drule_tac i = i in chainE)
+  apply (subst (asm) perm_cont_simp[symmetric, where \<pi> = \<pi>])
+  by (metis permute_fun_app_eq permute_pure)
+
+
 (*
 lemma Rep_cfun_eqvt[eqvt]:
   "\<pi> \<bullet> (Rep_cfun f) = Rep_cfun (\<pi> \<bullet> f)"
