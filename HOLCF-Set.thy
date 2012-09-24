@@ -33,11 +33,16 @@ where
   "cont_on f = (\<forall>Y. chain_on Y --> range (\<lambda>i. f (Y i)) <<| f (\<Squnion>i. Y i))"
 
 definition
-  "fix_on" :: "('a \<Rightarrow> 'a) \<Rightarrow> 'a" where
-  "fix_on F = 
-    (if chain (\<lambda>i. (F^^i) bottom_of) \<and> subpcpo S
+  "fix_on'" :: "'a \<Rightarrow> ('a \<Rightarrow> 'a) \<Rightarrow> 'a" where
+  "fix_on' b F = 
+    (if chain (\<lambda>i. (F^^i) bottom_of) \<and> subpcpo S \<and> b = bottom_of
     then (\<Squnion>i. (F^^i) bottom_of)
-    else bottom_of)"
+    else b)"
+
+abbreviation fix_on where
+  "fix_on \<equiv> fix_on' (bottom_of)"
+
+lemmas fix_on_def = fix_on'_def
 
 definition 
   closed_on :: "('a::cpo => 'a::cpo) => bool"
