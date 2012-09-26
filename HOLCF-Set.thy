@@ -9,6 +9,13 @@ locale subpcpo =
   assumes pcpo: "(\<forall>Y. (chain Y \<longrightarrow> (\<forall> i. Y i \<in> S) \<longrightarrow> (\<Squnion> i. Y i) \<in> S))
           \<and>  (\<exists> z \<in> S. \<forall> y \<in> S. z \<sqsubseteq> y)"
 
+lemma subpcpoI:
+  assumes "\<And> Y. \<lbrakk> chain Y; \<And> i. Y i \<in> S \<rbrakk> \<Longrightarrow> (\<Squnion> i. Y i) \<in> S"
+  assumes "b \<in> S"
+  assumes "\<And> y. y \<in> S \<Longrightarrow> b \<sqsubseteq> y"
+  shows "subpcpo S"
+unfolding subpcpo_def by (metis assms)
+
 locale subpcpo_syn = 
   fixes S :: "'a set" 
 begin
@@ -152,32 +159,29 @@ lemma chain_on_product:
 lemma subpcpo_product:
   assumes "subpcpo S1" and "subpcpo S2"
   shows "subpcpo (S1 \<times> S2)"
-proof-
+proof(rule subpcpoI)
   interpret subpcpo S1 by fact
   interpret s2!: subpcpo S2  by fact
- 
-  { fix Y :: "nat \<Rightarrow> ('a \<times>'b)"
-    assume "chain Y"
-    hence "chain (\<lambda> i. (fst (Y i)))" and  "chain (\<lambda> i. (snd (Y i)))"
-      by (auto simp add: chain_def fst_monofun snd_monofun)
-    moreover
-    assume "\<And> i. Y i \<in> S1 \<times> S2"
-    hence "\<And> i. fst (Y i) \<in> S1" and  "\<And> i. snd (Y i) \<in> S2"
-      by (metis mem_Sigma_iff surjective_pairing)+
-    ultimately
-    have "(\<Squnion> i. fst (Y i)) \<in> S1" and "(\<Squnion> i. snd (Y i)) \<in> S2" using pcpo s2.pcpo by auto
-    hence "(\<Squnion> i. Y i) \<in> S1 \<times> S2" by (auto simp add: lub_prod[OF `chain Y`])
-  }
+{
+  fix Y :: "nat \<Rightarrow> ('a \<times>'b)"
+  assume "chain Y"
+  hence "chain (\<lambda> i. (fst (Y i)))" and  "chain (\<lambda> i. (snd (Y i)))"
+    by (auto simp add: chain_def fst_monofun snd_monofun)
   moreover
-  have "(bottom_of S1, bottom_of S2) \<in> S1 \<times> S2" by simp
-  moreover
-  { fix y
-    assume "y \<in> S1 \<times> S2"
-    hence "(bottom_of S1, bottom_of S2) \<sqsubseteq> y"
-      by (metis (full_types) Pair_below_iff bottom_of_minimal mem_Sigma_iff prod.exhaust s2.bottom_of_minimal)
-  }
+  assume "\<And> i. Y i \<in> S1 \<times> S2"
+  hence "\<And> i. fst (Y i) \<in> S1" and  "\<And> i. snd (Y i) \<in> S2"
+    by (metis mem_Sigma_iff surjective_pairing)+
   ultimately
-  show ?thesis unfolding subpcpo_def by metis
+  have "(\<Squnion> i. fst (Y i)) \<in> S1" and "(\<Squnion> i. snd (Y i)) \<in> S2" using pcpo s2.pcpo by auto
+  thus "(\<Squnion> i. Y i) \<in> S1 \<times> S2" by (auto simp add: lub_prod[OF `chain Y`])
+  next
+  show "(bottom_of S1, bottom_of S2) \<in> S1 \<times> S2" by simp
+  next
+  fix y
+  assume "y \<in> S1 \<times> S2"
+  thus "(bottom_of S1, bottom_of S2) \<sqsubseteq> y"
+    by (metis (full_types) Pair_below_iff bottom_of_minimal mem_Sigma_iff prod.exhaust s2.bottom_of_minimal)
+}
 qed
 
 lemma parallel_fix_on_ind:
