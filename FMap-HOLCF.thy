@@ -473,7 +473,12 @@ lift_definition compatible_fmap :: "('a, 'b::pcpo) fmap  \<Rightarrow> ('a, 'b) 
 
 lemma compatible_fmap_def':
   "compatible_fmap m1 m2 = (\<forall> z \<in> fdom m1 \<inter> fdom m2 . compatible (the (lookup m1 z)) (the (lookup m2 z)))"
-  apply transfer..
+  by (transfer, rule)
+
+lemma compatible_fmapI:
+  assumes "\<And> x. \<lbrakk> x \<in> fdom m1 ; x \<in> fdom m2 \<rbrakk> \<Longrightarrow> compatible (the (lookup m1 x)) (the (lookup m2 x))"
+  shows "compatible_fmap m1 m2"
+  unfolding compatible_fmap_def' using assms by auto
 
 lemma [simp]:
   "compatible_fmap fempty \<rho>" 
