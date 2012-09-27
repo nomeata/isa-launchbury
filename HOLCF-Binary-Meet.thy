@@ -101,26 +101,29 @@ proof-
 qed
 
 lemma compatible_adm:
-  assumes c: "chain Y"
-  assumes a: "\<And> i. compatible x (Y i)"
-  shows "compatible x (\<Squnion> i. Y i)"
-proof(rule compatibleI)
-  have c2: "chain (\<lambda>i. x \<squnion> Y i)"
-    apply (rule chainI)
-    apply (rule meet_mono[OF a a below_refl chainE[OF `chain Y`]])
-    done
-  show "x \<sqsubseteq> (\<Squnion> i. x \<squnion> Y i)"
-    by (auto intro: admD[OF _ c2] meet_above1[OF a])
-  show "(\<Squnion> i. Y i) \<sqsubseteq> (\<Squnion> i. x \<squnion> Y i)"
-    by (auto intro: admD[OF _ c] below_lub[OF c2 meet_above2[OF a]])
-  fix a
-  assume "x \<sqsubseteq> a" and "(\<Squnion> i. Y i) \<sqsubseteq> a"
-  show "(\<Squnion> i. x \<squnion> Y i) \<sqsubseteq> a"
-    apply (rule lub_below[OF c2])
-    apply (rule meet_below[OF a `x \<sqsubseteq> a`])
-    apply (rule below_trans[OF is_ub_thelub[OF c] `(\<Squnion> i. Y i) \<sqsubseteq> a`])
-    done
+  shows "adm (\<lambda> y. compatible x y)"
+proof(rule admI)
+  fix Y
+  assume c: "chain Y" and "\<forall>i.  compatible x (Y i)"
+  hence a: "\<And> i. compatible x (Y i)" by auto
+  show "compatible x (\<Squnion> i. Y i)"
+  proof(rule compatibleI)
+    have c2: "chain (\<lambda>i. x \<squnion> Y i)"
+      apply (rule chainI)
+      apply (rule meet_mono[OF a a below_refl chainE[OF `chain Y`]])
+      done
+    show "x \<sqsubseteq> (\<Squnion> i. x \<squnion> Y i)"
+      by (auto intro: admD[OF _ c2] meet_above1[OF a])
+    show "(\<Squnion> i. Y i) \<sqsubseteq> (\<Squnion> i. x \<squnion> Y i)"
+      by (auto intro: admD[OF _ c] below_lub[OF c2 meet_above2[OF a]])
+    fix a
+    assume "x \<sqsubseteq> a" and "(\<Squnion> i. Y i) \<sqsubseteq> a"
+    show "(\<Squnion> i. x \<squnion> Y i) \<sqsubseteq> a"
+      apply (rule lub_below[OF c2])
+      apply (rule meet_below[OF a `x \<sqsubseteq> a`])
+      apply (rule below_trans[OF is_ub_thelub[OF c] `(\<Squnion> i. Y i) \<sqsubseteq> a`])
+      done
+  qed
 qed
-
 
 end
