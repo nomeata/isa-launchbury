@@ -426,6 +426,24 @@ apply auto
 done
 termination (eqvt) by lexicographic_order
 
+nominal_primrec vars_as_l
+where
+  "vars_as_l ANil = []"
+ |"vars_as_l (ACons v e as) =  v # (vars_as_l as)"
+apply(simp add: eqvt_def vars_as_l_graph_def)
+apply(rule, perm_simp, rule)
+apply auto[1]
+apply(case_tac x rule: exp_assn.exhaust(2))
+apply auto
+done
+termination (eqvt) by lexicographic_order
+
+lemma True and set_vars_as_l [simp]: "set (vars_as_l as) = vars_as as"
+  by (nominal_induct and as rule:exp_assn.strong_induct, auto)
+
+lemma finite_vars_as[simp]: "finite (vars_as as)"
+  by (metis set_vars_as_l finite_set)
+
 nominal_primrec frees and frees_as
 where
   "frees (Var x) = {x}"
