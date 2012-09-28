@@ -1,5 +1,5 @@
 theory "Denotational-HeapExtend"
-  imports "Denotational-Common" "Denotational-Compatible"
+  imports "Denotational-Common"
 begin
 
 definition heapExtendMeet :: "Env \<Rightarrow> heap \<Rightarrow> (exp \<Rightarrow> Env \<Rightarrow> Value)  \<Rightarrow> (var, Value) fmap"
@@ -36,12 +36,6 @@ case False
   thus ?thesis unfolding heapExtendMeet_def apply (subst if_not_P, assumption)+ ..
 qed
 
-
-definition heapExtendMeed_cond
-  where "heapExtendMeed_cond h eval \<rho> = 
-    (compatible_fmap \<rho> (heapToEnv h (\<lambda> e. eval e (fmap_bottom (fdom \<rho> \<union> fst ` set h)))) \<and> 
-    (\<forall> e \<in> snd ` set h. subpcpo (compatible_with_exp e (fdom \<rho> \<union> fst ` set h))) \<and>
-    (\<forall> e \<in> snd ` set h. cont_on (compatible_with_exp e (fdom \<rho> \<union> fst ` set h)) (eval e)))"
 
 
 lemma heapExtendMeet_def3:

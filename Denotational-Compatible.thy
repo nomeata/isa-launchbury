@@ -1,28 +1,49 @@
 theory "Denotational-Compatible"
-  imports "Denotational-Common" "HOLCF-Set-Nominal" "FMap-Nominal-HOLCF"
+  imports "Denotational" "HOLCF-Set-Nominal" "FMap-Nominal-HOLCF"
 begin
-
 
 lemmas fdom_perm_rev[eqvt]
 
 lemma below_eqvt [eqvt]:
     "\<pi> \<bullet> (x \<sqsubseteq> y) = (\<pi> \<bullet> x \<sqsubseteq> \<pi> \<bullet> (y::'a::cont_pt))" by (auto simp add: permute_pure)
 
-nominal_primrec
-  compatible_with_exp :: "exp \<Rightarrow> Env \<Rightarrow> Env set" 
-  and
-  compatible_with_heap :: "heap \<Rightarrow> Env \<Rightarrow> Env set"
-where
-  "compatible_with_exp (Var v) d = {\<rho>' . d \<sqsubseteq> \<rho>'}" |
-  "atom x \<sharp> d \<Longrightarrow> compatible_with_exp (Lam [x]. e) d = compatible_with_exp e d" |
-  "compatible_with_exp (App e x) d = compatible_with_exp e d" |
-  "compatible_with_exp (Let as body) d = compatible_with_exp body d \<inter> compatible_with_heap (asToHeap as) d" |
+definition fmap_bottom_l where
+  "fmap_bottom_l d = fmap_bottom (set d)"
 
-  "compatible_with_heap [] d = {\<rho>' . d \<sqsubseteq> \<rho>'}" |
-  "compatible_with_heap (x # xs) d = compatible_with_heap xs d" (* TODO. Was hier? *)
+lemma fmap_bottom_l_eqvt[eqvt]:
+  "\<pi> \<bullet> fmap_bottom_l d = fmap_bottom_l (\<pi> \<bullet> d)" sorry
+
+definition fmap_restr_l where
+  "fmap_restr_l d = fmap_restr (set d)"
+
+lemma fmap_restr_l_eqvt[eqvt]:
+  "\<pi> \<bullet> fmap_restr_l d = fmap_restr_l (\<pi> \<bullet> d)" sorry
+
+lemma fmap_restr_l_cont:
+  "cont (fmap_restr_l l)" unfolding fmap_restr_l_def by (rule fmap_restr_cont)
+
+
+nominal_primrec
+  compatible_with_exp :: "exp \<Rightarrow> var list \<Rightarrow> Env set" 
+and
+  compatible_with_assn :: "assn \<Rightarrow> var list \<Rightarrow> Env set" 
+where
+  "compatible_with_exp (Var v) d = {\<rho>' . fmap_bottom_l d \<sqsubseteq> \<rho>'}" |
+  "atom x \<sharp> d \<Longrightarrow>
+    compatible_with_exp (Lam [x]. e) d =
+      fmap_restr_l d ` compatible_with_exp e (x # d)" |
+  "compatible_with_exp (App e x) d = compatible_with_exp e d" |
+  "set (bn as) \<sharp>* d \<Longrightarrow>
+    compatible_with_exp (Let as body) d =
+      fmap_restr_l d ` (compatible_with_exp body (vars_as_l as @ d) \<inter> compatible_with_assn as (vars_as_l as @ d))" |
+  "compatible_with_assn ANil d = {\<rho>' . fmap_bottom_l d \<sqsubseteq> \<rho>'}" |
+  "compatible_with_assn (ACons v e as) d = 
+      compatible_with_exp e d
+      \<inter> {\<rho>'. compatible (eval e \<rho>') (the (lookup \<rho>' v))}
+      \<inter> compatible_with_assn as d"
 proof-
 case goal1 thus ?case
-  unfolding compatible_with_exp_compatible_with_heap_graph_def eqvt_def
+  unfolding compatible_with_exp_compatible_with_assn_graph_def eqvt_def
   apply rule
   apply perm_simp
   apply rule
@@ -30,65 +51,190 @@ case goal1 thus ?case
 next
 case (goal3 P x)
   show ?case
+  sorry (*
   proof (cases x)
-  case (Inl y)
+  case (Pair e d)
     show ?thesis
-    proof(cases y)
-    case (Pair e d)
-      show ?thesis
-      using Inl Pair goal3
-        apply (rule_tac y=e in exp_assn.exhaust(1))
-        apply blast+
-        apply (rule_tac y=e and c = d in exp_assn.strong_exhaust(1), auto simp add: fresh_star_singleton, metis)[1]
-        done
-    qed
-  next
-  case (Inr y)
-    show ?thesis
-    proof(cases y)
-    case (Pair h d)
-      show ?thesis
-      apply (cases h)
-      using Inr Pair goal3
+      using  Pair goal3
+      apply (rule_tac y=e in exp_assn.exhaust(1))
       apply blast+
+      apply (rule_tac y=e and c = d in exp_assn.strong_exhaust(1), auto simp add: fresh_star_singleton, metis)[1]
       done
-   qed
-qed
+  qed*)
 next
 apply_end auto
-next
   fix X show X X X X X X sorry
 qed
 
+
 termination(eqvt) by lexicographic_order
 
+lemma fresh_fmap_bottom_set[simp]:
+  "x \<sharp> d \<Longrightarrow> x \<sharp> fmap_bottom (set d)" sorry
+
+lemma fresh_star_fmap_bottom_set[simp]:
+  "x \<sharp>* d \<Longrightarrow> x \<sharp>* fmap_bottom (set d)" sorry
+
+definition contains_bottoms where
+  "contains_bottoms d S = (\<forall>d'. d' \<subseteq> d \<longrightarrow> (\<forall> x \<in> S. fmap_extend (fmap_restr d' x) (d - d') \<in> S))"
+
+lemma contains_bottomsD:
+  "contains_bottoms d S \<Longrightarrow> d' \<subseteq> d \<Longrightarrow> x \<in> S \<Longrightarrow> fmap_extend (fmap_restr d' x) (d - d') \<in> S"
+  unfolding contains_bottoms_def by metis
+
+lemma contains_bottomsI:
+  "\<lbrakk> \<And> d' x . d' \<subseteq> d \<Longrightarrow> x \<in> S \<Longrightarrow> fmap_extend (fmap_restr d' x) (d - d') \<in> S\<rbrakk> \<Longrightarrow> contains_bottoms d S"
+  unfolding contains_bottoms_def by metis
+
+lemma contains_bottoms_subsetD:
+  "contains_bottoms d S \<Longrightarrow> d' \<subseteq> d  \<Longrightarrow> (\<lambda> m. fmap_extend m (d - d')) ` fmap_restr d' ` S \<subseteq> S"
+  by (auto dest:contains_bottomsD)
+
+lemma restr_extend_cut:
+  "finite d \<Longrightarrow> d' \<subseteq> d \<Longrightarrow> fdom x = d' \<Longrightarrow> fmap_restr d' (fmap_extend x (d - d')) = x " sorry
+
+lemma contains_bottoms_inter:
+  "contains_bottoms d S1 \<Longrightarrow> contains_bottoms d S2 \<Longrightarrow> contains_bottoms d (S1 \<inter> S2)"
+  unfolding contains_bottoms_def by auto
+
+lemma contains_bottoms_restr:
+  assumes "finite d"
+  assumes "d' \<subseteq> d"
+  assumes "contains_bottoms d S"
+  shows "contains_bottoms d' (fmap_restr d' ` S)" 
+proof(rule contains_bottomsI)
+  fix d'' x
+  assume "d'' \<subseteq> d'"
+  assume "x \<in> fmap_restr d' ` S"
+  then obtain y where "y \<in> S" and "x = fmap_restr d' y" by auto
+  then have "fmap_extend (fmap_restr d'' x) (d - d'') \<in> S" 
+    using contains_bottomsD[OF `contains_bottoms d S` subset_trans[OF `d'' \<subseteq> d'` `d' \<subseteq> d`]]
+    using `d'' \<subseteq> d'`  `d' \<subseteq> d` `finite d`
+    by (simp add: finite_subset Int_absorb2)
+  then have "fmap_restr d' (fmap_extend (fmap_restr d'' x) (d - d'')) \<in> fmap_restr d' ` S" by (rule imageI)
+  then have "fmap_restr d' (fmap_extend (fmap_restr d'' x) (d' - d'')) \<in> fmap_restr d' ` S" 
+       using `d'' \<subseteq> d'`  `d' \<subseteq> d` `finite d`
+       by (auto simp add: fmap_restr_fmap_extend Diff_Int_distrib Int_absorb1 Int_absorb2)
+  then show "fmap_extend (fmap_restr d'' x) (d' - d'') \<in> fmap_restr d' ` S" 
+      apply (subst (asm) fmap_restr_useless)
+      using `d'' \<subseteq> d'`  `d' \<subseteq> d` `finite d`
+      apply (auto simp add: finite_subset)
+      done
+qed
+ 
+
 lemma ESem_cont_induct_lemma:
-  "subpcpo (compatible_with_exp e d) &&& bottom_of (compatible_with_exp e d) = d"
+  "frees e \<subseteq> set d \<Longrightarrow> (subpcpo_bot (fmap_bottom_l d) (compatible_with_exp e d)  &&& contains_bottoms (set d) (compatible_with_exp e d))"
   and
-  "subpcpo (compatible_with_heap (asToHeap as) d) &&& bottom_of (compatible_with_heap (asToHeap as) d) = d"
+  "\<lbrakk> frees_as as \<subseteq> set d; vars_as as \<subseteq> set d \<rbrakk> \<Longrightarrow> (subpcpo_bot (fmap_bottom_l d) (compatible_with_assn as d)) &&&  contains_bottoms (set d) (compatible_with_assn as d)"
 proof(nominal_induct e and avoiding: d rule:exp_assn.strong_induct)
 print_cases
   case (Var v d)
-  show "subpcpo (compatible_with_exp (Var v) d)"
-    by (simp, rule subpcpo_cone_above)
-  show "bottom_of (compatible_with_exp (Var v) d) = d" by simp
+    case 1 show ?case by (simp, rule subpcpo_bot_cone_above)
+    case 2 show ?case by (auto intro!: fmap_bottom_below  dest!: fmap_below_dom simp add: finite_subset fmap_bottom_l_def contains_bottoms_def)
 next
   case (App e x d)
     case 1 thus ?case using App by auto
     case 2 thus ?case using App by auto
 next
   case (Lam x e d)
-    case 1 thus ?case using Lam by auto
-    case 2 thus ?case using Lam by auto
+    case 1
+      hence f: "frees e \<subseteq> set (x # d)" by auto
+
+      { fix m
+        assume "m \<in> compatible_with_exp e (x # d)"
+        hence "fmap_bottom_l (x # d) \<sqsubseteq> m" by (rule bottom_of_subpcpo_bot_minimal[OF Lam(2)[OF f]])
+        hence "fdom m = set (x # d)" unfolding fmap_bottom_l_def by (metis fdom_fmap_bottom finite_set fmap_below_dom)
+      } note * = this
+
+      have "subpcpo_bot (fmap_restr_l d (fmap_bottom_l (x#d)))  (fmap_restr_l d ` compatible_with_exp e (x # d))"
+        unfolding fmap_restr_l_def 
+        apply (rule subpcpo_bot_image[OF Lam(2)[OF f] fmap_restr_cont fmap_extend_cont contains_bottoms_subsetD[OF Lam(3)[OF f]] restr_extend_cut[OF finite_set]])
+        using * by auto
+      thus ?case using Lam(1)
+        apply (auto simp add: fmap_restr_l_def fmap_bottom_l_def)
+        by (metis inf_absorb1 subset_insertI)
+    case 2
+      have "set d \<subseteq> set (x # d)" by auto
+      hence "contains_bottoms (set d) (fmap_restr_l d ` compatible_with_exp e (x # d))"
+        using Lam(3)[OF f]
+        unfolding fmap_restr_l_def
+        by (rule contains_bottoms_restr[OF finite_set])        
+      thus ?case using Lam(1) by simp
 next
   case (Let as body d)
-    case 1 thus ?case
-      using Let by (auto intro: subpcpo_inter)
-    case 2 thus ?case using Let apply simp by (metis bottom_of_inter)
+    let "?d'" = "vars_as_l as @ d"
+    case 1
+      hence f: "frees body \<subseteq> set ?d'" and f': "frees_as as \<subseteq> set ?d'" by auto 
+      have f'': "vars_as as \<subseteq> set ?d'" by auto
+
+      { fix m
+        assume "m \<in> compatible_with_exp body ?d'"
+        hence "fmap_bottom_l ?d' \<sqsubseteq> m" by (rule bottom_of_subpcpo_bot_minimal[OF Let(4)[OF f]])
+        hence "fdom m = set ?d'" unfolding fmap_bottom_l_def by (metis fdom_fmap_bottom finite_set fmap_below_dom)
+      } note * = this
+
+      thm subpcpo_bot_inter[OF Let(4)]
+      have "subpcpo_bot (fmap_bottom (set ?d')) (compatible_with_exp body ?d' \<inter> compatible_with_assn as ?d')"
+        find_theorems subpcpo subcpo
+        by (rule subpcpo_bot_inter[OF Let(4)[unfolded fmap_bottom_l_def, OF f]
+                                      subpcpo_is_subcpo[OF subpcpo_bot_is_subpcpo[OF Let(2)[unfolded fmap_bottom_l_def, OF f' f'']]]
+                                      bottom_of_subpcpo_bot_there[OF Let(2)[unfolded fmap_bottom_l_def, OF f' f'']]
+                                      ])
+      moreover
+      have cb: "contains_bottoms (set ?d') (compatible_with_exp body (vars_as_l as @ d) \<inter> compatible_with_assn as (vars_as_l as @ d))"
+        by (rule contains_bottoms_inter[OF Let(5)[OF f] Let(3)[OF f' f'']])
+      ultimately
+      have "subpcpo_bot (fmap_restr (set d) (fmap_bottom (set ?d'))) (fmap_restr (set d) ` (compatible_with_exp body ?d' \<inter> compatible_with_assn as ?d'))"
+        apply (rule subpcpo_bot_image[OF _ fmap_restr_cont fmap_extend_cont contains_bottoms_subsetD restr_extend_cut[OF finite_set]])
+        using * by auto
+      thus ?case using Let(1) 
+        apply (auto simp add: fmap_restr_l_def fmap_bottom_l_def)
+        by (metis inf_sup_absorb sup_commute)
+
+    case 2 thus ?case
+      using Let by (auto simp add: fmap_restr_l_def intro: contains_bottoms_restr[OF finite_set _ cb])
 next
   case ANil
-    case 1 thus ?case apply simp
+    case 1 show ?case by (simp, rule subpcpo_bot_cone_above)
+    case 2 show ?case by (auto intro!: fmap_bottom_below  dest!: fmap_below_dom simp add: finite_subset fmap_bottom_l_def contains_bottoms_def)
+next
+  case (ACons var e as d)
+    case 1
+      hence f: "frees e \<subseteq> set d" and f': "frees_as as \<subseteq> set d" and f'': "vars_as as \<subseteq> set d" and f''':"var \<in> set d" by auto
+
+    have s: "\<And> eval. subcpo {\<rho>'. compatible (eval e \<rho>') (the (lookup \<rho>' var))}" sorry
+
+    have cb: "\<And> eval. contains_bottoms (set d) {\<rho>'. compatible (eval e \<rho>') (the (lookup \<rho>' var))}" sorry
+ 
+    show ?case
+      apply (subst compatible_with_assn.simps(2))
+      apply (rule subpcpo_bot_inter[OF subpcpo_bot_inter[OF ACons(1)[OF f] s ]
+                                       subpcpo_is_subcpo[OF subpcpo_bot_is_subpcpo[OF ACons(3)[OF f' f'']]]
+                                       bottom_of_subpcpo_bot_there[OF ACons(3)[OF f' f'']]
+                                   ])
+      using f'' f'''
+      apply (auto simp add: fmap_bottom_l_def)
+      done
+
+   case 2
+   show ?case
+      apply (subst compatible_with_assn.simps(2))
+      by (rule contains_bottoms_inter[OF contains_bottoms_inter[OF ACons(2)[OF f] cb]  ACons(4)[OF f' f'']])
+      
 qed
+
+
+
+definition heapExtendMeed_cond
+  where "heapExtendMeed_cond h eval \<rho> = 
+    (compatible_fmap \<rho> (heapToEnv h (\<lambda> e. eval e (fmap_bottom (fdom \<rho> \<union> fst ` set h)))) \<and> 
+    (\<forall> e \<in> snd ` set h. subpcpo (compatible_with_exp e (fdom \<rho> \<union> fst ` set h))) \<and>
+    (\<forall> e \<in> snd ` set h. cont_on (compatible_with_exp e (fdom \<rho> \<union> fst ` set h)) (eval e)))"
+
+
+
+
 
 lemma heap_compat_subset:
    "e \<in> snd ` set h \<Longrightarrow> compatible_with_heap h d \<subseteq> compatible_with_exp e d" sorry
