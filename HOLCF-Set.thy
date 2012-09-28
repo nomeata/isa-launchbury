@@ -4,6 +4,10 @@ begin
 
 default_sort cpo
 
+locale subcpo =
+  fixes S :: "'a set"
+  assumes cpo': "(\<forall>Y. (chain Y \<longrightarrow> (\<forall> i. Y i \<in> S) \<longrightarrow> (\<Squnion> i. Y i) \<in> S))"
+
 locale subpcpo =
   fixes S :: "'a set"
   assumes pcpo: "(\<forall>Y. (chain Y \<longrightarrow> (\<forall> i. Y i \<in> S) \<longrightarrow> (\<Squnion> i. Y i) \<in> S))
@@ -15,6 +19,7 @@ lemma subpcpoI:
   assumes "\<And> y. y \<in> S \<Longrightarrow> b \<sqsubseteq> y"
   shows "subpcpo S"
 unfolding subpcpo_def by (metis assms)
+
 
 locale subpcpo_syn = 
   fixes S :: "'a set" 
@@ -55,39 +60,38 @@ definition
   closed_on :: "('a::cpo => 'a::cpo) => bool"
 where
   "closed_on f = (\<forall> x\<in> S. f x \<in> S)"
-
 end
 
-sublocale subpcpo < subpcpo_syn.
-
-context subpcpo
-begin
-
-lemma closed_onE: 
-  "[|closed_on f; x \<in> S|] ==> f x \<in> S"
-by (simp add: closed_on_def)
-
-lemma monofun_onE: 
-  "[|monofun_on f; x\<in> S; y \<in> S; x \<sqsubseteq> y|] ==> f x \<sqsubseteq> f y"
-by (simp add: monofun_on_def)
-
-lemma monofun_onI: 
-  "[|\<And>x y. \<lbrakk> x \<in> S; y \<in> S; x \<sqsubseteq> y \<rbrakk> \<Longrightarrow> f x \<sqsubseteq> f y|] ==> monofun_on f"
-by (simp add: monofun_on_def)
-
-lemma chain_on_is_on: "chain_on Y \<Longrightarrow> Y i \<in> S"
-  unfolding chain_on_def by auto
-
-lemma chain_onE: "chain_on Y \<Longrightarrow> Y i \<sqsubseteq> Y (Suc i)"
-  unfolding chain_on_def by auto
+interpretation subpcpo_syn S for S.
 
 lemma chain_onI:
   assumes  "\<And> i. Y i \<sqsubseteq> Y (Suc i)" and "\<And>i. Y i \<in> S"
-  shows "chain_on Y"
+  shows "chain_on S Y"
 unfolding chain_on_def using assms by auto
 
+lemma chain_on_is_on: "chain_on S Y \<Longrightarrow> Y i \<in> S"
+  unfolding chain_on_def by auto
+
+lemma chain_onE: "chain_on S Y \<Longrightarrow> Y i \<sqsubseteq> Y (Suc i)"
+  unfolding chain_on_def by auto
+
+lemma chain_on_is_chain: "chain_on S Y \<Longrightarrow> chain Y"
+  unfolding chain_on_def chain_def by auto
+
+lemma closed_onE: 
+  "[|closed_on S f; x \<in> S|] ==> f x \<in> S"
+by (simp add: closed_on_def)
+
+lemma monofun_onE: 
+  "[|monofun_on S f; x\<in> S; y \<in> S; x \<sqsubseteq> y|] ==> f x \<sqsubseteq> f y"
+by (simp add: monofun_on_def)
+
+lemma monofun_onI: 
+  "[|\<And>x y. \<lbrakk> x \<in> S; y \<in> S; x \<sqsubseteq> y \<rbrakk> \<Longrightarrow> f x \<sqsubseteq> f y|] ==> monofun_on S f"
+by (simp add: monofun_on_def)
+
 lemma ub2ub_monofun_on: 
-  "[|monofun_on f; \<And> i. Y i \<in> S; u \<in> S; range Y <| u|] ==> range (\<lambda>i. f (Y i)) <| f u"
+  "[|monofun_on S f; \<And> i. Y i \<in> S; u \<in> S; range Y <| u|] ==> range (\<lambda>i. f (Y i)) <| f u"
 apply (rule ub_rangeI)
 apply (erule  monofun_onE)
 apply assumption+
@@ -95,14 +99,14 @@ apply (erule ub_rangeD)
 done
 
 lemma cont_onE:
-  "[|cont_on f; chain_on Y|] ==> range (\<lambda>i. f (Y i)) <<| f (\<Squnion>i. Y i)"
+  "[|cont_on S f; chain_on S Y|] ==> range (\<lambda>i. f (Y i)) <<| f (\<Squnion>i. Y i)"
 by (simp add: cont_on_def)
 
-lemma bin_chain_on: "\<lbrakk> x\<in>S; y\<in>S; x \<sqsubseteq> y\<rbrakk> \<Longrightarrow> chain_on (\<lambda>i. if i=0 then x else y)"
+lemma bin_chain_on: "\<lbrakk> x\<in>S; y\<in>S; x \<sqsubseteq> y\<rbrakk> \<Longrightarrow> chain_on S (\<lambda>i. if i=0 then x else y)"
   by (simp add: chain_on_def)
 
 lemma binchain_cont_on:
-  "\<lbrakk>cont_on f; x \<in> S; y \<in> S ; x \<sqsubseteq> y\<rbrakk> \<Longrightarrow> range (\<lambda>i::nat. f (if i = 0 then x else y)) <<| f y"
+  "\<lbrakk>cont_on S f; x \<in> S; y \<in> S ; x \<sqsubseteq> y\<rbrakk> \<Longrightarrow> range (\<lambda>i::nat. f (if i = 0 then x else y)) <<| f y"
 apply (subgoal_tac "f (\<Squnion>i::nat. if i = 0 then x else y) = f y")
 apply (erule subst)
 apply (erule cont_onE)
@@ -112,7 +116,7 @@ apply (erule is_lub_bin_chain [THEN lub_eqI])
 done
 
 lemma cont_on2mono_on:
-  "cont_on F \<Longrightarrow> monofun_on F"
+  "cont_on S F \<Longrightarrow> monofun_on S F"
 apply (rule monofun_onI)
 apply (drule (3) binchain_cont_on)
 apply (drule_tac i=0 in is_lub_rangeD1)
@@ -120,21 +124,34 @@ apply simp
 done
 
 lemma cont_on2contlubE:
-  "[|cont_on f; chain_on Y|] ==> f (\<Squnion> i. Y i) = (\<Squnion> i. f (Y i))"
+  "[|cont_on S f; chain_on S Y|] ==> f (\<Squnion> i. Y i) = (\<Squnion> i. f (Y i))"
 apply (rule lub_eqI [symmetric])
 apply (erule (1) cont_onE)
 done
 
+lemma cont_is_cont_on:
+  "cont P \<Longrightarrow> cont_on S P"
+  unfolding cont_on_def cont_def by (metis (full_types) chain_on_def po_class.chainI)
+
 lemma adm_onD:
-  assumes "adm_on P"
-  and "chain_on Y"
+  assumes "adm_on S P"
+  and "chain_on S Y"
   and"\<And>i. P (Y i)"
   shows "P (\<Squnion>i. Y i)"
 using assms unfolding adm_on_def by auto
 
 lemma adm_is_adm_on:
-  "adm P \<Longrightarrow> adm_on P"
+  "adm P \<Longrightarrow> adm_on S P"
   unfolding adm_def adm_on_def by (metis (full_types) chain_on_def po_class.chainI)
+
+sublocale subpcpo < subpcpo_syn.
+
+lemma subpcpo_is_subcpo: "subpcpo S \<Longrightarrow> subcpo S" unfolding subpcpo_def subcpo_def by simp
+
+sublocale subpcpo < subcpo by (rule subpcpo_is_subcpo[OF subpcpo_axioms])
+
+context subpcpo
+begin
 
 lemma shows bottom_of_there[simp]: "bottom_of \<in> S"
       and bottom_of_minimal: "\<And> x. x \<in> S \<Longrightarrow> bottom_of \<sqsubseteq> x"
@@ -179,40 +196,69 @@ end
 
 interpretation subpcpo_syn S for S.
 
-lemma ch2ch_monofun_on:
-  assumes "subpcpo S1" and "subpcpo S2"
-  shows "[|monofun_on S1 f; chain_on S1 Y; f ` S1 \<subseteq> S2 |] ==> chain_on S2 (\<lambda>i. f (Y i))"
-proof-
-  interpret s1!: subpcpo S1 by fact
-  interpret s2!: subpcpo S2 by fact
-  show "[|monofun_on S1 f; chain_on S1 Y; f ` S1 \<subseteq> S2 |] ==> chain_on S2 (\<lambda>i. f (Y i))"
-    apply (rule s2.chain_onI)
-    apply (erule s1.monofun_onE)
-    apply (erule s1.chain_on_is_on)+
-    apply (erule s1.chain_onE)
-    apply (erule subsetD)
-    apply (rule imageI)
-    apply (erule s1.chain_on_is_on)
-    done
+definition subpcpo_bot where
+  "subpcpo_bot b S = (subpcpo S \<and> bottom_of S = b)"
+
+lemma subpcpo_bot_is_subpcpo:
+  "subpcpo_bot b S \<Longrightarrow> subpcpo S"
+  unfolding subpcpo_bot_def by auto
+
+lemma bottom_of_subpcpo_bot:
+  "subpcpo_bot b S \<Longrightarrow> bottom_of S = b"
+  unfolding subpcpo_bot_def by auto
+
+lemma bottom_of_subpcpo_bot_there:
+  "subpcpo_bot b S \<Longrightarrow> b \<in> S"
+  unfolding subpcpo_bot_def by (metis subpcpo.bottom_of_there)
+
+lemma bottom_of_subpcpo_bot_minimal:
+  "subpcpo_bot b S \<Longrightarrow> x \<in> S \<Longrightarrow> b \<sqsubseteq> x"
+  unfolding subpcpo_bot_def by (metis subpcpo.bottom_of_minimal)
+
+lemma subpcpo_is_subpcpo_bot:
+  "subpcpo S \<Longrightarrow> subpcpo_bot (bottom_of S) S"
+  unfolding subpcpo_bot_def by auto
+
+lemma subpcpo_botI:
+  assumes "\<And> Y. \<lbrakk> chain Y; \<And> i. Y i \<in> S \<rbrakk> \<Longrightarrow> (\<Squnion> i. Y i) \<in> S"
+  assumes "b \<in> S"
+  assumes "\<And> y. y \<in> S \<Longrightarrow> b \<sqsubseteq> y"
+  shows "subpcpo_bot b S"
+unfolding subpcpo_bot_def 
+proof
+  show "subpcpo S" by (rule subpcpoI[OF assms])
+  interpret subpcpo S by fact
+  show "bottom_of S = b"
+    by (metis assms(2) assms(3) below_antisym bottom_of_minimal bottom_of_there)
 qed
 
 
+lemma ch2ch_monofun_on:
+  shows "[|monofun_on S1 f; chain_on S1 Y; f ` S1 \<subseteq> S2 |] ==> chain_on S2 (\<lambda>i. f (Y i))"
+proof-
+  show "[|monofun_on S1 f; chain_on S1 Y; f ` S1 \<subseteq> S2 |] ==> chain_on S2 (\<lambda>i. f (Y i))"
+    apply (rule chain_onI)
+    apply (erule monofun_onE)
+    apply (erule chain_on_is_on)+
+    apply (erule chain_onE)
+    apply (erule subsetD)
+    apply (rule imageI)
+    apply (erule chain_on_is_on)
+    done
+qed
+
 lemma ch2ch_cont_on:
-  assumes "subpcpo S1" and "subpcpo S2"
   assumes "cont_on S1 f" and "chain_on S1 Y" and "f ` S1 \<subseteq> S2"
   shows "chain_on S2 (\<lambda>i. f (Y i))"
-  by (rule ch2ch_monofun_on[OF assms(1) assms(2) subpcpo.cont_on2mono_on[OF assms(1) assms(3)] assms(4) assms(5)])
+  by (rule ch2ch_monofun_on[OF cont_on2mono_on[OF assms(1)] assms(2) assms(3)])
 
 lemma adm_on_subst:
-  assumes "subpcpo S1" and "subpcpo S2"
   assumes cont: "cont_on S1 t"  and closed: "t ` S1 \<subseteq> S2" and  adm: "adm_on S2 P" 
   shows "adm_on S1 (\<lambda>x. P (t x))"
 proof-
-  interpret s1!: subpcpo S1 by fact
-  interpret s2!: subpcpo S2 by fact
   from cont closed adm
   show ?thesis
-  by (auto simp add: adm_on_def s1.cont_on2contlubE ch2ch_cont_on[OF assms(1) assms(2)])
+  by (auto simp add: adm_on_def cont_on2contlubE ch2ch_cont_on)
 qed
 
 lemma chain_on_product:
@@ -233,6 +279,45 @@ lemma bottom_of_cone_above[simp]:
 proof-
   interpret subpcpo "{y . x \<sqsubseteq> y}" by (rule subpcpo_cone_above)
   show ?thesis by (metis bottom_of_minimal bottom_of_there mem_Collect_eq po_eq_conv)
+qed
+
+lemma subpcpo_bot_cone_above:
+  shows "subpcpo_bot x {y . x \<sqsubseteq> y}"
+  by (metis bottom_of_cone_above subpcpo_is_subpcpo_bot[OF subpcpo_cone_above])
+
+lemma subpcpo_bot_image:
+  assumes "subpcpo_bot b S"
+  and "cont f"
+  and "cont g"
+  and im: "g ` f ` S \<subseteq> S"
+  and cut: "\<And> x. x \<in> f ` S \<Longrightarrow> f (g x) = x"
+  shows "subpcpo_bot (f b) (f`S)"
+proof(rule subpcpo_botI)
+  interpret subpcpo S by (rule subpcpo_bot_is_subpcpo, fact)
+{
+  fix Y :: "nat \<Rightarrow> 'b"
+  assume *: "\<And> i. Y i \<in> f ` S"
+  have "\<And> i. g (Y i) \<in> S"
+    by (metis (full_types) "*" im image_eqI set_mp)
+  moreover
+  assume "chain Y"
+  hence "chain (\<lambda> i. g (Y i))"
+    by (metis ch2ch_cont[OF `cont g`])
+  ultimately
+  have "(\<Squnion> i. g (Y i)) \<in> S" by (metis pcpo)
+  hence "f (\<Squnion> i. g (Y i)) \<in> f` S" by (rule imageI)
+  hence "(\<Squnion> i. f (g (Y i))) \<in> f` S" by (metis cont2contlubE[OF `cont f` `chain (\<lambda>i. g (Y i))` ])
+  thus "(\<Squnion> i. Y i) \<in> f` S" by (metis "*" cut lub_eq)
+  next
+  show "f b \<in> f ` S" by (rule imageI, rule bottom_of_subpcpo_bot_there, fact)
+  next
+  fix y
+  assume "y \<in> f`S"
+  hence "g y \<in> S" by (metis im imageI in_mono)
+  hence "b \<sqsubseteq> g y" by (metis bottom_of_subpcpo_bot[OF assms(1)] bottom_of_minimal)
+  hence "f b \<sqsubseteq> f (g y)" by (metis cont2monofunE[OF `cont f`])
+  thus  "f b \<sqsubseteq> y" by (metis `y \<in> f\` S` cut)
+}
 qed
 
 lemma subpcpo_product:
@@ -263,13 +348,13 @@ proof(rule subpcpoI)
 }
 qed
 
-lemma subpcpo_inter:
-  assumes "subpcpo S1" and "subpcpo S2"
-  and bot_eq: "bottom_of S1 = bottom_of S2"
-  shows "subpcpo (S1 \<inter> S2)"
-proof(rule subpcpoI)
-  interpret subpcpo S1 by fact
-  interpret s2!: subpcpo S2  by fact
+lemma subpcpo_bot_inter:
+  assumes "subpcpo_bot b1 S1" and "subcpo S2"
+  and bot_in_2: "b1 \<in> S2"
+  shows "subpcpo_bot b1 (S1 \<inter> S2)"
+proof(rule subpcpo_botI)
+  interpret subpcpo S1 by (rule subpcpo_bot_is_subpcpo, fact)
+  interpret s2!: subcpo S2  by (fact)
 {
   fix Y :: "nat \<Rightarrow> 'a"
   assume "chain Y"
@@ -277,28 +362,18 @@ proof(rule subpcpoI)
   assume "\<And> i. Y i \<in> S1 \<inter> S2"
   hence "\<And> i. Y i \<in> S1" and  "\<And> i. Y i \<in> S2" by auto
   ultimately
-  have "(\<Squnion> i. Y i) \<in> S1" and "(\<Squnion> i. Y i) \<in> S2" using pcpo s2.pcpo by auto
+  have "(\<Squnion> i. Y i) \<in> S1" and "(\<Squnion> i. Y i) \<in> S2" using pcpo s2.cpo' by auto
   thus "(\<Squnion> i. Y i) \<in> S1 \<inter> S2" by auto
   next
-  find_theorems bottom_of
-  show "bottom_of S1 \<in> S1 \<inter> S2"  by (simp add: s2.bottom_of_there[unfolded bot_eq[symmetric]])
+  show "b1 \<in> S1 \<inter> S2" by (auto simp add: bot_in_2 bottom_of_subpcpo_bot_there[OF assms(1)])
   next
   fix y
   assume "y \<in> S1 \<inter> S2"
-  thus "bottom_of S1 \<sqsubseteq> y"
-    by (auto intro: bottom_of_minimal)
+  thus "b1 \<sqsubseteq> y"
+    by (auto intro: bottom_of_subpcpo_bot_minimal[OF assms(1)])
 }
 qed
 
-lemma bottom_of_inter:
-  assumes "subpcpo S1" and "subpcpo S2"
-  and bot_eq: "bottom_of S1 = bottom_of S2"
-  shows "bottom_of (S1 \<inter> S2) = bottom_of S1"
-proof-
-  interpret subpcpo S1 by fact
-  interpret s2!: subpcpo "(S1 \<inter> S2)" by (rule subpcpo_inter[OF assms])
-  show ?thesis by (metis IntD1 IntI assms(2) below_antisym bot_eq bottom_of_minimal bottom_of_there s2.bottom_of_minimal s2.bottom_of_there subpcpo.bottom_of_there)
-qed
 
 lemma parallel_fix_on_ind:
   assumes pcpo1: "subpcpo S1"
@@ -317,7 +392,7 @@ proof -
   interpret sp!: subpcpo "(S1 \<times> S2)"  by (rule subpcpo_product, fact+)
 
   note chain1 = closed_is_chain[OF closedF cont_on2mono_on[OF chainF]] 
-  note chain2 = s2.closed_is_chain[OF closedG s2.cont_on2mono_on[OF chainG]] 
+  note chain2 = s2.closed_is_chain[OF closedG cont_on2mono_on[OF chainG]] 
 
   from adm have adm': "adm_on (S1 \<times> S2) (split P)"
     unfolding split_def .
@@ -329,7 +404,7 @@ proof -
     case (Suc i)
       have "((F ^^ i) (bottom_of S1)) \<in> S1" by (rule closed_onE[OF iterate_closed_on[OF closedF] bottom_of_there])
       moreover
-      have "((G ^^ i) (bottom_of S2)) \<in> S2" by (rule s2.closed_onE[OF s2.iterate_closed_on[OF closedG] s2.bottom_of_there])
+      have "((G ^^ i) (bottom_of S2)) \<in> S2" by (rule closed_onE[OF s2.iterate_closed_on[OF closedG] s2.bottom_of_there])
       ultimately
       show ?case using Suc by (simp add: step)
     qed
@@ -338,9 +413,9 @@ proof -
     by simp
   hence "split P (\<Squnion>i. ((F^^i) (bottom_of S1), (G^^i) (bottom_of S2)))"
     apply -
-    apply (rule sp.adm_onD [OF adm'
+    apply (rule adm_onD [OF adm'
                chain_on_product[OF closed_is_chain_on[OF closedF cont_on2mono_on[OF chainF]]
-                                   s2.closed_is_chain_on[OF closedG s2.cont_on2mono_on[OF chainG]]]])
+                                   s2.closed_is_chain_on[OF closedG cont_on2mono_on[OF chainG]]]])
     apply (auto intro: ch2ch_Pair simp add: chain1 chain2)
     done
   hence "split P (\<Squnion>i. ((F^^i) (bottom_of S1)), \<Squnion>i. (G^^i) (bottom_of S2))"
@@ -351,8 +426,5 @@ proof -
     using chain1 chain2 subpcpo_axioms s2.subpcpo_axioms
     by (simp add: fix_on_def)
 qed
-
-
-
 
 end
