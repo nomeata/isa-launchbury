@@ -92,7 +92,7 @@ lemma fmap_upd_twist: "a ~= c ==> (m(a f\<mapsto> b))(c f\<mapsto> d) = (m(c f\<
 lift_definition fmap_restr :: "'a set \<Rightarrow> ('a, 'b) fmap => ('a, 'b) fmap"
   is "\<lambda> S m. (if finite S then (restrict_map m S) else empty)" by auto
 
-lemma lookup_fmap_restr: "finite S \<Longrightarrow> x \<in> S \<Longrightarrow> lookup (fmap_restr S m) x = lookup m x"
+lemma lookup_fmap_restr[simp]: "finite S \<Longrightarrow> x \<in> S \<Longrightarrow> lookup (fmap_restr S m) x = lookup m x"
   by (transfer, auto)
 
 (*
@@ -106,6 +106,11 @@ lemma [transfer_rule]: "(op = ===> set_rel op = ===> set_rel op =) op \<inter> o
 lemma fdom_fmap_restr[simp]: "finite S \<Longrightarrow> fdom (fmap_restr S m) = fdom m \<inter> S"
   by (transfer, simp)
 
+lemma fmap_restr_fmap_restr[simp]:
+ "finite d1 \<Longrightarrow> finite d2 \<Longrightarrow> fmap_restr d1 (fmap_restr d2 x) = fmap_restr (d1 \<inter> d2) x"
+ by (transfer, auto simp add: restrict_map_def)
 
+lemma fmap_restr_useless: "finite S \<Longrightarrow> fdom m \<subseteq> S \<Longrightarrow> fmap_restr S m = m"
+  by (rule fmap_eqI, auto)
 
 end

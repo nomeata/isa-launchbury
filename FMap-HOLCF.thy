@@ -546,6 +546,26 @@ lift_definition fmap_extend :: "('a, 'b::pcpo) fmap \<Rightarrow> 'a set  \<Righ
   apply auto
   done
 
+lemma fmap_restr_fmap_extend:
+  "finite d2 \<Longrightarrow> fmap_restr d1 (fmap_extend m d2) = fmap_restr d1 (fmap_extend m (d1 \<inter> d2))"
+  apply(cases "finite d1")
+  apply transfer
+  apply (auto simp add: restrict_map_def)
+  unfolding fmap_restr_def
+  by auto
+
+lemma fmap_extend_monofun:
+  "monofun (\<lambda> m. fmap_extend m S)"
+sorry
+
+lemma fmap_extend_cont:
+  "cont (\<lambda> m. fmap_extend m S)"
+sorry
+
+lemma fdom_fmap_extend[simp]:
+  "finite S \<Longrightarrow> fdom (fmap_extend m S) = fdom m \<union> S"
+  by (transfer, auto)
+
 lift_definition fmap_bottom :: "'a set  \<Rightarrow> ('a, 'b::pcpo) fmap"
   is "\<lambda> S. (if finite S then (\<lambda> x. if x \<in> S then Some \<bottom> else None) else empty)"
   apply (case_tac "finite set")
@@ -566,6 +586,9 @@ lemma fmap_bottom_below[simp]:
   "S = fdom \<rho> \<Longrightarrow> fmap_bottom S \<sqsubseteq> \<rho>"
  by(rule fmap_belowI, auto)
 
+lemma fmap_restr_fmap_bottom[simp]:
+  "finite S \<Longrightarrow> finite S2 \<Longrightarrow> fmap_restr S (fmap_bottom S2) = fmap_bottom (S \<inter> S2)"
+  by (transfer, auto simp add: restrict_map_def)
 
 definition fix_extend :: "('a, 'b::pcpo) fmap \<Rightarrow> 'a set \<Rightarrow> (('a, 'b) fmap \<Rightarrow> ('a, 'b) fmap) \<Rightarrow> ('a, 'b) fmap"
   where
