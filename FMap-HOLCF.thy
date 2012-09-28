@@ -216,6 +216,7 @@ proof(rule chainI)
     qed
 qed
 
+
 lemma lookup_cont:
   assumes "chain (Y :: nat \<Rightarrow> ('a, 'b::cpo) fmap)"
   shows "the (lookup (\<Squnion> i. Y i) x) = (\<Squnion> i. the (lookup (Y i) x))"
@@ -445,6 +446,52 @@ lemma fmap_update_upd_swap:
   apply (case_tac "xa \<in> fdom \<rho>'")
   apply (auto)
   done
+
+lemma fmap_restr_belowI:
+  assumes  "\<And> x. x \<in> S \<Longrightarrow> the (lookup (fmap_restr S m1) x) \<sqsubseteq> the (lookup (fmap_restr S m2) x)"
+  and "fdom m1 = fdom m2"
+  shows "fmap_restr S m1 \<sqsubseteq> fmap_restr S m2"
+proof (cases "finite S")
+case True thus ?thesis
+  apply -
+  apply (rule fmap_belowI)
+  apply (simp add: `fdom m1 = fdom m2`)
+  by (metis Int_iff assms(1) fdom_fmap_restr the.simps)
+next
+case False thus ?thesis unfolding fmap_restr_def by simp
+qed
+
+lemma fmap_restr_monofun:  "monofun (fmap_restr S)"
+proof (cases "finite S")
+  case True thus ?thesis
+    apply -
+    apply (rule monofunI)
+    apply (rule fmap_restr_belowI)
+    apply (subst lookup_fmap_restr[OF True], assumption)+
+    apply (metis fmap_belowE)
+    by (metis fmap_below_dom)
+next
+case False thus ?thesis  by -(rule monofunI, simp add: fmap_restr_def)
+qed
+
+lemma fmap_restr_cont:  "cont (fmap_restr S)"
+proof(cases "finite S")
+case True thus ?thesis apply -
+  apply (rule contI2[OF fmap_restr_monofun])
+  apply (rule fmap_belowI')
+  apply (simp add: chain_fdom(2))[1]
+  apply auto
+  apply (subst lookup_fmap_restr[OF True], assumption)
+  apply (subst lookup_cont, assumption)+
+  apply (rule lub_mono[OF lookup_chain lookup_chain], assumption+)
+  apply (subst lookup_fmap_restr[OF True], assumption)
+  apply (rule below_refl)
+  done
+next
+case False thus ?thesis by -(rule contI2[OF fmap_restr_monofun], simp add: fmap_restr_def)
+qed
+
+lemmas fmap_restr_cont2cont[simp,cont2cont] = cont_compose[OF fmap_restr_cont]
 
 (* A definition of fmap_meep that requires compatible fmaps *)
 
