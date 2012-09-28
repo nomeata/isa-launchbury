@@ -13,6 +13,10 @@ definition meet :: "'a => 'a => 'a" (infix "\<squnion>" 80) where
 definition compatible :: "'a \<Rightarrow> 'a \<Rightarrow> bool"
   where "compatible x y = (\<exists> z. {x, y} <<| z)"
 
+lemma bot_compatible[simp]:
+  "compatible x \<bottom>" "compatible \<bottom> x"
+  unfolding compatible_def by (metis insert_commute is_lub_bin minimal)+
+
 lemma meet_idem[simp]: "compatible x y \<Longrightarrow> x \<squnion> (x \<squnion> y) = x \<squnion> y"
 proof-
   assume c1: "compatible x y"
