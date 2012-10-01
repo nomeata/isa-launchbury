@@ -5,17 +5,14 @@ begin
 
 subsection {* Binary Joins and compatibility *}
 
-context pcpo
+context cpo
 begin
 definition join :: "'a => 'a => 'a" (infix "\<squnion>" 80) where
-  "x \<squnion> y = (if \<exists> z. {x, y} <<| z then lub {x, y} else \<bottom>)"
+  "x \<squnion> y = (if \<exists> z. {x, y} <<| z then lub {x, y} else x)"
 
 definition compatible :: "'a \<Rightarrow> 'a \<Rightarrow> bool"
   where "compatible x y = (\<exists> z. {x, y} <<| z)"
 
-lemma bot_compatible[simp]:
-  "compatible x \<bottom>" "compatible \<bottom> x"
-  unfolding compatible_def by (metis insert_commute is_lub_bin minimal)+
 
 lemma join_idem[simp]: "compatible x y \<Longrightarrow> x \<squnion> (x \<squnion> y) = x \<squnion> y"
 proof-
@@ -32,15 +29,11 @@ proof-
 qed
 
 lemma join_self[simp]: "x \<squnion> x = x"
-  unfolding join_def
-  apply auto
-  apply (metis is_lub_singleton)
-  done
+  unfolding join_def  by auto
 end
 
-lemma join_commute: "x \<squnion> y = y \<squnion> x"
-  unfolding join_def
-  by (metis insert_commute)
+lemma join_commute:  "compatible x y \<Longrightarrow> x \<squnion> y = y \<squnion> x"
+  unfolding compatible_def unfolding join_def by (metis insert_commute)
 
 lemma compatibleI:
   assumes "x \<sqsubseteq> z"
@@ -134,6 +127,12 @@ proof(rule admI)
   qed
 qed
 
+context pcpo
+begin
+  lemma bot_compatible[simp]:
+    "compatible x \<bottom>" "compatible \<bottom> x"
+    unfolding compatible_def by (metis insert_commute is_lub_bin minimal)+
+end
 
 subsection {* Towards meets: Lower bounds *}
 
@@ -265,13 +264,12 @@ end
 lemma (in pcpo) join_empty: "lub {} = (\<bottom>::'a)"
   by (metis (full_types) is_lub_def is_ub_empty lub_eqI minimal)
 
-class Join_cpo = pcpo +
+class Join_cpo = cpo +
   assumes join_exists: "\<exists>x. S <<| x"
 begin
   lemma lub_belowI: "\<lbrakk>\<And> x. x \<in> S \<Longrightarrow> x \<sqsubseteq> z \<rbrakk> \<Longrightarrow> lub S  \<sqsubseteq> z"
     by (metis is_lubD2 is_ubI join_exists lub_eqI)
 
-  declare [[show_sorts]]
   lemma join_def': "x \<squnion> y = lub {x, y}"
     unfolding join_def using join_exists by auto
 
@@ -295,16 +293,15 @@ definition down_closed where
 
 (* Compatible is downclosed in Nonempty_Meet_exists *)
 
-lemma compatible_down_closed:
+lemma (in Nonempty_Meet_cpo) compatible_down_closed:
     assumes "compatible x y"
     and "z \<sqsubseteq> x"
-    shows "compatible z (y::'a::{Nonempty_Meet_cpo,pcpo})"
+    shows "compatible z y"
 proof-
     from assms(1) obtain ub where "{x, y} <<| ub" by (metis compatible_def)
     hence "{x,y} <| ub" by (metis is_lubD1)
-    hence "{z,y} <| ub" using assms(2) by (metis below.r_trans is_ub_insert)
-    thus ?thesis
-      unfolding compatible_def by (rule ub_implies_lub_exists)
+    hence "{z,y} <| ub" using assms(2) by (metis is_ub_insert rev_below_trans)
+    thus ?thesis unfolding compatible_def by (rule ub_implies_lub_exists)
 qed
 
 end

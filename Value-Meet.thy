@@ -26,7 +26,7 @@ proof(rule exI, intro conjI strip)
           apply (cases t, simp)
           apply (cases x, simp)
           apply (cases y, simp)
-          apply (auto simp add: cfun_below_iff)
+          apply (fastforce simp add: cfun_below_iff)
           done
       qed
    qed auto
@@ -37,7 +37,5 @@ proof(rule exI, intro conjI strip)
   assume "z \<sqsubseteq> x" and "z \<sqsubseteq> y"
   thus "z \<sqsubseteq> value_meet\<cdot>x\<cdot>y" using * by auto
 qed
-
-
 
 end
