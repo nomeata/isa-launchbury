@@ -196,12 +196,6 @@ end
 
 interpretation subpcpo_syn S for S.
 
-
-(* Down-closedness *)
-
-definition down_closed where
-  "down_closed S = (\<forall>x y. x \<in> S \<longrightarrow> y \<sqsubseteq> x \<longrightarrow> y \<in> S)"
-
 locale subpcpo_bot = subpcpo S for S +
   fixes b
   assumes "bottom_of S = b"

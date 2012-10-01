@@ -481,7 +481,6 @@ case True thus ?thesis apply -
   apply (rule fmap_belowI')
   apply (simp add: chain_fdom(2))[1]
   apply auto
-  apply (subst lookup_fmap_restr[OF True], assumption)
   apply (subst lookup_cont, assumption)+
   apply (rule lub_mono[OF lookup_chain lookup_chain], assumption+)
   apply (subst lookup_fmap_restr[OF True], assumption)
@@ -566,6 +565,14 @@ lemma fdom_fmap_extend[simp]:
   "finite S \<Longrightarrow> fdom (fmap_extend m S) = fdom m \<union> S"
   by (transfer, auto)
 
+lemma lookup_fmap_extend1[simp]:
+  "finite S \<Longrightarrow> x \<in> S \<Longrightarrow> lookup (fmap_extend m S) x = Some \<bottom>"
+  by (transfer, auto)
+
+lemma lookup_fmap_extend2[simp]:
+  "finite S \<Longrightarrow> x \<notin> S \<Longrightarrow> lookup (fmap_extend m S) x = lookup m x"
+  by (transfer, auto)
+
 lift_definition fmap_bottom :: "'a set  \<Rightarrow> ('a, 'b::pcpo) fmap"
   is "\<lambda> S. (if finite S then (\<lambda> x. if x \<in> S then Some \<bottom> else None) else empty)"
   apply (case_tac "finite set")
@@ -585,6 +592,10 @@ lemma[simp]: "fmap_bottom {} = fempty"
 lemma fmap_bottom_below[simp]:
   "S = fdom \<rho> \<Longrightarrow> fmap_bottom S \<sqsubseteq> \<rho>"
  by(rule fmap_belowI, auto)
+
+lemma fmap_bottom_below_iff[iff]:
+  "finite S \<Longrightarrow> fmap_bottom S \<sqsubseteq> \<rho> \<longleftrightarrow> S = fdom \<rho>"
+  by (metis fdom_fmap_bottom fmap_below_dom fmap_bottom_below)
 
 lemma fmap_restr_fmap_bottom[simp]:
   "finite S \<Longrightarrow> finite S2 \<Longrightarrow> fmap_restr S (fmap_bottom S2) = fmap_bottom (S \<inter> S2)"
