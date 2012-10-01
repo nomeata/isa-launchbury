@@ -196,35 +196,44 @@ end
 
 interpretation subpcpo_syn S for S.
 
-definition subpcpo_bot where
-  "subpcpo_bot b S = (subpcpo S \<and> bottom_of S = b)"
+
+(* Down-closedness *)
+
+definition down_closed where
+  "down_closed S = (\<forall>x y. x \<in> S \<longrightarrow> y \<sqsubseteq> x \<longrightarrow> y \<in> S)"
+
+locale subpcpo_bot = subpcpo S for S +
+  fixes b
+  assumes "bottom_of S = b"
+
+lemmas subpcpo_bot_def' = subpcpo_bot_def[unfolded subpcpo_bot_axioms_def]
 
 lemma subpcpo_bot_is_subpcpo:
-  "subpcpo_bot b S \<Longrightarrow> subpcpo S"
+  "subpcpo_bot S b \<Longrightarrow> subpcpo S"
   unfolding subpcpo_bot_def by auto
 
 lemma bottom_of_subpcpo_bot:
-  "subpcpo_bot b S \<Longrightarrow> bottom_of S = b"
-  unfolding subpcpo_bot_def by auto
+  "subpcpo_bot S b \<Longrightarrow> bottom_of S = b"
+  unfolding subpcpo_bot_def' by auto
 
 lemma bottom_of_subpcpo_bot_there:
-  "subpcpo_bot b S \<Longrightarrow> b \<in> S"
-  unfolding subpcpo_bot_def by (metis subpcpo.bottom_of_there)
+  "subpcpo_bot S b \<Longrightarrow> b \<in> S"
+  unfolding subpcpo_bot_def' by (metis subpcpo.bottom_of_there)
 
 lemma bottom_of_subpcpo_bot_minimal:
-  "subpcpo_bot b S \<Longrightarrow> x \<in> S \<Longrightarrow> b \<sqsubseteq> x"
-  unfolding subpcpo_bot_def by (metis subpcpo.bottom_of_minimal)
+  "subpcpo_bot S b \<Longrightarrow> x \<in> S \<Longrightarrow> b \<sqsubseteq> x"
+  unfolding subpcpo_bot_def' by (metis subpcpo.bottom_of_minimal)
 
 lemma subpcpo_is_subpcpo_bot:
-  "subpcpo S \<Longrightarrow> subpcpo_bot (bottom_of S) S"
-  unfolding subpcpo_bot_def by auto
+  "subpcpo S \<Longrightarrow> subpcpo_bot S (bottom_of S)"
+  unfolding subpcpo_bot_def' by auto
 
 lemma subpcpo_botI:
   assumes "\<And> Y. \<lbrakk> chain Y; \<And> i. Y i \<in> S \<rbrakk> \<Longrightarrow> (\<Squnion> i. Y i) \<in> S"
   assumes "b \<in> S"
   assumes "\<And> y. y \<in> S \<Longrightarrow> b \<sqsubseteq> y"
-  shows "subpcpo_bot b S"
-unfolding subpcpo_bot_def 
+  shows "subpcpo_bot S b"
+unfolding subpcpo_bot_def' 
 proof
   show "subpcpo S" by (rule subpcpoI[OF assms])
   interpret subpcpo S by fact
@@ -282,16 +291,16 @@ proof-
 qed
 
 lemma subpcpo_bot_cone_above:
-  shows "subpcpo_bot x {y . x \<sqsubseteq> y}"
+  shows "subpcpo_bot {y . x \<sqsubseteq> y} x"
   by (metis bottom_of_cone_above subpcpo_is_subpcpo_bot[OF subpcpo_cone_above])
 
 lemma subpcpo_bot_image:
-  assumes "subpcpo_bot b S"
+  assumes "subpcpo_bot S b"
   and "cont f"
   and "cont g"
   and im: "g ` f ` S \<subseteq> S"
   and cut: "\<And> x. x \<in> f ` S \<Longrightarrow> f (g x) = x"
-  shows "subpcpo_bot (f b) (f`S)"
+  shows "subpcpo_bot (f`S) (f b)"
 proof(rule subpcpo_botI)
   interpret subpcpo S by (rule subpcpo_bot_is_subpcpo, fact)
 {
@@ -349,9 +358,9 @@ proof(rule subpcpoI)
 qed
 
 lemma subpcpo_bot_inter:
-  assumes "subpcpo_bot b1 S1" and "subcpo S2"
+  assumes "subpcpo_bot S1 b1" and "subcpo S2"
   and bot_in_2: "b1 \<in> S2"
-  shows "subpcpo_bot b1 (S1 \<inter> S2)"
+  shows "subpcpo_bot (S1 \<inter> S2) b1"
 proof(rule subpcpo_botI)
   interpret subpcpo S1 by (rule subpcpo_bot_is_subpcpo, fact)
   interpret s2!: subcpo S2  by (fact)

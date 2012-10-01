@@ -153,7 +153,7 @@ apply (auto simp add: contains_bottoms_def)[1]
 oops
 
 lemma ESem_cont_induct_lemma:
-  "frees e \<subseteq> set d \<Longrightarrow> (subpcpo_bot (fmap_bottom_l d) (compatible_with_exp e d)  &&& contains_bottoms (set d) (compatible_with_exp e d))"
+  "frees e \<subseteq> set d \<Longrightarrow> (subpcpo_bot (compatible_with_exp e d) (fmap_bottom_l d)  &&& contains_bottoms (set d) (compatible_with_exp e d))"
 (*  and
   "\<lbrakk> frees_as as \<subseteq> set d; vars_as as \<subseteq> set d \<rbrakk> \<Longrightarrow>
     (subpcpo_bot (fmap_bottom_l d) (compatible_with_heapExtend' compatible_with_exp eval d (asToHeap as)))
@@ -178,7 +178,7 @@ next
         hence "fdom m = set (x # d)" unfolding fmap_bottom_l_def by (metis fdom_fmap_bottom finite_set fmap_below_dom)
       } note * = this
 
-      have "subpcpo_bot (fmap_restr_l d (fmap_bottom_l (x#d)))  (fmap_restr_l d ` compatible_with_exp e (x # d))"
+      have "subpcpo_bot (fmap_restr_l d ` compatible_with_exp e (x # d)) (fmap_restr_l d (fmap_bottom_l (x#d))) "
         unfolding fmap_restr_l_def 
         apply (rule subpcpo_bot_image[OF Lam(2)[OF f] fmap_restr_cont fmap_extend_cont contains_bottoms_subsetD[OF Lam(3)[OF f]] restr_extend_cut[OF finite_set]])
         using * by auto

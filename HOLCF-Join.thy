@@ -286,11 +286,6 @@ begin
     by (metis is_lubD1 is_ub_insert join_exists lub_eqI)
 end
 
-(* Down-closedness *)
-
-definition down_closed where
-  "down_closed S = (\<forall>x y. x \<in> S \<longrightarrow> y \<sqsubseteq> x \<longrightarrow> y \<in> S)"
-
 (* Compatible is downclosed in Nonempty_Meet_exists *)
 
 lemma (in Nonempty_Meet_cpo) compatible_down_closed:
