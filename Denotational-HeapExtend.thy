@@ -2,60 +2,60 @@ theory "Denotational-HeapExtend"
   imports "Denotational-Common"
 begin
 
-definition heapExtendMeet :: "Env \<Rightarrow> heap \<Rightarrow> (exp \<Rightarrow> Env \<Rightarrow> Value)  \<Rightarrow> (var, Value) fmap"
+definition heapExtendJoin :: "Env \<Rightarrow> heap \<Rightarrow> (exp \<Rightarrow> Env \<Rightarrow> Value)  \<Rightarrow> (var, Value) fmap"
   where
-  "heapExtendMeet \<rho> h eval =
+  "heapExtendJoin \<rho> h eval =
     (if (\<forall>e \<in> snd ` set h. cont (eval e)) \<and> compatible_fmap \<rho> (heapToEnv h (\<lambda> e. eval e \<rho>) )
-    then fmap_meet \<rho> (fixR (fmap_bottom (fst ` set h)) (\<lambda> \<rho>' . heapToEnv h (\<lambda> e. eval e (fmap_meet \<rho> \<rho>'))))
+    then fmap_join \<rho> (fixR (fmap_bottom (fst ` set h)) (\<lambda> \<rho>' . heapToEnv h (\<lambda> e. eval e (fmap_join \<rho> \<rho>'))))
     else fempty)"
 
-lemma heapExtendMeet_def2:
-  "heapExtendMeet \<rho> h eval =
+lemma heapExtendJoin_def2:
+  "heapExtendJoin \<rho> h eval =
     (if (\<forall>e \<in> snd ` set h. cont (eval e)) \<and> compatible_fmap \<rho> (heapToEnv h (\<lambda> e. eval e \<rho>) )
-    then (fixR (fmap_bottom (fdom \<rho> \<union> fst ` set h)) (\<lambda> \<rho>' . fmap_meet \<rho> (heapToEnv h (\<lambda> e. eval e \<rho>'))))
+    then (fixR (fmap_bottom (fdom \<rho> \<union> fst ` set h)) (\<lambda> \<rho>' . fmap_join \<rho> (heapToEnv h (\<lambda> e. eval e \<rho>'))))
     else fempty)" (is "_ = (if _ then fixR ?x2 ?F2 else _)")
 proof (cases "(\<forall> e \<in> snd ` set h. cont (eval e)) \<and> compatible_fmap \<rho> (heapToEnv h (\<lambda> e. eval e \<rho>))")
 case True
-  let "fixR ?x1 ?F1" = "fixR (fmap_bottom (fst ` set h)) (\<lambda> \<rho>'. heapToEnv h (\<lambda> e. eval e (fmap_meet \<rho> \<rho>')))"
+  let "fixR ?x1 ?F1" = "fixR (fmap_bottom (fst ` set h)) (\<lambda> \<rho>'. heapToEnv h (\<lambda> e. eval e (fmap_join \<rho> \<rho>')))"
   show ?thesis
   proof(induct rule: below_antisym[case_names lt gt])
   case lt
-    have "fmap_meet \<rho> (fixR ?x1 ?F1) \<sqsubseteq> fixR (?F2 ?x2) ?F2"
+    have "fmap_join \<rho> (fixR ?x1 ?F1) \<sqsubseteq> fixR (?F2 ?x2) ?F2"
       apply (rule parallel_fixR_ind)
       sorry also
     have "... = fixR ?x2 ?F2" sorry
-    finally show ?case unfolding heapExtendMeet_def using True by auto
+    finally show ?case unfolding heapExtendJoin_def using True by auto
   next
   case gt
-    have "fixR ?x2 ?F2  \<sqsubseteq> fmap_meet \<rho> (fixR ?x1 ?F1)"
+    have "fixR ?x2 ?F2  \<sqsubseteq> fmap_join \<rho> (fixR ?x1 ?F1)"
       sorry
-    thus ?case unfolding heapExtendMeet_def using True by auto
+    thus ?case unfolding heapExtendJoin_def using True by auto
   qed
 next
 case False
-  thus ?thesis unfolding heapExtendMeet_def apply (subst if_not_P, assumption)+ ..
+  thus ?thesis unfolding heapExtendJoin_def apply (subst if_not_P, assumption)+ ..
 qed
 
 
 
-lemma heapExtendMeet_def3:
-  "heapExtendMeet \<rho> h eval =
+lemma heapExtendJoin_def3:
+  "heapExtendJoin \<rho> h eval =
     (if heapExtendMeed_cond h eval \<rho>
-    then fix_on (compatible_with_heap_and_env h eval \<rho>) (\<lambda> \<rho>'. fmap_meet \<rho> (heapToEnv h (\<lambda> e. eval e \<rho>')))
+    then fix_on (compatible_with_heap_and_env h eval \<rho>) (\<lambda> \<rho>'. fmap_join \<rho> (heapToEnv h (\<lambda> e. eval e \<rho>')))
     else fempty)"
 sorry
 
 
-lemma heapExtendMeet_eqvt[eqvt]:
-  "\<pi> \<bullet> heapExtendMeet \<rho> h eval = heapExtendMeet (\<pi> \<bullet> \<rho>) (\<pi> \<bullet> h) (\<pi> \<bullet> eval)"
+lemma heapExtendJoin_eqvt[eqvt]:
+  "\<pi> \<bullet> heapExtendJoin \<rho> h eval = heapExtendJoin (\<pi> \<bullet> \<rho>) (\<pi> \<bullet> h) (\<pi> \<bullet> eval)"
 proof (cases "(\<forall> e \<in> snd ` set h. cont (eval e)) \<and> compatible_fmap \<rho> (heapToEnv h (\<lambda> e. eval e \<rho>))")
   case True
   moreover hence "(\<forall> e \<in> snd ` set (\<pi> \<bullet> h). cont ((\<pi> \<bullet> eval) e)) \<and> compatible_fmap (\<pi> \<bullet> \<rho>) (heapToEnv (\<pi> \<bullet> h) (\<lambda> e. (\<pi> \<bullet> eval) e (\<pi> \<bullet> \<rho>))) " sorry
   ultimately show ?thesis
-   unfolding heapExtendMeet_def
+   unfolding heapExtendJoin_def
    apply -
    apply (subst if_P, assumption)+
-   apply (subst fmap_meet_eqvt)
+   apply (subst fmap_join_eqvt)
    apply (subst fixR_eqvt)
    apply (auto simp add: fmap_bottom_eqvt)[1]
    apply perm_simp
@@ -63,7 +63,7 @@ proof (cases "(\<forall> e \<in> snd ` set h. cont (eval e)) \<and> compatible_f
    done
 next
 case False thus ?thesis
-   unfolding heapExtendMeet_def
+   unfolding heapExtendJoin_def
    apply (subst if_not_P, assumption)
    apply (subst if_not_P)
    apply  (rule notI)
@@ -77,10 +77,10 @@ case False thus ?thesis
    done
 qed
 
-lemma heapExtendMeet_cong[fundef_cong]:
+lemma heapExtendJoin_cong[fundef_cong]:
   "\<lbrakk> env1 = env2 ; heap1 = heap2 ;  (\<And> e. e \<in> snd ` set heap2 \<Longrightarrow> eval1 e = eval2 e) \<rbrakk>
-      \<Longrightarrow> heapExtendMeet env1 heap1 eval1 = heapExtendMeet env2 heap2 eval2"
-  unfolding heapExtendMeet_def
+      \<Longrightarrow> heapExtendJoin env1 heap1 eval1 = heapExtendJoin env2 heap2 eval2"
+  unfolding heapExtendJoin_def
   by (auto cong:heapToEnv_cong)
 
 definition heapExtend :: "Env \<Rightarrow> heap \<Rightarrow> (exp \<Rightarrow> Env \<Rightarrow> Value)  \<Rightarrow> (var, Value) fmap"

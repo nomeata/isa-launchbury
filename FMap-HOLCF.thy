@@ -1,5 +1,5 @@
 theory "FMap-HOLCF"
-  imports FMap "HOLCF-Binary-Meet" "Fix1" "FixRestr"
+  imports FMap "HOLCF-Binary-Join" "Fix1" "FixRestr"
 begin
 
 default_sort type
@@ -495,7 +495,7 @@ lemmas fmap_restr_cont2cont[simp,cont2cont] = cont_compose[OF fmap_restr_cont]
 
 (* A definition of fmap_meep that requires compatible fmaps *)
 
-lift_definition fmap_meet :: "('a, 'b::pcpo) fmap \<Rightarrow> ('a, 'b) fmap  \<Rightarrow> ('a, 'b) fmap"
+lift_definition fmap_join :: "('a, 'b::pcpo) fmap \<Rightarrow> ('a, 'b) fmap  \<Rightarrow> ('a, 'b) fmap"
   is "\<lambda>m1 m2 x. (
     case m1 x of
       Some x1 \<Rightarrow> case m2 x of
@@ -506,13 +506,13 @@ lift_definition fmap_meet :: "('a, 'b::pcpo) fmap \<Rightarrow> ('a, 'b) fmap  \
   apply (rule_tac B = "dom fun1 \<union> dom fun2" in  finite_subset)
   by (auto simp add: map_def split add: option.split_asm)
 
-lemma fdom_fmap_meet[simp]: "fdom (fmap_meet m1 m2) = fdom m1 \<union> fdom m2"
+lemma fdom_fmap_join[simp]: "fdom (fmap_join m1 m2) = fdom m1 \<union> fdom m2"
   by (transfer, auto simp add: dom_def split:option.split)
 
-lemma [simp]: "fmap_meet \<rho> fempty = \<rho>"
+lemma [simp]: "fmap_join \<rho> fempty = \<rho>"
   by (transfer, auto split:option.split)
 
-lemma [simp]: "fmap_meet fempty \<rho> = \<rho>"
+lemma [simp]: "fmap_join fempty \<rho> = \<rho>"
   by (transfer, auto split:option.split)
 
 lift_definition compatible_fmap :: "('a, 'b::pcpo) fmap  \<Rightarrow> ('a, 'b) fmap \<Rightarrow> bool"
@@ -532,8 +532,8 @@ lemma [simp]:
   "compatible_fmap \<rho> fempty"
   by (transfer, simp)+
 
-lemma fmap_meet_rho[simp]:
-  "compatible_fmap \<rho> x \<Longrightarrow> fmap_meet \<rho> (fmap_meet \<rho> x) = fmap_meet \<rho> x"
+lemma fmap_join_rho[simp]:
+  "compatible_fmap \<rho> x \<Longrightarrow> fmap_join \<rho> (fmap_join \<rho> x) = fmap_join \<rho> x"
   apply (transfer)
   apply rule
   apply (case_tac "\<rho> xa", case_tac "x xa")

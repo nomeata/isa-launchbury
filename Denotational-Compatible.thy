@@ -22,11 +22,34 @@ lemma fmap_restr_l_eqvt[eqvt]:
 lemma fmap_restr_l_cont:
   "cont (fmap_restr_l l)" unfolding fmap_restr_l_def by (rule fmap_restr_cont)
 
+definition heapExtendJoin_cond
+  where "heapExtendJoin_cond compatible_with_exp h eval \<rho> = 
+    (compatible_fmap \<rho> (heapToEnv h (\<lambda> e. eval e (fmap_bottom (fdom \<rho> \<union> fst ` set h)))) \<and> 
+    (\<forall> e \<in> snd ` set h. subpcpo (compatible_with_exp e (fdom \<rho> \<union> fst ` set h))) \<and>
+    (\<forall> e \<in> snd ` set h. cont_on (compatible_with_exp e (fdom \<rho> \<union> fst ` set h)) (eval e)))"
+
+
+definition
+  compatible_with_heapExtend' :: "(exp \<Rightarrow> var list \<Rightarrow> Env set) \<Rightarrow> (exp \<Rightarrow> Env \<Rightarrow> Value) \<Rightarrow> var list \<Rightarrow> heap \<Rightarrow> Env set"
+where
+  "compatible_with_heapExtend' compatible_with_exp eval d h =
+  (if True
+  then {\<rho>.
+    (\<forall> e\<in> snd`set h . \<forall> i. ((\<lambda> \<rho>'. fmap_join \<rho> (heapToEnv h (\<lambda> e. eval e \<rho>')))^^i) (fmap_bottom (set d)) \<in> compatible_with_exp e d) \<and>
+    (\<forall>i. compatible_fmap \<rho> (heapToEnv h (\<lambda> e. eval e (((\<lambda> \<rho>'. fmap_join \<rho> (heapToEnv h (\<lambda> e. eval e \<rho>')))^^i) (fmap_bottom (set d)))))) }
+  else {})"
+
+lemma compatible_with_heapExtend'_cong[fundef_cong]:
+  "\<lbrakk> \<And> e. e\<in> snd`set h2 \<Longrightarrow> compatible_with_exp1 e d1 = compatible_with_exp2 e d2 ;  eval1 = eval2; d1 = d2; h1 = h2 \<rbrakk>
+    \<Longrightarrow>  compatible_with_heapExtend' compatible_with_exp1 eval1 d1 h1 = compatible_with_heapExtend' compatible_with_exp2 eval2 d2 h2"
+unfolding compatible_with_heapExtend'_def by auto
+
+lemma  compatible_with_heapExtend'_eqvt[eqvt]:
+  "\<pi> \<bullet> compatible_with_heapExtend' compatible_with_exp eval d h = compatible_with_heapExtend' (\<pi> \<bullet> compatible_with_exp) (\<pi> \<bullet> eval) (\<pi> \<bullet> d) (\<pi> \<bullet> h)"
+  sorry
 
 nominal_primrec
   compatible_with_exp :: "exp \<Rightarrow> var list \<Rightarrow> Env set" 
-and
-  compatible_with_assn :: "assn \<Rightarrow> var list \<Rightarrow> Env set" 
 where
   "compatible_with_exp (Var v) d = {\<rho>' . fmap_bottom_l d \<sqsubseteq> \<rho>'}" |
   "atom x \<sharp> d \<Longrightarrow>
@@ -35,15 +58,10 @@ where
   "compatible_with_exp (App e x) d = compatible_with_exp e d" |
   "set (bn as) \<sharp>* d \<Longrightarrow>
     compatible_with_exp (Let as body) d =
-      fmap_restr_l d ` (compatible_with_exp body (vars_as_l as @ d) \<inter> compatible_with_assn as (vars_as_l as @ d))" |
-  "compatible_with_assn ANil d = {\<rho>' . fmap_bottom_l d \<sqsubseteq> \<rho>'}" |
-  "compatible_with_assn (ACons v e as) d = 
-      compatible_with_exp e d
-      \<inter> {\<rho>'. compatible (eval e \<rho>') (the (lookup \<rho>' v))}
-      \<inter> compatible_with_assn as d"
+      fmap_restr_l d ` (compatible_with_exp body (vars_as_l as @ d) \<inter> compatible_with_heapExtend' compatible_with_exp eval (vars_as_l as @ d)  (asToHeap as))"
 proof-
 case goal1 thus ?case
-  unfolding compatible_with_exp_compatible_with_assn_graph_def eqvt_def
+  unfolding compatible_with_exp_graph_def eqvt_def
   apply rule
   apply perm_simp
   apply rule
@@ -51,7 +69,6 @@ case goal1 thus ?case
 next
 case (goal3 P x)
   show ?case
-  sorry (*
   proof (cases x)
   case (Pair e d)
     show ?thesis
@@ -59,11 +76,12 @@ case (goal3 P x)
       apply (rule_tac y=e in exp_assn.exhaust(1))
       apply blast+
       apply (rule_tac y=e and c = d in exp_assn.strong_exhaust(1), auto simp add: fresh_star_singleton, metis)[1]
+      apply (rule_tac y=e and c = d in exp_assn.strong_exhaust(1), auto simp add: fresh_star_singleton, metis)[1]
       done
-  qed*)
+  qed
 next
 apply_end auto
-  fix X show X X X X X X sorry
+  fix X show X X X X sorry
 qed
 
 
@@ -122,12 +140,25 @@ proof(rule contains_bottomsI)
       done
 qed
  
+thm compatible_with_exp.induct
+
+lemma compatible_with_HeapExtend'_contains_bottom:
+  "\<lbrakk> \<And> e. e \<in> snd ` set h \<Longrightarrow> contains_bottoms (set d) (compatible_with_exp e d) \<rbrakk> 
+  \<Longrightarrow> contains_bottoms (set d) (compatible_with_heapExtend' compatible_with_exp eval d h)"
+unfolding compatible_with_heapExtend'_def 
+apply (subst if_True)
+apply (subst Collect_conj_eq)
+apply (rule contains_bottoms_inter)
+apply (auto simp add: contains_bottoms_def)[1]
+oops
 
 lemma ESem_cont_induct_lemma:
   "frees e \<subseteq> set d \<Longrightarrow> (subpcpo_bot (fmap_bottom_l d) (compatible_with_exp e d)  &&& contains_bottoms (set d) (compatible_with_exp e d))"
-  and
-  "\<lbrakk> frees_as as \<subseteq> set d; vars_as as \<subseteq> set d \<rbrakk> \<Longrightarrow> (subpcpo_bot (fmap_bottom_l d) (compatible_with_assn as d)) &&&  contains_bottoms (set d) (compatible_with_assn as d)"
-proof(nominal_induct e and avoiding: d rule:exp_assn.strong_induct)
+(*  and
+  "\<lbrakk> frees_as as \<subseteq> set d; vars_as as \<subseteq> set d \<rbrakk> \<Longrightarrow>
+    (subpcpo_bot (fmap_bottom_l d) (compatible_with_heapExtend' compatible_with_exp eval d (asToHeap as)))
+           &&&  contains_bottoms (set d) (compatible_with_heapExtend' compatible_with_exp eval  d (asToHeap as))" *)
+proof(induct e d rule:compatible_with_exp.induct[case_names Var Lam App Let])
 print_cases
   case (Var v d)
     case 1 show ?case by (simp, rule subpcpo_bot_cone_above)
@@ -137,7 +168,7 @@ next
     case 1 thus ?case using App by auto
     case 2 thus ?case using App by auto
 next
-  case (Lam x e d)
+  case (Lam x d e)
     case 1
       hence f: "frees e \<subseteq> set (x # d)" by auto
 
@@ -162,15 +193,20 @@ next
         by (rule contains_bottoms_restr[OF finite_set])        
       thus ?case using Lam(1) by simp
 next
-  case (Let as body d)
+  case (Let as d body)
     let "?d'" = "vars_as_l as @ d"
     case 1
       hence f: "frees body \<subseteq> set ?d'" and f': "frees_as as \<subseteq> set ?d'" by auto 
       have f'': "vars_as as \<subseteq> set ?d'" by auto
 
+      thm Let(2)[OF f]
+      thm Let(3)[OF f]
+      thm Let(4)[OF _ f]
+      thm Let(5)[OF _ f]
+
       { fix m
         assume "m \<in> compatible_with_exp body ?d'"
-        hence "fmap_bottom_l ?d' \<sqsubseteq> m" by (rule bottom_of_subpcpo_bot_minimal[OF Let(4)[OF f]])
+        hence "fmap_bottom_l ?d' \<sqsubseteq> m" by (rule bottom_of_subpcpo_bot_minimal[OF Let(2)[OF f]])
         hence "fdom m = set ?d'" unfolding fmap_bottom_l_def by (metis fdom_fmap_bottom finite_set fmap_below_dom)
       } note * = this
 
@@ -194,43 +230,7 @@ next
 
     case 2 thus ?case
       using Let by (auto simp add: fmap_restr_l_def intro: contains_bottoms_restr[OF finite_set _ cb])
-next
-  case ANil
-    case 1 show ?case by (simp, rule subpcpo_bot_cone_above)
-    case 2 show ?case by (auto intro!: fmap_bottom_below  dest!: fmap_below_dom simp add: finite_subset fmap_bottom_l_def contains_bottoms_def)
-next
-  case (ACons var e as d)
-    case 1
-      hence f: "frees e \<subseteq> set d" and f': "frees_as as \<subseteq> set d" and f'': "vars_as as \<subseteq> set d" and f''':"var \<in> set d" by auto
-
-    have s: "\<And> eval. subcpo {\<rho>'. compatible (eval e \<rho>') (the (lookup \<rho>' var))}" sorry
-
-    have cb: "\<And> eval. contains_bottoms (set d) {\<rho>'. compatible (eval e \<rho>') (the (lookup \<rho>' var))}" sorry
- 
-    show ?case
-      apply (subst compatible_with_assn.simps(2))
-      apply (rule subpcpo_bot_inter[OF subpcpo_bot_inter[OF ACons(1)[OF f] s ]
-                                       subpcpo_is_subcpo[OF subpcpo_bot_is_subpcpo[OF ACons(3)[OF f' f'']]]
-                                       bottom_of_subpcpo_bot_there[OF ACons(3)[OF f' f'']]
-                                   ])
-      using f'' f'''
-      apply (auto simp add: fmap_bottom_l_def)
-      done
-
-   case 2
-   show ?case
-      apply (subst compatible_with_assn.simps(2))
-      by (rule contains_bottoms_inter[OF contains_bottoms_inter[OF ACons(2)[OF f] cb]  ACons(4)[OF f' f'']])
-      
 qed
-
-
-
-definition heapExtendMeed_cond
-  where "heapExtendMeed_cond h eval \<rho> = 
-    (compatible_fmap \<rho> (heapToEnv h (\<lambda> e. eval e (fmap_bottom (fdom \<rho> \<union> fst ` set h)))) \<and> 
-    (\<forall> e \<in> snd ` set h. subpcpo (compatible_with_exp e (fdom \<rho> \<union> fst ` set h))) \<and>
-    (\<forall> e \<in> snd ` set h. cont_on (compatible_with_exp e (fdom \<rho> \<union> fst ` set h)) (eval e)))"
 
 
 

@@ -171,20 +171,20 @@ lemma compatible_fmap_eqvt[eqvt]:
   apply auto
   done
 
-lemma meet_eqvt[simp,eqvt]:
-  "\<pi> \<bullet> meet (x::'a::{cont_pt,pcpo}) y = meet (\<pi> \<bullet> x) (\<pi> \<bullet> y)"
+lemma join_eqvt[simp,eqvt]:
+  "\<pi> \<bullet> join (x::'a::{cont_pt,pcpo}) y = join (\<pi> \<bullet> x) (\<pi> \<bullet> y)"
 proof (cases "\<exists> z. {x, y} <<| z")
 case False
   hence "\<not> (\<exists> z. {\<pi> \<bullet> x, \<pi> \<bullet> y} <<| z)" by (metis perm_is_lub_simp empty_eqvt insert_eqvt eqvt_bound)
-  thus ?thesis using False unfolding meet_def by auto
+  thus ?thesis using False unfolding join_def by auto
 next
 case True
   hence "\<exists> z. {\<pi> \<bullet> x, \<pi> \<bullet> y} <<| z" by (metis perm_is_lub_simp empty_eqvt insert_eqvt)
-  thus ?thesis using True unfolding meet_def by (auto simp add: empty_eqvt insert_eqvt)
+  thus ?thesis using True unfolding join_def by (auto simp add: empty_eqvt insert_eqvt)
 qed
 
-lemma fmap_meet_eqvt[eqvt]:
-  "\<pi> \<bullet> fmap_meet m1 (m2 :: ('a::{pt}, 'b::{cont_pt, pcpo}) fmap) = fmap_meet (\<pi> \<bullet> m1) (\<pi> \<bullet> m2)"
+lemma fmap_join_eqvt[eqvt]:
+  "\<pi> \<bullet> fmap_join m1 (m2 :: ('a::{pt}, 'b::{cont_pt, pcpo}) fmap) = fmap_join (\<pi> \<bullet> m1) (\<pi> \<bullet> m2)"
   by (transfer, perm_simp, rule refl)
 
 end
