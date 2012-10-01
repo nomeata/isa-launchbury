@@ -113,6 +113,21 @@ end
 
 class Nonempty_Meet_cpo = cpo +
   assumes nonempty_meet_exists: "S \<noteq> {} \<Longrightarrow> \<exists>x. S >>| x"
+begin
+  lemma ub_implies_lub_exists:
+  assumes "S <| u"
+  shows "\<exists> z. S <<| z"
+  proof-
+    have "{u. S <| u} \<noteq> {}" using assms by auto
+    from nonempty_meet_exists[OF this]
+    obtain lu where lb: "{u. S <| u} >>| lu" by auto
+    hence "S <| lu"
+      by (metis is_glb_above_iff is_lb_def is_ub_def mem_Collect_eq)
+    hence "S <<| lu"
+      by (metis (full_types) is_lubI is_glbD1 is_lb_def lb mem_Collect_eq)
+    thus ?thesis ..
+  qed
+end
 
 class Meet_cpo = Top_cpo + Nonempty_Meet_cpo
 begin
