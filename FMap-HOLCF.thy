@@ -1,5 +1,5 @@
 theory "FMap-HOLCF"
-  imports FMap "HOLCF-Binary-Join" "Fix1" "FixRestr"
+  imports FMap "HOLCF-Join" "Fix1" "FixRestr"
 begin
 
 default_sort type
