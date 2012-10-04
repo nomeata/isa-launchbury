@@ -11,13 +11,33 @@ definition fmap_bottom_l where
   "fmap_bottom_l d = fmap_bottom (set d)"
 
 lemma fmap_bottom_l_eqvt[eqvt]:
-  "\<pi> \<bullet> fmap_bottom_l d = fmap_bottom_l (\<pi> \<bullet> d)" sorry
+  "\<pi> \<bullet> fmap_bottom_l d = (fmap_bottom_l (\<pi> \<bullet> d) :: ('a::pt, 'b::{pcpo,cont_pt}) fmap)"
+  by (simp add: fmap_bottom_l_def fmap_bottom_eqvt set_eqvt)
 
 definition fmap_restr_l where
   "fmap_restr_l d = fmap_restr (set d)"
 
+lemma fmap_restr_eqvt:
+  "finite d \<Longrightarrow> \<pi> \<bullet> (fmap_restr d m) = fmap_restr (\<pi> \<bullet> d) (\<pi> \<bullet> m)"
+proof
+case goal1 thus ?case by (simp add:fdom_perm inter_eqvt  del:fdom_perm_rev)
+case goal2
+  hence "finite (\<pi> \<bullet> d)" by simp
+
+  from goal2(2) have "x \<in> \<pi> \<bullet> fdom m \<inter> \<pi> \<bullet> d" by (metis (full_types) fdom_fmap_restr fdom_perm_rev goal1 inter_eqvt)
+  then obtain y where "x = \<pi> \<bullet> y" and "y \<in> fdom m \<inter> d" by (auto simp add: permute_set_def)
+
+  have "the (lookup (\<pi> \<bullet> fmap_restr d m) x) = the (lookup (\<pi> \<bullet> fmap_restr d m) (\<pi> \<bullet> y))" by (simp add: `x = _`)
+  also have "... = \<pi> \<bullet> (the (lookup (fmap_restr d m) y))" using `finite d` `y \<in> fdom m \<inter> d` by (metis fdom_fmap_restr the_lookup_eqvt)
+  also have "... = \<pi> \<bullet> (the (lookup m y))" using `y \<in> _` by (simp add: lookup_fmap_restr[OF `finite d`])
+  also have "... = the (lookup (\<pi> \<bullet> m) x)" using `x = _` `y \<in> _` by (simp add: the_lookup_eqvt)
+  also have "... = the (lookup (fmap_restr (\<pi> \<bullet> d) (\<pi> \<bullet> m)) x)" using `x \<in> _ \<inter> _` by (simp add: lookup_fmap_restr[OF `finite (\<pi> \<bullet> d)`])
+  finally show ?case.
+qed
+
 lemma fmap_restr_l_eqvt[eqvt]:
-  "\<pi> \<bullet> fmap_restr_l d = fmap_restr_l (\<pi> \<bullet> d)" sorry
+  "\<pi> \<bullet> fmap_restr_l d m = fmap_restr_l (\<pi> \<bullet> d) (\<pi> \<bullet> m)"
+    by (simp add: fmap_restr_l_def fmap_restr_eqvt set_eqvt)
 
 lemma fmap_restr_l_cont:
   "cont (fmap_restr_l l)" unfolding fmap_restr_l_def by (rule fmap_restr_cont)
@@ -87,10 +107,17 @@ qed
 termination(eqvt) by lexicographic_order
 
 lemma fresh_fmap_bottom_set[simp]:
-  "x \<sharp> d \<Longrightarrow> x \<sharp> fmap_bottom (set d)" sorry
+  "x \<sharp> d \<Longrightarrow> x \<sharp> (fmap_bottom (set d) :: ('a::pt, 'b::{pcpo,cont_pt}) fmap)"
+  unfolding fmap_bottom_l_def[symmetric]
+  apply (erule fresh_fun_eqvt_app[rotated])
+  apply (rule eqvtI)
+  apply (rule eq_reflection)
+  using [[eta_contract=false]]
+  by (metis  fmap_bottom_l_eqvt permute_fun_def permute_minus_cancel(1))
 
 lemma fresh_star_fmap_bottom_set[simp]:
-  "x \<sharp>* d \<Longrightarrow> x \<sharp>* fmap_bottom (set d)" sorry
+  "x \<sharp>* d \<Longrightarrow> x \<sharp>* (fmap_bottom (set d) :: ('a::pt, 'b::{pcpo,cont_pt}) fmap)"
+  by (metis fresh_star_def fresh_fmap_bottom_set)
 
 definition contains_bottoms where
   "contains_bottoms d S = (\<forall>d'. d' \<subseteq> d \<longrightarrow> (\<forall> x \<in> S. fmap_extend (fmap_restr d' x) (d - d') \<in> S))"

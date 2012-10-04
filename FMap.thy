@@ -51,13 +51,13 @@ lemma finite_fran[simp]: "finite (fran m)"
 
 lemma fmap_eqI[intro]:
   assumes "fdom a = fdom b"
-  and "\<forall>x \<in> fdom a. the (lookup a x) = the (lookup b x)"
+  and "\<And> x. x \<in> fdom a \<Longrightarrow> the (lookup a x) = the (lookup b x)"
   shows "a = b"
 using assms
 proof(transfer)
   fix a b :: "('a \<rightharpoonup> 'b)"
   assume d: "dom a = dom b"
-  assume eq: "\<forall>x \<in> dom a. the (a x) = the (b x)"
+  assume eq: "\<And> x. x \<in> dom a \<Longrightarrow> the (a x) = the (b x)"
   show "a = b"
   proof
     fix x
@@ -84,7 +84,6 @@ qed
 lemma fmap_upd_twist: "a ~= c ==> (m(a f\<mapsto> b))(c f\<mapsto> d) = (m(c f\<mapsto> d))(a f\<mapsto> b)"
   apply (rule fmap_eqI)
   apply auto[1]
-  apply rule
   apply (case_tac "x = a", auto)
   apply (case_tac "x = c", auto)
   done
