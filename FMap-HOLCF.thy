@@ -545,6 +545,10 @@ lift_definition fmap_extend :: "('a, 'b::pcpo) fmap \<Rightarrow> 'a set  \<Righ
   apply auto
   done
 
+lemma fmap_extend_nonfinite:
+  "\<not> finite S \<Longrightarrow> fmap_extend m S = fempty"
+  by (transfer, simp)
+
 lemma fmap_restr_fmap_extend:
   "finite d2 \<Longrightarrow> fmap_restr d1 (fmap_extend m d2) = fmap_restr d1 (fmap_extend m (d1 \<inter> d2))"
   apply(cases "finite d1")
@@ -552,14 +556,6 @@ lemma fmap_restr_fmap_extend:
   apply (auto simp add: restrict_map_def)
   unfolding fmap_restr_def
   by auto
-
-lemma fmap_extend_monofun:
-  "monofun (\<lambda> m. fmap_extend m S)"
-sorry
-
-lemma fmap_extend_cont:
-  "cont (\<lambda> m. fmap_extend m S)"
-sorry
 
 lemma fdom_fmap_extend[simp]:
   "finite S \<Longrightarrow> fdom (fmap_extend m S) = fdom m \<union> S"
@@ -572,6 +568,42 @@ lemma lookup_fmap_extend1[simp]:
 lemma lookup_fmap_extend2[simp]:
   "finite S \<Longrightarrow> x \<notin> S \<Longrightarrow> lookup (fmap_extend m S) x = lookup m x"
   by (transfer, auto)
+
+lemma fmap_extend_monofun:
+  "monofun (\<lambda> m. fmap_extend m S)"
+proof(cases "finite S")
+case True
+  show ?thesis
+  proof (rule monofunI, rule fmap_belowI')
+  case goal1 thus ?case using True by (simp add: fmap_below_dom)
+  case (goal2 m1 m2 x) thus ?case
+    using goal2 True
+    by (cases  "x \<in> S", auto dest:fmap_belowE)
+  qed
+next
+case False
+  show ?thesis by (rule monofunI, simp add: fmap_extend_nonfinite[OF False])
+qed
+
+
+lemma fmap_extend_cont:
+  "cont (\<lambda> m. fmap_extend m S)"
+proof(cases "finite S")
+case True[simp]
+  show ?thesis
+  proof (rule fmap_contI)
+  case goal1 thus ?case by (simp add: fmap_below_dom)
+  case goal2 thus ?case by (metis True fmap_belowE lookup_fmap_extend1 lookup_fmap_extend2 minimal the.simps)
+  next
+  case (goal3 Y x)[simp]
+    show ?case
+      by (cases "x\<in>S", simp_all add: lookup_cont)
+  qed
+next
+case False
+  show ?thesis by (rule contI2[OF fmap_extend_monofun] , simp add: fmap_extend_nonfinite[OF False])
+qed
+
 
 lift_definition fmap_bottom :: "'a set  \<Rightarrow> ('a, 'b::pcpo) fmap"
   is "\<lambda> S. (if finite S then (\<lambda> x. if x \<in> S then Some \<bottom> else None) else empty)"

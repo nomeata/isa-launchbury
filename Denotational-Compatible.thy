@@ -66,7 +66,9 @@ unfolding compatible_with_heapExtend'_def by auto
 
 lemma  compatible_with_heapExtend'_eqvt[eqvt]:
   "\<pi> \<bullet> compatible_with_heapExtend' compatible_with_exp eval d h = compatible_with_heapExtend' (\<pi> \<bullet> compatible_with_exp) (\<pi> \<bullet> eval) (\<pi> \<bullet> d) (\<pi> \<bullet> h)"
-  sorry
+  unfolding compatible_with_heapExtend'_def
+  unfolding fmap_bottom_l_def[symmetric]
+  by (perm_simp,rule)  
 
 nominal_primrec
   compatible_with_exp :: "(exp \<Rightarrow> Env \<Rightarrow> Value) \<Rightarrow> exp \<Rightarrow> var list \<Rightarrow> Env set" 
