@@ -122,51 +122,6 @@ lemma fresh_star_fmap_bottom_set[simp]:
   by (metis fresh_star_def fresh_fmap_bottom_set)
 
 
-locale nice_domain = subpcpo_bot + down_closed
-thm nice_domain_def
-
-lemma cone_above_bottom_is_nice:
-  "finite d \<Longrightarrow> nice_domain {y. fmap_bottom d \<sqsubseteq> y} (fmap_bottom d)"
-  unfolding nice_domain_def
-  apply rule
-  apply (rule subpcpo_bot_cone_above)
-  apply (auto simp add: down_closed_def)
-  apply (metis fmap_below_dom)+
-  done
-
-lemma nice_domain_is_subpcpo_bot: "nice_domain S d \<Longrightarrow> subpcpo_bot S d"
-  unfolding nice_domain_def by auto
-
-lemma nice_domain_contains_bottoms: "nice_domain S d \<Longrightarrow> contains_bottoms (fdom d) S"
-  unfolding nice_domain_def
-  apply (auto intro!: down_closed_contains_bottoms)
-  apply (metis bottom_of_subpcpo_bot_minimal fmap_below_dom)+
-  done
-
-lemma nice_domain_inter:
-  "nice_domain S b \<Longrightarrow> nice_domain S2 b \<Longrightarrow> nice_domain (S \<inter> S2) b"
-  by (metis nice_domain_def down_closed_inter subpcpo_bot_inter subpcpo_bot_is_subpcpo subpcpo_is_subcpo bottom_of_subpcpo_bot_there)
-
-lemma nice_domain_retrict_image:
-  fixes S :: "Env set"
-  assumes "nice_domain S b"
-  and "\<And> x. x \<in> S \<Longrightarrow> fdom x = d"
-  and "finite d"
-  and "d' \<subseteq> d"
-  shows "nice_domain (fmap_restr d' `S) (fmap_restr d' b)"
-using assms
-  unfolding nice_domain_def
-  apply -
-  apply rule
-  apply (rule subpcpo_bot_image[OF _ fmap_restr_cont fmap_extend_cont _ restr_extend_cut[OF `finite d`]])
-  apply auto[1]
-  apply (metis contains_bottoms_subsetD down_closed_contains_bottoms)
-  apply assumption
-  apply (erule imageE, simp)
-  apply (metis Int_absorb1 fdom_fmap_restr finite_subset)
-  by (metis down_closed_restrict_image)
-
-
 lemma compatible_with_HeapExtend'_down_closed:
   "\<lbrakk> \<And> e. e \<in> snd ` set h \<Longrightarrow> nice_domain (compatible_with_exp eval e d) (fmap_bottom (set d)) \<rbrakk> 
   \<Longrightarrow> down_closed (compatible_with_heapExtend' (compatible_with_exp eval) eval d h)"
