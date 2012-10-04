@@ -90,6 +90,10 @@ lemma monofun_onI:
   "[|\<And>x y. \<lbrakk> x \<in> S; y \<in> S; x \<sqsubseteq> y \<rbrakk> \<Longrightarrow> f x \<sqsubseteq> f y|] ==> monofun_on S f"
 by (simp add: monofun_on_def)
 
+lemma monofun_on_cong:
+  "\<lbrakk> \<And> x. x \<in> S \<Longrightarrow> f x = g x \<rbrakk> \<Longrightarrow> monofun_on S f = monofun_on S g"
+  unfolding monofun_on_def by metis
+
 lemma ub2ub_monofun_on: 
   "[|monofun_on S f; \<And> i. Y i \<in> S; u \<in> S; range Y <| u|] ==> range (\<lambda>i. f (Y i)) <| f u"
 apply (rule ub_rangeI)
@@ -121,7 +125,6 @@ lemma ch2ch_monofun_on: "[|monofun_on S f; chain_on S Y|] ==> chain (\<lambda>i.
   apply (erule chain_on_is_on)+
   apply (erule chain_onE)
   done
-
 
 lemma cont_onE:
   "[|cont_on S f; chain_on S Y|] ==> range (\<lambda>i. f (Y i)) <<| f (\<Squnion>i. Y i)"
@@ -244,6 +247,30 @@ proof (rule cont_onI)
   with fY show "range (\<lambda>i. f (Y i)) <<| f (\<Squnion>i. Y i)"
     by (rule thelubE)
 qed
+
+lemma cont_on_cong':
+  "\<lbrakk> \<And> x. x \<in> S \<Longrightarrow> f x = g x \<rbrakk> \<Longrightarrow> cont_on g \<Longrightarrow> cont_on f"
+proof (rule cont_onI2)
+case goal1 thus ?case by -(drule cont_on2mono_on, metis monofun_on_def)
+next
+case goal2
+  have "(\<Squnion> i. f (Y i)) = (\<Squnion> i. g (Y i)) "
+    using goal2(1) chain_on_is_on[OF goal2(3)]
+    by (metis (lifting) lub_eq)
+  moreover
+  have "f (\<Squnion> i. Y i) = g  (\<Squnion> i. Y i)"
+    apply (rule goal2(1))
+    by (rule chain_on_lub_on[OF goal2(3)])
+  ultimately
+  show ?case apply -apply (erule ssubst)+
+    apply (subst cont_on2contlubE[OF goal2(2) goal2(3)]) 
+    apply rule
+    done
+qed
+
+lemma cont_on_cong:
+  "\<lbrakk> \<And> x. x \<in> S \<Longrightarrow> f x = g x \<rbrakk> \<Longrightarrow> cont_on g = cont_on f"
+  by (metis cont_on_cong')
 
 lemma cont_comp_cont_on:
   "cont f \<Longrightarrow> cont_on g \<Longrightarrow> cont_on (\<lambda> x. f (g x))"

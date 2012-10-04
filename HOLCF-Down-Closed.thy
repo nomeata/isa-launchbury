@@ -156,6 +156,9 @@ lemma cone_above_bottom_is_nice:
 lemma nice_domain_is_subpcpo_bot: "nice_domain S d \<Longrightarrow> subpcpo_bot S d"
   unfolding nice_domain_def by auto
 
+lemma nice_domain_is_subpcpo: "nice_domain S d \<Longrightarrow> subpcpo S"
+  by (metis subpcpo_bot_is_subpcpo nice_domain_is_subpcpo_bot)
+
 lemma nice_domain_is_down_closed: "nice_domain S d \<Longrightarrow> down_closed S"
   unfolding nice_domain_def by auto
 
