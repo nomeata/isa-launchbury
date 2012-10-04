@@ -122,6 +122,26 @@ proof(rule down_closedI)
   thus "y \<in> ?f ` S " by (metis x'1 x'2 `y \<sqsubseteq> x` assms(2) assms(3) assms(4) cut fdom_fmap_restr fmap_below_dom inf_absorb2 finite_subset)
 qed
 
+
+lemma down_closed_ball:
+  assumes  "\<And> x. x \<in> A \<Longrightarrow> down_closed (S x)"
+  shows  "down_closed (\<Inter>x \<in> A. S x)"
+  using assms unfolding down_closed_def by auto
+
+lemma down_closed_all:
+  assumes  "\<And> z. down_closed (S z)"
+  shows  "down_closed (\<Inter>x. S x)"
+  using assms by (metis down_closed_ball)
+
+lemma down_closed_vimage:
+  assumes "down_closed S"
+  and "monofun f"
+  shows "down_closed (f -` S)"
+  using assms
+  unfolding down_closed_def monofun_def vimage_def
+  by auto
+
+
 locale nice_domain = subpcpo_bot + down_closed
 
 lemma cone_above_bottom_is_nice:
@@ -134,6 +154,9 @@ lemma cone_above_bottom_is_nice:
   done
 
 lemma nice_domain_is_subpcpo_bot: "nice_domain S d \<Longrightarrow> subpcpo_bot S d"
+  unfolding nice_domain_def by auto
+
+lemma nice_domain_is_down_closed: "nice_domain S d \<Longrightarrow> down_closed S"
   unfolding nice_domain_def by auto
 
 lemma nice_domain_contains_bottoms: "nice_domain S d \<Longrightarrow> contains_bottoms (fdom d) S"
