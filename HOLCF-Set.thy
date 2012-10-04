@@ -98,6 +98,31 @@ apply assumption+
 apply (erule ub_rangeD)
 done
 
+
+lemma monofun_comp_monofun_on:
+  "monofun f \<Longrightarrow> monofun_on S g \<Longrightarrow> monofun_on S (\<lambda> x. f (g x))"
+  unfolding monofun_on_def
+  by (auto elim:monofunE)
+
+lemma monofun_comp_monofun_on2:
+  assumes "monofun f"
+  and "\<And> x. monofun (f x)"
+  shows "monofun_on S g \<Longrightarrow> monofun_on S h \<Longrightarrow> monofun_on S (\<lambda> x. f (g x) (h x))"
+  unfolding monofun_on_def
+  by (auto intro: rev_below_trans[OF fun_belowD[OF monofunE[OF assms(1)]] monofunE[OF assms(2)]]) 
+
+lemma cont_onI:
+  "[|!!Y. chain_on S Y ==> range (\<lambda>i. f (Y i)) <<| f (\<Squnion>i. Y i)|] ==> cont_on S f"
+by (simp add: cont_on_def)
+
+lemma ch2ch_monofun_on: "[|monofun_on S f; chain_on S Y|] ==> chain (\<lambda>i. f (Y i))"
+  apply (rule chainI)
+  apply (erule monofun_onE)
+  apply (erule chain_on_is_on)+
+  apply (erule chain_onE)
+  done
+
+
 lemma cont_onE:
   "[|cont_on S f; chain_on S Y|] ==> range (\<lambda>i. f (Y i)) <<| f (\<Squnion>i. Y i)"
 by (simp add: cont_on_def)
@@ -192,6 +217,63 @@ lemma iterate_below_fix_on: "closed_on F \<Longrightarrow> monofun_on F \<Longri
   unfolding fix_on_def
   by (auto intro: is_ub_thelub closed_is_chain  subpcpo_axioms)
 
+lemma chain_on_lub_on:
+  "chain_on Y \<Longrightarrow> (\<Squnion> i. Y i) \<in> S"
+  unfolding chain_on_def by (metis chain_def pcpo)
+
+lemma cont_onI2:
+  fixes f :: "'a::cpo => 'b::cpo"
+  assumes mono: "monofun_on f"
+  assumes below: "!!Y. [|chain_on Y; chain (\<lambda>i. f (Y i))|]
+     ==> f (\<Squnion>i. Y i) \<sqsubseteq> (\<Squnion>i. f (Y i))"
+  shows "cont_on f"
+proof (rule cont_onI)
+  fix Y :: "nat => 'a"
+  assume Y: "chain_on Y"
+  with mono have fY: "chain (\<lambda>i. f (Y i))"
+    by (rule ch2ch_monofun_on)
+  have "(\<Squnion>i. f (Y i)) = f (\<Squnion>i. Y i)"
+    apply (rule below_antisym)
+    apply (rule lub_below [OF fY])
+    apply (rule monofun_onE [OF mono])
+    apply (rule chain_on_is_on[OF Y])
+    apply (rule chain_on_lub_on[OF Y])
+    apply (rule is_ub_thelub [OF chain_on_is_chain[OF Y]])
+    apply (rule below [OF Y fY])
+    done
+  with fY show "range (\<lambda>i. f (Y i)) <<| f (\<Squnion>i. Y i)"
+    by (rule thelubE)
+qed
+
+lemma cont_comp_cont_on:
+  "cont f \<Longrightarrow> cont_on g \<Longrightarrow> cont_on (\<lambda> x. f (g x))"
+  apply (rule cont_onI2)
+  apply (erule (1) monofun_comp_monofun_on[OF cont2mono cont_on2mono_on])
+  by (metis ch2ch_monofun_on cont2contlubE cont_on2contlubE cont_on2mono_on eq_imp_below)
+
+lemma cont_comp_cont_on2:
+  "cont f \<Longrightarrow> (\<And>x. cont (f x)) \<Longrightarrow> cont_on g \<Longrightarrow> cont_on h \<Longrightarrow> cont_on (\<lambda> x. f (g x) (h x))"
+proof (rule cont_onI2)
+case goal1 thus ?case by (rule  monofun_comp_monofun_on2[OF cont2mono cont2mono cont_on2mono_on cont_on2mono_on])
+next
+case goal2
+  have c1: "chain (\<lambda>i. h (Y i))" by (rule ch2ch_monofun_on[OF cont_on2mono_on[OF goal2(4)] goal2(5)])
+  have c2: "chain (\<lambda>i. g (Y i))" by (rule ch2ch_monofun_on[OF cont_on2mono_on[OF goal2(3)] goal2(5)])
+  have c3: "chain (\<lambda>i. f (g (Y i)))" by (rule ch2ch_cont[OF goal2(1) c2])
+  have c4: "\<And>x. chain (\<lambda>i. f x (h (Y i)))" by (rule ch2ch_cont[OF goal2(2) c1])
+  have c5: "\<And>x. chain (\<lambda>i. f (g (Y i)) x)" by (rule ch2ch_fun[OF c3])
+
+  show ?case
+  apply (subst cont_on2contlubE[OF goal2(3) goal2(5)])
+  apply (subst cont_on2contlubE[OF goal2(4) goal2(5)])
+  apply (subst cont2contlubE[OF goal2(2) c1])
+  apply (subst cont2contlubE[OF goal2(1) c2])
+  apply (subst lub_fun[OF c3])
+  apply (subst diag_lub[OF c4 c5])
+  apply rule
+  done
+qed
+
 end
 
 interpretation subpcpo_syn S for S.
@@ -236,7 +318,7 @@ proof
 qed
 
 
-lemma ch2ch_monofun_on:
+lemma ch2chain_on_monofun_on:
   shows "[|monofun_on S1 f; chain_on S1 Y; f ` S1 \<subseteq> S2 |] ==> chain_on S2 (\<lambda>i. f (Y i))"
 proof-
   show "[|monofun_on S1 f; chain_on S1 Y; f ` S1 \<subseteq> S2 |] ==> chain_on S2 (\<lambda>i. f (Y i))"
@@ -253,7 +335,7 @@ qed
 lemma ch2ch_cont_on:
   assumes "cont_on S1 f" and "chain_on S1 Y" and "f ` S1 \<subseteq> S2"
   shows "chain_on S2 (\<lambda>i. f (Y i))"
-  by (rule ch2ch_monofun_on[OF cont_on2mono_on[OF assms(1)] assms(2) assms(3)])
+  by (rule ch2chain_on_monofun_on[OF cont_on2mono_on[OF assms(1)] assms(2) assms(3)])
 
 lemma adm_on_subst:
   assumes cont: "cont_on S1 t"  and closed: "t ` S1 \<subseteq> S2" and  adm: "adm_on S2 P" 
