@@ -2,53 +2,6 @@ theory "Denotational-Compatible"
   imports "Denotational" "HOLCF-Set-Nominal" "FMap-Nominal-HOLCF" "HOLCF-Down-Closed"
 begin
 
-lemmas fdom_perm_rev[eqvt]
-
-lemma below_eqvt [eqvt]:
-    "\<pi> \<bullet> (x \<sqsubseteq> y) = (\<pi> \<bullet> x \<sqsubseteq> \<pi> \<bullet> (y::'a::cont_pt))" by (auto simp add: permute_pure)
-
-definition fmap_bottom_l where
-  "fmap_bottom_l d = fmap_bottom (set d)"
-
-lemma fmap_bottom_l_eqvt[eqvt]:
-  "\<pi> \<bullet> fmap_bottom_l d = (fmap_bottom_l (\<pi> \<bullet> d) :: ('a::pt, 'b::{pcpo,cont_pt}) fmap)"
-  by (simp add: fmap_bottom_l_def fmap_bottom_eqvt set_eqvt)
-
-definition fmap_restr_l where
-  "fmap_restr_l d = fmap_restr (set d)"
-
-lemma fmap_restr_eqvt:
-  "finite d \<Longrightarrow> \<pi> \<bullet> (fmap_restr d m) = fmap_restr (\<pi> \<bullet> d) (\<pi> \<bullet> m)"
-proof
-case goal1 thus ?case by (simp add:fdom_perm inter_eqvt  del:fdom_perm_rev)
-case goal2
-  hence "finite (\<pi> \<bullet> d)" by simp
-
-  from goal2(2) have "x \<in> \<pi> \<bullet> fdom m \<inter> \<pi> \<bullet> d" by (metis (full_types) fdom_fmap_restr fdom_perm_rev goal1 inter_eqvt)
-  then obtain y where "x = \<pi> \<bullet> y" and "y \<in> fdom m \<inter> d" by (auto simp add: permute_set_def)
-
-  have "the (lookup (\<pi> \<bullet> fmap_restr d m) x) = the (lookup (\<pi> \<bullet> fmap_restr d m) (\<pi> \<bullet> y))" by (simp add: `x = _`)
-  also have "... = \<pi> \<bullet> (the (lookup (fmap_restr d m) y))" using `finite d` `y \<in> fdom m \<inter> d` by (metis fdom_fmap_restr the_lookup_eqvt)
-  also have "... = \<pi> \<bullet> (the (lookup m y))" using `y \<in> _` by (simp add: lookup_fmap_restr[OF `finite d`])
-  also have "... = the (lookup (\<pi> \<bullet> m) x)" using `x = _` `y \<in> _` by (simp add: the_lookup_eqvt)
-  also have "... = the (lookup (fmap_restr (\<pi> \<bullet> d) (\<pi> \<bullet> m)) x)" using `x \<in> _ \<inter> _` by (simp add: lookup_fmap_restr[OF `finite (\<pi> \<bullet> d)`])
-  finally show ?case.
-qed
-
-lemma fmap_restr_l_eqvt[eqvt]:
-  "\<pi> \<bullet> fmap_restr_l d m = fmap_restr_l (\<pi> \<bullet> d) (\<pi> \<bullet> m)"
-    by (simp add: fmap_restr_l_def fmap_restr_eqvt set_eqvt)
-
-lemma fmap_restr_l_cont:
-  "cont (fmap_restr_l l)" unfolding fmap_restr_l_def by (rule fmap_restr_cont)
-
-definition heapExtendJoin_cond
-  where "heapExtendJoin_cond compatible_with_exp h eval \<rho> = 
-    (compatible_fmap \<rho> (heapToEnv h (\<lambda> e. eval e (fmap_bottom (fdom \<rho> \<union> fst ` set h)))) \<and> 
-    (\<forall> e \<in> snd ` set h. subpcpo (compatible_with_exp e (fdom \<rho> \<union> fst ` set h))) \<and>
-    (\<forall> e \<in> snd ` set h. cont_on (compatible_with_exp e (fdom \<rho> \<union> fst ` set h)) (eval e)))"
-
-
 definition
   compatible_with_heapExtend' :: "(exp \<Rightarrow> var list \<Rightarrow> Env set) \<Rightarrow> (exp \<Rightarrow> Env \<Rightarrow> Value) \<Rightarrow> var list \<Rightarrow> heap \<Rightarrow> Env set"
 where
@@ -69,6 +22,33 @@ lemma  compatible_with_heapExtend'_eqvt[eqvt]:
   unfolding compatible_with_heapExtend'_def
   unfolding fmap_bottom_l_def[symmetric]
   by (perm_simp,rule)  
+
+
+definition heapExtendJoin_cond
+  where "heapExtendJoin_cond compatible_with_exp h eval \<rho> = 
+    (compatible_fmap \<rho> (heapToEnv h (\<lambda> e. eval e (fmap_bottom (fdom \<rho> \<union> fst ` set h)))) \<and> 
+    (\<forall> e \<in> snd ` set h. subpcpo (compatible_with_exp e (fdom \<rho> \<union> fst ` set h))) \<and>
+    (\<forall> e \<in> snd ` set h. cont_on (compatible_with_exp e (fdom \<rho> \<union> fst ` set h)) (eval e)))"
+
+lemma compatible_with_HeapExtend'_down_closed:
+  "\<lbrakk> \<And> e. e \<in> snd ` set h \<Longrightarrow> nice_domain (compatible_with_exp eval e d) (fmap_bottom (set d)) \<rbrakk> 
+  \<Longrightarrow> down_closed (compatible_with_heapExtend' (compatible_with_exp eval) eval d h)"
+unfolding compatible_with_heapExtend'_def 
+  apply (subst if_True)
+  apply (subst Collect_conj_eq)
+  apply (rule down_closed_inter)
+  apply (auto simp add: down_closed_def)[1]
+  apply (erule_tac x = "(a,b)" in ballE)
+  apply (erule_tac x = i in allE)
+  
+  oops
+
+lemma compatible_with_HeapExtend'_nice_domain:
+  "\<lbrakk> \<And> e. e \<in> snd ` set h \<Longrightarrow> nice_domain (compatible_with_exp eval e d) (fmap_bottom (set d)) \<rbrakk> 
+  \<Longrightarrow> nice_domain (compatible_with_heapExtend' (compatible_with_exp eval) eval d h) (fmap_bottom (set d))"
+sorry
+
+
 
 nominal_primrec
   compatible_with_exp :: "(exp \<Rightarrow> Env \<Rightarrow> Value) \<Rightarrow> exp \<Rightarrow> var list \<Rightarrow> Env set" 
@@ -108,37 +88,7 @@ qed
 
 termination(eqvt) by lexicographic_order
 
-lemma fresh_fmap_bottom_set[simp]:
-  "x \<sharp> d \<Longrightarrow> x \<sharp> (fmap_bottom (set d) :: ('a::pt, 'b::{pcpo,cont_pt}) fmap)"
-  unfolding fmap_bottom_l_def[symmetric]
-  apply (erule fresh_fun_eqvt_app[rotated])
-  apply (rule eqvtI)
-  apply (rule eq_reflection)
-  using [[eta_contract=false]]
-  by (metis  fmap_bottom_l_eqvt permute_fun_def permute_minus_cancel(1))
 
-lemma fresh_star_fmap_bottom_set[simp]:
-  "x \<sharp>* d \<Longrightarrow> x \<sharp>* (fmap_bottom (set d) :: ('a::pt, 'b::{pcpo,cont_pt}) fmap)"
-  by (metis fresh_star_def fresh_fmap_bottom_set)
-
-
-lemma compatible_with_HeapExtend'_down_closed:
-  "\<lbrakk> \<And> e. e \<in> snd ` set h \<Longrightarrow> nice_domain (compatible_with_exp eval e d) (fmap_bottom (set d)) \<rbrakk> 
-  \<Longrightarrow> down_closed (compatible_with_heapExtend' (compatible_with_exp eval) eval d h)"
-unfolding compatible_with_heapExtend'_def 
-  apply (subst if_True)
-  apply (subst Collect_conj_eq)
-  apply (rule down_closed_inter)
-  apply (auto simp add: down_closed_def)[1]
-  apply (erule_tac x = "(a,b)" in ballE)
-  apply (erule_tac x = i in allE)
-  
-  oops
-
-lemma compatible_with_HeapExtend'_nice_domain:
-  "\<lbrakk> \<And> e. e \<in> snd ` set h \<Longrightarrow> nice_domain (compatible_with_exp eval e d) (fmap_bottom (set d)) \<rbrakk> 
-  \<Longrightarrow> nice_domain (compatible_with_heapExtend' (compatible_with_exp eval) eval d h) (fmap_bottom (set d))"
-sorry
 
 lemma True and
   frees_as_to_frees:

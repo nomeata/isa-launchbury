@@ -112,4 +112,8 @@ lemma fmap_restr_fmap_restr[simp]:
 lemma fmap_restr_useless: "finite S \<Longrightarrow> fdom m \<subseteq> S \<Longrightarrow> fmap_restr S m = m"
   by (rule fmap_eqI, auto)
 
+definition fmap_restr_l where
+  "fmap_restr_l d = fmap_restr (set d)"
+
+
 end

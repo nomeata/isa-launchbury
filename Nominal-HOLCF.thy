@@ -3,6 +3,7 @@ imports
   "Nominal/Nominal/Nominal2" "Nominal-Utils" "~~/src/HOL/HOLCF/HOLCF"
 begin
 
+
 class cont_pt = 
   cpo + 
   pt +

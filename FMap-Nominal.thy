@@ -50,7 +50,7 @@ lemma permute_transfer2[transfer_rule]: "(op = ===> op = ===> op =) permute (per
 
 lemma fdom_perm: "fdom (\<pi> \<bullet> f) = \<pi> \<bullet> (fdom f)"
   apply transfer by (rule dom_perm)
-lemmas fdom_perm_rev[simp] = fdom_perm[symmetric]
+lemmas fdom_perm_rev[simp,eqvt] = fdom_perm[symmetric]
 
 
 lemma map_between_finite:
@@ -201,5 +201,28 @@ instance "fmap" :: (fs,fs) fs
 
 lemma fmap_upd_eqvt[eqvt]: "p \<bullet> (fmap_upd f x y) = fmap_upd (p \<bullet> f) (p \<bullet> x) (p \<bullet> y)"
   by (transfer, auto simp add:permute_fun_def fun_eq_iff)
+
+lemma fmap_restr_eqvt:
+  "finite d \<Longrightarrow> \<pi> \<bullet> (fmap_restr d m) = fmap_restr (\<pi> \<bullet> d) (\<pi> \<bullet> m)"
+proof
+case goal1 thus ?case by (simp add:fdom_perm inter_eqvt  del:fdom_perm_rev)
+case goal2
+  hence "finite (\<pi> \<bullet> d)" by simp
+
+  from goal2(2) have "x \<in> \<pi> \<bullet> fdom m \<inter> \<pi> \<bullet> d" by (metis (full_types) fdom_fmap_restr fdom_perm_rev goal1 inter_eqvt)
+  then obtain y where "x = \<pi> \<bullet> y" and "y \<in> fdom m \<inter> d" by (auto simp add: permute_set_def)
+
+  have "the (lookup (\<pi> \<bullet> fmap_restr d m) x) = the (lookup (\<pi> \<bullet> fmap_restr d m) (\<pi> \<bullet> y))" by (simp add: `x = _`)
+  also have "... = \<pi> \<bullet> (the (lookup (fmap_restr d m) y))" using `finite d` `y \<in> fdom m \<inter> d` by (metis fdom_fmap_restr the_lookup_eqvt)
+  also have "... = \<pi> \<bullet> (the (lookup m y))" using `y \<in> _` by (simp add: lookup_fmap_restr[OF `finite d`])
+  also have "... = the (lookup (\<pi> \<bullet> m) x)" using `x = _` `y \<in> _` by (simp add: the_lookup_eqvt)
+  also have "... = the (lookup (fmap_restr (\<pi> \<bullet> d) (\<pi> \<bullet> m)) x)" using `x \<in> _ \<inter> _` by (simp add: lookup_fmap_restr[OF `finite (\<pi> \<bullet> d)`])
+  finally show ?case.
+qed
+
+lemma fmap_restr_l_eqvt[eqvt]:
+  "\<pi> \<bullet> fmap_restr_l d m = fmap_restr_l (\<pi> \<bullet> d) (\<pi> \<bullet> m)"
+    by (simp add: fmap_restr_l_def fmap_restr_eqvt set_eqvt)
+
 
 end

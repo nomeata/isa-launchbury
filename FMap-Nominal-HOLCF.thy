@@ -187,5 +187,31 @@ lemma fmap_join_eqvt[eqvt]:
   "\<pi> \<bullet> fmap_join m1 (m2 :: ('a::{pt}, 'b::{cont_pt, pcpo}) fmap) = fmap_join (\<pi> \<bullet> m1) (\<pi> \<bullet> m2)"
   by (transfer, perm_simp, rule refl)
 
+
+lemma below_eqvt [eqvt]:
+    "\<pi> \<bullet> (x \<sqsubseteq> y) = (\<pi> \<bullet> x \<sqsubseteq> \<pi> \<bullet> (y::'a::cont_pt))" by (auto simp add: permute_pure)
+
+definition fmap_bottom_l where
+  "fmap_bottom_l d = fmap_bottom (set d)"
+
+lemma fmap_bottom_l_eqvt[eqvt]:
+  "\<pi> \<bullet> fmap_bottom_l d = (fmap_bottom_l (\<pi> \<bullet> d) :: ('a::pt, 'b::{pcpo,cont_pt}) fmap)"
+  by (simp add: fmap_bottom_l_def fmap_bottom_eqvt set_eqvt)
+
+
+
+lemma fresh_fmap_bottom_set[simp]:
+  "x \<sharp> d \<Longrightarrow> x \<sharp> (fmap_bottom (set d) :: ('a::pt, 'b::{pcpo,cont_pt}) fmap)"
+  unfolding fmap_bottom_l_def[symmetric]
+  apply (erule fresh_fun_eqvt_app[rotated])
+  apply (rule eqvtI)
+  apply (rule eq_reflection)
+  by (metis fmap_bottom_l_eqvt permute_fun_def permute_minus_cancel(1))
+
+lemma fresh_star_fmap_bottom_set[simp]:
+  "x \<sharp>* d \<Longrightarrow> x \<sharp>* (fmap_bottom (set d) :: ('a::pt, 'b::{pcpo,cont_pt}) fmap)"
+  by (metis fresh_star_def fresh_fmap_bottom_set)
+
+
 end
 
