@@ -107,9 +107,6 @@ lemma contains_bottoms_subsetD:
   "contains_bottoms d S \<Longrightarrow> d' \<subseteq> d  \<Longrightarrow> (\<lambda> m. fmap_extend m (d - d')) ` fmap_restr d' ` S \<subseteq> S"
   by (auto dest:contains_bottomsD)
 
-lemma restr_extend_cut:
-  "finite d \<Longrightarrow> d' \<subseteq> d \<Longrightarrow> fdom x = d' \<Longrightarrow> fmap_restr d' (fmap_extend x (d - d')) = x " sorry
-
 lemma contains_bottoms_inter:
   "contains_bottoms d S1 \<Longrightarrow> contains_bottoms d S2 \<Longrightarrow> contains_bottoms d (S1 \<inter> S2)"
   unfolding contains_bottoms_def by auto
