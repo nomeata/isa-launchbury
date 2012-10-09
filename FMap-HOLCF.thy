@@ -542,6 +542,66 @@ lemma fmap_join_rho[simp]:
   apply (case_tac "\<rho> xa", case_tac "x xa")
   by (auto simp add: domIff Ball_def split add:option.split)
 
+
+lemma fmap_join_mono:
+  assumes "compatible_fmap a b"
+  assumes "compatible_fmap c d"
+  assumes "a \<sqsubseteq> c"
+  assumes "b \<sqsubseteq> d"
+  shows "fmap_join a b \<sqsubseteq> fmap_join c d"
+proof (rule fmap_belowI')
+case goal1 thus ?case using assms by  (simp add: fmap_below_dom) 
+next
+case (goal2 x)
+  from assms have [simp]: "fdom c = fdom a" "fdom d = fdom b" by (metis fmap_below_dom)+
+  show ?case
+  proof(cases "x \<in> fdom a")
+  case True
+    hence "x \<in> fdom c" by simp
+    show ?thesis
+    proof (cases "x \<in> fdom b")
+    case True
+      hence "x \<in> fdom d" by simp
+      from `x \<in> fdom a` `x \<in> fdom b`
+      have [simp]:"the (lookup (fmap_join a b) x) = the (lookup a x) \<squnion> the (lookup b x)"
+        by (transfer, auto split add:option.split)
+      from `x \<in> fdom c` `x \<in> fdom d`
+      have [simp]:"the (lookup (fmap_join c d) x) = the (lookup c x) \<squnion> the (lookup d x)"
+        by (transfer, auto split add:option.split)
+      have "compatible (the (lookup a x)) (the (lookup b x))"
+        by (metis Int_iff `x \<in> fdom a` `x \<in> fdom b` assms(1) compatible_fmap_def')
+      moreover
+      have "compatible (the (lookup c x)) (the (lookup d x))"
+        by (metis Int_iff `x \<in> fdom c` `x \<in> fdom d` assms(2) compatible_fmap_def')
+      ultimately
+      show ?thesis
+        apply (simp, rule join_mono)
+        apply (rule fmap_belowE[OF assms(3)])
+        apply (rule fmap_belowE[OF assms(4)])
+        done
+    next
+    case False
+      hence [simp]:"the (lookup (fmap_join a b) x) = the (lookup a x)"
+        by (transfer, auto split add:option.split)
+      from False have "x \<notin> fdom d" by simp
+      hence [simp]:"the (lookup (fmap_join c d) x) = the (lookup c x)"
+        by (transfer, auto split add:option.split)
+      show ?thesis
+        by (simp, rule fmap_belowE[OF assms(3)])
+    qed
+  next
+  case False
+    hence [simp]:"the (lookup (fmap_join a b) x) = the (lookup b x)"
+      by (transfer, auto split add:option.split)
+    from False have "x \<notin> fdom c" by simp
+    hence [simp]:"the (lookup (fmap_join c d) x) = the (lookup d x)"
+      by (transfer, auto split add:option.split)
+    thus ?thesis
+      by -(simp, rule fmap_belowE[OF assms(4)])
+  qed
+qed 
+
+
 lift_definition fmap_extend :: "('a, 'b::pcpo) fmap \<Rightarrow> 'a set  \<Rightarrow> ('a, 'b) fmap"
   is "\<lambda> m1 S. (if finite S then (\<lambda> x. if x \<in> S then Some \<bottom> else m1 x) else empty)"
   apply (case_tac "finite set")
