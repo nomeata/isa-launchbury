@@ -102,6 +102,15 @@ apply assumption+
 apply (erule ub_rangeD)
 done
 
+lemma monofun_on_comp:
+  assumes "monofun_on S1 f"
+  and "monofun_on S2 g"
+  and "f ` S1 \<subseteq> S2"
+  shows "monofun_on S1 (\<lambda> x. g (f x))"
+  using assms 
+  unfolding monofun_on_def
+  by (metis image_eqI in_mono)
+
 
 lemma monofun_comp_monofun_on:
   "monofun f \<Longrightarrow> monofun_on S g \<Longrightarrow> monofun_on S (\<lambda> x. f (g x))"
@@ -304,6 +313,37 @@ qed
 end
 
 interpretation subpcpo_syn S for S.
+
+
+lemma cont_on_comp:
+  assumes "subpcpo S1"
+  and "subpcpo S2"
+  and "cont_on S1 f"
+  and "cont_on S2 g"
+  and "f ` S1 \<subseteq> S2"
+  shows "cont_on S1 (\<lambda> x. g (f x))"
+proof-
+  interpret subpcpo S1 by fact
+  interpret s2!: subpcpo S2 by fact
+  show ?thesis
+  proof(rule cont_onI2)
+  case goal1
+    show ?case
+      by (rule monofun_on_comp[OF cont_on2mono_on[OF assms(3)] cont_on2mono_on[OF assms(4)] assms(5)])
+  case (goal2 Y)
+    have c: "chain_on S2 (\<lambda>i. f (Y i))"
+      apply (rule chain_onI)
+      apply (metis assms(3) chain_on_def cont_on2mono_on goal2(1) monofun_onE)
+      apply (metis (full_types) assms(5) chain_on_is_on goal2(1) imageI in_mono)
+      done
+    show ?case
+      apply (subst cont_on2contlubE[OF assms(3) goal2(1)])
+      apply (subst cont_on2contlubE[OF assms(4) c])
+      apply (rule below_refl)
+    done
+  qed
+qed
+
 
 locale subpcpo_bot = subpcpo S for S +
   fixes b
@@ -538,5 +578,19 @@ proof -
     using chain1 chain2 subpcpo_axioms s2.subpcpo_axioms
     by (simp add: fix_on_def)
 qed
+
+lemma fix_on_mono:
+  assumes "subpcpo S"
+  and "closed_on S F"
+  and "cont_on S F"
+  and "closed_on S G"
+  and "cont_on S G"
+  and "\<And> x y. x \<in> S \<Longrightarrow> y \<in> S \<Longrightarrow> x \<sqsubseteq> y \<Longrightarrow> F x \<sqsubseteq> G y"
+  shows "fix_on S F \<sqsubseteq> fix_on S G"
+  apply (rule parallel_fix_on_ind[OF assms(1) assms(1) _ assms(2) assms(3) assms(4) assms(5)])
+  apply (rule adm_is_adm_on, simp)
+  apply (rule below_refl)
+  apply (metis  assms(6))
+  done
 
 end
