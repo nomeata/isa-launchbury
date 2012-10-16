@@ -13,6 +13,12 @@ definition join :: "'a => 'a => 'a" (infix "\<squnion>" 80) where
 definition compatible :: "'a \<Rightarrow> 'a \<Rightarrow> bool"
   where "compatible x y = (\<exists> z. {x, y} <<| z)"
 
+lemma compatible_sym: "compatible x y ==> compatible y x"
+  unfolding compatible_def by (metis insert_commute)
+
+lemma compatible_sym_iff: "compatible x y \<longleftrightarrow> compatible y x"
+  unfolding compatible_def by (metis insert_commute)
+
 lemma join_above1: "compatible x y \<Longrightarrow> x \<sqsubseteq> x \<squnion> y"
   unfolding compatible_def join_def
   apply auto
@@ -110,7 +116,7 @@ proof-
   ultimately show ?thesis by simp
 qed
 
-lemma compatible_adm:
+lemma compatible_adm2:
   shows "adm (\<lambda> y. compatible x y)"
 proof(rule admI)
   fix Y
@@ -135,6 +141,9 @@ proof(rule admI)
       done
   qed
 qed
+
+lemma compatible_adm1: "adm (\<lambda> x. compatible x y)"
+  by (subst compatible_sym_iff, rule compatible_adm2)
 
 lemma join_cont1:
   assumes "chain Y"
