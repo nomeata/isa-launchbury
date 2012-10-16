@@ -174,6 +174,9 @@ lemma cont_is_cont_on:
   "cont P \<Longrightarrow> cont_on S P"
   unfolding cont_on_def cont_def by (metis (full_types) chain_on_def po_class.chainI)
 
+lemma cont_on_subset: "cont_on S1 f \<Longrightarrow> S2 \<subseteq> S1 \<Longrightarrow> cont_on S2 f"
+  unfolding cont_on_def chain_on_def by (metis set_mp)
+
 lemma adm_onD:
   assumes "adm_on S P"
   and "chain_on S Y"
@@ -597,6 +600,37 @@ lemma fix_on_larger_subpcpo:
   using assms by auto
 *)
 
+lemma fix_on_mono2:
+  assumes "subpcpo S1"
+  assumes "subpcpo S2"
+  assumes "closed_on S1 F"
+  and "cont_on S1 F"
+  and "closed_on S2 G"
+  and "cont_on S2 G"
+  and "bottom_of S1 \<sqsubseteq> bottom_of S2"
+  and "\<And> x y. x \<in> S1 \<Longrightarrow> y \<in> S2 \<Longrightarrow> x \<sqsubseteq> y \<Longrightarrow> F x \<sqsubseteq> G y"
+  shows "fix_on S1 F \<sqsubseteq> fix_on S2 G"
+  apply (rule parallel_fix_on_ind[OF assms(1) assms(2) _ assms(3) assms(4) assms(5) assms(6)])
+  apply (rule adm_is_adm_on, simp)
+  apply (rule assms(7))
+  apply (metis assms(8))
+  done
+
+lemma fix_on_same:
+  assumes "subpcpo S1"
+  assumes "subpcpo S2"
+  assumes "closed_on S1 F"
+  and "cont_on S1 F"
+  and "closed_on S2 F"
+  and "cont_on S2 F"
+  and "bottom_of S1 = bottom_of S2"
+  shows "fix_on S1 F = fix_on S2 F"
+  apply (rule parallel_fix_on_ind[OF assms(1) assms(2) _ assms(3) assms(4) assms(5) assms(6)])
+  apply (rule adm_is_adm_on, simp)
+  apply (rule assms(7))
+  apply (simp)
+  done
+
 context subpcpo
 begin
   
@@ -612,7 +646,22 @@ begin
     apply (rule below_refl)
     apply (metis assms(5))
     done
+
+  lemma fix_on_there:
+    assumes "cont_on F"
+    assumes "closed_on F"
+    shows "fix_on F \<in> S"
+  proof-
+    note co = closed_is_chain_on[OF `closed_on _` cont_on2mono_on[OF `cont_on _`]] 
+    note c = chain_on_is_chain[OF co] 
   
+    have "(\<Squnion> i. (F ^^ i) (subpcpo_syn.bottom_of S)) \<in> S"
+      by (metis chain_on_lub_on[OF co])
+    thus ?thesis
+      using c subpcpo_axioms
+      by (simp add: fix_on_def)
+  qed
+
   lemma fix_on_eq:
     assumes "cont_on F"
     assumes "closed_on F"
