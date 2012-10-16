@@ -16,8 +16,7 @@ binder
 where "bn ANil = []" | "bn (ACons x t as) = (atom x) # (bn as)"
 
 fun subst_var :: "var \<Rightarrow> var \<Rightarrow> var \<Rightarrow> var" ("_[_::v=_]" [1000,100,100] 1000)
-where
- [simp]: "x[y ::v= z] = (if x = y then z else x)"
+where "x[y ::v= z] = (if x = y then z else x)"
 
 lemma subst_var_eqvts[eqvt]:
  fixes \<pi>::perm
@@ -492,14 +491,14 @@ lemma alpha_test:
 
 lemma alpha_test2:
   shows "let x be (Var x) in (Var x) = let y be (Var y) in (Var y)"
-  by (simp add:exp_assn.eq_iff exp_assn.bn_defs Abs1_eq_iff fresh_Pair add:exp_assn.fresh fresh_at_base)
+  by (simp add: exp_assn.bn_defs Abs1_eq_iff fresh_Pair add:exp_assn.fresh fresh_at_base)
 
 lemma alpha_test3:
   shows "
     Let (ACons x (Var y) (ACons y (Var x) ANil)) (Var x)
     =
     Let (ACons y (Var x) (ACons x (Var y) ANil)) (Var y)" (is "Let ?la ?lb = _")
-  apply (simp add:exp_assn.eq_iff exp_assn.bn_defs Abs1_eq_iff fresh_Pair add:exp_assn.fresh fresh_at_base)
+  apply (simp add: exp_assn.bn_defs Abs1_eq_iff fresh_Pair add:exp_assn.fresh fresh_at_base)
   apply (simp add: Abs_swap2[of "atom x" "(?lb,?la)" "[atom x, atom y]" "atom y"])
 done
 
