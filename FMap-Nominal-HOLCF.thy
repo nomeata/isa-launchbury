@@ -198,8 +198,6 @@ lemma fmap_bottom_l_eqvt[eqvt]:
   "\<pi> \<bullet> fmap_bottom_l d = (fmap_bottom_l (\<pi> \<bullet> d) :: ('a::pt, 'b::{pcpo,cont_pt}) fmap)"
   by (simp add: fmap_bottom_l_def fmap_bottom_eqvt set_eqvt)
 
-
-
 lemma fresh_fmap_bottom_set[simp]:
   "x \<sharp> d \<Longrightarrow> x \<sharp> (fmap_bottom (set d) :: ('a::pt, 'b::{pcpo,cont_pt}) fmap)"
   unfolding fmap_bottom_l_def[symmetric]

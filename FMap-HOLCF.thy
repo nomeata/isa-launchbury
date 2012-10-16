@@ -599,7 +599,7 @@ case (goal2 x)
     thus ?thesis
       by -(simp, rule fmap_belowE[OF assms(4)])
   qed
-qed 
+qed
 
 
 lift_definition fmap_extend :: "('a, 'b::pcpo) fmap \<Rightarrow> 'a set  \<Rightarrow> ('a, 'b) fmap"
