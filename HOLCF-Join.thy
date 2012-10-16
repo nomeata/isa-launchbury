@@ -13,6 +13,15 @@ definition join :: "'a => 'a => 'a" (infix "\<squnion>" 80) where
 definition compatible :: "'a \<Rightarrow> 'a \<Rightarrow> bool"
   where "compatible x y = (\<exists> z. {x, y} <<| z)"
 
+lemma join_above1: "compatible x y \<Longrightarrow> x \<sqsubseteq> x \<squnion> y"
+  unfolding compatible_def join_def
+  apply auto
+  by (metis is_lubD1 is_ub_insert lub_eqI)  
+
+lemma join_above2: "compatible x y \<Longrightarrow> y \<sqsubseteq> x \<squnion> y"
+  unfolding compatible_def join_def
+  apply auto
+  by (metis is_lubD1 is_ub_insert lub_eqI)  
 
 lemma join_idem[simp]: "compatible x y \<Longrightarrow> x \<squnion> (x \<squnion> y) = x \<squnion> y"
 proof-
@@ -126,6 +135,49 @@ proof(rule admI)
       done
   qed
 qed
+
+lemma join_cont1:
+  assumes "chain Y"
+  assumes compat: "\<And> i. compatible (Y i) y"
+  shows "(\<Squnion>i. Y i) \<squnion> y = (\<Squnion> i. Y i \<squnion> y)"
+proof-
+  have c: "chain (\<lambda>i. Y i \<squnion> y)"
+    apply (rule chainI)
+    apply (rule join_mono[OF compat compat chainE[OF `chain Y`] below_refl])
+    done
+
+  show ?thesis
+    apply (rule is_joinI)
+    apply (rule lub_mono[OF `chain Y` c join_above1[OF compat]])
+    apply (rule below_lub[OF c join_above2[OF compat]])
+    apply (rule lub_below[OF c])
+    apply (rule join_below[OF compat])
+    apply (metis lub_below_iff[OF `chain Y`])
+    apply assumption
+    done
+qed
+
+lemma join_cont2:
+  assumes "chain Y"
+  assumes compat: "\<And> i. compatible x (Y i)"
+  shows "x \<squnion> (\<Squnion>i. Y i) = (\<Squnion> i. x \<squnion> Y i)"
+proof-
+  have c: "chain (\<lambda>i. x \<squnion> Y i)"
+    apply (rule chainI)
+    apply (rule join_mono[OF compat compat below_refl chainE[OF `chain Y`]])
+    done
+
+  show ?thesis
+    apply (rule is_joinI)
+    apply (rule below_lub[OF c join_above1[OF compat]])
+    apply (rule lub_mono[OF `chain Y` c join_above2[OF compat]])
+    apply (rule lub_below[OF c])
+    apply (rule join_below[OF compat])
+    apply assumption
+    apply (metis lub_below_iff[OF `chain Y`])
+    done
+qed
+
 
 context pcpo
 begin
