@@ -334,15 +334,15 @@ begin
   lemma join_def': "x \<squnion> y = lub {x, y}"
     unfolding join_def using join_exists by auto
 
-  lemma join_belowI: "x \<sqsubseteq> z \<Longrightarrow> y \<sqsubseteq> z \<Longrightarrow> x \<squnion> y \<sqsubseteq> z"
+  lemma arb_join_belowI: "x \<sqsubseteq> z \<Longrightarrow> y \<sqsubseteq> z \<Longrightarrow> x \<squnion> y \<sqsubseteq> z"
     unfolding join_def'
     by (auto intro: lub_belowI)
   
-  lemma join_above1: "x \<sqsubseteq> x \<squnion> y"
+  lemma arb_join_above1: "x \<sqsubseteq> x \<squnion> y"
     unfolding join_def'
     by (metis is_lubD1 is_ub_insert join_exists lub_eqI)
   
-  lemma join_above2: "y \<sqsubseteq> x \<squnion> y"
+  lemma arb_join_above2: "y \<sqsubseteq> x \<squnion> y"
     unfolding join_def'
     by (metis is_lubD1 is_ub_insert join_exists lub_eqI)
 end
