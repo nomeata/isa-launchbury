@@ -8,6 +8,11 @@ locale subcpo =
   fixes S :: "'a set"
   assumes cpo': "(\<forall>Y. (chain Y \<longrightarrow> (\<forall> i. Y i \<in> S) \<longrightarrow> (\<Squnion> i. Y i) \<in> S))"
 
+lemma subcpoI:
+  assumes "\<And> Y. \<lbrakk> chain Y; \<And> i. Y i \<in> S \<rbrakk> \<Longrightarrow> (\<Squnion> i. Y i) \<in> S"
+  shows "subcpo S"
+unfolding subcpo_def by (metis assms)
+
 locale subpcpo =
   fixes S :: "'a set"
   assumes pcpo: "(\<forall>Y. (chain Y \<longrightarrow> (\<forall> i. Y i \<in> S) \<longrightarrow> (\<Squnion> i. Y i) \<in> S))
@@ -20,6 +25,12 @@ lemma subpcpoI:
   shows "subpcpo S"
 unfolding subpcpo_def by (metis assms)
 
+lemma subpcpoI2:
+  assumes "subcpo S"
+  assumes "b \<in> S"
+  assumes "\<And> y. y \<in> S \<Longrightarrow> b \<sqsubseteq> y"
+  shows "subpcpo S"
+unfolding subpcpo_def by (metis subcpo_def assms)
 
 locale subpcpo_syn = 
   fixes S :: "'a set" 
@@ -207,6 +218,13 @@ proof-
   thus "bottom_of \<in> S" and "\<And> x. x \<in> S \<Longrightarrow> bottom_of \<sqsubseteq> x" by metis+
 qed
 
+lemma bottom_ofI:
+  assumes "x \<in> S"
+  assumes "\<And> y . y \<in> S \<Longrightarrow> x \<sqsubseteq> y"
+  shows "x = bottom_of"
+  using assms 
+  by (metis below_antisym bottom_of_minimal bottom_of_there)
+
 lemma iterate_closed_on: "closed_on F \<Longrightarrow> closed_on (F^^i)"
   unfolding closed_on_def
   by (induct i, auto)
@@ -388,7 +406,7 @@ proof
   show "subpcpo S" by (rule subpcpoI[OF assms])
   interpret subpcpo S by fact
   show "bottom_of S = b"
-    by (metis assms(2) assms(3) below_antisym bottom_of_minimal bottom_of_there)
+    by (rule bottom_ofI[symmetric, OF assms(2) assms(3)])
 qed
 
 
@@ -505,6 +523,34 @@ proof(rule subpcpoI)
   thus "(bottom_of S1, bottom_of S2) \<sqsubseteq> y"
     by (metis (full_types) Pair_below_iff bottom_of_minimal mem_Sigma_iff prod.exhaust s2.bottom_of_minimal)
 }
+qed
+
+lemma subcpo_Inter:
+  "(\<And>i. subcpo (S i)) \<Longrightarrow> subcpo (\<Inter> i. S i)"
+  unfolding subcpo_def by (metis INT_iff UNIV_I)
+
+lemma
+  assumes "\<And>i. subpcpo (S i)"
+  assumes "\<And> i j. bottom_of (S i) = bottom_of (S j)"
+  shows subpcpo_Inter: "subpcpo (\<Inter> i. S i)" and bottom_of_Inter: "\<And>i. bottom_of (S i) = bottom_of (\<Inter> i. S i)"
+proof-
+  have *: "subpcpo_bot (\<Inter> i. S i) (bottom_of (S undefined))"
+  proof(rule subpcpo_botI)
+    case goal1
+    thus ?case by (metis assms(1) subpcpo_is_subcpo subcpo_Inter subcpo_def)
+  next
+    case goal2
+    show "bottom_of (S undefined) \<in> (\<Inter> i. S i)"
+      by (rule, metis subpcpo.bottom_of_there[OF assms(1)] assms(2))
+  next
+    case goal3
+    thus "bottom_of (S undefined) \<sqsubseteq> y"
+      apply -
+      apply (rule subpcpo.bottom_of_minimal[OF assms(1)])
+      by (metis INT_iff UNIV_I)
+ qed
+ case goal1 show ?case using * by (metis subpcpo_bot_is_subpcpo)
+ case goal2 show ?case using * by (metis assms(2) bottom_of_subpcpo_bot)
 qed
 
 lemma subpcpo_bot_inter:
