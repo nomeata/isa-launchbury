@@ -360,4 +360,15 @@ proof-
     thus ?thesis unfolding compatible_def by (rule ub_implies_lub_exists)
 qed
 
+lemma (in Nonempty_Meet_cpo) compatible_down_closed2:
+    assumes "compatible y x"
+    and "z \<sqsubseteq> x"
+    shows "compatible y z"
+proof-
+    from assms(1) obtain ub where "{y, x} <<| ub" by (metis compatible_def)
+    hence "{y,x} <| ub" by (metis is_lubD1)
+    hence "{y,z} <| ub" using assms(2) by (metis is_ub_insert rev_below_trans)
+    thus ?thesis unfolding compatible_def by (rule ub_implies_lub_exists)
+qed
+
 end
