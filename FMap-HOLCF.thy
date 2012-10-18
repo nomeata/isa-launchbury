@@ -542,6 +542,9 @@ lemma fmap_join_rho[simp]:
   apply (case_tac "\<rho> xa", case_tac "x xa")
   by (auto simp add: domIff Ball_def split add:option.split)
 
+lemma compatible_fmap_disjoint_fdom:
+  "fdom m1 \<inter> fdom m2 = {} \<Longrightarrow> compatible_fmap m1 m2"
+  by (auto intro: compatible_fmapI)
 
 lemma fmap_join_mono:
   assumes "compatible_fmap a b"
@@ -601,6 +604,12 @@ case (goal2 x)
   qed
 qed
 
+lift_definition fmap_expand :: "('a, 'b::pcpo) fmap \<Rightarrow> 'a set  \<Rightarrow> ('a, 'b) fmap"
+  is "\<lambda> m1 S. (if finite S then (\<lambda> x. if x \<in> S then Some (case m1 x of (Some x) => x | None => \<bottom>) else None) else empty)"
+  apply (case_tac "finite set")
+  apply (rule_tac B = "dom fun \<union> set" in   finite_subset)
+  apply auto
+  done
 
 lift_definition fmap_extend :: "('a, 'b::pcpo) fmap \<Rightarrow> 'a set  \<Rightarrow> ('a, 'b) fmap"
   is "\<lambda> m1 S. (if finite S then (\<lambda> x. if x \<in> S then Some \<bottom> else m1 x) else empty)"
@@ -608,6 +617,10 @@ lift_definition fmap_extend :: "('a, 'b::pcpo) fmap \<Rightarrow> 'a set  \<Righ
   apply (rule_tac B = "dom fun \<union> set" in   finite_subset)
   apply auto
   done
+
+lemma fmap_expand_nonfinite:
+  "\<not> finite S \<Longrightarrow> fmap_expand m S = fempty"
+  by (transfer, simp)
 
 lemma fmap_extend_nonfinite:
   "\<not> finite S \<Longrightarrow> fmap_extend m S = fempty"
@@ -621,17 +634,41 @@ lemma fmap_restr_fmap_extend:
   unfolding fmap_restr_def
   by auto
 
+lemma fmap_restr_fmap_expand:
+  "finite d2 \<Longrightarrow> fmap_restr d1 (fmap_expand m d2) = fmap_restr d1 (fmap_expand m (d1 \<inter> d2))"
+  apply(cases "finite d1")
+  apply transfer
+  apply (auto simp add: restrict_map_def)
+  unfolding fmap_restr_def
+  by auto
+
 lemma fdom_fmap_extend[simp]:
   "finite S \<Longrightarrow> fdom (fmap_extend m S) = fdom m \<union> S"
   by (transfer, auto)
+
+lemma fdom_fmap_expand[simp]:
+  "finite S \<Longrightarrow> fdom (fmap_expand m S) = S"
+  by (transfer, auto split:if_splits) 
 
 lemma lookup_fmap_extend1[simp]:
   "finite S \<Longrightarrow> x \<in> S \<Longrightarrow> lookup (fmap_extend m S) x = Some \<bottom>"
   by (transfer, auto)
 
+lemma lookup_fmap_expand1[simp]:
+  "finite S \<Longrightarrow> x \<in> S \<Longrightarrow> x \<in> fdom m \<Longrightarrow> lookup (fmap_expand m S) x = lookup m x"
+  by (transfer, auto)
+
 lemma lookup_fmap_extend2[simp]:
   "finite S \<Longrightarrow> x \<notin> S \<Longrightarrow> lookup (fmap_extend m S) x = lookup m x"
   by (transfer, auto)
+
+lemma lookup_fmap_expand2[simp]:
+  "finite S \<Longrightarrow> x \<in> S \<Longrightarrow> x \<notin> fdom m \<Longrightarrow> lookup (fmap_expand m S) x = Some \<bottom>"
+  by (transfer, auto split:option.split)
+
+lemma lookup_fmap_expand3[simp]:
+  "finite S \<Longrightarrow> x \<notin> S \<Longrightarrow> lookup (fmap_expand m S) x = None"
+  by (transfer, auto split:option.split)
 
 lemma fmap_extend_monofun:
   "monofun (\<lambda> m. fmap_extend m S)"
@@ -647,6 +684,26 @@ case True
 next
 case False
   show ?thesis by (rule monofunI, simp add: fmap_extend_nonfinite[OF False])
+qed
+
+lemma fmap_expand_monofun:
+  "monofun (\<lambda> m. fmap_expand m S)"
+proof(cases "finite S")
+case True
+  show ?thesis
+  proof (rule monofunI, rule fmap_belowI')
+  case goal1 thus *: ?case using True by (simp add: fmap_below_dom)
+  case (goal2 m1 m2 x) thus ?case
+    using goal2 True
+    apply (cases "x \<in> S")
+    apply (cases "x \<in> fdom m1")
+    apply (subgoal_tac "x \<in> fdom m2")
+    apply (auto dest:fmap_belowE simp add: fmap_below_dom)
+    done
+  qed
+next
+case False
+  show ?thesis by (rule monofunI, simp add: fmap_expand_nonfinite[OF False])
 qed
 
 
@@ -666,6 +723,30 @@ case True[simp]
 next
 case False
   show ?thesis by (rule contI2[OF fmap_extend_monofun] , simp add: fmap_extend_nonfinite[OF False])
+qed
+
+lemma fmap_expand_cont:
+  "cont (\<lambda> m. fmap_expand m S)"
+proof(cases "finite S")
+case True[simp]
+  show ?thesis
+  proof (rule fmap_contI)
+  case goal1 thus ?case by (simp add: fmap_below_dom)
+  case goal2 thus ?case by (metis True below_fmap_def fdom_fmap_expand lookup_fmap_expand1 lookup_fmap_expand2 minimal the.simps)
+  next
+  case (goal3 Y x)[simp]
+    hence [simp]:"x \<in> S" by simp
+    show ?case
+      apply (cases "x \<in> fdom (\<Squnion> i. Y i)")
+      apply (subgoal_tac "\<And> i. x \<in> fdom (Y i)")
+      apply (simp add: lookup_cont)
+      apply (metis chain_fdom(1) chain_fdom(2) goal3(1))
+      apply (simp)
+      done
+  qed
+next
+case False
+  show ?thesis by (rule contI2[OF fmap_expand_monofun] , simp add: fmap_expand_nonfinite[OF False])
 qed
 
 
