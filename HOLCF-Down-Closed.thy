@@ -128,7 +128,7 @@ lemma down_closed_ball:
   shows  "down_closed (\<Inter>x \<in> A. S x)"
   using assms unfolding down_closed_def by auto
 
-lemma down_closed_all:
+lemma down_closed_Inter:
   assumes  "\<And> z. down_closed (S z)"
   shows  "down_closed (\<Inter>x. S x)"
   using assms by (metis down_closed_ball)
