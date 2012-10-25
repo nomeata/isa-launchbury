@@ -37,6 +37,9 @@ lemma fmap_upd_overwrite[simp]: "f (x f\<mapsto> y) (x f\<mapsto> z) = f (x f\<m
 lemma fdomIff: "(a : fdom m) = (lookup m a ~= None)"
  by (transfer, auto)
 
+lemma lookup_not_fdom: "x \<notin> fdom m \<Longrightarrow> lookup m x = None"
+  by (auto iff:fdomIff)
+
 lemma finite_range:
   assumes "finite (dom m)"
   shows "finite (ran m)"
