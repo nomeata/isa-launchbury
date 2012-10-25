@@ -2,7 +2,7 @@ theory "FMap-Nominal-HOLCF"
 imports "Nominal-HOLCF" "FMap-Nominal" "FMap-HOLCF" "Nominal-Utils"
 begin
 
-instance "fmap" :: (cont_pt, cont_pt) cont_pt
+instance "fmap" :: (pt, cont_pt) cont_pt
 apply default
 proof(intro contI2 monofunI fmap_belowI')
   fix \<pi> m1 m2
@@ -143,14 +143,18 @@ lemma fmap_update_eqvt[eqvt]:
   "\<pi> \<bullet> fmap_update m1 (m2 :: ('a::{cont_pt,cpo}, 'b::{cont_pt,cpo}) fmap) = fmap_update (\<pi> \<bullet> m1) (\<pi> \<bullet> m2)"
   by (transfer, perm_simp, rule refl)
 
+lemma fmap_extend_eqvt[eqvt]:
+  "\<pi> \<bullet> fmap_extend (m :: ('a::{pt}, 'b::{cont_pt,pcpo}) fmap) S = fmap_extend (\<pi> \<bullet> m) (\<pi> \<bullet> S)"
+  by (transfer, perm_simp, rule refl)
+
+lemma fmap_expand_eqvt[eqvt]:
+  "\<pi> \<bullet> fmap_expand (m :: ('a::{pt}, 'b::{cont_pt,pcpo}) fmap) S = fmap_expand (\<pi> \<bullet> m) (\<pi> \<bullet> S)"
+  by (transfer, perm_simp, rule refl)
+
 lemma compatible_eqvt[eqvt]:
-  "compatible x y \<Longrightarrow> compatible (\<pi> \<bullet> (x::'a::{cont_pt,pcpo})) (\<pi> \<bullet> y)"
+  "compatible (x::'a::cont_pt) y \<Longrightarrow> compatible (\<pi> \<bullet> x) (\<pi> \<bullet> y)"
   unfolding compatible_def
-  apply (erule exE)
-  apply (drule perm_is_lub_eqvt[of _ _ \<pi>])
-  apply (simp only: insert_eqvt empty_eqvt)
-  apply (erule exI)
-  done
+  by (metis empty_eqvt insert_eqvt perm_is_lub_simp)
 
 lemma permute_under_all:
   "(\<forall> x . P (\<pi> \<bullet> x)) \<Longrightarrow> (\<forall> x. P x)"
@@ -172,7 +176,7 @@ lemma compatible_fmap_eqvt[eqvt]:
   done
 
 lemma join_eqvt[simp,eqvt]:
-  "\<pi> \<bullet> join (x::'a::{cont_pt,pcpo}) y = join (\<pi> \<bullet> x) (\<pi> \<bullet> y)"
+  "\<pi> \<bullet> join (x::'a::{cont_pt}) y = join (\<pi> \<bullet> x) (\<pi> \<bullet> y)"
 proof (cases "\<exists> z. {x, y} <<| z")
 case False
   hence "\<not> (\<exists> z. {\<pi> \<bullet> x, \<pi> \<bullet> y} <<| z)" by (metis perm_is_lub_simp empty_eqvt insert_eqvt eqvt_bound)
