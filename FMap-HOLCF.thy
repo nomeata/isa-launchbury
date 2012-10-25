@@ -530,6 +530,7 @@ lemma compatible_fmapI:
   shows "compatible_fmap m1 m2"
   unfolding compatible_fmap_def' using assms by auto
 
+
 lemma [simp]:
   "compatible_fmap fempty \<rho>" 
   "compatible_fmap \<rho> fempty"
@@ -542,9 +543,44 @@ lemma fmap_join_rho[simp]:
   apply (case_tac "\<rho> xa", case_tac "x xa")
   by (auto simp add: domIff Ball_def split add:option.split)
 
+lemma lookup_fmap_join1[simp]:
+  "compatible_fmap \<rho> \<rho>' \<Longrightarrow>  x \<in> fdom \<rho> \<Longrightarrow> x \<in> fdom \<rho>' \<Longrightarrow> the (lookup (fmap_join \<rho> \<rho>') x) = the (lookup \<rho> x) \<squnion> the (lookup \<rho>' x) "
+  by (transfer, auto)
+
+lemma lookup_fmap_join2[simp]:
+  "compatible_fmap \<rho> \<rho>' \<Longrightarrow>  x \<in> fdom \<rho> \<Longrightarrow> x \<notin> fdom \<rho>' \<Longrightarrow> the (lookup (fmap_join \<rho> \<rho>') x) = the (lookup \<rho> x)"
+  by (transfer, auto split:option.split)
+
+lemma lookup_fmap_join3[simp]:
+  "compatible_fmap \<rho> \<rho>' \<Longrightarrow>  x \<notin> fdom \<rho> \<Longrightarrow> x \<in> fdom \<rho>' \<Longrightarrow> the (lookup (fmap_join \<rho> \<rho>') x) = the (lookup \<rho>' x)"
+  by (transfer, auto split:option.split)
+
 lemma compatible_fmap_disjoint_fdom:
   "fdom m1 \<inter> fdom m2 = {} \<Longrightarrow> compatible_fmap m1 m2"
   by (auto intro: compatible_fmapI)
+
+lemma fmap_join_below1:
+  "compatible_fmap m1 m2 \<Longrightarrow> fdom m1 = fdom m2 \<Longrightarrow> m1 \<sqsubseteq> fmap_join m1 m2"
+  apply (rule fmap_belowI', simp)
+  apply transfer
+  apply (auto simp add: intro!:join_above1 split:option.split)
+  by (metis domI the.simps)
+
+lemma fmap_join_below2:
+  "compatible_fmap m1 m2 \<Longrightarrow> fdom m1 = fdom m2 \<Longrightarrow> m2 \<sqsubseteq> fmap_join m1 m2"
+  apply (rule fmap_belowI', simp)
+  apply transfer
+  apply (auto simp add: intro!:join_above2 split:option.split)
+  by (metis domI the.simps)
+
+lemma fmap_join_least:
+  "compatible_fmap m1 m2 \<Longrightarrow> fdom m1 = fdom m2 \<Longrightarrow> m1 \<sqsubseteq> m \<Longrightarrow> m2 \<sqsubseteq> m \<Longrightarrow> fmap_join m1 m2 \<sqsubseteq> m"
+  apply (rule fmap_belowI', metis below_fmap_def fmap_join_below2)
+  apply (drule_tac x = x in fmap_belowE)
+  apply (drule_tac x = x in fmap_belowE)
+  apply transfer
+  apply (auto split:option.split intro!:join_below)
+  by (metis domI the.simps)
 
 lemma fmap_join_mono:
   assumes "compatible_fmap a b"
@@ -650,6 +686,10 @@ lemma fdom_fmap_expand[simp]:
   "finite S \<Longrightarrow> fdom (fmap_expand m S) = S"
   by (transfer, auto split:if_splits) 
 
+lemma fmap_expand_noop[simp]:
+  "S = fdom \<rho> \<Longrightarrow> fmap_expand \<rho> S = \<rho>"
+  by (transfer, auto split: option.split)
+
 lemma lookup_fmap_extend1[simp]:
   "finite S \<Longrightarrow> x \<in> S \<Longrightarrow> lookup (fmap_extend m S) x = Some \<bottom>"
   by (transfer, auto)
@@ -749,6 +789,19 @@ case False
   show ?thesis by (rule contI2[OF fmap_expand_monofun] , simp add: fmap_expand_nonfinite[OF False])
 qed
 
+lemma compatible_fmap_expand: 
+  assumes "compatible_fmap m1 m2"
+  shows "compatible_fmap (fmap_expand m1 S)  (fmap_expand m2 S)"
+proof(cases "finite S")
+case True with assms show ?thesis
+  apply transfer
+  apply (auto  split:option.split)
+  by (metis Int_iff domI the.simps)
+next
+  case False thus ?thesis by (transfer, auto)
+qed
+
+
 
 lift_definition fmap_bottom :: "'a set  \<Rightarrow> ('a, 'b::pcpo) fmap"
   is "\<lambda> S. (if finite S then (\<lambda> x. if x \<in> S then Some \<bottom> else None) else empty)"
@@ -773,6 +826,12 @@ lemma fmap_bottom_below[simp]:
 lemma fmap_bottom_below_iff[iff]:
   "finite S \<Longrightarrow> fmap_bottom S \<sqsubseteq> \<rho> \<longleftrightarrow> S = fdom \<rho>"
   by (metis fdom_fmap_bottom fmap_below_dom fmap_bottom_below)
+
+lemma fmap_bottom_inj[iff]: "finite x \<Longrightarrow> finite y \<Longrightarrow> fmap_bottom x = fmap_bottom y \<longleftrightarrow> x = y"
+  apply transfer
+  apply (auto simp add: option.split option.split_asm)
+  apply (metis option.simps(3))+
+  done
 
 lemma fmap_restr_fmap_bottom[simp]:
   "finite S \<Longrightarrow> finite S2 \<Longrightarrow> fmap_restr S (fmap_bottom S2) = fmap_bottom (S \<inter> S2)"
