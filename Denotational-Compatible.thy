@@ -30,6 +30,7 @@ definition heapExtendJoin_cond
     (\<forall> e \<in> snd ` set h. subpcpo (compatible_with_exp e (fdom \<rho> \<union> fst ` set h))) \<and>
     (\<forall> e \<in> snd ` set h. cont_on (compatible_with_exp e (fdom \<rho> \<union> fst ` set h)) (eval e)))"
 
+
 lemma compatible_with_HeapExtend'_down_closed:
   "\<lbrakk> \<And> e. e \<in> snd ` set h \<Longrightarrow> nice_domain (compatible_with_exp eval e d) (fmap_bottom (set d)) \<rbrakk> 
   \<Longrightarrow> down_closed (compatible_with_heapExtend' (compatible_with_exp eval) eval d h)"
@@ -37,9 +38,13 @@ unfolding compatible_with_heapExtend'_def
   apply (subst if_True)
   apply (subst Collect_conj_eq)
   apply (rule down_closed_inter)
-  apply (auto simp add: down_closed_def)[1]
-  apply (erule_tac x = "(a,b)" in ballE)
-  apply (erule_tac x = i in allE)
+  apply (subst Collect_ball_eq)
+  apply (rule down_closed_ball)
+  apply (subst Collect_all_eq)
+  apply (rule down_closed_inter)
+  apply (subst vimage_Collect_eq[symmetric]) back
+  apply (rule down_closed_vimage)
+  apply (auto dest: nice_domain_is_down_closed)[1]
   
   oops
 
@@ -89,43 +94,98 @@ qed
 termination(eqvt) by lexicographic_order
 
 
+lemma fdom_subpcpo_bot:
+  assumes "subpcpo_bot S b" and "x \<in> S"
+  shows "fdom x = fdom b"
+by (metis assms bottom_of_subpcpo_bot_minimal fmap_below_dom)
+
 
 lemma True and
   frees_as_to_frees:
   "frees_as as \<subseteq> set d \<Longrightarrow> e \<in> snd ` set (asToHeap as) \<Longrightarrow> frees e \<subseteq> set d"
   by (induct and as arbitrary:d rule:exp_assn.inducts, auto)
 
+lemma cont_if_incomp:
+  assumes incomp: "\<And>a b. a \<sqsubseteq> b \<Longrightarrow> p a = p b"
+  assumes "cont f"  and "cont g"
+  shows "cont (\<lambda>x. if p x then f x else g x)"
+proof (rule contI)
+  case (goal1 Y )
+  have [simp]: "\<And> i. p (Y i) = p (\<Squnion>i. Y i)" by (metis `chain Y` incomp is_ub_thelub)
+  show ?case  by (auto intro: contE[OF assms(2) goal1] contE[OF assms(3) goal1])
+qed
+
+ 
+
+lemma ESem_cont: "cont (ESem e)"
+proof(induct "ESem" e _ rule:compatible_with_exp.induct[case_names Var Lam App Let])
+case (Var e d)
+  show "cont (\<lambda>\<rho>. ESem (Var e) \<rho>)" by simp
+next
+case (App e x d)
+  thus "cont (\<lambda> \<rho>. ESem (App e x) \<rho>)" by auto
+next
+case (Let v e)
+  find_theorems cont "if _ then _ else _"
+oops
+
 lemma ESem_cont_induct_lemma:
-  "frees e \<subseteq> set d \<Longrightarrow> (nice_domain (compatible_with_exp eval e d) (fmap_bottom_l d)  &&& True)"
-(*  and
-  "\<lbrakk> frees_as as \<subseteq> set d; vars_as as \<subseteq> set d \<rbrakk> \<Longrightarrow>
-    (subpcpo_bot (fmap_bottom_l d) (compatible_with_heapExtend' compatible_with_exp eval d (asToHeap as)))
-           &&&  contains_bottoms (set d) (compatible_with_heapExtend' compatible_with_exp eval  d (asToHeap as))" *)
-proof(induct eval e d rule:compatible_with_exp.induct[case_names Var Lam App Let])
-print_cases
-  case (Var eval v d)
+  "frees e \<subseteq> set d \<Longrightarrow>
+  nice_domain (compatible_with_exp ESem e d) (fmap_bottom_l d)
+  &&&
+  cont_on (compatible_with_exp ESem e d) (ESem e)"
+proof(induct "ESem" e d rule:compatible_with_exp.induct[case_names Var Lam App Let])
+  print_cases
+  case (Var  v d)
     case 1 show ?case by (auto simp add: fmap_bottom_l_def intro: cone_above_bottom_is_nice)
-    case 2 show ?case.. (* by (auto intro!: fmap_bottom_below  dest!: fmap_below_dom simp add: finite_subset fmap_bottom_l_def contains_bottoms_def) *)
+    case 2
+      have "cont (\<lambda> \<rho>. ESem (Var v) \<rho>)" by auto
+      thus ?case by (rule cont_is_cont_on) 
 next
-  case (App eval e x d)
-    case 1 thus ?case using App by auto
-    case 2 thus ?case using App by auto
+  case (App e x d)
+    case 1
+      hence f: "frees e \<subseteq> set d" by auto
+      thus ?case using App by auto
+
+      show "cont_on (compatible_with_exp ESem (App e x) d) (\<lambda> \<rho>. ESem (App e x) \<rho>)"
+        apply (subst ESem.simps(2))
+        apply (subst compatible_with_exp.simps(3))
+        apply (rule subpcpo.cont_comp_cont_on2[OF nice_domain_is_subpcpo[OF App(1)[OF f]] _ _ App(2)[OF f]]) back  
+        apply (metis cont_Rep_cfun cont_Rep_cfun2)
+        apply (metis cont_Rep_cfun2)
+        apply (rule cont_is_cont_on)
+        by simp
 next
-  case (Lam x d eval e)
+  case (Lam x d e)
     case 1
       hence f: "frees e \<subseteq> set (x # d)" by auto
       
       from Lam(2)[OF f]
-      have "nice_domain (fmap_restr_l d ` compatible_with_exp eval e (x # d)) (fmap_restr_l d (fmap_bottom_l (x#d)))"
+      have "nice_domain (fmap_restr_l d ` compatible_with_exp ESem e (x # d)) (fmap_restr_l d (fmap_bottom_l (x#d)))"
         unfolding fmap_restr_l_def
         apply (rule nice_domain_retrict_image)
         apply (rule fmap_below_dom[OF bottom_of_subpcpo_bot_minimal[OF nice_domain_is_subpcpo_bot[OF Lam(2)[OF f]]], unfolded fmap_bottom_l_def, symmetric])
         by auto
-      thus ?case using Lam(1)
+      thus nd: ?case using Lam(1)
         apply (auto simp add: fmap_restr_l_def fmap_bottom_l_def)
         by (metis inf_absorb1 subset_insertI)
-    case 2
-      show ?case using Lam(1) by simp
+
+      have "cont_on (compatible_with_exp ESem (Lam [x]. e) d) (\<lambda> \<rho>.  Fn\<cdot>(\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>))"
+        thm subpcpo.cont_comp_cont_on[OF nice_domain_is_subpcpo[OF nd]]
+        apply (rule subpcpo.cont_comp_cont_on[OF nice_domain_is_subpcpo[OF nd] cont_Rep_cfun2]) 
+        thm cont_on_comp[OF nice_domain_is_subpcpo[OF nd] _ cont_is_cont_on[OF fmap_upd_cont[OF cont_id cont_const]]]
+        apply (rule cont_on_comp[OF nice_domain_is_subpcpo[OF nd] _ cont_is_cont_on[OF fmap_upd_cont[OF cont_id cont_const]]]) 
+        using Lam(1)
+        
+
+        sorry
+      thus "cont_on (compatible_with_exp ESem (Lam [x]. e) d) (\<lambda> \<rho>. ESem (Lam [x]. e) \<rho>)"
+        apply (rule subst[OF subpcpo.cont_on_cong[OF nice_domain_is_subpcpo[OF nd]], rotated])
+        apply (rule arg_cong[OF ESem.simps(1)])
+        apply (drule fdom_subpcpo_bot[OF nice_domain_is_subpcpo_bot[OF nd]])
+        apply (simp add: sharp_Env fmap_bottom_l_def )
+        apply (metis Lam(1) finite_set fresh_finite_set_at_base fresh_set)
+        done
 next
   case (Let as d eval body)
     let "?d'" = "vars_as_l as @ d"
@@ -139,7 +199,8 @@ next
       moreover
       have "nice_domain (compatible_with_heapExtend' (compatible_with_exp eval) eval ?d' (asToHeap as)) (fmap_bottom_l ?d')"
         unfolding fmap_bottom_l_def
-        by (rule compatible_with_HeapExtend'_nice_domain[OF  Let(4)[OF _ f''', unfolded fmap_bottom_l_def]])
+        apply (rule compatible_with_HeapExtend'_nice_domain)
+        by (rule Let(4)[OF _ f''', unfolded fmap_bottom_l_def])
       ultimately
       have "nice_domain
              (compatible_with_exp eval body ?d' \<inter>
@@ -166,7 +227,7 @@ next
     case 2 show ?case..
 qed
 
-
+(*
 
 lemma heap_compat_subset:
    "e \<in> snd ` set h \<Longrightarrow> compatible_with_heap h d \<subseteq> compatible_with_exp e d" sorry
@@ -242,6 +303,6 @@ next
   thus "?bot \<sqsubseteq> y"
     by (auto intro: fmap_bottom_below simp add: compatible_with_heap_and_env_def)
 qed
-
+*)
 
 end

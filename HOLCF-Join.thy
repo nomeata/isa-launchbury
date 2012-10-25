@@ -13,43 +13,6 @@ definition join :: "'a => 'a => 'a" (infix "\<squnion>" 80) where
 definition compatible :: "'a \<Rightarrow> 'a \<Rightarrow> bool"
   where "compatible x y = (\<exists> z. {x, y} <<| z)"
 
-lemma compatible_sym: "compatible x y ==> compatible y x"
-  unfolding compatible_def by (metis insert_commute)
-
-lemma compatible_sym_iff: "compatible x y \<longleftrightarrow> compatible y x"
-  unfolding compatible_def by (metis insert_commute)
-
-lemma join_above1: "compatible x y \<Longrightarrow> x \<sqsubseteq> x \<squnion> y"
-  unfolding compatible_def join_def
-  apply auto
-  by (metis is_lubD1 is_ub_insert lub_eqI)  
-
-lemma join_above2: "compatible x y \<Longrightarrow> y \<sqsubseteq> x \<squnion> y"
-  unfolding compatible_def join_def
-  apply auto
-  by (metis is_lubD1 is_ub_insert lub_eqI)  
-
-lemma join_idem[simp]: "compatible x y \<Longrightarrow> x \<squnion> (x \<squnion> y) = x \<squnion> y"
-proof-
-  assume c1: "compatible x y"
-  then obtain z where z:"{x, y} <<| z" unfolding compatible_def by auto
-  hence "x \<sqsubseteq> z" by (metis is_lubD1 is_ub_insert)
-  hence "{x, z} <<| z" by (metis is_lub_bin)
-  hence "x \<squnion> z = z" unfolding join_def by (auto intro: lub_eqI)
-  from z
-  have "x \<squnion> y = z" unfolding join_def by (auto intro: lub_eqI)
-  hence c2: "compatible x (x \<squnion> y)" unfolding compatible_def using `{x, z} <<| z` by auto
-  
-  show ?thesis using `x \<squnion> y = z` `x \<squnion> z = z` by auto
-qed
-
-lemma join_self[simp]: "x \<squnion> x = x"
-  unfolding join_def  by auto
-end
-
-lemma join_commute:  "compatible x y \<Longrightarrow> x \<squnion> y = y \<squnion> x"
-  unfolding compatible_def unfolding join_def by (metis insert_commute)
-
 lemma compatibleI:
   assumes "x \<sqsubseteq> z"
   assumes "y \<sqsubseteq> z"
@@ -74,10 +37,35 @@ proof-
   thus ?thesis unfolding join_def by (metis lub_eqI)
 qed
 
+lemma compatible_sym: "compatible x y ==> compatible y x"
+  unfolding compatible_def by (metis insert_commute)
+
+lemma compatible_sym_iff: "compatible x y \<longleftrightarrow> compatible y x"
+  unfolding compatible_def by (metis insert_commute)
+
+lemma join_above1: "compatible x y \<Longrightarrow> x \<sqsubseteq> x \<squnion> y"
+  unfolding compatible_def join_def
+  apply auto
+  by (metis is_lubD1 is_ub_insert lub_eqI)  
+
+lemma join_above2: "compatible x y \<Longrightarrow> y \<sqsubseteq> x \<squnion> y"
+  unfolding compatible_def join_def
+  apply auto
+  by (metis is_lubD1 is_ub_insert lub_eqI)  
+
+lemma join_self[simp]: "x \<squnion> x = x"
+  unfolding join_def  by auto
+end
+
+lemma join_commute:  "compatible x y \<Longrightarrow> x \<squnion> y = y \<squnion> x"
+  unfolding compatible_def unfolding join_def by (metis insert_commute)
+
 lemma lub_is_join:
   "{x, y} <<| z \<Longrightarrow> x \<squnion> y = z"
 unfolding join_def by (metis lub_eqI)
 
+lemma compatible_refl[simp]: "compatible x x"
+  by (rule compatibleI[OF below_refl below_refl])
 
 lemma join_mono:
   assumes "compatible a b"
@@ -104,6 +92,15 @@ proof-
   thus "x \<sqsubseteq> x \<squnion> y" and "y \<sqsubseteq> x \<squnion> y" by simp_all
 qed
 
+lemma
+  assumes "compatible x y"
+  shows compatible_above1: "compatible x (x \<squnion> y)" and compatible_above2: "compatible y (x \<squnion> y)"
+proof-
+  from assms obtain z where "{x,y} <<| z" unfolding compatible_def by auto
+  hence  "x \<squnion> y = z" and "x \<sqsubseteq> z" and "y \<sqsubseteq> z" apply (auto intro: lub_is_join) by (metis is_lubD1 is_ub_insert)+
+  thus  "compatible x (x \<squnion> y)" and  "compatible y (x \<squnion> y)" by (metis below.r_refl compatibleI)+
+qed
+
 lemma join_below:
   assumes "compatible x y"
   and "x \<sqsubseteq> a" and "y \<sqsubseteq> a"
@@ -115,6 +112,35 @@ proof-
   from z have "x \<squnion> y = z" by (rule lub_is_join) 
   ultimately show ?thesis by simp
 qed
+
+lemma join_assoc:
+  assumes "compatible x y"
+  assumes "compatible x (y \<squnion> z)"
+  assumes "compatible y z"
+  shows "(x \<squnion> y) \<squnion> z = x \<squnion> (y \<squnion> z)"
+  apply (rule is_joinI)
+  apply (rule join_mono[OF assms(1) assms(2) below_refl join_above1[OF assms(3)]])
+  apply (rule below_trans[OF join_above2[OF assms(3)] join_above2[OF assms(2)]])
+  apply (rule join_below[OF assms(2)])
+  apply (erule rev_below_trans)
+  apply (rule join_above1[OF assms(1)])
+  apply (rule join_below[OF assms(3)])
+  apply (erule rev_below_trans)
+  apply (rule join_above2[OF assms(1)])
+  apply assumption
+  done
+
+lemma join_idem[simp]: "compatible x y \<Longrightarrow> x \<squnion> (x \<squnion> y) = x \<squnion> y"
+  apply (subst join_assoc[symmetric])
+  apply (rule compatible_refl)
+  apply (erule compatible_above1)
+  apply assumption
+  apply (subst join_self)
+  apply rule
+  done
+
+lemma join_bottom[simp]: "x \<squnion> \<bottom> = x" "\<bottom> \<squnion> x = x"
+  by (auto intro: is_joinI)
 
 lemma compatible_adm2:
   shows "adm (\<lambda> y. compatible x y)"
@@ -187,6 +213,22 @@ proof-
     done
 qed
 
+lemma join_cont12:
+  assumes "chain Y" and "chain Z"
+  assumes compat: "\<And> i j. compatible (Y i) (Z j)"
+  shows "(\<Squnion>i. Y i) \<squnion> (\<Squnion>i. Z i) = (\<Squnion> i. Y i  \<squnion> Z i)"
+proof-
+  have "(\<Squnion>i. Y i) \<squnion> (\<Squnion>i. Z i) = (\<Squnion>i. Y i \<squnion> (\<Squnion>j. Z j))"
+    by (rule join_cont1[OF `chain Y` admD[OF compatible_adm2 `chain Z` compat]])
+  also have "... = (\<Squnion>i j. Y i \<squnion> Z j)"
+    by (subst join_cont2[OF `chain Z` compat], rule)
+  also have "... = (\<Squnion>i. Y i \<squnion> Z i)"
+    apply (rule diag_lub)
+    apply (rule chainI, rule join_mono[OF compat compat chainE[OF `chain Y`] below_refl])
+    apply (rule chainI, rule join_mono[OF compat compat below_refl chainE[OF `chain Z`]])
+    done
+  finally show ?thesis.
+qed
 
 context pcpo
 begin
@@ -301,6 +343,33 @@ begin
   done
 end
 
+class Bounded_Nonempty_Meet_cpo = cpo +
+  assumes bounded_nonempty_meet_exists: "S \<noteq> {} \<Longrightarrow> (\<exists>z. S >| z) \<Longrightarrow> \<exists>x. S >>| x"
+begin
+  lemma nonempty_ub_implies_lub_exists:
+  assumes "S <| u"
+  assumes "S \<noteq> {}"
+  shows "\<exists> z. S <<| z"
+  proof-
+    have "{u. S <| u} \<noteq> {}" using assms(1) by auto
+    hence "\<exists>x. {u. S <| u} >>| x"
+      apply (rule bounded_nonempty_meet_exists)
+      by (metis CollectE assms(2) equals0I is_lbI is_ub_def)
+    then obtain lu where lb: "{u. S <| u} >>| lu" by auto
+    hence "S <| lu"
+      by (metis is_glb_above_iff is_lb_def is_ub_def mem_Collect_eq)
+    hence "S <<| lu"
+      by (metis (full_types) is_lubI is_glbD1 is_lb_def lb mem_Collect_eq)
+    thus ?thesis ..
+  qed
+
+  lemma ub_implies_compatible:
+    "x \<sqsubseteq> z \<Longrightarrow> y \<sqsubseteq> z \<Longrightarrow> compatible x y"
+    unfolding compatible_def
+    by (rule nonempty_ub_implies_lub_exists, auto)
+end
+
+
 class Nonempty_Meet_cpo = cpo +
   assumes nonempty_meet_exists: "S \<noteq> {} \<Longrightarrow> \<exists>x. S >>| x"
 begin
@@ -319,6 +388,11 @@ begin
   qed
 end
 
+context Nonempty_Meet_cpo
+begin
+  subclass Bounded_Nonempty_Meet_cpo
+  apply default by (metis nonempty_meet_exists)
+end
 
 (* More about Joins aka least upper bounds *)
 
@@ -349,7 +423,7 @@ end
 
 (* Compatible is downclosed in Nonempty_Meet_exists *)
 
-lemma (in Nonempty_Meet_cpo) compatible_down_closed:
+lemma (in Bounded_Nonempty_Meet_cpo) compatible_down_closed:
     assumes "compatible x y"
     and "z \<sqsubseteq> x"
     shows "compatible z y"
@@ -357,10 +431,10 @@ proof-
     from assms(1) obtain ub where "{x, y} <<| ub" by (metis compatible_def)
     hence "{x,y} <| ub" by (metis is_lubD1)
     hence "{z,y} <| ub" using assms(2) by (metis is_ub_insert rev_below_trans)
-    thus ?thesis unfolding compatible_def by (rule ub_implies_lub_exists)
+    thus ?thesis unfolding compatible_def by (metis insert_not_empty nonempty_ub_implies_lub_exists)
 qed
 
-lemma (in Nonempty_Meet_cpo) compatible_down_closed2:
+lemma (in Bounded_Nonempty_Meet_cpo) compatible_down_closed2:
     assumes "compatible y x"
     and "z \<sqsubseteq> x"
     shows "compatible y z"
@@ -368,7 +442,73 @@ proof-
     from assms(1) obtain ub where "{y, x} <<| ub" by (metis compatible_def)
     hence "{y,x} <| ub" by (metis is_lubD1)
     hence "{y,z} <| ub" using assms(2) by (metis is_ub_insert rev_below_trans)
-    thus ?thesis unfolding compatible_def by (rule ub_implies_lub_exists)
+    thus ?thesis unfolding compatible_def by (metis insert_not_empty nonempty_ub_implies_lub_exists)
 qed
+
+class Finite_Meet_bifinite_cpo = Finite_Meet_cpo + bifinite
+
+lemma is_ub_range:
+     "S >| u \<Longrightarrow> Rep_cfun f ` S >| f \<cdot> u"
+  apply (rule is_lbI)
+  apply (erule imageE)
+  by (metis monofun_cfun_arg is_lbD)
+
+lemma (in approx_chain) lub_approx_arg: "(\<Squnion>i. approx i \<cdot> u ) = u"
+  by (metis chain_approx lub_ID_reach lub_approx)
+
+instance Finite_Meet_bifinite_cpo \<subseteq> Nonempty_Meet_cpo
+proof (default)
+  from bifinite obtain approx :: "nat \<Rightarrow> 'a \<rightarrow> 'a" where "approx_chain approx" by auto
+  fix S
+  assume "(S :: 'a set) \<noteq> {}"
+  have "\<And>i. \<exists> l . Rep_cfun (approx i) ` S >>|l"
+    apply (rule finite_meet_exists)
+    using `S \<noteq> {}` apply auto[1]
+    using  finite_deflation.finite_range[OF approx_chain.finite_deflation_approx[OF `approx_chain approx`]]
+    by (metis (full_types) image_mono rev_finite_subset top_greatest)
+  then obtain Y where Y_is_glb: "\<And>i. Rep_cfun (approx i) ` S >>| Y i" by metis
+  
+  have "chain Y"
+    apply (rule chainI)
+    apply (subst is_glb_above_iff[OF Y_is_glb])
+    apply (rule is_lbI)
+    apply (erule imageE)
+    apply (erule ssubst)
+    apply (rule rev_below_trans[OF monofun_cfun_fun[OF chainE[OF approx_chain.chain_approx[OF `approx_chain approx`]]]])
+    apply (rule is_lbD[OF is_glbD1[OF Y_is_glb]])
+    apply (erule imageI)
+    done
+  
+  have "S >| Lub Y"
+  proof(rule is_lbI, rule lub_below[OF `chain Y`])
+    fix x i
+    assume "x \<in> S"
+    hence "Y i \<sqsubseteq> approx i \<cdot> x"
+      by (rule imageI[THEN is_lbD[OF is_glbD1[OF Y_is_glb]]])
+    also have "approx i \<cdot> x \<sqsubseteq> x"
+      by (rule  approx_chain.approx_below[OF `approx_chain approx`])
+    finally
+    show "Y i \<sqsubseteq> x".
+  qed
+
+  have "S >>| Lub Y"
+  proof (rule is_glbI[OF `S >| Lub Y`])
+    fix u
+    assume "S >| u"
+    hence "\<And> i. Rep_cfun (approx i) ` S >| approx i \<cdot> u"
+      by (rule is_ub_range)
+    hence "\<And> i.  approx i \<cdot> u \<sqsubseteq> Y i"
+      by (rule is_glbD2[OF Y_is_glb])
+    hence "(\<Squnion>i. approx i \<cdot> u ) \<sqsubseteq> Lub Y" 
+      by (rule lub_mono[OF
+            ch2ch_Rep_cfunL[OF approx_chain.chain_approx[OF `approx_chain approx`]]
+            `chain Y`
+            ])
+    thus "u \<sqsubseteq> Lub Y" 
+      by (metis approx_chain.lub_approx_arg[OF `approx_chain approx`])
+  qed
+  thus "\<exists>x. S >>| x"..
+qed
+
 
 end
