@@ -45,7 +45,7 @@ definition heapExtendJoin :: "Env \<Rightarrow> heap \<Rightarrow> (exp \<Righta
   where
   "heapExtendJoin \<rho> h eval =
     (if heapExtendJoin_cond' h eval \<rho>
-    then fix_on (fix_join_compat' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)))
+    then fix_on (fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) (\<lambda> \<rho>' . fmap_expand (heapToEnv h (\<lambda> e. eval e \<rho>')) (fdom \<rho> \<union> fst ` set h)))
       (\<lambda> \<rho>'. fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h) \<squnion> fmap_expand (heapToEnv h (\<lambda> e. eval e \<rho>')) (fdom \<rho> \<union> fst ` set h))
     else (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)))"
 
@@ -225,10 +225,10 @@ unfolding heapExtendJoin_cond'_def
   done
 
 lemma heapExtendJoin_ind:
-  assumes "heapExtendJoin_cond' h eval \<rho> \<Longrightarrow> subpcpo_syn.adm_on (fix_join_compat' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h))) P"
+  assumes "heapExtendJoin_cond' h eval \<rho> \<Longrightarrow> subpcpo_syn.adm_on (fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda> e. eval e \<rho>')) (fdom \<rho> \<union> fst ` set h))) P"
   assumes "heapExtendJoin_cond' h eval \<rho> \<Longrightarrow> P (to_bot (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)))"
   assumes "\<And> y. heapExtendJoin_cond' h eval \<rho> \<Longrightarrow>
-        y \<in> fix_join_compat' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) \<Longrightarrow>
+        y \<in> fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda> e. eval e \<rho>')) (fdom \<rho> \<union> fst ` set h)) \<Longrightarrow>
         P y \<Longrightarrow>
         P (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h) \<squnion> fmap_expand (heapToEnv h (\<lambda>e. eval e y)) (fdom \<rho> \<union> fst ` set h))"
   assumes "P (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h))"
@@ -236,7 +236,7 @@ lemma heapExtendJoin_ind:
   unfolding heapExtendJoin_def
   apply (cases "heapExtendJoin_cond' h eval \<rho>")
   apply (simp)
-  apply (rule fix_on_jfc'_ind)
+  apply (rule fix_on_jfc''_ind)
   apply (erule heapExtendJoin_cond'_cont)
   apply (erule (1) heapExtendJoin_cond'D)
   apply fact+
@@ -250,7 +250,7 @@ lemma heapExtendJoin_eq:
   unfolding heapExtendJoin_def
   using assms
   apply (simp)
-  apply (rule fix_on_jfc'_eq)
+  apply (rule fix_on_jfc''_eq)
   apply (erule heapExtendJoin_cond'_cont)
   apply (erule (1) heapExtendJoin_cond'D)
   done
@@ -278,9 +278,28 @@ lemma fdom_heapExtendJoin[simp]:
   apply simp
   apply simp
   apply (subst fdom_join)
-  apply (erule heapExtendJoin_cond'D)
-  apply simp_all
+
+  apply (rule compat_jfc'')
+  apply (rule rho_jfc''[OF _ heapExtendJoin_cond'D])
+  apply (rule cont_compose[OF fmap_expand_cont cont2cont_heapToEnv])
+  prefer 2
+  apply assumption
+  prefer 2
+  apply assumption
+  apply (metis heapExtendJoin_cond'_def)
+
+  apply (rule F_pres_compat''[OF _ heapExtendJoin_cond'D])
+  apply (rule cont_compose[OF fmap_expand_cont cont2cont_heapToEnv])
+  prefer 2
+  apply assumption
+  prefer 2
+  apply assumption
+  apply (metis heapExtendJoin_cond'_def)
+  apply assumption
+  
+  apply auto
   done
+
 
 lemma lub_eq_range_is_lub:
   "(\<And> i. F (Y i) \<sqsubseteq> F (Y (Suc i))) \<Longrightarrow> F (\<Squnion> i. Y i) = (\<Squnion> i. F (Y i)) \<Longrightarrow> range (\<lambda>i. F (Y i)::'b::cpo) <<| F (\<Squnion> i. Y i)"
@@ -313,7 +332,7 @@ lemma heapExtendJoin_monofun'':
     unfolding heapExtendJoin_def
     unfolding if_P[OF cond1] if_P[OF cond2]
     apply (simp only: fmap_below_dom[OF `\<rho> \<sqsubseteq> \<rho>'`, symmetric])
-    apply (rule fix_on_jfc'_mono'')
+    apply (rule fix_on_jfc''_mono'')
     apply (rule monofunE[OF fmap_expand_monofun assms(4)])
     apply (intro cont_compose[OF fmap_expand_cont] cont2cont_heapToEnv assms) apply assumption
     apply (erule heapExtendJoin_cond'D[OF cond1])
@@ -335,13 +354,13 @@ proof-
             compatible (fmap_expand (Y i) (?d \<union> fst ` set h)) (fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (?d \<union> fst ` set h)) "
      using heapExtendJoin_cond'D[OF cond2] by simp
 
-  have "fix_on       (fix_join_compat' (\<Squnion> i. fmap_expand (Y i)  (?d \<union> fst ` set h)))
+  have "fix_on       (fix_join_compat'' (\<Squnion> i. fmap_expand (Y i)  (?d \<union> fst ` set h)) (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (?d \<union> fst ` set h)))
              (\<lambda>\<rho>'.                     (\<Squnion> i. fmap_expand (Y i)  (?d \<union> fst ` set h)) \<squnion>
                       fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (?d \<union> fst ` set h)) \<sqsubseteq>
-       (\<Squnion> i. fix_on  (fix_join_compat'       (fmap_expand (Y i) (?d \<union> fst ` set h)))
+       (\<Squnion> i. fix_on  (fix_join_compat''      (fmap_expand (Y i) (?d \<union> fst ` set h))  (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (?d \<union> fst ` set h)))
                                         (\<lambda>\<rho>'. fmap_expand (Y i) (?d \<union> fst ` set h) \<squnion>
                       fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (?d \<union> fst ` set h))) "
-    apply (rule fix_on_join_cont'')
+    apply (rule fix_on_join_cont''')
     apply (rule ch2ch_cont[OF fmap_expand_cont `chain Y`])
     apply (intro cont_compose[OF fmap_expand_cont] cont2cont_heapToEnv assms) apply assumption
     apply (erule compat_preserve)
@@ -386,7 +405,6 @@ lemma fix_join_compat'_eqvt[eqvt]:
 unfolding fix_join_compat'_def
   by (perm_simp, rule)
 
-
 lemma subcpo_eqvt[eqvt]:
   fixes S :: "('a::cont_pt) set"
   assumes "subcpo S"
@@ -430,6 +448,47 @@ lemma bottom_of_eqvt:
   shows "\<pi> \<bullet> (bottom_of (S ::('a::cont_pt) set)) = bottom_of (\<pi> \<bullet> S)"
   by (rule bottom_of_subpcpo_bot[symmetric, OF subpcpo_bot_eqvt[OF  subpcpo_is_subpcpo_bot[OF assms]]])
 
+
+lemma fix_on_jfc'_eqvt:
+  fixes \<rho> :: "'a::{Bounded_Nonempty_Meet_cpo,subpcpo_partition,cont_pt}"
+  assumes "cont F"
+  assumes F_pres_compat:"\<And> x. compatible \<rho> x \<Longrightarrow> compatible \<rho> (F x)"
+  shows "\<pi> \<bullet> fix_on (fix_join_compat' \<rho>) (\<lambda> \<rho>'. \<rho> \<squnion> F \<rho>') = fix_on (fix_join_compat' (\<pi> \<bullet> \<rho>))  (\<lambda> \<rho>'. (\<pi> \<bullet> \<rho>) \<squnion> (\<pi> \<bullet> F) \<rho>')"
+proof-
+  have cont_permuted: "cont (\<pi> \<bullet> F)" 
+    by (metis assms(1) perm_still_cont)
+  have F_pres_compat_permuted: "(\<And> x. compatible (\<pi> \<bullet> \<rho>) x \<Longrightarrow> compatible (\<pi> \<bullet> \<rho>) ((\<pi> \<bullet> F) x))"
+    by (metis assms(2) compatible_eqvt eqvt_bound eqvt_lambda unpermute_def)
+  show ?thesis
+    apply (rule parallel_fix_on_ind[OF subpcpo_jfc' subpcpo_jfc' _ closed_on_jfc'[OF assms] cont_on_jfc'[OF assms] closed_on_jfc'[OF cont_permuted F_pres_compat_permuted] cont_on_jfc'[OF cont_permuted F_pres_compat_permuted] ])
+    apply (rule adm_is_adm_on)
+    apply auto
+    apply (subst bottom_of_eqvt[OF subpcpo_jfc'])
+    apply (subst fix_join_compat'_eqvt, rule)
+    apply perm_simp
+    apply rule
+    done
+qed
+
+lemma fix_join_compat''_eqvt:
+  fixes \<rho> :: "'a::{Bounded_Nonempty_Meet_cpo,subpcpo_partition,cont_pt}"
+  assumes "cont F"
+  assumes F_pres_compat:"\<And> x. compatible \<rho> x \<Longrightarrow> compatible \<rho> (F x)"
+  shows "\<pi> \<bullet> fix_join_compat'' \<rho> F = fix_join_compat'' (\<pi> \<bullet> \<rho>) (\<pi> \<bullet> F)"
+proof-
+  note fix_on_jfc'_eqvt[OF assms]
+  show ?thesis
+    unfolding fix_join_compat''_def
+    apply (auto simp add: permute_set_eq)
+    apply (subst (asm) perm_cont_simp[symmetric, of _ _ \<pi>])
+    apply (subst (asm) fix_on_jfc'_eqvt[OF assms])
+    apply auto[2]
+    apply (subst (asm) perm_cont_simp[symmetric, of _ _ "-\<pi>"])
+    apply (subst (asm) fix_on_jfc'_eqvt[OF assms, symmetric])
+    apply auto[2]
+    done
+qed
+
 lemma heapExtendJoin_eqvt[eqvt]:
   "\<pi> \<bullet> heapExtendJoin \<rho> h eval = heapExtendJoin (\<pi> \<bullet> \<rho>) (\<pi> \<bullet> h) (\<pi> \<bullet> eval)"
 proof (cases "heapExtendJoin_cond' h eval \<rho>")
@@ -453,17 +512,18 @@ proof (cases "heapExtendJoin_cond' h eval \<rho>")
    unfolding heapExtendJoin_def
    apply (simp only: if_P[OF True] if_P[OF True_permuted])
    apply (rule parallel_fix_on_ind[OF
-        subpcpo_jfc'
-        subpcpo_jfc'
+        subpcpo_jfc''
+        subpcpo_jfc''
         adm_is_adm_on
-        closed_onI[OF closed_jfc'[OF cont heapExtendJoin_cond'D[OF True]]]
-        cont_on_jfc'[OF cont heapExtendJoin_cond'D[OF True]]
-        closed_onI[OF closed_jfc'[OF cont_permuted heapExtendJoin_cond'D[OF True_permuted]]]
-        cont_on_jfc'[OF cont_permuted heapExtendJoin_cond'D[OF True_permuted]]
+        closed_onI[OF closed_jfc''[OF cont heapExtendJoin_cond'D[OF True]]]
+        cont_on_jfc''[OF cont heapExtendJoin_cond'D[OF True]]
+        closed_onI[OF closed_jfc''[OF cont_permuted heapExtendJoin_cond'D[OF True_permuted]]]
+        cont_on_jfc''[OF cont_permuted heapExtendJoin_cond'D[OF True_permuted]]
         ])
    apply simp
    apply assumption+
-   apply (subst bottom_of_eqvt[OF  subpcpo_jfc'])
+   apply (subst bottom_of_eqvt[OF subpcpo_jfc''])
+   apply (subst fix_join_compat''_eqvt[OF cont heapExtendJoin_cond'D[OF True]], assumption)
    apply (perm_simp, rule)
    apply perm_simp
    apply simp

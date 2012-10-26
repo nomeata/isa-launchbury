@@ -1,5 +1,5 @@
 theory Correctness
-  imports Denotational Launchbury
+  imports "Denotational-Props" Launchbury
 begin
 
 lemma preserve_meaning:

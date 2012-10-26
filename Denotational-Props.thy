@@ -86,7 +86,7 @@ lemma Esem_simps4[simp]: "set (bn as) \<sharp>* \<rho> \<Longrightarrow> \<lbrak
 thm disjoint_is_heapExtendJoin_cond'
 
 lemma HSem_def': "heapExtendJoin_cond' \<Gamma> ESem \<rho> \<Longrightarrow>
-  \<lbrace>\<Gamma>\<rbrace>\<rho> = fix_on (fix_join_compat' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set \<Gamma>)))
+  \<lbrace>\<Gamma>\<rbrace>\<rho> = fix_on (fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set \<Gamma>)) (\<lambda>\<rho>'. fmap_expand (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)) (fdom \<rho> \<union> fst ` set \<Gamma>)))
            (\<lambda>\<rho>'. fmap_expand \<rho> (fdom \<rho> \<union> fst ` set \<Gamma>) \<squnion> fmap_expand (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)) (fdom \<rho> \<union> fst ` set \<Gamma>))
  "
   unfolding HSem_def heapExtendJoin_def
@@ -117,9 +117,8 @@ lemma heapExtendJoin_cond'_Nil[simp]:
 
 lemma HSem_Nil[simp]: "\<lbrace>[]\<rbrace>\<rho> = \<rho>"
   apply (subst HSem_def') apply auto
-  apply (subst subpcpo.fix_on_const[OF subpcpo_jfc'])
-  apply auto[1]
-  apply (metis join_above1 below.r_refl compatibleI to_bot_fmap_def to_bot_minimal)
+  apply (subst subpcpo.fix_on_const[OF subpcpo_jfc''])
+  apply (metis (full_types) bottom_of_subpcpo_bot_there compatible_fmap_bottom cont_const join_jfc'' rho_jfc'' subpcpo_bot_jfc'' to_bot_fmap_def)
   by (metis below.r_refl is_joinI to_bot_fmap_def to_bot_minimal)
 
 lemma [simp]:"fdom (\<lbrace>\<Gamma>\<rbrace>\<rho>) = fdom \<rho> \<union> fst ` set \<Gamma>"
@@ -143,12 +142,11 @@ lemma [simp]: "x \<notin> fst ` set \<Gamma> \<Longrightarrow> the (lookup (\<lb
   apply simp
   apply (subst to_bot_fmap_def)
   apply simp
-  apply simp
   apply (subst the_lookup_join)
-  apply (metis heapExtendJoin_cond'D)
+  apply (erule compat_jfc''[OF rho_jfc''[OF heapExtendJoin_cond'_cont heapExtendJoin_cond'D] F_pres_compat''[OF heapExtendJoin_cond'_cont heapExtendJoin_cond'D], rotated 6])
+  apply assumption+
   apply simp
   apply simp
-  
   apply (cases "heapExtendJoin_cond' \<Gamma> ESem \<rho>")
   apply (subst heapExtendJoin_eq, assumption)
   apply (subst the_lookup_join)
@@ -247,16 +245,31 @@ lemma HSem_refines:
   apply (rule HSem_compat)
   done
 
+lemma fdom_fix_on:
+  assumes "subpcpo S"
+  assumes "cont_on S F"
+  assumes "closed_on S F"
+  shows  "fdom (fix_on S F) = fdom (bottom_of S)"
+proof-
+  have "fix_on S F \<in> S"
+    by (rule subpcpo.fix_on_there[OF assms])
+  hence "bottom_of S \<sqsubseteq> fix_on S F"
+    by (rule subpcpo.bottom_of_minimal[OF assms(1)])
+  thus ?thesis
+    by (metis fmap_below_dom)
+qed
+
 lemma iterative_HSem:
   assumes "heapExtendJoin_cond' ((x, e) # \<Gamma>) ESem \<rho>"
+  assumes "x \<notin> fst `set \<Gamma>"
   shows "\<lbrace>(x,e) # \<Gamma>\<rbrace>\<rho> =
-      fix_on (fix_join_compat' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>))))
+      fix_on (fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>))) (\<lambda> \<rho>'.  fmap_expand (heapToEnv ((x, e) # \<Gamma>) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)) (fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>))))
               (\<lambda> \<rho>'. (\<lbrace>\<Gamma>\<rbrace>\<rho>')
                       \<squnion> (fmap_bottom (fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>))(x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>) 
                       \<squnion> (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>)))))" (is "_ = fix_on ?S ?R")
-apply (subst HSem_def'[OF assms])
+apply (subst HSem_def'[OF assms(1)])
 proof(rule below_antisym)
-  interpret subpcpo ?S by (rule subpcpo_jfc')
+  interpret subpcpo ?S by (rule subpcpo_jfc'')
 
   let "?d" = "fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>)"
 
@@ -267,17 +280,74 @@ proof(rule below_antisym)
   let "(\<lambda> \<rho>'. ?R1 \<rho>' \<squnion> (?R2 \<rho>' \<squnion> ?R3 \<rho>'))" = ?R
 
   have contL: "cont_on ?S ?L"
-    by (rule cont_on_jfc'[OF cont_compose[OF fmap_expand_cont cont2cont_heapToEnv[OF ESem_cont]] heapExtendJoin_cond'D[OF assms]])
+    by (rule cont_on_jfc''[OF cont_compose[OF fmap_expand_cont cont2cont_heapToEnv[OF ESem_cont]] heapExtendJoin_cond'D[OF assms(1)]])
   have closedL: "closed_on ?S ?L"
-    by (rule closed_on_jfc'[OF cont_compose[OF fmap_expand_cont cont2cont_heapToEnv[OF ESem_cont]] heapExtendJoin_cond'D[OF assms]])
+    by (rule closed_on_jfc''[OF cont_compose[OF fmap_expand_cont cont2cont_heapToEnv[OF ESem_cont]] heapExtendJoin_cond'D[OF assms(1)]])
   have contR: "cont_on ?S ?R" sorry
   have closedR: "closed_on ?S ?R" sorry
 
   have R_there: "fix_on ?S ?R \<in> ?S"
     by (rule fix_on_there[OF contR closedR])
 
+  have L1: "\<And> x. x \<in> ?S \<Longrightarrow> ?L1 x \<in> ?S"
+    by (rule rho_jfc''[OF heapExtendJoin_cond'_cont heapExtendJoin_cond'D], auto intro: assms)
+
+  have L2: "\<And> x. x \<in> ?S \<Longrightarrow> ?L2 x \<in> ?S"
+    by (rule F_pres_compat''[OF heapExtendJoin_cond'_cont heapExtendJoin_cond'D], auto intro: assms)
+
+  have R1: "\<And> x. x \<in> ?S \<Longrightarrow> ?R1 x \<in> ?S"
+  proof-
+    fix \<rho>'
+    assume rho': "\<rho>' \<in> ?S"
+    hence [simp]: "fdom \<rho>' = ?d"
+      apply (simp only: fjc''_iff)
+      apply (drule fmap_below_dom)
+      apply (subst (asm) fdom_fix_on[OF subpcpo_jfc'])
+      apply (rule cont_on_jfc'[OF cont_compose[OF fmap_expand_cont cont2cont_heapToEnv[OF ESem_cont]] heapExtendJoin_cond'D[OF assms(1)]], assumption)
+      apply (rule closed_on_jfc'[OF cont_compose[OF fmap_expand_cont cont2cont_heapToEnv[OF ESem_cont]] heapExtendJoin_cond'D[OF assms(1)]], assumption)
+      apply (subst (asm) bottom_of_jfc')
+      apply simp
+      done
+    hence *[simp]: "fdom \<rho>' \<union> fst ` set \<Gamma> = ?d" by auto
+
+    have "\<And> \<rho>'a. x \<notin> fdom (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'a\<^esub>))" using assms(2) by auto
+    have [simp]: "\<And> e. (x, e) \<in> set \<Gamma> = False" using assms(2) by (metis fst_eqD image_eqI)
+
+    have heap_below: "\<And> \<rho>'a.
+        fmap_expand (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'a\<^esub>)) (fdom \<rho>' \<union> fst ` set \<Gamma>) 
+        \<sqsubseteq> fmap_expand (heapToEnv ((x, e) # \<Gamma>) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'a\<^esub>)) (fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>))"
+      apply (rule fmap_belowI')
+      apply auto[1]
+      apply (case_tac "xa \<in> fst ` set \<Gamma>")
+      apply (case_tac "xa = x")
+      apply (auto simp add: assms(2))
+      done
+    
+    have "heapExtendJoin_cond' \<Gamma> ESem \<rho>'"
+      apply (rule heapExtendJoin_cond'I)
+      apply (rule compat_jfc'')
+      apply (subst fmap_expand_noop)
+      apply auto[1]
+      apply (rule rho')
+      apply (rule down_closed.down_closedE[OF down_closed_jfc'' _ heap_below])
+
+      apply (rule down_closed)
+      apply (simp only: *)
+
+      apply simp
+      apply auto[1]
+      
+      thm heapExtendJoin_cond'D[OF assms]
+      apply (frule heapExtendJoin_cond'D[OF assms])
+      sorry
+  
+    show "?R1 \<rho>' \<in> ?S"
+      apply (simp only: fjc''_iff)
+
+    
   have compatL: "\<And> x. x \<in> ?S \<Longrightarrow> compatible (?L1 x) (?L2 x)"
-    by (metis assms fjc'_iff heapExtendJoin_cond'D)
+    by (rule compat_jfc''[OF  L1 L2])
+
   have compatR2R3: "\<And> x. x \<in> ?S \<Longrightarrow> compatible (?R2 x) (?R3 x)"
     sorry
   have compatR1R2: "\<And> x. x \<in> ?S \<Longrightarrow> compatible (?R1 x) (?R2 x)"
