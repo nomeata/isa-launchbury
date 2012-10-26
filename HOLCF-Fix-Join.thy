@@ -306,7 +306,7 @@ begin
     by (rule cont_on_join_jfc'[OF const_closed_on[OF rho_jfc''] F_closed_on_jfc'' cont_is_cont_on[OF cont_const] cont_is_cont_on[OF `cont F`]]) 
 
   lemma fix_on_jfc''_ind:
-    assumes "subpcpo_syn.adm_on (fix_join_compat'' \<rho> F) P "
+    assumes "adm_on (fix_join_compat'' \<rho> F) P "
     assumes "P (to_bot \<rho>)"
     assumes "\<And> y. y \<in> fix_join_compat'' \<rho> F \<Longrightarrow> P y \<Longrightarrow> P (\<rho> \<squnion> F y)"
     shows "P (fix_on (fix_join_compat'' \<rho> F) (\<lambda> x. \<rho> \<squnion> F x))"
@@ -316,10 +316,29 @@ begin
       apply fact
       done
 
-  lemma fix_on_jjfc''_eq:
+  lemma fix_on_jfc''_eq:
     shows "fix_on (fix_join_compat'' \<rho> F) (\<lambda> x. \<rho> \<squnion> F x) = \<rho> \<squnion> F (fix_on (fix_join_compat'' \<rho> F) (\<lambda> x. \<rho> \<squnion> F x))"
     by (rule subpcpo.fix_on_eq[OF subpcpo_jfc'' cont_on_jfc'' closed_on_jfc''])
+
 end
+
+lemma fix_on_jfc''_mono'':
+  fixes \<rho> \<rho>':: "'a::{Bounded_Nonempty_Meet_cpo, subpcpo_partition}"
+  assumes "\<rho> \<sqsubseteq> \<rho>'"
+  assumes "cont F"
+  assumes F_pres_compat1: "\<And> i x. compatible \<rho> x \<Longrightarrow> compatible \<rho> (F x)"
+  assumes F_pres_compat2: "\<And> i x. compatible \<rho>' x \<Longrightarrow> compatible \<rho>' (F x)"
+
+  shows "fix_on (fix_join_compat'' \<rho> F) (\<lambda> x. \<rho> \<squnion> F x) \<sqsubseteq> (fix_on (fix_join_compat'' \<rho>' F) (\<lambda> x. \<rho>' \<squnion> F x))"
+  apply (rule parallel_fix_on_ind[OF subpcpo_jfc'' subpcpo_jfc''])
+  apply (rule adm_is_adm_on, simp)
+  apply (metis closed_on_jfc'' assms(2) assms(3))
+  apply (metis cont_on_jfc'' assms(2) assms(3))
+  apply (metis closed_on_jfc'' assms(2) assms(4))
+  apply (metis cont_on_jfc'' assms(2) assms(4))
+  apply (subst (1 2) bottom_of_jfc'')
+  apply (rule eq_imp_below[OF unrelated[OF assms(1)]])
+  by (metis F_pres_compat1 F_pres_compat2 assms(1) assms(2) cont2monofunE compat_jfc'' rho_jfc'' join_mono)
 
 lemma subset_fjc'':
   assumes "cont F"
