@@ -113,12 +113,12 @@ lemma fmap_expand_fdom[simp]: "fmap_expand \<rho> (fdom \<rho>) = \<rho>"
 
 lemma heapExtendJoin_cond'_Nil[simp]:
   "heapExtendJoin_cond' [] ESem \<rho>"
-  by(auto intro: disjoint_is_heapExtendJoin_cond')
+  by (rule disjoint_is_heapExtendJoin_cond', auto)
 
 lemma HSem_Nil[simp]: "\<lbrace>[]\<rbrace>\<rho> = \<rho>"
-  apply (subst HSem_def') apply auto
-  apply (subst subpcpo.fix_on_const[OF subpcpo_jfc''])
-  apply (metis (full_types) bottom_of_subpcpo_bot_there compatible_fmap_bottom cont_const join_jfc'' rho_jfc'' subpcpo_bot_jfc'' to_bot_fmap_def)
+  apply (subst HSem_def)
+  apply (subst heapExtendJoin_eq[OF heapExtendJoin_cond'_Nil])
+  apply auto
   by (metis below.r_refl is_joinI to_bot_fmap_def to_bot_minimal)
 
 lemma [simp]:"fdom (\<lbrace>\<Gamma>\<rbrace>\<rho>) = fdom \<rho> \<union> fst ` set \<Gamma>"
@@ -143,15 +143,14 @@ lemma [simp]: "x \<notin> fst ` set \<Gamma> \<Longrightarrow> the (lookup (\<lb
   apply (subst to_bot_fmap_def)
   apply simp
   apply (subst the_lookup_join)
-  apply (erule compat_jfc''[OF rho_jfc''[OF heapExtendJoin_cond'_cont heapExtendJoin_cond'D] F_pres_compat''[OF heapExtendJoin_cond'_cont heapExtendJoin_cond'D], rotated 6])
-  apply assumption+
+  apply (erule (1) rho_F_compat_jfc'')
   apply simp
   apply simp
   apply (cases "heapExtendJoin_cond' \<Gamma> ESem \<rho>")
   apply (subst heapExtendJoin_eq, assumption)
   apply (subst the_lookup_join)
-  apply (erule heapExtendJoin_cond'D)
-  apply (rule heapExtendJoin_compatible)
+  apply (rule rho_F_compat_jfc'', assumption)
+  apply (erule heapExtendJoin_there)
   apply simp
   apply (simp add: heapExtendJoin_def)
   apply (simp add: lookup_not_fdom)
@@ -241,20 +240,19 @@ lemma HSem_refines:
   "heapExtendJoin_cond' \<Gamma> ESem \<rho>' \<Longrightarrow> fmap_expand \<rho>' (fdom \<rho>' \<union> fst ` set \<Gamma>)  \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<rho>'"
   apply (subst HSem_unroll, assumption)
   apply (rule join_above1)
-  apply (erule heapExtendJoin_cond'D)
-  apply (rule HSem_compat)
+  apply (rule rho_F_compat_jfc'', assumption)
+  apply (subst HSem_def)
+  apply (erule heapExtendJoin_there)
   done
 
 lemma fdom_fix_on:
-  assumes "subpcpo S"
-  assumes "cont_on S F"
-  assumes "closed_on S F"
-  shows  "fdom (fix_on S F) = fdom (bottom_of S)"
+  assumes "fix_on_cond S b F"
+  shows  "fdom (fix_on' b F) = fdom b"
 proof-
   have "fix_on S F \<in> S"
-    by (rule subpcpo.fix_on_there[OF assms])
-  hence "bottom_of S \<sqsubseteq> fix_on S F"
-    by (rule subpcpo.bottom_of_minimal[OF assms(1)])
+    by (rule fix_on_there[OF assms])
+  hence "b \<sqsubseteq> fix_on' b F"
+    by (metis assms bottom_of_subpcpo_bot_minimal fix_on_cond.simps subpcpo_is_subpcpo_bot)
   thus ?thesis
     by (metis fmap_below_dom)
 qed

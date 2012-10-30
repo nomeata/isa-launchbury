@@ -2,6 +2,7 @@ theory "HOLCF-Fix-Join"
   imports "HOLCF-Set" "HOLCF-Join" "HOLCF-Down-Closed"
 begin
 
+(*
 inductive_set fix_join_compat
   for \<rho> :: "'a::{Nonempty_Meet_cpo,pcpo}" and F :: "'a \<Rightarrow> 'a"
   where
@@ -57,6 +58,7 @@ lemma "\<rho> \<sqsubseteq> \<rho>' \<Longrightarrow> fix_join_compat \<rho>' F 
   apply (erule fix_join_compat.induct)
   apply (auto intro: fix_join_compat.intros)
   oops
+*)
 
 definition fix_join_compat' :: "'a::{Bounded_Nonempty_Meet_cpo,subpcpo_partition} \<Rightarrow> 'a set"
   where "fix_join_compat' \<rho> = {x. compatible \<rho> x}"
@@ -147,59 +149,183 @@ next
   show "?R \<subseteq> ?L" by (auto elim: compatible_down_closed intro: is_ub_thelub[OF `chain Y`])
 qed
 
+(* Need something more exact than the following two, i.e. that it is a chain and that all joins exist *)
+(*
+inductive fix_on_cond_jfc'
+  where fix_on_cond_jfc'I: "cont F \<Longrightarrow> (\<And> x. compatible \<rho> x \<Longrightarrow> compatible \<rho> (F x)) \<Longrightarrow> fix_on_cond_jfc' \<rho> F "
+*)
+
+(*
+definition chain_pcpo where
+  "chain_pcpo Y = insert (\<Squnion>i. Y i) (range Y)"
+
+lemma subpcpo_bot_chain_pcpo:
+  assumes "chain Y"
+  shows "subpcpo_bot (chain_pcpo Y) (Y 0)"
+proof(rule subpcpo_botI[of _ "Y 0"])
+case (goal1 Y')
+  show ?case
+  proof(cases "\<exists>i. max_in_chain i Y'")
+  case True
+    thus ?thesis
+      by (metis (full_types) goal1(1) goal1(2) maxinch_is_thelub)
+  next
+  case False
+    have "range Y' <| (\<Squnion> i. Y i)"
+      by (metis assms below.r_refl chain_pcpo_def cpo goal1(2) insertE is_lubD1 is_ubD lub_eqI ub_rangeI)
+    hence "\<And> i. Y' i \<noteq> (\<Squnion> i. Y i)"
+      by (metis (full_types) False goal1(1) lub_maximal maxinch_is_thelub range_eqI)
+    hence in_range: "\<And> i. Y' i \<in> range Y"
+      by (metis chain_pcpo_def goal1(2) insert_iff)
+    obtain f where f: "\<And> i. Y' i = Y (f i)" and f_mon: "\<And> i j. Y (f i) \<sqsubseteq> Y j \<Longrightarrow> f i \<le> j"
+    proof (rule that[of "\<lambda> i. (LEAST j. Y' i \<sqsubseteq> Y j)"])
+      {
+      fix i
+      from in_range obtain j where "Y' i = Y j" by auto
+      hence "Y' i \<sqsubseteq> Y (LEAST j. Y' i \<sqsubseteq> Y j)" by (metis LeastI below.r_refl)
+      thus  "Y' i = Y (LEAST j. Y' i \<sqsubseteq> Y j)"
+        apply (rule below_antisym)
+        by (metis (full_types) Least_le `Y' i = Y j` assms chain_mono po_eq_conv)
+      } note f = this
+      {
+      fix i j
+      assume "Y (LEAST j. Y' i \<sqsubseteq> Y j) \<sqsubseteq> Y j"
+      hence "Y' i \<sqsubseteq> Y j" by (metis f)
+
+      show "(LEAST j. Y' i \<sqsubseteq> Y j) \<le> j"
+        apply (rule LeastI2_wellorder)
+        apply (subst f)
+        apply (rule below_refl)
+        by (metis `Y' i \<sqsubseteq> Y j`)
+      }
+    qed
+
+    have range_subset: "range Y' \<subseteq>  Y ` range f"
+      by (metis f image_eqI image_subsetI)
+
+    have inc: "\<forall>i. \<exists>j. Y i \<sqsubseteq> Y' j"
+    proof(rule ccontr)
+      assume "\<not>?thesis"
+      then obtain i where "\<And> j. \<not>(Y i \<sqsubseteq> Y' j)" by metis
+      hence "\<And> j. Y' j \<sqsubseteq> Y i"
+        by (metis (full_types) in_range assms chain_mono image_iff linorder_le_cases)
+      hence "\<And> j. f j \<le> i"
+        by (metis f f_mon)
+      hence "finite (range f)"
+        by (metis atMost_iff finite_atMost finite_subset image_subsetI)
+      hence "finite (range Y')"
+        by (metis finite_surj range_subset)
+      thus False
+        by (metis False finite_chainE finite_range_imp_finch goal1(1))
+    qed
+
+    from `_ <| _`
+    have "(\<Squnion> i. Y' i) = (\<Squnion> i. Y i)"
+      apply (rule lub_eqI[OF is_lubI[OF _  lub_below[OF `chain Y`]]])
+      by (metis inc iso_tuple_UNIV_I rev_below_trans ub_imageD)      
+    thus ?thesis
+      unfolding chain_pcpo_def by auto
+  qed
+next
+  show "Y 0 \<in> chain_pcpo Y" unfolding chain_pcpo_def by (auto)
+next
+  fix y
+  have "Y 0 \<sqsubseteq> (\<Squnion> i. Y i)"
+    by (rule is_ub_thelub[OF `chain Y`])
+  moreover
+  have "\<And> i. Y 0 \<sqsubseteq> Y i" by (rule chain_mono[OF assms le0])
+  ultimately
+  show "\<And> y. y \<in> chain_pcpo Y \<Longrightarrow> Y 0 \<sqsubseteq> y" by (auto simp add: chain_pcpo_def)
+qed
+
+lemma subpcpo_chain_pcpo: "chain Y \<Longrightarrow> subpcpo (chain_pcpo Y)"
+  by (rule subpcpo_bot_is_subpcpo[OF subpcpo_bot_chain_pcpo])
+
+lemma chain_pcpoD:
+  "x \<in> chain_pcpo Y \<Longrightarrow> (\<exists> i. x = Y i) \<or> x = (\<Squnion>i. Y i)"
+  by (auto simp add:chain_pcpo_def)
+
+lemma chain_pcpo_cases:
+  "x \<in> chain_pcpo Y \<Longrightarrow> 
+  (\<And> i. P (Y i)) \<Longrightarrow>
+  P (\<Squnion> i. Y i) \<Longrightarrow>
+  P x"
+  by (auto dest: chain_pcpoD)
+
+lemma closed_on_chain_pcpo:
+  assumes "chain (\<lambda>i . (f^^i) b)"
+  shows "cont_on (chain_pcpo (\<lambda>i . (f^^i) b)) f"
+
+
+lemma closed_on_chain_pcpo:
+  assumes "chain (\<lambda>i . (f^^i) b)"
+  shows "x \<in> chain_pcpo (\<lambda>i . (f^^i) b) \<Longrightarrow> f x \<in> chain_pcpo (\<lambda>i . (f^^i) b)"
+  proof (erule chain_pcpo_cases)
+  case (goal1 i)
+    have "f ((f ^^ i) b) = (f ^^ (Suc i)) b" by (metis funpow.simps(2) o_apply)
+    thus ?case by (auto simp add: chain_pcpo_def  simp del: funpow.simps)
+  next
+  case goal2
+  apply (auto simp add: chain_pcpo_def)[1]
+*)
+
+(*
+abbreviation fix_on_join_cond :: "'a set \<Rightarrow> 'a::{Bounded_Nonempty_Meet_cpo,subpcpo_partition} \<Rightarrow> ('a \<Rightarrow> 'a) \<Rightarrow> bool"
+  where "fix_on_join_cond S \<rho> F \<equiv> fix_on_cond S (bottom_of S) (\<lambda> x. \<rho> \<squnion> F x)"
+
+lemma fix_on_cond_jfc'_cond:
+  "fix_on_cond_jfc' \<rho> F \<Longrightarrow> fix_on_join_cond (chain_pcpo (\<lambda>i. ((\<lambda>\<rho>'. \<rho> \<squnion> F \<rho>')^^i) (to_bot \<rho>))) \<rho> F"
+  apply (erule fix_on_cond_jfc'.cases)
+  apply (erule ssubst)+
+  apply (erule fix_on_condI[OF subpcpo_chain_pcpo refl])
+  apply (rule closed_onI)
+  
+  --"apply (metis fix_on_condI[OF subpcpo_jfc' refl closed_on_jfc' cont_on_jfc'])"
+  done
+
 lemma fix_on_jfc'_ind:
-  fixes \<rho> \<rho>':: "'a::{Bounded_Nonempty_Meet_cpo, subpcpo_partition}"
-  assumes "cont F"
-  assumes "\<And> i x. compatible \<rho> x \<Longrightarrow> compatible \<rho> (F x)"
+  fixes \<rho> :: "'a::{Bounded_Nonempty_Meet_cpo, subpcpo_partition}"
+  assumes "fix_on_join_cond S \<rho> F"
 
-  assumes "subpcpo_syn.adm_on (fix_join_compat' \<rho>) P "
-  assumes "P (to_bot \<rho>)"
-  assumes "\<And> y. y \<in> fix_join_compat' \<rho> \<Longrightarrow> P y \<Longrightarrow> P (\<rho> \<squnion> F y)"
+  assumes "subpcpo_syn.adm_on S P "
+  assumes "P (bottom_of S)"
+  assumes "\<And> y. y \<in> S \<Longrightarrow> P y \<Longrightarrow> P (\<rho> \<squnion> F y)"
 
-  shows "P (fix_on (fix_join_compat' \<rho>) (\<lambda> x. \<rho> \<squnion> F x))"
-  apply (rule subpcpo.fix_on_ind[OF subpcpo_jfc'])
-  apply fact
-  apply (metis closed_on_jfc'[OF assms(1)] assms(2))
-  apply (metis cont_on_jfc'[OF assms(1)] assms(2))
-  apply (subst bottom_of_jfc') apply fact
-  apply fact
+  shows "P (fix_on S (\<lambda> x. \<rho> \<squnion> F x))"
+
+  apply (rule fix_on_ind[OF  assms(1)])
+  apply fact+
   done
 
 lemma fix_on_jfc'_eq:
-  fixes \<rho> \<rho>':: "'a::{Bounded_Nonempty_Meet_cpo, subpcpo_partition}"
-  assumes "cont F"
-  assumes "\<And> i x. compatible \<rho> x \<Longrightarrow> compatible \<rho> (F x)"
+  fixes \<rho> :: "'a::{Bounded_Nonempty_Meet_cpo, subpcpo_partition}"
+  assumes "fix_on_join_cond S \<rho> F"
 
-  shows "fix_on (fix_join_compat' \<rho>) (\<lambda> x. \<rho> \<squnion> F x) = \<rho> \<squnion> F (fix_on (fix_join_compat' \<rho>) (\<lambda> x. \<rho> \<squnion> F x))"
-  apply (rule subpcpo.fix_on_eq[OF subpcpo_jfc'])
-  apply (metis cont_on_jfc'[OF assms(1)] assms(2))
-  apply (metis closed_on_jfc'[OF assms(1)] assms(2))
-  done
-
+  shows "fix_on S (\<lambda> x. \<rho> \<squnion> F x) = \<rho> \<squnion> F (fix_on S (\<lambda> x. \<rho> \<squnion> F x))"
+  by (rule fix_on_eq[OF assms(1)])
 
 lemma fix_on_jfc'_mono'':
   fixes \<rho> \<rho>':: "'a::{Bounded_Nonempty_Meet_cpo, subpcpo_partition}"
+  assumes "fix_on_cond_jfc' \<rho> F"
+  assumes "fix_on_cond_jfc' \<rho>' F"
   assumes "\<rho> \<sqsubseteq> \<rho>'"
-  assumes "cont F"
-  assumes F_pres_compat1: "\<And> i x. compatible \<rho> x \<Longrightarrow> compatible \<rho> (F x)"
-  assumes F_pres_compat2: "\<And> i x. compatible \<rho>' x \<Longrightarrow> compatible \<rho>' (F x)"
 
   shows "fix_on (fix_join_compat' \<rho>) (\<lambda> x. \<rho> \<squnion> F x) \<sqsubseteq> (fix_on (fix_join_compat' \<rho>') (\<lambda> x. \<rho>' \<squnion> F x))"
-  apply (rule parallel_fix_on_ind[OF subpcpo_jfc' subpcpo_jfc'])
-  apply (rule adm_is_adm_on, simp)
-  apply (metis closed_on_jfc' assms(2) assms(3))
-  apply (metis cont_on_jfc' assms(2) assms(3))
-  apply (metis closed_on_jfc' assms(2) assms(4))
-  apply (metis cont_on_jfc' assms(2) assms(4))
+  apply (rule fix_on_mono2[OF  fix_on_cond_jfc'_cond[OF assms(1)] fix_on_cond_jfc'_cond [OF assms(2)]])
   apply (subst (1 2) bottom_of_jfc')
-  apply (rule eq_imp_below[OF unrelated[OF assms(1)]])
-  by (metis F_pres_compat1 F_pres_compat2 assms(1) assms(2) cont2monofunE fjc'_iff join_mono)
+  apply (rule eq_imp_below[OF unrelated[OF assms(3)]])
+  apply (rule fix_on_cond_jfc'.cases[OF assms(1)])
+  apply (rule fix_on_cond_jfc'.cases[OF assms(2)])
+  apply (rule join_mono[OF _ _ assms(3)])
+  apply (auto intro: cont2monofunE)
+  done
+*)
 
 definition fix_join_compat'' where 
-  "fix_join_compat'' \<rho> F = {\<rho>'. \<rho>' \<sqsubseteq> fix_on (fix_join_compat' \<rho>) (\<lambda> \<rho>'. \<rho> \<squnion> F \<rho>')}"
+  "fix_join_compat'' (\<rho>::'a::{Bounded_Nonempty_Meet_cpo,subpcpo_partition})  F = {\<rho>'. \<rho>' \<sqsubseteq> fix_on' (to_bot \<rho>) (\<lambda> \<rho>'. \<rho> \<squnion> F \<rho>')}"
 
 lemma fjc''_iff[iff]:
-  "\<rho>' \<in> fix_join_compat'' \<rho> F \<longleftrightarrow> \<rho>' \<sqsubseteq> fix_on (fix_join_compat' \<rho>) (\<lambda> \<rho>'. \<rho> \<squnion> F \<rho>')"
+  "\<rho>' \<in> fix_join_compat'' \<rho> F \<longleftrightarrow> \<rho>' \<sqsubseteq> fix_on' (to_bot \<rho>) (\<lambda> \<rho>'. \<rho> \<squnion> F \<rho>')"
   unfolding fix_join_compat''_def by auto
 
 lemma subcpo_jfc'': "subcpo (fix_join_compat'' \<rho> F)"
@@ -212,8 +338,7 @@ lemma subpcpo_bot_jfc'': "subpcpo_bot (fix_join_compat'' \<rho> F) (to_bot \<rho
   apply (rule subpcpo_botI)
   apply (metis subcpo.cpo' subcpo_jfc'')
   apply (auto)
-  apply (metis bottom_of_jfc' to_bot_fix_on to_bot_minimal unrelated)
-  by (metis bottom_of_jfc' to_bot_fix_on to_bot_minimal unrelated)
+  by (metis to_bot_fix_on to_bot_minimal unrelated)
 
 lemma bottom_of_jfc'': "bottom_of (fix_join_compat'' \<rho> F) = to_bot \<rho>"
   by (rule bottom_of_subpcpo_bot[OF subpcpo_bot_jfc''])
@@ -272,6 +397,52 @@ lemma cont_on_join_jfc':
    finally show ?case by (rule eq_imp_below)
 qed
 
+inductive fix_on_cond_jfc'
+  where fix_on_cond_jfc'I:
+  "cont F \<Longrightarrow>
+   chain (\<lambda>i. ((\<lambda>\<rho>'. \<rho> \<squnion> F \<rho>')^^i) (to_bot \<rho>)) \<Longrightarrow>
+   (\<And> i. compatible \<rho> (F (((\<lambda>\<rho>'. \<rho> \<squnion> F \<rho>')^^i) (to_bot \<rho>)))) \<Longrightarrow> fix_on_cond_jfc' \<rho> F "
+
+context
+  fixes \<rho> :: "'a::{Bounded_Nonempty_Meet_cpo,subpcpo_partition}" and S and F
+  assumes "fix_on_cond_jfc' \<rho> F"
+begin
+  lemma cont_F_jfc'': "cont F"
+    by (rule fix_on_cond_jfc'.induct[OF `fix_on_cond_jfc' _ _`]) 
+
+  lemma chain_jfc'': "chain (\<lambda>i. ((\<lambda>\<rho>'. \<rho> \<squnion> F \<rho>') ^^ i) (to_bot \<rho>))"
+    by (rule fix_on_cond_jfc'.induct[OF `fix_on_cond_jfc' _ _`]) 
+
+  lemma chain_compat_jfc'': "compatible \<rho> (F (((\<lambda>\<rho>'. \<rho> \<squnion> F \<rho>')^^i) (to_bot \<rho>)))"
+    by (rule fix_on_cond_jfc'.induct[OF `fix_on_cond_jfc' _ _`]) 
+
+  lemma rho_jfc'': "\<rho> \<in> fix_join_compat'' \<rho> F"
+    apply auto
+    apply (subst fix_on_def, subst if_P[OF chain_jfc''])
+    apply (rule below_trans[OF _ is_ub_thelub[of _ 1, OF chain_jfc'']])
+    apply (simp del: funpow.simps(1))
+    apply (rule join_above1)
+    apply (rule fix_on_cond_jfc'.induct[OF `fix_on_cond_jfc' _ _`])
+    apply assumption
+    done
+
+  lemma F_pres_compat'': "x \<in> fix_join_compat'' \<rho> F \<Longrightarrow> F x \<in> fix_join_compat'' \<rho> F" 
+    apply auto
+    apply (drule cont2monofunE[OF cont_F_jfc''])
+    apply (erule below_trans)
+    apply (subst (1 2) fix_on_def, subst (1 2) if_P[OF chain_jfc''])
+    apply (subst cont2contlubE[OF cont_F_jfc'' chain_jfc''])
+    apply (subst lub_range_shift[symmetric, OF chain_jfc'', of 1])
+    apply (rule lub_mono[OF ch2ch_cont[OF cont_F_jfc'' chain_jfc''] chain_shift[OF chain_jfc'']])
+    apply simp
+    apply (rule join_above2[OF chain_compat_jfc''])
+    done
+
+  lemma rho_F_compat_jfc'': "x \<in> fix_join_compat'' \<rho> F \<Longrightarrow> compatible \<rho> (F x)"
+    by (rule compat_jfc''[OF rho_jfc'' F_pres_compat''])
+
+
+(*
 context
   fixes \<rho> :: "'a::{Bounded_Nonempty_Meet_cpo,subpcpo_partition}"
   fixes F :: "'a \<Rightarrow> 'a"
@@ -292,6 +463,7 @@ begin
     apply (erule cont2monofunE[OF `cont F`])
     apply (rule join_above2)
     by (metis (full_types) F_pres_compat `cont F` closed_on_jfc' compatible_F_jfc' cont_on_jfc' subpcpo.fix_on_there subpcpo_jfc')
+*)
 
   lemma F_closed_on_jfc'': "closed_on (fix_join_compat'' \<rho> F) F"
     by (rule, rule F_pres_compat'')
@@ -305,23 +477,24 @@ begin
   lemma cont_on_jfc'': "cont_on (fix_join_compat'' \<rho> F) (\<lambda> x. \<rho> \<squnion> F x)"
     by (rule cont_on_join_jfc'[OF const_closed_on[OF rho_jfc''] F_closed_on_jfc'' cont_is_cont_on[OF cont_const] cont_is_cont_on[OF `cont F`]]) 
 
+  lemma fix_on_cond_jfc'':
+    "fix_on_cond (fix_join_compat'' \<rho> F) (bottom_of (fix_join_compat'' \<rho> F)) (\<lambda>x. \<rho> \<squnion> F x)"
+    apply (subst bottom_of_jfc'')
+    by (rule fix_on_condI[OF subpcpo_jfc'' bottom_of_jfc'' closed_on_jfc'' cont_on_jfc''])
+
   lemma fix_on_jfc''_ind:
-    assumes "adm_on (fix_join_compat'' \<rho> F) P "
-    assumes "P (to_bot \<rho>)"
+    assumes "adm_on (fix_join_compat'' \<rho> F) P"
+    assumes "P (bottom_of (fix_join_compat'' \<rho> F))"
     assumes "\<And> y. y \<in> fix_join_compat'' \<rho> F \<Longrightarrow> P y \<Longrightarrow> P (\<rho> \<squnion> F y)"
     shows "P (fix_on (fix_join_compat'' \<rho> F) (\<lambda> x. \<rho> \<squnion> F x))"
-      apply (rule subpcpo.fix_on_ind[OF subpcpo_jfc'' _ closed_on_jfc'' cont_on_jfc''])
-      apply fact
-      apply (subst bottom_of_jfc'', fact)
-      apply fact
-      done
+      by (rule fix_on_ind[OF fix_on_cond_jfc'' assms])
 
   lemma fix_on_jfc''_eq:
     shows "fix_on (fix_join_compat'' \<rho> F) (\<lambda> x. \<rho> \<squnion> F x) = \<rho> \<squnion> F (fix_on (fix_join_compat'' \<rho> F) (\<lambda> x. \<rho> \<squnion> F x))"
-    by (rule subpcpo.fix_on_eq[OF subpcpo_jfc'' cont_on_jfc'' closed_on_jfc''])
-
+    by (rule fix_on_eq[OF fix_on_cond_jfc''])
 end
 
+(*
 lemma fix_on_jfc''_mono'':
   fixes \<rho> \<rho>':: "'a::{Bounded_Nonempty_Meet_cpo, subpcpo_partition}"
   assumes "\<rho> \<sqsubseteq> \<rho>'"
@@ -339,7 +512,25 @@ lemma fix_on_jfc''_mono'':
   apply (subst (1 2) bottom_of_jfc'')
   apply (rule eq_imp_below[OF unrelated[OF assms(1)]])
   by (metis F_pres_compat1 F_pres_compat2 assms(1) assms(2) cont2monofunE compat_jfc'' rho_jfc'' join_mono)
+*)
 
+lemma subset_fjc'':
+  assumes "cont F"
+  assumes "fix_on_cond_jfc' \<rho> F"
+  assumes "fix_on_cond_jfc' \<rho>' F"
+  shows "\<rho> \<sqsubseteq> \<rho>' \<Longrightarrow> fix_join_compat'' \<rho> F \<subseteq> fix_join_compat'' \<rho>' F"
+  apply rule
+  apply (simp only: fjc''_iff)
+  apply (erule below_trans)
+  apply (rule fix_on_mono2[OF fix_on_cond_jfc''[OF assms(2)] fix_on_cond_jfc''[OF assms(3)], unfolded bottom_of_jfc''])
+  apply (metis po_eq_conv unrelated)
+  by (rule join_mono[OF
+        rho_F_compat_jfc''[OF assms(2)]
+        rho_F_compat_jfc''[OF assms(3)]
+        _
+        cont2monofunE[OF `cont F`]])
+
+(*
 lemma subset_fjc'':
   assumes "cont F"
   assumes F_pres_compat1: "\<And> x. compatible \<rho> x \<Longrightarrow> compatible \<rho> (F x)"
@@ -353,6 +544,7 @@ lemma subset_fjc'':
   apply (metis bottom_of_jfc' po_eq_conv unrelated)
   apply (erule (3) join_mono[OF F_pres_compat1 F_pres_compat2 _ cont2monofunE[OF `cont F`]])
   done
+*)
 
 (* Wrong 
 lemma jfc''_Union:
@@ -413,30 +605,34 @@ proof-
     done
   qed
 
+  have foc': "fix_on_cond S' (bottom_of S') (\<lambda>x. (\<Squnion>i. Y i) \<squnion> F x)"
+    by (rule fix_on_condI[OF subpcpo_axioms refl cl' co'])
+  have foc: "\<And> i. fix_on_cond (S i) (bottom_of (S i)) (\<lambda>x. Y i \<squnion> F x)"
+    by (rule fix_on_condI[OF pcpo_i refl cl co])
+
   { fix i j
     have  "compatible (Y j) (F (?F i))"
     proof(cases "i \<le> j")
     case True show ?thesis
       apply (rule compatible_down_closed2)
-      apply (rule compat)
-      apply (rule subpcpo.fix_on_there[OF pcpo_i co cl])
+      apply (rule compat[OF fix_on_there[OF foc]])
       apply (rule cont2monofunE[OF `cont F`])
-      apply (rule fix_on_mono2[OF pcpo_i pcpo_i cl co cl co eq_imp_below[OF same_bottoms]])
+      apply (rule fix_on_mono2[OF foc foc eq_imp_below[OF same_bottoms]])
       apply (erule (2) join_mono[OF compat compat chain_mono[OF `chain Y` True] cont2monofunE[OF `cont F`] ])
       done
    next
    case False
      hence "j \<le> i" by (metis nat_le_linear)
      thus ?thesis
-       by (rule compatible_down_closed[OF compat[OF subpcpo.fix_on_there[OF pcpo_i co cl]] chain_mono[OF `chain Y`]])
+       by (rule compatible_down_closed[OF compat[OF fix_on_there[OF foc]] chain_mono[OF `chain Y`]])
    qed
   } note compat'' = this
 
   have  "fix_on S' (\<lambda>x. (Lub Y) \<squnion> F x) \<in> S'"
-    by (rule fix_on_there[OF co' cl'])
+    by (rule fix_on_there[OF foc'])
   moreover
   have "\<And> i. fix_on (S i) (\<lambda>x. Y i \<squnion> F x) \<sqsubseteq> fix_on S' (\<lambda>x. (Lub Y) \<squnion> F x)"
-    apply (rule fix_on_mono2[OF pcpo_i subpcpo_axioms cl co cl' co'])
+    apply (rule fix_on_mono2[OF foc foc'])
     apply simp      
     apply (erule (2) join_mono[OF
         compat
@@ -450,7 +646,7 @@ proof-
 
   have chF: "chain ?F"
     apply (rule chainI)
-    apply (rule fix_on_mono2[OF pcpo_i pcpo_i cl co cl co ])
+    apply (rule fix_on_mono2[OF foc foc])
     apply simp
     by (rule join_mono[OF compat compat chainE[OF `chain Y`] cont2monofunE[OF `cont F`]])
   have cho: "chain_on S' ?F"
@@ -479,14 +675,14 @@ proof-
   also have " ... = (\<Squnion> i. Y i \<squnion> F (fix_on (S i) (\<lambda>x. Y i \<squnion> F x)))"
     by (rule diag_lub[OF c1 c2])
   also have " ... = (\<Squnion> i. fix_on (S i) (\<lambda>x. Y i \<squnion> F x))"
-    by (subst subpcpo.fix_on_eq[symmetric, OF pcpo_i co cl], rule)
+    by (subst fix_on_eq[symmetric, OF foc], rule)
   also note calculation
   }
   hence "(\<Squnion> i. Y i) \<squnion> F (\<Squnion> i. fix_on (S i) (\<lambda>x. Y i \<squnion> F x)) \<sqsubseteq> (\<Squnion> i. fix_on (S i) (\<lambda>x. Y i \<squnion> F x))"
     by (rule eq_imp_below)
   ultimately
   show ?thesis
-    by (rule fix_on_least_below[OF co' cl'])
+    by (rule fix_on_least_below[OF foc'])
 qed
 
 
@@ -688,18 +884,40 @@ proof-
   thus ?thesis unfolding fjc'_Inter[OF `chain Y`].
 qed
 
+
+(*
+Spart das wirklich später was?
+lemma fix_on_cond_jfc'_adm: "adm (\<lambda> (\<rho>::'a::{Bounded_Nonempty_Meet_cpo, subpcpo_partition}). fix_on_cond_jfc' \<rho> F)"
+proof (rule admI[rule_format])
+  fix Y
+  assume  "chain Y" and "\<And> i. fix_on_cond_jfc' (Y i) F"
+  hence "cont F" by (metis cont_F_jfc'') 
+  moreover
+  have "\<And> i. compatible (\<Squnion> i. Y i) (F (((\<lambda>\<rho>'. (\<Squnion> i. Y i) \<squnion> F \<rho>') ^^ i) (to_bot (\<Squnion> i. Y i))))"
+    apply (rule admD[OF compatible_adm1 `chain Y`]) 
+    apply (rule admD[OF _ `chain Y`])
+    
+    apply (rule compatible_adm1)
+  moreover
+  have "chain (\<lambda>i. ((\<lambda>\<rho>'. (\<Squnion> i. Y i) \<squnion> F \<rho>') ^^ i) (to_bot (\<Squnion> i. Y i)))" sorry
+  ultimately
+  show "fix_on_cond_jfc' (\<Squnion> i. Y i) F"
+    by (metis fix_on_cond_jfc'I)
+*)
+
 lemma fix_on_join_cont''':
   fixes Y :: "nat \<Rightarrow> 'a::{Bounded_Nonempty_Meet_cpo, subpcpo_partition}"
   assumes "chain Y"
-  assumes "cont F"
-  assumes F_pres_compat: "\<And> i x. compatible (Y i) x \<Longrightarrow> compatible (Y i) (F x)"
+  assumes focj: "\<And>i. fix_on_cond_jfc' (Y i) F"
+  assumes focj': "fix_on_cond_jfc' (\<Squnion> i. Y i) F"
 
   shows "fix_on (fix_join_compat'' (\<Squnion> i. Y i) F) (\<lambda> x. (\<Squnion>i. Y i) \<squnion> F x) \<sqsubseteq> (\<Squnion> i. (fix_on (fix_join_compat'' (Y i) F) (\<lambda> x. Y i \<squnion> F x)))"
     (is "fix_on ?S _ \<sqsubseteq> Lub ?F")
 proof(rule fix_on_join_cont'_general)
+  (*
   have F_pres_compat': "\<And> x. compatible (\<Squnion> i. Y i) x \<Longrightarrow> compatible (\<Squnion> i. Y i) (F x)"
     by (rule admD[OF compatible_adm1 `chain Y`  F_pres_compat[OF compatible_down_closed[OF _ is_ub_thelub[OF `chain Y`]]]])
-  {
+  *)  
   fix i
   show "\<And> j. bottom_of (fix_join_compat'' (Y i) F) = bottom_of (fix_join_compat'' (Y j) F)"
     apply (simp add: bottom_of_jfc'')
@@ -710,24 +928,26 @@ proof(rule fix_on_join_cont'_general)
     apply (simp add: bottom_of_jfc'')
     by (rule unrelated[OF is_ub_thelub[OF `chain Y`]])
   next
+  show "cont F"
+    by (rule cont_F_jfc''[OF focj])
+  next
   fix i x
   assume "x \<in> fix_join_compat'' (Y i) F"
   thus "compatible (Y i) (F x)"
-    by (metis rho_jfc'' F_pres_compat `cont F` compat_jfc'' )
+    by (rule rho_F_compat_jfc''[OF focj])
   next
   fix x
   assume "x \<in> fix_join_compat'' (\<Squnion> i. Y i) F"
   thus "compatible (\<Squnion> i. Y i) (F x)"
-    by (metis rho_jfc'' F_pres_compat' `cont F` compat_jfc'' )
+    by (rule rho_F_compat_jfc''[OF focj'])
   next
   fix i
   show "closed_on (fix_join_compat'' (Y i) F) (\<lambda>x. Y i \<squnion> F x)"
-    by (rule closed_on_jfc''[OF `cont F` F_pres_compat])
+    by (rule closed_on_jfc''[OF focj])
   next
   fix i
   show "closed_on (fix_join_compat'' (\<Squnion> i. Y i) F) (\<lambda>x. (\<Squnion> i. Y i) \<squnion> F x)"
-    by (rule closed_on_jfc''[OF `cont F` F_pres_compat'])
-  }
-qed (intro subpcpo_jfc'' down_closed_jfc'' assms)+
+    by (rule closed_on_jfc''[OF focj'])
+qed (intro subpcpo_jfc'' down_closed_jfc'' rho_F_compat_jfc'' closed_on_jfc'' assms)+
 
 end
