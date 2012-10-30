@@ -55,24 +55,12 @@ definition
 where
   "cont_on f = (\<forall>Y. chain_on Y --> range (\<lambda>i. f (Y i)) <<| f (\<Squnion>i. Y i))"
 
-definition
-  "fix_on'" :: "'a \<Rightarrow> ('a \<Rightarrow> 'a) \<Rightarrow> 'a" where
-  "fix_on' b F = 
-    (if chain (\<lambda>i. (F^^i) bottom_of) \<and> subpcpo S \<and> b = bottom_of
-    then (\<Squnion>i. (F^^i) bottom_of)
-    else b)"
-
-lemmas fix_on_def = fix_on'_def
-
 definition 
   closed_on :: "('a::cpo => 'a::cpo) => bool"
 where
   "closed_on f = (\<forall> x\<in> S. f x \<in> S)"
 
 end
-
-abbreviation fix_on where
-  "fix_on S \<equiv> subpcpo_syn.fix_on' S (subpcpo_syn.bottom_of S)"
 
 interpretation subpcpo_syn S for S.
 
@@ -130,7 +118,6 @@ lemma monofun_on_comp:
   using assms 
   unfolding monofun_on_def
   by (metis image_eqI in_mono)
-
 
 lemma monofun_comp_monofun_on:
   "monofun f \<Longrightarrow> monofun_on S g \<Longrightarrow> monofun_on S (\<lambda> x. f (g x))"
@@ -255,9 +242,6 @@ lemma closed_is_chain_on: "closed_on F \<Longrightarrow> monofun_on F \<Longrigh
   apply (erule closed_onE[OF iterate_closed_on bottom_of_there])
   done
 
-lemma iterate_below_fix_on: "closed_on F \<Longrightarrow> monofun_on F \<Longrightarrow> (F^^i) bottom_of \<sqsubseteq> fix_on S F"
-  unfolding fix_on_def
-  by (auto intro: is_ub_thelub closed_is_chain  subpcpo_axioms)
 
 lemma chain_on_lub_on:
   "chain_on Y \<Longrightarrow> (\<Squnion> i. Y i) \<in> S"
@@ -591,38 +575,111 @@ proof(rule subpcpo_botI)
 }
 qed
 
-lemma parallel_fix_on_ind:
-  assumes pcpo1: "subpcpo S1"
-  assumes pcpo2: "subpcpo S2"
-  assumes adm: "adm_on (S1 \<times> S2) (\<lambda>x. P (fst x) (snd x))"
-  assumes closedF: "closed_on S1 F"
-  assumes chainF: "cont_on S1 F"
-  assumes closedG: "closed_on S2 G"
-  assumes chainG: "cont_on S2 G"
-  assumes base: "P (bottom_of S1) (bottom_of S2)"
-  assumes step: "!!y z. \<lbrakk> y \<in> S1 ; z \<in> S2; P y z \<rbrakk> \<Longrightarrow> P (F y) (G z)"
-  shows "P (fix_on S1 F) (fix_on S2 G)"
+
+definition
+  "fix_on'" :: "'a \<Rightarrow> ('a \<Rightarrow> 'a) \<Rightarrow> 'a" where
+  "fix_on' b F = 
+    (if chain (\<lambda>i. (F^^i) b)
+    then (\<Squnion>i. (F^^i) b)
+    else b)"
+
+lemmas fix_on_def = fix_on'_def
+
+abbreviation fix_on where
+  "fix_on S \<equiv> fix_on' (subpcpo_syn.bottom_of S)"
+
+inductive fix_on_cond
+  for S b F
+  where fix_on_condI: "subpcpo S \<Longrightarrow> bottom_of S = b \<Longrightarrow> closed_on S F \<Longrightarrow> cont_on S F \<Longrightarrow> fix_on_cond S b F"
+
+lemma fix_on_condD1:
+  assumes "fix_on_cond S b F"
+  shows "chain (\<lambda>i. (F ^^ i) b)"
+proof-
+  have "subpcpo S" and "closed_on S F" and "cont_on S F" and "b = bottom_of S"
+    using fix_on_cond.cases[OF assms] by metis+
+  interpret subpcpo S by fact
+  have "chain (\<lambda>i. (F ^^ i) (subpcpo_syn.bottom_of S))"
+    by (rule closed_is_chain[OF `closed_on _ _` cont_on2mono_on[OF `cont_on _ _`]])
+  thus ?thesis by (simp add: `b = _`)
+qed
+
+lemma fix_on_def':
+  assumes "fix_on_cond S b F"
+  shows "fix_on' b F = (\<Squnion>i. (F^^i) b)"
+  unfolding fix_on_def
+  by (simp add: fix_on_def fix_on_condD1[OF assms])
+
+lemma iterate_below_fix_on: assumes "fix_on_cond S b F" shows "(F^^i) b \<sqsubseteq> fix_on' b F"
+  apply (subst fix_on_def'[OF assms])
+  apply (rule is_ub_thelub[OF fix_on_condD1[OF assms]])
+  done
+
+
+lemma fix_on_ind:
+  assumes "fix_on_cond S b F"
+  assumes adm: "adm_on S P"
+  assumes base: "P b"
+  assumes step: "\<And>y. \<lbrakk> y \<in> S ; P y \<rbrakk> \<Longrightarrow> P (F y)"
+  shows "P (fix_on' b F)"
 proof -
+  from assms(1)
+  have pcpo1: "subpcpo S" and closed: "closed_on S F" and cont: "cont_on S F" and [simp]:"b = bottom_of S"
+     by (metis fix_on_cond.cases)+
+  interpret subpcpo S by fact
+
+  note chain = closed_is_chain_on[OF closed cont_on2mono_on[OF cont]] 
+
+  { fix i
+    have "P ((F^^i) (bottom_of S))"
+      apply (induct i)
+      apply (simp add: base[simplified])
+      apply simp
+      apply (erule step[rotated])
+      by (metis (full_types) chain chain_on_def)
+  }
+  hence "P (\<Squnion>i. (F^^i) (bottom_of S))"
+    by (rule adm_onD[OF adm chain])
+  thus ?thesis
+    using chain_on_is_chain[OF chain] subpcpo_axioms
+    by (simp add: fix_on_def)
+qed
+
+
+lemma parallel_fix_on_ind:
+  assumes "fix_on_cond S1 b1 F"
+  assumes "fix_on_cond S2 b2 G"
+  assumes adm: "adm_on (S1 \<times> S2) (\<lambda>x. P (fst x) (snd x))"
+  assumes base: "P b1 b2"
+  assumes step: "!!y z. \<lbrakk> y \<in> S1 ; z \<in> S2; P y z \<rbrakk> \<Longrightarrow> P (F y) (G z)"
+  shows "P (fix_on' b1 F) (fix_on' b2 G)"
+proof -
+  from assms(1,2)
+  have pcpo1: "subpcpo S1" and closedF: "closed_on S1 F" and chainF: "cont_on S1 F" and [simp]:"b1 = bottom_of S1"
+  and  pcpo2: "subpcpo S2" and closedG: "closed_on S2 G" and chainG: "cont_on S2 G" and [simp]:"b2 = bottom_of S2"
+     by (metis fix_on_cond.cases)+
+
   interpret subpcpo S1 by fact
   interpret s2!: subpcpo S2  by fact
-  interpret sp!: subpcpo "(S1 \<times> S2)"  by (rule subpcpo_product, fact+)
+  interpret sp!: subpcpo "(S1 \<times> S2)" by (rule subpcpo_product, fact+)
 
   note chain1 = closed_is_chain[OF closedF cont_on2mono_on[OF chainF]] 
   note chain2 = s2.closed_is_chain[OF closedG cont_on2mono_on[OF chainG]] 
 
   from adm have adm': "adm_on (S1 \<times> S2) (split P)"
     unfolding split_def .
+
   { fix i
     have "P ((F^^i) (bottom_of S1)) ((G^^i) (bottom_of S2))"
     proof(induct i)
-    case 0 thus ?case by (simp add: base)
+    case 0 thus ?case by (simp add: base[simplified])
     next
     case (Suc i)
       have "((F ^^ i) (bottom_of S1)) \<in> S1" by (rule closed_onE[OF iterate_closed_on[OF closedF] bottom_of_there])
       moreover
       have "((G ^^ i) (bottom_of S2)) \<in> S2" by (rule closed_onE[OF s2.iterate_closed_on[OF closedG] s2.bottom_of_there])
       ultimately
-      show ?case using Suc by (simp add: step)
+      show ?case using Suc by (simp add: step[simplified])
     qed
   }
   hence "!!i. split P ((F^^i) (bottom_of S1), (G^^i) (bottom_of S2))"
@@ -638,7 +695,7 @@ proof -
     by (simp add: lub_Pair chain1 chain2)
   hence "P (\<Squnion>i. (F^^i) (bottom_of S1)) (\<Squnion>i. (G^^i) (bottom_of S2))"
     by simp
-  thus "P (fix_on S1 F) (fix_on S2 G)"
+  thus "P (fix_on' b1 F) (fix_on' b2 G)"
     using chain1 chain2 subpcpo_axioms s2.subpcpo_axioms
     by (simp add: fix_on_def)
 qed
@@ -659,158 +716,132 @@ lemma fix_on_larger_subpcpo:
 *)
 
 lemma fix_on_mono2:
-  assumes "subpcpo S1"
-  assumes "subpcpo S2"
-  assumes "closed_on S1 F"
-  and "cont_on S1 F"
-  and "closed_on S2 G"
-  and "cont_on S2 G"
-  and "bottom_of S1 \<sqsubseteq> bottom_of S2"
+  assumes "fix_on_cond S1 b1 F"
+  assumes "fix_on_cond S2 b2 G"
+  and "b1 \<sqsubseteq> b2"
   and "\<And> x y. x \<in> S1 \<Longrightarrow> y \<in> S2 \<Longrightarrow> x \<sqsubseteq> y \<Longrightarrow> F x \<sqsubseteq> G y"
-  shows "fix_on S1 F \<sqsubseteq> fix_on S2 G"
-  apply (rule parallel_fix_on_ind[OF assms(1) assms(2) _ assms(3) assms(4) assms(5) assms(6)])
+  shows "fix_on' b1 F \<sqsubseteq> fix_on' b2 G"
+  apply (rule parallel_fix_on_ind[OF assms(1) assms(2)])
   apply (rule adm_is_adm_on, simp)
-  apply (rule assms(7))
-  apply (metis assms(8))
+  apply (rule assms(3))
+  apply (metis assms(4))
   done
 
 lemma fix_on_same:
-  assumes "subpcpo S1"
-  assumes "subpcpo S2"
-  assumes "closed_on S1 F"
-  and "cont_on S1 F"
-  and "closed_on S2 F"
-  and "cont_on S2 F"
-  and "bottom_of S1 = bottom_of S2"
-  shows "fix_on S1 F = fix_on S2 F"
-  apply (rule parallel_fix_on_ind[OF assms(1) assms(2) _ assms(3) assms(4) assms(5) assms(6)])
-  apply (rule adm_is_adm_on, simp)
-  apply (rule assms(7))
-  apply (simp)
-  done
+  "b1 = b2 \<Longrightarrow> fix_on b1 F = fix_on b2 F"
+  by simp
+
+
+lemma fix_on_mono:
+  assumes "fix_on_cond S b F"
+  assumes "fix_on_cond S b G"
+  assumes adm: "adm_on S P"
+  assumes base: "P b"
+  assumes step: "\<And>y. \<lbrakk> y \<in> S ; P y \<rbrakk> \<Longrightarrow> P (F y)"
+  assumes below: "\<And> x. x \<in> S \<Longrightarrow> F x \<sqsubseteq> G x"
+  shows "fix_on' b F \<sqsubseteq> fix_on' b G"
+proof -
+  from assms(1,2)
+  have pcpo: "subpcpo S" and closedF: "closed_on S F" and contF: "cont_on S F" and [simp]:"b = bottom_of S"
+  and  closedG: "closed_on S G" and contG: "cont_on S G"
+     by (metis fix_on_cond.cases)+
+
+  show ?thesis
+    apply (rule parallel_fix_on_ind[OF assms(1) assms(2)_ below_refl])
+    apply (rule adm_is_adm_on, simp)
+    apply (rule below_trans[OF below ], assumption)
+    apply (erule (2) monofun_onE[OF cont_on2mono_on[OF contG]])
+    done
+qed
+
+lemma fix_on_there:
+  assumes "fix_on_cond S b F"
+  shows "fix_on S F \<in> S"
+proof-
+  from assms(1)
+  have pcpo1: "subpcpo S" and closed: "closed_on S F" and cont: "cont_on S F" and [simp]:"b = bottom_of S"
+     by (metis fix_on_cond.cases)+
+  interpret subpcpo S by fact
+
+  note co = closed_is_chain_on[OF closed cont_on2mono_on[OF cont]] 
+  note c = chain_on_is_chain[OF co] 
+
+  have "(\<Squnion> i. (F ^^ i) (subpcpo_syn.bottom_of S)) \<in> S"
+    by (metis chain_on_lub_on[OF co])
+  thus ?thesis
+    using c subpcpo_axioms
+    by (simp add: fix_on_def)
+qed
+
+lemma fix_on_eq:
+  assumes "fix_on_cond S b F"
+  shows "fix_on' b F = F (fix_on' b F)"
+proof-
+  from assms(1)
+  have pcpo1: "subpcpo S" and closed: "closed_on S F" and cont: "cont_on S F" and [simp]:"b = bottom_of S"
+     by (metis fix_on_cond.cases)+
+  interpret subpcpo S by fact
+
+  note co = closed_is_chain_on[OF closed cont_on2mono_on[OF cont]] 
+  note c = chain_on_is_chain[OF co] 
+
+  have "(\<Squnion> i. (F ^^ i) (subpcpo_syn.bottom_of S)) = F (\<Squnion> i. (F ^^ i) (subpcpo_syn.bottom_of S))"
+    apply (subst lub_range_shift [of _ 1, symmetric, OF c])
+    apply (subst cont_on2contlubE[OF `cont_on _ _` co])
+    apply simp
+    done
+
+  thus ?thesis
+    using c subpcpo_axioms
+    by (simp add: fix_on_def)
+qed
+  
+  
+lemma fix_on_least_below:
+  assumes "fix_on_cond S b F"
+  assumes [simp]: "x \<in> S"
+  assumes below: "F x \<sqsubseteq> x"
+  shows "fix_on S F \<sqsubseteq> x"
+proof-
+  from assms(1)
+  have pcpo1: "subpcpo S" and closed: "closed_on S F" and cont: "cont_on S F" and [simp]:"b = bottom_of S"
+     by (metis fix_on_cond.cases)+
+  interpret subpcpo S by fact
+
+  note co = closed_is_chain_on[OF closed cont_on2mono_on[OF cont]] 
+  note c = chain_on_is_chain[OF co] 
+
+
+  have "(\<Squnion> i. (F ^^ i) (subpcpo_syn.bottom_of S)) \<sqsubseteq> x"
+    apply (rule lub_below[OF c])
+    apply (induct_tac i)
+    apply simp_all
+    apply (rule rev_below_trans[OF below])
+    apply (erule monofun_onE[OF
+          cont_on2mono_on[OF `cont_on _ _`]
+          closed_onE[OF iterate_closed_on[OF `closed_on _ _`] bottom_of_there]
+          `x \<in> S`])
+    done
+
+  thus ?thesis
+    using c subpcpo_axioms
+    by (simp add: fix_on_def)
+qed
 
 context subpcpo
 begin
-
-  lemma fix_on_ind:
-    assumes adm: "adm_on P"
-    assumes closed: "closed_on F"
-    assumes cont: "cont_on F"
-    assumes base: "P (bottom_of)"
-    assumes step: "\<And>y. \<lbrakk> y \<in> S ; P y \<rbrakk> \<Longrightarrow> P (F y)"
-    shows "P (fix_on S F)"
-  proof -
-    note chain = closed_is_chain_on[OF closed cont_on2mono_on[OF cont]] 
-  
-    { fix i
-      have "P ((F^^i) bottom_of)"
-        apply (induct i)
-        apply (simp add: base)
-        apply simp
-        apply (erule step[rotated])
-        by (metis (full_types) chain chain_on_def)
-    }
-    hence "P (\<Squnion>i. (F^^i) bottom_of)"
-      by (rule adm_onD[OF adm chain])
-    thus ?thesis
-      using chain_on_is_chain[OF chain] subpcpo_axioms
-      by (simp add: fix_on_def)
-  qed
-  
-  lemma fix_on_mono:
-    assumes "closed_on F"
-    and "cont_on F"
-    and "closed_on G"
-    and "cont_on G"
-    and "\<And> x. x \<in> S \<Longrightarrow> F x \<sqsubseteq> G x"
-    shows "fix_on S F \<sqsubseteq> fix_on S G"
-    apply (rule parallel_fix_on_ind[OF subpcpo_axioms subpcpo_axioms _ assms(1) assms(2) assms(3) assms(4)])
-    apply (rule adm_is_adm_on, simp)
-    apply (rule below_refl)
-    apply (metis below_trans cont_on2mono_on monofun_onE assms(2) assms(5))
-    done
-
-  lemma fix_on_there:
-    assumes "cont_on F"
-    assumes "closed_on F"
-    shows "fix_on S F \<in> S"
-  proof-
-    note co = closed_is_chain_on[OF `closed_on _` cont_on2mono_on[OF `cont_on _`]] 
-    note c = chain_on_is_chain[OF co] 
-  
-    have "(\<Squnion> i. (F ^^ i) (subpcpo_syn.bottom_of S)) \<in> S"
-      by (metis chain_on_lub_on[OF co])
-    thus ?thesis
-      using c subpcpo_axioms
-      by (simp add: fix_on_def)
-  qed
-
-  lemma fix_on_eq:
-    assumes "cont_on F"
-    assumes "closed_on F"
-    shows "fix_on S F = F (fix_on S F)"
-  proof-
-    note co = closed_is_chain_on[OF `closed_on _` cont_on2mono_on[OF `cont_on _`]] 
-    note c = chain_on_is_chain[OF co] 
-  
-    have "(\<Squnion> i. (F ^^ i) (subpcpo_syn.bottom_of S)) = F (\<Squnion> i. (F ^^ i) (subpcpo_syn.bottom_of S))"
-      apply (subst lub_range_shift [of _ 1, symmetric, OF c])
-      apply (subst cont_on2contlubE[OF `cont_on _ ` co])
-      apply simp
-      done
-  
-    thus ?thesis
-      using c subpcpo_axioms
-      by (simp add: fix_on_def)
-  qed
-  
-  
-  lemma fix_on_least_below:
-    assumes "cont_on F"
-    assumes "closed_on F"
-    assumes [simp]: "x \<in> S"
-    assumes below: "F x \<sqsubseteq> x"
-    shows "fix_on S F \<sqsubseteq> x"
-  proof-
-    note c = closed_is_chain[OF `closed_on _` cont_on2mono_on[OF `cont_on _`]] 
-  
-    have "(\<Squnion> i. (F ^^ i) (subpcpo_syn.bottom_of S)) \<sqsubseteq> x"
-      apply (rule lub_below[OF c])
-      apply (induct_tac i)
-      apply simp_all
-      apply (rule rev_below_trans[OF below])
-      apply (erule monofun_onE[OF
-            cont_on2mono_on[OF `cont_on _`]
-            closed_onE[OF iterate_closed_on[OF `closed_on _`] bottom_of_there]
-            `x \<in> S`])
-      done
-  
-    thus ?thesis
-      using c subpcpo_axioms
-      by (simp add: fix_on_def)
-  qed
-
   lemma fix_on_const[simp]:
     assumes "x \<in> S"
     shows "fix_on S (\<lambda> _. x) = x"
   proof-
-    have compow_const[simp]:
-      "\<And> i x y. ((\<lambda> _ . x) ^^ i) y = (if i = (0::nat) then y else x)"
-      by (case_tac i, auto)
-
-    have compow_const_range[simp]: "\<And> x y. range (\<lambda> (i::nat). ((\<lambda> _ . x) ^^ i) y) = {y, x}"
-      by auto
-
-    show ?thesis
-      unfolding fix_on_def
-      apply (subst if_P)
-      apply auto[1]
-      apply (rule bin_chain[OF bottom_of_minimal[OF assms]])
-      apply (rule subpcpo_axioms)
-      apply (subst compow_const_range)
-      by (metis lub_bin[OF bottom_of_minimal[OF assms]])
+    have "fix_on_cond S bottom_of (\<lambda>_ . x)"
+      apply (rule fix_on_condI[OF subpcpo_axioms refl])
+      apply (rule closed_onI[OF assms])
+      apply (rule cont_is_cont_on[OF cont_const])
+      done  
+    thus ?thesis
+      by (rule fix_on_eq)
   qed
-
 end
 
 
@@ -1085,11 +1116,19 @@ begin
     apply auto
     done
 
-  lemma to_bot_fix_on: "to_bot (fix_on' S b F) = to_bot b"
+  lemma to_bot_idem[simp]:
+    "to_bot (to_bot x) = to_bot x"
+     by (metis to_bot_minimal unrelated)
+
+  lemma to_bot_belowI[intro]:
+    "to_bot x = to_bot y \<Longrightarrow> to_bot x \<sqsubseteq> y"
+    by (metis to_bot_minimal)
+
+  lemma to_bot_fix_on[simp]: "to_bot (fix_on' b F) = to_bot b"
     unfolding fix_on'_def
     apply auto
     apply (rule admD[OF to_bot_adm], assumption)
-    apply (rule unrelated[OF chain_mono, of "\<lambda>i. (F ^^ i) (subpcpo_syn.bottom_of S)" 0, symmetric, simplified], assumption)
+    apply (rule unrelated[OF chain_mono, of "\<lambda>i. (F ^^ i) b" 0, symmetric, simplified], assumption)
     done
 end
 
