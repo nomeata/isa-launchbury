@@ -591,7 +591,9 @@ proof(rule below_antisym)
       done
   qed
 
-  show "fix_on ?S ?R \<sqsubseteq> fix_on ?S ?L" sorry
+  show "fix_on ?S ?R \<sqsubseteq> fix_on ?S ?L"
+    unfolding bottom_of_jfc''
+    by (rule R_there[unfolded fjc''_iff, unfolded bottom_of_jfc''])
 qed
 
 (*
