@@ -400,8 +400,8 @@ qed
 inductive fix_on_cond_jfc'
   where fix_on_cond_jfc'I:
   "cont F \<Longrightarrow>
-   chain (\<lambda>i. ((\<lambda>\<rho>'. \<rho> \<squnion> F \<rho>')^^i) (to_bot \<rho>)) \<Longrightarrow>
    (\<And> i. compatible \<rho> (F (((\<lambda>\<rho>'. \<rho> \<squnion> F \<rho>')^^i) (to_bot \<rho>)))) \<Longrightarrow> fix_on_cond_jfc' \<rho> F "
+
 
 context
   fixes \<rho> :: "'a::{Bounded_Nonempty_Meet_cpo,subpcpo_partition}" and S and F
@@ -410,12 +410,24 @@ begin
   lemma cont_F_jfc'': "cont F"
     by (rule fix_on_cond_jfc'.induct[OF `fix_on_cond_jfc' _ _`]) 
 
-  lemma chain_jfc'': "chain (\<lambda>i. ((\<lambda>\<rho>'. \<rho> \<squnion> F \<rho>') ^^ i) (to_bot \<rho>))"
-    by (rule fix_on_cond_jfc'.induct[OF `fix_on_cond_jfc' _ _`]) 
-
   lemma chain_compat_jfc'': "compatible \<rho> (F (((\<lambda>\<rho>'. \<rho> \<squnion> F \<rho>')^^i) (to_bot \<rho>)))"
     by (rule fix_on_cond_jfc'.induct[OF `fix_on_cond_jfc' _ _`]) 
 
+  lemma chain_jfc'': "chain (\<lambda>i. ((\<lambda>\<rho>'. \<rho> \<squnion> F \<rho>')^^i) (to_bot \<rho>))"
+  proof(rule chainI, induct_tac i, simp_all)
+    have "to_bot \<rho> \<sqsubseteq> \<rho>"
+      by (rule to_bot_minimal)
+    also have "\<rho> \<sqsubseteq> \<rho> \<squnion> F (to_bot \<rho>)"
+      by (rule join_above1[OF chain_compat_jfc''[of 0, simplified]])
+    finally
+    show "to_bot \<rho> \<sqsubseteq> \<rho> \<squnion> F (to_bot \<rho>)".
+   
+    fix n
+    assume "((\<lambda>\<rho>'. \<rho> \<squnion> F \<rho>') ^^ n) (to_bot \<rho>) \<sqsubseteq> \<rho> \<squnion> F (((\<lambda>\<rho>'. \<rho> \<squnion> F \<rho>') ^^ n) (to_bot \<rho>))"
+    thus "\<rho> \<squnion> F (((\<lambda>\<rho>'. \<rho> \<squnion> F \<rho>') ^^ n) (to_bot \<rho>)) \<sqsubseteq> \<rho> \<squnion> F (\<rho> \<squnion> F (((\<lambda>\<rho>'. \<rho> \<squnion> F \<rho>') ^^ n) (to_bot \<rho>)))"
+      by (rule join_mono[OF chain_compat_jfc'' chain_compat_jfc''[of "Suc n", simplified] below_refl cont2monofunE[OF `cont F`]])
+  qed 
+  
   lemma rho_jfc'': "\<rho> \<in> fix_join_compat'' \<rho> F"
     apply auto
     apply (subst fix_on_def, subst if_P[OF chain_jfc''])
@@ -569,8 +581,8 @@ lemma fix_on_join_cont'_general:
   assumes cl: "\<And> i. closed_on (S i) (\<lambda>x. Y i \<squnion> F x)"
   assumes cl': "\<And> i. closed_on S' (\<lambda>x. (\<Squnion>i. Y i) \<squnion> F x)"
 
-  shows "fix_on S' (\<lambda> x. (\<Squnion>i. Y i) \<squnion> F x) \<sqsubseteq> (\<Squnion> i. (fix_on (S i) (\<lambda> x. Y i \<squnion> F x)))"
-    (is "fix_on _ _ \<sqsubseteq> Lub ?F")
+  shows "fix_on S' (\<lambda> x. (\<Squnion>i. Y i) \<squnion> F x) = (\<Squnion> i. (fix_on (S i) (\<lambda> x. Y i \<squnion> F x)))"
+    (is "fix_on _ _ = Lub ?F")
 proof-
   interpret subpcpo S' by fact
   interpret down_closed S' by fact
@@ -681,8 +693,18 @@ proof-
   hence "(\<Squnion> i. Y i) \<squnion> F (\<Squnion> i. fix_on (S i) (\<lambda>x. Y i \<squnion> F x)) \<sqsubseteq> (\<Squnion> i. fix_on (S i) (\<lambda>x. Y i \<squnion> F x))"
     by (rule eq_imp_below)
   ultimately
-  show ?thesis
+  have "fix_on S' (\<lambda> x. (\<Squnion>i. Y i) \<squnion> F x) \<sqsubseteq> (\<Squnion> i. (fix_on (S i) (\<lambda> x. Y i \<squnion> F x)))"
     by (rule fix_on_least_below[OF foc'])
+  moreover
+  have  "(\<Squnion> i. (fix_on (S i) (\<lambda> x. Y i \<squnion> F x))) \<sqsubseteq> fix_on S' (\<lambda> x. (\<Squnion>i. Y i) \<squnion> F x)"
+  proof (rule lub_below[OF chF])
+    fix i
+    show "(fix_on (S i) (\<lambda> x. Y i \<squnion> F x)) \<sqsubseteq> fix_on S' (\<lambda> x. (\<Squnion>i. Y i) \<squnion> F x)"
+      apply (rule fix_on_mono2[OF foc foc' eq_imp_below[OF same_bottoms']])
+      by (rule join_mono[OF compat compat' is_ub_thelub[OF `chain Y`] cont2monofunE[OF `cont F`]])
+  qed
+  finally
+  show ?thesis.
 qed
 
 
@@ -696,8 +718,8 @@ lemma fix_on_join_cont':
   assumes compat: "\<And> i x. x \<in> S i \<Longrightarrow> compatible (Y i) (F x)"
   assumes cl: "\<And> i. closed_on (S i) (\<lambda>x. Y i \<squnion> F x)"
 
-  shows "fix_on (\<Inter> i. S i) (\<lambda> x. (\<Squnion>i. Y i) \<squnion> F x) \<sqsubseteq> (\<Squnion> i. (fix_on (S i) (\<lambda> x. Y i \<squnion> F x)))"
-    (is "fix_on ?S _ \<sqsubseteq> Lub ?F")
+  shows "fix_on (\<Inter> i. S i) (\<lambda> x. (\<Squnion>i. Y i) \<squnion> F x) = (\<Squnion> i. (fix_on (S i) (\<lambda> x. Y i \<squnion> F x)))"
+    (is "fix_on ?S _ = Lub ?F")
 proof(rule fix_on_join_cont'_general[OF _ pcpo_i _ down_closed _ _ `chain Y` `cont F` compat _ cl])
   show same_bottoms: "\<And> i j. bottom_of (S i) = bottom_of (S j)"
   proof-
@@ -784,8 +806,8 @@ lemma fix_on_join_cont'_covariant:
   assumes compat: "\<And> i x. x \<in> S i \<Longrightarrow> compatible (Y i) (F x)"
   assumes cl: "\<And> i. closed_on (S i) (\<lambda>x. Y i \<squnion> F x)"
 
-  shows "fix_on (\<Union> i. S i) (\<lambda> x. (\<Squnion>i. Y i) \<squnion> F x) \<sqsubseteq> (\<Squnion> i. (fix_on (S i) (\<lambda> x. Y i \<squnion> F x)))"
-    (is "fix_on ?S _ \<sqsubseteq> Lub ?F")
+  shows "fix_on (\<Union> i. S i) (\<lambda> x. (\<Squnion>i. Y i) \<squnion> F x) = (\<Squnion> i. (fix_on (S i) (\<lambda> x. Y i \<squnion> F x)))"
+    (is "fix_on ?S _ = Lub ?F")
 proof(rule fix_on_join_cont'_general[OF pcpo pcpo_i _ down_closed _ _ `chain Y` `cont F` compat _ cl])
   show same_bottoms: "\<And> i j. bottom_of (S i) = bottom_of (S j)"
   proof-
@@ -870,11 +892,9 @@ lemma fix_on_join_cont'':
   assumes "cont F"
   assumes F_pres_compat: "\<And> i x. compatible (Y i) x \<Longrightarrow> compatible (Y i) (F x)"
 
-  shows "fix_on (fix_join_compat' (\<Squnion> i. Y i)) (\<lambda> x. (\<Squnion>i. Y i) \<squnion> F x) \<sqsubseteq> (\<Squnion> i. (fix_on (fix_join_compat' (Y i)) (\<lambda> x. Y i \<squnion> F x)))"
-    (is "fix_on ?S _ \<sqsubseteq> Lub ?F")
+  shows "fix_on (fix_join_compat' (\<Squnion> i. Y i)) (\<lambda> x. (\<Squnion>i. Y i) \<squnion> F x) = (\<Squnion> i. (fix_on (fix_join_compat' (Y i)) (\<lambda> x. Y i \<squnion> F x)))"
 proof-
-  have "fix_on (\<Inter> i. (fix_join_compat' (Y i))) (\<lambda> x. (\<Squnion>i. Y i) \<squnion> F x) \<sqsubseteq> (\<Squnion> i. (fix_on (fix_join_compat' (Y i)) (\<lambda> x. Y i \<squnion> F x)))"
-    (is "fix_on ?S _ \<sqsubseteq> Lub ?F")
+  have "fix_on (\<Inter> i. (fix_join_compat' (Y i))) (\<lambda> x. (\<Squnion>i. Y i) \<squnion> F x) = (\<Squnion> i. (fix_on (fix_join_compat' (Y i)) (\<lambda> x. Y i \<squnion> F x)))"
   apply (rule fix_on_join_cont'[OF subpcpo_jfc' down_closed_jfc'])
   apply (metis subset_fjc'[OF chain_mono[OF `chain Y`]] le_add1 nat_add_commute)
   apply fact+
@@ -899,7 +919,7 @@ proof (rule admI[rule_format])
     
     apply (rule compatible_adm1)
   moreover
-  have "chain (\<lambda>i. ((\<lambda>\<rho>'. (\<Squnion> i. Y i) \<squnion> F \<rho>') ^^ i) (to_bot (\<Squnion> i. Y i)))" sorry
+  have "chain (\<lambda>i. ((\<lambda>\<rho>'. (\<Squnion> i. Y i) \<squnion> F \<rho>') ^^ i) (to_bot (\<Squnion> i. Y i)))" so rry
   ultimately
   show "fix_on_cond_jfc' (\<Squnion> i. Y i) F"
     by (metis fix_on_cond_jfc'I)
@@ -911,13 +931,8 @@ lemma fix_on_join_cont''':
   assumes focj: "\<And>i. fix_on_cond_jfc' (Y i) F"
   assumes focj': "fix_on_cond_jfc' (\<Squnion> i. Y i) F"
 
-  shows "fix_on (fix_join_compat'' (\<Squnion> i. Y i) F) (\<lambda> x. (\<Squnion>i. Y i) \<squnion> F x) \<sqsubseteq> (\<Squnion> i. (fix_on (fix_join_compat'' (Y i) F) (\<lambda> x. Y i \<squnion> F x)))"
-    (is "fix_on ?S _ \<sqsubseteq> Lub ?F")
+  shows "fix_on (fix_join_compat'' (\<Squnion> i. Y i) F) (\<lambda> x. (\<Squnion>i. Y i) \<squnion> F x) = (\<Squnion> i. (fix_on (fix_join_compat'' (Y i) F) (\<lambda> x. Y i \<squnion> F x)))"
 proof(rule fix_on_join_cont'_general)
-  (*
-  have F_pres_compat': "\<And> x. compatible (\<Squnion> i. Y i) x \<Longrightarrow> compatible (\<Squnion> i. Y i) (F x)"
-    by (rule admD[OF compatible_adm1 `chain Y`  F_pres_compat[OF compatible_down_closed[OF _ is_ub_thelub[OF `chain Y`]]]])
-  *)  
   fix i
   show "\<And> j. bottom_of (fix_join_compat'' (Y i) F) = bottom_of (fix_join_compat'' (Y j) F)"
     apply (simp add: bottom_of_jfc'')

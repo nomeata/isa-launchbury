@@ -1,5 +1,5 @@
 theory "FMap-HOLCF"
-  imports FMap "HOLCF-Join" "Fix1" "FixRestr"
+  imports FMap "HOLCF-Join"
 begin
 
 default_sort type
@@ -330,6 +330,7 @@ qed
 lemma fdom_pred_adm[intro]: "adm (\<lambda> a. P (fdom a))" 
   by (rule admI, metis chain_fdom(2))
 
+(*
 lemma fdom_fix1[simp]: assumes "x \<sqsubseteq> F\<cdot>x" shows "fdom (fix1 x F) = fdom x"
   apply (rule fix1_ind[OF fdom_pred_adm refl assms])
   using  fmap_below_dom[OF monofun_cfun_arg[of x _ F]]  fmap_below_dom[OF assms]
@@ -362,7 +363,7 @@ lemma fix1_cong:
   apply (rule parallel_fix1_ind[OF _ assms(1) assms(2) refl])
   apply auto[1]
   by (metis fmap_below_dom assms(3))
-
+*)
 
 lift_definition fmap_update :: "('a, 'b) fmap \<Rightarrow> ('a, 'b) fmap  \<Rightarrow> ('a, 'b) fmap"
   is "\<lambda>m1 m2 x. (
@@ -841,9 +842,11 @@ lemma restr_extend_cut:
   "finite d \<Longrightarrow> d' \<subseteq> d \<Longrightarrow> fdom x = d' \<Longrightarrow> fmap_restr d' (fmap_extend x (d - d')) = x "
   by (rule fmap_eqI, auto)
 
+(*
 definition fix_extend :: "('a, 'b::pcpo) fmap \<Rightarrow> 'a set \<Rightarrow> (('a, 'b) fmap \<Rightarrow> ('a, 'b) fmap) \<Rightarrow> ('a, 'b) fmap"
   where
   "fix_extend h S nh = fmap_update h (fix1 (fmap_bottom S)  (\<Lambda> h'. (nh (fmap_update h h') )))"
+*)
 
 instantiation fmap :: (type,pcpo) order
 begin

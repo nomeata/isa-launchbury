@@ -735,9 +735,6 @@ lemma fix_on_same:
 lemma fix_on_mono:
   assumes "fix_on_cond S b F"
   assumes "fix_on_cond S b G"
-  assumes adm: "adm_on S P"
-  assumes base: "P b"
-  assumes step: "\<And>y. \<lbrakk> y \<in> S ; P y \<rbrakk> \<Longrightarrow> P (F y)"
   assumes below: "\<And> x. x \<in> S \<Longrightarrow> F x \<sqsubseteq> G x"
   shows "fix_on' b F \<sqsubseteq> fix_on' b G"
 proof -
@@ -1078,7 +1075,7 @@ proof-
     apply (rule below_refl)
 
     
-    sorry
+    so rry
   thus ?thesis
     using chain  pcpo
     unfolding fix_on'_def

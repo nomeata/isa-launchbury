@@ -216,7 +216,12 @@ lemma disjoint_is_heapExtendJoin_cond':
   apply (rule fix_on_cond_jfc'I)
   apply (rule cont_compose[OF fmap_expand_cont cont2cont_heapToEnv])
   apply (metis)
-  sorry
+  apply (rule compatible_fmap_is_compatible[OF compatible_fmapI])
+  apply (case_tac "x \<in> fdom \<rho>")
+  apply simp
+  apply (subst lookup_fmap_expand2)
+  apply auto
+  done
 
 lemma heapExtendJoin_cond'_cont:
   "heapExtendJoin_cond' h eval \<rho> \<Longrightarrow> cont (\<lambda>x. fmap_expand (heapToEnv h (\<lambda>e. eval e x)) (fdom \<rho> \<union> fst ` set h))"
@@ -337,7 +342,7 @@ lemma heapExtendJoin_cont'':
   assumes cond1: "heapExtendJoin_cond' h ESem (\<Squnion> i. Y i)"
   assumes cond2: "\<And>i. heapExtendJoin_cond' h ESem (Y i)"
   assumes "chain Y"
-  shows "heapExtendJoin (\<Squnion> i. Y  i) h ESem \<sqsubseteq> (\<Squnion> i. heapExtendJoin (Y i) h ESem)"
+  shows "heapExtendJoin (\<Squnion> i. Y  i) h ESem = (\<Squnion> i. heapExtendJoin (Y i) h ESem)"
 proof-
   have fdoms[simp]:"\<And> i. fdom (Y i) = fdom (\<Squnion> i. Y i)" (is "\<And> _ .(_ = ?d)") by (metis chain_fdom `chain Y`) 
 
@@ -350,7 +355,7 @@ proof-
 
   have "fix_on       (fix_join_compat'' (\<Squnion> i. fmap_expand (Y i)  (?d \<union> fst ` set h)) (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (?d \<union> fst ` set h)))
              (\<lambda>\<rho>'.                     (\<Squnion> i. fmap_expand (Y i)  (?d \<union> fst ` set h)) \<squnion>
-                      fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (?d \<union> fst ` set h)) \<sqsubseteq>
+                      fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (?d \<union> fst ` set h)) =
        (\<Squnion> i. fix_on  (fix_join_compat''      (fmap_expand (Y i) (?d \<union> fst ` set h))  (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (?d \<union> fst ` set h)))
                                         (\<lambda>\<rho>'. fmap_expand (Y i) (?d \<union> fst ` set h) \<squnion>
                       fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (?d \<union> fst ` set h))) "
@@ -370,7 +375,7 @@ qed
 lemma heapExtendJoin_cond'_eqvt[eqvt]:
  assumes "heapExtendJoin_cond' h eval \<rho>"
  shows "heapExtendJoin_cond' (\<pi> \<bullet> h) (\<pi> \<bullet> eval) (\<pi> \<bullet> \<rho>)"
-sorry
+sor ry
 proof (rule heapExtendJoin_cond'I)
   fix \<rho>'
   assume "compatible (fmap_expand (\<pi> \<bullet> \<rho>) (fdom (\<pi> \<bullet> \<rho>) \<union> fst ` set (\<pi> \<bullet> h))) \<rho>'"
@@ -468,12 +473,71 @@ proof-
 qed
 *)
 
+lemma closed_on_eqvt:
+  "closed_on S F \<Longrightarrow> closed_on (\<pi> \<bullet> S) (\<pi> \<bullet> F)"
+  apply (rule closed_onI)
+  apply (simp add: permute_set_def)
+  by (metis closed_onE eqvt_apply)
+
+lemma cont_eqvt[eqvt]:
+  "cont (F::'a::cont_pt \<Rightarrow> 'b::cont_pt) \<Longrightarrow> cont (\<pi> \<bullet> F)"
+  apply (rule contI)
+  apply (drule_tac Y = "unpermute \<pi> Y" in contE)
+  apply (auto intro: chain_eqvt simp add: unpermute_def)[1]
+  apply (drule perm_is_lub_eqvt[of _ _ "\<pi>"])
+  apply (subst (asm) eqvt_apply[of _ F])
+  apply (subst (asm) lub_eqvt)
+  apply (rule cpo)
+  apply (auto intro: chain_eqvt simp add: unpermute_def)[1]
+  apply perm_simp
+  apply assumption
+  done
+
+lemma chain_on_eqvt:
+  "chain_on (S::'a::cont_pt set) Y \<Longrightarrow> chain_on (\<pi> \<bullet> S) (\<pi> \<bullet> Y)"
+  apply (rule chain_onI)
+  apply (drule_tac i = i in chain_onE)
+  apply (metis perm_cont_simp permute_fun_app_eq permute_pure)
+  apply (drule_tac i = i in chain_on_is_on)
+  by (metis (full_types) mem_permute_iff permute_fun_app_eq permute_pure)
+
+lemma cont_on_eqvt:
+  "cont_on S (F::'a::cont_pt \<Rightarrow> 'b::cont_pt) \<Longrightarrow> cont_on (\<pi> \<bullet> S) (\<pi> \<bullet> F)"
+  apply (rule cont_onI)
+  apply (drule_tac Y = "unpermute \<pi> Y" in cont_onE)
+  apply (auto intro: chain_eqvt simp add: unpermute_def)[1]
+  apply (metis chain_on_eqvt permute_minus_cancel(2))
+  apply (drule perm_is_lub_eqvt[of _ _ "\<pi>"])
+  apply (subst (asm) eqvt_apply[of _ F])
+  apply (subst (asm) lub_eqvt)
+  apply (rule cpo)
+  apply (drule chain_on_is_chain)
+  apply (auto intro: chain_eqvt simp add: unpermute_def)[1]
+  apply perm_simp
+  apply assumption
+  done
+
+
+lemma fix_on_cond_eqvt:
+  assumes "fix_on_cond S (b::'a::cont_pt) F"
+  shows "fix_on_cond (\<pi> \<bullet> S) (\<pi> \<bullet> b) (\<pi> \<bullet> F)"
+proof
+  from assms
+  have pcpo1: "subpcpo S" and closed: "closed_on S F" and cont: "cont_on S F" and [simp]:"b = bottom_of S"
+    by (metis fix_on_cond.cases)+
+
+  show "subpcpo (\<pi> \<bullet> S)" by (rule subpcpo_eqvt[OF pcpo1])
+  show "bottom_of (\<pi> \<bullet> S) = \<pi> \<bullet> b" by (simp add: bottom_of_eqvt[OF pcpo1, symmetric])
+  show "closed_on (\<pi> \<bullet> S) (\<pi> \<bullet> F)" by (rule closed_on_eqvt[OF closed])
+  show "cont_on (\<pi> \<bullet> S) (\<pi> \<bullet> F)" by (rule cont_on_eqvt[OF cont])
+qed
+
 lemma fix_on_eqvt:
   assumes "fix_on_cond S (b::'a::cont_pt) F"
   shows "\<pi> \<bullet> (fix_on' b F) = fix_on' (\<pi> \<bullet> b) (\<pi> \<bullet> F)"
 proof-
   have permuted: "fix_on_cond (\<pi> \<bullet> S) (\<pi> \<bullet> b) (\<pi> \<bullet> F)"
-    sorry
+    by (rule fix_on_cond_eqvt[OF assms])
   show ?thesis
     apply (rule parallel_fix_on_ind[OF assms permuted])
     apply (rule adm_is_adm_on, auto)[1]
@@ -488,19 +552,6 @@ proof(rule below_antisym)
     by (metis eqvt_bound perm_cont_simp to_bot_minimal unrelated)
 qed
 
-lemma cont_eqvt[eqvt]:
-  "cont (F::'a::cont_pt \<Rightarrow> 'a) \<Longrightarrow> cont (\<pi> \<bullet> F)"
-  apply (rule contI)
-  apply (drule_tac Y = "unpermute \<pi> Y" in contE)
-  apply (auto intro: chain_eqvt simp add: unpermute_def)[1]
-  apply (drule perm_is_lub_eqvt[of _ _ "\<pi>"])
-  apply (subst (asm) eqvt_apply[of _ F])
-  apply (subst (asm) lub_eqvt)
-  apply (rule cpo)
-  apply (auto intro: chain_eqvt simp add: unpermute_def)[1]
-  apply perm_simp
-  apply assumption
-  done
 
 
 lemma fix_on_cond_jfc'_eqvt[eqvt]:
@@ -508,7 +559,6 @@ lemma fix_on_cond_jfc'_eqvt[eqvt]:
   apply (erule fix_on_cond_jfc'.induct)
   apply (rule fix_on_cond_jfc'I)
   apply (erule cont_eqvt)
-  apply (drule chain_eqvt[where \<pi> = \<pi>], perm_simp, assumption)
   apply (erule_tac x = i in meta_allE) 
   apply (drule compatible_eqvt[where \<pi> = \<pi>], perm_simp, assumption)
   done
@@ -578,6 +628,7 @@ lemma heapExtendJoin_cong[fundef_cong]:
   unfolding heapExtendJoin_def
   by (auto cong:heapToEnv_cong)
 
+(*
 definition heapExtend :: "Env \<Rightarrow> heap \<Rightarrow> (exp \<Rightarrow> Env \<Rightarrow> Value)  \<Rightarrow> (var, Value) fmap"
   where
   "heapExtend \<rho> h eval =
@@ -637,4 +688,5 @@ lemma heapExtend_cont[simp,cont2cont]: "cont (\<lambda>\<rho>. heapExtend \<rho>
   apply simp
   apply simp
   done
+*)
 end

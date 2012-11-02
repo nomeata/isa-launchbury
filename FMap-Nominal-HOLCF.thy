@@ -69,6 +69,7 @@ next
   thus "the (lookup (\<pi> \<bullet> (\<Squnion> i. Y i)) x) \<sqsubseteq> the (lookup (\<Squnion> i. \<pi> \<bullet> Y i) x)" by auto
 qed
 
+(*
 lemma fix1_eqvt[simp,eqvt]:
   "\<pi> \<bullet> fix1 x f = fix1 (\<pi> \<bullet> x) (\<pi> \<bullet> f)"
 proof(cases "x \<sqsubseteq> f \<cdot> x")
@@ -87,6 +88,7 @@ next
   apply rule
   done
 qed
+*)
 
 lemma chain_shift_funpow[simp]: 
   "chain (\<lambda>i. (f ^^ i) x) \<Longrightarrow> chain (\<lambda>i. f ((f ^^ i) x))"
@@ -98,6 +100,7 @@ proof-
     by (rule chain_shift[of _ 1, simplified])
 qed
 
+(*
 lemma chainFrom_eqvt[simp,eqvt]:
   "chainFrom f (x :: 'a :: cont_pt) \<Longrightarrow> chainFrom (\<pi> \<bullet> f) (\<pi> \<bullet> x)"
   unfolding chainFrom_def
@@ -130,7 +133,7 @@ next
   apply rule
   done
 qed  
-
+*)
 
 lemma finite_transfer[transfer_rule]: "(op = ===> op =) finite finite" 
   unfolding fun_rel_eq by (rule refl)
