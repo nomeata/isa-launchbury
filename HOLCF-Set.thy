@@ -197,6 +197,11 @@ lemma subpcpo_is_subcpo: "subpcpo S \<Longrightarrow> subcpo S" unfolding subpcp
 
 sublocale subpcpo < subcpo by (rule subpcpo_is_subcpo[OF subpcpo_axioms])
 
+
+lemma subcpo_mem_adm:
+  "subcpo S \<Longrightarrow> adm (\<lambda> x. x \<in> S)"
+  by (rule admI, metis subcpo.cpo')
+
 context subpcpo
 begin
 
@@ -700,6 +705,16 @@ proof -
     by (simp add: fix_on_def)
 qed
 
+lemma parallel_fix_on_ind2:
+  assumes "fix_on_cond S1 b1 F"
+  assumes "fix_on_cond S2 b2 G"
+  assumes adm: "adm_on (S1 \<times> S2) (\<lambda>x. P (fst x) (snd x))"
+  assumes base: "P (F b1) (G b2)"
+  assumes step: "!!y z. \<lbrakk> y \<in> S1 ; z \<in> S2; P y z \<rbrakk> \<Longrightarrow> P (F y) (G z)"
+  shows "P (fix_on' b1 F) (fix_on' b2 G)"
+sorry
+
+
 (*
 lemma fix_on_larger_subpcpo:
   assumes pcpo1: "subpcpo S1"
@@ -751,9 +766,18 @@ proof -
     done
 qed
 
+lemma fix_on_cong:
+  assumes "fix_on_cond S b F"
+  assumes "fix_on_cond S b G"
+  assumes below: "\<And> x. x \<in> S \<Longrightarrow> F x = G x"
+  shows "fix_on' b F = fix_on' b G"
+  apply (rule below_antisym)
+  apply (metis fix_on_mono assms eq_imp_below)+
+  done
+
 lemma fix_on_there:
   assumes "fix_on_cond S b F"
-  shows "fix_on S F \<in> S"
+  shows "fix_on' b F \<in> S"
 proof-
   from assms(1)
   have pcpo1: "subpcpo S" and closed: "closed_on S F" and cont: "cont_on S F" and [simp]:"b = bottom_of S"
@@ -796,9 +820,9 @@ qed
   
 lemma fix_on_least_below:
   assumes "fix_on_cond S b F"
-  assumes [simp]: "x \<in> S"
+  assumes there: "x \<in> S"
   assumes below: "F x \<sqsubseteq> x"
-  shows "fix_on S F \<sqsubseteq> x"
+  shows "fix_on' b F \<sqsubseteq> x"
 proof-
   from assms(1)
   have pcpo1: "subpcpo S" and closed: "closed_on S F" and cont: "cont_on S F" and [simp]:"b = bottom_of S"
@@ -812,7 +836,8 @@ proof-
   have "(\<Squnion> i. (F ^^ i) (subpcpo_syn.bottom_of S)) \<sqsubseteq> x"
     apply (rule lub_below[OF c])
     apply (induct_tac i)
-    apply simp_all
+
+    apply (simp_all add: there)
     apply (rule rev_below_trans[OF below])
     apply (erule monofun_onE[OF
           cont_on2mono_on[OF `cont_on _ _`]
@@ -824,6 +849,55 @@ proof-
     using c subpcpo_axioms
     by (simp add: fix_on_def)
 qed
+
+lemma fix_on_eqI:
+  assumes "fix_on_cond S b F"
+  assumes there: "x \<in> S"
+  assumes fixed: "F x = x"
+  assumes least: "\<And>z. z \<in> S \<Longrightarrow> F z = z \<Longrightarrow> x \<sqsubseteq> z"
+  shows "fix_on' b F = x"
+  apply (rule below_antisym)
+  apply (rule fix_on_least_below [OF assms(1) there eq_imp_below[OF fixed]])
+  apply (rule least[OF fix_on_there[OF assms(1)] fix_on_eq[OF assms(1), symmetric]])
+done
+
+lemma fix_on_roll:
+  assumes "fix_on_cond S b (\<lambda> x. F (G x))"
+  assumes "fix_on_cond S' b' (\<lambda> x. G (F x))"
+  assumes "cont G"
+  assumes "G b \<in> S'"
+  assumes huh: "\<And> z. z \<in> S' \<Longrightarrow> F z \<in> S"
+
+  shows "G (fix_on' b (\<lambda> x. F (G x))) = fix_on' b' (\<lambda>x. G (F x))"
+proof(rule fix_on_eqI[OF assms(2), symmetric])
+  from assms(1)
+  have pcpo1: "subpcpo S" and closed: "closed_on S (\<lambda> x. F (G x))" and cont: "cont_on S (\<lambda> x. F (G x))" and [simp]:"b = bottom_of S"
+     by (metis fix_on_cond.cases)+
+  interpret subpcpo S by fact
+
+  from assms(2)
+  have pcpo2: "subpcpo S'" and closed2: "closed_on S' (\<lambda> x. G (F x))" and cont2: "cont_on S' (\<lambda> x. G (F x))" and [simp]:"b' = bottom_of S'"
+     by (metis fix_on_cond.cases)+
+  interpret subpcpo S' by fact
+
+  show "G (fix_on' b (\<lambda>x. F (G x))) \<in> S'"
+    apply (rule fix_on_ind[OF assms(1)])
+    apply (rule adm_is_adm_on[OF adm_subst[OF `cont G` subcpo_mem_adm[OF subpcpo_is_subcpo[OF pcpo2]]]])
+    apply fact
+    apply (erule closed_onE[OF closed2])
+    done
+  show "G (F (G (fix_on' b (\<lambda>x. F (G x))))) = G (fix_on' b (\<lambda>x. F (G x)))"
+    by (subst fix_on_eq[OF assms(1), symmetric], rule)
+  fix z
+  assume "z \<in> S'" and "G (F z) = z"
+  hence "F (G (F z)) = F z" by metis 
+  hence "fix_on' b (\<lambda>x. F (G x)) \<sqsubseteq> F z"
+    by (rule fix_on_least_below[OF assms(1) huh[OF `z \<in> _`] eq_imp_below])
+  hence "G (fix_on' b (\<lambda>x. F (G x))) \<sqsubseteq> G (F z)"
+    by (rule cont2monofunE[OF `cont G`])
+  thus "G (fix_on' b (\<lambda>x. F (G x))) \<sqsubseteq> z" by (simp add: `_ = z`)
+qed
+
 
 context subpcpo
 begin

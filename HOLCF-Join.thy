@@ -445,6 +445,14 @@ proof-
     thus ?thesis unfolding compatible_def by (metis insert_not_empty nonempty_ub_implies_lub_exists)
 qed
 
+lemma join_mono':
+  assumes  "compatible (c::'a::Bounded_Nonempty_Meet_cpo) d"
+  and "a \<sqsubseteq> c"
+  and "b \<sqsubseteq> d"
+  shows "a \<squnion> b \<sqsubseteq> c \<squnion> d"
+  apply (rule join_mono[OF _ assms(1) assms(2) assms(3)])
+  by (metis assms(1) assms(2) assms(3) compatible_down_closed2 compatible_sym)
+
 class Finite_Meet_bifinite_cpo = Finite_Meet_cpo + bifinite
 
 lemma is_ub_range:

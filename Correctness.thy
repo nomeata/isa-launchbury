@@ -45,7 +45,8 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' \<rho>)
   have "... = \<lbrakk> e' \<rbrakk>\<^bsub>(\<lbrace>\<Delta>\<rbrace>\<rho>)(y f\<mapsto> (\<lbrakk> Var x \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>))\<^esub>"
     by simp also
   have "... = \<lbrakk>  e'[y::=x] \<rbrakk>\<^bsub>(\<lbrace>\<Delta>\<rbrace>\<rho>)\<^esub>"
-    using `atom y \<sharp> \<Delta>` and `atom y \<sharp> \<rho>` and `atom y \<sharp> x` by-(rule ESem_subst, simp_all add:fresh_at_base) also
+    using `atom y \<sharp> \<Delta>` and `atom y \<sharp> \<rho>` and `atom y \<sharp> x`
+    by-(rule ESem_subst, simp_all add:fresh_at_base) also
   have "... = \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Theta>\<rbrace>\<rho>\<^esub>"
     using `\<lbrakk>  e'[y::=x] \<rbrakk>\<^bsub>_\<^esub> = _` by simp
   finally
@@ -62,7 +63,7 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
   have "... = fix1 (fmap_bottom (fdom \<rho> \<union> fst ` set ((x, e) # removeAll (x, e) \<Gamma>)))
                    (\<Lambda> \<rho>'a. fmap_update \<rho>
                             (fmap_restr (fst ` set (removeAll (x, e) \<Gamma>)) (\<lbrace>removeAll (x, e) \<Gamma>\<rbrace>\<rho>'a)(x f\<mapsto> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'a\<^esub>)))"                           
-    by (rule iterative_HSem[OF xnot1]) also (* Alternative definition needs to be proven *)
+    by (rule iterative_HSem[OF _ xnot1]) also (* Alternative definition needs to be proven *)
   have "... = fix1 (fmap_bottom (fdom \<rho> \<union> fst ` set ((x, e) # removeAll (x, e) \<Gamma>)))
                    (\<Lambda> \<rho>'a. fmap_update \<rho>
                             (fmap_restr (fst ` set (removeAll (x, e) \<Gamma>)) (\<lbrace>removeAll (x, e) \<Gamma>\<rbrace>\<rho>'a)(x f\<mapsto> \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>removeAll (x, e) \<Gamma>\<rbrace>\<rho>'a\<^esub>)))"

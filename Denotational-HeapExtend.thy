@@ -142,15 +142,15 @@ case (goal3 x a)
 qed
 
 lemma fdom_compatible[simp]:
-  "compatible m1 (m2::('a, 'b::pcpo) fmap) \<Longrightarrow> fdom m1 = fdom m2"
+  "compatible m1 (m2::(('a::type), ('b::pcpo)) fmap) \<Longrightarrow> fdom m1 = fdom m2"
 by (metis join_above1 join_above2 fmap_below_dom)
 
 lemma fdom_join[simp]:
-  "compatible m1 (m2::('a, 'b::pcpo) fmap) \<Longrightarrow> fdom (m1 \<squnion> m2) = fdom m1"
+  "compatible m1 (m2::('a::type, ('b::pcpo)) fmap) \<Longrightarrow> fdom (m1 \<squnion> m2) = fdom m1"
   by (metis join_above1 fmap_below_dom)
 
 lemma join_is_fmap_join:
-  assumes "compatible m1 (m2::('a, 'b::pcpo) fmap)"
+  assumes "compatible m1 (m2::('a::type, 'b::pcpo) fmap)"
   shows "m1 \<squnion> m2 = fmap_join m1 m2"
   apply (rule is_joinI)
   apply (rule fmap_join_below1[OF compatible_is_compatible_fmap[OF assms] fdom_compatible[OF assms]])
@@ -159,7 +159,7 @@ lemma join_is_fmap_join:
   done
 
 lemma the_lookup_compatible:
-  assumes "compatible m1 (m2::('a, 'b::pcpo) fmap)"
+  assumes "compatible m1 (m2::('a::type, ('b::pcpo)) fmap)"
   shows "compatible (the (lookup m1 x)) (the (lookup m2 x))"
 proof(cases "x \<in> fdom m1")
 case True hence "x \<in> fdom m2" by (metis fdom_compatible[OF assms])
@@ -172,7 +172,7 @@ case False
 qed
 
 lemma the_lookup_join:
-  assumes "compatible m1 (m2::('a, 'b::pcpo) fmap)"
+  assumes "compatible m1 (m2::(('a::type), ('b::pcpo)) fmap)"
   shows "the (lookup (m1 \<squnion> m2) x) = the (lookup m1 x) \<squnion> the (lookup m2 x)"
 proof(cases "x \<in> fdom m1")
 case True hence "x \<in> fdom m2" by (metis fdom_compatible[OF assms])
@@ -226,7 +226,6 @@ lemma disjoint_is_heapExtendJoin_cond':
 lemma heapExtendJoin_cond'_cont:
   "heapExtendJoin_cond' h eval \<rho> \<Longrightarrow> cont (\<lambda>x. fmap_expand (heapToEnv h (\<lambda>e. eval e x)) (fdom \<rho> \<union> fst ` set h))"
   by (rule cont_F_jfc'')
-
 
 lemma heapExtendJoin_ind:
   assumes "heapExtendJoin_cond' h eval \<rho> \<Longrightarrow> adm_on (fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda> e. eval e \<rho>')) (fdom \<rho> \<union> fst ` set h))) P"

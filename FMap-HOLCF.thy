@@ -236,10 +236,11 @@ case False
 qed
 
 lemma cont2cont_lookup[simp,cont2cont]:
+  fixes f :: "'a::cpo \<Rightarrow> ('b::type, 'c::cpo) fmap"
   assumes "cont f"
-  shows "cont (\<lambda>p :: ('a, 'b::cpo) fmap. the (lookup (f p) x))"
+  shows "cont (\<lambda>p. the (lookup (f p) x))"
 proof (rule cont_compose[OF _ `cont f`], rule contI)
-  fix Y :: "nat \<Rightarrow> ('c, 'd::cpo) fmap"
+  fix Y :: "nat \<Rightarrow> ('b::type, 'c::cpo) fmap"
   assume "chain Y"
   show "range (\<lambda>i. the (lookup (Y i) x)) <<| the (lookup (\<Squnion> i. Y i) x)"
     by (subst lookup_cont[OF `chain Y`], rule cpo_lubI[OF lookup_chain[OF `chain Y`]])
@@ -531,6 +532,12 @@ lemma compatible_fmapI:
   shows "compatible_fmap m1 m2"
   unfolding compatible_fmap_def' using assms by auto
 
+lemma compatible_fmapE:
+  assumes "compatible_fmap m1 m2"
+  assumes "x \<in> fdom m1"
+  assumes "x \<in> fdom m2"
+  shows "compatible (the (lookup m1 x)) (the (lookup m2 x))"
+  using assms unfolding compatible_fmap_def' by auto
 
 lemma [simp]:
   "compatible_fmap fempty \<rho>" 
@@ -827,6 +834,9 @@ lemma fmap_bottom_below[simp]:
 lemma fmap_bottom_below_iff[iff]:
   "finite S \<Longrightarrow> fmap_bottom S \<sqsubseteq> \<rho> \<longleftrightarrow> S = fdom \<rho>"
   by (metis fdom_fmap_bottom fmap_below_dom fmap_bottom_below)
+
+lemma fmap_bottom_eqI[intro!]: "x = y \<Longrightarrow> fmap_bottom x = fmap_bottom y"
+  by (transfer, auto)
 
 lemma fmap_bottom_inj[iff]: "finite x \<Longrightarrow> finite y \<Longrightarrow> fmap_bottom x = fmap_bottom y \<longleftrightarrow> x = y"
   apply transfer
