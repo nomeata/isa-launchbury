@@ -8,7 +8,7 @@ where
   "atom x \<sharp> \<rho> \<Longrightarrow> \<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub> = Fn \<cdot> (\<Lambda> v. (\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>))"
 | "\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> \<down>Fn \<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub> "
 | "\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub> = the (lookup \<rho> x)"
-| "set (bn as) \<sharp>* \<rho> \<Longrightarrow>\<lbrakk> Let as body \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk>body\<rbrakk>\<^bsub>heapExtendJoin \<rho> (asToHeap as) ESem\<^esub>"
+| "set (bn as) \<sharp>* \<rho> \<Longrightarrow> \<lbrakk> Let as body \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk>body\<rbrakk>\<^bsub>heapExtendJoin \<rho> (asToHeap as) ESem\<^esub>"
 proof-
 case goal1 thus ?case
   unfolding eqvt_def ESem_graph_def
@@ -67,42 +67,26 @@ case (goal13 as \<rho> body as' \<rho>' body')
         ESem_sumC (body', heapExtendJoin \<rho> (asToHeap as') (\<lambda>x0 x1. ESem_sumC (x0, x1)))"
     apply (rule Abs_lst_fcb[of bn _ _ _ _ "(\<lambda> as (body, as'). ESem_sumC (body, heapExtendJoin \<rho> (asToHeap as) (\<lambda>x0 x1. ESem_sumC (x0, x1))))" , OF tmp, simplified])
     apply (rule pure_fresh)+
-    apply (erule conjE)
-    using fresh2[unfolded rho]
-    proof-
-      fix \<pi>
-      assume body: "\<pi> \<bullet> body = body'"
-      assume as: "\<pi> \<bullet> as = as'"
-      assume "set (bn as') \<sharp>* \<rho>" with fresh1
-      have "(set (bn as) \<union> set (bn as')) \<sharp>* \<rho>" by (metis fresh_star_Un)
-      moreover
-      assume "supp \<pi> \<subseteq> set (bn as) \<union> set (bn as')"
-      ultimately
-      have "\<pi> \<bullet> \<rho> = \<rho>"
-        using as
-        apply -
-        apply (rule perm_supp_eq)
-        apply (auto intro: perm_supp_eq simp add: fresh_star_def)
-        done            
-      thus "\<pi> \<bullet> ESem_sumC (body, heapExtendJoin \<rho> (asToHeap as) (\<lambda>x0 x1. ESem_sumC (x0, x1))) =
-             ESem_sumC (body', heapExtendJoin \<rho> (asToHeap as') (\<lambda>x0 x1. ESem_sumC (x0, x1)))"
-         using as body         
-         apply (simp add: eqvt2[unfolded eqvt_at_def, simplified, rule_format]   asToHeap.eqvt heapExtendJoin_eqvt)
-         apply (subst heapExtendJoin_cong)
-         prefer 4
-         apply (rule refl)+
-         apply (simp add: permute_fun_def)
-         apply rule
-         apply (subst eqvt1[unfolded eqvt_at_def, simplified, rule_format])
-         defer
-         apply simp
-         apply (subst mem_permute_iff[symmetric, of _ _ "\<pi>"])
-         apply (simp add: image_eqvt)
-         apply perm_simp
-         using as
-         apply simp
-         done
-    qed
+    apply (subst spec[OF iffD1[OF meta_eq_to_obj_eq[OF eqvt_at_def] eqvt2]])
+    apply (simp add:
+        heapExtendJoin_eqvt eqvt_apply[of _ asToHeap]
+        permute_pure
+        spec[OF iffD1[OF meta_eq_to_obj_eq[OF eqvt_def] asToHeap_eqvt]]
+        asToHeap_eqvt)
+    apply (rule arg_cong[OF heapExtendJoin_cong[OF _ refl]])
+
+    apply (rule perm_supp_eq)
+    using fresh1 fresh2
+    apply (auto simp add: fresh_star_def rho)[1]
+
+    apply (auto simp add: permute_fun_def)
+    apply (subst spec[OF iffD1[OF meta_eq_to_obj_eq[OF eqvt_at_def] eqvt1]])
+    apply (subst mem_permute_iff[symmetric, of _ _ "p"])
+    apply (simp add: image_eqvt)
+    apply perm_simp
+    apply (metis (full_types) imageI snd_conv)
+    apply simp
+    done
   thus "ESem_sumC (body, heapExtendJoin \<rho> (asToHeap as) (\<lambda>x0 x1. ESem_sumC (x0, x1))) =
       ESem_sumC (body', heapExtendJoin \<rho>' (asToHeap as') (\<lambda>x0 x1. ESem_sumC (x0, x1)))" using `\<rho>' = \<rho>`  by simp
 qed auto
