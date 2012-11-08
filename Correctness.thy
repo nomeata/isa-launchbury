@@ -39,6 +39,53 @@ lemma refinesD':
   apply (auto dest: refinesD)
   done
 
+lemma compatible_fmap_expand:
+  assumes "\<And> x. x \<in> fdom \<rho>1 \<Longrightarrow> x \<in> fdom \<rho>2 \<Longrightarrow> compatible (the (lookup \<rho>1 x)) (the (lookup \<rho>2 x))"
+  shows "compatible (fmap_expand \<rho>1 S) (fmap_expand \<rho>2 S)"
+  apply (case_tac "finite S")
+  apply (rule compatible_fmap_is_compatible[OF compatible_fmapI])
+  apply (case_tac "x \<in> fdom \<rho>1")
+  apply (case_tac "x \<in> fdom \<rho>2")
+  apply (auto simp add: assms fmap_expand_nonfinite)
+  done
+
+lemma refines_is_heapExtendJoin_cond:
+  assumes "refines \<Gamma> \<rho>"
+  shows "heapExtendJoin_cond' \<Gamma> ESem \<rho>" (is "fix_on_cond_jfc' ?\<rho> ?F")
+proof (rule fix_on_cond_jfc'I[OF cont_compose[OF fmap_expand_cont cont2cont_heapToEnv[OF ESem_cont]]])
+  fix i
+  have compat: "compatible ?\<rho> (?F ?\<rho>)"
+    apply (rule compatible_fmap_expand)
+    apply simp
+    apply (rule ub_implies_compatible[OF _ below_refl])
+    apply (erule lookupHeapToEnvE)
+    apply (rule below_trans)
+    apply (erule (1) refinesD[OF assms])
+    apply simp
+    done
+  show "compatible ?\<rho> (?F (((\<lambda> \<rho>'. ?\<rho> \<squnion> ?F \<rho>')^^i) (to_bot ?\<rho>)))"
+  proof(induct i)
+  case 0 show ?case
+    apply simp
+    apply (rule ub_implies_compatible[of _ "?\<rho> \<squnion> ?F ?\<rho>"])
+    apply (rule join_above1[OF compat])
+    apply (rule below_trans[OF _ join_above2[OF compat]])
+    apply (rule cont2monofunE[OF cont_compose[OF fmap_expand_cont cont2cont_heapToEnv[OF ESem_cont]] to_bot_minimal])
+    done
+  case (Suc i)
+    show ?case
+    apply (rule compatible_fmap_expand)
+    apply simp
+    apply (rule ub_implies_compatible[OF _ below_refl])
+    apply (erule lookupHeapToEnvE)
+    apply (rule below_trans)
+    apply (erule (1) refinesD[OF assms])
+    apply simp
+    apply (rule cont2monofunE[OF ESem_cont join_above1[OF Suc]])
+    done
+  qed
+qed
+
 
 theorem correctness:
   assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z" and "refines \<Gamma> \<rho>" and "fdom \<rho> \<subseteq> set L"
@@ -84,8 +131,23 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
   have xnot1: "x \<notin> fst ` set (removeAll (x, e) \<Gamma>)" sorry
   have xnot2: "x \<notin> fst ` set \<Delta>" sorry
 
-  have cond: "heapExtendJoin_cond' ((x, e) # removeAll (x, e) \<Gamma>) ESem \<rho>" sorry
-  have cond2: "heapExtendJoin_cond' ((x, z) # \<Delta>) ESem \<rho>" sorry
+  assume "refines \<Gamma> \<rho>"
+  have "refines (removeAll (x, e) \<Gamma>) \<rho>" sorry
+  assume "fdom \<rho> \<subseteq> set L" 
+
+  note hyps = Variable.hyps(3-5)[OF `refines (removeAll (x, e) \<Gamma>) \<rho>` `fdom \<rho> \<subseteq> set L`]
+
+  from `refines \<Delta> \<rho>`
+  have "refines ((x, z) # \<Delta>) \<rho>" sorry
+
+  have cond: "heapExtendJoin_cond' \<Gamma> ESem \<rho>"
+    by (rule refines_is_heapExtendJoin_cond, fact)
+
+  have cond: "heapExtendJoin_cond' ((x, e) # removeAll (x, e) \<Gamma>) ESem \<rho>"
+    (* simple consequence of set being equals *)
+    sorry
+  have cond2: "heapExtendJoin_cond' ((x, z) # \<Delta>) ESem \<rho>"
+    by (rule refines_is_heapExtendJoin_cond, fact)
 
   let "?S" = "(fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set ((x, e) # removeAll (x, e) \<Gamma>)))
        (\<lambda>\<rho>'a. fmap_expand (heapToEnv ((x, e) # removeAll (x, e) \<Gamma>) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'a\<^esub>))
@@ -142,8 +204,6 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
     by (rule iterative_HSem[OF cond2  xnot2,symmetric])
   finally show part2: ?case.
 
-  case 3 show ?case sorry
-
   case 1
   have "\<lbrakk> Var x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = the (lookup (\<lbrace>\<Gamma>\<rbrace>\<rho>) x)" by simp also
   have "... = the (lookup (\<lbrace>(x, z) # \<Delta>\<rbrace>\<rho>) x)"
@@ -161,6 +221,8 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
     apply simp
     done
   finally show ?case.
+
+  case 3 show ?case by fact
 next
 
 case (Let as \<Gamma> L body \<Delta> z \<rho>)
