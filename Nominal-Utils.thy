@@ -60,5 +60,30 @@ lemma funpow_eqvt[simp,eqvt]:
  apply (auto simp add: permute_pure)
  by (metis (no_types) eqvt_lambda permute_fun_app_eq)
 
+lemma supp_mono: "finite (B::'a::at_base set) \<Longrightarrow> A \<subseteq> B \<Longrightarrow> supp A \<subseteq> supp B"
+  apply (subst (1 2) supp_finite_set_at_base)
+  apply (auto dest:infinite_super)
+  done
+
+lemma fresh_subset:
+  "finite B \<Longrightarrow> x \<sharp> (B :: 'a::at_base set) \<Longrightarrow> A \<subseteq> B \<Longrightarrow> x \<sharp> A"
+  by (auto dest:supp_mono simp add: fresh_def)
+
+lemma fresh_star_subset:
+  "finite B \<Longrightarrow> x \<sharp>* (B :: 'a::at_base set) \<Longrightarrow> A \<subseteq> B \<Longrightarrow> x \<sharp>* A"
+  by (metis fresh_star_def fresh_subset)
+
+lemma fresh_star_fun_eqvt_app: "eqvt f \<Longrightarrow> a \<sharp>* x \<Longrightarrow> a \<sharp>* f x "
+  by (metis fresh_star_def fresh_fun_eqvt_app)
+
+lemma eqvt2I:
+  assumes "(\<And> p x y. p \<bullet> f x y = f (p \<bullet> x) (p \<bullet> y))"
+  shows "eqvt (\<lambda> p. f (fst p) (snd p))"
+  by (auto simp add: eqvt_def eqvt_lambda assms unpermute_def)
+
+lemma fresh_star_fun_eqvt_app2: 
+  assumes "(\<And> p x y. p \<bullet> f x y = f (p \<bullet> x) (p \<bullet> y))"
+  shows "a \<sharp>* x \<Longrightarrow> a \<sharp>* y \<Longrightarrow> a \<sharp>* f x y"
+  by (intro fresh_star_fun_eqvt_app[of "\<lambda> p. f (fst p) (snd p)" _ "(x, y)", simplified, unfolded fresh_star_Pair] eqvt2I assms conjI)
 
 end

@@ -41,7 +41,7 @@ lemma refinesD':
 
 
 theorem correctness:
-  assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z" and "refines \<Gamma> \<rho>"
+  assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z" and "refines \<Gamma> \<rho>" and "fdom \<rho> \<subseteq> set L"
   shows "\<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk>z\<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>" and "\<lbrace>\<Gamma>\<rbrace>\<rho> \<le> \<lbrace>\<Delta>\<rbrace>\<rho>" and "refines \<Delta> \<rho>"
   using assms
 proof(nominal_induct avoiding: \<rho>  rule:reds.strong_induct)
@@ -56,8 +56,9 @@ next
 case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' \<rho>)
 
   case 1
-  note Application.hyps(10,11,12)[OF `refines \<Gamma> \<rho>`]
-  note Application.hyps(14,15,16)[OF `refines \<Delta> \<rho>`]
+  have "fdom \<rho> \<subseteq> set (x # L)" by (metis `fdom \<rho> \<subseteq> set L` set_subset_Cons subset_trans)
+  note Application.hyps(10,11,12)[OF `refines \<Gamma> \<rho>` `fdom \<rho> \<subseteq> set (x # L)`]
+  note Application.hyps(14,15,16)[OF `refines \<Delta> \<rho>` `fdom \<rho> \<subseteq> set L`]
   have "\<lbrakk> App e x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> \<down>Fn \<lbrakk> Var x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
     by simp also
   have "... = \<lbrakk> Lam [y]. e' \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub> \<down>Fn \<lbrakk> Var x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
@@ -163,14 +164,19 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
 next
 
 case (Let as \<Gamma> L body \<Delta> z \<rho>)
-  note `set (bn as) \<sharp>* L` (* Does this help? fdom \<rho> = L? *)
-  have "set (bn as) \<sharp>* \<rho>" sorry (* Problem: How to achieve this? *)
-  with `set (bn as) \<sharp>* \<Gamma>`
-  have "set (bn as) \<sharp>* (\<lbrace>\<Gamma>\<rbrace>\<rho>)" sorry
+  assume "fdom \<rho> \<subseteq> set L"
+  note `set (bn as) \<sharp>* L`
+  hence "set (bn as) \<sharp>* set L"  by (metis fresh_star_set)
+  hence "set (bn as) \<sharp>* fdom \<rho>"
+    by (rule fresh_star_subset[OF finite_set _ `fdom \<rho> \<subseteq> set L`])
+  hence "set (bn as) \<sharp>* \<rho>"
+    by (simp add:fresh_def fresh_star_def supp_fmap pure_supp)
+  have "set (bn as) \<sharp>* (\<lbrace>\<Gamma>\<rbrace>\<rho>)"
+    by (rule fresh_star_fun_eqvt_app2[OF HSem_eqvt `set (bn as) \<sharp>* \<Gamma>` `set (bn as) \<sharp>* \<rho>`])
 
   have "refines (asToHeap as @ \<Gamma>) \<rho>" sorry
  
-  note hyps = Let.hyps(4-6)[OF `refines (asToHeap as @ \<Gamma>) \<rho>`]
+  note hyps = Let.hyps(4-6)[OF `refines (asToHeap as @ \<Gamma>) \<rho>` `fdom \<rho> \<subseteq> set L`]
 
   case 1
   have "\<lbrakk> Let as body \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk> body \<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
