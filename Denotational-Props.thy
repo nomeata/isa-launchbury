@@ -243,15 +243,9 @@ lemma HSem_there:
           (\<lambda>\<rho>'. fmap_expand (heapToEnv \<Gamma> (\<lambda>e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set \<Gamma>))"
   unfolding HSem_def by (drule heapExtendJoin_there)
  
-
 lemma HSem_refines:
   "heapExtendJoin_cond' \<Gamma> ESem \<rho>' \<Longrightarrow> fmap_expand \<rho>' (fdom \<rho>' \<union> fst ` set \<Gamma>)  \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<rho>'"
-  apply (subst HSem_unroll, assumption)
-  apply (rule join_above1)
-  apply (rule rho_F_compat_jfc'', assumption)
-  apply (subst HSem_def)
-  apply (erule heapExtendJoin_there)
-  done
+  by (metis HSem_def heapExtendJoin_refines)
 
 lemma fdom_fix_on:
   assumes "fix_on_cond S b F"

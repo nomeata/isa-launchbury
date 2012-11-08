@@ -8,7 +8,7 @@ where
   "atom x \<sharp> \<rho> \<Longrightarrow> \<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub> = Fn \<cdot> (\<Lambda> v. (\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>))"
 | "\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> \<down>Fn \<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub> "
 | "\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub> = the (lookup \<rho> x)"
-| "set (bn as) \<sharp>* \<rho> \<Longrightarrow>\<lbrakk>Let as body\<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk>body\<rbrakk>\<^bsub>heapExtendJoin \<rho> (asToHeap as) ESem\<^esub>"
+| "set (bn as) \<sharp>* \<rho> \<Longrightarrow>\<lbrakk> Let as body \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk>body\<rbrakk>\<^bsub>heapExtendJoin \<rho> (asToHeap as) ESem\<^esub>"
 proof-
 case goal1 thus ?case
   unfolding eqvt_def ESem_graph_def

@@ -369,6 +369,14 @@ proof-
     by (simp add: cont2contlubE[OF fmap_expand_cont `chain Y`])
 qed
 
+lemma heapExtendJoin_refines:
+  assumes "heapExtendJoin_cond' h ESem \<rho>"
+  shows "fmap_expand \<rho> (fdom \<rho> \<union> fst `set h) \<sqsubseteq> heapExtendJoin \<rho> h ESem"
+  apply (subst heapExtendJoin_eq[OF assms(1)])
+  apply (rule join_above1[OF rho_F_compat_jfc''[OF assms heapExtendJoin_there[OF assms]]])
+done
+
+
 (*
 
 lemma heapExtendJoin_cond'_eqvt[eqvt]:

@@ -766,13 +766,32 @@ proof -
     done
 qed
 
+find_theorems cont_on name:cong
+
+lemma fix_on_cond_cong:
+  assumes "fix_on_cond S b F"
+  assumes eq: "\<And> x. x \<in> S \<Longrightarrow> F x = G x"
+  shows "fix_on_cond S b G"
+proof -
+  from assms(1)
+  have pcpo: "subpcpo S" and closedF: "closed_on S F" and contF: "cont_on S F" and [simp]:"b = bottom_of S"
+     by (metis fix_on_cond.cases)+
+  interpret subpcpo S by fact
+  show ?thesis
+    apply (rule fix_on_condI)
+    apply fact
+    apply simp
+    apply (metis closedF closed_on_def eq)
+    apply (subst cont_on_cong[OF eq], assumption, fact)
+  done
+qed
+
 lemma fix_on_cong:
   assumes "fix_on_cond S b F"
-  assumes "fix_on_cond S b G"
-  assumes below: "\<And> x. x \<in> S \<Longrightarrow> F x = G x"
+  assumes "\<And> x. x \<in> S \<Longrightarrow> F x = G x"
   shows "fix_on' b F = fix_on' b G"
   apply (rule below_antisym)
-  apply (metis fix_on_mono assms eq_imp_below)+
+  apply (metis fix_on_mono assms fix_on_cond_cong[OF assms(1) assms(2)] eq_imp_below)+
   done
 
 lemma fix_on_there:
