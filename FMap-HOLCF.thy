@@ -698,6 +698,14 @@ lemma fmap_expand_noop[simp]:
   "S = fdom \<rho> \<Longrightarrow> fmap_expand \<rho> S = \<rho>"
   by (transfer, auto split: option.split)
 
+lemma fmap_expand_idem:
+  "finite S2 \<Longrightarrow> fdom \<rho> \<subseteq> S1 \<Longrightarrow> S1 \<subseteq> S2 \<Longrightarrow> fmap_expand (fmap_expand \<rho> S1) S2 = fmap_expand \<rho> S2"
+  apply (transfer)
+  apply (auto split:option.split simp add: split_if_eq1 split_if_eq2)
+  apply (rule ext)
+  apply (auto split:option.split simp add: split_if_eq1 split_if_eq2)
+  by (metis finite_subset)
+
 lemma lookup_fmap_extend1[simp]:
   "finite S \<Longrightarrow> x \<in> S \<Longrightarrow> lookup (fmap_extend m S) x = Some \<bottom>"
   by (transfer, auto)

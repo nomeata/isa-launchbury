@@ -20,24 +20,62 @@ case False with reds_avoids_live[OF assms(1,2)]
 qed
 
 inductive refines where
-  refinesI: "(\<And> x e. (x, e) \<in> set \<Gamma> \<Longrightarrow> x \<in> fdom \<rho> \<Longrightarrow> the (lookup \<rho> x) \<sqsubseteq> \<lbrakk>e\<rbrakk>\<^bsub>fmap_expand \<rho> (fdom \<rho> \<union> fst `set \<Gamma>)\<^esub>) \<Longrightarrow> refines \<Gamma> \<rho>"
+  refinesI: "(\<And> x e S. finite S \<Longrightarrow> (x, e) \<in> set \<Gamma> \<Longrightarrow> x \<in> fdom \<rho> \<Longrightarrow> the (lookup \<rho> x) \<sqsubseteq> \<lbrakk>e\<rbrakk>\<^bsub>fmap_expand \<rho> (fdom \<rho> \<union> S)\<^esub>)
+      \<Longrightarrow> refines \<Gamma> \<rho>"
 
 lemma refinesD:
   assumes "refines \<Gamma> \<rho>"
+  assumes "finite S"
   assumes "(x, e) \<in> set \<Gamma>"
   assumes "x \<in> fdom \<rho>"
-  shows "the (lookup \<rho> x) \<sqsubseteq> \<lbrakk>e\<rbrakk>\<^bsub>fmap_expand \<rho> (fdom \<rho> \<union> fst `set \<Gamma>)\<^esub>"
-using assms by (metis refines.simps)
+  shows "the (lookup \<rho> x) \<sqsubseteq> \<lbrakk>e\<rbrakk>\<^bsub>fmap_expand \<rho> (fdom \<rho> \<union> S)\<^esub>"
+using assms
+ by (metis refines.simps)
 
 lemma refinesD':
   assumes "refines \<Gamma> \<rho>"
+  assumes "finite S"
   assumes "(x, e) \<in> set \<Gamma>"
-  assumes "x \<in> fdom \<rho> \<union> fst ` set \<Gamma>"
-  shows "the (lookup (fmap_expand \<rho> (fdom \<rho> \<union> fst `set \<Gamma>)) x) \<sqsubseteq> \<lbrakk>e\<rbrakk>\<^bsub>fmap_expand \<rho> (fdom \<rho> \<union> fst `set \<Gamma>)\<^esub>"
+  assumes "x \<in> fdom \<rho> \<union> S"
+  shows "the (lookup (fmap_expand \<rho> (fdom \<rho> \<union> S)) x) \<sqsubseteq> \<lbrakk>e\<rbrakk>\<^bsub>fmap_expand \<rho> (fdom \<rho> \<union> S)\<^esub>"
   using assms
   apply (cases "x \<in> fdom \<rho>")
   apply (auto dest: refinesD)
   done
+
+lemma refines_subsetD:
+  "refines \<Gamma> \<rho> \<Longrightarrow> set \<Delta> \<subseteq> set \<Gamma> \<Longrightarrow> refines \<Delta> \<rho>"
+  apply (rule refinesI)
+  apply (frule (1) subsetD)
+  apply (drule (3) refinesD)
+  apply assumption
+  done
+
+lemma refines_insertI:
+  assumes "refines \<Gamma> \<rho>"
+  assumes "\<And> S. finite S \<Longrightarrow> x \<in> fdom \<rho> \<Longrightarrow> the (lookup \<rho> x) \<sqsubseteq> \<lbrakk>e\<rbrakk>\<^bsub>fmap_expand \<rho> (fdom \<rho> \<union> S)\<^esub>"
+  shows "refines ((x,e) # \<Gamma>) \<rho>"
+proof(rule refinesI)
+  case (goal1 x' e' S)
+  note `finite S`[simp]
+  show ?case
+  proof(cases "(x', e') = (x, e)")
+  case True
+    with goal1 have "x \<in> fdom \<rho>" by auto
+    from assms(2)[OF goal1(1) this]
+    show ?thesis using True by simp
+  next
+  case False
+    hence "(x', e') \<in> set \<Gamma>" using goal1(2) by auto
+    from refinesD[OF assms(1) goal1(1) this goal1(3)]
+    show ?thesis
+      apply (rule below_trans)
+      apply (rule ESem_mono_fdom_changes)
+      apply (subst fmap_expand_idem)
+      apply auto
+      done
+  qed
+qed
 
 lemma compatible_fmap_expand:
   assumes "\<And> x. x \<in> fdom \<rho>1 \<Longrightarrow> x \<in> fdom \<rho>2 \<Longrightarrow> compatible (the (lookup \<rho>1 x)) (the (lookup \<rho>2 x))"
@@ -60,8 +98,8 @@ proof (rule fix_on_cond_jfc'I[OF cont_compose[OF fmap_expand_cont cont2cont_heap
     apply (rule ub_implies_compatible[OF _ below_refl])
     apply (erule lookupHeapToEnvE)
     apply (rule below_trans)
-    apply (erule (1) refinesD[OF assms])
-    apply simp
+    apply (erule (1) refinesD[OF assms,rotated, of _  _"fst ` set \<Gamma>"])
+    apply simp+
     done
   show "compatible ?\<rho> (?F (((\<lambda> \<rho>'. ?\<rho> \<squnion> ?F \<rho>')^^i) (to_bot ?\<rho>)))"
   proof(induct i)
@@ -79,7 +117,8 @@ proof (rule fix_on_cond_jfc'I[OF cont_compose[OF fmap_expand_cont cont2cont_heap
     apply (rule ub_implies_compatible[OF _ below_refl])
     apply (erule lookupHeapToEnvE)
     apply (rule below_trans)
-    apply (erule (1) refinesD[OF assms])
+    apply (erule (1) refinesD[OF assms,rotated, of _  _"fst ` set \<Gamma>"])
+    apply simp
     apply simp
     apply (rule cont2monofunE[OF ESem_cont join_above1[OF Suc]])
     done
@@ -129,16 +168,25 @@ next
 
 case (Variable x e \<Gamma> L \<Delta> z \<rho>)
   have xnot1: "x \<notin> fst ` set (removeAll (x, e) \<Gamma>)" sorry
-  have xnot2: "x \<notin> fst ` set \<Delta>" sorry
+  hence xnot2: "x \<notin> fst ` set \<Delta>"
+    by (rule reds_avoids_live[OF `removeAll (x, e) \<Gamma> : e \<Down>\<^bsub>x#L\<^esub> \<Delta> : z`, unfolded heapVars_def, rotated], simp)
 
   assume "refines \<Gamma> \<rho>"
-  have "refines (removeAll (x, e) \<Gamma>) \<rho>" sorry
+  hence "refines (removeAll (x, e) \<Gamma>) \<rho>" by (auto intro: refines_subsetD)
   assume "fdom \<rho> \<subseteq> set L" 
+  hence "fdom \<rho> \<subseteq> set (x # L)" by (metis set_subset_Cons subset_trans)
 
-  note hyps = Variable.hyps(3-5)[OF `refines (removeAll (x, e) \<Gamma>) \<rho>` `fdom \<rho> \<subseteq> set L`]
+  note hyps = Variable.hyps(3-5)[OF `refines (removeAll (x, e) \<Gamma>) \<rho>` `fdom \<rho> \<subseteq> set (x#L)`]
+
+  thm refinesD[OF `refines \<Gamma> \<rho>` _ `(x,e) \<in> set \<Gamma>`]
 
   from `refines \<Delta> \<rho>`
-  have "refines ((x, z) # \<Delta>) \<rho>" sorry
+  have "refines ((x, z) # \<Delta>) \<rho>"
+    apply (rule refines_insertI)
+    apply (rule below_trans)
+    apply (erule (1) refinesD[OF `refines \<Gamma> \<rho>` _ `(x,e) \<in> set \<Gamma>`])
+    find_theorems e z
+  sorry
 
   have cond: "heapExtendJoin_cond' \<Gamma> ESem \<rho>"
     by (rule refines_is_heapExtendJoin_cond, fact)
@@ -215,7 +263,7 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
     apply auto
     apply (rule larger_is_join)
     apply (cases "x \<in> fdom \<rho>")
-    apply (rule below_trans[OF refinesD'[OF  `refines ((x, z) # \<Delta>) \<rho>`, simplified]])
+    apply (rule below_trans[OF refinesD'[OF `refines ((x, z) # \<Delta>) \<rho>`, of "fst ` set  ((x, z) # \<Delta>)", simplified]])
     apply auto[2]
     apply (rule cont2monofunE[OF ESem_cont HSem_refines[OF cond2, simplified]])
     apply simp

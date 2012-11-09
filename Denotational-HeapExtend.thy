@@ -227,6 +227,23 @@ lemma heapExtendJoin_cond'_cont:
   "heapExtendJoin_cond' h eval \<rho> \<Longrightarrow> cont (\<lambda>x. fmap_expand (heapToEnv h (\<lambda>e. eval e x)) (fdom \<rho> \<union> fst ` set h))"
   by (rule cont_F_jfc'')
 
+lemma heapExtendJoin_ind':
+  assumes "heapExtendJoin_cond' h eval \<rho>"
+  assumes "adm_on (fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda> e. eval e \<rho>')) (fdom \<rho> \<union> fst ` set h))) P"
+  assumes "P (to_bot (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)))"
+  assumes "\<And> y. y \<in> fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda> e. eval e \<rho>')) (fdom \<rho> \<union> fst ` set h)) \<Longrightarrow>
+        P y \<Longrightarrow>
+        P (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h) \<squnion> fmap_expand (heapToEnv h (\<lambda>e. eval e y)) (fdom \<rho> \<union> fst ` set h))"
+  shows "P (heapExtendJoin \<rho> h eval)"
+  unfolding heapExtendJoin_def
+  apply (subst if_P[OF assms(1)])
+  apply (rule fix_on_jfc''_ind[OF assms(1)])
+  apply fact
+  apply (simp add:bottom_of_jfc'')
+  apply fact
+  apply fact
+  done
+
 lemma heapExtendJoin_ind:
   assumes "heapExtendJoin_cond' h eval \<rho> \<Longrightarrow> adm_on (fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda> e. eval e \<rho>')) (fdom \<rho> \<union> fst ` set h))) P"
   assumes "heapExtendJoin_cond' h eval \<rho> \<Longrightarrow> P (to_bot (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)))"
@@ -236,15 +253,10 @@ lemma heapExtendJoin_ind:
         P (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h) \<squnion> fmap_expand (heapToEnv h (\<lambda>e. eval e y)) (fdom \<rho> \<union> fst ` set h))"
   assumes "P (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h))"
   shows "P (heapExtendJoin \<rho> h eval)"
-  unfolding heapExtendJoin_def
   apply (cases "heapExtendJoin_cond' h eval \<rho>")
-  apply (simp)
-  apply (rule fix_on_jfc''_ind, assumption)
-  apply fact
-  apply (simp add:bottom_of_jfc'')
-  apply fact
-  apply fact
-  apply (simp)
+  apply (rule heapExtendJoin_ind'[OF _ assms(1,2,3)], assumption+)
+  unfolding heapExtendJoin_def
+  apply (subst if_not_P, assumption)
   apply (rule assms(4))
   done
 
