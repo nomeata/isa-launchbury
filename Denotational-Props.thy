@@ -84,7 +84,6 @@ lemma ESem_cont: "cont (ESem e)"  using ESem_cont'[OF refl] by (rule contI)
 
 lemmas ESem_cont2cont[simp,cont2cont] = cont_compose[OF ESem_cont]
 
-
 definition HSem ("\<lbrace>_\<rbrace>_"  [60,60] 60) where "\<lbrace>\<Gamma>\<rbrace>\<rho> = heapExtendJoin \<rho> \<Gamma> ESem"
 
 lemma Esem_simps4[simp]: "set (bn as) \<sharp>* \<rho> \<Longrightarrow> \<lbrakk> Terms.Let as body \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> body \<rbrakk>\<^bsub>\<lbrace>asToHeap as \<rbrace>\<rho>\<^esub>"
@@ -732,7 +731,7 @@ proof(rule fmap_eqI)
   qed
 qed
 
-(* TODO: Possible without y \<in> fdom \<rho>? *)
+
 lemma ESem_subst: "x \<noteq> y \<Longrightarrow> atom x \<sharp> \<rho> \<Longrightarrow>  \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> \<lbrakk>Var y\<rbrakk>\<^bsub>\<rho>\<^esub>)\<^esub> = \<lbrakk> e[x::= y] \<rbrakk>\<^bsub>\<rho>\<^esub>"
   and 
   "x \<noteq> y \<Longrightarrow> atom x \<sharp> \<rho> \<Longrightarrow>  heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> the (lookup \<rho> y))\<^esub>)
@@ -908,5 +907,158 @@ next
 case(ACons var exp as \<rho> x y)  thus ?case by auto
 qed
 
+lemma fmap_expand_compatible:
+  assumes [simp]: "finite S"
+  assumes compat:"compatible \<rho>1 \<rho>2"
+  shows "compatible (fmap_expand \<rho>1 S) (fmap_expand \<rho>2 S)"
+  apply (rule compatible_fmap_is_compatible[OF compatible_fmapI])
+  apply (case_tac "x \<in> fdom \<rho>1")
+  apply (auto simp add: fdom_compatible[OF compat] intro: the_lookup_compatible[OF compat])
+  done
+
+
+lemma fmap_expand_join:
+  assumes [simp]: "finite S"
+  assumes compat:"compatible \<rho>1 \<rho>2"
+  shows "fmap_expand (\<rho>1 \<squnion> \<rho>2) S = fmap_expand \<rho>1 S \<squnion> fmap_expand \<rho>2 S"
+proof-
+  have [simp]: "fdom \<rho>2 = fdom \<rho>1" by (metis fdom_compatible[OF compat])
+  have [simp]: "fdom (\<rho>1 \<squnion> \<rho>2) = fdom \<rho>1" by (rule fdom_join[OF compat])
+  have compat2: "compatible (fmap_expand \<rho>1 S) (fmap_expand \<rho>2 S)"
+    by (rule fmap_expand_compatible[OF assms])
+  show ?thesis
+    apply (rule fmap_eqI)
+    apply (simp add: fdom_join[OF compat2])
+    apply (case_tac "x \<in> fdom \<rho>1")
+    by (auto simp add: the_lookup_join[OF compat2] the_lookup_join[OF compat])
+qed
+
+
+lemma ESem_mono_fdom_changes:
+  shows "\<rho>2 \<sqsubseteq> fmap_expand \<rho>1 (fdom \<rho>2) \<Longrightarrow> fdom \<rho>1 \<subseteq> fdom \<rho>2 \<Longrightarrow> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>2\<^esub> \<sqsubseteq> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>1\<^esub>"
+  and
+   "\<rho>2 \<sqsubseteq> fmap_expand \<rho>1 (fdom \<rho>2) \<Longrightarrow> fdom \<rho>1 \<subseteq> fdom \<rho>2 \<Longrightarrow> heapToEnv (asToHeap as) (\<lambda> e. ESem e \<rho>2) \<sqsubseteq> heapToEnv (asToHeap as) (\<lambda> e. ESem e \<rho>1)"
+proof(nominal_induct e and as avoiding: \<rho>1 \<rho>2  rule:exp_assn.strong_induct)
+print_cases
+case (Var v \<rho>1 \<rho>2)
+  have "\<lbrakk> Var v \<rbrakk>\<^bsub>\<rho>2\<^esub> \<sqsubseteq> \<lbrakk> Var v \<rbrakk>\<^bsub>fmap_expand \<rho>1 (fdom \<rho>2)\<^esub>"
+    by (rule cont2monofunE[OF ESem_cont Var(1)])
+  also
+  from Var(2)
+  have "\<lbrakk> Var v \<rbrakk>\<^bsub>fmap_expand \<rho>1 (fdom \<rho>2)\<^esub> \<sqsubseteq> \<lbrakk> Var v \<rbrakk>\<^bsub>\<rho>1\<^esub>"
+    apply (cases "v \<in> fdom \<rho>2")
+    apply (cases "v \<in> fdom \<rho>1")
+    apply (auto simp add: lookup_not_fdom)
+    apply (cases "v \<in> fdom \<rho>1")
+    apply (auto simp add: lookup_not_fdom)
+    done
+  finally show ?case.
+next
+case (App e v \<rho>1 \<rho>2)
+  have "the (lookup \<rho>2 v) \<sqsubseteq> the (lookup (fmap_expand \<rho>1 (fdom \<rho>2)) v)"
+     by (rule cont2monofunE[OF cont2cont_lookup[OF cont_id] App(2)])
+  also
+  from App(3)
+  have "... \<sqsubseteq> the (lookup \<rho>1 v)"
+    apply (cases "v \<in> fdom \<rho>2")
+    apply (cases "v \<in> fdom \<rho>1")
+    apply (auto simp add: lookup_not_fdom)
+    apply (cases "v \<in> fdom \<rho>1")
+    apply (auto simp add: lookup_not_fdom)
+    done
+  finally have "the (lookup \<rho>2 v) \<sqsubseteq> the (lookup \<rho>1 v)".
+  moreover
+  have "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>2\<^esub> \<sqsubseteq> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>1\<^esub>"
+    by (rule App.hyps[OF App.prems])
+  ultimately
+  have "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>2\<^esub> \<down>Fn the (lookup \<rho>2 v) \<sqsubseteq> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>1\<^esub> \<down>Fn the (lookup \<rho>1 v)"
+    by (metis monofun_cfun monofun_cfun_arg)
+  thus ?case
+    by simp
+next
+case (Let as e \<rho>1 \<rho>2)
+  have cond1: "heapExtendJoin_cond' (asToHeap as) ESem \<rho>1"
+    (is "fix_on_cond_jfc' ?\<rho>1 ?F1")
+    apply (rule disjoint_is_heapExtendJoin_cond')
+    using Let(1) by (auto simp add: sharp_star_Env)
+  have cond2: "heapExtendJoin_cond' (asToHeap as) ESem \<rho>2"
+    (is "fix_on_cond_jfc' ?\<rho>2 ?F2")
+    apply (rule disjoint_is_heapExtendJoin_cond')
+    using Let(2) by (auto simp add: sharp_star_Env)
+  let "?S1" = "fix_join_compat'' ?\<rho>1 ?F1"
+  let "?S2" = "fix_join_compat'' ?\<rho>2 ?F2"
+
+  have "\<lbrace>asToHeap as\<rbrace>\<rho>2 \<sqsubseteq> fmap_expand (\<lbrace>asToHeap as\<rbrace>\<rho>1) (fdom (\<lbrace>asToHeap as\<rbrace>\<rho>2))"
+    apply (subst HSem_def)
+    apply (rule heapExtendJoin_ind'[OF cond2 adm_is_adm_on])
+    apply auto[1]
+    apply (auto simp add: to_bot_fmap_def)[1]
+    apply (subst HSem_unroll[OF cond1])
+    apply (subst fmap_expand_join[OF finite_fdom rho_F_compat_jfc''[OF cond1 HSem_there[OF cond1]]])
+
+    apply (erule join_mono[OF
+        rho_F_compat_jfc''[OF cond2]
+        fmap_expand_compatible[OF finite_fdom rho_F_compat_jfc''[OF cond1 HSem_there[OF cond1]]]
+        ])
+    
+    apply (rule below_trans[OF cont2monofunE[OF fmap_expand_cont `\<rho>2 \<sqsubseteq> fmap_expand \<rho>1 (fdom \<rho>2)`]])
+    apply (subst fmap_expand_idem)
+      using `fdom \<rho>1 \<subseteq> fdom \<rho>2` apply auto[3]
+    apply (subst fmap_expand_idem)
+      using `fdom \<rho>1 \<subseteq> fdom \<rho>2` apply auto[3]
+    apply simp
+
+    apply (subst fmap_expand_idem)
+      using `fdom \<rho>1 \<subseteq> fdom \<rho>2` apply auto[3]
+
+    using `fdom \<rho>1 \<subseteq> fdom \<rho>2` apply simp
+
+    apply (rule cont2monofunE[OF fmap_expand_cont]) 
+    apply (rule Let.hyps(3))
+    apply (frule fmap_below_dom, simp)
+    apply (drule fmap_below_dom)
+    apply auto
+    done
+  moreover
+  have "fdom (\<lbrace>asToHeap as\<rbrace>\<rho>1) \<subseteq> fdom (\<lbrace>asToHeap as\<rbrace>\<rho>2)"
+    using Let(6) by auto
+  ultimately
+  have "\<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>2\<^esub> \<sqsubseteq> \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>1\<^esub> "
+    by (rule Let.hyps)
+  thus ?case
+    using Let(1,2)
+    by simp
+next
+case (Lam v e \<rho>1 \<rho>2)
+  from `atom v \<sharp> \<rho>2`
+  have "v \<notin> fdom \<rho>2" by (simp add: sharp_Env)
+  {
+  fix x
+  have "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>2(v f\<mapsto> x)\<^esub> \<sqsubseteq> \<lbrakk> e \<rbrakk>\<^bsub>(fmap_expand \<rho>1 (fdom \<rho>2))(v f\<mapsto> x)\<^esub>"
+    by (rule cont2monofunE[OF cont_compose[OF ESem_cont fmap_upd_cont[OF cont_id cont_const]] Lam(4)])
+  also
+  have "... = \<lbrakk> e \<rbrakk>\<^bsub>(fmap_expand (\<rho>1(v f\<mapsto> x)) (fdom (\<rho>2(v f\<mapsto> x))))\<^esub>"
+    using `v \<notin> fdom \<rho>2` by (auto simp add: fmap_upd_expand)
+  also
+  have "... \<sqsubseteq> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>1(v f\<mapsto> x)\<^esub>"
+    apply (rule Lam.hyps(3))
+    using `fdom \<rho>1 \<subseteq> fdom \<rho>2`
+    by (auto intro: Lam.hyps(3) fmap_expand_belowI)
+  also note calculation 
+  }
+  thus ?case
+    by (auto intro: cfun_belowI simp add: Lam(1) Lam(2) beta_cfun[OF cont_compose[OF ESem_cont fmap_upd_cont[OF cont_const cont_id]]])
+next
+case (ANil \<rho>1 \<rho>2) thus ?case by simp
+next
+case (ACons v e as \<rho>1 \<rho>2)
+  have "heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>2\<^esub>)(v f\<mapsto> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>2\<^esub>) \<sqsubseteq> heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>1\<^esub>)(v f\<mapsto> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>2\<^esub>)"
+    by (rule cont2monofunE[OF fmap_upd_cont[OF cont_id cont_const] ACons.hyps(2)[OF ACons.prems]])
+  also
+  have "... \<sqsubseteq>  heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>1\<^esub>)(v f\<mapsto> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>1\<^esub>) "
+    by (rule cont2monofunE[OF fmap_upd_cont[OF cont_const cont_id] ACons.hyps(1)[OF ACons.prems]])
+  finally
+  show ?case by simp
+qed
 
 end
