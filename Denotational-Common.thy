@@ -130,7 +130,6 @@ proof
   show "?lhs \<Longrightarrow> ?rhs" using imp[of "\<pi> \<bullet> h" "\<pi> \<bullet> f" "-\<pi>"] by simp
 qed
 
-
 lemma lookupHeapToEnvE:
   assumes "v \<in> fst ` set h"
   obtains e where "(v, e) \<in> set h" and "\<And> f. the (lookup (heapToEnv h f) v) = f e"

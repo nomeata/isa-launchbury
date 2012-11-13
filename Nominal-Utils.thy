@@ -81,6 +81,11 @@ lemma eqvt2I:
   shows "eqvt (\<lambda> p. f (fst p) (snd p))"
   by (auto simp add: eqvt_def eqvt_lambda assms unpermute_def)
 
+lemma fresh_fun_eqvt_app2: 
+  assumes "(\<And> p x y. p \<bullet> f x y = f (p \<bullet> x) (p \<bullet> y))"
+  shows "a \<sharp> x \<Longrightarrow> a \<sharp> y \<Longrightarrow> a \<sharp> f x y"
+  by (intro fresh_fun_eqvt_app[of "\<lambda> p. f (fst p) (snd p)" _ "(x, y)", simplified, unfolded fresh_Pair] eqvt2I assms conjI)
+
 lemma fresh_star_fun_eqvt_app2: 
   assumes "(\<And> p x y. p \<bullet> f x y = f (p \<bullet> x) (p \<bullet> y))"
   shows "a \<sharp>* x \<Longrightarrow> a \<sharp>* y \<Longrightarrow> a \<sharp>* f x y"
