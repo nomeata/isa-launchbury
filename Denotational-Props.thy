@@ -112,6 +112,9 @@ lemma HSem_eqvt[eqvt]: "\<pi> \<bullet> (\<lbrace>\<Gamma>\<rbrace>\<rho>) = \<l
 lemma fmap_expand_fempty[simp]: "fmap_expand fempty S = fmap_bottom S"
   by (transfer, auto)
 
+lemma fmap_expand_fmap_bottom[simp]: "fmap_expand (fmap_bottom S') S = fmap_bottom S"
+  by (transfer, auto)
+
 lemma fmap_expand_fdom[simp]: "fmap_expand \<rho> (fdom \<rho>) = \<rho>"
   by (transfer, auto split:option.split)
 
@@ -125,7 +128,7 @@ lemma HSem_Nil[simp]: "\<lbrace>[]\<rbrace>\<rho> = \<rho>"
   apply auto
   by (metis below.r_refl is_joinI to_bot_fmap_def to_bot_minimal)
 
-lemma [simp]:"fdom (\<lbrace>\<Gamma>\<rbrace>\<rho>) = fdom \<rho> \<union> fst ` set \<Gamma>"
+lemma fdom_HSem[simp]:"fdom (\<lbrace>\<Gamma>\<rbrace>\<rho>) = fdom \<rho> \<union> fst ` set \<Gamma>"
   unfolding HSem_def by simp
 
 lemma adm_lookup: assumes "adm P" shows "adm (\<lambda> \<rho>. P (the (lookup \<rho> x)))"
@@ -241,7 +244,7 @@ lemma HSem_there:
   \<lbrace>\<Gamma>\<rbrace>\<rho> \<in> fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set \<Gamma>))
           (\<lambda>\<rho>'. fmap_expand (heapToEnv \<Gamma> (\<lambda>e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set \<Gamma>))"
   unfolding HSem_def by (drule heapExtendJoin_there)
- 
+
 lemma HSem_refines:
   "heapExtendJoin_cond' \<Gamma> ESem \<rho>' \<Longrightarrow> fmap_expand \<rho>' (fdom \<rho>' \<union> fst ` set \<Gamma>)  \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<rho>'"
   by (metis HSem_def heapExtendJoin_refines)
@@ -934,6 +937,7 @@ proof-
 qed
 
 
+
 lemma ESem_mono_fdom_changes:
   shows "\<rho>2 \<sqsubseteq> fmap_expand \<rho>1 (fdom \<rho>2) \<Longrightarrow> fdom \<rho>1 \<subseteq> fdom \<rho>2 \<Longrightarrow> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>2\<^esub> \<sqsubseteq> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>1\<^esub>"
   and
@@ -1060,5 +1064,43 @@ case (ACons v e as \<rho>1 \<rho>2)
   finally
   show ?case by simp
 qed
+
+lemma HSem_mono_subset:
+  assumes "heapExtendJoin_cond' \<Gamma> ESem \<rho>"
+  and "heapExtendJoin_cond' \<Delta> ESem \<rho>"
+  shows "set \<Gamma> \<subseteq> set \<Delta> \<Longrightarrow> fmap_expand (\<lbrace>\<Gamma>\<rbrace>\<rho>) (fdom (\<lbrace>\<Delta>\<rbrace>\<rho>)) \<sqsubseteq> \<lbrace>\<Delta>\<rbrace>\<rho>"
+(*
+apply (rule fmap_expand_belowI[OF refl])
+apply simp
+*)
+apply (subst fdom_HSem)
+apply (subst HSem_def'[OF assms(1)])
+apply (subst HSem_def'[OF assms(2)])
+apply (rule parallel_fix_on_ind[OF fix_on_cond_jfc''[OF assms(1)] fix_on_cond_jfc''[OF assms(2)] ])
+apply (rule adm_is_adm_on)
+defer
+apply (simp add: bottom_of_jfc'' to_bot_fmap_def)
+apply (rule fmap_expand_belowI)
+apply (subst fdom_join[OF rho_F_compat_jfc''[OF assms(2)]], assumption)
+apply simp
+
+apply (subst (asm) fdom_join[OF rho_F_compat_jfc''[OF assms(1)]], assumption)
+apply (subst (asm) fdom_fmap_expand, simp)
+
+
+apply (subst the_lookup_join[OF rho_F_compat_jfc''[OF assms(1)]], assumption)
+apply (subst the_lookup_join[OF rho_F_compat_jfc''[OF assms(2)]], assumption)
+apply (rule join_mono)
+apply (rule the_lookup_compatible[OF rho_F_compat_jfc''[OF assms(1)]], assumption)
+apply (rule the_lookup_compatible[OF rho_F_compat_jfc''[OF assms(2)]], assumption)
+apply (case_tac "x \<in> fdom \<rho>")
+  apply simp
+  apply simp
+apply (case_tac "x \<in> fst `set \<Gamma>")
+  apply simp
+apply (case_tac "x \<in> fst `set \<Delta>")
+  apply simp
+oops
+
 
 end

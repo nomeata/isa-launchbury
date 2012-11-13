@@ -2,28 +2,6 @@ theory Launchbury
 imports Terms Heap
 begin
 
-lemma fresh_remove:
-  assumes "atom x \<sharp> \<Gamma>"
-  shows "atom x \<sharp> (removeAll e \<Gamma>)"
-using assms
-by(induct \<Gamma>)(auto simp add: fresh_Cons)
-
-lemma fresh_list_elem:
-  assumes "atom x \<sharp> \<Gamma>"
-  and "e \<in> set \<Gamma>"
-  shows "atom x \<sharp> e"
-using assms
-by(induct \<Gamma>)(auto simp add: fresh_Cons)
-
-
-lemma
- subst_pres_fresh: "(atom x \<sharp> e \<and> atom x \<sharp> z) --> atom x \<sharp> e[y ::= z]"
-and
- "(atom x \<sharp> as \<and> atom x \<sharp> z \<and> atom x \<notin> set (bn as)) --> (atom x \<sharp> (subst_assn as y z))"
-by(induct e y z and as y z rule:subst_subst_assn.induct)
-  (auto simp add:exp_assn.fresh fresh_at_base fresh_star_Pair exp_assn.bn_defs fresh_star_insert)
-
-
 inductive reds :: "heap \<Rightarrow> exp \<Rightarrow> var list \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool" ("_ : _ \<Down>\<^bsub>_\<^esub> _ : _" [50,50,50,50] 50)
 where
   Lambda: "\<Gamma> : (Lam [x]. e) \<Down>\<^bsub>L\<^esub> \<Gamma> : (Lam [x]. e)" 

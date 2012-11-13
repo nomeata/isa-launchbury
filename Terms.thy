@@ -531,4 +531,12 @@ using assms
 by(induct e y z and as y z rule:subst_subst_assn.induct)
   (auto simp add:exp_assn.fresh fresh_at_base fresh_star_Pair exp_assn.bn_defs fresh_star_insert)
 
+lemma
+ subst_pres_fresh: "(atom x \<sharp> e \<and> atom x \<sharp> z) --> atom x \<sharp> e[y ::= z]"
+and
+ "(atom x \<sharp> as \<and> atom x \<sharp> z \<and> atom x \<notin> set (bn as)) --> (atom x \<sharp> (subst_assn as y z))"
+by(induct e y z and as y z rule:subst_subst_assn.induct)
+  (auto simp add:exp_assn.fresh fresh_at_base fresh_star_Pair exp_assn.bn_defs fresh_star_insert)
+
+
 end

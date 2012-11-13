@@ -39,4 +39,20 @@ lemma asToHeap_eqvt: "eqvt asToHeap"
 lemma fst_set_asToHeap[simp]: "fst ` set (asToHeap as) = assn_vars as"
   by (induct as rule:asToHeap.induct, auto)
 
+
+lemma fresh_remove:
+  assumes "atom x \<sharp> \<Gamma>"
+  shows "atom x \<sharp> (removeAll e \<Gamma>)"
+using assms
+by(induct \<Gamma>)(auto simp add: fresh_Cons)
+
+lemma fresh_list_elem:
+  assumes "atom x \<sharp> \<Gamma>"
+  and "e \<in> set \<Gamma>"
+  shows "atom x \<sharp> e"
+using assms
+by(induct \<Gamma>)(auto simp add: fresh_Cons)
+
+
+
 end
