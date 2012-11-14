@@ -54,5 +54,59 @@ using assms
 by(induct \<Gamma>)(auto simp add: fresh_Cons)
 
 
+inductive distinctVars  where
+  [simp]: "distinctVars []" |
+  [intro]:"x \<notin> heapVars \<Gamma> \<Longrightarrow> distinctVars \<Gamma> \<Longrightarrow> distinctVars ((x, e)  # \<Gamma>)"
+
+lemma [simp]: "distinctVars [x]"
+  by (cases x, auto)
+
+lemma heapVars[eqvt]:
+  "\<pi> \<bullet> heapVars \<Gamma> = heapVars (\<pi> \<bullet> \<Gamma>)"
+  apply (simp add: heapVars_def)
+  apply perm_simp
+  apply rule
+  done
+
+lemma distinctVars[eqvt]:
+  "distinctVars \<Gamma> \<Longrightarrow> distinctVars (\<pi> \<bullet> \<Gamma>)"
+  apply (induct \<Gamma> rule:distinctVars.induct)
+  apply (auto simp add: heapVars[symmetric] mem_permute_iff)
+  done
+
+lemma removeAll_no_there:
+  "x \<notin> heapVars \<Gamma> \<Longrightarrow> removeAll (x,e) \<Gamma> = \<Gamma>"
+  by (induct \<Gamma>, auto)
+
+lemma heapVars_removeAll_subset:
+  "heapVars (removeAll (x,e) \<Gamma>) \<subseteq> heapVars \<Gamma>"
+  by (induct \<Gamma>, auto)
+
+lemma heapVars_removeAll:
+  "distinctVars \<Gamma> \<Longrightarrow> (x,e) \<in> set \<Gamma> \<Longrightarrow> heapVars (removeAll (x,e) \<Gamma>) = heapVars \<Gamma> - {x}"
+  apply (induct \<Gamma> rule:distinctVars.induct)
+  apply auto[1]
+  apply (case_tac "(x,e) = (xa,ea)")
+  apply (auto simp add: removeAll_no_there intro: set_mp[OF heapVars_removeAll_subset])
+  by (metis member_remove removeAll_no_there remove_code(1))
+
+lemma distinctVars_removeAll:
+  "distinctVars \<Gamma> \<Longrightarrow> (x,e) \<in> set \<Gamma> \<Longrightarrow> distinctVars (removeAll (x,e) \<Gamma>)"
+  apply (induct \<Gamma> rule:distinctVars.induct)
+  apply auto[1]
+  apply (case_tac "(x,e) = (xa,ea)")
+  by (auto simp add: removeAll_no_there heapVars_removeAll)
+
+lemma heapVarsAppend[simp]:
+  "heapVars (\<Gamma> @ \<Delta>) = heapVars \<Gamma> \<union> heapVars \<Delta>"
+  by (induct \<Gamma>, auto)
+
+lemma distinctVars_append:
+  "distinctVars \<Gamma> \<Longrightarrow> distinctVars \<Delta> \<Longrightarrow> heapVars \<Gamma> \<inter> heapVars \<Delta> = {} \<Longrightarrow> distinctVars (\<Gamma> @ \<Delta>)"
+  by (induct \<Gamma> rule:distinctVars.induct, auto)
+
+lemma removeAll_stays_fresh:
+  "atom x \<sharp> \<Delta> \<Longrightarrow> atom x \<sharp> removeAll (v, e) \<Delta>"
+  by (induct \<Delta>, auto simp add: fresh_Cons fresh_Pair)
 
 end
