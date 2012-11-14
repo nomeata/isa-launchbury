@@ -3,7 +3,8 @@ theory CorrectnessSimpl
 begin
 
 lemma preserve_meaning:
-  assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
+  assumes "\<Gamma> : e \<Down>\<^bsub>L;S\<^esub> \<Delta> : z"
+  and "distinctVars \<Gamma>"
   and "x \<in> set L"
   and "\<lbrace>\<Gamma>\<rbrace>\<rho> \<le> \<lbrace>\<Delta>\<rbrace>\<rho>"
   shows "\<lbrakk>Var x\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk>Var x\<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>"
@@ -13,7 +14,7 @@ case True
   using fmap_less_eqD[OF `\<lbrace>\<Gamma>\<rbrace>\<rho> \<le> \<lbrace>\<Delta>\<rbrace>\<rho>`, of x] 
   by (auto simp add: heapVars_def)
 next
-case False with reds_avoids_live[OF assms(1,2)]
+case False with reds_avoids_live[OF assms(1-3)]
   have "\<lbrakk>Var x\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = the (lookup \<rho> x)" and "\<lbrakk>Var x\<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub> = the (lookup \<rho> x)"
     by (auto intro:  the_lookup_HSem_other simp add: heapVars_def)
   thus ?thesis by simp
@@ -173,7 +174,7 @@ proof (rule below_antisym)
     apply (simp add: to_bot_fmap_def)
     apply (subst HSem_unroll[OF cond1])
     apply (subst step[OF HSem_there[OF cond1]])
-    apply (erule join_mono[OF rho_F_compat_jfc''[OF cond2] comp_step[OF HSem_there[OF cond1]  rho_F_compat_jfc''[OF cond1 HSem_there[OF cond1]]] below_refl])
+    apply (erule join_mono[OF rho_F_compat_jfc''[OF cond2 _] comp_step[OF HSem_there[OF cond1]]  below_refl])
     apply (erule cont2monofunE[OF cont_F_jfc''[OF cond2]])
     done
 
@@ -201,6 +202,8 @@ lemma HSem_commutes_fmap_upd:
   assumes "x \<notin> fst ` set \<Gamma>"
   assumes "\<And> \<rho>' e. \<rho>' \<in> fix_join_compat'' ?\<rho>1 ?F1 \<Longrightarrow> e \<in> snd `set \<Gamma> \<Longrightarrow> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'(x f\<mapsto> v)\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>"
   shows "(\<lbrace>\<Gamma>\<rbrace>\<rho>)(x f\<mapsto> v) = \<lbrace>\<Gamma>\<rbrace>(\<rho>(x f\<mapsto> v))"
+oops
+(*
 proof (rule HSem_commutes[OF assms(1) assms(2) fmap_upd_cont[OF cont_id cont_const]])
 case goal1 thus ?case by simp
 next
@@ -247,6 +250,7 @@ case goal4 show ?case
     done
   qed      
 qed
+*)
 
 lemma ESem_HSem_unused:
   shows "supp (fst ` set \<Delta>) \<sharp>* e \<Longrightarrow> \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub> = \<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>" and True
@@ -349,7 +353,10 @@ lemma HSem_le_append:
 
 
 theorem correctness:
-  assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z" and "refines \<Gamma> \<rho>" and "fdom \<rho> \<subseteq> set L"
+  assumes "\<Gamma> : e \<Down>\<^bsub>L;S\<^esub> \<Delta> : z"
+  and "refines \<Gamma> \<rho>"
+  and "distinctVars \<Gamma>"
+  and "fdom \<rho> \<subseteq> set L"
   shows "\<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk>z\<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>" and "\<lbrace>\<Gamma>\<rbrace>\<rho> \<le> \<lbrace>\<Delta>\<rbrace>\<rho>" and "refines \<Delta> \<rho>"
   using assms
 proof(nominal_induct avoiding: \<rho>  rule:reds.strong_induct)
@@ -359,18 +366,18 @@ case (Lambda \<Gamma> x e L \<rho>)
   case 3 show ?case by fact
 next
 
-case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' \<rho>)
-
+case (Application y \<Gamma> e x L \<Delta> \<Theta> z S e' \<rho>)
   case 1
   have "fdom \<rho> \<subseteq> set (x # L)" by (metis `fdom \<rho> \<subseteq> set L` set_subset_Cons subset_trans)
-  note Application.hyps(10,11,12)[OF `refines \<Gamma> \<rho>` `fdom \<rho> \<subseteq> set (x # L)`]
-  note Application.hyps(14,15,16)[OF `refines \<Delta> \<rho>` `fdom \<rho> \<subseteq> set L`]
+  note Application.hyps(11-13)[OF `refines \<Gamma> \<rho>`  `distinctVars \<Gamma>` `fdom \<rho> \<subseteq> set (x # L)`]
+  note reds_pres_distinctVars[OF Application.hyps(10) `distinctVars \<Gamma>`]
+  note Application.hyps(15-17)[OF `refines \<Delta> \<rho>` `distinctVars \<Delta>` `fdom \<rho> \<subseteq> set L`]
   have "\<lbrakk> App e x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> \<down>Fn \<lbrakk> Var x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
     by simp also
   have "... = \<lbrakk> Lam [y]. e' \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub> \<down>Fn \<lbrakk> Var x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
     using `\<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = _` by simp also
   have "... = \<lbrakk> Lam [y]. e' \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub> \<down>Fn \<lbrakk> Var x \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>"
-    by (subst preserve_meaning[OF `\<Gamma> : e \<Down>\<^bsub>x # L\<^esub> \<Delta> : Lam [y]. e'` _ `\<lbrace>\<Gamma>\<rbrace>\<rho> \<le> \<lbrace>\<Delta>\<rbrace>\<rho>`], auto) also
+    by (subst preserve_meaning[OF `\<Gamma> : e \<Down>\<^bsub>x # L;S\<^esub> \<Delta> : Lam [y]. e'` `distinctVars \<Gamma>` _ `\<lbrace>\<Gamma>\<rbrace>\<rho> \<le> \<lbrace>\<Delta>\<rbrace>\<rho>`], auto) also
   have "... = (\<Lambda> v. \<lbrakk> e' \<rbrakk>\<^bsub>(\<lbrace>\<Delta>\<rbrace>\<rho>)(y f\<mapsto> v)\<^esub>)\<cdot>(\<lbrakk> Var x \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>)"
     using `atom y \<sharp> \<Delta>` and `atom y \<sharp> \<rho>` by simp also
   have "... = \<lbrakk> e' \<rbrakk>\<^bsub>(\<lbrace>\<Delta>\<rbrace>\<rho>)(y f\<mapsto> (\<lbrakk> Var x \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>))\<^esub>"
@@ -386,13 +393,12 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' \<rho>)
   case 3 show ?case by fact
 next
 
-case (Variable x e \<Gamma> L \<Delta> z \<rho>)
+case (Variable x e \<Gamma> S L \<Delta> z \<rho>)
   assume "refines \<Gamma> \<rho>"
-  assume "fdom \<rho> \<subseteq> set L" 
+  assume "fdom \<rho> \<subseteq> set L"
+  assume "distinctVars \<Gamma>"
 
-  note hyps = Variable.hyps(3-5)[OF `refines \<Gamma> \<rho>` `fdom \<rho> \<subseteq> set L`]
-
-  thm refinesD[OF `refines \<Gamma> \<rho>` `(x,e) \<in> set \<Gamma>`]
+  note hyps = Variable.hyps(4-6)[OF `refines \<Gamma> \<rho>` `distinctVars \<Gamma>` `fdom \<rho> \<subseteq> set L`]
 
   have cond: "heapExtendJoin_cond' \<Gamma> ESem \<rho>"
     by (rule refines_is_heapExtendJoin_cond, fact)
@@ -406,9 +412,14 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
   let "?S2" = "(fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set \<Delta>))
        (\<lambda>\<rho>'a. fmap_expand (heapToEnv \<Delta> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'a\<^esub>))
                (fdom \<rho> \<union> fst ` set \<Delta>)))"
+   
+  have *: "\<lbrace>\<Delta>\<rbrace>\<rho> = \<lbrace>(x, z) # removeAll (x, e) \<Delta>\<rbrace>\<rho>" sorry
 
   case 2
-    show ?case using hyps by simp
+    have "\<lbrace>\<Gamma>\<rbrace>\<rho> \<le> \<lbrace>\<Delta>\<rbrace>\<rho>" by (rule hyps)
+    also have "... = \<lbrace>(x, z) # removeAll (x, e) \<Delta>\<rbrace>\<rho>" by fact
+    finally
+    show ?case.
 
   case 1
   have "\<lbrakk> Var x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = the (lookup (\<lbrace>\<Gamma>\<rbrace>\<rho>) x)" by simp
@@ -418,12 +429,16 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
   also
   have "... = \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>"
     using hyps by simp
+  also
+  have "... = \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>(x, z) # removeAll (x, e) \<Delta>\<rbrace>\<rho>\<^esub>" by (simp add: * )
   finally show ?case.
 
-  case 3 show ?case by fact
+  from `refines \<Delta> \<rho>`
+  show "refines ((x, z) # removeAll (x, e) \<Delta>) \<rho>" sorry
+
 next
 
-case (Let as \<Gamma> L body \<Delta> z \<rho>)
+case (Let as \<Gamma> L body S \<Delta> z \<rho>)
   assume "fdom \<rho> \<subseteq> set L"
   note `set (bn as) \<sharp>* L`
   hence "set (bn as) \<sharp>* set L"  by (metis fresh_star_set)
@@ -445,11 +460,12 @@ case (Let as \<Gamma> L body \<Delta> z \<rho>)
     apply auto[1]
     using `set (bn as) \<sharp>* fdom \<rho>` 
     defer
-    apply (erule (1) below_trans[OF refinesD[OF `refines \<Gamma> \<rho>`]])
     sorry
   thm HSem_le_append
  
-  note hyps = Let.hyps(4-6)[OF `refines (asToHeap as @ \<Gamma>) \<rho>` `fdom \<rho> \<subseteq> set L`]
+  assume "distinctVars \<Gamma>"
+  note distinctVars_append_asToHeap[OF `distinctVars (asToHeap as)` `distinctVars \<Gamma>` `set (bn as) \<sharp>* \<Gamma>`]
+  note hyps = Let.hyps(5-7)[OF `refines (asToHeap as @ \<Gamma>) \<rho>` `distinctVars (asToHeap as @ \<Gamma>)` `fdom \<rho> \<subseteq> set L`]
 
   case 1
   have "\<lbrakk> Let as body \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk> body \<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
