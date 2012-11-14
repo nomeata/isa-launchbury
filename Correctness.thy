@@ -135,7 +135,10 @@ lemma compatible_fmap_expand:
 
 
 theorem correctness:
-  assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z" and "refines \<Gamma> \<rho>" and "fdom \<rho> \<subseteq> set L"
+  assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
+  and "refines \<Gamma> \<rho>"
+  and "distinctVars \<Gamma>"
+  and "fdom \<rho> \<subseteq> set L"
   shows "\<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk>z\<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>" and "\<lbrace>\<Gamma>\<rbrace>\<rho> \<le> \<lbrace>\<Delta>\<rbrace>\<rho>" and "refines \<Delta> \<rho>"
   using assms
 proof(nominal_induct avoiding: \<rho>  rule:reds.strong_induct)
@@ -151,8 +154,9 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' \<rho>)
 
   case 1
   have "fdom \<rho> \<subseteq> set (x # L)" by (metis `fdom \<rho> \<subseteq> set L` set_subset_Cons subset_trans)
-  note Application.hyps(10,11,12)[OF `refines \<Gamma> \<rho>` `fdom \<rho> \<subseteq> set (x # L)`]
-  note Application.hyps(14,15,16)[OF `refines \<Delta> \<rho>` `fdom \<rho> \<subseteq> set L`]
+  note Application.hyps(10,11,12)[OF `refines \<Gamma> \<rho>`  `distinctVars \<Gamma>` `fdom \<rho> \<subseteq> set (x # L)`]
+  note reds_pres_distinctVars[OF Application.hyps(9) `distinctVars \<Gamma>`]
+  note Application.hyps(14,15,16)[OF `refines \<Delta> \<rho>` `distinctVars \<Delta>` `fdom \<rho> \<subseteq> set L`]
   have "\<lbrakk> App e x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> \<down>Fn \<lbrakk> Var x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
     by simp also
   have "... = \<lbrakk> Lam [y]. e' \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub> \<down>Fn \<lbrakk> Var x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
@@ -184,7 +188,11 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
   assume "fdom \<rho> \<subseteq> set L" 
   hence "fdom \<rho> \<subseteq> set (x # L)" by (metis set_subset_Cons subset_trans)
 
-  note hyps = Variable.hyps(3-5)[OF `refines (removeAll (x, e) \<Gamma>) \<rho>` `fdom \<rho> \<subseteq> set (x#L)`]
+  assume "distinctVars \<Gamma>"
+  hence "distinctVars (removeAll (x, e) \<Gamma>)"
+    by (rule distinctVars_removeAll[OF _  `(x, e) \<in> set \<Gamma>`])
+
+  note hyps = Variable.hyps(3-5)[OF `refines (removeAll (x, e) \<Gamma>) \<rho>` `distinctVars (removeAll (x, e) \<Gamma>)` `fdom \<rho> \<subseteq> set (x#L)`]
 
   thm refinesD[OF `refines \<Gamma> \<rho>` `(x,e) \<in> set \<Gamma>`]
 
@@ -295,7 +303,9 @@ case (Let as \<Gamma> L body \<Delta> z \<rho>)
 
   have "refines (asToHeap as @ \<Gamma>) \<rho>" sorry
  
-  note hyps = Let.hyps(4-6)[OF `refines (asToHeap as @ \<Gamma>) \<rho>` `fdom \<rho> \<subseteq> set L`]
+  assume "distinctVars \<Gamma>"
+  note distinctVars_append_asToHeap[OF `distinctVars (asToHeap as)` `distinctVars \<Gamma>` `set (bn as) \<sharp>* \<Gamma>`]
+  note hyps = Let.hyps(5-7)[OF `refines (asToHeap as @ \<Gamma>) \<rho>` `distinctVars (asToHeap as @ \<Gamma>)` `fdom \<rho> \<subseteq> set L`]
 
   case 1
   have "\<lbrakk> Let as body \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk> body \<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"

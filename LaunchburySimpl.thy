@@ -32,7 +32,7 @@ apply(auto intro!: Lambda Application VariableI Let
 done
 
 lemma eval_test2:
-  "y \<noteq> x \<Longrightarrow> [] : (Let (ACbons x (Lam [y]. Var y) ANil) (App (Var x) x)) \<Down>\<^bsub>[];[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y)"
+  "y \<noteq> x \<Longrightarrow> [] : (Let (ACons x (Lam [y]. Var y) ANil) (App (Var x) x)) \<Down>\<^bsub>[];[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y)"
 by (auto intro!: Lambda Application VariableI Let simp add: fresh_Pair fresh_at_base fresh_Cons fresh_Nil exp_assn.fresh fresh_star_def)
 
 lemma blackholed_untouched:
