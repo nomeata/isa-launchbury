@@ -7,7 +7,7 @@ where
   Lambda: "\<Gamma> : (Lam [x]. e) \<Down>\<^bsub>L\<^esub> \<Gamma> : (Lam [x]. e)" 
  | Application: "\<lbrakk> atom y \<sharp> (\<Gamma>,e,x,L,\<Delta>,\<Theta>,z) ; \<Gamma> : e \<Down>\<^bsub>x#L\<^esub> \<Delta> : (Lam [y]. e') ; \<Delta> : e'[y ::= x] \<Down>\<^bsub>L\<^esub> \<Theta> : z\<rbrakk> \<Longrightarrow> \<Gamma> : App e x \<Down>\<^bsub>L\<^esub> \<Theta> : z" 
  | Variable: "\<lbrakk> (x,e) \<in> set \<Gamma>; removeAll (x, e) \<Gamma> : e \<Down>\<^bsub>x#L\<^esub> \<Delta> : z \<rbrakk> \<Longrightarrow> \<Gamma> : Var x \<Down>\<^bsub>L\<^esub> (x, z) # \<Delta> : z"
- | Let: "set (bn as) \<sharp>* (\<Gamma>, L) \<Longrightarrow> asToHeap as @ \<Gamma> : body \<Down>\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> \<Gamma> : Let as body \<Down>\<^bsub>L\<^esub> \<Delta> : z"
+ | Let: "set (bn as) \<sharp>* (\<Gamma>, L) \<Longrightarrow> distinctVars (asToHeap as) \<Longrightarrow> asToHeap as @ \<Gamma> : body \<Down>\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> \<Gamma> : Let as body \<Down>\<^bsub>L\<^esub> \<Delta> : z"
 
 equivariance reds
 
@@ -75,8 +75,25 @@ case (Let as \<Gamma> L body \<Delta> z)
     by (metis finite_set fresh_finite_set_at_base fresh_set)  ultimately
   have "x \<notin> heapVars (asToHeap as @ \<Gamma>)" by (auto simp del:fst_set_asToHeap)  
   thus ?case
-    by (rule Let.hyps(3)[OF `x \<in> set L`])
+    by (rule Let.hyps(4)[OF `x \<in> set L`])
 qed
+
+lemma reds_pres_distinctVars:
+  "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> distinctVars \<Gamma> \<Longrightarrow> distinctVars \<Delta>"
+proof (nominal_induct rule: reds.strong_induct)
+  case (Variable x e \<Gamma> L \<Delta> z)
+    have "x \<notin> heapVars \<Delta>"
+      apply (rule reds_avoids_live[OF Variable(2)])
+      apply (auto simp add: heapVars_removeAll[OF Variable(4,1)])
+      done
+    moreover
+    have "distinctVars (removeAll (x,e) \<Gamma>)"
+      by (rule distinctVars_removeAll[OF Variable(4,1)])
+    hence "distinctVars \<Delta>" by (rule Variable.hyps)
+    ultimately
+    show ?case
+      by (rule distinctVars.intros)
+qed (auto intro: distinctVars_append_asToHeap)
 
 
 lemma reds_fresh:" \<lbrakk> \<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z;
@@ -126,14 +143,14 @@ case (Let as \<Gamma> body L \<Delta> z)
       hence "atom x \<sharp> asToHeap as"
         by(induct as rule:asToHeap_induct)(auto simp add: fresh_Nil fresh_Cons fresh_Pair exp_assn.fresh)
       show ?thesis
-        apply(rule Let.hyps(3))
+        apply(rule Let.hyps(4))
         using Let.prems `atom x \<sharp> asToHeap as` False
         by (auto simp add: fresh_Pair exp_assn.fresh fresh_append)
     next
     case True
       hence "x \<in> heapVars (asToHeap as)" 
         by(induct as rule:asToHeap_induct)(auto simp add: exp_assn.bn_defs)      
-      thus ?thesis using reds_doesnt_forget[OF Let.hyps(2)] by auto
+      thus ?thesis using reds_doesnt_forget[OF Let.hyps(3)] by auto
     qed
 qed
 
