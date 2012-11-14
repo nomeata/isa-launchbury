@@ -127,6 +127,127 @@ lemma compatible_fmap_expand:
   apply (auto simp add: assms fmap_expand_nonfinite)
   done
 
+
+lemma HSem_commutes:
+  assumes cond1: "heapExtendJoin_cond' \<Gamma> ESem \<rho>" (is "fix_on_cond_jfc' ?\<rho>1 ?F1")
+  assumes cond2: "heapExtendJoin_cond' \<Gamma> ESem (F \<rho>)" (is "fix_on_cond_jfc' ?\<rho>2 ?F2")
+  assumes cont: "cont F"
+  assumes fdom[simp]: "\<And> \<rho>' . fdom \<rho>' = fdom \<rho> \<union> fst ` set \<Gamma> \<Longrightarrow> fdom (F \<rho>') = fdom (F \<rho>) \<union> fst ` set \<Gamma>"
+  assumes start: "F (fmap_bottom (fdom \<rho> \<union> fst ` set \<Gamma>)) \<sqsubseteq> fmap_expand (F \<rho>) (fdom (F \<rho>) \<union> fst ` set \<Gamma>)"
+  assumes comp_step: "\<And> \<rho>' . \<rho>' \<in> fix_join_compat'' ?\<rho>1 ?F1 \<Longrightarrow> compatible ?\<rho>2 (?F2 (F \<rho>'))"
+  assumes step: "\<And> \<rho>' . \<rho>' \<in> fix_join_compat'' ?\<rho>1 ?F1 \<Longrightarrow> F (?\<rho>1 \<squnion> ?F1 \<rho>') = ?\<rho>2 \<squnion> ?F2 (F \<rho>')"
+  shows "F (\<lbrace>\<Gamma>\<rbrace>\<rho>) = \<lbrace>\<Gamma>\<rbrace>(F \<rho>)"
+proof (rule below_antisym)
+  (*
+  have "heapExtendJoin_cond' \<Gamma> ESem (F \<rho>)"
+    apply (rule fix_on_cond_jfc'I)  
+    apply (rule cont_compose[OF fmap_expand_cont cont2cont_heapToEnv[OF ESem_cont]])
+    apply (induct_tac i)
+    apply simp
+    apply (rule compatible_down_closed2[OF comp_step cont2monofunE[OF cont_compose[OF fmap_expand_cont cont2cont_heapToEnv[OF ESem_cont]]],
+        of "fmap_bottom (fdom \<rho> \<union> fst ` set \<Gamma>)"])
+    apply (metis (no_types) fdom_HSem fdom_fmap_expand finite_fdom fjc''_iff to_bot_fix_on to_bot_fmap_def to_bot_idem to_bot_minimal)
+    apply (simp add: to_bot_fmap_def)
+
+    apply (rule compatible_down_closed2[OF comp_step cont2monofunE[OF cont_compose[OF fmap_expand_cont cont2cont_heapToEnv[OF ESem_cont]]]])
+
+    apply (rule comp_step)
+    thm compatible_down_closed2 
+
+    oops
+
+  { fix \<rho>'
+    have "\<rho>' \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<rho> \<longrightarrow> F \<rho>' \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>(F \<rho>)"
+    unfolding HSem_def'[OF cond1] HSem_def'[OF cond2]
+    apply (rule parallel_fix_on_ind[OF fix_on_cond_jfc''[OF cond1] fix_on_cond_jfc''[OF cond2]])
+    apply (rule adm_is_adm_on)
+      apply (intro adm_lemmas cont cont2cont)
+    sorry
+  }
+  *)
+  show "\<lbrace>\<Gamma>\<rbrace>(F \<rho>) \<sqsubseteq> F (\<lbrace>\<Gamma>\<rbrace>\<rho>)"
+    apply (subst HSem_def)
+    apply (rule heapExtendJoin_ind'[OF cond2])
+    apply (auto intro!: adm_is_adm_on adm_subst[OF `cont F`])[1]
+    apply rule
+    apply (simp add: to_bot_fmap_def)
+    apply (subst HSem_unroll[OF cond1])
+    apply (subst step[OF HSem_there[OF cond1]])
+    apply (erule join_mono[OF rho_F_compat_jfc''[OF cond2] comp_step[OF HSem_there[OF cond1]  rho_F_compat_jfc''[OF cond1 HSem_there[OF cond1]]] below_refl])
+    apply (erule cont2monofunE[OF cont_F_jfc''[OF cond2]])
+    done
+
+  show "F (\<lbrace>\<Gamma>\<rbrace>\<rho>) \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>(F \<rho>)"
+    apply (subst HSem_def)
+    apply (rule heapExtendJoin_ind'[OF cond1])
+    apply (auto intro!: adm_is_adm_on adm_subst[OF `cont F`])[1]
+    apply (subst HSem_unroll[OF cond2])
+
+    apply (rule below_trans[OF _ join_above1[OF rho_F_compat_jfc''[OF cond2 HSem_there[OF cond2]]]])
+    apply (simp add: to_bot_fmap_def)
+    apply (rule start)
+   
+    apply (subst step, assumption)
+    apply (subst HSem_unroll[OF cond2])
+    apply (rule join_mono[OF rho_F_compat_jfc''[OF cond2 ] rho_F_compat_jfc''[OF cond2 HSem_there[OF cond2]] below_refl])
+      apply (simp add: HSem_def'[OF cond2] bottom_of_jfc'')
+    apply (erule cont2monofunE[OF cont_F_jfc''[OF cond2]])
+    done
+qed
+
+lemma HSem_commutes_fmap_upd:
+  assumes cond1: "heapExtendJoin_cond' \<Gamma> ESem \<rho>" (is "fix_on_cond_jfc' ?\<rho>1 ?F1")
+  assumes cond2: "heapExtendJoin_cond' \<Gamma> ESem (\<rho>(x f\<mapsto> v))"
+  assumes "x \<notin> fst ` set \<Gamma>"
+  assumes "\<And> \<rho>' e. \<rho>' \<in> fix_join_compat'' ?\<rho>1 ?F1 \<Longrightarrow> e \<in> snd `set \<Gamma> \<Longrightarrow> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'(x f\<mapsto> v)\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>"
+  shows "(\<lbrace>\<Gamma>\<rbrace>\<rho>)(x f\<mapsto> v) = \<lbrace>\<Gamma>\<rbrace>(\<rho>(x f\<mapsto> v))"
+proof (rule HSem_commutes[OF assms(1) assms(2) fmap_upd_cont[OF cont_id cont_const]])
+case goal1 thus ?case by simp
+next
+case goal2 thus ?case by (rule fmap_upd_below, simp_all)[1]
+next
+{
+case goal3 show ?case 
+  proof(rule compatible_fmap_expand)
+    case (goal1 xa) thus ?case
+      apply (cases "xa = x")
+      apply (simp add: assms(3))
+      apply (simp add: heapToEnv_cong[OF refl assms(4)[OF goal3(1)]])
+      using the_lookup_compatible[OF goal3(2), of xa]
+      by simp
+  qed
+} note compat = this
+case goal4 show ?case
+  proof (rule fmap_eqI)
+  case goal1 show ?case
+      apply (subst fmap_upd_fdom)
+      apply (subst fdom_join[OF rho_F_compat_jfc''[OF cond1 goal4(1)]])
+      apply (subst fdom_join[OF compat[OF goal4(1) rho_F_compat_jfc''[OF cond1 goal4(1)]]])
+      apply simp
+      done
+  case (goal2 xa)
+    hence "xa = x \<or> (xa \<noteq> x \<and> xa \<in> fdom \<rho> \<union> fst ` set \<Gamma>)"
+      by (auto simp add: fdom_join[OF rho_F_compat_jfc''[OF cond1 goal4(1)]])
+    thus ?case
+      apply (rule disjE)
+      apply (subst the_lookup_join[OF compat[OF goal4(1) rho_F_compat_jfc''[OF cond1 goal4(1)]]])
+      apply (simp add: assms(3))
+
+      apply (subst the_lookup_join[OF compat[OF goal4(1) rho_F_compat_jfc''[OF cond1 goal4(1)]]])
+      apply simp
+      apply (subst the_lookup_join[OF rho_F_compat_jfc''[OF cond1 goal4(1)]])
+      apply (simp add: heapToEnv_cong[OF refl assms(4)[OF goal4(1)]])
+      apply (cases "xa \<in> fdom \<rho>")
+      apply (cases "xa \<in> fst ` set \<Gamma>")
+      apply simp
+      apply simp
+      apply (cases "xa \<in> fst ` set \<Gamma>")
+      apply simp
+      apply simp
+    done
+  qed      
+qed
+
 lemma ESem_HSem_unused:
   shows "supp (fst ` set \<Delta>) \<sharp>* e \<Longrightarrow> \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub> = \<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>" and True
 proof(nominal_induct e and avoiding: \<Delta> \<rho> rule:exp_assn.strong_induct)
