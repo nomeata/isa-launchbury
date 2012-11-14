@@ -109,4 +109,30 @@ lemma removeAll_stays_fresh:
   "atom x \<sharp> \<Delta> \<Longrightarrow> atom x \<sharp> removeAll (v, e) \<Delta>"
   by (induct \<Delta>, auto simp add: fresh_Cons fresh_Pair)
 
+lemma distinctVars_append_asToHeap:
+  assumes "distinctVars (asToHeap as)"
+  assumes "distinctVars \<Gamma>"
+  assumes "set (bn as) \<sharp>* \<Gamma>"
+  shows "distinctVars (asToHeap as @ \<Gamma>)" 
+proof(rule distinctVars_append[OF assms(1,2)])
+  { fix x
+    assume "x \<in> heapVars (asToHeap as)"
+    hence "atom x \<in> set (bn as)"
+      apply (induct as rule: asToHeap.induct)
+      apply (auto simp add: exp_assn.bn_defs(2))
+      done
+    hence "atom x \<sharp> \<Gamma>"
+      using `set (bn as) \<sharp>* \<Gamma>` by (auto simp add: fresh_star_def)
+    moreover
+    assume "x \<in> heapVars \<Gamma>"
+    hence "atom x \<in> supp \<Gamma>"
+      apply (induct \<Gamma>)
+      by (auto simp add: supp_Cons heapVars_def supp_Pair supp_at_base)
+    ultimately
+    have False
+      by (simp add: fresh_def)
+  }
+  thus "heapVars (asToHeap as) \<inter> heapVars \<Gamma> = {}" by auto
+qed  
+
 end

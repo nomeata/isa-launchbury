@@ -32,38 +32,12 @@ apply(auto intro!: Lambda Application VariableI Let
 done
 
 lemma eval_test2:
-  "y \<noteq> x \<Longrightarrow> [] : (Let (ACons x (Lam [y]. Var y) ANil) (App (Var x) x)) \<Down>\<^bsub>[];[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y)"
+  "y \<noteq> x \<Longrightarrow> [] : (Let (ACbons x (Lam [y]. Var y) ANil) (App (Var x) x)) \<Down>\<^bsub>[];[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y)"
 by (auto intro!: Lambda Application VariableI Let simp add: fresh_Pair fresh_at_base fresh_Cons fresh_Nil exp_assn.fresh fresh_star_def)
 
 lemma blackholed_untouched:
   "\<Gamma> : e \<Down>\<^bsub>L;S\<^esub> \<Delta> : z \<Longrightarrow> x \<in> set S \<Longrightarrow> (x, e') \<in> set \<Gamma> \<Longrightarrow> (x, e') \<in> set \<Delta>"
 by(induct rule: reds.induct, auto)
-
-lemma distinctVars_append_asToHeap:
-  assumes "distinctVars (asToHeap as)"
-  assumes "distinctVars \<Gamma>"
-  assumes "set (bn as) \<sharp>* \<Gamma>"
-  shows "distinctVars (asToHeap as @ \<Gamma>)" 
-proof(rule distinctVars_append[OF assms(1,2)])
-  { fix x
-    assume "x \<in> heapVars (asToHeap as)"
-    hence "atom x \<in> set (bn as)"
-      apply (induct as rule: asToHeap.induct)
-      apply (auto simp add: exp_assn.bn_defs(2))
-      done
-    hence "atom x \<sharp> \<Gamma>"
-      using `set (bn as) \<sharp>* \<Gamma>` by (auto simp add: fresh_star_def)
-    moreover
-    assume "x \<in> heapVars \<Gamma>"
-    hence "atom x \<in> supp \<Gamma>"
-      apply (induct \<Gamma>)
-      by (auto simp add: supp_Cons heapVars_def supp_Pair supp_at_base)
-    ultimately
-    have False
-      by (simp add: fresh_def)
-  }
-  thus "heapVars (asToHeap as) \<inter> heapVars \<Gamma> = {}" by auto
-qed  
 
 lemma reds_pres_distinctVars:
   "\<Gamma> : e \<Down>\<^bsub>L;S\<^esub> \<Delta> : z \<Longrightarrow> distinctVars \<Gamma> \<Longrightarrow> distinctVars \<Delta>"

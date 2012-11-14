@@ -412,7 +412,22 @@ case (Variable x e \<Gamma> S L \<Delta> z \<rho>)
   let "?S2" = "(fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set \<Delta>))
        (\<lambda>\<rho>'a. fmap_expand (heapToEnv \<Delta> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'a\<^esub>))
                (fdom \<rho> \<union> fst ` set \<Delta>)))"
-   
+
+  have "(x, e) \<in> set \<Delta>"
+    by (rule blackholed_untouched[OF Variable.hyps(3) _ Variable.hyps(1), simplified])
+
+  hence "\<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub> = the (lookup (\<lbrace>\<Delta>\<rbrace>\<rho>) x)" sorry
+  moreover
+  hence "\<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = the (lookup (\<lbrace>\<Gamma>\<rbrace>\<rho>) x)" sorry
+  moreover
+  have "\<lbrace>\<Gamma>\<rbrace>\<rho> \<le> \<lbrace>\<Delta>\<rbrace>\<rho>" by (rule hyps)
+  ultimately
+  have "\<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>" sorry
+  with  `\<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>`
+  have "\<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub> = \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>" by simp
+  
+
+  (* Vielleicht \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub> = \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub> *)
   have *: "\<lbrace>\<Delta>\<rbrace>\<rho> = \<lbrace>(x, z) # removeAll (x, e) \<Delta>\<rbrace>\<rho>" sorry
 
   case 2
