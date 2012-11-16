@@ -1,5 +1,5 @@
 theory Heap
-imports Terms
+imports Terms "Nominal-Utils"
 begin
 
 type_synonym heap = "(var \<times> exp) list"
@@ -7,10 +7,15 @@ type_synonym heap = "(var \<times> exp) list"
 definition heapVars
   where "heapVars h = fst ` set h"
 
-lemma [simp]:"heapVars (a @ b) = heapVars a \<union> heapVars b"
+lemma heapVarsAppend[simp]:"heapVars (a @ b) = heapVars a \<union> heapVars b"
   and [simp]:"heapVars ((v,e) # h) = insert v (heapVars h)"
+  and [simp]:"heapVars (p # h) = insert (fst p) (heapVars h)"
   and [simp]:"heapVars [] = {}"
   by (auto simp add: heapVars_def)
+
+lemma heapVars_not_fresh:
+  "x \<in> heapVars \<Gamma> \<Longrightarrow> \<not>(atom x \<sharp> \<Gamma>)"
+  by (induct \<Gamma>, auto simp add: fresh_Cons fresh_Pair)
 
 function asToHeap_raw :: "assn_raw \<Rightarrow> (var \<times> exp_raw) list"
 where ANilToHeap_raw: "asToHeap_raw ANil_raw = []"
@@ -97,24 +102,63 @@ lemma distinctVars_removeAll:
   apply (case_tac "(x,e) = (xa,ea)")
   by (auto simp add: removeAll_no_there heapVars_removeAll)
 
-lemma heapVarsAppend[simp]:
-  "heapVars (\<Gamma> @ \<Delta>) = heapVars \<Gamma> \<union> heapVars \<Delta>"
-  by (induct \<Gamma>, auto)
-
-lemma distinctVars_append:
+lemma distinctVars_appendI:
   "distinctVars \<Gamma> \<Longrightarrow> distinctVars \<Delta> \<Longrightarrow> heapVars \<Gamma> \<inter> heapVars \<Delta> = {} \<Longrightarrow> distinctVars (\<Gamma> @ \<Delta>)"
   by (induct \<Gamma> rule:distinctVars.induct, auto)
+
+
+lemma distinctVars_ConsD:
+  assumes "distinctVars ((x,e) # \<Gamma>)"
+  shows "x \<notin> heapVars \<Gamma>" and "distinctVars \<Gamma>"
+  by (rule distinctVars.cases[OF assms], simp_all)+
+
+lemma distinctVars_appendD:
+  assumes "distinctVars (\<Gamma> @ \<Delta>)"
+  shows distinctVars_appendD1: "distinctVars \<Gamma>"
+  and distinctVars_appendD2: "distinctVars \<Delta>"
+  and distinctVars_appendD3: "heapVars \<Gamma> \<inter> heapVars \<Delta> = {}"
+proof-
+  from assms
+  have "distinctVars \<Gamma> \<and> distinctVars \<Delta> \<and> heapVars \<Gamma> \<inter> heapVars \<Delta> = {}"
+  proof (induct \<Gamma> )
+  case Nil thus ?case by simp
+  next
+  case (Cons p \<Gamma>)
+    obtain x e where "p = (x,e)" by (metis PairE)
+    with Cons have "distinctVars ((x,e) # (\<Gamma>@ \<Delta>))" by simp
+    hence "x \<notin> heapVars (\<Gamma>@ \<Delta>)" and "distinctVars (\<Gamma> @ \<Delta>)" by (rule distinctVars_ConsD)+
+
+    from `x \<notin> heapVars (\<Gamma>@ \<Delta>)` have  "x \<notin> heapVars \<Gamma>"  and "x \<notin> heapVars \<Delta>" by auto
+
+    from Cons(1)[OF `distinctVars (\<Gamma> @ \<Delta>)`]
+    have "distinctVars \<Gamma>" and "distinctVars \<Delta>" and "heapVars \<Gamma> \<inter> heapVars \<Delta> = {}" by auto
+    have "distinctVars (p # \<Gamma>)"
+      using `p = _` `x \<notin> heapVars \<Gamma>` `distinctVars \<Gamma>` by auto
+    moreover
+    have "heapVars (p # \<Gamma>) \<inter> heapVars \<Delta> = {}" 
+      using `p = _` `x \<notin> heapVars \<Delta>` `heapVars \<Gamma> \<inter> heapVars \<Delta> = {}` by auto
+    ultimately
+    show ?case using `distinctVars \<Delta>` by auto
+  qed
+  thus "distinctVars \<Gamma>" and "distinctVars \<Delta>" and "heapVars \<Gamma> \<inter> heapVars \<Delta> = {}" by auto
+qed
+
+lemma distinctVars_Cons:
+  "distinctVars (x # \<Gamma>) \<longleftrightarrow> (fst x \<notin> heapVars \<Gamma> \<and> distinctVars \<Gamma>)"
+  by (metis PairE distinctVars.intros(2) distinctVars_ConsD fst_conv)
+
+lemma distinctVars_append:
+  "distinctVars (\<Gamma> @ \<Delta>) \<longleftrightarrow> (distinctVars \<Gamma> \<and> distinctVars \<Delta> \<and> heapVars \<Gamma> \<inter> heapVars \<Delta> = {})"
+  by (metis distinctVars_appendD distinctVars_appendI)
 
 lemma removeAll_stays_fresh:
   "atom x \<sharp> \<Delta> \<Longrightarrow> atom x \<sharp> removeAll (v, e) \<Delta>"
   by (induct \<Delta>, auto simp add: fresh_Cons fresh_Pair)
 
-lemma distinctVars_append_asToHeap:
-  assumes "distinctVars (asToHeap as)"
-  assumes "distinctVars \<Gamma>"
-  assumes "set (bn as) \<sharp>* \<Gamma>"
-  shows "distinctVars (asToHeap as @ \<Gamma>)" 
-proof(rule distinctVars_append[OF assms(1,2)])
+lemma fresh_assn_distinct:
+ assumes "set (bn as) \<sharp>* \<Gamma>"
+ shows "heapVars (asToHeap as) \<inter> heapVars \<Gamma> = {}"
+proof-
   { fix x
     assume "x \<in> heapVars (asToHeap as)"
     hence "atom x \<in> set (bn as)"
@@ -133,6 +177,14 @@ proof(rule distinctVars_append[OF assms(1,2)])
       by (simp add: fresh_def)
   }
   thus "heapVars (asToHeap as) \<inter> heapVars \<Gamma> = {}" by auto
-qed  
+qed
+
+lemma distinctVars_append_asToHeap:
+  assumes "distinctVars (asToHeap as)"
+  assumes "distinctVars \<Gamma>"
+  assumes "set (bn as) \<sharp>* \<Gamma>"
+  shows "distinctVars (asToHeap as @ \<Gamma>)" 
+by(rule distinctVars_appendI[OF assms(1,2) fresh_assn_distinct[OF assms(3)]])
+
 
 end

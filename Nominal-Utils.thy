@@ -2,6 +2,9 @@ theory "Nominal-Utils"
 imports "Nominal/Nominal/Nominal2"
 begin
 
+lemma not_self_fresh[simp]: "atom x \<sharp> (x::'a::at_base) \<longleftrightarrow> False"
+  by (metis fresh_at_base(2))
+
 lemma image_eqvt[eqvt]: "\<pi> \<bullet> (f ` S) = (\<pi> \<bullet> f) ` (\<pi> \<bullet> S)"
   unfolding permute_set_def permute_fun_def
   by (auto simp add: image_def)
