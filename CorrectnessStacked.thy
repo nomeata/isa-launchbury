@@ -105,6 +105,20 @@ case (goal2 x \<Gamma> e \<Delta>)
     by (simp add: Delta')
 qed
 
+lemma heapExtendJoin_reorder:
+  assumes "distinctVars \<Gamma>"
+  assumes "distinctVars \<Delta>"
+  assumes "set \<Gamma> = set \<Delta>"
+  shows "heapExtendJoin \<rho> \<Gamma> eval = heapExtendJoin \<rho> \<Delta> eval"
+by (simp add: heapExtendJoin_def  heapToEnv_reorder[OF assms] assms(3))
+
+lemma HSem_reorder:
+  assumes "distinctVars \<Gamma>"
+  assumes "distinctVars \<Delta>"
+  assumes "set \<Gamma> = set \<Delta>"
+  shows "\<lbrace>\<Gamma>\<rbrace>\<rho> = \<lbrace>\<Delta>\<rbrace>\<rho>"
+by (simp add: HSem_def heapExtendJoin_reorder[OF assms])
+
 theorem correctness:
   assumes "\<Gamma> : \<Gamma>' \<Down> \<Delta> : \<Delta>'"
   and "distinctVars (\<Gamma>' @ \<Gamma>)"
@@ -137,9 +151,11 @@ case (Application n \<Gamma> \<Gamma>' x e y \<Theta> \<Theta>' z e' \<Delta>' \
 
 next
 case (Variable y e \<Gamma> x \<Gamma>' z \<Delta>' \<Delta>)
-  have "\<lbrace>((x, Var y) # \<Gamma>') @ \<Gamma>\<rbrace>fempty \<le> \<lbrace>((y, e) # (x, Var y) # \<Gamma>') @ removeAll (y, e) \<Gamma>\<rbrace>fempty"
+  have "\<lbrace>((x, Var y) # \<Gamma>') @ \<Gamma>\<rbrace>fempty = \<lbrace>((y, e) # (x, Var y) # \<Gamma>') @ removeAll (y, e) \<Gamma>\<rbrace>fempty"
     (* Shifting a variable around *)
-    sorry
+    apply (rule HSem_reorder[OF Variable.hyps(2,3)])
+    using Variable(1)
+    by auto
   also
   have "... \<le>  \<lbrace>((y, z) # (x, Var y) # \<Delta>') @ \<Delta>\<rbrace>fempty"
     by fact
