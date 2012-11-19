@@ -713,7 +713,7 @@ lemma HSem_add_fresh:
   assumes cond1: "heapExtendJoin_cond' \<Gamma> eval \<rho>"
   assumes cond2: "heapExtendJoin_cond' ((x,e) # \<Gamma>) eval \<rho>"
   assumes fresh: "atom x \<sharp> (\<rho>,\<Gamma>)"
-  assumes step: "\<And>e \<rho>. e \<in> snd ` set \<Gamma> \<Longrightarrow> eval e \<rho> = eval e (fmap_restr (fdom \<rho> - {x}) \<rho>)"
+  assumes step: "\<And>e \<rho>'. fdom \<rho>' = fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>) \<Longrightarrow> e \<in> snd ` set \<Gamma> \<Longrightarrow> eval e \<rho>' = eval e (fmap_restr (fdom \<rho>' - {x}) \<rho>')"
   shows  "fmap_restr (fdom \<rho> \<union> heapVars \<Gamma>) (heapExtendJoin \<rho> ((x, e) # \<Gamma>) eval) = heapExtendJoin \<rho> \<Gamma> eval"
 proof (rule parallel_heapExtendJoin_ind[OF cond1 cond2])
 case goal1 show ?case by (auto intro:adm_is_adm_on)
@@ -743,6 +743,7 @@ case goal3
       apply simp
     apply (rule arg_cong[OF heapToEnv_cong[OF refl]])
     apply (subst step)
+    using fdom_fix_join_compat''[OF fix_on_cond_jfc''[OF cond2] goal3(2)] apply simp
     apply assumption
     using `_ = y`[symmetric]
     apply (simp add: heapVars_def)

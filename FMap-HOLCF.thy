@@ -949,6 +949,11 @@ lemma fmap_less_restrict:
   apply (auto simp add:restrict_map_def split:option.split_asm)
   by (metis option.simps(3))
 
+lemma fmap_restr_less:
+  "fmap_restr S \<rho> \<le> \<rho>"
+  unfolding less_eq_fmap_def
+  by (transfer, auto)
+
 lemma fdom_adm:
    "adm (\<lambda>\<rho>. P (fdom \<rho>))"
    by (metis admI chain_fdom(2))
