@@ -1241,6 +1241,29 @@ case (ACons x e as \<rho>1 \<rho>2)
   show ?case by simp
 qed
 
+lemma HSem_add_fresh:
+  assumes cond1: "heapExtendJoin_cond' \<Gamma> ESem \<rho>"
+  assumes cond2: "heapExtendJoin_cond' ((x,e) # \<Gamma>) ESem \<rho>"
+  assumes fresh: "atom x \<sharp> (\<rho>, \<Gamma>)"
+(*  assumes step: "\<And>e \<rho>'. fdom \<rho>' = fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>) \<Longrightarrow> e \<in> snd ` set \<Gamma> \<Longrightarrow> ESem e \<rho>' = ESem e (fmap_restr (fdom \<rho>' - {x}) \<rho>')" *)
+  shows  "fmap_restr (fdom \<rho> \<union> heapVars \<Gamma>) (\<lbrace>(x, e) # \<Gamma>\<rbrace>\<rho>) = \<lbrace>\<Gamma>\<rbrace>\<rho>"
+unfolding HSem_def
+proof(rule heapExtendJoin_add_fresh[OF assms])
+case (goal1 e \<rho>')
+  assume "e \<in> snd ` set \<Gamma>"
+  hence "atom x \<sharp> e"
+    apply auto
+    by (metis fresh fresh_PairD(2) fresh_list_elem)
+
+  assume "fdom \<rho>' = fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>)"
+  hence [simp]:"fdom \<rho>' - fdom \<rho>' \<inter> (fdom \<rho>' - {x}) = {x}" by auto
+
+  show ?case
+    apply (rule ESem_ignores_fresh[symmetric, OF fmap_restr_less])
+    apply (simp add: fresh_star_def)
+    using `atom x \<sharp> e`.
+qed
+
 lemma HSem_mono_subset:
   assumes "heapExtendJoin_cond' \<Gamma> ESem \<rho>"
   and "heapExtendJoin_cond' \<Delta> ESem \<rho>"

@@ -709,7 +709,7 @@ case goal1 show ?case by (auto intro:adm_is_adm_on)
 case goal2 show ?case by (auto simp add: heapVars_def)[1]
 *)
 
-lemma HSem_add_fresh:
+lemma heapExtendJoin_add_fresh:
   assumes cond1: "heapExtendJoin_cond' \<Gamma> eval \<rho>"
   assumes cond2: "heapExtendJoin_cond' ((x,e) # \<Gamma>) eval \<rho>"
   assumes fresh: "atom x \<sharp> (\<rho>,\<Gamma>)"

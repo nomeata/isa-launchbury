@@ -135,28 +135,14 @@ next
 case (Application n \<Gamma> \<Gamma>' x e y \<Theta> \<Theta>' z e' \<Delta>' \<Delta>)
   let "?restr \<rho>" = "fmap_restr (insert x (heapVars \<Gamma>' \<union> heapVars \<Gamma>)) (\<rho>::Env)"
   
-  have [simp]:"(insert n (insert x (fst ` (set \<Gamma>' \<union> set \<Gamma>))) -
-        insert x (fst ` (set \<Gamma>' \<union> set \<Gamma>)) \<inter> (insert x (fst ` (set \<Gamma>' \<union> set \<Gamma>)) - {n}))
-        = {n}"
-   by auto
 
   have "\<lbrace>((x, App e y) # \<Gamma>') @ \<Gamma>\<rbrace>fempty = ?restr (\<lbrace>(n, e) # (x, App e y) # \<Gamma>' @ \<Gamma>\<rbrace>fempty)"
     (* Adding a fresh variable *)
-    thm HSem_add_fresh[of fempty "((x, App e y) # \<Gamma>') @ \<Gamma>" ESem n e, unfolded HSem_def[symmetric], symmetric]
-    apply (subst HSem_add_fresh[of fempty "((x, App e y) # \<Gamma>') @ \<Gamma>" ESem n e, unfolded HSem_def[symmetric], symmetric])
+    apply (subst HSem_add_fresh[of fempty "((x, App e y) # \<Gamma>') @ \<Gamma>" n e, symmetric])
     apply (metis fempty_is_heapExtendJoin_cond' ESem_cont)
     apply (metis fempty_is_heapExtendJoin_cond' ESem_cont)
     using Application apply (simp add: fresh_Pair fresh_Cons fresh_append exp_assn.fresh)
-    defer
-    apply auto[1]
-    apply (rule ESem_ignores_fresh[symmetric])
-    apply (rule fmap_restr_less)
-    apply (simp add: fresh_star_def)
-    apply (erule disjE)
-    using Application(1) apply (simp add: exp_assn.fresh fresh_Pair)
-    apply auto
-    apply (metis Application(1) fresh_PairD(1) fresh_PairD(2) fresh_list_elem)
-    apply (metis Application(1) fresh_PairD(1) fresh_PairD(2) fresh_list_elem)
+    apply simp
     done
   also have  "... = ?restr (\<lbrace>((n, e) # (x, App e y) # \<Gamma>') @ \<Gamma>\<rbrace>fempty)"
     by simp
