@@ -686,6 +686,14 @@ lemma fmap_restr_fmap_expand:
   unfolding fmap_restr_def
   by auto
 
+lemma fmap_restr_fmap_expand2:
+  "finite d2 \<Longrightarrow> d1 \<subseteq> d2 \<Longrightarrow> fmap_restr d1 (fmap_expand m d2) = fmap_expand m d1"
+  apply(cases "finite d1")
+  apply transfer
+  apply (auto simp add: restrict_map_def split:option.split)
+  apply (metis set_mp)
+  by (metis rev_finite_subset)
+
 lemma fdom_fmap_extend[simp]:
   "finite S \<Longrightarrow> fdom (fmap_extend m S) = fdom m \<union> S"
   by (transfer, auto)
@@ -930,6 +938,54 @@ instance
   done
 end
 
+lemma fmap_less_fdom:
+  "\<rho>1 \<le> \<rho>2 \<Longrightarrow> fdom \<rho>1 \<subseteq> fdom \<rho>2"
+  by (metis less_eq_fmap_def)
+
+lemma fmap_less_restrict:
+  "\<rho>1 \<le> \<rho>2 \<longleftrightarrow> (fdom \<rho>1 \<subseteq> fdom \<rho>2 \<and> \<rho>1 = fmap_restr (fdom \<rho>1) \<rho>2)"
+  unfolding less_eq_fmap_def
+  apply transfer
+  apply (auto simp add:restrict_map_def split:option.split_asm)
+  by (metis option.simps(3))
+
+lemma fdom_adm:
+   "adm (\<lambda>\<rho>. P (fdom \<rho>))"
+   by (metis admI chain_fdom(2))
+
+lemma fdom_adm2:
+  "cont u \<Longrightarrow> cont v \<Longrightarrow> adm (\<lambda>x. P (fdom (u x)) (fdom (v x)))"
+  apply (rule admI)
+  apply (frule (1) chain_fdom(2)[OF ch2ch_cont])
+  apply (frule (1) chain_fdom(2)[OF ch2ch_cont]) back
+  apply (erule (1) ssubst[OF cont2contlubE])
+  apply (erule (1) ssubst[OF cont2contlubE])
+  apply simp
+  done
+
+lemma fdom_adm_eq[simp]:
+   "adm (\<lambda>\<rho>. fdom \<rho> = z)"
+   by (rule fdom_adm)
+
+lemma adm_less_fmap [simp]:
+  "[|cont (\<lambda>x. u x); cont (\<lambda>x. v x)|] ==> adm (\<lambda>x. u x \<le> ((v x)::('a::type,'b::pcpo) fmap))"
+  apply (subst fmap_less_restrict)
+  apply (intro adm_lemmas fdom_adm2, assumption+)
+  apply (rule contI)
+  apply (subst chain_fdom(1)[OF ch2ch_cont[of u]], assumption+)
+  apply (subst cont2contlubE[of u], assumption+)
+  apply (subst chain_fdom(2)[OF ch2ch_cont[of u]], assumption+)
+  apply (rule contE)
+  apply auto
+  done
+
+lemma fmap_bottom_less[simp]:
+  "finite S2 \<Longrightarrow> S1 \<subseteq> S2 \<Longrightarrow> fmap_bottom S1 \<le> fmap_bottom S2"
+  apply (subgoal_tac "finite S1")
+  apply (rule fmap_less_eqI)
+  apply simp
+  apply simp
+  by (rule rev_finite_subset)
 
 (*
 

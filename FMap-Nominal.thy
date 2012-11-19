@@ -40,6 +40,12 @@ lemma fempty_eqvt[eqvt, simp]:
   "\<pi> \<bullet> fempty = fempty"
   by (transfer, auto simp add: permute_fun_def)
 
+lemma fempty_supp[simp]: "supp fempty = {}"
+  by (metis eqvtI fempty_eqvt supp_fun_eqvt)
+
+lemma fempty_fresh[simp]: "a \<sharp> fempty"
+  by (simp add: fresh_def)
+
 lemma permute_transfer[transfer_rule]: "(op = ===> cr_fmap ===> cr_fmap) permute permute" 
   apply (rule fun_relI)+
   apply (auto simp add: cr_fmap_def permute_fmap_def simp del: dom_perm_rev simp add: dom_perm Rep_fmap[simplified] Abs_fmap_inverse)

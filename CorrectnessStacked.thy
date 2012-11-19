@@ -119,6 +119,8 @@ lemma HSem_reorder:
   shows "\<lbrace>\<Gamma>\<rbrace>\<rho> = \<lbrace>\<Delta>\<rbrace>\<rho>"
 by (simp add: HSem_def heapExtendJoin_reorder[OF assms])
 
+
+
 theorem correctness:
   assumes "\<Gamma> : \<Gamma>' \<Down> \<Delta> : \<Delta>'"
   and "distinctVars (\<Gamma>' @ \<Gamma>)"
@@ -131,18 +133,40 @@ case (Lambda x y e \<Gamma> \<Gamma>')
 next
 
 case (Application n \<Gamma> \<Gamma>' x e y \<Theta> \<Theta>' z e' \<Delta>' \<Delta>)
-  let "?restr \<rho>" = "fmap_restr (insert x (heapVars \<Gamma>') \<union> (heapVars \<Gamma>)) (\<rho>::Env)"
+  let "?restr \<rho>" = "fmap_restr (insert x (heapVars \<Gamma>' \<union> heapVars \<Gamma>)) (\<rho>::Env)"
 
-  have "\<lbrace>((x, App e y) # \<Gamma>') @ \<Gamma>\<rbrace>fempty \<le> ?restr (\<lbrace>((n, e) # (x, App (Var n) y) # \<Gamma>') @ \<Gamma>\<rbrace>fempty)"
-    (* Adding a fresh variable and stubstituting it *)
+  have "\<lbrace>((x, App e y) # \<Gamma>') @ \<Gamma>\<rbrace>fempty = ?restr (\<lbrace>(n, e) # (x, App e y) # \<Gamma>' @ \<Gamma>\<rbrace>fempty)"
+    (* Adding a fresh variable *)
+    thm HSem_add_fresh[of fempty "((x, App e y) # \<Gamma>') @ \<Gamma>" ESem n e, unfolded HSem_def[symmetric], symmetric]
+    apply (subst HSem_add_fresh[of fempty "((x, App e y) # \<Gamma>') @ \<Gamma>" ESem n e, unfolded HSem_def[symmetric], symmetric])
+    apply (metis fempty_is_heapExtendJoin_cond' ESem_cont)
+    apply (metis fempty_is_heapExtendJoin_cond' ESem_cont)
+    using Application apply (simp add: fresh_Pair fresh_Cons fresh_append exp_assn.fresh)
+    defer
+    apply auto[1]
+    
+    sorry
+  also have  "... = ?restr (\<lbrace>((n, e) # (x, App e y) # \<Gamma>') @ \<Gamma>\<rbrace>fempty)"
+    by simp
+  also
+  have "... = ?restr (\<lbrace>((n, e) # (x, App (Var n) y) # \<Gamma>') @ \<Gamma>\<rbrace>fempty)"
+    (* Substituting the variable *)
     sorry
   also
   have "... \<le> ?restr  (\<lbrace>((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>') @ \<Delta>\<rbrace>fempty)"
     (* Restriction and \<le> *)
     by (rule fmap_restr_le[OF Application.hyps(9)])
   also
-  have "... \<le>  \<lbrace>((x, e'[z::=y]) # \<Delta>') @ \<Delta>\<rbrace>fempty"
-    (* Substituting a fresh variable, denotation of application *)
+  have "... = ?restr  (\<lbrace>((n, Lam [z]. e') # (x, App (Lam [z]. e') y) # \<Delta>') @ \<Delta>\<rbrace>fempty)"
+    (* Substituting the variable *)
+    sorry
+  also
+  have "... = (\<lbrace>((x, App (Lam [z]. e') y) # \<Delta>') @ \<Delta>\<rbrace>fempty)"
+    (* Removing a fresh variable *)
+    sorry
+  also
+  have "... =  \<lbrace>((x, e'[z::=y]) # \<Delta>') @ \<Delta>\<rbrace>fempty"
+    (* Denotation of application *)
     sorry
   also
   have "... \<le> \<lbrace>\<Theta>' @ \<Theta>\<rbrace>fempty" by fact
@@ -160,9 +184,18 @@ case (Variable y e \<Gamma> x \<Gamma>' z \<Delta>' \<Delta>)
   have "... \<le>  \<lbrace>((y, z) # (x, Var y) # \<Delta>') @ \<Delta>\<rbrace>fempty"
     by fact
   also
-  have "... \<le> \<lbrace>((x, z) # \<Delta>') @ (y, z) # \<Delta>\<rbrace>fempty"
-    (* Substituting a variable indirection, moving stuff around *)
+  have "... =  \<lbrace>((y, z) # (x, z) # \<Delta>') @ \<Delta>\<rbrace>fempty"
+    (* Substituting a variable *)
     sorry
+  also
+  {
+  have "distinctVars (((y, z) # (x, z) # \<Delta>') @ \<Delta>)"
+    using Variable.hyps(4)
+    by (simp add: distinctVars_append distinctVars_Cons)
+  }
+  hence "... = \<lbrace>((x, z) # \<Delta>') @ (y, z) # \<Delta>\<rbrace>fempty"
+    apply (rule HSem_reorder[OF _ Variable.hyps(5)])
+    by auto
   finally
   show "\<lbrace>((x, Var y) # \<Gamma>') @ \<Gamma>\<rbrace>fempty \<le> \<lbrace>((x, z) # \<Delta>') @ (y, z) # \<Delta>\<rbrace>fempty".
 

@@ -17,6 +17,10 @@ lemma heapVars_not_fresh:
   "x \<in> heapVars \<Gamma> \<Longrightarrow> \<not>(atom x \<sharp> \<Gamma>)"
   by (induct \<Gamma>, auto simp add: fresh_Cons fresh_Pair)
 
+lemma finite_heapVars[simp]:
+  "finite (heapVars \<Gamma>)"
+  by (auto simp add: heapVars_def)
+
 function asToHeap_raw :: "assn_raw \<Rightarrow> (var \<times> exp_raw) list"
 where ANilToHeap_raw: "asToHeap_raw ANil_raw = []"
  | AConsToHeap_raw: "asToHeap_raw (ACons_raw v e as) = (v, e) # asToHeap_raw as"

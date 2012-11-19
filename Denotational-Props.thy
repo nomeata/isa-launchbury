@@ -261,12 +261,6 @@ proof-
     by (metis fmap_below_dom)
 qed
 
-lemma fdom_fix_join_compat'':
-  assumes "fix_on_cond S (bottom_of S) (\<lambda>\<rho>'. \<rho> \<squnion> F \<rho>')"
-  assumes "\<rho>' \<in> fix_join_compat'' \<rho> F"
-  shows "fdom \<rho>' = fdom \<rho>"
-  by (metis assms(2) bottom_of_jfc'' fmap_below_dom subpcpo.bottom_of_minimal subpcpo_jfc'' to_bot_minimal)
-
 
 lemma fjc'_of_member:
   assumes "fix_on_cond_jfc' \<rho> F"
@@ -1062,6 +1056,188 @@ case (ACons v e as \<rho>1 \<rho>2)
   have "... \<sqsubseteq>  heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>1\<^esub>)(v f\<mapsto> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>1\<^esub>) "
     by (rule cont2monofunE[OF fmap_upd_cont[OF cont_const cont_id] ACons.hyps(1)[OF ACons.prems]])
   finally
+  show ?case by simp
+qed
+
+lemma ESem_ignores_fresh:
+  "\<rho>1 \<le> \<rho>2 \<Longrightarrow> atom ` (fdom \<rho>2 - fdom \<rho>1) \<sharp>* e \<Longrightarrow> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>1\<^esub> = \<lbrakk>e\<rbrakk>\<^bsub>\<rho>2\<^esub>"
+  and
+  "\<rho>1 \<le> \<rho>2 \<Longrightarrow> atom ` (fdom \<rho>2 - fdom \<rho>1) \<sharp>* as \<Longrightarrow> heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>1\<^esub>) = heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>2\<^esub>)"
+proof (nominal_induct e and as avoiding: \<rho>1 \<rho>2 rule:exp_assn.strong_induct)
+case (Var x \<rho>1 \<rho>2)
+  show ?case
+  proof(cases "x \<in> fdom \<rho>1")
+  case True
+    show ?thesis
+      by (simp add: fmap_less_eqD[OF `\<rho>1 \<le> \<rho>2` True])
+  next
+  case False
+    have "x \<notin> fdom \<rho>2"
+    proof
+      assume "x \<in> fdom \<rho>2"
+      hence "x \<in> fdom \<rho>2 - fdom \<rho>1" using False by simp
+      hence "atom x \<sharp> Var x"
+        using Var(2) by (simp add: fresh_star_def)
+      thus False
+        by (auto simp add: exp_assn.fresh)
+    qed
+    with False
+    show ?thesis
+      by (auto simp add: lookup_not_fdom)
+  qed
+next
+case (App e x \<rho>1 \<rho>2)
+  from App(3)
+  have "atom ` (fdom \<rho>2 - fdom \<rho>1) \<sharp>* e"
+    by (auto simp add: fresh_star_def exp_assn.fresh)
+  note hyps = App.hyps[OF App.prems(1) this]
+  moreover
+  have "the (lookup \<rho>1 x) = the (lookup \<rho>2 x)"
+  proof(cases "x \<in> fdom \<rho>1")
+  case True
+    show ?thesis
+      by (simp add: fmap_less_eqD[OF `\<rho>1 \<le> \<rho>2` True])
+  next
+  case False
+    have "x \<notin> fdom \<rho>2"
+    proof
+      assume "x \<in> fdom \<rho>2"
+      hence "x \<in> fdom \<rho>2 - fdom \<rho>1" using False by simp
+      hence "atom x \<sharp> App e x"
+        using App(3) by (simp add: fresh_star_def)
+      thus False
+        by (auto simp add: exp_assn.fresh)
+    qed
+    with False
+    show ?thesis
+      by (auto simp add: lookup_not_fdom)
+  qed
+  ultimately
+  show ?case
+    by simp
+next
+case (Let as e \<rho>1 \<rho>2)
+  have cond1: "heapExtendJoin_cond' (asToHeap as) ESem \<rho>1"
+      (is "fix_on_cond_jfc' ?\<rho>1 ?F1")
+    apply (rule disjoint_is_heapExtendJoin_cond')
+    using Let(1)
+    by (auto simp add: sharp_star_Env)
+  have cond2: "heapExtendJoin_cond' (asToHeap as) ESem \<rho>2"
+      (is "fix_on_cond_jfc' ?\<rho>2 ?F2")
+    apply (rule disjoint_is_heapExtendJoin_cond')
+    using Let(2)
+    by (auto simp add: sharp_star_Env)
+
+  have "fdom \<rho>1 \<subseteq> fdom \<rho>2" by (metis Let(5) fmap_less_restrict)
+
+  have "\<lbrace>asToHeap as\<rbrace>\<rho>1 \<le> \<lbrace>asToHeap as\<rbrace>\<rho>2"
+  unfolding HSem_def
+  proof (rule parallel_heapExtendJoin_ind[OF cond1 cond2])
+  case goal1 show ?case by (rule adm_is_adm_on, simp)
+  case goal2
+    show ?case
+      apply (rule fmap_bottom_less)
+      using `fdom \<rho>1 \<subseteq> fdom \<rho>2` apply auto[2]
+      done
+  case (goal3 \<rho>1' \<rho>2')
+    have [simp]:"fdom \<rho>1' = fdom \<rho>1 \<union> fst ` set (asToHeap as)" and [simp]:"fdom \<rho>2' = fdom \<rho>2 \<union> fst ` set (asToHeap as)"
+      using fdom_fix_join_compat''[OF fix_on_cond_jfc''[OF cond1] goal3(1)]
+      using fdom_fix_join_compat''[OF fix_on_cond_jfc''[OF cond2] goal3(2)]
+      by simp+  
+    note compat1 = rho_F_compat_jfc''[OF cond1 goal3(1)]
+    note compat2 = rho_F_compat_jfc''[OF cond2 goal3(2)]
+
+    have prem: "atom ` (fdom \<rho>2' - fdom \<rho>1') \<sharp>* as"
+      using Let(6) Let(1) Let(2)
+      apply (auto simp add: sharp_star_Env fresh_star_def exp_assn.fresh)
+      by (metis Diff_iff sharp_Env)
+
+    show "?\<rho>1 \<squnion> ?F1 \<rho>1' \<le> ?\<rho>2 \<squnion> ?F2 \<rho>2'"
+    proof(rule fmap_less_eqI)
+    case goal1
+      show ?case
+        apply (subst fdom_join[OF compat1])
+        apply (subst fdom_join[OF compat2])
+        using `fdom \<rho>1 \<subseteq> fdom \<rho>2`
+        by auto
+    next
+    case (goal2 x)
+      hence dom: "x \<in> fdom \<rho>1 \<union> fst ` set (asToHeap as)"      
+        apply (subst (asm) fdom_join[OF compat1])
+        by simp
+      hence dom2: "x \<in> fdom \<rho>2 \<union> fst ` set (asToHeap as)"
+        by (auto intro: set_mp[OF `fdom \<rho>1 \<subseteq> fdom \<rho>2`])
+
+      have "lookup ?\<rho>1 x = lookup ?\<rho>2 x"
+      proof (cases "x \<in> fdom \<rho>1")
+      case True
+        hence "x \<in> fdom \<rho>2" by (rule set_mp[OF `fdom \<rho>1 \<subseteq> fdom \<rho>2`])
+        with True show ?thesis
+          by (simp add: fmap_less_eqD[OF `\<rho>1 \<le> \<rho>2` True])
+      next
+      case False
+        hence "x \<notin> fdom \<rho>2"
+          using Let(2) dom 
+          by (auto simp add: sharp_star_Env)
+        with False dom show ?thesis by (simp add: lookup_not_fdom)
+      qed
+      moreover
+      have "lookup (?F1 \<rho>1') x = lookup (?F2 \<rho>2') x"
+      proof (cases "x \<in> fst`set (asToHeap as)")
+      case True
+        thus ?thesis
+          by (simp add: Let(3)[OF goal3(3) prem])
+      next
+      case False
+        thus ?thesis
+          using dom dom2 by simp
+      qed
+      ultimately
+      show ?case
+        apply (subst the_lookup_join[OF compat1])
+        apply (subst the_lookup_join[OF compat2])
+        by simp
+    qed
+  qed
+  moreover
+  have "atom ` (fdom (\<lbrace>asToHeap as\<rbrace>\<rho>2) - fdom (\<lbrace>asToHeap as\<rbrace>\<rho>1)) \<sharp>* e "
+    using Let(6) Let(1) Let(2)
+    apply (auto simp add: sharp_star_Env fresh_star_def exp_assn.fresh)
+    by (metis Diff_iff sharp_Env)
+  ultimately
+  have "\<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>1\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>2\<^esub>"
+    apply (rule Let.hyps(4))
+    done
+  thus "\<lbrakk> Terms.Let as e \<rbrakk>\<^bsub>\<rho>1\<^esub> = \<lbrakk> Terms.Let as e \<rbrakk>\<^bsub>\<rho>2\<^esub>"
+    using Let.hyps(1,2) by simp
+next
+case (Lam x e \<rho>1 \<rho>2)
+  { fix v
+    have "\<rho>1(x f\<mapsto> v) \<le> \<rho>2(x f\<mapsto> v)"
+      apply (rule fmap_less_eqI)
+      using fmap_less_fdom[OF Lam(4)] apply auto[1]
+      apply (case_tac "xa = x")
+      by (auto simp add: fmap_less_eqD[OF `\<rho>1 \<le> \<rho>2`])
+    moreover
+    have "atom ` (fdom (\<rho>2(x f\<mapsto> v)) - fdom (\<rho>1(x f\<mapsto> v))) \<sharp>* e"
+      using Lam(5)
+      by (auto simp add: fresh_star_def exp_assn.fresh)
+    ultimately
+    have "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>1(x f\<mapsto> v)\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho>2(x f\<mapsto> v)\<^esub>"
+      by (rule Lam(3))
+  }
+  thus "\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>1\<^esub> = \<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>2\<^esub>"
+    using Lam(1,2)
+    by simp
+next
+case ANil
+  thus ?case by simp
+next
+case (ACons x e as \<rho>1 \<rho>2)
+  from ACons(4)
+  have prem1: "atom ` (fdom \<rho>2 - fdom \<rho>1) \<sharp>* e" and  prem2: "atom ` (fdom \<rho>2 - fdom \<rho>1) \<sharp>* as"
+    by (auto simp add: fresh_star_def exp_assn.fresh)
+  from ACons.hyps(1)[OF `\<rho>1 \<le> \<rho>2` prem1] ACons.hyps(2)[OF `\<rho>1 \<le> \<rho>2` prem2]
   show ?case by simp
 qed
 
