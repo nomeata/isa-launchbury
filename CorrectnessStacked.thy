@@ -12,6 +12,31 @@ lemma compatible_fmap_expand:
   apply (auto simp add: assms fmap_expand_nonfinite)
   done
 
+lemma fmap_restr_le:
+  assumes "\<rho>1 \<le> \<rho>2"
+  shows "fmap_restr S \<rho>1 \<le> fmap_restr S \<rho>2"
+proof(cases "finite S")
+case True[simp]
+  show ?thesis
+  proof (rule fmap_less_eqI)
+    have "fdom \<rho>1 \<subseteq> fdom \<rho>2"
+      by (metis assms less_eq_fmap_def)
+    thus "fdom (fmap_restr S \<rho>1) \<subseteq> fdom (fmap_restr S \<rho>2)"
+      by auto
+  next
+    fix x
+    assume "x \<in> fdom (fmap_restr S \<rho>1) "
+    hence [simp]:"x \<in> fdom \<rho>1" and [simp]:"x \<in> S" by auto
+    have "the (lookup \<rho>1 x) = the (lookup \<rho>2 x)"
+      by (metis `x \<in> fdom \<rho>1` assms less_eq_fmap_def)
+    thus "the (lookup (fmap_restr S \<rho>1) x) = the (lookup (fmap_restr S \<rho>2) x)"
+      by simp
+  qed
+next
+case False
+  thus ?thesis
+    by (simp add: fmap_restr_not_finite)
+qed
 
 theorem correctness:
   assumes "\<Gamma> : \<Gamma>' \<Down> \<Delta> : \<Delta>'"
@@ -32,9 +57,8 @@ case (Application n \<Gamma> \<Gamma>' x e y \<Theta> \<Theta>' z e' \<Delta>' \
     sorry
   also
   have "... \<le> ?restr  (\<lbrace>((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>') @ \<Delta>\<rbrace>fempty)"
-    using Application.hyps(9)
     (* Restriction and \<le> *)
-    sorry
+    by (rule fmap_restr_le[OF Application.hyps(9)])
   also
   have "... \<le>  \<lbrace>((x, e'[z::=y]) # \<Delta>') @ \<Delta>\<rbrace>fempty"
     (* Substituting a fresh variable, denotation of application *)
