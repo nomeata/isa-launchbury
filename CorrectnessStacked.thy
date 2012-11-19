@@ -28,13 +28,16 @@ case (Application n \<Gamma> \<Gamma>' x e y \<Theta> \<Theta>' z e' \<Delta>' \
   let "?restr \<rho>" = "fmap_restr (insert x (heapVars \<Gamma>') \<union> (heapVars \<Gamma>)) (\<rho>::Env)"
 
   have "\<lbrace>((x, App e y) # \<Gamma>') @ \<Gamma>\<rbrace>fempty \<le> ?restr (\<lbrace>((n, e) # (x, App (Var n) y) # \<Gamma>') @ \<Gamma>\<rbrace>fempty)"
+    (* Adding a fresh variable and stubstituting it *)
     sorry
   also
-  have "... \<le> ?restr  (\<lbrace>((x, e'[z::=y]) # \<Delta>') @ \<Delta>\<rbrace>fempty)"
+  have "... \<le> ?restr  (\<lbrace>((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>') @ \<Delta>\<rbrace>fempty)"
     using Application.hyps(9)
+    (* Restriction and \<le> *)
     sorry
   also
   have "... \<le>  \<lbrace>((x, e'[z::=y]) # \<Delta>') @ \<Delta>\<rbrace>fempty"
+    (* Substituting a fresh variable, denotation of application *)
     sorry
   also
   have "... \<le> \<lbrace>\<Theta>' @ \<Theta>\<rbrace>fempty" by fact
@@ -44,12 +47,14 @@ case (Application n \<Gamma> \<Gamma>' x e y \<Theta> \<Theta>' z e' \<Delta>' \
 next
 case (Variable y e \<Gamma> x \<Gamma>' z \<Delta>' \<Delta>)
   have "\<lbrace>((x, Var y) # \<Gamma>') @ \<Gamma>\<rbrace>fempty \<le> \<lbrace>((y, e) # (x, Var y) # \<Gamma>') @ removeAll (y, e) \<Gamma>\<rbrace>fempty"
+    (* Shifting a variable around *)
     sorry
   also
   have "... \<le>  \<lbrace>((y, z) # (x, Var y) # \<Delta>') @ \<Delta>\<rbrace>fempty"
     by fact
   also
   have "... \<le> \<lbrace>((x, z) # \<Delta>') @ (y, z) # \<Delta>\<rbrace>fempty"
+    (* Substituting a variable indirection, moving stuff around *)
     sorry
   finally
   show "\<lbrace>((x, Var y) # \<Gamma>') @ \<Gamma>\<rbrace>fempty \<le> \<lbrace>((x, z) # \<Delta>') @ (y, z) # \<Delta>\<rbrace>fempty".
@@ -57,6 +62,7 @@ case (Variable y e \<Gamma> x \<Gamma>' z \<Delta>' \<Delta>)
 next
 case (Let as \<Gamma> x body \<Gamma>' \<Delta>' \<Delta>)
   have "\<lbrace>((x, Terms.Let as body) # \<Gamma>') @ \<Gamma>\<rbrace>fempty \<le> \<lbrace>((x, body) # \<Gamma>') @ asToHeap as @ \<Gamma>\<rbrace>fempty"
+    (* Unrolling a let *)
     sorry
   also
   have "... \<le>  \<lbrace>\<Delta>' @ \<Delta>\<rbrace>fempty"
