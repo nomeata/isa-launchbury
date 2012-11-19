@@ -38,6 +38,73 @@ case False
     by (simp add: fmap_restr_not_finite)
 qed
 
+lemma heapToVar_reorder_head:
+  assumes "x \<noteq> y"
+  shows "heapToEnv ((x,e1)#(y,e2)#\<Gamma>) eval = heapToEnv ((y,e2)#(x,e1)#\<Gamma>) eval"
+  by (simp add: fmap_upd_twist[OF assms])
+
+lemma heapToVar_remove_insert:
+  assumes "distinctVars \<Gamma>"
+  assumes "(x,e) \<in> set \<Gamma>"
+  shows "heapToEnv \<Gamma> eval = heapToEnv ((x,e) # removeAll (x,e) \<Gamma>) eval"
+using assms
+proof (induct \<Gamma> rule:distinctVars.induct)
+  case goal1 thus ?case by simp
+next
+  case (goal2 y \<Gamma> e2)
+  show ?case
+  proof(cases "(x,e) = (y,e2)")
+  case True
+    from `y \<notin> heapVars \<Gamma>`
+    have "x \<notin> heapVars \<Gamma>" using True by simp
+    hence "removeAll (x, e) \<Gamma> = \<Gamma>" by (rule removeAll_no_there)
+    with True show ?thesis by simp
+  next
+  case False
+    hence "x \<noteq> y" by (metis goal2(1) goal2(4) member_remove removeAll_no_there remove_code(1) set_ConsD)
+    hence "(x, e) \<in> set \<Gamma>" by (metis False goal2(4) set_ConsD)
+    note hyp = goal2(3)[OF this]
+
+    have "heapToEnv ((x, e) # removeAll (x, e) ((y, e2) # \<Gamma>)) eval 
+      = heapToEnv ((x, e) # ((y, e2) # removeAll (x, e) \<Gamma>)) eval"
+      using False by simp
+    also have "... = heapToEnv ((y, e2) # ((x, e) # removeAll (x, e) \<Gamma>)) eval"
+      by (rule heapToVar_reorder_head[OF `x \<noteq> y`])
+    also have "... = heapToEnv ((y, e2) # \<Gamma>) eval"
+      using hyp
+      by simp
+    finally
+    show ?thesis by (rule sym)
+  qed
+qed
+
+lemma heapToEnv_reorder:
+  assumes "distinctVars \<Gamma>"
+  assumes "distinctVars \<Delta>"
+  assumes "set \<Gamma> = set \<Delta>"
+  shows "heapToEnv \<Gamma> eval = heapToEnv \<Delta> eval"
+using assms
+proof (induct \<Gamma> arbitrary: \<Delta> rule:distinctVars.induct)
+case goal1 thus ?case by simp
+next
+case (goal2 x \<Gamma> e \<Delta>)
+  hence "(x,e) \<in> set \<Delta>"
+    by (metis ListMem_iff elem)
+  note Delta' = heapToVar_remove_insert[OF `distinctVars \<Delta>` this]
+
+  have "distinctVars (removeAll (x, e) \<Delta>)" 
+    by (rule distinctVars_removeAll[OF goal2(4)  `(x, e) \<in> set \<Delta>`])
+  moreover
+  from `set ((x, e) # \<Gamma>) = set \<Delta>`
+  have "set \<Gamma> = set (removeAll (x, e) \<Delta>)"
+    by (metis removeAll.simps(2) removeAll_no_there[OF `x \<notin> heapVars \<Gamma>`] remove_code(1))
+  ultimately
+  have "heapToEnv \<Gamma> eval = heapToEnv (removeAll (x, e) \<Delta>) eval"
+    by (rule goal2(3))
+  thus ?case
+    by (simp add: Delta')
+qed
+
 theorem correctness:
   assumes "\<Gamma> : \<Gamma>' \<Down> \<Delta> : \<Delta>'"
   and "distinctVars (\<Gamma>' @ \<Gamma>)"
