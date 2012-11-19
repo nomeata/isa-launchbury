@@ -242,8 +242,8 @@ lemma reds_pres_distinctVars:
   "\<Gamma> : \<Gamma>' \<Down> \<Delta> : \<Delta>' \<Longrightarrow> distinctVars (\<Gamma>'@\<Gamma>) \<Longrightarrow> distinctVars (\<Delta>'@\<Delta>)"
 by (metis distinct_redsD3 distinct_redsI)
 
-thm reds.induct
 lemmas reds_distinct_ind = distinct_reds.induct[OF distinct_redsI, consumes 2, case_names Lambda Application Variable Let]
+lemmas reds_distinct_strong_ind = distinct_reds.strong_induct[OF distinct_redsI, consumes 2, case_names Lambda Application Variable Let]
 
 lemma reds_doesnt_forget:
   "\<Gamma> : \<Gamma>' \<Down> \<Delta> : \<Delta>' \<Longrightarrow> distinctVars (\<Gamma>'@\<Gamma>) \<Longrightarrow> heapVars (\<Gamma>' @ \<Gamma>) \<subseteq> heapVars (\<Delta>' @ \<Delta>)"
