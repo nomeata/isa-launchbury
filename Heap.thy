@@ -77,7 +77,7 @@ lemma heapVars[eqvt]:
   apply rule
   done
 
-lemma distinctVars[eqvt]:
+lemma distinctVars_eqvt[eqvt]:
   "distinctVars \<Gamma> \<Longrightarrow> distinctVars (\<pi> \<bullet> \<Gamma>)"
   apply (induct \<Gamma> rule:distinctVars.induct)
   apply (auto simp add: heapVars[symmetric] mem_permute_iff)
