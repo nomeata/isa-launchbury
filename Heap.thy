@@ -155,6 +155,18 @@ lemma distinctVars_append:
   "distinctVars (\<Gamma> @ \<Delta>) \<longleftrightarrow> (distinctVars \<Gamma> \<and> distinctVars \<Delta> \<and> heapVars \<Gamma> \<inter> heapVars \<Delta> = {})"
   by (metis distinctVars_appendD distinctVars_appendI)
 
+lemma distinctVars_Cons_subset:
+  assumes "heapVars ((x,e)#\<Gamma>) \<subseteq> heapVars ((x,e')#\<Delta>)"
+  assumes "distinctVars ((x,e)#\<Gamma>)"
+  assumes "distinctVars ((x,e')#\<Delta>)"
+  shows "heapVars \<Gamma> \<subseteq> heapVars \<Delta>"
+proof-
+  have "x \<notin> heapVars \<Gamma>" and "x \<notin> heapVars \<Delta>"
+    using assms(2,3) by (metis distinctVars_ConsD(1))+
+  thus ?thesis using assms(1)
+    by auto
+qed
+
 lemma removeAll_stays_fresh:
   "atom x \<sharp> \<Delta> \<Longrightarrow> atom x \<sharp> removeAll (v, e) \<Delta>"
   by (induct \<Delta>, auto simp add: fresh_Cons fresh_Pair)

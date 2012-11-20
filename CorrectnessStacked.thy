@@ -177,14 +177,32 @@ case (Lambda x y e \<Gamma> \<Gamma>')
   show ?case by simp
 next
 
-case (Application n \<Gamma> \<Gamma>' x e y \<Theta> \<Theta>' z e' \<Delta>' \<Delta>)
+case (Application n \<Gamma> \<Gamma>' x e y \<Theta> \<Theta>' z \<Delta> \<Delta>' e')
   let "?restr \<rho>" = "fmap_restr (insert x (heapVars \<Gamma>' \<union> heapVars \<Gamma>)) (\<rho>::Env)"
   let "?restr2 \<rho>" = "fmap_restr (insert x (heapVars \<Delta>' \<union> heapVars \<Delta>)) (\<rho>::Env)"
 
-  have subsets: "heapVars \<Gamma> \<subseteq> heapVars \<Delta>" "heapVars \<Gamma>' \<subseteq> heapVars \<Delta>'" sorry
+  have "n \<noteq> z" using Application by (simp add: fresh_Pair fresh_at_base)
 
-  have more_fresh1: "atom n \<sharp> (e', \<Delta>, \<Delta>')" sorry
-  have more_fresh2: "atom z \<sharp> (e', \<Delta>, \<Delta>')" sorry
+  from stack_unchanged[OF distinct_redsD1[OF Application.hyps(8)]]
+  have "\<Delta>' = \<Gamma>'" by simp
+  hence [simp]:"atom n \<sharp> \<Delta>'"  using Application by (simp add: fresh_Pair)+
+  
+  have "atom n \<sharp> (\<Gamma>, e)" using Application by (simp add: fresh_Pair)
+  note reds_fresh[OF Application(8) this]
+  hence "atom n \<sharp> (\<Delta>, Lam [z]. e')"
+    using Application(5)
+    by (metis (hide_lams, no_types) Application(1) Application(10) fresh_Pair heapVars_not_fresh reds_doesnt_forget'(1) set_rev_mp)
+  with `n \<noteq> z`
+  have [simp]: "atom n \<sharp> \<Delta>" "atom n \<sharp> e'"
+    by (auto simp add: exp_assn.fresh fresh_Pair)
+
+  note subset1 = reds_doesnt_forget'(1)[OF Application.hyps(8), unfolded append_Cons]
+  from reds_doesnt_forget'(2)[OF Application.hyps(8), unfolded append_Cons]
+  have subset2: "heapVars ((x, App (Var n) y) # \<Gamma>') \<subseteq> heapVars ((x, App (Var n) y) # \<Delta>')"
+    apply (rule distinctVars_Cons_subset)
+    apply (metis Application(4) distinctVars_appendD1)
+    apply (metis Application(5) distinctVars_appendD1)
+    done
 
   have "n \<noteq> x" 
     by (metis Application(1) fresh_PairD(1) fresh_PairD(2) not_self_fresh)
@@ -213,18 +231,24 @@ case (Application n \<Gamma> \<Gamma>' x e y \<Theta> \<Theta>' z e' \<Delta>' \
   have "... \<le> ?restr2  (\<lbrace>(n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>' @ \<Delta>\<rbrace>fempty)"
     (* Restriction and \<le> *)
     apply (rule fmap_restr_le[OF Application.hyps(9)[simplified]])
-    using subsets by auto
+    using subset1 subset2 by auto
   also
-  have "... = ?restr2 (\<lbrace>(n, Lam [z]. e') # (x, App (Lam [z]. e') y) # \<Delta>' @ \<Delta>\<rbrace>fempty)"
+  have "... \<le> ?restr2  (\<lbrace>(x, App (Var n) y) # (n, Lam [z]. e') #  \<Delta>' @ \<Delta>\<rbrace>fempty)"
+    by (simp add: HSem_reorder_head[OF `n \<noteq> x`])
+  also
+  have "... = ?restr2 (\<lbrace>(x, App (Lam [z]. e') y) # (n, Lam [z]. e') # \<Delta>' @ \<Delta>\<rbrace>fempty)"
     (* Substituting the variable *)
     sorry
+  also
+  have "... = ?restr2 (\<lbrace>(n, Lam [z]. e') # (x, App (Lam [z]. e') y) # \<Delta>' @ \<Delta>\<rbrace>fempty)"
+    by (simp add: HSem_reorder_head[OF `n \<noteq> x`])
   also
   have "... = (\<lbrace>(x, App (Lam [z]. e') y) # \<Delta>' @ \<Delta>\<rbrace>fempty)"
     (* Removing a fresh variable *)
     apply (subst HSem_add_fresh[of fempty "(x, App (Lam [z]. e') y) # \<Delta>' @ \<Delta>" n "Lam [z]. e'", symmetric])
     apply (metis fempty_is_heapExtendJoin_cond' ESem_cont)
     apply (metis fempty_is_heapExtendJoin_cond' ESem_cont)
-    using more_fresh1 Application(1) apply (simp add: fresh_Pair fresh_Cons fresh_append exp_assn.fresh)
+    using Application(1) apply (simp add: fresh_Pair fresh_Cons fresh_append exp_assn.fresh)
     apply simp
     done
   also
@@ -241,7 +265,7 @@ case (Application n \<Gamma> \<Gamma>' x e y \<Theta> \<Theta>' z e' \<Delta>' \
       using Application(2) apply (auto simp add: fresh_Pair)[1]
       apply assumption
       
-      using Application(2) more_fresh2
+      using Application(2)
       apply (subst sharp_Env)
       apply auto[1]
       apply (metis fresh_Pair not_self_fresh)
