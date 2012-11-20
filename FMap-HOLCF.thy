@@ -268,6 +268,15 @@ next
     by (simp add: chain_fdom(2)[OF c2])
 qed fact+
 
+lemma fmap_upd_mono:
+  "\<rho>1 \<sqsubseteq> \<rho>2 \<Longrightarrow> v1 \<sqsubseteq> v2 \<Longrightarrow> \<rho>1(x f\<mapsto> v1) \<sqsubseteq> \<rho>2(x f\<mapsto> v2)"
+  apply (rule fmap_belowI')
+  apply (auto dest:fmap_below_dom)[1]
+  apply (case_tac "xa = x")
+  apply simp
+  apply (auto elim:fmap_belowE)
+  done
+
 lemma fmap_upd_cont[simp,cont2cont]:
   assumes "cont f" and "cont h"
   shows "cont (\<lambda> x. fmap_upd (f x) v (h x) :: ('a, 'b::cpo) fmap)"
