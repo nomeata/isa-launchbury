@@ -56,11 +56,25 @@ using assms
 by(induct \<Gamma>)(auto simp add: fresh_Cons)
 
 lemma fresh_list_elem:
-  assumes "atom x \<sharp> \<Gamma>"
+  assumes "a \<sharp> \<Gamma>"
   and "e \<in> set \<Gamma>"
-  shows "atom x \<sharp> e"
+  shows "a \<sharp> e"
 using assms
 by(induct \<Gamma>)(auto simp add: fresh_Cons)
+
+lemma fresh_heap_expr:
+  assumes "a \<sharp> \<Gamma>"
+  and "(x,e) \<in> set \<Gamma>"
+  shows "a \<sharp> e"
+  using assms
+  by (metis fresh_list_elem fresh_Pair)
+
+lemma fresh_star_heap_expr:
+  assumes "S \<sharp>* \<Gamma>"
+  and "(x,e) \<in> set \<Gamma>"
+  shows "S \<sharp>* e"
+  using assms
+  by (metis fresh_star_def fresh_heap_expr)
 
 
 inductive distinctVars  where
@@ -171,18 +185,20 @@ lemma removeAll_stays_fresh:
   "atom x \<sharp> \<Delta> \<Longrightarrow> atom x \<sharp> removeAll (v, e) \<Delta>"
   by (induct \<Delta>, auto simp add: fresh_Cons fresh_Pair)
 
+lemma set_bn_to_atom_heapVars:
+  "set (bn as) = atom ` heapVars (asToHeap as)"
+   apply (induct as rule: asToHeap.induct)
+   apply (auto simp add: exp_assn.bn_defs)
+   done
+
 lemma fresh_assn_distinct:
  assumes "set (bn as) \<sharp>* \<Gamma>"
  shows "heapVars (asToHeap as) \<inter> heapVars \<Gamma> = {}"
 proof-
   { fix x
     assume "x \<in> heapVars (asToHeap as)"
-    hence "atom x \<in> set (bn as)"
-      apply (induct as rule: asToHeap.induct)
-      apply (auto simp add: exp_assn.bn_defs(2))
-      done
     hence "atom x \<sharp> \<Gamma>"
-      using `set (bn as) \<sharp>* \<Gamma>` by (auto simp add: fresh_star_def)
+      using `set (bn as) \<sharp>* \<Gamma>` by (auto simp add: fresh_star_def set_bn_to_atom_heapVars)
     moreover
     assume "x \<in> heapVars \<Gamma>"
     hence "atom x \<in> supp \<Gamma>"

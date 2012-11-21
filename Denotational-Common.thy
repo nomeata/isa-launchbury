@@ -143,5 +143,14 @@ lemma lookupHeapToEnvE:
   apply auto
   done
 
+lemma lookupHeapToEnvNotCons[simp]:
+  assumes "x \<noteq> y"
+  shows "the (lookup (heapToEnv ((y,e)#h) f) x) = the (lookup (heapToEnv h f) x)"
+  using assms by simp
+
+lemma lookupHeapToEnvNotAppend[simp]:
+  assumes "x \<notin> fst ` set \<Gamma>"
+  shows "the (lookup (heapToEnv (\<Gamma>@h) f) x) = the (lookup (heapToEnv h f) x)"
+  using assms by (induct \<Gamma>, auto)
 
 end

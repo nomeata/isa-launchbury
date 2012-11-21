@@ -98,9 +98,27 @@ lemma HSem_def': "heapExtendJoin_cond' \<Gamma> ESem \<rho> \<Longrightarrow>
 
 declare ESem.simps(4)[simp del]
 
+lemma HSem_mono:
+  assumes "heapExtendJoin_cond' \<Gamma> ESem \<rho>1"
+  assumes "heapExtendJoin_cond' \<Gamma> ESem \<rho>2"
+  assumes "\<rho>1 \<sqsubseteq> \<rho>2"
+  shows "\<lbrace>\<Gamma>\<rbrace>\<rho>1 \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<rho>2"
+  unfolding HSem_def
+  by(rule heapExtendJoin_monofun''[OF ESem_cont assms])
+
+lemma disjoint_is_heapExtendJoin_cond'_ESem:
+  assumes "fdom \<rho> \<inter> fst ` set h = {}"
+  shows "heapExtendJoin_cond' h ESem \<rho>" 
+  by (metis disjoint_is_heapExtendJoin_cond'[OF assms] ESem_cont)
+
 (*
-lemma HSem_cont2: "cont (\<lambda>y. HSem \<Gamma> y)"
-  unfolding HSem_def' by auto
+lemma HSem_cont: "cont (\<lambda>y. HSem \<Gamma> y)"
+  unfolding HSem_def
+  apply (rule contI)
+  apply (subst heapExtendJoin_cont'')
+  apply (rule ESem_cont)
+  
+  find_theorems cont heapExtendJoin
 
 lemmas HSem_cont2cont[cont2cont,simp] = cont_compose[OF HSem_cont2]
 *)
@@ -120,7 +138,7 @@ lemma fmap_expand_fdom[simp]: "fmap_expand \<rho> (fdom \<rho>) = \<rho>"
 
 lemma heapExtendJoin_cond'_Nil[simp]:
   "heapExtendJoin_cond' [] ESem \<rho>"
-  by (rule disjoint_is_heapExtendJoin_cond', auto)
+  by (rule disjoint_is_heapExtendJoin_cond'_ESem, simp)
 
 lemma HSem_Nil[simp]: "\<lbrace>[]\<rbrace>\<rho> = \<rho>"
   apply (subst HSem_def)
@@ -747,12 +765,12 @@ case (Let as exp \<rho> x y)
 
   have cond1: "heapExtendJoin_cond' (asToHeap as) ESem (\<rho>(x f\<mapsto> the (lookup \<rho> y)))"
       (is "fix_on_cond_jfc' ?\<rho>1 ?F1")
-    apply (rule disjoint_is_heapExtendJoin_cond')
+    apply (rule disjoint_is_heapExtendJoin_cond'_ESem)
     apply (auto simp add:  `x \<notin> assn_vars as`)
     by (metis Let(1) fst_set_asToHeap sharp_star_Env)
   have cond2: "heapExtendJoin_cond' (asToHeap as[x::a=y]) ESem \<rho>"
       (is "fix_on_cond_jfc' ?\<rho>2 ?F2")
-    apply (rule disjoint_is_heapExtendJoin_cond')
+    apply (rule disjoint_is_heapExtendJoin_cond'_ESem)
     apply (auto simp add:  `x \<notin> assn_vars as`)
     by (metis Let(1) fst_set_asToHeap sharp_star_Env)
 
@@ -977,11 +995,11 @@ next
 case (Let as e \<rho>1 \<rho>2)
   have cond1: "heapExtendJoin_cond' (asToHeap as) ESem \<rho>1"
     (is "fix_on_cond_jfc' ?\<rho>1 ?F1")
-    apply (rule disjoint_is_heapExtendJoin_cond')
+    apply (rule disjoint_is_heapExtendJoin_cond'_ESem)
     using Let(1) by (auto simp add: sharp_star_Env)
   have cond2: "heapExtendJoin_cond' (asToHeap as) ESem \<rho>2"
     (is "fix_on_cond_jfc' ?\<rho>2 ?F2")
-    apply (rule disjoint_is_heapExtendJoin_cond')
+    apply (rule disjoint_is_heapExtendJoin_cond'_ESem)
     using Let(2) by (auto simp add: sharp_star_Env)
   let "?S1" = "fix_join_compat'' ?\<rho>1 ?F1"
   let "?S2" = "fix_join_compat'' ?\<rho>2 ?F2"
@@ -1119,12 +1137,12 @@ next
 case (Let as e \<rho>1 \<rho>2)
   have cond1: "heapExtendJoin_cond' (asToHeap as) ESem \<rho>1"
       (is "fix_on_cond_jfc' ?\<rho>1 ?F1")
-    apply (rule disjoint_is_heapExtendJoin_cond')
+    apply (rule disjoint_is_heapExtendJoin_cond'_ESem)
     using Let(1)
     by (auto simp add: sharp_star_Env)
   have cond2: "heapExtendJoin_cond' (asToHeap as) ESem \<rho>2"
       (is "fix_on_cond_jfc' ?\<rho>2 ?F2")
-    apply (rule disjoint_is_heapExtendJoin_cond')
+    apply (rule disjoint_is_heapExtendJoin_cond'_ESem)
     using Let(2)
     by (auto simp add: sharp_star_Env)
 
