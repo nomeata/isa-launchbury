@@ -963,6 +963,11 @@ lemma fmap_restr_less:
   unfolding less_eq_fmap_def
   by (transfer, auto)
 
+lemma less_fmap_expand:
+  "finite S \<Longrightarrow> fdom \<rho> \<subseteq> S \<Longrightarrow> \<rho> \<le> fmap_expand \<rho> S"
+  unfolding less_eq_fmap_def
+  by (transfer, auto)
+
 lemma fdom_adm:
    "adm (\<lambda>\<rho>. P (fdom \<rho>))"
    by (metis admI chain_fdom(2))

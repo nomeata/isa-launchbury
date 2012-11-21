@@ -288,27 +288,238 @@ proof(rule HSem_subst_expr[OF cond1 cond2])
     by simp
 qed
 
-lemma HSem_redo:
-  assumes "fst`set \<Gamma> \<inter> (fdom \<rho> \<union> fst`set \<Delta>) = {}"
-  shows "\<lbrace>\<Gamma>\<rbrace>fmap_restr (fdom \<rho> \<union> fst`set \<Delta>) (\<lbrace>\<Gamma>@\<Delta>\<rbrace>\<rho>) = \<lbrace>\<Gamma>@\<Delta>\<rbrace>\<rho>" (is "?L = ?R")
-proof-
-  { fix x
-    assume "x \<in> fdom \<rho> \<union> fst ` set \<Delta>"
-    hence "the (lookup ?L x) = the (lookup ?R x)"
-      apply (subst the_lookup_HSem_other)
-      using assms(1) by auto
-  } note not_Gamma_eq = this
 
-  
+lemma HSem_subset_below:
+  assumes cond2: "heapExtendJoin_cond' (\<Delta>@\<Gamma>) ESem \<rho>"
+  assumes fresh: "atom ` fst ` set \<Gamma> \<sharp>* (\<Delta>, \<rho>)" 
+  shows "fmap_expand (\<lbrace>\<Delta>\<rbrace>\<rho>) (fdom \<rho> \<union> fst ` set \<Delta> \<union> fst ` set \<Gamma>) \<sqsubseteq> \<lbrace>\<Delta>@\<Gamma>\<rbrace>\<rho>"
+  apply (subst HSem_def)
+proof (rule heapExtendJoin_ind)
+case goal1 show ?case by (auto intro!: adm_is_adm_on adm_subst[OF fmap_expand_cont])
+next
+case goal2 show ?case by (auto simp add: to_bot_fmap_def)
+next
+show rho: "fmap_expand (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set \<Delta>)) (fdom \<rho> \<union> fst ` set \<Delta> \<union> fst ` set \<Gamma>) \<sqsubseteq> \<lbrace>\<Delta> @ \<Gamma>\<rbrace>\<rho> "
+  apply (subst fmap_expand_idem)
+  apply auto[3]
+  using HSem_refines[OF cond2]
+  by (auto simp add: image_Un sup.assoc)
 
-  show ?thesis sorry
+  from fresh
+  have "fst`set \<Gamma> \<inter> (fdom \<rho> \<union> fst`set \<Delta>) = {}"
+    by (auto dest: fresh_heapVars_distinct[unfolded heapVars_def] simp add: sharp_star_Env' fresh_star_Pair)
+  hence fdoms: "fdom \<rho> \<union> fst ` set \<Delta> \<union> fst ` set \<Gamma> - (fdom \<rho> \<union> fst ` set \<Delta>) = fst ` set \<Gamma>"
+    by auto
+
+case (goal3 x)
+  note cond1 = goal3(1)
+  have  "fdom x = fdom \<rho> \<union> fst ` set \<Delta>"
+    using fdom_fix_join_compat''[OF fix_on_cond_jfc''[OF cond1] goal3(2)]
+    by simp
+  {
+    fix v e
+    assume "(v,e) \<in> set \<Delta>"
+    from fresh_star_heap_expr[OF _ this]
+    have fresh_e: "atom ` fst ` set \<Gamma> \<sharp>* e"
+      by (metis fresh fresh_star_Pair)
+    have "\<lbrakk> e \<rbrakk>\<^bsub>x\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>fmap_expand x (fdom \<rho> \<union> fst ` set \<Delta> \<union> fst ` set \<Gamma>)\<^esub>"
+      apply (rule ESem_ignores_fresh)
+      apply (rule less_fmap_expand)
+        using `fdom x = _` apply auto[2]
+      apply (simp add: `fdom x = _` fdoms)
+      apply (rule fresh_e)
+      done
+    with goal3(3)
+    have "\<lbrakk> e \<rbrakk>\<^bsub>x\<^esub> \<sqsubseteq> \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>\<Delta> @ \<Gamma>\<rbrace>\<rho>\<^esub>"
+      by (metis cont2monofunE[OF ESem_cont])
+  } note e_less = this
+
+  note compat = rho_F_compat_jfc''[OF cond1 goal3(2)]
+  note compat2 = rho_F_compat_jfc''[OF cond2 HSem_there[OF cond2]]
+  show ?case
+    apply (subst fmap_expand_join[OF _ compat], simp)
+    apply (rule join_below[OF fmap_expand_compatible[OF _ compat] rho], simp)
+    apply (subst fmap_expand_idem)
+      apply auto[3]
+    apply (rule fmap_expand_belowI)
+      apply auto[1]
+    apply (subst HSem_unroll[OF cond2])
+    apply (subst the_lookup_join[OF compat2])
+    apply (rule below_trans[OF _ join_above2[OF the_lookup_compatible[OF compat2]]])
+    apply (subst lookup_fmap_expand1)
+      apply auto[3]
+    apply simp
+    apply (erule lookupHeapToEnvE2[of _ _ \<Gamma>])
+    apply simp
+    apply (erule e_less)
+    done
 qed
 
+lemma fmap_restr_HSem_noop:
+  assumes "fst`set \<Gamma> \<inter> fdom \<rho> = {}"
+  shows "fmap_restr (fdom \<rho>) (\<lbrace>\<Gamma>\<rbrace>\<rho>) = \<rho>"
+  apply (rule fmap_eqI)
+  using assms apply auto[1]
+  using assms apply auto[1]
+  apply (subst the_lookup_HSem_other)
+  apply auto
+  done
 
+lemma HSem_disjoint_less:
+  assumes "fst`set \<Gamma> \<inter> fdom \<rho> = {}"
+  shows "\<rho> \<le> \<lbrace>\<Gamma>\<rbrace>\<rho>"
+  using assms
+by (metis fdom_HSem fmap_less_restrict fmap_restr_HSem_noop sup_ge1)
+  
+
+lemma HSem_merge:
+  assumes distinct1: "distinctVars (\<Delta> @ \<Gamma>)"
+  assumes fresh: "atom ` fst ` set \<Gamma> \<sharp>* (\<Delta>, \<rho>)"
+  assumes rho_fresh: "fdom \<rho> \<inter> fst ` set (\<Gamma> @ \<Delta>) = {}"
+  shows "\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho> = \<lbrace>\<Gamma>@\<Delta>\<rbrace>\<rho>"
+proof(rule below_antisym)
+  from distinct1
+  have distinct2: "distinctVars (\<Gamma> @ \<Delta>)"
+    by (auto simp add: distinctVars_append)
+
+  from fresh
+  have Gamma_fresh: "fst`set \<Gamma> \<inter> (fdom \<rho> \<union> fst`set \<Delta>) = {}"
+    by (auto dest: fresh_heapVars_distinct[unfolded heapVars_def] simp add: sharp_star_Env' fresh_star_Pair)
+  hence fdoms: "fdom \<rho> \<union> fst ` set \<Delta> \<union> fst ` set \<Gamma> - (fdom \<rho> \<union> fst ` set \<Delta>) = fst ` set \<Gamma>"
+    by auto
+
+  have cond1: "heapExtendJoin_cond' \<Gamma> ESem (\<lbrace>\<Delta>\<rbrace>\<rho>)"
+    apply (rule disjoint_is_heapExtendJoin_cond'_ESem)
+    using Gamma_fresh by auto
+  have cond2: "heapExtendJoin_cond' (\<Gamma>@\<Delta>) ESem \<rho>"
+    apply (rule disjoint_is_heapExtendJoin_cond'_ESem)
+    using rho_fresh by auto
+  have cond2': "heapExtendJoin_cond' (\<Delta>@\<Gamma>) ESem \<rho>"
+    apply (rule disjoint_is_heapExtendJoin_cond'_ESem)
+    using rho_fresh by auto
+  have cond3: "heapExtendJoin_cond' \<Delta> ESem \<rho>"
+    apply (rule disjoint_is_heapExtendJoin_cond'_ESem)
+    using rho_fresh by auto
+
+  show "\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho> \<sqsubseteq> \<lbrace>\<Gamma>@\<Delta>\<rbrace>\<rho>"
+  apply (subst HSem_def)
+  proof (rule heapExtendJoin_ind)
+  case goal1 show ?case by (auto simp add: adm_is_adm_on)
+  next
+  case goal2 show ?case by (auto simp add: to_bot_fmap_def)
+  next
+  have "fmap_expand (\<lbrace>\<Delta>\<rbrace>\<rho>) (fdom \<rho> \<union> fst ` set \<Delta> \<union> fst ` set \<Gamma>) \<sqsubseteq> \<lbrace>\<Delta> @ \<Gamma>\<rbrace>\<rho>"
+    by (rule HSem_subset_below[OF cond2' fresh])
+  also have "\<lbrace>\<Delta> @ \<Gamma>\<rbrace>\<rho> = \<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>"
+    apply (rule HSem_reorder[OF distinct1 distinct2])
+    by auto
+  finally
+  show Delta_rho: "fmap_expand (\<lbrace>\<Delta>\<rbrace>\<rho>) (fdom (\<lbrace>\<Delta>\<rbrace>\<rho>) \<union> fst ` set \<Gamma>) \<sqsubseteq> \<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>"
+    by simp
+
+  case (goal3 \<rho>')
+    note compat = rho_F_compat_jfc''[OF cond1 goal3(2)]
+    note compat2 = rho_F_compat_jfc''[OF cond2 HSem_there[OF cond2]]
+
+    have "fmap_expand (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>\<^esub>)) (fdom (\<lbrace>\<Delta>\<rbrace>\<rho>) \<union> fst ` set \<Gamma>) \<sqsubseteq> \<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho> "
+    proof (rule fmap_expand_belowI)
+    case goal1 thus ?case by auto
+    case (goal2 x)
+      hence x:"x \<in> fst ` set \<Gamma>" by auto
+      thus ?case
+        apply (rule lookupHeapToEnvE2[of _ _ \<Delta>])
+        apply simp
+        apply (subst (2) HSem_unroll[OF cond2])
+        apply (subst the_lookup_join[OF compat2])
+        apply (rule below_trans[OF _ join_above2[OF the_lookup_compatible[OF compat2]]])
+        apply (subst lookup_fmap_expand1)
+          using x apply auto[3]
+        apply auto
+        done
+    qed       
+    thus ?case
+      by (rule join_below[OF compat Delta_rho 
+          below_trans[OF cont2monofunE[OF cont_compose[OF fmap_expand_cont cont2cont_heapToEnv[OF ESem_cont]] goal3(3)]]])
+  qed
+
+  show "\<lbrace>\<Gamma>@\<Delta>\<rbrace>\<rho> \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>"
+  apply (subst HSem_def)
+  proof (rule heapExtendJoin_ind)
+  case goal1 show ?case by (auto simp add: adm_is_adm_on)
+  next
+  case goal2 show ?case by (auto simp add: to_bot_fmap_def)
+  next
+  have "fmap_expand \<rho> (fdom \<rho> \<union> fst ` set (\<Gamma> @ \<Delta>)) = fmap_expand (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set \<Delta>)) (fdom \<rho> \<union> fst ` set (\<Gamma> @ \<Delta>))"
+    by (rule fmap_expand_idem[symmetric], auto)
+  also have "... \<sqsubseteq> fmap_expand (\<lbrace>\<Delta>\<rbrace>\<rho>) (fdom \<rho> \<union> fst ` set (\<Gamma> @ \<Delta>))"
+    by (rule cont2monofunE[OF fmap_expand_cont HSem_refines[OF cond3]])
+  also have "... = fmap_expand (\<lbrace>\<Delta>\<rbrace>\<rho>) (fdom (\<lbrace>\<Delta>\<rbrace>\<rho>) \<union> fst ` set (\<Gamma>))"
+    apply (rule arg_cong) back
+    by auto
+  also have "... \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>"
+    by (rule HSem_refines[OF cond1])
+  finally
+  show rho: "fmap_expand \<rho> (fdom \<rho> \<union> fst ` set (\<Gamma> @ \<Delta>)) \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho> ".
+
+  case (goal3 \<rho>')
+    note compat = rho_F_compat_jfc''[OF cond2 goal3(2)]
+    note compat2 = rho_F_compat_jfc''[OF cond1 HSem_there[OF cond1]]
+    note compat3 = rho_F_compat_jfc''[OF cond3 HSem_there[OF cond3]]
+
+    have "fmap_expand (heapToEnv (\<Gamma> @ \<Delta>) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>)) (fdom \<rho> \<union> fst ` set (\<Gamma> @ \<Delta>)) \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>"
+    proof (rule fmap_expand_belowI)
+    case goal1 thus ?case by auto
+    case (goal2 x)
+      hence "x \<in> fst ` set \<Gamma> \<or> (x \<notin> fst ` set \<Gamma> \<and> x \<in> fst ` set \<Delta>)" by auto      
+      thus ?case
+      proof
+        assume x: "x \<in> fst ` set \<Gamma>"
+        thus ?thesis
+        apply (rule lookupHeapToEnvE2[of _ _ \<Delta>])
+        apply simp
+        apply (subst (2) HSem_unroll[OF cond1])
+        apply (subst the_lookup_join[OF compat2])
+        apply (rule below_trans[OF _ join_above2[OF the_lookup_compatible[OF compat2]]])
+        apply (subst lookup_fmap_expand1)
+          using x apply auto[3]
+        apply auto
+        done
+      next
+        assume x: "x \<notin> fst ` set \<Gamma> \<and> x \<in> fst ` set \<Delta>"
+        hence [simp]:"x \<notin> fst ` set \<Gamma>" and  "x \<in> fst ` set \<Delta>" by auto
+        from this(2)
+        show ?thesis
+        apply (rule lookupHeapToEnvE)
+        apply simp
+        apply (subst (2) HSem_unroll[OF cond3])
+        apply (subst the_lookup_join[OF compat3])
+        apply (rule below_trans[OF _ join_above2[OF the_lookup_compatible[OF compat3]]])
+        apply (subst lookup_fmap_expand1)
+          using x apply auto[3]
+        apply auto
+        apply (rule eq_imp_below)
+        apply (rule ESem_ignores_fresh[symmetric])
+        apply (rule HSem_disjoint_less)
+          using Gamma_fresh apply auto[1]
+        apply (simp add: fdoms)
+        by (metis fresh fresh_star_Pair fresh_star_heap_expr)
+      qed  
+    qed
+    thus ?case
+      by (rule join_below[OF compat rho 
+          below_trans[OF cont2monofunE[OF cont_compose[OF fmap_expand_cont cont2cont_heapToEnv[OF ESem_cont]] goal3(3)]]])
+  qed
+qed
+
+lemma HSem_redo:
+  shows "\<lbrace>\<Gamma>\<rbrace>fmap_restr (fdom \<rho> \<union> fst ` set \<Delta>) (\<lbrace>\<Gamma>@\<Delta>\<rbrace>\<rho>) = \<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>"
+  sorry
 
 lemma HSem_unfold_let:
   assumes cond1: "heapExtendJoin_cond' ((x, Let as body) # \<Gamma>) ESem \<rho>"
   assumes cond2: "heapExtendJoin_cond' ((x, body) # asToHeap as @ \<Gamma>) ESem \<rho>"
+  assumes distinct1: "distinctVars (asToHeap as)"
+  assumes distinct2: "distinctVars ((x, body) # \<Gamma>)"
   assumes fresh: "set (bn as) \<sharp>* (x, Let as body, \<Gamma>, \<rho>)"
   shows "\<lbrace>(x, Let as body) # \<Gamma>\<rbrace>\<rho> \<le> \<lbrace>(x, body) # asToHeap as @ \<Gamma>\<rbrace>\<rho>"
 proof (rule iffD2[OF fmap_less_restrict], rule conjI)
@@ -397,9 +608,25 @@ case goal2
           done
         also have "... = \<lbrakk> body \<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>(fmap_restr (insert x (fdom \<rho> \<union> fst ` set \<Gamma>)) (\<lbrace>asToHeap as @ ((x, body) # \<Gamma>)\<rbrace>\<rho>))\<^esub>"
           by (rule arg_cong[OF HSem_reorder_heap_append[OF x_not_as]])
+        (* Kaputter Ansatz:
+        also have "... = \<lbrakk> body \<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>(fmap_restr (insert x (fdom \<rho> \<union> fst ` set \<Gamma>)) (\<lbrace>asToHeap as\<rbrace>\<lbrace>((x, body) # \<Gamma>)\<rbrace>\<rho>))\<^esub>"
+          apply (rule arg_cong[OF HSem_merge[symmetric]])
+          apply (subst distinctVars_append)
+          using distinct1 distinct2 apply (elim conjI)
+          using disjoint apply (auto simp add: heapVars_def simp del: fst_set_asToHeap)[1]
+          using fresh
+          (* ARG, hier gehts schief *)
+          
+          apply (simp add: distinctVars_append )
+          
+          done
+        also have "... = \<lbrakk> body \<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<lbrace>((x, body) # \<Gamma>)\<rbrace>\<rho>\<^esub>"
+          apply (rule arg_cong[OF fmap_restr_HSem_noop[of _ "\<lbrace>((x, body) # \<Gamma>)\<rbrace>\<rho>", simplified]])
+          using disjoint by auto
+        *)
         also have "... = \<lbrakk> body \<rbrakk>\<^bsub>\<lbrace>asToHeap as @ ((x, body) # \<Gamma>)\<rbrace>\<rho>\<^esub>"
-          apply (rule arg_cong[OF HSem_redo[of "asToHeap as" \<rho> "((x,body)#\<Gamma>)", simplified]])
-          using disjoint apply auto
+          apply (rule arg_cong) back
+          apply (rule HSem_redo[of "asToHeap as" \<rho> "((x, body) # \<Gamma>)", simplified])
           done
         also have "... = \<lbrakk> body \<rbrakk>\<^bsub>\<lbrace>(x, body) # asToHeap as @ \<Gamma>\<rbrace>\<rho>\<^esub>"
           by (rule arg_cong[OF HSem_reorder_heap_append[OF x_not_as], symmetric])

@@ -65,6 +65,9 @@ lemma sharp_Env: "atom (x::var) \<sharp> (\<rho> :: Env) \<longleftrightarrow> x
 lemma sharp_star_Env: "set (bn as) \<sharp>* (\<rho> :: Env) \<longleftrightarrow> (\<forall> x \<in> fst`set (asToHeap as) . x \<notin> fdom \<rho>)"
   by(induct rule:asToHeap.induct, auto simp add: fresh_star_def exp_assn.bn_defs sharp_Env)
 
+lemma sharp_star_Env': "atom ` fst ` set \<Gamma> \<sharp>* (\<rho> :: Env) \<longleftrightarrow> fst ` set \<Gamma> \<inter> fdom \<rho> = {}"
+  by(induct rule:asToHeap.induct, auto simp add: fresh_star_def exp_assn.bn_defs sharp_Env)
+
 function heapToEnv :: "heap \<Rightarrow> (exp \<Rightarrow> Value) \<Rightarrow> Env"
 where
   "heapToEnv [] _ = fempty"
@@ -141,6 +144,20 @@ lemma lookupHeapToEnvE:
   defer
   apply (case_tac "a = aa")
   apply auto
+  done
+
+lemma lookupHeapToEnvE2:
+  assumes "v \<in> fst ` set h"
+  obtains e where "(v, e) \<in> set h" and "\<And> f. the (lookup (heapToEnv h f) v) = f e" and "\<And> f. the (lookup (heapToEnv (h@h') f) v) = f e"
+  using assms
+  apply rule
+  apply (induct h)
+  apply simp
+  apply auto
+  apply blast
+  apply (case_tac "a = aa")
+  apply auto
+  apply blast
   done
 
 lemma lookupHeapToEnvNotCons[simp]:

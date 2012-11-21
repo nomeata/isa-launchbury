@@ -191,14 +191,12 @@ lemma set_bn_to_atom_heapVars:
    apply (auto simp add: exp_assn.bn_defs)
    done
 
-lemma fresh_assn_distinct:
- assumes "set (bn as) \<sharp>* \<Gamma>"
- shows "heapVars (asToHeap as) \<inter> heapVars \<Gamma> = {}"
+lemma fresh_heapVars_distinct:
+ assumes "atom ` heapVars \<Delta> \<sharp>* \<Gamma>"
+ shows "heapVars \<Delta> \<inter> heapVars \<Gamma> = {}"
 proof-
   { fix x
-    assume "x \<in> heapVars (asToHeap as)"
-    hence "atom x \<sharp> \<Gamma>"
-      using `set (bn as) \<sharp>* \<Gamma>` by (auto simp add: fresh_star_def set_bn_to_atom_heapVars)
+    assume "x \<in> heapVars \<Delta>"
     moreover
     assume "x \<in> heapVars \<Gamma>"
     hence "atom x \<in> supp \<Gamma>"
@@ -206,10 +204,17 @@ proof-
       by (auto simp add: supp_Cons heapVars_def supp_Pair supp_at_base)
     ultimately
     have False
-      by (simp add: fresh_def)
+      using assms
+      by (simp add: fresh_star_def fresh_def)
   }
-  thus "heapVars (asToHeap as) \<inter> heapVars \<Gamma> = {}" by auto
+  thus "heapVars \<Delta> \<inter> heapVars \<Gamma> = {}" by auto
 qed
+
+lemma fresh_assn_distinct:
+ assumes "set (bn as) \<sharp>* \<Gamma>"
+ shows "heapVars (asToHeap as) \<inter> heapVars \<Gamma> = {}"
+ using assms
+by (metis set_bn_to_atom_heapVars fresh_heapVars_distinct)
 
 lemma distinctVars_append_asToHeap:
   assumes "distinctVars (asToHeap as)"
