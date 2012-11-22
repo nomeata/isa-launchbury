@@ -41,6 +41,12 @@ proof-
   thus ?thesis by simp
 qed
 
+lemma eqvt_fresh_star_cong2:
+  assumes eqvt: "(\<And>p x y. p \<bullet> (f x y) = f (p \<bullet> x) (p \<bullet> y))"
+  and fresh1: "a \<sharp>* x" and fresh2: "a \<sharp>* y"
+  shows "a \<sharp>* f x y"
+  by (metis fresh_star_def eqvt_fresh_cong2 assms)
+
 lemma eqvt_fresh_cong3:
   assumes eqvt: "(\<And>p x y z. p \<bullet> (f x y z) = f (p \<bullet> x) (p \<bullet> y) (p \<bullet> z))"
   and fresh1: "a \<sharp> x" and fresh2: "a \<sharp> y" and fresh3: "a \<sharp> z"
@@ -93,5 +99,14 @@ lemma fresh_star_fun_eqvt_app2:
   assumes "(\<And> p x y. p \<bullet> f x y = f (p \<bullet> x) (p \<bullet> y))"
   shows "a \<sharp>* x \<Longrightarrow> a \<sharp>* y \<Longrightarrow> a \<sharp>* f x y"
   by (intro fresh_star_fun_eqvt_app[of "\<lambda> p. f (fst p) (snd p)" _ "(x, y)", simplified, unfolded fresh_star_Pair] eqvt2I assms conjI)
+
+lemma fresh_star_Cons:
+  "S \<sharp>* (x # xs) = (S \<sharp>* x \<and> S \<sharp>* xs)"
+by (metis fresh_star_def fresh_Cons)
+
+lemma fresh_star_append:
+  shows "a \<sharp>* (xs @ ys) \<longleftrightarrow> a \<sharp>* xs \<and> a \<sharp>* ys"
+by (metis fresh_star_def fresh_append)
+
 
 end

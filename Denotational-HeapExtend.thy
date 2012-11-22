@@ -228,7 +228,7 @@ lemma disjoint_is_heapExtendJoin_cond':
   apply auto
   done
 
-lemma fempty_is_heapExtendJoin_cond'[simp]:
+lemma fempty_is_heapExtendJoin_cond':
   "(\<forall> e \<in> snd`set h.  cont (ESem e)) \<Longrightarrow> heapExtendJoin_cond' h ESem fempty"
   apply (rule disjoint_is_heapExtendJoin_cond')
   by auto
@@ -309,6 +309,59 @@ lemma heapExtendJoin_there:
   apply (rule fix_on_there[OF fix_on_cond_jfc''[OF assms]])
   done
 
+lemma the_lookup_heapExtendJoin_other:
+  assumes "y \<notin> fst ` set h"
+  shows "the (lookup (heapExtendJoin \<rho> h eval) y) = the (lookup \<rho> y)"
+proof(cases "heapExtendJoin_cond' h eval \<rho>")
+  case True show ?thesis
+    apply (subst heapExtendJoin_eq[OF True])
+    apply (subst the_lookup_join[OF rho_F_compat_jfc''[OF True heapExtendJoin_there[OF True]]])
+    apply (cases "y \<in> fdom \<rho>")
+    apply (auto simp add: assms lookup_not_fdom)
+    done
+next
+  case False show ?thesis
+    unfolding heapExtendJoin_def if_not_P[OF False]
+    apply (cases "y \<in> fdom \<rho>")
+    apply (auto simp add: assms  False lookup_not_fdom)
+    done
+qed
+
+lemma the_lookup_heapExtendJoin_both:
+  assumes "heapExtendJoin_cond' h eval \<rho>"
+  assumes "y \<in> fst ` set h"
+  shows "the (lookup (heapExtendJoin \<rho> h eval) y) =
+    the (lookup (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) y) \<squnion> eval (the (map_of h y)) (heapExtendJoin \<rho> h eval)"
+  apply (subst heapExtendJoin_eq[OF assms(1)])
+  apply (subst the_lookup_join[OF rho_F_compat_jfc''[OF assms(1) heapExtendJoin_there[OF assms(1)]]])
+  apply (subst (2) lookup_fmap_expand1)
+    using assms(2) apply auto[3]
+  apply (subst lookupHeapToEnv[OF assms(2)])
+  by (rule refl)
+
+lemma the_lookup_heapExtendJoin_both_compatible:
+  assumes "heapExtendJoin_cond' h eval \<rho>"
+  assumes "y \<in> fst ` set h"
+  shows "compatible (the (lookup (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) y)) (eval (the (map_of h y)) (heapExtendJoin \<rho> h eval))"
+  using the_lookup_compatible[OF rho_F_compat_jfc''[OF assms(1) heapExtendJoin_there[OF assms(1)]], of y]
+  apply (subst (asm) (2) lookup_fmap_expand1)
+    using assms(2) apply auto[3]
+  apply (subst (asm) lookupHeapToEnv[OF assms(2)])
+  .
+
+lemma the_lookup_heapExtendJoin_heap:
+  assumes "heapExtendJoin_cond' h eval \<rho>"
+  assumes "y \<in> fst ` set h"
+  assumes "y \<notin> fdom \<rho>"
+  shows "the (lookup (heapExtendJoin \<rho> h eval) y) = eval (the (map_of h y)) (heapExtendJoin \<rho> h eval)"
+  apply (subst heapExtendJoin_eq[OF assms(1)])
+  apply (subst the_lookup_join[OF rho_F_compat_jfc''[OF assms(1) heapExtendJoin_there[OF assms(1)]]])
+  apply (subst lookup_fmap_expand2)
+    using assms(2,3) apply auto[3]
+  apply (subst lookup_fmap_expand1)
+    using assms(2) apply auto[3]
+  apply (subst lookupHeapToEnv[OF assms(2)])
+  by (simp)
 
 lemma compatible_fmap_bottom[simp]:
   "fdom x = y \<Longrightarrow> compatible x (fmap_bottom y)"
@@ -419,6 +472,31 @@ lemma heapExtendJoin_refines:
   apply (subst heapExtendJoin_eq[OF assms(1)])
   apply (rule join_above1[OF rho_F_compat_jfc''[OF assms heapExtendJoin_there[OF assms]]])
 done
+
+lemma heapExtendJoin_below:
+  assumes "fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h) \<sqsubseteq> r"
+  assumes "\<And>x. x \<in> fst ` set h \<Longrightarrow> ESem (the (map_of h x)) r \<sqsubseteq> the (lookup r x)"
+  assumes cont: "\<And> e. cont (ESem e)"
+  shows "heapExtendJoin \<rho> h ESem \<sqsubseteq> r"
+proof (rule heapExtendJoin_ind)
+  from fmap_below_dom[OF assms(1)]
+  have [simp]:"fdom r = fdom \<rho> \<union> fst ` set h" by simp
+  {
+  case goal1 show ?case by (auto intro: adm_is_adm_on)
+  case goal2 show ?case by (simp add: to_bot_fmap_def)
+  case (goal3 \<rho>')
+    show ?case
+    apply (rule join_below[OF rho_F_compat_jfc''[OF goal3(1) goal3(2)] assms(1)])
+    apply (rule fmap_expand_belowI)
+    apply simp
+    apply (simp add: lookupHeapToEnv)
+    by (rule below_trans[OF
+          cont2monofunE[OF cont goal3(3)]
+          assms(2)])
+  next
+  case goal4 show ?case by fact
+  }
+qed  
 
 
 (*

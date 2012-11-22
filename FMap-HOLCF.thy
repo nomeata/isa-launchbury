@@ -472,6 +472,17 @@ next
 case False thus ?thesis unfolding fmap_restr_def by simp
 qed
 
+lemma fmap_restr_belowI2:
+  assumes "finite S"
+  assumes "fdom m2 = fdom m1 \<inter> S"
+  assumes  "\<And> x. x \<in> S \<Longrightarrow> x \<in> fdom m1 \<Longrightarrow> the (lookup m1 x) \<sqsubseteq> the (lookup m2 x)"
+  shows "fmap_restr S m1 \<sqsubseteq> m2"
+  apply (rule fmap_belowI')
+  apply (simp add: assms(1,2))
+  apply (simp add: assms(1,2))
+  apply (rule assms(3))
+  by auto
+
 lemma fmap_restr_monofun:  "monofun (fmap_restr S)"
 proof (cases "finite S")
   case True thus ?thesis
@@ -703,6 +714,7 @@ lemma fmap_restr_fmap_expand2:
   apply (metis set_mp)
   by (metis rev_finite_subset)
 
+
 lemma fdom_fmap_extend[simp]:
   "finite S \<Longrightarrow> fdom (fmap_extend m S) = fdom m \<union> S"
   by (transfer, auto)
@@ -742,6 +754,23 @@ lemma lookup_fmap_expand2[simp]:
 lemma lookup_fmap_expand3[simp]:
   "finite S \<Longrightarrow> x \<notin> S \<Longrightarrow> lookup (fmap_expand m S) x = None"
   by (transfer, auto split:option.split)
+
+lemma fmap_expand_belowI:
+  assumes "fdom \<rho>' = S"
+  assumes "\<And> x. x \<in> fdom \<rho> \<Longrightarrow> x \<in> S \<Longrightarrow> the (lookup \<rho> x) \<sqsubseteq> the (lookup \<rho>' x)"
+  shows "fmap_expand \<rho> S \<sqsubseteq> \<rho>'"
+  apply (rule fmap_belowI')
+  apply (metis assms(1) fdom_fmap_expand finite_fdom)
+  apply (case_tac "x \<in> fdom \<rho>")
+  apply (metis assms(1) assms(2) finite_fdom lookup_fmap_expand1)
+  apply (metis assms(1) finite_fdom lookup_fmap_expand2 minimal the.simps)
+  done
+
+lemma fmap_expand_fmap_restr_below:
+  assumes [simp]:"fdom x = S2"
+  shows "fmap_expand (fmap_restr S1 x) S2 \<sqsubseteq> x"
+  apply (rule fmap_expand_belowI[OF assms(1)])
+  by (metis Int_iff below.r_refl empty_iff fdom_fmap_restr fempty_fdom fmap_restr_not_finite lookup_fmap_restr)
 
 lemma fmap_extend_monofun:
   "monofun (\<lambda> m. fmap_extend m S)"

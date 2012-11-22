@@ -133,32 +133,41 @@ proof
   show "?lhs \<Longrightarrow> ?rhs" using imp[of "\<pi> \<bullet> h" "\<pi> \<bullet> f" "-\<pi>"] by simp
 qed
 
+lemma lookupHeapToEnv:
+  assumes "v \<in> fst ` set h"
+  shows "the (lookup (heapToEnv h f) v) = f (the (map_of h v))"
+  using assms
+  apply (induct h)
+  apply simp
+  apply (case_tac a)
+  apply auto
+  done
+
 lemma lookupHeapToEnvE:
   assumes "v \<in> fst ` set h"
   obtains e where "(v, e) \<in> set h" and "\<And> f. the (lookup (heapToEnv h f) v) = f e"
-  using assms
-  apply rule
-  apply (induct h)
-  apply simp
-  apply auto
-  defer
-  apply (case_tac "a = aa")
-  apply auto
-  done
+proof(rule that)
+  show "(v, (the (map_of h v))) \<in> set h"
+    by (metis assms domD dom_map_of_conv_image_fst map_of_is_SomeD the.simps)
+  fix f
+  show "the (lookup (heapToEnv h f) v) = f (the (map_of h v))"
+    by (rule lookupHeapToEnv[OF assms])
+qed
 
 lemma lookupHeapToEnvE2:
   assumes "v \<in> fst ` set h"
   obtains e where "(v, e) \<in> set h" and "\<And> f. the (lookup (heapToEnv h f) v) = f e" and "\<And> f. the (lookup (heapToEnv (h@h') f) v) = f e"
-  using assms
-  apply rule
-  apply (induct h)
-  apply simp
-  apply auto
-  apply blast
-  apply (case_tac "a = aa")
-  apply auto
-  apply blast
-  done
+proof(rule that)
+  show "(v, (the (map_of h v))) \<in> set h"
+    by (metis assms domD dom_map_of_conv_image_fst map_of_is_SomeD the.simps)
+  fix f
+  show "the (lookup (heapToEnv h f) v) = f (the (map_of h v))"
+    by (rule lookupHeapToEnv[OF assms])
+  show "the (lookup (heapToEnv (h @ h') f) v) = f (the (map_of h v))"
+    apply (subst lookupHeapToEnv)
+    using assms apply (auto simp add: map_add_dom_app_simps dom_map_of_conv_image_fst)
+    done
+qed
 
 lemma lookupHeapToEnvNotCons[simp]:
   assumes "x \<noteq> y"

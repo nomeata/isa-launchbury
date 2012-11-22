@@ -111,6 +111,11 @@ lemma disjoint_is_heapExtendJoin_cond'_ESem:
   shows "heapExtendJoin_cond' h ESem \<rho>" 
   by (metis disjoint_is_heapExtendJoin_cond'[OF assms] ESem_cont)
 
+lemma fempty_is_heapExtendJoin_cond'_ESem[simp]:
+  "heapExtendJoin_cond' h ESem fempty"
+  apply (rule disjoint_is_heapExtendJoin_cond'_ESem)
+  by auto
+
 (*
 lemma HSem_cont: "cont (\<lambda>y. HSem \<Gamma> y)"
   unfolding HSem_def
@@ -157,29 +162,6 @@ lemma adm_lookup: assumes "adm P" shows "adm (\<lambda> \<rho>. P (the (lookup \
   apply metis
   done
 
-lemma [simp]: "x \<notin> fst ` set \<Gamma> \<Longrightarrow> the (lookup (\<lbrace>\<Gamma>\<rbrace>\<rho>) x) = the (lookup \<rho> x)"
-  apply (cases "x \<in> fdom \<rho>")
-  apply (rule below_antisym)
-  unfolding HSem_def
-  apply (rule heapExtendJoin_ind)
-  apply (rule adm_is_adm_on)
-  apply (rule adm_lookup)
-  apply simp
-  apply (subst to_bot_fmap_def)
-  apply simp
-  apply (subst the_lookup_join)
-  apply (erule (1) rho_F_compat_jfc'')
-  apply simp
-  apply simp
-  apply (cases "heapExtendJoin_cond' \<Gamma> ESem \<rho>")
-  apply (subst heapExtendJoin_eq, assumption)
-  apply (subst the_lookup_join)
-  apply (rule rho_F_compat_jfc'', assumption)
-  apply (erule heapExtendJoin_there)
-  apply simp
-  apply (simp add: heapExtendJoin_def)
-  apply (simp add: lookup_not_fdom)
-  done
 
 
 (*
@@ -267,6 +249,51 @@ lemma HSem_refines:
   "heapExtendJoin_cond' \<Gamma> ESem \<rho>' \<Longrightarrow> fmap_expand \<rho>' (fdom \<rho>' \<union> fst ` set \<Gamma>)  \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<rho>'"
   by (metis HSem_def heapExtendJoin_refines)
 
+lemma HSem_refines_lookup: "heapExtendJoin_cond' \<Gamma> ESem \<rho> \<Longrightarrow> x \<in> fdom \<rho> \<Longrightarrow> the (lookup \<rho> x) \<sqsubseteq> the (lookup (\<lbrace>\<Gamma>\<rbrace>\<rho>) x)"
+  apply (drule HSem_refines)
+  apply (drule fmap_belowE[of _ _ x])
+  apply simp
+  done
+
+lemma the_lookup_HSem_other:
+  assumes "y \<notin> fst ` set h"
+  shows "the (lookup (\<lbrace>h\<rbrace>\<rho>) y) = the (lookup \<rho> y)"
+by (metis HSem_def the_lookup_heapExtendJoin_other[OF assms])
+
+lemma the_lookup_HSem_both:
+  assumes "heapExtendJoin_cond' h ESem \<rho>"
+  assumes "y \<in> fst ` set h"
+  shows "the (lookup (\<lbrace>h\<rbrace>\<rho>) y) =
+    the (lookup (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) y) \<squnion> (\<lbrakk> the (map_of h y) \<rbrakk>\<^bsub>\<lbrace>h\<rbrace>\<rho>\<^esub>)"
+  by (metis HSem_def the_lookup_heapExtendJoin_both[OF assms])
+
+lemma the_lookup_HSem_both_compatible:
+  assumes "heapExtendJoin_cond' h ESem \<rho>"
+  assumes "y \<in> fst ` set h"
+  shows "compatible (the (lookup (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) y)) (\<lbrakk> the (map_of h y) \<rbrakk>\<^bsub>\<lbrace>h\<rbrace>\<rho>\<^esub>)"
+  by (metis HSem_def the_lookup_heapExtendJoin_both_compatible[OF assms])
+
+
+lemma the_lookup_heapExtendJoin_heap:
+  assumes "heapExtendJoin_cond' h ESem \<rho>"
+  assumes "y \<in> fst ` set h"
+  assumes "y \<notin> fdom \<rho>"
+  shows "the (lookup (\<lbrace>h\<rbrace>\<rho>) y) = \<lbrakk> the (map_of h y) \<rbrakk>\<^bsub>\<lbrace>h\<rbrace>\<rho>\<^esub>"
+  by (metis HSem_def the_lookup_heapExtendJoin_heap[OF assms])
+
+lemma HSem_heap_below: "heapExtendJoin_cond' \<Gamma> ESem \<rho> \<Longrightarrow> x \<in> fst ` set \<Gamma> \<Longrightarrow> \<lbrakk> the (map_of \<Gamma> x) \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> \<sqsubseteq> the (lookup (\<lbrace>\<Gamma>\<rbrace>\<rho>) x)"
+  apply (subst the_lookup_HSem_both, assumption+)
+  apply (rule join_above2)
+  apply (rule the_lookup_HSem_both_compatible, assumption+)
+  done
+
+lemma HSem_below:
+  assumes "fmap_expand \<rho> (fdom \<rho> \<union> fst ` set \<Gamma>) \<sqsubseteq> r"
+  assumes "\<And>x. x \<in> fst ` set \<Gamma> \<Longrightarrow> \<lbrakk> the (map_of \<Gamma> x) \<rbrakk>\<^bsub>r\<^esub> \<sqsubseteq> the (lookup r x)"
+  shows "\<lbrace>\<Gamma>\<rbrace>\<rho> \<sqsubseteq> r"
+  unfolding HSem_def
+  by (rule heapExtendJoin_below[OF assms ESem_cont])
+
 lemma fdom_fix_on:
   assumes "fix_on_cond S b F"
   shows  "fdom (fix_on' b F) = fdom b"
@@ -348,17 +375,6 @@ proof-
     apply (simp add:to_bot_fmap_def)
     done
 qed
-
-lemma fmap_expand_belowI:
-  assumes "fdom \<rho>' = S"
-  assumes "\<And> x. x \<in> fdom \<rho> \<Longrightarrow> x \<in> S \<Longrightarrow> the (lookup \<rho> x) \<sqsubseteq> the (lookup \<rho>' x)"
-  shows "fmap_expand \<rho> S \<sqsubseteq> \<rho>'"
-  apply (rule fmap_belowI')
-  apply (metis assms(1) fdom_fmap_expand finite_fdom)
-  apply (case_tac "x \<in> fdom \<rho>")
-  apply (metis assms(1) assms(2) finite_fdom lookup_fmap_expand1)
-  apply (metis assms(1) finite_fdom lookup_fmap_expand2 minimal the.simps)
-  done
 
 lemma heapToEnv_mono:
   "finite d1 \<Longrightarrow>
@@ -600,25 +616,9 @@ proof(rule below_antisym)
     by (rule R_there[unfolded fjc''_iff, unfolded bottom_of_jfc''])
 qed
 
-lemma the_lookup_HSem_other:
-  assumes "y \<notin> fst ` set h"
-  shows "the (lookup (\<lbrace>h\<rbrace>\<rho>) y) = the (lookup \<rho> y)"
-proof(cases "heapExtendJoin_cond' h ESem \<rho>")
-  case True show ?thesis
-    apply (subst HSem_unroll[OF True])
-    apply (subst the_lookup_join[OF rho_F_compat_jfc''[OF True heapExtendJoin_there[OF True, unfolded HSem_def[symmetric]]]])
-    apply (cases "y \<in> fdom \<rho>")
-    apply (auto simp add: assms lookup_not_fdom)
-    done
-next
-  case False show ?thesis
-    unfolding HSem_def heapExtendJoin_def if_not_P[OF False]
-    apply (cases "y \<in> fdom \<rho>")
-    apply (auto simp add: assms  False lookup_not_fdom)
-    done
-qed
 
 lemmas HSem_fresh[simp] = eqvt_fresh_cong2[of HSem, OF HSem_eqvt]
+ and   HSem_fresh_star[simp] = eqvt_fresh_star_cong2[of HSem, OF HSem_eqvt]
  and   asToHeap_fresh[simp] = eqvt_fresh_cong1[of asToHeap, OF asToHeap.eqvt]
  and   fresh_fmap_upd[simp] = eqvt_fresh_cong3[of fmap_upd, OF fmap_upd_eqvt]
 

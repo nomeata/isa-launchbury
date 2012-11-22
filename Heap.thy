@@ -69,12 +69,26 @@ lemma fresh_heap_expr:
   using assms
   by (metis fresh_list_elem fresh_Pair)
 
+lemma fresh_heap_expr':
+  assumes "a \<sharp> \<Gamma>"
+  and "e \<in> snd` set \<Gamma>"
+  shows "a \<sharp> e"
+  using assms
+  by (induct \<Gamma>, auto simp add: fresh_Cons)
+
 lemma fresh_star_heap_expr:
   assumes "S \<sharp>* \<Gamma>"
   and "(x,e) \<in> set \<Gamma>"
   shows "S \<sharp>* e"
   using assms
   by (metis fresh_star_def fresh_heap_expr)
+
+lemma fresh_star_heap_expr':
+  assumes "S \<sharp>* \<Gamma>"
+  and "e \<in> snd ` set \<Gamma>"
+  shows "S \<sharp>* e"
+  using assms
+  by (metis fresh_star_def fresh_heap_expr')
 
 
 inductive distinctVars  where
@@ -223,5 +237,8 @@ lemma distinctVars_append_asToHeap:
   shows "distinctVars (asToHeap as @ \<Gamma>)" 
 by(rule distinctVars_appendI[OF assms(1,2) fresh_assn_distinct[OF assms(3)]])
 
+lemma the_map_of_snd:
+  "x\<in> fst ` set \<Gamma> \<Longrightarrow> the (map_of \<Gamma> x) \<in> snd ` set \<Gamma>"
+by (induct \<Gamma>, auto)
 
 end
