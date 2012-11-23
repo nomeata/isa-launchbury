@@ -765,7 +765,7 @@ case (Lambda x y e \<Gamma> \<Gamma>')
   show ?case by simp
 next
 
-case (Application n \<Gamma> \<Gamma>' x e y \<Theta> \<Theta>' z \<Delta> \<Delta>' e')
+case (Application n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<Theta>' z  e')
   let "?restr \<rho>" = "fmap_restr (insert x (heapVars \<Gamma>' \<union> heapVars \<Gamma>)) (\<rho>::Env)"
   let "?restr2 \<rho>" = "fmap_restr (insert x (heapVars \<Delta>' \<union> heapVars \<Delta>)) (\<rho>::Env)"
 

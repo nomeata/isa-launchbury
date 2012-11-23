@@ -6,7 +6,7 @@ inductive reds :: "heap \<Rightarrow> heap \<Rightarrow> heap \<Rightarrow> heap
 where
   Lambda: "\<Gamma> : (x, (Lam [y]. e)) # \<Gamma>' \<Down> \<Gamma> : (x, (Lam [y]. e)) # \<Gamma>'" 
  | Application: "\<lbrakk>
-      atom n \<sharp> (\<Gamma>,\<Gamma>',x,e,y,\<Theta>,\<Theta>',z);
+      atom n \<sharp> (\<Gamma>,\<Gamma>',\<Delta>,\<Delta>',x,e,y,\<Theta>,\<Theta>',z);
       atom z \<sharp> (\<Gamma>,\<Gamma>',\<Delta>,\<Delta>',x,e,y,\<Theta>,\<Theta>');
       \<Gamma> : (n, e) # (x, App (Var n) y) # \<Gamma>' \<Down> \<Delta> : (n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>';
       \<Delta> : (x, e'[z ::= y]) # \<Delta>' \<Down> \<Theta> : \<Theta>'
@@ -85,7 +85,7 @@ where
     \<rbrakk> \<Longrightarrow>
       \<Gamma> : (x, (Lam [y]. e)) # \<Gamma>' \<Down>d \<Gamma> : (x, (Lam [y]. e)) # \<Gamma>'" 
  | DApplication: "\<lbrakk>
-      atom n \<sharp> (\<Gamma>,\<Gamma>',x,e,y,\<Theta>,\<Theta>',z);
+      atom n \<sharp> (\<Gamma>,\<Gamma>',\<Delta>,\<Delta>',x,e,y,\<Theta>,\<Theta>',z);
       atom z \<sharp> (\<Gamma>,\<Gamma>',\<Delta>,\<Delta>',x,e,y,\<Theta>,\<Theta>');
       distinctVars (((x, App e y) # \<Gamma>') @ \<Gamma>);
       distinctVars (((n, e) # (x, App (Var n) y) # \<Gamma>') @ \<Gamma>);
@@ -130,7 +130,7 @@ done
 lemma distinct_redsD1:
   "\<Gamma> : \<Gamma>' \<Down>d \<Delta> : \<Delta>' \<Longrightarrow> \<Gamma> : \<Gamma>' \<Down> \<Delta> : \<Delta>'"
   apply (nominal_induct rule: distinct_reds.strong_induct)
-  apply (auto intro!:reds.intros simp add: fresh_star_Pair)
+  apply (auto intro:reds.intros simp add: fresh_star_Pair fresh_Pair)
   done
 
 lemma distinct_redsD2:
@@ -151,8 +151,8 @@ lemma distinct_redsI:
 proof (nominal_induct rule: reds.strong_induct)
 case Lambda thus ?case by (auto intro: distinct_reds.intros)
 next
-case (Application n \<Gamma> \<Gamma>' x e y \<Theta> \<Theta>' z \<Delta> \<Delta>' e')
-  have "atom n \<sharp> (\<Gamma>, \<Gamma>', x, e, y, \<Theta>, \<Theta>',z)"
+case (Application n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<Theta>' z e')
+  have "atom n \<sharp> (\<Gamma>, \<Gamma>',\<Delta>,\<Delta>',x, e, y, \<Theta>, \<Theta>',z)"
     using Application by simp
   moreover
   have "atom z \<sharp> (\<Gamma>, \<Gamma>', \<Delta>, \<Delta>', x, e, y, \<Theta>, \<Theta>')"
@@ -169,13 +169,13 @@ case (Application n \<Gamma> \<Gamma>' x e y \<Theta> \<Theta>' z \<Delta> \<Del
   have "distinctVars (((n, e) # (x, App (Var n) y) # \<Gamma>') @ \<Gamma>)"
     by (simp add: distinctVars_append distinctVars_Cons)
   moreover
-  note hyp1 = Application.hyps(19)[OF this]
+  note hyp1 = Application.hyps(21)[OF this]
   note distinct_redsD3[OF hyp1]
   moreover
   hence "distinctVars (((x, e'[z::=y]) # \<Delta>') @ \<Delta>)"
     by (simp add: distinctVars_append distinctVars_Cons)
   moreover
-  note hyp2 = Application.hyps(21)[OF this]
+  note hyp2 = Application.hyps(23)[OF this]
   note distinct_redsD3[OF hyp2]
   moreover  
   note hyp1
@@ -255,7 +255,7 @@ case DLambda
   case 1 show ?case by simp
   case 2 show ?case by simp
 next
-case (DApplication n \<Gamma> \<Gamma>' x e y \<Theta> \<Theta>' z \<Delta> \<Delta>' e')
+case (DApplication n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<Theta>' z e')
   case 1
   show ?case
     using DApplication by simp
@@ -308,6 +308,12 @@ lemma reds_doesnt_forget:
  shows "heapVars \<Gamma> \<subseteq> heapVars \<Delta>" and "heapVars \<Gamma>' \<subseteq> heapVars \<Delta>'"
 by (rule reds_doesnt_forget'[OF distinct_redsI[OF assms]])+
 
+lemma stack_not_empty:
+  assumes "\<Gamma> : \<Gamma>' \<Down> \<Delta> : \<Delta>'"
+  shows "\<Delta>' \<noteq> []"
+  using assms
+  by (induct rule:reds.induct, simp_all)
+
 lemma stack_unchanged:
   assumes "\<Gamma> : (x, e) # \<Gamma>' \<Down> \<Delta> : (x, e') # \<Delta>'"
   shows "\<Delta>' = \<Gamma>'"
@@ -353,14 +359,14 @@ lemma reds_fresh':" \<lbrakk> \<Gamma> : \<Gamma>' \<Down>d \<Delta> : \<Delta>'
 proof(nominal_induct avoiding: x rule: distinct_reds.strong_induct)
 case (DLambda \<Gamma> x e) thus ?case by auto
 next
-case (DApplication n \<Gamma> \<Gamma>' xa e y \<Theta> \<Theta>' z \<Delta> \<Delta>' e' x)
+case (DApplication n \<Gamma> \<Gamma>' \<Delta> \<Delta>' xa e y \<Theta> \<Theta>' z e' x)
   from DApplication have [simp]:"atom x \<sharp> \<Gamma>" "atom x \<sharp> e" "atom x \<sharp> y" by (simp add: fresh_Pair exp_assn.fresh)+
   from `atom n \<sharp> x` have [simp]:"atom x \<sharp> n" by (metis fresh_at_base(2)) 
   have [simp]:"atom z \<sharp> y" by fact
 
   have "atom x \<sharp> (\<Gamma>, snd (hd ((n, e) # (xa, App (Var n) y) # \<Gamma>')))"
     by simp 
-  from DApplication.hyps(26)[OF this, simplified]
+  from DApplication.hyps(28)[OF this, simplified]
   have "atom x \<sharp> (\<Delta>, Lam [z]. e') \<or> x \<in> heapVars \<Delta>".
   thus ?case
   proof
@@ -385,7 +391,7 @@ case (DApplication n \<Gamma> \<Gamma>' xa e y \<Theta> \<Theta>' z \<Delta> \<D
   next
     assume "x \<in> heapVars \<Delta>"
     thus ?thesis
-    using reds_doesnt_forget'(1)[OF DApplication.hyps(27)]
+    using reds_doesnt_forget'(1)[OF DApplication.hyps(29)]
     by auto
   qed
 next
