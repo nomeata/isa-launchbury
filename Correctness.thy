@@ -4,16 +4,20 @@ begin
 
 
 theorem correctness:
-  assumes "\<Gamma> : e \<Down>\<^bsub>x#L\<^esub> \<Delta> : z"
+  assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
   and [simp]:"distinctVars \<Gamma>"
-  and fresh: "atom x \<sharp> (\<Gamma>,e)"
   shows "\<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<^esub> = \<lbrakk>z\<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<^esub>" and "\<lbrace>\<Gamma>\<rbrace> \<le> \<lbrace>\<Delta>\<rbrace>"
 proof-
 
-  have "\<Gamma> : [(x, e)] \<Down> \<Delta> : [(x, z)]"
-    by (rule add_stack[OF assms(1)], simp_all add: supp_Nil)
+  obtain x :: var where fresh: "atom x \<sharp> (\<Gamma>,e,\<Delta>,z)"
+    by (rule obtain_fresh)
+
+  have "\<Gamma> : e \<Down>\<^bsub>x#L\<^esub> \<Delta> : z"
+    by (rule reds_add_var_L[OF assms(1) fresh], simp)
+  hence "\<Gamma> : [(x, e)] \<Down> \<Delta> : [(x, z)]"
+    by (rule add_stack, simp_all add: supp_Nil)
   moreover
-  from `atom x \<sharp> (\<Gamma>,e)`
+  from fresh
   have "x \<notin> heapVars \<Gamma>"
     by (metis heapVars_not_fresh fresh_Pair)
   hence "distinctVars ([(x, e)] @ \<Gamma>)"
@@ -21,10 +25,6 @@ proof-
   ultimately
   have le: "\<lbrace>[(x, e)] @ \<Gamma>\<rbrace> \<le> \<lbrace>[(x, z)] @ \<Delta>\<rbrace>"
     by (rule CorrectnessStacked.correctness)
- 
-  have "atom x \<sharp> (\<Delta>, z)"
-    using reds_fresh[OF assms(1) fresh]
-    by auto
 
   have "\<lbrace>\<Gamma>\<rbrace> = fmap_restr (fst ` set \<Gamma>) (\<lbrace>(x, e) # \<Gamma>\<rbrace>)"
     apply (rule HSem_add_fresh[of fempty, simplified (no_asm), unfolded heapVars_def, symmetric])
@@ -38,7 +38,7 @@ proof-
     apply (rule HSem_add_fresh[of fempty, simplified (no_asm), unfolded heapVars_def])
     apply (rule fempty_is_heapExtendJoin_cond'_ESem)
     apply (rule fempty_is_heapExtendJoin_cond'_ESem)
-    using `_ \<sharp> (\<Delta>,z)` apply (simp add: fresh_Pair)
+    using fresh apply (simp add: fresh_Pair)
     done
   finally show "\<lbrace>\<Gamma>\<rbrace> \<le> \<lbrace>\<Delta>\<rbrace>".
  
@@ -66,7 +66,7 @@ proof-
     apply (rule ESem_add_fresh)
     apply (rule fempty_is_heapExtendJoin_cond'_ESem)
     apply (rule fempty_is_heapExtendJoin_cond'_ESem)
-    using `atom x \<sharp> (\<Delta>,z)` by (simp add: fresh_Pair)
+    using fresh by (simp add: fresh_Pair)
   finally show "\<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<^esub> = \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<^esub>".
 qed
 
