@@ -274,7 +274,7 @@ lemma the_lookup_HSem_both_compatible:
   by (metis HSem_def the_lookup_heapExtendJoin_both_compatible[OF assms])
 
 
-lemma the_lookup_heapExtendJoin_heap:
+lemma the_lookup_HSem_heap:
   assumes "heapExtendJoin_cond' h ESem \<rho>"
   assumes "y \<in> fst ` set h"
   assumes "y \<notin> fdom \<rho>"
@@ -1263,7 +1263,6 @@ lemma HSem_add_fresh:
   assumes cond1: "heapExtendJoin_cond' \<Gamma> ESem \<rho>"
   assumes cond2: "heapExtendJoin_cond' ((x,e) # \<Gamma>) ESem \<rho>"
   assumes fresh: "atom x \<sharp> (\<rho>, \<Gamma>)"
-(*  assumes step: "\<And>e \<rho>'. fdom \<rho>' = fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>) \<Longrightarrow> e \<in> snd ` set \<Gamma> \<Longrightarrow> ESem e \<rho>' = ESem e (fmap_restr (fdom \<rho>' - {x}) \<rho>')" *)
   shows  "fmap_restr (fdom \<rho> \<union> heapVars \<Gamma>) (\<lbrace>(x, e) # \<Gamma>\<rbrace>\<rho>) = \<lbrace>\<Gamma>\<rbrace>\<rho>"
 unfolding HSem_def
 proof(rule heapExtendJoin_add_fresh[OF assms])
@@ -1281,6 +1280,28 @@ case (goal1 e \<rho>')
     apply (simp add: fresh_star_def)
     using `atom x \<sharp> e`.
 qed
+
+lemma ESem_add_fresh:
+  assumes cond1: "heapExtendJoin_cond' \<Gamma> ESem \<rho>"
+  assumes cond2: "heapExtendJoin_cond' ((x,e') # \<Gamma>) ESem \<rho>"
+  assumes fresh: "atom x \<sharp> (\<rho>, \<Gamma>, e)"
+  shows "\<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>(x, e') # \<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
+proof(rule ESem_ignores_fresh[symmetric])
+  have "\<lbrace>\<Gamma>\<rbrace>\<rho> = fmap_restr (fdom \<rho> \<union> fst ` set \<Gamma>) (\<lbrace>(x, e') # \<Gamma>\<rbrace>\<rho>) "
+    apply (rule HSem_add_fresh[OF assms(1,2), symmetric, unfolded heapVars_def])
+    using fresh by (simp add: fresh_Pair)
+  thus "\<lbrace>\<Gamma>\<rbrace>\<rho> \<le> \<lbrace>(x, e') # \<Gamma>\<rbrace>\<rho>"
+    by (auto simp add: fmap_less_restrict)
+
+  have "(insert x (fdom \<rho> \<union> fst ` set \<Gamma>) - (fdom \<rho> \<union> fst ` set \<Gamma>)) = {x}"
+    using fresh
+    apply (auto simp add: fresh_Pair sharp_Env)
+    by (metis fresh_PairD(1) fresh_list_elem not_self_fresh)
+  thus "atom ` (fdom (\<lbrace>(x, e') # \<Gamma>\<rbrace>\<rho>) - fdom (\<lbrace>\<Gamma>\<rbrace>\<rho>)) \<sharp>* e"
+    using fresh
+    by (simp add: fresh_star_def fresh_Pair)
+qed
+
 
 lemma HSem_mono_subset:
   assumes "heapExtendJoin_cond' \<Gamma> ESem \<rho>"
