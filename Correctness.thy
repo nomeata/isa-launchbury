@@ -13,7 +13,7 @@ proof-
     by (rule obtain_fresh)
 
   have "\<Gamma> : e \<Down>\<^bsub>x#L\<^esub> \<Delta> : z"
-    by (rule reds_add_var_L[OF assms(1) fresh], simp)
+    by (rule Launchbury.reds_add_var_L[OF assms(1) fresh], simp)
   hence "\<Gamma> : [(x, e)] \<Down> \<Delta> : [(x, z)]"
     by (rule add_stack, simp_all add: supp_Nil)
   moreover
@@ -33,7 +33,7 @@ proof-
     using fresh apply (simp add: fresh_Pair)
     done
   also have "... \<le> fmap_restr (fst ` set \<Delta>) (\<lbrace>(x, z) # \<Delta>\<rbrace>)"
-    by (rule fmap_restr_le[OF le reds_doesnt_forget[unfolded heapVars_def, OF assms(1)], simplified])
+    by (rule fmap_restr_le[OF le Launchbury.reds_doesnt_forget[unfolded heapVars_def, OF assms(1)], simplified])
   also have "... = \<lbrace>\<Delta>\<rbrace>"
     apply (rule HSem_add_fresh[of fempty, simplified (no_asm), unfolded heapVars_def])
     apply (rule fempty_is_heapExtendJoin_cond'_ESem)
