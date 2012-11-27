@@ -256,6 +256,44 @@ case (Let as \<Gamma> body L \<Delta> z L')
     by (rule reds.Let[OF _ Let.hyps(4) Let.hyps(6)[OF _ Let.prems(2)]])
 qed
 
+lemma reds_smaller_L: "\<lbrakk> \<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z;
+   set L' \<subseteq> set L
+  \<rbrakk> \<Longrightarrow> \<Gamma> : e \<Down>\<^bsub>L'\<^esub> \<Delta> : z"
+proof(nominal_induct avoiding : L' rule: reds.strong_induct)
+case (Lambda \<Gamma> x e L L')
+  show ?case
+    by (rule reds.Lambda)
+next
+case (Application y \<Gamma> e xa L \<Delta> \<Theta> z e' L')
+  show ?case
+  proof(rule reds.Application)
+    show "atom y \<sharp> (\<Gamma>, e, xa, L', \<Delta>, \<Theta>, z)"
+      using Application
+      by (auto simp add: fresh_Pair)
+  
+    have "set (xa # L') \<subseteq> set (xa # L)"
+      using `set L' \<subseteq> set L` by auto
+    thus "\<Gamma> : e \<Down>\<^bsub>xa # L'\<^esub> \<Delta> : Lam [y]. e'"
+      by (rule Application.hyps(10))
+
+    show "\<Delta> : e'[y::=xa] \<Down>\<^bsub>L'\<^esub> \<Theta> : z "
+      by (rule Application.hyps(12)[OF Application.prems])
+  qed
+next 
+case (Variable xa e \<Gamma> L \<Delta> z L')
+  have "set (xa # L') \<subseteq> set (xa # L)"
+    using Variable.prems by auto
+  thus ?case
+    by (rule reds.Variable[OF Variable(1) Variable.hyps(3)])
+next
+case (Let as \<Gamma> body L \<Delta> z L')
+  have "set (bn as) \<sharp>* (\<Gamma>, Terms.Let as body, L')"
+    using Let(1-3) Let.prems
+    by (auto simp add: fresh_star_Pair  fresh_star_set_subset)
+  thus ?case
+    by (rule reds.Let[OF _ Let.hyps(4) Let.hyps(6)[OF Let.prems]])
+qed
+
 
 end
 

@@ -78,9 +78,17 @@ lemma fresh_subset:
   "finite B \<Longrightarrow> x \<sharp> (B :: 'a::at_base set) \<Longrightarrow> A \<subseteq> B \<Longrightarrow> x \<sharp> A"
   by (auto dest:supp_mono simp add: fresh_def)
 
+lemma fresh_set_subset:
+  "x \<sharp> (B :: 'a::at_base list) \<Longrightarrow> set A \<subseteq> set B \<Longrightarrow> x \<sharp> A"
+  by (metis fresh_set fresh_subset[OF finite_set])
+
 lemma fresh_star_subset:
   "finite B \<Longrightarrow> x \<sharp>* (B :: 'a::at_base set) \<Longrightarrow> A \<subseteq> B \<Longrightarrow> x \<sharp>* A"
   by (metis fresh_star_def fresh_subset)
+
+lemma fresh_star_set_subset:
+  "x \<sharp>* (B :: 'a::at_base list) \<Longrightarrow> set A \<subseteq> set B \<Longrightarrow> x \<sharp>* A"
+  by (metis fresh_star_set fresh_star_subset[OF finite_set])
 
 lemma fresh_star_fun_eqvt_app: "eqvt f \<Longrightarrow> a \<sharp>* x \<Longrightarrow> a \<sharp>* f x "
   by (metis fresh_star_def fresh_fun_eqvt_app)

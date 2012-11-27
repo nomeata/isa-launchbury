@@ -284,9 +284,6 @@ qed
 lemma reds_more_free:
   "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> \<Gamma> : e \<Down>*\<^bsub>L\<^esub> \<Delta> : z"
 proof(nominal_induct rule: Launchbury.reds.strong_induct)
-case (Lambda \<Gamma> x e L)
-  show ?case by (rule reds.Lambda)
-next
 case (Application y \<Gamma> e x L \<Delta> \<Theta> z e')
   obtain n :: var where
     fresh: "atom n \<sharp> (\<Gamma>, e, x, L, \<Delta>, \<Theta>, z, y, Lam [y]. e')" 
@@ -301,8 +298,7 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e')
       using fresh
       by (auto simp add: fresh_Pair fresh_at_base)
 
-    have "\<Gamma> : e \<Down>*\<^bsub>x # L\<^esub> \<Delta> : Lam [y]. e'"
-      by (rule Application.hyps)
+    note `\<Gamma> : e \<Down>*\<^bsub>x # L\<^esub> \<Delta> : Lam [y]. e'`
     moreover
     have "atom n \<sharp> (\<Gamma>, e, \<Delta>, Lam [y]. e')"
       using fresh by (auto simp add: fresh_Pair)
@@ -313,13 +309,29 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e')
     show "\<Delta> : e'[y::=x] \<Down>*\<^bsub>L\<^esub> \<Theta> : z"
       by fact
   qed
-next
-case Variable
-  thus ?case by (auto intro: reds.intros)
-next
-case (Let as \<Gamma> body L \<Delta> z)
-  thus ?case
-    by (auto intro: reds.Let simp add: fresh_star_Pair)
-qed
+qed (auto intro: reds.intros simp add: fresh_star_Pair)
+
+lemma reds_less_free:
+  "\<Gamma> : e \<Down>*\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> \<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
+proof(nominal_induct rule: LaunchburyMoreFree.reds.strong_induct)
+case (Application y \<Gamma> e x L \<Delta> \<Theta> z n e')
+  show ?case
+  proof(rule Launchbury.reds.Application)
+    show "atom y \<sharp> (\<Gamma>, e, x, L, \<Delta>, \<Theta>, z)"
+      using Application  by (auto simp add: fresh_Pair fresh_at_base)
+    show  "\<Gamma> : e \<Down>\<^bsub>x # L\<^esub> \<Delta> : Lam [y]. e'"
+      apply (rule reds_smaller_L[OF Application.hyps(17)])
+      by auto
+    show "\<Delta> : e'[y::=x] \<Down>\<^bsub>L\<^esub> \<Theta> : z" by fact
+  qed
+qed (auto intro: Launchbury.reds.intros simp add: fresh_star_Pair)
+
+lemma reds_more_free_eq:
+  "(\<Gamma> : e \<Down>*\<^bsub>L\<^esub> \<Delta> : z) \<longleftrightarrow> (\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z)"
+  by (metis reds_less_free reds_more_free)
+
+(* Why does this not work? *)
+lemmas reds_with_n_strong_induct = LaunchburyMoreFree.reds.strong_induct[unfolded reds_more_free_eq, case_names Lambda Application Variable Let]
+lemmas reds_with_n_induct = LaunchburyMoreFree.reds.induct[unfolded reds_more_free_eq, case_names Lambda Application Variable Let]
 
 end
