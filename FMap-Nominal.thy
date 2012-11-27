@@ -230,5 +230,12 @@ lemma fmap_restr_l_eqvt[eqvt]:
   "\<pi> \<bullet> fmap_restr_l d m = fmap_restr_l (\<pi> \<bullet> d) (\<pi> \<bullet> m)"
     by (simp add: fmap_restr_l_def fmap_restr_eqvt set_eqvt)
 
+lemma sharp_Env: "atom x \<sharp> (\<rho> :: ('a::at_base, 'b::pure) fmap) \<longleftrightarrow> x \<notin> fdom \<rho>"
+  apply (subst fresh_def)
+  apply (simp  add: supp_fmap)
+  apply (subst (1 2) fresh_def[symmetric])
+  apply (simp add: fresh_finite_set_at_base[OF finite_fdom] pure_fresh)
+  done
+
 
 end

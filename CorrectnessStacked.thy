@@ -318,8 +318,8 @@ case (goal3 x)
     by simp
   {
     fix v e
-    assume "(v,e) \<in> set \<Delta>"
-    from fresh_star_heap_expr[OF _ this]
+    assume "e \<in> snd` set \<Delta>"
+    from fresh_star_heap_expr'[OF _ this]
     have fresh_e: "atom ` fst ` set \<Gamma> \<sharp>* e"
       by (metis fresh fresh_star_Pair)
     have "\<lbrakk> e \<rbrakk>\<^bsub>x\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>fmap_expand x (fdom \<rho> \<union> fst ` set \<Delta> \<union> fst ` set \<Gamma>)\<^esub>"
@@ -349,10 +349,12 @@ case (goal3 x)
     apply (subst lookup_fmap_expand1)
       apply auto[3]
     apply simp
-    apply (erule lookupHeapToEnvE2[of _ _ \<Gamma>])
-    apply simp
-    apply (erule e_less)
-    done
+    apply (subst lookupHeapToEnv, assumption)
+    apply (subst lookupHeapToEnv)
+      apply auto[1]
+    apply (simp add: map_add_dom_app_simps dom_map_of_conv_image_fst)
+    apply (rule e_less)
+    by (metis the_map_of_snd)
 qed
 
 lemma fmap_restr_HSem_noop:
@@ -427,14 +429,15 @@ proof(rule below_antisym)
     case (goal2 x)
       hence x:"x \<in> fst ` set \<Gamma>" by auto
       thus ?case
-        apply (rule lookupHeapToEnvE2[of _ _ \<Delta>])
-        apply simp
+        apply (subst lookupHeapToEnv, assumption)
         apply (subst (2) HSem_unroll[OF cond2])
         apply (subst the_lookup_join[OF compat2])
         apply (rule below_trans[OF _ join_above2[OF the_lookup_compatible[OF compat2]]])
         apply (subst lookup_fmap_expand1)
           using x apply auto[3]
-        apply auto
+        apply (subst lookupHeapToEnv)
+          apply auto[1]
+        apply (simp add: map_add_dom_app_simps dom_map_of_conv_image_fst)
         done
     qed       
     thus ?case
@@ -475,22 +478,23 @@ proof(rule below_antisym)
       proof
         assume x: "x \<in> fst ` set \<Gamma>"
         thus ?thesis
-        apply (rule lookupHeapToEnvE2[of _ _ \<Delta>])
-        apply simp
+        apply (subst lookupHeapToEnv)
+          apply auto[1]
         apply (subst (2) HSem_unroll[OF cond1])
         apply (subst the_lookup_join[OF compat2])
         apply (rule below_trans[OF _ join_above2[OF the_lookup_compatible[OF compat2]]])
         apply (subst lookup_fmap_expand1)
           using x apply auto[3]
-        apply auto
+        apply (subst lookupHeapToEnv, assumption)
+        apply (simp add: map_add_dom_app_simps dom_map_of_conv_image_fst)
         done
       next
         assume x: "x \<notin> fst ` set \<Gamma> \<and> x \<in> fst ` set \<Delta>"
         hence [simp]:"x \<notin> fst ` set \<Gamma>" and  "x \<in> fst ` set \<Delta>" by auto
         from this(2)
         show ?thesis
-        apply (rule lookupHeapToEnvE)
-        apply simp
+        apply (subst lookupHeapToEnv)
+          apply auto[1]
         apply (subst the_lookup_HSem_other)
           apply simp
         apply (subst (2) HSem_unroll[OF cond3])
@@ -498,13 +502,15 @@ proof(rule below_antisym)
         apply (rule below_trans[OF _ join_above2[OF the_lookup_compatible[OF compat3]]])
         apply (subst lookup_fmap_expand1)
           using x apply auto[3]
-        apply auto
+        apply (subst lookupHeapToEnv, assumption)
+        apply (simp add: map_add_dom_app_simps dom_map_of_conv_image_fst)
         apply (rule eq_imp_below)
         apply (rule ESem_ignores_fresh[symmetric])
         apply (rule HSem_disjoint_less)
           using Gamma_fresh apply auto[1]
         apply (simp add: fdoms)
-        by (metis fresh fresh_star_Pair fresh_star_heap_expr)
+        apply (erule fresh_star_heap_expr'[OF _ the_map_of_snd, rotated])
+        by (metis fresh fresh_star_Pair)
       qed  
     qed
     thus ?case
@@ -600,7 +606,7 @@ proof (rule iffD2[OF fmap_less_restrict], rule conjI)
 
   {
     fix x' e
-    assume "(x', e) \<in> set \<Gamma>"
+    assume "e \<in> snd ` set \<Gamma>"
 
     have simp1: " fdom (\<lbrace>(x, body) # asToHeap as @ \<Gamma>\<rbrace>\<rho>) \<inter> insert x (fdom \<rho> \<union> fst ` set \<Gamma>) = insert x (fdom \<rho> \<union> fst ` set \<Gamma>)"
       by auto
@@ -610,7 +616,7 @@ proof (rule iffD2[OF fmap_less_restrict], rule conjI)
       by (auto simp del: fst_set_asToHeap)
 
     have fresh_e: "atom ` fst ` set (asToHeap as) \<sharp>* e"
-      by (rule fresh_star_heap_expr[OF fresh_Gamma `_ \<in> set \<Gamma>`])
+      by (rule fresh_star_heap_expr'[OF fresh_Gamma `_ \<in> snd\` set \<Gamma>`])
 
     have "\<lbrakk> e \<rbrakk>\<^bsub>fmap_restr (insert x (fdom \<rho> \<union> fst ` set \<Gamma>)) (\<lbrace>(x, body) # asToHeap as @ \<Gamma>\<rbrace>\<rho>)\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>(x, body) # asToHeap as @ \<Gamma>\<rbrace>\<rho>\<^esub>"
       apply (rule ESem_ignores_fresh[OF fmap_restr_less])
@@ -693,10 +699,10 @@ case goal2
           apply (subst lookup_fmap_expand1)
             apply auto[3]
           apply (simp add: lookupHeapToEnvNotAppend[OF x'_not_as])
-          apply (erule lookupHeapToEnvE)
-          apply simp
+          apply (subst lookupHeapToEnv, assumption)
+          apply (subst lookupHeapToEnv, assumption)
           apply (rule below_trans[OF cont2monofunE[OF ESem_cont goal3(2)] eq_imp_below])
-          apply (erule Gamma_eq)
+          apply (erule Gamma_eq[OF the_map_of_snd])
           done
       qed
     qed

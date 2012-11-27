@@ -1,5 +1,5 @@
 theory Denotational
-  imports "Denotational-HeapExtend"
+  imports "Denotational-Common" "Value-Meet" "Denotational-HeapExtend"
 begin
 
 nominal_primrec

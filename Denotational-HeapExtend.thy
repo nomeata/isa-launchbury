@@ -1,47 +1,13 @@
 theory "Denotational-HeapExtend"
-  imports "Denotational-Common" "HOLCF-Set" "HOLCF-Down-Closed" "HOLCF-Fix-Join" "Value-Meet"
+  imports "HeapToEnv" "HOLCF-Set" "HOLCF-Down-Closed" "HOLCF-Fix-Join"
 begin
 
-
-instantiation fmap :: (type, pcpo) subpcpo_partition
-begin
-  definition "to_bot x = fmap_bottom (fdom x)"
-  lemma [simp]:"fdom (to_bot x) = fdom x"
-    unfolding to_bot_fmap_def by auto
-
-  lemma to_bot_vimage_cone:"to_bot -` {to_bot x} = {z. fmap_bottom (fdom x) \<sqsubseteq> z}"
-    by (auto simp add:to_bot_fmap_def)
-
-  instance  
-  apply default
-  apply (subst to_bot_vimage_cone)
-  apply (rule subpcpo_cone_above)
-  apply (simp add: to_bot_fmap_def fmap_below_dom)
-  apply (simp add: to_bot_fmap_def)
-  done
-end
-
-abbreviation heapExtendJoin_cond'
+abbreviation heapExtendJoin_cond' :: "('var::{cont_pt,at_base} \<times> 'exp::pt) list \<Rightarrow> ('exp \<Rightarrow> ('var, 'value) fmap \<Rightarrow> 'value)  \<Rightarrow> ('var, 'value::{pure,cont_pt,Nonempty_Meet_cpo,pcpo}) fmap \<Rightarrow> bool"
   where "heapExtendJoin_cond' h eval \<rho> \<equiv>
       fix_on_cond_jfc' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) 
                         (\<lambda> \<rho>' . fmap_expand (heapToEnv h (\<lambda>e. eval e \<rho>')) (fdom \<rho> \<union> fst ` set h))"
 
-(*
-lemma heapExtendJoin_cond'D:
-  assumes "heapExtendJoin_cond' h eval \<rho>"
-  and   "compatible (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) \<rho>'"
-  shows " compatible (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) (fmap_expand (heapToEnv h (\<lambda>e. eval e \<rho>')) (fdom \<rho> \<union> fst ` set h))"
-  using assms unfolding heapExtendJoin_cond'_def  by metis
-
-lemma heapExtendJoin_cond'I:
-  assumes  "\<And> \<rho>'. compatible (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) \<rho>' \<Longrightarrow>
-                   compatible (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) (fmap_expand (heapToEnv h (\<lambda>e. eval e \<rho>')) (fdom \<rho> \<union> fst ` set h))"
-  and "\<And> e. e \<in> snd ` set h \<Longrightarrow> cont (eval e)"
-  shows "heapExtendJoin_cond' h eval \<rho>"
-  using assms unfolding heapExtendJoin_cond'_def by metis
-*)
-
-definition heapExtendJoin :: "Env \<Rightarrow> heap \<Rightarrow> (exp \<Rightarrow> Env \<Rightarrow> Value)  \<Rightarrow> (var, Value) fmap"
+definition heapExtendJoin :: "('var::{cont_pt,at_base}, 'value::{pure,cont_pt,Nonempty_Meet_cpo,pcpo}) fmap \<Rightarrow> ('var \<times> 'exp::pt) list \<Rightarrow> ('exp \<Rightarrow> ('var, 'value) fmap \<Rightarrow> 'value)  \<Rightarrow> ('var, 'value) fmap"
   where
   "heapExtendJoin \<rho> h eval =
     (if heapExtendJoin_cond' h eval \<rho>
@@ -235,6 +201,8 @@ lemma fempty_is_heapExtendJoin_cond':
 
 lemma heapExtendJoin_cond'_cont:
   "heapExtendJoin_cond' h eval \<rho> \<Longrightarrow> cont (\<lambda>x. fmap_expand (heapToEnv h (\<lambda>e. eval e x)) (fdom \<rho> \<union> fst ` set h))"
+  using [[show_sorts]]
+  thm cont_F_jfc''
   by (rule cont_F_jfc'')
 
 lemma heapExtendJoin_ind':
@@ -775,30 +743,18 @@ lemma fdom_fix_join_compat'':
   shows "fdom \<rho>' = fdom \<rho>"
   by (metis assms(2) bottom_of_jfc'' fmap_below_dom subpcpo.bottom_of_minimal subpcpo_jfc'' to_bot_minimal)
 
-(*
-lemma HSem_add_fresh:
-  assumes cond1: "heapExtendJoin_cond' \<Gamma> eval \<rho>"
-  assumes cond2: "heapExtendJoin_cond' ((x,e) # \<Gamma>) eval \<rho>"
-  assumes fresh: "atom ` (fdom \<rho>2 - fdom \<rho>1) \<sharp>* \<Gamma>"
-  assumes step: "\<And>e \<rho>1' \<rho>2'. e \<in> snd ` set \<Gamma> \<Longrightarrow> fdom \<rho>1' = fdom \<rho>1 \<Longrightarrow> fdom \<rho>2' = fdom \<rho>2 \<Longrightarrow> \<rho>1 \<le> \<rho>2 \<Longrightarrow> eval e \<rho>1' = eval e \<rho>2'"
-  shows  "heapExtendJoin \<rho> \<Gamma> eval \<le> heapExtendJoin \<rho> ((x, e) # \<Gamma>) eval"
-proof (rule parallel_heapExtendJoin_ind[OF cond1 cond2])
-case goal1 show ?case by (auto intro:adm_is_adm_on)
-case goal2 show ?case by (auto simp add: heapVars_def)[1]
-*)
 
 lemma heapExtendJoin_add_fresh:
   assumes cond1: "heapExtendJoin_cond' \<Gamma> eval \<rho>"
   assumes cond2: "heapExtendJoin_cond' ((x,e) # \<Gamma>) eval \<rho>"
   assumes fresh: "atom x \<sharp> (\<rho>,\<Gamma>)"
   assumes step: "\<And>e \<rho>'. fdom \<rho>' = fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>) \<Longrightarrow> e \<in> snd ` set \<Gamma> \<Longrightarrow> eval e \<rho>' = eval e (fmap_restr (fdom \<rho>' - {x}) \<rho>')"
-  shows  "fmap_restr (fdom \<rho> \<union> heapVars \<Gamma>) (heapExtendJoin \<rho> ((x, e) # \<Gamma>) eval) = heapExtendJoin \<rho> \<Gamma> eval"
+  shows  "fmap_restr (fdom \<rho> \<union> fst ` set \<Gamma>) (heapExtendJoin \<rho> ((x, e) # \<Gamma>) eval) = heapExtendJoin \<rho> \<Gamma> eval"
 proof (rule parallel_heapExtendJoin_ind[OF cond1 cond2])
 case goal1 show ?case by (auto intro:adm_is_adm_on)
-case goal2 show ?case by (auto simp add: heapVars_def)[1]
+case goal2 show ?case by (auto)[1]
 case goal3
-  have "fmap_restr (fdom \<rho> \<union> heapVars \<Gamma>) (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>))) = fmap_expand \<rho> (fdom \<rho> \<union> fst ` set \<Gamma>)"
-    unfolding heapVars_def
+  have "fmap_restr (fdom \<rho> \<union> fst ` set \<Gamma>) (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>))) = fmap_expand \<rho> (fdom \<rho> \<union> fst ` set \<Gamma>)"
     apply (subst fmap_restr_fmap_expand2)
     by auto
   moreover
@@ -811,9 +767,8 @@ case goal3
     using fdom_fix_join_compat''[OF fix_on_cond_jfc''[OF cond2] goal3(2)]
     by auto
 
-  have "fmap_restr (fdom \<rho> \<union> heapVars \<Gamma>) (fmap_expand (heapToEnv ((x, e) # \<Gamma>) (\<lambda>e. eval e z)) (fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>)))
+  have "fmap_restr (fdom \<rho> \<union> fst`set \<Gamma>) (fmap_expand (heapToEnv ((x, e) # \<Gamma>) (\<lambda>e. eval e z)) (fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>)))
     =  fmap_expand (heapToEnv \<Gamma> (\<lambda>e. eval e y)) (fdom \<rho> \<union> fst ` set \<Gamma>) "
-    unfolding heapVars_def
     apply (subst fmap_restr_fmap_expand2)
       apply simp
       apply auto[1]
@@ -824,7 +779,7 @@ case goal3
     using fdom_fix_join_compat''[OF fix_on_cond_jfc''[OF cond2] goal3(2)] apply simp
     apply assumption
     using `_ = y`[symmetric]
-    apply (simp add: heapVars_def)
+    apply simp
     done
   ultimately
   show ?case

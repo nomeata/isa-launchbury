@@ -55,13 +55,6 @@ lemma fresh_remove:
 using assms
 by(induct \<Gamma>)(auto simp add: fresh_Cons)
 
-lemma fresh_list_elem:
-  assumes "a \<sharp> \<Gamma>"
-  and "e \<in> set \<Gamma>"
-  shows "a \<sharp> e"
-using assms
-by(induct \<Gamma>)(auto simp add: fresh_Cons)
-
 lemma fresh_heap_expr:
   assumes "a \<sharp> \<Gamma>"
   and "(x,e) \<in> set \<Gamma>"

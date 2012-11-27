@@ -14,26 +14,6 @@ end
 instance var :: cont_pt  by default auto
 
 
-definition cfun_upd :: "('a \<rightarrow> 'b) => 'a => 'b => ('a \<rightarrow> 'b)" where
-  "cfun_upd f a b == \<Lambda> x. if x=a then b else f\<cdot>x"
-
-nonterminal cupdbinds and cupdbind
-
-syntax
-  "_cupdbind" :: "['a, 'a] => cupdbind"               ("(2_ :\<cdot>=/ _)")
-  ""         :: "cupdbind => cupdbinds"               ("_")
-  "_cupdbinds":: "[cupdbind, cupdbinds] => cupdbinds" ("_,/ _")
-  "_cUpdate"  :: "['a, cupdbinds] => 'a"              ("_/'((_)')" [1000, 0] 900)
-
-translations
-  "_cUpdate f (_cupdbinds b bs)" == "_cUpdate (_cUpdate f b) bs"
-  "f(x:\<cdot>=y)" == "CONST cfun_upd f x y"
-
-
-lemma cfun_upd_eqvt[eqvt]: "p \<bullet> (cfun_upd f (x::'a::{cont_pt,discrete_cpo}) y) = cfun_upd (p \<bullet> f) (p \<bullet> x) (p \<bullet> y)"
-  by (auto simp add:permute_cfun_def cfun_eq_iff cfun_upd_def)
-
-
 domain Value = Fn (lazy "Value \<rightarrow> Value")
 
 fixrec Fn_project :: "Value \<rightarrow> Value \<rightarrow> Value" (* (infix "\<down>Fn" 70) *)
@@ -55,41 +35,11 @@ instance
   done
 end
 
-lemma sharp_Env: "atom (x::var) \<sharp> (\<rho> :: Env) \<longleftrightarrow> x \<notin> fdom \<rho>"
-  apply (subst fresh_def)
-  apply (simp  add: supp_fmap)
-  apply (subst (1 2) fresh_def[symmetric])
-  apply (simp add: fresh_finite_set_at_base[OF finite_fdom] pure_fresh)
-  done
-
 lemma sharp_star_Env: "set (bn as) \<sharp>* (\<rho> :: Env) \<longleftrightarrow> (\<forall> x \<in> fst`set (asToHeap as) . x \<notin> fdom \<rho>)"
   by(induct rule:asToHeap.induct, auto simp add: fresh_star_def exp_assn.bn_defs sharp_Env)
 
 lemma sharp_star_Env': "atom ` fst ` set \<Gamma> \<sharp>* (\<rho> :: Env) \<longleftrightarrow> fst ` set \<Gamma> \<inter> fdom \<rho> = {}"
   by(induct rule:asToHeap.induct, auto simp add: fresh_star_def exp_assn.bn_defs sharp_Env)
-
-function heapToEnv :: "heap \<Rightarrow> (exp \<Rightarrow> Value) \<Rightarrow> Env"
-where
-  "heapToEnv [] _ = fempty"
-| "heapToEnv ((x,e)#h) eval = (heapToEnv h eval) (x f\<mapsto> eval e)"
-by (pat_completeness, auto)
-termination by lexicographic_order
-
-lemma cont2cont_heapToEnv[simp, cont2cont]:
-  "(\<And> e . e \<in> snd ` set h \<Longrightarrow> cont (\<lambda>\<rho>. eval \<rho> e)) \<Longrightarrow> cont (\<lambda> \<rho>. heapToEnv h (eval \<rho>))"
-  by(induct h, auto)
-
-lemma heapToEnv_eqvt[eqvt]:
-  "\<pi> \<bullet> heapToEnv h eval = heapToEnv (\<pi> \<bullet> h) (\<pi> \<bullet> eval)"
-  by (induct h eval rule:heapToEnv.induct, auto simp add: fmap_upd_eqvt  permute_fun_def)
-
-lemma heapToEnv_fdom[simp]:"fdom (heapToEnv h eval) = fst ` set h"
-  by (induct h eval rule:heapToEnv.induct, auto)
-
-lemma heapToEnv_cong[fundef_cong]:
-  "\<lbrakk> heap1 = heap2 ;  (\<And> e. e \<in> snd ` set heap2 \<Longrightarrow> eval1 e = eval2 e) \<rbrakk>
-    \<Longrightarrow>  heapToEnv heap1 eval1 = heapToEnv heap2 eval2"
- by (induct heap2 eval2 arbitrary:heap1 rule:heapToEnv.induct, auto)
 
 lemma perm_still_cont[simp]: "cont (\<pi> \<bullet> f) = cont (f :: ('a :: cont_pt) \<Rightarrow> ('b :: cont_pt))"
 proof
@@ -133,50 +83,5 @@ proof
   show "?lhs \<Longrightarrow> ?rhs" using imp[of "\<pi> \<bullet> h" "\<pi> \<bullet> f" "-\<pi>"] by simp
 qed
 
-lemma lookupHeapToEnv:
-  assumes "v \<in> fst ` set h"
-  shows "the (lookup (heapToEnv h f) v) = f (the (map_of h v))"
-  using assms
-  apply (induct h)
-  apply simp
-  apply (case_tac a)
-  apply auto
-  done
-
-lemma lookupHeapToEnvE:
-  assumes "v \<in> fst ` set h"
-  obtains e where "(v, e) \<in> set h" and "\<And> f. the (lookup (heapToEnv h f) v) = f e"
-proof(rule that)
-  show "(v, (the (map_of h v))) \<in> set h"
-    by (metis assms domD dom_map_of_conv_image_fst map_of_is_SomeD the.simps)
-  fix f
-  show "the (lookup (heapToEnv h f) v) = f (the (map_of h v))"
-    by (rule lookupHeapToEnv[OF assms])
-qed
-
-lemma lookupHeapToEnvE2:
-  assumes "v \<in> fst ` set h"
-  obtains e where "(v, e) \<in> set h" and "\<And> f. the (lookup (heapToEnv h f) v) = f e" and "\<And> f. the (lookup (heapToEnv (h@h') f) v) = f e"
-proof(rule that)
-  show "(v, (the (map_of h v))) \<in> set h"
-    by (metis assms domD dom_map_of_conv_image_fst map_of_is_SomeD the.simps)
-  fix f
-  show "the (lookup (heapToEnv h f) v) = f (the (map_of h v))"
-    by (rule lookupHeapToEnv[OF assms])
-  show "the (lookup (heapToEnv (h @ h') f) v) = f (the (map_of h v))"
-    apply (subst lookupHeapToEnv)
-    using assms apply (auto simp add: map_add_dom_app_simps dom_map_of_conv_image_fst)
-    done
-qed
-
-lemma lookupHeapToEnvNotCons[simp]:
-  assumes "x \<noteq> y"
-  shows "the (lookup (heapToEnv ((y,e)#h) f) x) = the (lookup (heapToEnv h f) x)"
-  using assms by simp
-
-lemma lookupHeapToEnvNotAppend[simp]:
-  assumes "x \<notin> fst ` set \<Gamma>"
-  shows "the (lookup (heapToEnv (\<Gamma>@h) f) x) = the (lookup (heapToEnv h f) x)"
-  using assms by (induct \<Gamma>, auto)
 
 end

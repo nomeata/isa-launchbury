@@ -1,5 +1,5 @@
 theory "FMap-HOLCF"
-  imports FMap "HOLCF-Join"
+  imports FMap "HOLCF-Join" "HOLCF-Set"
 begin
 
 default_sort type
@@ -1035,85 +1035,83 @@ lemma fmap_bottom_less[simp]:
   apply simp
   by (rule rev_finite_subset)
 
-(*
 
-instantiation fmap :: (type,pcpo) order
-begin
-  definition "(\<rho>::('a,'b) fmap) \<le> \<rho>' = ((fdom \<rho> \<subseteq> fdom \<rho>') \<and> (\<forall>x \<in> fdom \<rho>. lookup \<rho> x \<noteq> Some \<bottom> \<longrightarrow> lookup \<rho> x = lookup \<rho>' x))"
-  definition "(\<rho>::('a,'b) fmap) < \<rho>' = (\<rho> \<noteq> \<rho>' \<and> \<rho> \<le> \<rho>')"
-
-lemma fmap_less_eqI[intro]:
-  assumes assm1: "fdom (\<rho>::('a,'b) fmap) \<subseteq> fdom \<rho>'"
-    and assm2:  "\<And> x. \<lbrakk> x \<in> fdom \<rho> ; x \<in> fdom \<rho>' ; lookup \<rho> x \<noteq> Some \<bottom> \<rbrakk> \<Longrightarrow> the (lookup \<rho> x) = the (lookup \<rho>' x) "
-   shows "\<rho> \<le> \<rho>'"
- unfolding less_eq_fmap_def
- apply rule
- apply fact
- apply rule+
- apply (frule subsetD[OF `_ \<subseteq> _`])
- apply (frule (2) assm2)
- apply (auto iff: fdomIff)
- done
-
-lemma fmap_less_eqD:
-  assumes "(\<rho>::('a,'b) fmap) \<le> \<rho>'"
-  assumes "x \<in> fdom \<rho>"
-  assumes "lookup \<rho> x \<noteq> Some \<bottom>"
-  shows "lookup \<rho> x = lookup \<rho>' x"
-  using assms
-  unfolding less_eq_fmap_def by auto
-
-
-lemma fmap_antisym: assumes  "(x:: ('a,'b) fmap) \<le> y" and "y \<le> x" shows "x = y "
-proof(rule fmap_eqI[rule_format])
-    show "fdom x = fdom y" using `x \<le> y` and `y \<le> x` unfolding less_eq_fmap_def by auto
-    
-    fix v
-    assume "v \<in> fdom x"
-    hence "v \<in> fdom y" using `fdom _ = _` by simp
-
-    { assume "lookup x v \<noteq> Some \<bottom>"
-      hence "the (lookup x v) = the (lookup y v)"
-        using `x \<le> y` `v \<in> fdom x` unfolding less_eq_fmap_def by simp
+instance fmap :: (type, Nonempty_Meet_cpo) Bounded_Nonempty_Meet_cpo
+apply default
+proof-
+  fix S :: "('a, 'b) fmap set"
+  assume "S \<noteq> {}" and "\<exists>z. S >| z"
+  then obtain b where "\<And> m. m\<in>S \<Longrightarrow> b \<sqsubseteq> m" by (metis is_lbD)
+  hence [simp]:"\<And> m. m \<in> S \<Longrightarrow> fdom m = fdom b" by (metis fmap_below_dom)
+  
+  obtain f where f: "\<And> x. x \<in> fdom b \<Longrightarrow> (\<lambda>m . the (lookup m x)) ` S >>| f x "
+  proof-
+    {
+    fix x
+    assume "x \<in> fdom b"
+    have "(\<lambda>m . the (lookup m x)) ` S \<noteq> {}" using `S \<noteq> {}` by auto
+    then obtain l where  "(\<lambda>m . the (lookup m x)) ` S >>| l" by (metis nonempty_meet_exists)
+    hence "(\<lambda>m . the (lookup m x)) ` S >>| (SOME l. (\<lambda>m . the (lookup m x)) ` S >>| l)"
+      by (rule someI)
     }
-    moreover
-    { assume "lookup y v \<noteq> Some \<bottom>"
-      hence "the (lookup x v) = the (lookup y v)"
-        using `y \<le> x` `v \<in> fdom y` unfolding less_eq_fmap_def by simp
-    }
-    ultimately
-    show "the (lookup x v) = the (lookup y v)"
-      using `v \<in> fdom x` `v \<in> fdom y`
-      by (auto iff: fdomIff, blast)
+    thus ?thesis by (rule that)
+  qed 
+
+  let ?zm = "\<lambda> x. if x \<in> fdom b then Some (f x) else None"
+  have "dom ?zm = fdom b" by (auto simp add: dom_def)
+
+  obtain z where [simp]: "fdom z = fdom b" and z: "\<And> x m . x \<in> fdom b \<Longrightarrow> (\<lambda>m . the (lookup m x)) ` S >>| the (lookup z x)"
+  proof-
+    show ?thesis  
+      apply (rule that[of "Abs_fmap ?zm"])
+      apply (subst fdom.rep_eq)
+      apply (subst  Abs_fmap_inverse)
+      prefer 3
+      apply (subst (2) lookup.rep_eq)
+      apply (subst  Abs_fmap_inverse)
+      apply (auto simp add: dom_def)
+      apply (erule f)
+      done
   qed
 
-lemma fmap_trans: assumes  "(x:: ('a,'b) fmap) \<le> y" and "y \<le> z" shows "x \<le> z"
-proof
-  show "fdom x \<subseteq> fdom z" using `x \<le> y` and `y \<le> z` unfolding less_eq_fmap_def
-    by -(rule order_trans [of _ "fdom y"], auto)
-  
-  fix v
-  assume "v \<in> fdom x" and "v \<in> fdom z"
-  hence "v \<in> fdom y" using `x \<le> y`  unfolding less_eq_fmap_def by auto
-  assume "lookup x v \<noteq> Some \<bottom>"
-  hence "lookup y v = lookup x v"
-    using `x \<le> y` `v \<in> fdom x` unfolding less_eq_fmap_def by auto
-  moreover
-  hence "lookup y v \<noteq> Some \<bottom>"
-    using `lookup x v \<noteq> Some \<bottom>` by simp
-  hence "lookup y v = lookup z v"
-    by (rule fmap_less_eqD[OF `y \<le> z`  `v \<in> fdom y`])
-  ultimately
-  show "the (lookup x v) = the (lookup z v)" by auto
+  have "S >>| z"
+    apply (rule is_glbI)
+    apply (rule is_lbI)
+    apply (rule fmap_belowI')
+    apply simp
+    apply (rule is_lbD)
+    apply (rule is_glbD1)
+    apply (rule z, simp)
+    apply auto
+    apply (rule fmap_belowI')
+    apply (metis `S \<noteq> {}` `\<And>m. m \<in> S \<Longrightarrow> fdom m = fdom b` `fdom z = fdom b` all_not_in_conv fmap_below_dom is_lbD)
+    apply (rule is_glbD2)
+    apply (rule z, simp)
+    apply (rule is_lbI)
+    apply (erule imageE)
+    apply (erule ssubst)
+    apply (rule fmap_belowE)
+    apply (erule (1) is_lbD)
+    done
+  thus "\<exists> z. S >>| z" by auto
 qed
 
-instance
+instantiation fmap :: (type, pcpo) subpcpo_partition
+begin
+  definition "to_bot x = fmap_bottom (fdom x)"
+  lemma [simp]:"fdom (to_bot x) = fdom x"
+    unfolding to_bot_fmap_def by auto
+
+  lemma to_bot_vimage_cone:"to_bot -` {to_bot x} = {z. fmap_bottom (fdom x) \<sqsubseteq> z}"
+    by (auto simp add:to_bot_fmap_def)
+
+  instance  
   apply default
-  using fmap_antisym apply (auto simp add: less_fmap_def)[1]
-  apply (auto simp add: less_eq_fmap_def)[1]
-  using fmap_trans apply assumption
-  using fmap_antisym apply assumption
+  apply (subst to_bot_vimage_cone)
+  apply (rule subpcpo_cone_above)
+  apply (simp add: to_bot_fmap_def fmap_below_dom)
+  apply (simp add: to_bot_fmap_def)
   done
 end
-*)
+
 end

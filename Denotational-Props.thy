@@ -1267,14 +1267,14 @@ lemma HSem_add_fresh:
   assumes fresh: "atom x \<sharp> (\<rho>, \<Gamma>)"
   shows  "fmap_restr (fdom \<rho> \<union> heapVars \<Gamma>) (\<lbrace>(x, e) # \<Gamma>\<rbrace>\<rho>) = \<lbrace>\<Gamma>\<rbrace>\<rho>"
 unfolding HSem_def
-proof(rule heapExtendJoin_add_fresh[OF assms])
+proof(rule heapExtendJoin_add_fresh[OF assms, unfolded heapVars_def[symmetric]])
 case (goal1 e \<rho>')
   assume "e \<in> snd ` set \<Gamma>"
   hence "atom x \<sharp> e"
     apply auto
     by (metis fresh fresh_PairD(2) fresh_list_elem)
 
-  assume "fdom \<rho>' = fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>)"
+  assume "fdom \<rho>' = fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>)"
   hence [simp]:"fdom \<rho>' - fdom \<rho>' \<inter> (fdom \<rho>' - {x}) = {x}" by auto
 
   show ?case
