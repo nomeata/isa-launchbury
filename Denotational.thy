@@ -8,7 +8,7 @@ where
   "atom x \<sharp> \<rho> \<Longrightarrow> \<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub> = Fn \<cdot> (\<Lambda> v. (\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>))"
 | "\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> \<down>Fn \<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub> "
 | "\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub> = the (lookup \<rho> x)"
-| "set (bn as) \<sharp>* \<rho> \<Longrightarrow> \<lbrakk> Let as body \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk>body\<rbrakk>\<^bsub>heapExtendJoin \<rho> (asToHeap as) ESem\<^esub>"
+| "set (bn as) \<sharp>* \<rho> \<Longrightarrow> \<lbrakk> Let as body \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk>body\<rbrakk>\<^bsub>has_ESem.heapExtendJoin ESem \<rho> (asToHeap as) \<^esub>"
 proof-
 case goal1 thus ?case
   unfolding eqvt_def ESem_graph_def
@@ -55,17 +55,17 @@ next
 
 case (goal13 as \<rho> body as' \<rho>' body')
   assume eqvt1: "\<And> e x. e \<in> snd ` set (asToHeap as) \<Longrightarrow> eqvt_at ESem_sumC (e, x)"
-    and eqvt2:"eqvt_at ESem_sumC (body, heapExtendJoin \<rho> (asToHeap as) (\<lambda>x0 x1. ESem_sumC (x0, x1)))"
+    and eqvt2:"eqvt_at ESem_sumC (body, has_ESem.heapExtendJoin (\<lambda>x0 x1. ESem_sumC (x0, x1)) \<rho> (asToHeap as))"
     and eqvt3:"\<And>e x. e \<in> snd ` set (asToHeap as') \<Longrightarrow> eqvt_at ESem_sumC (e, x)"
-    and eqvt4:"eqvt_at ESem_sumC (body', heapExtendJoin \<rho>' (asToHeap as') (\<lambda>x0 x1. ESem_sumC (x0, x1)))"
+    and eqvt4:"eqvt_at ESem_sumC (body', has_ESem.heapExtendJoin (\<lambda>x0 x1. ESem_sumC (x0, x1)) \<rho>' (asToHeap as'))"
 
   assume fresh1: "set (bn as) \<sharp>* \<rho>" and fresh2: "set (bn as') \<sharp>* \<rho>'"
   assume "(Terms.Let as body, \<rho>) =  (Terms.Let as' body', \<rho>')"
   hence tmp: "[bn as]lst. (body, as) = [bn as']lst. (body', as')" and rho:"\<rho>' = \<rho>" by auto
 
-  have "ESem_sumC (body, heapExtendJoin \<rho> (asToHeap as) (\<lambda>x0 x1. ESem_sumC (x0, x1))) =
-        ESem_sumC (body', heapExtendJoin \<rho> (asToHeap as') (\<lambda>x0 x1. ESem_sumC (x0, x1)))"
-    apply (rule Abs_lst_fcb[of bn _ _ _ _ "(\<lambda> as (body, as'). ESem_sumC (body, heapExtendJoin \<rho> (asToHeap as) (\<lambda>x0 x1. ESem_sumC (x0, x1))))" , OF tmp, simplified])
+  have "ESem_sumC (body, has_ESem.heapExtendJoin (\<lambda>x0 x1. ESem_sumC (x0, x1)) \<rho> (asToHeap as)) =
+        ESem_sumC (body', has_ESem.heapExtendJoin (\<lambda>x0 x1. ESem_sumC (x0, x1)) \<rho> (asToHeap as'))"
+    apply (rule Abs_lst_fcb[of bn _ _ _ _ "(\<lambda> as (body, as'). ESem_sumC (body, has_ESem.heapExtendJoin (\<lambda>x0 x1. ESem_sumC (x0, x1)) \<rho> (asToHeap as)))" , OF tmp, simplified])
     apply (rule pure_fresh)+
     apply (subst spec[OF iffD1[OF meta_eq_to_obj_eq[OF eqvt_at_def] eqvt2]])
     apply (simp add:
@@ -73,7 +73,7 @@ case (goal13 as \<rho> body as' \<rho>' body')
         permute_pure
         spec[OF iffD1[OF meta_eq_to_obj_eq[OF eqvt_def] asToHeap_eqvt]]
         asToHeap_eqvt)
-    apply (rule arg_cong[OF heapExtendJoin_cong[OF _ refl]])
+    apply (rule arg_cong[OF heapExtendJoin_cong[OF _ _ refl, rotated]])
 
     apply (rule perm_supp_eq)
     using fresh1 fresh2
@@ -87,13 +87,15 @@ case (goal13 as \<rho> body as' \<rho>' body')
     apply (metis (full_types) imageI snd_conv)
     apply simp
     done
-  thus "ESem_sumC (body, heapExtendJoin \<rho> (asToHeap as) (\<lambda>x0 x1. ESem_sumC (x0, x1))) =
-      ESem_sumC (body', heapExtendJoin \<rho>' (asToHeap as') (\<lambda>x0 x1. ESem_sumC (x0, x1)))" using `\<rho>' = \<rho>`  by simp
+  thus "ESem_sumC (body, has_ESem.heapExtendJoin (\<lambda>x0 x1. ESem_sumC (x0, x1)) \<rho> (asToHeap as) ) =
+      ESem_sumC (body', has_ESem.heapExtendJoin (\<lambda>x0 x1. ESem_sumC (x0, x1)) \<rho>' (asToHeap as'))" using `\<rho>' = \<rho>`  by simp
 qed auto
 
 lemma  True and [simp]:"(a, b) \<in> set (asToHeap as) \<Longrightarrow> size b < Suc (size as + size body)"
   by(induct and as rule:exp_assn.inducts, auto simp add: exp_assn.bn_defs fresh_star_insert)
 
 termination (eqvt) by lexicographic_order
+
+interpretation has_ESem ESem.
 
 end

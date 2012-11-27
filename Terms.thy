@@ -15,6 +15,9 @@ binder
   bn
 where "bn ANil = []" | "bn (ACons x t as) = (atom x) # (bn as)"
 
+type_synonym heap = "(var \<times> exp) list"
+
+
 fun subst_var :: "var \<Rightarrow> var \<Rightarrow> var \<Rightarrow> var" ("_[_::v=_]" [1000,100,100] 1000)
 where "x[y ::v= z] = (if x = y then z else x)"
 

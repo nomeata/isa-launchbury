@@ -125,5 +125,4 @@ instance "cfun" :: (pure_cpo, pure_cpo) pure_cpo
   apply (auto  simp add: permute_cfun_def permute_pure Cfun.cfun.Rep_cfun_inverse)
   done
 
-
 end
