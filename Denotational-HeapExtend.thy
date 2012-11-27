@@ -201,8 +201,6 @@ lemma fempty_is_heapExtendJoin_cond':
 
 lemma heapExtendJoin_cond'_cont:
   "heapExtendJoin_cond' h eval \<rho> \<Longrightarrow> cont (\<lambda>x. fmap_expand (heapToEnv h (\<lambda>e. eval e x)) (fdom \<rho> \<union> fst ` set h))"
-  using [[show_sorts]]
-  thm cont_F_jfc''
   by (rule cont_F_jfc'')
 
 lemma heapExtendJoin_ind':
