@@ -69,7 +69,7 @@ case (Let as \<Gamma> x body \<Gamma>' \<Delta> \<Delta>' S)
     by (simp, rule Launchbury.Let[OF fresh Let.hyps(5) hyp])
 qed
 
-lemma add_stack_more_fresh:
+lemma add_stack:
   assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
   assumes "x \<in> set L"
   assumes "supp \<Gamma>' \<subseteq> supp L"

@@ -6,8 +6,9 @@ inductive reds :: "heap \<Rightarrow> exp \<Rightarrow> var list \<Rightarrow> h
 where
   Lambda: "\<Gamma> : (Lam [x]. e) \<Down>*\<^bsub>L\<^esub> \<Gamma> : (Lam [x]. e)" 
  | Application: "\<lbrakk>
-    atom y \<sharp> (\<Gamma>,e,x,L,\<Delta>,\<Theta>,z,n) ;
+    atom y \<sharp> (\<Gamma>,e,x,L,\<Delta>,\<Theta>,z) ;
     atom (n::var) \<sharp> (\<Gamma>,e,x,L,\<Delta>,\<Theta>,z) ;
+    n \<noteq> y;
     \<Gamma> : e \<Down>*\<^bsub>n#x#L\<^esub> \<Delta> : (Lam [y]. e');
     \<Delta> : e'[y ::= x] \<Down>*\<^bsub>L\<^esub> \<Theta> : z
   \<rbrakk>  \<Longrightarrow>
@@ -40,12 +41,13 @@ lemma eval_test2:
   apply (rule reds.intros)
   apply (auto simp add: fresh_Pair fresh_at_base fresh_Cons fresh_Nil exp_assn.fresh fresh_star_def)[2]
   apply (rule Application[where y = y and n = n])
-  prefer 3
+  prefer 4
   apply (rule reds.intros)
   apply simp
   apply (rule reds.intros)
   apply (auto simp add: fresh_Pair fresh_at_base fresh_Cons fresh_Nil exp_assn.fresh fresh_star_def)[1]
   apply (auto simp add: fresh_Pair fresh_at_base fresh_Cons fresh_Nil exp_assn.fresh fresh_star_def)[1]
+  apply simp
   apply simp
   apply (rule reds.intros)
   apply simp
@@ -138,16 +140,16 @@ case (Application y \<Gamma> e x' L \<Delta> \<Theta> z n e')
         by (auto simp add:fresh_Pair exp_assn.fresh)
       hence "atom x \<sharp> e'[y ::= x']" using Application.prems
         by (auto intro: subst_pres_fresh[rule_format] simp add: fresh_Pair exp_assn.fresh)
-      thus ?thesis using Application.hyps(6) `atom x \<sharp> (\<Delta>, Lam [y]. e')` by auto
+      thus ?thesis using Application.hyps(7) `atom x \<sharp> (\<Delta>, Lam [y]. e')` by auto
     next
     case True
       hence "atom x \<sharp> e'[y ::= x']" using `atom x \<sharp> (\<Delta>, Lam [y]. e')` Application.prems
         by (auto intro:subst_is_fresh simp add: fresh_Pair exp_assn.fresh)
-      thus ?thesis using Application.hyps(6) `atom x \<sharp> (\<Delta>, Lam [y]. e')` by auto
+      thus ?thesis using Application.hyps(7) `atom x \<sharp> (\<Delta>, Lam [y]. e')` by auto
     qed
   next
     assume "x \<in> heapVars \<Delta>  - set (n # x' # L)"
-    thus ?thesis using reds_doesnt_forget[OF Application.hyps(5)] by auto
+    thus ?thesis using reds_doesnt_forget[OF Application.hyps(6)] by auto
   qed
 next
 
@@ -196,13 +198,15 @@ next
 case (Application y \<Gamma> e xa L \<Delta> \<Theta> z n e' L')
   show ?case
   proof(rule reds.Application)
-    show "atom y \<sharp> (\<Gamma>, e, xa, L', \<Delta>, \<Theta>, z, n)"
+    show "atom y \<sharp> (\<Gamma>, e, xa, L', \<Delta>, \<Theta>, z)"
       using Application
       by (auto simp add: fresh_Pair)
   
     show "atom n \<sharp> (\<Gamma>, e, xa, L', \<Delta>, \<Theta>, z)"
       using Application
       by (auto simp add: fresh_Pair)
+
+    show "n \<noteq> y" by fact
 
     have "x \<notin> heapVars \<Theta>"
       using `atom x \<sharp> (\<Gamma>, App e xa, \<Theta>, z)`
@@ -291,10 +295,13 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e')
 
   show ?case
   proof (rule reds.Application)
-    show "atom y \<sharp> (\<Gamma>, e, x, L, \<Delta>, \<Theta>, z, n)"
-      using Application fresh
-      by (auto simp add: fresh_Pair fresh_at_base)
+    show "atom y \<sharp> (\<Gamma>, e, x, L, \<Delta>, \<Theta>, z)"
+      using Application
+      by (auto simp add: fresh_Pair)
     show "atom n \<sharp> (\<Gamma>, e, x, L, \<Delta>, \<Theta>, z)"
+      using fresh
+      by (auto simp add: fresh_Pair)
+   show "n \<noteq> y"
       using fresh
       by (auto simp add: fresh_Pair fresh_at_base)
 
@@ -313,18 +320,19 @@ qed (auto intro: reds.intros simp add: fresh_star_Pair)
 
 lemma reds_less_free:
   "\<Gamma> : e \<Down>*\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> \<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
-proof(nominal_induct rule: LaunchburyMoreFree.reds.strong_induct)
+proof(induct rule: LaunchburyMoreFree.reds.induct)
 case (Application y \<Gamma> e x L \<Delta> \<Theta> z n e')
   show ?case
   proof(rule Launchbury.reds.Application)
     show "atom y \<sharp> (\<Gamma>, e, x, L, \<Delta>, \<Theta>, z)"
-      using Application  by (auto simp add: fresh_Pair fresh_at_base)
+      by fact
     show  "\<Gamma> : e \<Down>\<^bsub>x # L\<^esub> \<Delta> : Lam [y]. e'"
-      apply (rule reds_smaller_L[OF Application.hyps(17)])
+      apply (rule reds_smaller_L[OF Application.hyps(5)])
       by auto
-    show "\<Delta> : e'[y::=x] \<Down>\<^bsub>L\<^esub> \<Theta> : z" by fact
+    show "\<Delta> : e'[y::=x] \<Down>\<^bsub>L\<^esub> \<Theta> : z"
+      by fact
   qed
-qed (auto intro: Launchbury.reds.intros simp add: fresh_star_Pair)
+qed (auto intro: reds_smaller_L Launchbury.reds.intros simp add: fresh_star_Pair)
 
 lemma reds_more_free_eq:
   "(\<Gamma> : e \<Down>*\<^bsub>L\<^esub> \<Delta> : z) \<longleftrightarrow> (\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z)"
