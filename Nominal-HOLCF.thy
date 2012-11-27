@@ -48,6 +48,16 @@ lemma perm_is_lub_eqvt[simp,eqvt]: "S <<| (x::'a::{cont_pt}) ==> \<pi> \<bullet>
 
 lemmas perm_cont2cont[simp,cont2cont] = cont_compose[OF perm_cont]
 
+lemma perm_still_cont: "cont (\<pi> \<bullet> f) = cont (f :: ('a :: cont_pt) \<Rightarrow> ('b :: cont_pt))"
+proof
+  have imp:"\<And> (f :: 'a \<Rightarrow> 'b) \<pi>. cont f \<Longrightarrow> cont (\<pi> \<bullet> f)"
+    unfolding permute_fun_def
+    by (metis cont_compose perm_cont)
+  show "cont f \<Longrightarrow> cont (\<pi> \<bullet> f)" using imp[of "f" "\<pi>"].
+  show "cont (\<pi> \<bullet> f) \<Longrightarrow> cont (f)" using imp[of "\<pi> \<bullet> f" "-\<pi>"] by simp
+qed
+
+
 lemma perm_bottom[simp,eqvt]: "\<pi> \<bullet> \<bottom> = (\<bottom>::'a::{cont_pt,pcpo})"
   proof-
   have "\<bottom> \<sqsubseteq> -\<pi> \<bullet> (\<bottom>::'a::{cont_pt,pcpo})" by simp
