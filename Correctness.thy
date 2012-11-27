@@ -13,7 +13,7 @@ proof-
     by (rule obtain_fresh)
 
   have "\<Gamma> : e \<Down>\<^bsub>x#L\<^esub> \<Delta> : z"
-    by (rule Launchbury.reds_add_var_L[OF assms(1) fresh], simp)
+    by (rule reds_add_var_L[OF assms(1) fresh], simp)
   hence "\<Gamma> : [(x, e)] \<Down> \<Delta> : [(x, z)]"
     by (rule add_stack, simp_all add: supp_Nil)
   moreover

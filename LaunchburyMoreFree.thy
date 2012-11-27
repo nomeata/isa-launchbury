@@ -40,16 +40,16 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z n e')
 qed (auto intro: reds_smaller_L Launchbury.reds.intros simp add: fresh_star_Pair)
 
 
-lemma reds_doesnt_forget:
+lemma reds_with_n_doesnt_forget:
   "\<Gamma> : e \<Down>*\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> heapVars \<Gamma> \<subseteq> heapVars \<Delta>"
 by (metis reds_less_free reds_doesnt_forget)
 
-lemma reds_fresh:" \<lbrakk> \<Gamma> : e \<Down>*\<^bsub>L\<^esub> \<Delta> : z;
+lemma reds_with_n_fresh:" \<lbrakk> \<Gamma> : e \<Down>*\<^bsub>L\<^esub> \<Delta> : z;
    atom (x::var) \<sharp> (\<Gamma>, e)
   \<rbrakk> \<Longrightarrow> atom x \<sharp> (\<Delta>, z) \<or> x \<in> (heapVars \<Delta> - set L)"
   by (metis reds_less_free reds_fresh)
 
-lemma reds_add_var_L: "\<lbrakk> \<Gamma> : e \<Down>*\<^bsub>L\<^esub> \<Delta> : z;
+lemma reds_with_n_add_var_L: "\<lbrakk> \<Gamma> : e \<Down>*\<^bsub>L\<^esub> \<Delta> : z;
    atom (x::var) \<sharp> (\<Gamma>, e, \<Delta>, z);
    set L' = insert x (set L)
   \<rbrakk> \<Longrightarrow> \<Gamma> : e \<Down>*\<^bsub>L'\<^esub> \<Delta> : z"
@@ -76,12 +76,12 @@ case (Application y \<Gamma> e xa L \<Delta> \<Theta> z n e' L')
       apply (simp add: fresh_Pair)
       by (metis heapVars_not_fresh)
     hence "x \<notin> heapVars \<Delta>"
-      by (metis set_mp reds_doesnt_forget[OF Application.hyps(20)])
+      by (metis set_mp reds_with_n_doesnt_forget[OF Application.hyps(20)])
 
     have "atom x \<sharp> (\<Gamma>, e)"
       using `atom x \<sharp> (\<Gamma>, App e xa, \<Theta>, z)`
       by (simp add: fresh_Pair exp_assn.fresh)
-    from reds_fresh[OF Application.hyps(18) this] `x \<notin> heapVars \<Delta>`
+    from reds_with_n_fresh[OF Application.hyps(18) this] `x \<notin> heapVars \<Delta>`
     have "atom x \<sharp> (\<Delta>, Lam [y]. e')"
       by auto
     hence "atom x \<sharp> (\<Gamma>, e, \<Delta>, Lam [y]. e')"
@@ -100,7 +100,7 @@ case (Application y \<Gamma> e xa L \<Delta> \<Theta> z n e' L')
       apply (rule subst_pres_fresh[rule_format])
       apply simp
       done
-    from reds_fresh[OF Application.hyps(20) this] `x \<notin> heapVars \<Theta>`
+    from reds_with_n_fresh[OF Application.hyps(20) this] `x \<notin> heapVars \<Theta>`
     have "atom x \<sharp> (\<Theta>, z)" by auto
     hence "atom x \<sharp> (\<Delta>, e'[y::=xa], \<Theta>, z)"
       using `atom x \<sharp> (\<Delta>, e'[y::=xa])`
@@ -127,7 +127,7 @@ case (Let as \<Gamma> body L \<Delta> z L')
     apply (auto simp add: fresh_Pair)
     by (metis heapVars_not_fresh)
   hence "x \<notin> heapVars (asToHeap as @ \<Gamma>)"
-      by (metis set_mp reds_doesnt_forget[OF Let.hyps(5)])
+      by (metis set_mp reds_with_n_doesnt_forget[OF Let.hyps(5)])
   hence "atom x \<notin> set (bn as)"
     by (auto simp add: set_bn_to_atom_heapVars)
   hence "set (bn as) \<sharp>* x"
@@ -174,7 +174,7 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e')
       using fresh by (auto simp add: fresh_Pair)
     ultimately
     show "\<Gamma> : e \<Down>*\<^bsub>n # x # L\<^esub> \<Delta> : Lam [y]. e'"
-      by (rule reds_add_var_L, simp)
+      by (rule reds_with_n_add_var_L, simp)
 
     show "\<Delta> : e'[y::=x] \<Down>*\<^bsub>L\<^esub> \<Theta> : z"
       by fact
@@ -187,5 +187,9 @@ lemma reds_more_free_eq:
 
 lemmas reds_with_n_strong_induct = LaunchburyMoreFree.reds.strong_induct[unfolded reds_more_free_eq, consumes 1, case_names Lambda Application Variable Let]
 lemmas reds_with_n_induct = LaunchburyMoreFree.reds.induct[unfolded reds_more_free_eq, consumes 1, case_names Lambda Application Variable Let]
+
+(* This can be shown for reds directly, but we needed it here, and after we got the equality we can transfer it easily. *)
+lemmas reds_add_var_L = reds_with_n_add_var_L[unfolded reds_more_free_eq]
+
 
 end
