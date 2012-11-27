@@ -1,6 +1,8 @@
 theory Heap
-imports Terms "Nominal-Utils"
+imports Terms "Nominal-Utils" "~~/src/HOL/Library/AList"
 begin
+
+abbreviation delete where "delete \<equiv> AList.delete"
 
 type_synonym heap = "(var \<times> exp) list"
 
@@ -55,6 +57,12 @@ lemma fresh_remove:
 using assms
 by(induct \<Gamma>)(auto simp add: fresh_Cons)
 
+lemma fresh_delete:
+  assumes "atom x \<sharp> \<Gamma>"
+  shows "atom x \<sharp> (delete v \<Gamma>)"
+using assms
+by(induct \<Gamma>)(auto simp add: fresh_Cons)
+
 lemma fresh_heap_expr:
   assumes "a \<sharp> \<Gamma>"
   and "(x,e) \<in> set \<Gamma>"
@@ -103,29 +111,6 @@ lemma distinctVars_eqvt[eqvt]:
   apply (induct \<Gamma> rule:distinctVars.induct)
   apply (auto simp add: heapVars[symmetric] mem_permute_iff)
   done
-
-lemma removeAll_no_there:
-  "x \<notin> heapVars \<Gamma> \<Longrightarrow> removeAll (x,e) \<Gamma> = \<Gamma>"
-  by (induct \<Gamma>, auto)
-
-lemma heapVars_removeAll_subset:
-  "heapVars (removeAll (x,e) \<Gamma>) \<subseteq> heapVars \<Gamma>"
-  by (induct \<Gamma>, auto)
-
-lemma heapVars_removeAll:
-  "distinctVars \<Gamma> \<Longrightarrow> (x,e) \<in> set \<Gamma> \<Longrightarrow> heapVars (removeAll (x,e) \<Gamma>) = heapVars \<Gamma> - {x}"
-  apply (induct \<Gamma> rule:distinctVars.induct)
-  apply auto[1]
-  apply (case_tac "(x,e) = (xa,ea)")
-  apply (auto simp add: removeAll_no_there intro: set_mp[OF heapVars_removeAll_subset])
-  by (metis member_remove removeAll_no_there remove_code(1))
-
-lemma distinctVars_removeAll:
-  "distinctVars \<Gamma> \<Longrightarrow> (x,e) \<in> set \<Gamma> \<Longrightarrow> distinctVars (removeAll (x,e) \<Gamma>)"
-  apply (induct \<Gamma> rule:distinctVars.induct)
-  apply auto[1]
-  apply (case_tac "(x,e) = (xa,ea)")
-  by (auto simp add: removeAll_no_there heapVars_removeAll)
 
 lemma distinctVars_appendI:
   "distinctVars \<Gamma> \<Longrightarrow> distinctVars \<Delta> \<Longrightarrow> heapVars \<Gamma> \<inter> heapVars \<Delta> = {} \<Longrightarrow> distinctVars (\<Gamma> @ \<Delta>)"
@@ -188,9 +173,56 @@ proof-
     by auto
 qed
 
-lemma removeAll_stays_fresh:
-  "atom x \<sharp> \<Delta> \<Longrightarrow> atom x \<sharp> removeAll (v, e) \<Delta>"
-  by (induct \<Delta>, auto simp add: fresh_Cons fresh_Pair)
+
+lemma delete_no_there:
+  "x \<notin> heapVars \<Gamma> \<Longrightarrow> delete x \<Gamma> = \<Gamma>"
+  by (induct \<Gamma>, auto)
+
+lemma removeAll_no_there:
+  "x \<notin> heapVars \<Gamma> \<Longrightarrow> removeAll (x,e) \<Gamma> = \<Gamma>"
+  by (induct \<Gamma>, auto)
+
+lemma heapVars_delete_subset:
+  "heapVars (delete x \<Gamma>) \<subseteq> heapVars \<Gamma>"
+  by (induct \<Gamma>, auto)
+
+lemma heapVars_removeAll_subset:
+  "heapVars (removeAll (x,e) \<Gamma>) \<subseteq> heapVars \<Gamma>"
+  by (induct \<Gamma>, auto)
+
+lemma heapVars_removeAll:
+  "distinctVars \<Gamma> \<Longrightarrow> (x,e) \<in> set \<Gamma> \<Longrightarrow> heapVars (removeAll (x,e) \<Gamma>) = heapVars \<Gamma> - {x}"
+  apply (induct \<Gamma> rule:distinctVars.induct)
+  apply auto[1]
+  apply (case_tac "(x,e) = (xa,ea)")
+  apply (auto simp add: removeAll_no_there intro: set_mp[OF heapVars_removeAll_subset])
+  by (metis member_remove removeAll_no_there remove_code(1))
+
+lemma heapVars_delete:
+  "heapVars (delete x \<Gamma>) = (if x \<in> heapVars \<Gamma> then heapVars \<Gamma> - {x} else heapVars \<Gamma>)"
+  by (induct \<Gamma>, auto)
+
+lemma heapVars_delete_there:
+  "(x,e) \<in> set \<Gamma> \<Longrightarrow> heapVars (delete x \<Gamma>) = heapVars \<Gamma> - {x}"
+  by (auto simp add: heapVars_delete)
+
+lemma heapVars_delete_there':
+  "x \<in> fst` set \<Gamma> \<Longrightarrow> heapVars (delete x \<Gamma>) = heapVars \<Gamma> - {x}"
+  by (auto simp add: heapVars_delete)
+
+lemma distinctVars_delete:
+  "distinctVars \<Gamma> \<Longrightarrow> distinctVars (delete x \<Gamma>)"
+  apply (induct \<Gamma> rule:distinctVars.induct)
+  apply (auto simp add: distinctVars_Cons heapVars_delete)
+  done
+
+lemma distinctVars_removeAll:
+  "distinctVars \<Gamma> \<Longrightarrow> (x,e) \<in> set \<Gamma> \<Longrightarrow> distinctVars (removeAll (x,e) \<Gamma>)"
+  apply (induct \<Gamma> rule:distinctVars.induct)
+  apply auto[1]
+  apply (case_tac "(x,e) = (xa,ea)")
+  by (auto simp add: removeAll_no_there heapVars_removeAll)
+
 
 lemma set_bn_to_atom_heapVars:
   "set (bn as) = atom ` heapVars (asToHeap as)"

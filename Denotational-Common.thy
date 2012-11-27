@@ -16,13 +16,11 @@ instance var :: cont_pt  by default auto
 
 domain Value = Fn (lazy "Value \<rightarrow> Value")
 
-fixrec Fn_project :: "Value \<rightarrow> Value \<rightarrow> Value" (* (infix "\<down>Fn" 70) *)
+fixrec Fn_project :: "Value \<rightarrow> Value \<rightarrow> Value"
  where "Fn_project\<cdot>(Fn\<cdot>f)\<cdot>v = f \<cdot> v"
 
 abbreviation Fn_project_abbr (infix "\<down>Fn" 55)
   where "f \<down>Fn v \<equiv> Fn_project\<cdot>f\<cdot>v"
-
-lemma "Fn\<cdot>(\<Lambda> x . \<bottom>) \<noteq> \<bottom>" by simp
 
 type_synonym Env = "(var, Value) fmap"
 

@@ -113,7 +113,7 @@ next
 case (Variable xa e \<Gamma> L \<Delta> z L')
   have "atom x \<sharp> (removeAll (xa, e) \<Gamma>, e, \<Delta>, z)"
     using Variable.prems(1)
-    by (auto simp add: fresh_Pair fresh_Cons intro: removeAll_stays_fresh fresh_heap_expr[OF _ Variable(1)])
+    by (auto simp add: fresh_Pair fresh_Cons intro: fresh_remove fresh_heap_expr[OF _ Variable(1)])
   moreover
   have "set (xa # L') = insert x (set (xa # L))"
     using Variable.prems(2) by auto
