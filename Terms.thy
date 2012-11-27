@@ -1,5 +1,5 @@
 theory Terms
-  imports Main  "./Nominal/Nominal/Nominal2"
+  imports Main  "./Nominal/Nominal/Nominal2" 
 begin
 
 atom_decl var

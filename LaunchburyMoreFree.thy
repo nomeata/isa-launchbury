@@ -14,7 +14,7 @@ where
   \<rbrakk>  \<Longrightarrow>
     \<Gamma> : App e x \<Down>*\<^bsub>L\<^esub> \<Theta> : z" 
  | Variable: "\<lbrakk>
-    (x,e) \<in> set \<Gamma>; removeAll (x, e) \<Gamma> : e \<Down>*\<^bsub>x#L\<^esub> \<Delta> : z \<rbrakk> \<Longrightarrow> \<Gamma> : Var x \<Down>*\<^bsub>L\<^esub> (x, z) # \<Delta> : z"
+    (x,e) \<in> set \<Gamma>; delete x \<Gamma> : e \<Down>*\<^bsub>x#L\<^esub> \<Delta> : z \<rbrakk> \<Longrightarrow> \<Gamma> : Var x \<Down>*\<^bsub>L\<^esub> (x, z) # \<Delta> : z"
  | Let: "set (bn as) \<sharp>* (\<Gamma>, Let as body, L) \<Longrightarrow> distinctVars (asToHeap as) \<Longrightarrow> asToHeap as @ \<Gamma> : body \<Down>*\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> \<Gamma> : Let as body \<Down>*\<^bsub>L\<^esub> \<Delta> : z"
 
 equivariance reds
@@ -111,9 +111,9 @@ case (Application y \<Gamma> e xa L \<Delta> \<Theta> z n e' L')
   qed
 next 
 case (Variable xa e \<Gamma> L \<Delta> z L')
-  have "atom x \<sharp> (removeAll (xa, e) \<Gamma>, e, \<Delta>, z)"
+  have "atom x \<sharp> (delete xa \<Gamma>, e, \<Delta>, z)"
     using Variable.prems(1)
-    by (auto simp add: fresh_Pair fresh_Cons intro: fresh_remove fresh_heap_expr[OF _ Variable(1)])
+    by (auto simp add: fresh_Pair fresh_Cons intro: fresh_delete fresh_heap_expr[OF _ Variable(1)])
   moreover
   have "set (xa # L') = insert x (set (xa # L))"
     using Variable.prems(2) by auto

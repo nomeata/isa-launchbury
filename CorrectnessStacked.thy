@@ -55,10 +55,25 @@ lemma heapToEnv_reorder_head_append:
   apply simp
   done
 
-lemma heapToEnv_remove_insert:
+lemma distinctVars_set_delete_insert:
   assumes "distinctVars \<Gamma>"
   assumes "(x,e) \<in> set \<Gamma>"
-  shows "heapToEnv \<Gamma> eval = heapToEnv ((x,e) # removeAll (x,e) \<Gamma>) eval"
+  shows "set ((x,e) # delete x \<Gamma>) = set \<Gamma>"
+  using assms
+  apply (induct \<Gamma> rule:distinctVars.induct)
+  apply auto[1]
+  apply (case_tac "xa = x")
+  using [[simp_trace]]
+  apply (auto simp add: heapVars_def)[1]
+    apply (metis fst_conv imageI)
+  apply auto
+  done
+
+
+lemma heapToEnv_delete_insert:
+  assumes "distinctVars \<Gamma>"
+  assumes "(x,e) \<in> set \<Gamma>"
+  shows "heapToEnv \<Gamma> eval = heapToEnv ((x,e) # delete x \<Gamma>) eval"
 using assms
 proof (induct \<Gamma> rule:distinctVars.induct)
   case goal1 thus ?case by simp
@@ -69,18 +84,18 @@ next
   case True
     from `y \<notin> heapVars \<Gamma>`
     have "x \<notin> heapVars \<Gamma>" using True by simp
-    hence "removeAll (x, e) \<Gamma> = \<Gamma>" by (rule removeAll_no_there)
+    hence "delete x \<Gamma> = \<Gamma>" by (rule delete_no_there)
     with True show ?thesis by simp
   next
   case False
-    hence "x \<noteq> y" by (metis goal2(1) goal2(4) member_remove removeAll_no_there remove_code(1) set_ConsD)
+    hence "x \<noteq> y" by (metis goal2(1) goal2(4) heapVars_from_set set_ConsD)
     hence "(x, e) \<in> set \<Gamma>" by (metis False goal2(4) set_ConsD)
     note hyp = goal2(3)[OF this]
 
-    have "heapToEnv ((x, e) # removeAll (x, e) ((y, e2) # \<Gamma>)) eval 
-      = heapToEnv ((x, e) # ((y, e2) # removeAll (x, e) \<Gamma>)) eval"
+    have "heapToEnv ((x, e) # delete x ((y, e2) # \<Gamma>)) eval 
+      = heapToEnv ((x, e) # ((y, e2) # delete x \<Gamma>)) eval"
       using False by simp
-    also have "... = heapToEnv ((y, e2) # ((x, e) # removeAll (x, e) \<Gamma>)) eval"
+    also have "... = heapToEnv ((y, e2) # ((x, e) # delete x \<Gamma>)) eval"
       by (rule heapToEnv_reorder_head[OF `x \<noteq> y`])
     also have "... = heapToEnv ((y, e2) # \<Gamma>) eval"
       using hyp
@@ -102,16 +117,19 @@ next
 case (goal2 x \<Gamma> e \<Delta>)
   hence "(x,e) \<in> set \<Delta>"
     by (metis ListMem_iff elem)
-  note Delta' = heapToEnv_remove_insert[OF `distinctVars \<Delta>` this]
+  note Delta' = heapToEnv_delete_insert[OF `distinctVars \<Delta>` this]
+  thm Delta'
 
-  have "distinctVars (removeAll (x, e) \<Delta>)" 
-    by (rule distinctVars_removeAll[OF goal2(4)  `(x, e) \<in> set \<Delta>`])
+  have "distinctVars (delete x \<Delta>)" 
+    by (rule distinctVars_delete[OF goal2(4)])
   moreover
   from `set ((x, e) # \<Gamma>) = set \<Delta>`
-  have "set \<Gamma> = set (removeAll (x, e) \<Delta>)"
-    by (metis removeAll.simps(2) removeAll_no_there[OF `x \<notin> heapVars \<Gamma>`] remove_code(1))
+  have "set (delete x ((x, e) # \<Gamma>)) = set (delete x \<Delta>)"
+    by (metis project_set delete_eq)
+  hence "set \<Gamma> = set (delete x \<Delta>)"
+    by (simp add: delete_no_there[OF `x \<notin> heapVars \<Gamma>`])
   ultimately
-  have "heapToEnv \<Gamma> eval = heapToEnv (removeAll (x, e) \<Delta>) eval"
+  have "heapToEnv \<Gamma> eval = heapToEnv (delete x \<Delta>) eval"
     by (rule goal2(3))
   thus ?case
     by (simp add: Delta')
@@ -882,12 +900,14 @@ case (Application n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<Theta
 next
 case (Variable y e \<Gamma> x \<Gamma>' z \<Delta>' \<Delta>)
   have "x \<noteq> y"
-    using Variable(3) by (metis Variable(4) Variable(5) distinctVars_ConsD(1) distinctVars_appendD1 not_Cons_self removeAll.simps(2) removeAll_no_there)
+    using Variable(3) by (auto simp add: distinctVars_Cons distinctVars_append)
+  have "distinctVars \<Gamma>"
+    using Variable(2) by (auto simp add: distinctVars_Cons distinctVars_append)
 
-  have "\<lbrace>((x, Var y) # \<Gamma>') @ \<Gamma>\<rbrace> = \<lbrace>((y, e) # (x, Var y) # \<Gamma>') @ removeAll (y, e) \<Gamma>\<rbrace>"
+  have "\<lbrace>((x, Var y) # \<Gamma>') @ \<Gamma>\<rbrace> = \<lbrace>((y, e) # (x, Var y) # \<Gamma>') @ delete y \<Gamma>\<rbrace>"
     (* Shifting a variable around *)
     apply (rule HSem_reorder[OF Variable.hyps(2,3)])
-    using Variable(1)
+    using distinctVars_set_delete_insert[OF `distinctVars \<Gamma>` Variable(1)]
     by auto
   also
   have "... \<le>  \<lbrace>((y, z) # (x, Var y) # \<Delta>') @ \<Delta>\<rbrace>"
@@ -962,7 +982,6 @@ case (Let as \<Gamma> x body \<Gamma>' \<Delta>' \<Delta>)
   show "\<lbrace>((x, Terms.Let as body) # \<Gamma>') @ \<Gamma>\<rbrace> \<le> \<lbrace>\<Delta>' @ \<Delta>\<rbrace>".
 qed
 
-thm correctness
 
 end
 

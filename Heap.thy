@@ -15,6 +15,10 @@ lemma heapVarsAppend[simp]:"heapVars (a @ b) = heapVars a \<union> heapVars b"
   and [simp]:"heapVars [] = {}"
   by (auto simp add: heapVars_def)
 
+lemma heapVars_from_set:
+  "(x, e) \<in> set h \<Longrightarrow> x \<in> heapVars h"
+by (induct h, auto)
+
 lemma heapVars_not_fresh:
   "x \<in> heapVars \<Gamma> \<Longrightarrow> \<not>(atom x \<sharp> \<Gamma>)"
   by (induct \<Gamma>, auto simp add: fresh_Cons fresh_Pair)
@@ -49,13 +53,6 @@ lemma asToHeap_eqvt: "eqvt asToHeap"
 
 lemma fst_set_asToHeap[simp]: "fst ` set (asToHeap as) = assn_vars as"
   by (induct as rule:asToHeap.induct, auto)
-
-
-lemma fresh_remove:
-  assumes "atom x \<sharp> \<Gamma>"
-  shows "atom x \<sharp> (removeAll e \<Gamma>)"
-using assms
-by(induct \<Gamma>)(auto simp add: fresh_Cons)
 
 lemma fresh_delete:
   assumes "atom x \<sharp> \<Gamma>"
@@ -178,51 +175,21 @@ lemma delete_no_there:
   "x \<notin> heapVars \<Gamma> \<Longrightarrow> delete x \<Gamma> = \<Gamma>"
   by (induct \<Gamma>, auto)
 
-lemma removeAll_no_there:
-  "x \<notin> heapVars \<Gamma> \<Longrightarrow> removeAll (x,e) \<Gamma> = \<Gamma>"
-  by (induct \<Gamma>, auto)
-
 lemma heapVars_delete_subset:
   "heapVars (delete x \<Gamma>) \<subseteq> heapVars \<Gamma>"
   by (induct \<Gamma>, auto)
 
-lemma heapVars_removeAll_subset:
-  "heapVars (removeAll (x,e) \<Gamma>) \<subseteq> heapVars \<Gamma>"
+lemma heapVars_delete[simp]:
+  "heapVars (delete x \<Gamma>) = heapVars \<Gamma> - {x}"
   by (induct \<Gamma>, auto)
 
-lemma heapVars_removeAll:
-  "distinctVars \<Gamma> \<Longrightarrow> (x,e) \<in> set \<Gamma> \<Longrightarrow> heapVars (removeAll (x,e) \<Gamma>) = heapVars \<Gamma> - {x}"
-  apply (induct \<Gamma> rule:distinctVars.induct)
-  apply auto[1]
-  apply (case_tac "(x,e) = (xa,ea)")
-  apply (auto simp add: removeAll_no_there intro: set_mp[OF heapVars_removeAll_subset])
-  by (metis member_remove removeAll_no_there remove_code(1))
-
-lemma heapVars_delete:
-  "heapVars (delete x \<Gamma>) = (if x \<in> heapVars \<Gamma> then heapVars \<Gamma> - {x} else heapVars \<Gamma>)"
-  by (induct \<Gamma>, auto)
-
-lemma heapVars_delete_there:
-  "(x,e) \<in> set \<Gamma> \<Longrightarrow> heapVars (delete x \<Gamma>) = heapVars \<Gamma> - {x}"
-  by (auto simp add: heapVars_delete)
-
-lemma heapVars_delete_there':
-  "x \<in> fst` set \<Gamma> \<Longrightarrow> heapVars (delete x \<Gamma>) = heapVars \<Gamma> - {x}"
-  by (auto simp add: heapVars_delete)
+lemmas fst_set_delete[simp] = heapVars_delete[unfolded heapVars_def]
 
 lemma distinctVars_delete:
   "distinctVars \<Gamma> \<Longrightarrow> distinctVars (delete x \<Gamma>)"
   apply (induct \<Gamma> rule:distinctVars.induct)
-  apply (auto simp add: distinctVars_Cons heapVars_delete)
+  apply (auto simp add: distinctVars_Cons)
   done
-
-lemma distinctVars_removeAll:
-  "distinctVars \<Gamma> \<Longrightarrow> (x,e) \<in> set \<Gamma> \<Longrightarrow> distinctVars (removeAll (x,e) \<Gamma>)"
-  apply (induct \<Gamma> rule:distinctVars.induct)
-  apply auto[1]
-  apply (case_tac "(x,e) = (xa,ea)")
-  by (auto simp add: removeAll_no_there heapVars_removeAll)
-
 
 lemma set_bn_to_atom_heapVars:
   "set (bn as) = atom ` heapVars (asToHeap as)"

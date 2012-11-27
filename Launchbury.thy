@@ -12,7 +12,7 @@ where
   \<rbrakk>  \<Longrightarrow>
     \<Gamma> : App e x \<Down>\<^bsub>L\<^esub> \<Theta> : z" 
  | Variable: "\<lbrakk>
-    (x,e) \<in> set \<Gamma>; removeAll (x, e) \<Gamma> : e \<Down>\<^bsub>x#L\<^esub> \<Delta> : z \<rbrakk> \<Longrightarrow> \<Gamma> : Var x \<Down>\<^bsub>L\<^esub> (x, z) # \<Delta> : z"
+    (x,e) \<in> set \<Gamma>; delete x \<Gamma> : e \<Down>\<^bsub>x#L\<^esub> \<Delta> : z \<rbrakk> \<Longrightarrow> \<Gamma> : Var x \<Down>\<^bsub>L\<^esub> (x, z) # \<Delta> : z"
  | Let: "set (bn as) \<sharp>* (\<Gamma>, Let as body, L) \<Longrightarrow> distinctVars (asToHeap as) \<Longrightarrow> asToHeap as @ \<Gamma> : body \<Down>\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> \<Gamma> : Let as body \<Down>\<^bsub>L\<^esub> \<Delta> : z"
 
 equivariance reds
@@ -47,7 +47,7 @@ case(Variable v e \<Gamma> L \<Delta> z)
     next
     case False
       with `x \<in> heapVars \<Gamma>`
-      have "x \<in> heapVars (removeAll (v,e) \<Gamma>)" by (auto simp add: heapVars_def)
+      have "x \<in> heapVars (delete v \<Gamma>)" by simp
       hence "x \<in> heapVars \<Delta>" using Variable.hyps(3) by auto
       thus ?thesis by simp
     qed
@@ -64,7 +64,8 @@ case (Lambda \<Gamma> x e L) thus ?case by auto
 next
 case (Application y \<Gamma> e x L \<Delta> \<Theta> z e') thus ?case by auto
 next
-case (Variable  x e \<Gamma> L \<Delta> z) thus ?case by (auto simp add: heapVars_def, metis fst_conv imageI)
+case (Variable  x e \<Gamma> L \<Delta> z) thus ?case
+   by (auto simp add: heapVars_def, metis fst_conv imageI)
 next
 case (Let as \<Gamma> body L \<Delta> z)
   have "x \<notin> heapVars \<Gamma>" by fact moreover
@@ -86,11 +87,11 @@ proof (nominal_induct rule: reds.strong_induct)
   case (Variable x e \<Gamma> L \<Delta> z)
     have "x \<notin> heapVars \<Delta>"
       apply (rule reds_avoids_live[OF Variable(2)])
-      apply (auto simp add: heapVars_removeAll[OF Variable(4,1)])
+      apply (auto)
       done
     moreover
-    have "distinctVars (removeAll (x,e) \<Gamma>)"
-      by (rule distinctVars_removeAll[OF Variable(4,1)])
+    have "distinctVars (delete x \<Gamma>)"
+      by (rule distinctVars_delete[OF Variable(4)])
     hence "distinctVars \<Delta>" by (rule Variable.hyps)
     ultimately
     show ?case
@@ -132,7 +133,7 @@ next
 
 case(Variable v e \<Gamma> L \<Delta> z)
   have "atom x \<sharp> \<Gamma>" and "atom x \<sharp> v" using Variable.prems(1) by (auto simp add: fresh_Pair exp_assn.fresh)
-  hence "atom x \<sharp> removeAll (v,e) \<Gamma>" and "atom x \<sharp> e" using `(v,e) \<in> set \<Gamma>` by(auto intro: fresh_remove dest:fresh_list_elem)
+  hence "atom x \<sharp> delete v \<Gamma>" and "atom x \<sharp> e" using `(v,e) \<in> set \<Gamma>` by(auto intro: fresh_delete dest:fresh_list_elem)
   hence "atom x \<sharp> (\<Delta>, z) \<or> x \<in> heapVars \<Delta> - set (v # L)"  using Variable.hyps(3) by (auto simp add: fresh_Pair)
   thus ?case using `atom x \<sharp> v` by (auto simp add: fresh_Pair fresh_Cons fresh_at_base)
 next

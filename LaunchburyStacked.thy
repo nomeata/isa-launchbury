@@ -14,7 +14,7 @@ where
       \<Gamma> : (x, App e y) # \<Gamma>' \<Down> \<Theta> : \<Theta>'" 
  | Variable: "\<lbrakk>
       (y, e) \<in> set \<Gamma>;
-      removeAll (y, e) \<Gamma> : (y, e) # (x,Var y) # \<Gamma>' \<Down> \<Delta> : (y, z) # (x, Var y) # \<Delta>'
+      delete y \<Gamma> : (y, e) # (x,Var y) # \<Gamma>' \<Down> \<Delta> : (y, z) # (x, Var y) # \<Delta>'
    \<rbrakk> \<Longrightarrow>
       \<Gamma> : (x, Var y) # \<Gamma>' \<Down> (y, z) # \<Delta> : (x, z) # \<Delta>'"
  | Let: "\<lbrakk>
@@ -27,32 +27,9 @@ where
 equivariance reds
 
 nominal_inductive reds
-(*
-  avoids LetACons: "v"
-apply (auto simp add: fresh_star_def fresh_Pair exp_assn.fresh exp_assn.bn_defs)
-done
-*)
   avoids Application: "n" and "z"
-  apply (auto simp add: fresh_star_def fresh_Cons fresh_Pair exp_assn.fresh)
-  done
+  by (auto simp add: fresh_star_def fresh_Cons fresh_Pair exp_assn.fresh)
 
-(*
-inductive reds_tree_invariant :: "(heap \<Rightarrow> heap \<Rightarrow> bool) \<Rightarrow> bool"
-where
-  "(\<And> \<Gamma> \<Delta> x e y \<Gamma>' n z e' \<Delta>'.  atom n \<sharp> (\<Gamma>,\<Gamma>',x,e,y) \<Longrightarrow> atom z \<sharp> (\<Gamma>,\<Gamma>',x,e,y) \<Longrightarrow>   P \<Gamma> ((x, App e y) # \<Gamma>')  \<Longrightarrow> P \<Delta> ((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>')) \<Longrightarrow>
-  (\<And> \<Delta> n z e' x y \<Delta>'.  atom n \<sharp> (x,y) \<Longrightarrow>  atom z \<sharp> (x,y) \<Longrightarrow>  P \<Delta> ((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>') \<Longrightarrow> P \<Delta> ((x, e'[z ::= y]) # \<Delta>')) \<Longrightarrow>
-  (\<And> \<Gamma> x y \<Gamma>' e. (y, e) \<in> set \<Gamma> \<Longrightarrow> P \<Gamma> ((x, Var y) # \<Gamma>') \<Longrightarrow> P (removeAll (y, e) \<Gamma>) ((y, e) # (x,Var y) # \<Gamma>')) \<Longrightarrow>
-  (\<And> \<Delta> x y \<Delta>' z. P \<Delta> ((y, z) # (x, Var y) # \<Delta>') \<Longrightarrow> P ((y, z) # \<Delta>)  ((x, z) # \<Delta>')) \<Longrightarrow>
-  (\<And> \<Gamma> x as body \<Gamma>'. P \<Gamma> ((x, Let as body) # \<Gamma>') \<Longrightarrow> P (asToHeap as @ \<Gamma>) ((x, body) # \<Gamma>')) \<Longrightarrow>
-  reds_tree_invariant P"
-
-lemma reds_tree_invariant_preserved:
-  assumes "reds_tree_invariant P"
-  shows "\<Gamma> : \<Gamma>' \<Down> \<Delta> : \<Delta>' \<Longrightarrow> P \<Gamma> \<Gamma>' \<Longrightarrow> P \<Delta> \<Delta>'"
-apply (induct \<Gamma> \<Gamma>' \<Delta> \<Delta>' rule: reds.induct)
-apply assumption
-by (metis assms reds_tree_invariant.cases fresh_Pair)+
-*)
 
 lemma eval_test:
   "y \<noteq> x \<Longrightarrow> [] : [(x, Let (ACons y (Lam [z]. Var z) ANil) (Var y))] \<Down> [(y, Lam [z]. Var z)] : [(x, (Lam [z]. Var z))]"
@@ -99,10 +76,10 @@ where
  | DVariable: "\<lbrakk>
       (y, e) \<in> set \<Gamma>;
       distinctVars (((x, Var y) # \<Gamma>') @ \<Gamma>);
-      distinctVars (((y, e) # (x,Var y) # \<Gamma>') @ removeAll (y, e) \<Gamma>);
+      distinctVars (((y, e) # (x,Var y) # \<Gamma>') @ delete y \<Gamma>);
       distinctVars (((y, z) # (x, Var y) # \<Delta>') @ \<Delta>);
       distinctVars (((x, z) # \<Delta>') @ (y, z) # \<Delta>);
-      removeAll (y, e) \<Gamma> : (y, e) # (x,Var y) # \<Gamma>' \<Down>d \<Delta> : (y, z) # (x, Var y) # \<Delta>'
+      delete y \<Gamma> : (y, e) # (x,Var y) # \<Gamma>' \<Down>d \<Delta> : (y, z) # (x, Var y) # \<Delta>'
    \<rbrakk> \<Longrightarrow>
       \<Gamma> : (x, Var y) # \<Gamma>' \<Down>d (y, z) # \<Delta> : (x, z) # \<Delta>'"
  | DLet: "\<lbrakk>
@@ -186,21 +163,14 @@ case (Application n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<Theta
     by (rule DApplication[where n = n and z = z])
 next
 
-case (Variable y e \<Gamma> x \<Gamma>' \<Delta> z \<Delta>')
-  have [simp]:"heapVars (removeAll (y, e) \<Gamma>) = heapVars \<Gamma> - {y}"
-    using Variable(1,4)
-    by (metis append_Cons distinctVars_ConsD(2) distinctVars_appendD2 heapVars_removeAll[OF _ `(y, e) \<in> set \<Gamma>`])
-  
+case (Variable y e \<Gamma> x \<Gamma>' \<Delta> z \<Delta>')  
   assume "(y, e) \<in> set \<Gamma>"
   moreover  
   assume "distinctVars (((x, Var y) # \<Gamma>') @ \<Gamma>)"
   moreover
-  have "y \<in> heapVars \<Gamma>"
-    using Variable(1)
-    by (metis member_remove removeAll_no_there remove_code(1))
-    with Variable(1,4)
-  have "distinctVars (((y, e) # (x, Var y) # \<Gamma>') @ removeAll (y, e) \<Gamma>)"
-    by (auto simp add: distinctVars_append distinctVars_Cons intro: distinctVars_removeAll)
+  have "distinctVars (((y, e) # (x, Var y) # \<Gamma>') @ delete y \<Gamma>)"
+    using Variable(1,4)
+    by (auto simp add: distinctVars_append distinctVars_Cons intro: distinctVars_delete heapVars_from_set)
   moreover
   note hyp = Variable.hyps(3)[OF this]
   note distinct_redsD3[OF hyp]
@@ -280,12 +250,6 @@ case (DApplication n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<Thet
   qed
 next
 case (DVariable y e \<Gamma> x \<Gamma>' z \<Delta>' \<Delta>)
-  assume "(y, e) \<in> set \<Gamma>"
-  hence "y \<in> heapVars \<Gamma>" by (metis member_remove removeAll_no_there remove_code(1))
-
-  have [simp]:"heapVars (removeAll (y, e) \<Gamma>) = heapVars \<Gamma> - {y}"
-    by (rule heapVars_removeAll[OF distinctVars_appendD2[OF DVariable(2)] DVariable(1)])
-
   case 1
   from DVariable(7)
   show ?case  by auto
@@ -397,8 +361,8 @@ case (DApplication n \<Gamma> \<Gamma>' \<Delta> \<Delta>' xa e y \<Theta> \<The
 next
 case(DVariable y e \<Gamma> xa \<Gamma>' z \<Delta>' \<Delta> x)
   from `atom x \<sharp> _` ` (y, e) \<in> set \<Gamma>`
-  have "atom x \<sharp> removeAll (y, e) \<Gamma>" and "atom x \<sharp> e"
-    by (auto intro: fresh_remove dest:fresh_list_elem simp add: exp_assn.fresh fresh_Pair)
+  have "atom x \<sharp> delete y \<Gamma>" and "atom x \<sharp> e"
+    by (auto intro: fresh_delete dest:fresh_list_elem simp add: exp_assn.fresh fresh_Pair)
   hence "atom x \<sharp> (\<Delta>, snd (hd ((y, z) # (xa, Var y) # \<Delta>'))) \<or> x \<in> heapVars \<Delta>"
     by -(rule DVariable, simp add: fresh_Pair)
   thus ?case

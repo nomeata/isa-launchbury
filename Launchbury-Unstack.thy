@@ -47,7 +47,7 @@ case (Variable y e \<Gamma> x \<Gamma>' \<Delta> z \<Delta>' S)
   have "supp (y # S) \<subseteq> supp ((x, Var y) # \<Gamma>')"
     using Variable.prems(1)
     by (auto simp add: supp_Cons supp_Pair exp_assn.supp)
-  hence hyp: "removeAll (y, e) \<Gamma> : e \<Down>\<^bsub>y # S\<^esub> \<Delta> : z"
+  hence hyp: "delete y \<Gamma> : e \<Down>\<^bsub>y # S\<^esub> \<Delta> : z"
     by (rule Variable.hyps(3)[simplified])
   show ?case
     by (simp, rule Launchbury.Variable[OF `_ \<in> set _` hyp])   
@@ -108,7 +108,7 @@ case (Variable x e \<Gamma> L \<Delta> z \<Gamma>' xa)
   have "supp ((xa, Var x) # \<Gamma>') \<subseteq> supp (x # L)"
      using set_mp[OF supp_set_mem[OF `xa \<in> set L`]] set_mp[OF `supp \<Gamma>' \<subseteq> supp L`]
      by (auto simp add: supp_Pair supp_Cons exp_assn.supp)
-  hence hyp: "removeAll (x, e) \<Gamma> : (x, e) # (xa, Var x) # \<Gamma>' \<Down> \<Delta> : (x, z) # (xa, Var x) # \<Gamma>'"
+  hence hyp: "delete x \<Gamma> : (x, e) # (xa, Var x) # \<Gamma>' \<Down> \<Delta> : (x, z) # (xa, Var x) # \<Gamma>'"
     apply (rule Variable.hyps(3)[rotated])
     apply (simp)
     done

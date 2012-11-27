@@ -1,5 +1,5 @@
 theory "Nominal-Utils"
-imports "Nominal/Nominal/Nominal2"
+imports "Nominal/Nominal/Nominal2" "~~/src/HOL/Library/AList"
 begin
 
 lemma not_self_fresh[simp]: "atom x \<sharp> (x::'a::at_base) \<longleftrightarrow> False"
@@ -122,6 +122,10 @@ lemma fresh_list_elem:
   shows "a \<sharp> e"
 using assms
 by(induct \<Gamma>)(auto simp add: fresh_Cons)
+
+lemma delete_eqvt[eqvt]:
+  "\<pi> \<bullet> AList.delete x \<Gamma> = AList.delete (\<pi> \<bullet> x) (\<pi> \<bullet> \<Gamma>)"
+by (induct \<Gamma>, auto)
 
 
 end
