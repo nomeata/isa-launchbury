@@ -330,8 +330,7 @@ lemma reds_more_free_eq:
   "(\<Gamma> : e \<Down>*\<^bsub>L\<^esub> \<Delta> : z) \<longleftrightarrow> (\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z)"
   by (metis reds_less_free reds_more_free)
 
-(* Why does this not work? *)
-lemmas reds_with_n_strong_induct = LaunchburyMoreFree.reds.strong_induct[unfolded reds_more_free_eq, case_names Lambda Application Variable Let]
-lemmas reds_with_n_induct = LaunchburyMoreFree.reds.induct[unfolded reds_more_free_eq, case_names Lambda Application Variable Let]
+lemmas reds_with_n_strong_induct = LaunchburyMoreFree.reds.strong_induct[unfolded reds_more_free_eq, consumes 1, case_names Lambda Application Variable Let]
+lemmas reds_with_n_induct = LaunchburyMoreFree.reds.induct[unfolded reds_more_free_eq, consumes 1, case_names Lambda Application Variable Let]
 
 end

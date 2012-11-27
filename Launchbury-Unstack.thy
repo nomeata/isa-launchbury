@@ -70,12 +70,12 @@ case (Let as \<Gamma> x body \<Gamma>' \<Delta> \<Delta>' S)
 qed
 
 lemma add_stack_more_fresh:
-  assumes "\<Gamma> : e \<Down>*\<^bsub>L\<^esub> \<Delta> : z"
+  assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
   assumes "x \<in> set L"
   assumes "supp \<Gamma>' \<subseteq> supp L"
   shows "\<Gamma> : (x,e) # \<Gamma>' \<Down> \<Delta> : (x,z) # \<Gamma>'"
 using assms
-proof (nominal_induct avoiding: \<Gamma>' x rule: LaunchburyMoreFree.reds.strong_induct)
+proof (nominal_induct avoiding: \<Gamma>' x rule: reds_with_n_strong_induct)
 case (Lambda \<Gamma> xa e L \<Gamma>')
   show ?case
     by (auto intro: LaunchburyStacked.reds.intros)
@@ -135,14 +135,5 @@ case (Let as \<Gamma> body L \<Delta> z \<Gamma>' x)
   show ?case
     by (rule LaunchburyStacked.reds.Let[OF fresh `distinctVars (asToHeap as)` hyp])
 qed
-
-lemma add_stack:
-  assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
-  assumes "x \<in> set L"
-  assumes "supp \<Gamma>' \<subseteq> supp L"
-  shows "\<Gamma> : (x,e) # \<Gamma>' \<Down> \<Delta> : (x,z) # \<Gamma>'"
-  using assms
-  apply (rule add_stack_more_fresh[OF reds_more_free])
-done
 
 end
