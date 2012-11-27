@@ -2,12 +2,12 @@ theory "Denotational-HeapExtend"
   imports "HeapToEnv" "HOLCF-Set" "HOLCF-Down-Closed" "HOLCF-Fix-Join"
 begin
 
-abbreviation heapExtendJoin_cond' :: "('var::{cont_pt,at_base} \<times> 'exp::pt) list \<Rightarrow> ('exp \<Rightarrow> ('var, 'value) fmap \<Rightarrow> 'value)  \<Rightarrow> ('var, 'value::{pure,cont_pt,Nonempty_Meet_cpo,pcpo}) fmap \<Rightarrow> bool"
+abbreviation heapExtendJoin_cond' :: "('var::{cont_pt,at_base} \<times> 'exp::pt) list \<Rightarrow> ('exp \<Rightarrow> ('var, 'value) fmap \<Rightarrow> 'value)  \<Rightarrow> ('var, 'value::{pure_cpo,Nonempty_Meet_cpo,pcpo}) fmap \<Rightarrow> bool"
   where "heapExtendJoin_cond' h eval \<rho> \<equiv>
       fix_on_cond_jfc' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) 
                         (\<lambda> \<rho>' . fmap_expand (heapToEnv h (\<lambda>e. eval e \<rho>')) (fdom \<rho> \<union> fst ` set h))"
 
-definition heapExtendJoin :: "('var::{cont_pt,at_base}, 'value::{pure,cont_pt,Nonempty_Meet_cpo,pcpo}) fmap \<Rightarrow> ('var \<times> 'exp::pt) list \<Rightarrow> ('exp \<Rightarrow> ('var, 'value) fmap \<Rightarrow> 'value)  \<Rightarrow> ('var, 'value) fmap"
+definition heapExtendJoin :: "('var::{cont_pt,at_base}, 'value::{pure_cpo,Nonempty_Meet_cpo,pcpo}) fmap \<Rightarrow> ('var \<times> 'exp::pt) list \<Rightarrow> ('exp \<Rightarrow> ('var, 'value) fmap \<Rightarrow> 'value)  \<Rightarrow> ('var, 'value) fmap"
   where
   "heapExtendJoin \<rho> h eval =
     (if heapExtendJoin_cond' h eval \<rho>
