@@ -20,40 +20,8 @@ where
 equivariance reds
 
 nominal_inductive reds
-(*
-  avoids LetACons: "v"
-apply (auto simp add: fresh_star_def fresh_Pair exp_assn.fresh exp_assn.bn_defs)
-done
-*)
   avoids Application: "y" and "n"
-apply (auto simp add: fresh_star_def fresh_Pair exp_assn.fresh)
-done
-
-lemma eval_test:
-  "[] : (Let (ACons x (Lam [y]. Var y) ANil) (Var x)) \<Down>*\<^bsub>[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y)"
-apply(auto intro!: Lambda Application Variable Let
- simp add: fresh_Pair fresh_Cons fresh_Nil exp_assn.fresh fresh_star_def)
-done
-
-lemma eval_test2:
-  "y \<noteq> x \<Longrightarrow> n \<noteq> y \<Longrightarrow> n \<noteq> x \<Longrightarrow>[] : (Let (ACons x (Lam [y]. Var y) ANil) (App (Var x) x)) \<Down>*\<^bsub>[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y)"
- (* by (auto intro!: Lambda Application Variable Let simp add: fresh_Pair fresh_at_base fresh_Cons fresh_Nil exp_assn.fresh fresh_star_def)*)
-  apply (rule reds.intros)
-  apply (auto simp add: fresh_Pair fresh_at_base fresh_Cons fresh_Nil exp_assn.fresh fresh_star_def)[2]
-  apply (rule Application[where y = y and n = n])
-  prefer 4
-  apply (rule reds.intros)
-  apply simp
-  apply (rule reds.intros)
-  apply (auto simp add: fresh_Pair fresh_at_base fresh_Cons fresh_Nil exp_assn.fresh fresh_star_def)[1]
-  apply (auto simp add: fresh_Pair fresh_at_base fresh_Cons fresh_Nil exp_assn.fresh fresh_star_def)[1]
-  apply simp
-  apply simp
-  apply (rule reds.intros)
-  apply simp
-  apply simp
-  apply (rule reds.intros)
-  done
+    by(auto simp add: fresh_star_def fresh_Pair exp_assn.fresh)
 
 lemma reds_doesnt_forget:
   "\<Gamma> : e \<Down>*\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> heapVars \<Gamma> \<subseteq> heapVars \<Delta>"
@@ -76,49 +44,6 @@ case(Variable v e \<Gamma> L \<Delta> z)
     qed
   qed
 qed (auto)
-
-lemma reds_avoids_live:
-  "\<lbrakk> \<Gamma> : e \<Down>*\<^bsub>L\<^esub> \<Delta> : z;
-   x \<in> set L;
-   x \<notin> heapVars \<Gamma>
-  \<rbrakk> \<Longrightarrow> x \<notin> heapVars \<Delta>"
-proof(induct rule:reds.induct)
-case (Lambda \<Gamma> x e L) thus ?case by auto
-next
-case (Application y \<Gamma> e x L \<Delta> \<Theta> z e') thus ?case by auto
-next
-case (Variable  x e \<Gamma> L \<Delta> z) thus ?case by (auto simp add: heapVars_def, metis fst_conv imageI)
-next
-case (Let as \<Gamma> body L \<Delta> z)
-  have "x \<notin> heapVars \<Gamma>" by fact moreover
-  have "set (bn as) \<sharp>* L" using `set (bn as) \<sharp>* (\<Gamma>, Let as body, L)` by (simp add: fresh_star_Pair)
-  hence "x \<notin> heapVars (asToHeap as)"
-    using `x \<in> set L`
-    apply -
-    apply (induct as rule: asToHeap.induct)
-    apply (auto simp add: exp_assn.bn_defs fresh_star_insert fresh_star_Pair)
-    by (metis finite_set fresh_finite_set_at_base fresh_set)  ultimately
-  have "x \<notin> heapVars (asToHeap as @ \<Gamma>)" by (auto simp del:fst_set_asToHeap)  
-  thus ?case
-    by (rule Let.hyps(4)[OF `x \<in> set L`])
-qed
-
-lemma reds_pres_distinctVars:
-  "\<Gamma> : e \<Down>*\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> distinctVars \<Gamma> \<Longrightarrow> distinctVars \<Delta>"
-proof (nominal_induct rule: reds.strong_induct)
-  case (Variable x e \<Gamma> L \<Delta> z)
-    have "x \<notin> heapVars \<Delta>"
-      apply (rule reds_avoids_live[OF Variable(2)])
-      apply (auto simp add: heapVars_removeAll[OF Variable(4,1)])
-      done
-    moreover
-    have "distinctVars (removeAll (x,e) \<Gamma>)"
-      by (rule distinctVars_removeAll[OF Variable(4,1)])
-    hence "distinctVars \<Delta>" by (rule Variable.hyps)
-    ultimately
-    show ?case
-      by (rule distinctVars.intros)
-qed (auto intro: distinctVars_append_asToHeap)
 
 
 lemma reds_fresh:" \<lbrakk> \<Gamma> : e \<Down>*\<^bsub>L\<^esub> \<Delta> : z;
