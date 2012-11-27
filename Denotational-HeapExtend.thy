@@ -54,8 +54,52 @@ lemma fix_join_cont':
   apply fact
   done
 
-lemma "fdom \<rho> \<inter> fst ` set h = {} \<Longrightarrow> compatible_fmap \<rho> (heapToEnv h (\<lambda> e. ESem e \<rho>'))"
-  by (rule compatible_fmap_disjoint_fdom, simp)
+
+lemma heapExtendJoin_monofun'':
+  assumes cont: "\<And> e. e \<in> snd ` set h \<Longrightarrow> cont (ESem e)"
+  assumes cond1: "heapExtendJoin_cond' h ESem \<rho>"
+  assumes cond2: "heapExtendJoin_cond' h ESem \<rho>'"
+  assumes "\<rho> \<sqsubseteq> \<rho>'"
+  shows "heapExtendJoin \<rho> h ESem \<sqsubseteq> heapExtendJoin \<rho>' h ESem"
+    unfolding heapExtendJoin_def
+    unfolding if_P[OF cond1] if_P[OF cond2]
+    apply (rule fix_on_mono2[OF fix_on_cond_jfc''[OF cond1] fix_on_cond_jfc''[OF cond2]])
+    apply (simp add: bottom_of_jfc'' to_bot_fmap_def fmap_below_dom[OF `\<rho> \<sqsubseteq> \<rho>'`])
+    apply (erule (1) join_mono[OF rho_F_compat_jfc''[OF cond1] rho_F_compat_jfc''[OF cond2]])
+    apply (subst fmap_below_dom[OF `\<rho> \<sqsubseteq> \<rho>'`], rule monofunE[OF fmap_expand_monofun assms(4)])
+    apply (subst fmap_below_dom[OF `\<rho> \<sqsubseteq> \<rho>'`], rule monofunE[OF fmap_expand_monofun])
+    apply (erule cont2monofunE[rotated])
+    apply (intro cont_compose[OF fmap_expand_cont] cont2cont_heapToEnv assms) apply assumption
+    done
+
+
+
+lemma heapExtendJoin_cont'':
+  assumes cont: "\<And> e. e \<in> snd ` set h \<Longrightarrow> cont (ESem e)"
+  assumes cond1: "heapExtendJoin_cond' h ESem (\<Squnion> i. Y i)"
+  assumes cond2: "\<And>i. heapExtendJoin_cond' h ESem (Y i)"
+  assumes "chain Y"
+  shows "heapExtendJoin (\<Squnion> i. Y  i) h ESem = (\<Squnion> i. heapExtendJoin (Y i) h ESem)"
+proof-
+  have fdoms[simp]:"\<And> i. fdom (Y i) = fdom (\<Squnion> i. Y i)" (is "\<And> _ .(_ = ?d)") by (metis chain_fdom `chain Y`) 
+
+  have "fix_on       (fix_join_compat'' (\<Squnion> i. fmap_expand (Y i)  (?d \<union> fst ` set h)) (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (?d \<union> fst ` set h)))
+             (\<lambda>\<rho>'.                     (\<Squnion> i. fmap_expand (Y i)  (?d \<union> fst ` set h)) \<squnion>
+                      fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (?d \<union> fst ` set h)) =
+       (\<Squnion> i. fix_on  (fix_join_compat''      (fmap_expand (Y i) (?d \<union> fst ` set h))  (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (?d \<union> fst ` set h)))
+                                        (\<lambda>\<rho>'. fmap_expand (Y i) (?d \<union> fst ` set h) \<squnion>
+                      fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (?d \<union> fst ` set h))) "
+    by (rule fix_on_join_cont'''[OF 
+          ch2ch_cont[OF fmap_expand_cont `chain Y`]
+          cond2[unfolded fdoms]
+          cond1[unfolded cont2contlubE[OF fmap_expand_cont `chain Y`]]
+          ])
+  thus ?thesis
+    unfolding heapExtendJoin_def
+    unfolding if_P[OF cond1] if_P[OF cond2]
+    by (simp add: cont2contlubE[OF fmap_expand_cont `chain Y`])
+qed
+
 
 lemma compatible_fmap_is_compatible: "compatible_fmap m1 m2 \<Longrightarrow> fdom m1 = fdom m2 \<Longrightarrow> compatible m1 m2"
   apply (rule compatibleI[of _ "fmap_join m1 m2"])
@@ -379,57 +423,6 @@ proof-
     apply (rule ssubst)
     apply (rule cpo_lubI[OF `chain _`])
     done
-qed
-
-lemma heapExtendJoin_monofun'':
-  assumes cont: "\<And> e. e \<in> snd ` set h \<Longrightarrow> cont (ESem e)"
-  assumes cond1: "heapExtendJoin_cond' h ESem \<rho>"
-  assumes cond2: "heapExtendJoin_cond' h ESem \<rho>'"
-  assumes "\<rho> \<sqsubseteq> \<rho>'"
-  shows "heapExtendJoin \<rho> h ESem \<sqsubseteq> heapExtendJoin \<rho>' h ESem"
-    unfolding heapExtendJoin_def
-    unfolding if_P[OF cond1] if_P[OF cond2]
-    apply (rule fix_on_mono2[OF fix_on_cond_jfc''[OF cond1] fix_on_cond_jfc''[OF cond2]])
-    apply (simp add: bottom_of_jfc'' to_bot_fmap_def fmap_below_dom[OF `\<rho> \<sqsubseteq> \<rho>'`])
-    apply (erule (1) join_mono[OF rho_F_compat_jfc''[OF cond1] rho_F_compat_jfc''[OF cond2]])
-    apply (subst fmap_below_dom[OF `\<rho> \<sqsubseteq> \<rho>'`], rule monofunE[OF fmap_expand_monofun assms(4)])
-    apply (subst fmap_below_dom[OF `\<rho> \<sqsubseteq> \<rho>'`], rule monofunE[OF fmap_expand_monofun])
-    apply (erule cont2monofunE[rotated])
-    apply (intro cont_compose[OF fmap_expand_cont] cont2cont_heapToEnv assms) apply assumption
-    done
-
-
-lemma heapExtendJoin_cont'':
-  assumes cont: "\<And> e. e \<in> snd ` set h \<Longrightarrow> cont (ESem e)"
-  assumes cond1: "heapExtendJoin_cond' h ESem (\<Squnion> i. Y i)"
-  assumes cond2: "\<And>i. heapExtendJoin_cond' h ESem (Y i)"
-  assumes "chain Y"
-  shows "heapExtendJoin (\<Squnion> i. Y  i) h ESem = (\<Squnion> i. heapExtendJoin (Y i) h ESem)"
-proof-
-  have fdoms[simp]:"\<And> i. fdom (Y i) = fdom (\<Squnion> i. Y i)" (is "\<And> _ .(_ = ?d)") by (metis chain_fdom `chain Y`) 
-
-  (*
-  have compat_preserve:
-    "\<And> i \<rho>'. compatible (fmap_expand (Y i) (?d \<union> fst ` set h)) \<rho>' \<Longrightarrow>
-            compatible (fmap_expand (Y i) (?d \<union> fst ` set h)) (fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (?d \<union> fst ` set h)) "
-     using heapExtendJoin_cond'D[OF cond2] by simp
-  *)
-
-  have "fix_on       (fix_join_compat'' (\<Squnion> i. fmap_expand (Y i)  (?d \<union> fst ` set h)) (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (?d \<union> fst ` set h)))
-             (\<lambda>\<rho>'.                     (\<Squnion> i. fmap_expand (Y i)  (?d \<union> fst ` set h)) \<squnion>
-                      fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (?d \<union> fst ` set h)) =
-       (\<Squnion> i. fix_on  (fix_join_compat''      (fmap_expand (Y i) (?d \<union> fst ` set h))  (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (?d \<union> fst ` set h)))
-                                        (\<lambda>\<rho>'. fmap_expand (Y i) (?d \<union> fst ` set h) \<squnion>
-                      fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (?d \<union> fst ` set h))) "
-    by (rule fix_on_join_cont'''[OF 
-          ch2ch_cont[OF fmap_expand_cont `chain Y`]
-          cond2[unfolded fdoms]
-          cond1[unfolded cont2contlubE[OF fmap_expand_cont `chain Y`]]
-          ])
-  thus ?thesis
-    unfolding heapExtendJoin_def
-    unfolding if_P[OF cond1] if_P[OF cond2]
-    by (simp add: cont2contlubE[OF fmap_expand_cont `chain Y`])
 qed
 
 lemma heapExtendJoin_refines:
