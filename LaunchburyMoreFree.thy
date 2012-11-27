@@ -23,99 +23,37 @@ nominal_inductive reds
   avoids Application: "y" and "n"
     by(auto simp add: fresh_star_def fresh_Pair exp_assn.fresh)
 
+lemma reds_less_free:
+  "\<Gamma> : e \<Down>*\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> \<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
+proof(induct rule: LaunchburyMoreFree.reds.induct)
+case (Application y \<Gamma> e x L \<Delta> \<Theta> z n e')
+  show ?case
+  proof(rule Launchbury.reds.Application)
+    show "atom y \<sharp> (\<Gamma>, e, x, L, \<Delta>, \<Theta>, z)"
+      by fact
+    show  "\<Gamma> : e \<Down>\<^bsub>x # L\<^esub> \<Delta> : Lam [y]. e'"
+      apply (rule reds_smaller_L[OF Application.hyps(5)])
+      by auto
+    show "\<Delta> : e'[y::=x] \<Down>\<^bsub>L\<^esub> \<Theta> : z"
+      by fact
+  qed
+qed (auto intro: reds_smaller_L Launchbury.reds.intros simp add: fresh_star_Pair)
+
+
 lemma reds_doesnt_forget:
   "\<Gamma> : e \<Down>*\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> heapVars \<Gamma> \<subseteq> heapVars \<Delta>"
-proof(induct rule: reds.induct)
-case(Variable v e \<Gamma> L \<Delta> z)
-  show ?case
-  proof
-    fix x
-    assume "x \<in> heapVars \<Gamma>"
-    show "x \<in> heapVars ((v, z) # \<Delta>)"
-    proof(cases "x = v")
-    case True 
-      thus ?thesis by simp
-    next
-    case False
-      with `x \<in> heapVars \<Gamma>`
-      have "x \<in> heapVars (removeAll (v,e) \<Gamma>)" by (auto simp add: heapVars_def)
-      hence "x \<in> heapVars \<Delta>" using Variable.hyps(3) by auto
-      thus ?thesis by simp
-    qed
-  qed
-qed (auto)
-
+by (metis reds_less_free reds_doesnt_forget)
 
 lemma reds_fresh:" \<lbrakk> \<Gamma> : e \<Down>*\<^bsub>L\<^esub> \<Delta> : z;
    atom (x::var) \<sharp> (\<Gamma>, e)
   \<rbrakk> \<Longrightarrow> atom x \<sharp> (\<Delta>, z) \<or> x \<in> (heapVars \<Delta> - set L)"
-proof(induct rule: reds.induct)
-case (Lambda \<Gamma> x e) thus ?case by auto
-next
-case (Application y \<Gamma> e x' L \<Delta> \<Theta> z n e')
-  hence "atom x \<sharp> (\<Delta>, Lam [y]. e') \<or> x \<in> heapVars \<Delta> - set (n # x' # L)" by (auto simp add: exp_assn.fresh fresh_Pair)
-
-  thus ?case
-  proof
-    assume  "atom x \<sharp> (\<Delta>, Lam [y]. e')"
-    show ?thesis
-    proof(cases "x = y")
-    case False
-      hence "atom x \<sharp> e'" using `atom x \<sharp> (\<Delta>, Lam [y]. e')`
-        by (auto simp add:fresh_Pair exp_assn.fresh)
-      hence "atom x \<sharp> e'[y ::= x']" using Application.prems
-        by (auto intro: subst_pres_fresh[rule_format] simp add: fresh_Pair exp_assn.fresh)
-      thus ?thesis using Application.hyps(7) `atom x \<sharp> (\<Delta>, Lam [y]. e')` by auto
-    next
-    case True
-      hence "atom x \<sharp> e'[y ::= x']" using `atom x \<sharp> (\<Delta>, Lam [y]. e')` Application.prems
-        by (auto intro:subst_is_fresh simp add: fresh_Pair exp_assn.fresh)
-      thus ?thesis using Application.hyps(7) `atom x \<sharp> (\<Delta>, Lam [y]. e')` by auto
-    qed
-  next
-    assume "x \<in> heapVars \<Delta>  - set (n # x' # L)"
-    thus ?thesis using reds_doesnt_forget[OF Application.hyps(6)] by auto
-  qed
-next
-
-case(Variable v e \<Gamma> L \<Delta> z)
-  have "atom x \<sharp> \<Gamma>" and "atom x \<sharp> v" using Variable.prems(1) by (auto simp add: fresh_Pair exp_assn.fresh)
-  hence "atom x \<sharp> removeAll (v,e) \<Gamma>" and "atom x \<sharp> e" using `(v,e) \<in> set \<Gamma>` by(auto intro: fresh_remove dest:fresh_list_elem)
-  hence "atom x \<sharp> (\<Delta>, z) \<or> x \<in> heapVars \<Delta> - set (v # L)"  using Variable.hyps(3) by (auto simp add: fresh_Pair)
-  thus ?case using `atom x \<sharp> v` by (auto simp add: fresh_Pair fresh_Cons fresh_at_base)
-next
-
-case (Let as \<Gamma> body L \<Delta> z)
-  show ?case
-    proof (cases "atom x \<in> set(bn as)")
-    case False
-      hence "atom x \<sharp> as" using Let.prems by(auto simp add: fresh_Pair exp_assn.fresh)      
-      hence "atom x \<sharp> asToHeap as"
-        by(induct as rule:asToHeap_induct)(auto simp add: fresh_Nil fresh_Cons fresh_Pair exp_assn.fresh)
-      show ?thesis
-        apply(rule Let.hyps(4))
-        using Let.prems `atom x \<sharp> asToHeap as` False
-        by (auto simp add: fresh_Pair exp_assn.fresh fresh_append)
-    next
-    case True
-      hence "x \<in> heapVars (asToHeap as)" 
-        by(induct as rule:asToHeap_induct)(auto simp add: exp_assn.bn_defs)      
-      moreover
-      have "x \<notin> set L"
-        using Let(1)
-        by (metis True fresh_list_elem fresh_star_Pair fresh_star_def not_self_fresh)
-      ultimately
-      show ?thesis
-      using reds_doesnt_forget[OF Let.hyps(3)] by auto
-    qed
-qed
+  by (metis reds_less_free reds_fresh)
 
 lemma reds_add_var_L: "\<lbrakk> \<Gamma> : e \<Down>*\<^bsub>L\<^esub> \<Delta> : z;
    atom (x::var) \<sharp> (\<Gamma>, e, \<Delta>, z);
    set L' = insert x (set L)
   \<rbrakk> \<Longrightarrow> \<Gamma> : e \<Down>*\<^bsub>L'\<^esub> \<Delta> : z"
 proof(nominal_induct avoiding : L' rule: reds.strong_induct)
-print_cases
 case (Lambda \<Gamma> x e L L')
   show ?case
     by (rule reds.Lambda)
@@ -242,22 +180,6 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e')
       by fact
   qed
 qed (auto intro: reds.intros simp add: fresh_star_Pair)
-
-lemma reds_less_free:
-  "\<Gamma> : e \<Down>*\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> \<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
-proof(induct rule: LaunchburyMoreFree.reds.induct)
-case (Application y \<Gamma> e x L \<Delta> \<Theta> z n e')
-  show ?case
-  proof(rule Launchbury.reds.Application)
-    show "atom y \<sharp> (\<Gamma>, e, x, L, \<Delta>, \<Theta>, z)"
-      by fact
-    show  "\<Gamma> : e \<Down>\<^bsub>x # L\<^esub> \<Delta> : Lam [y]. e'"
-      apply (rule reds_smaller_L[OF Application.hyps(5)])
-      by auto
-    show "\<Delta> : e'[y::=x] \<Down>\<^bsub>L\<^esub> \<Theta> : z"
-      by fact
-  qed
-qed (auto intro: reds_smaller_L Launchbury.reds.intros simp add: fresh_star_Pair)
 
 lemma reds_more_free_eq:
   "(\<Gamma> : e \<Down>*\<^bsub>L\<^esub> \<Delta> : z) \<longleftrightarrow> (\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z)"
