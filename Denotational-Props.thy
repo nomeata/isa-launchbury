@@ -1166,42 +1166,4 @@ proof(rule ESem_ignores_fresh[symmetric])
 qed
 
 
-lemma HSem_mono_subset:
-  assumes "heapExtendJoin_cond' \<Gamma> \<rho>"
-  and "heapExtendJoin_cond' \<Delta> \<rho>"
-  shows "set \<Gamma> \<subseteq> set \<Delta> \<Longrightarrow> fmap_expand (\<lbrace>\<Gamma>\<rbrace>\<rho>) (fdom (\<lbrace>\<Delta>\<rbrace>\<rho>)) \<sqsubseteq> \<lbrace>\<Delta>\<rbrace>\<rho>"
-(*
-apply (rule fmap_expand_belowI[OF refl])
-apply simp
-*)
-apply (subst fdom_HSem)
-apply (subst HSem_def'[OF assms(1)])
-apply (subst HSem_def'[OF assms(2)])
-apply (rule parallel_fix_on_ind[OF fix_on_cond_jfc''[OF assms(1)] fix_on_cond_jfc''[OF assms(2)] ])
-apply (rule adm_is_adm_on)
-defer
-apply (simp add: bottom_of_jfc'' to_bot_fmap_def)
-apply (rule fmap_expand_belowI)
-apply (subst fdom_join[OF rho_F_compat_jfc''[OF assms(2)]], assumption)
-apply simp
-
-apply (subst (asm) fdom_join[OF rho_F_compat_jfc''[OF assms(1)]], assumption)
-apply (subst (asm) fdom_fmap_expand, simp)
-
-
-apply (subst the_lookup_join[OF rho_F_compat_jfc''[OF assms(1)]], assumption)
-apply (subst the_lookup_join[OF rho_F_compat_jfc''[OF assms(2)]], assumption)
-apply (rule join_mono)
-apply (rule the_lookup_compatible[OF rho_F_compat_jfc''[OF assms(1)]], assumption)
-apply (rule the_lookup_compatible[OF rho_F_compat_jfc''[OF assms(2)]], assumption)
-apply (case_tac "x \<in> fdom \<rho>")
-  apply simp
-  apply simp
-apply (case_tac "x \<in> fst `set \<Gamma>")
-  apply simp
-apply (case_tac "x \<in> fst `set \<Delta>")
-  apply simp
-oops
-
-
 end
