@@ -40,63 +40,6 @@ proof-
 qed
 
 
-lemma HSem_reorder:
-  assumes "distinctVars \<Gamma>"
-  assumes "distinctVars \<Delta>"
-  assumes "set \<Gamma> = set \<Delta>"
-  shows "\<lbrace>\<Gamma>\<rbrace>\<rho> = \<lbrace>\<Delta>\<rbrace>\<rho>"
-by (simp add: HSem_reorder[OF assms])
-
-lemma HSem_reorder_head:
-  assumes "x \<noteq> y"
-  shows "\<lbrace>((x,e1)#(y,e2)#\<Gamma>)\<rbrace>\<rho> = \<lbrace>((y,e2)#(x,e1)#\<Gamma>)\<rbrace>\<rho>"
-by (simp add: HSem_reorder_head[OF assms])
-
-lemma HSem_reorder_heap_append:
-  assumes "x \<notin> heapVars \<Gamma>"
-  shows "\<lbrace>(x,e)#\<Gamma>@\<Delta>\<rbrace>\<rho> = \<lbrace>\<Gamma> @ ((x,e)#\<Delta>)\<rbrace>\<rho>"
-by (simp add: HSem_reorder_head_append[OF assms])
-
-lemma HSem_subst_exp:
-  assumes cond1: "HSem_cond' ((x, e) # \<Gamma>) \<rho>"
-  assumes cond2: "HSem_cond' ((x, e') # \<Gamma>) \<rho>"
-  assumes "\<And>\<rho>'. fdom \<rho>' = fdom \<rho> \<union> (fst`set ((x,e)#\<Gamma>)) \<Longrightarrow> ESem e \<rho>' = ESem e' \<rho>'"
-  shows "\<lbrace>(x,e)#\<Gamma>\<rbrace>\<rho> = \<lbrace>(x,e')#\<Gamma>\<rbrace>\<rho>"
-by (metis HSem_subst_exp[OF assms])
-
-lemma HSem_subst_expr_below:
-  assumes cond1: "HSem_cond' ((x, e1) # \<Gamma>) \<rho>"
-  assumes cond2: "HSem_cond' ((x, e2) # \<Gamma>) \<rho>"
-  assumes below: "\<lbrakk> e1 \<rbrakk>\<^bsub>\<lbrace>(x, e2) #  \<Gamma>\<rbrace>\<rho>\<^esub> \<sqsubseteq> \<lbrakk> e2 \<rbrakk>\<^bsub>\<lbrace>(x, e2) # \<Gamma>\<rbrace>\<rho>\<^esub>"
-  shows "\<lbrace>(x, e1) # \<Gamma>\<rbrace>\<rho> \<sqsubseteq> \<lbrace>(x, e2) # \<Gamma>\<rbrace>\<rho>"
-proof (rule HSem_ind'[OF cond1])
-case goal1 show ?case by (auto intro: adm_is_adm_on)
-case goal2 show ?case by (simp add: to_bot_fmap_def)
-case (goal3 \<rho>')
-  show ?case
-    apply (subst HSem_unroll[OF cond2])
-    apply (rule join_mono[OF
-      rho_F_compat_jfc''[OF cond1 goal3(1)]
-      rho_F_compat_jfc''[OF cond2 HSem_there[OF cond2]]
-      ])
-    apply simp
-    apply (subst (1 2) heapToEnv.simps)
-    apply (simp del: heapToEnv.simps ESem.simps)
-    apply (rule cont2monofunE[OF fmap_expand_cont])
-    apply (rule fmap_upd_mono)
-    apply (rule cont2monofunE[OF cont2cont_heapToEnv[OF ESem_cont] goal3(2)])
-    apply (rule below_trans[OF cont2monofunE[OF ESem_cont goal3(2)] below])
-    done
-qed    
-
-lemma HSem_subst_expr:
-  assumes cond1: "HSem_cond' ((x, e1) # \<Gamma>) \<rho>"
-  assumes cond2: "HSem_cond' ((x, e2) # \<Gamma>) \<rho>"
-  assumes below1: "\<lbrakk> e1 \<rbrakk>\<^bsub>\<lbrace>(x, e2) #  \<Gamma>\<rbrace>\<rho>\<^esub> \<sqsubseteq> \<lbrakk> e2 \<rbrakk>\<^bsub>\<lbrace>(x, e2) # \<Gamma>\<rbrace>\<rho>\<^esub>"
-  assumes below2: "\<lbrakk> e2 \<rbrakk>\<^bsub>\<lbrace>(x, e1) #  \<Gamma>\<rbrace>\<rho>\<^esub> \<sqsubseteq> \<lbrakk> e1 \<rbrakk>\<^bsub>\<lbrace>(x, e1) # \<Gamma>\<rbrace>\<rho>\<^esub>"
-  shows "\<lbrace>(x, e1) # \<Gamma>\<rbrace>\<rho> = \<lbrace>(x, e2) # \<Gamma>\<rbrace>\<rho>"
-  by (metis assms HSem_subst_expr_below below_antisym)
-
 lemma HSem_subst_var_app:
   assumes cond1: "HSem_cond' ((x, App (Var n) y) # (n, e) # \<Gamma>) \<rho>"
   assumes cond2: "HSem_cond' ((x, App e y) # (n, e) # \<Gamma>) \<rho>"
@@ -109,7 +52,7 @@ proof(rule HSem_subst_expr[OF cond1 cond2])
   have "\<lbrakk> Var n \<rbrakk>\<^bsub>\<lbrace>(x, App e y) # (n, e) # \<Gamma>\<rbrace>\<rho>\<^esub> = the (lookup (\<lbrace>(x, App e y) # (n, e) # \<Gamma>\<rbrace>\<rho>) n)"
     by simp
   also have "... = \<lbrakk> e \<rbrakk>\<^bsub>(\<lbrace>(x, App e y) # (n, e) # \<Gamma>\<rbrace>\<rho>)\<^esub>"
-    apply (subst HSem_unroll[OF cond2])
+    apply (subst HSem_eq[OF cond2])
     apply (subst the_lookup_join[OF rho_F_compat_jfc''[OF cond2 HSem_there[OF cond2]]])
     apply simp
     done
@@ -120,7 +63,7 @@ proof(rule HSem_subst_expr[OF cond1 cond2])
  have "\<lbrakk> Var n \<rbrakk>\<^bsub>\<lbrace>(x, App (Var n) y) # (n, e) # \<Gamma>\<rbrace>\<rho>\<^esub> = the (lookup (\<lbrace>(x, App (Var n) y) # (n, e) # \<Gamma>\<rbrace>\<rho>) n)"
     by simp
   also have "... = \<lbrakk> e \<rbrakk>\<^bsub>(\<lbrace>(x, App (Var n) y) # (n, e) # \<Gamma>\<rbrace>\<rho>)\<^esub>"
-    apply (subst HSem_unroll[OF cond1])
+    apply (subst HSem_eq[OF cond1])
     apply (subst the_lookup_join[OF rho_F_compat_jfc''[OF cond1 HSem_there[OF cond1]]])
     apply simp
     done
@@ -141,7 +84,7 @@ proof(rule HSem_subst_expr[OF cond1 cond2])
   have "\<lbrakk> Var n \<rbrakk>\<^bsub>\<lbrace>(x, e) # (n, e) # \<Gamma>\<rbrace>\<rho>\<^esub> = the (lookup (\<lbrace>(x, e) # (n, e) # \<Gamma>\<rbrace>\<rho>) n)"
     by simp
   also have "... = \<lbrakk> e \<rbrakk>\<^bsub>(\<lbrace>(x, e) # (n, e) # \<Gamma>\<rbrace>\<rho>)\<^esub>"
-    apply (subst HSem_unroll[OF cond2])
+    apply (subst HSem_eq[OF cond2])
     apply (subst the_lookup_join[OF rho_F_compat_jfc''[OF cond2 HSem_there[OF cond2]]])
     apply simp
     done
@@ -152,7 +95,7 @@ proof(rule HSem_subst_expr[OF cond1 cond2])
   have "\<lbrakk> Var n \<rbrakk>\<^bsub>\<lbrace>(x, Var n) # (n, e) # \<Gamma>\<rbrace>\<rho>\<^esub> = the (lookup (\<lbrace>(x, Var n) # (n, e) # \<Gamma>\<rbrace>\<rho>) n)"
     by simp
   also have "... = \<lbrakk> e \<rbrakk>\<^bsub>(\<lbrace>(x, Var n) # (n, e) # \<Gamma>\<rbrace>\<rho>)\<^esub>"
-    apply (subst HSem_unroll[OF cond1])
+    apply (subst HSem_eq[OF cond1])
     apply (subst the_lookup_join[OF rho_F_compat_jfc''[OF cond1 HSem_there[OF cond1]]])
     apply simp
     done
@@ -215,7 +158,7 @@ case (goal3 x)
       apply auto[3]
     apply (rule fmap_expand_belowI)
       apply auto[1]
-    apply (subst HSem_unroll[OF cond2])
+    apply (subst HSem_eq[OF cond2])
     apply (subst the_lookup_join[OF compat2])
     apply (rule below_trans[OF _ join_above2[OF the_lookup_compatible[OF compat2]]])
     apply (subst lookup_fmap_expand1)
@@ -228,23 +171,6 @@ case (goal3 x)
     apply (rule e_less)
     by (metis the_map_of_snd)
 qed
-
-lemma fmap_restr_HSem_noop:
-  assumes "fst`set \<Gamma> \<inter> fdom \<rho> = {}"
-  shows "fmap_restr (fdom \<rho>) (\<lbrace>\<Gamma>\<rbrace>\<rho>) = \<rho>"
-  apply (rule fmap_eqI)
-  using assms apply auto[1]
-  using assms apply auto[1]
-  apply (subst the_lookup_HSem_other)
-  apply auto
-  done
-
-lemma HSem_disjoint_less:
-  assumes "fst`set \<Gamma> \<inter> fdom \<rho> = {}"
-  shows "\<rho> \<le> \<lbrace>\<Gamma>\<rbrace>\<rho>"
-  using assms
-by (metis fdom_HSem fmap_less_restrict fmap_restr_HSem_noop sup_ge1)
-  
 
 lemma HSem_merge:
   assumes distinct1: "distinctVars (\<Delta> @ \<Gamma>)"
@@ -263,16 +189,16 @@ proof(rule below_antisym)
     by auto
 
   have cond1: "HSem_cond' \<Gamma> (\<lbrace>\<Delta>\<rbrace>\<rho>)"
-    apply (rule disjoint_is_HSem_cond'_ESem)
+    apply (rule disjoint_is_HSem_cond)
     using Gamma_fresh by auto
   have cond2: "HSem_cond' (\<Gamma>@\<Delta>) \<rho>"
-    apply (rule disjoint_is_HSem_cond'_ESem)
+    apply (rule disjoint_is_HSem_cond)
     using rho_fresh by auto
   have cond2': "HSem_cond' (\<Delta>@\<Gamma>) \<rho>"
-    apply (rule disjoint_is_HSem_cond'_ESem)
+    apply (rule disjoint_is_HSem_cond)
     using rho_fresh by auto
   have cond3: "HSem_cond' \<Delta> \<rho>"
-    apply (rule disjoint_is_HSem_cond'_ESem)
+    apply (rule disjoint_is_HSem_cond)
     using rho_fresh by auto
 
   show "\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho> \<sqsubseteq> \<lbrace>\<Gamma>@\<Delta>\<rbrace>\<rho>"
@@ -301,7 +227,7 @@ proof(rule below_antisym)
       hence x:"x \<in> fst ` set \<Gamma>" by auto
       thus ?case
         apply (subst lookupHeapToEnv, assumption)
-        apply (subst (2) HSem_unroll[OF cond2])
+        apply (subst (2) HSem_eq[OF cond2])
         apply (subst the_lookup_join[OF compat2])
         apply (rule below_trans[OF _ join_above2[OF the_lookup_compatible[OF compat2]]])
         apply (subst lookup_fmap_expand1)
@@ -350,7 +276,7 @@ proof(rule below_antisym)
         thus ?thesis
         apply (subst lookupHeapToEnv)
           apply auto[1]
-        apply (subst (2) HSem_unroll[OF cond1])
+        apply (subst (2) HSem_eq[OF cond1])
         apply (subst the_lookup_join[OF compat2])
         apply (rule below_trans[OF _ join_above2[OF the_lookup_compatible[OF compat2]]])
         apply (subst lookup_fmap_expand1)
@@ -367,7 +293,7 @@ proof(rule below_antisym)
           apply auto[1]
         apply (subst the_lookup_HSem_other)
           apply simp
-        apply (subst (2) HSem_unroll[OF cond3])
+        apply (subst (2) HSem_eq[OF cond3])
         apply (subst the_lookup_join[OF compat3])
         apply (rule below_trans[OF _ join_above2[OF the_lookup_compatible[OF compat3]]])
         apply (subst lookup_fmap_expand1)
@@ -386,62 +312,6 @@ proof(rule below_antisym)
     thus ?case
       by (rule join_below[OF compat rho 
           below_trans[OF cont2monofunE[OF cont_compose[OF fmap_expand_cont cont2cont_heapToEnv[OF ESem_cont]] goal3(3)]]])
-  qed
-qed
-
-lemma HSem_redo:
-  assumes "HSem_cond' (\<Gamma> @ \<Delta>) \<rho>"
-  assumes "HSem_cond' \<Gamma> (fmap_restr (fdom \<rho> \<union> fst ` set \<Delta>) (\<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>))"
-  shows "\<lbrace>\<Gamma>\<rbrace>fmap_restr (fdom \<rho> \<union> fst ` set \<Delta>) (\<lbrace>\<Gamma>@\<Delta>\<rbrace>\<rho>) = \<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>" (is "?LHS = ?RHS")
-proof (rule below_antisym)
-  show "?LHS \<sqsubseteq> ?RHS"
-  proof(rule HSem_below)
-  case goal1
-    show ?case
-      apply (rule fmap_expand_fmap_restr_below)
-      apply auto
-      done
-  case (goal2 x)
-    hence "x \<in> fst ` set (\<Gamma>@\<Delta>)" by auto
-    show ?case
-      apply (subst the_lookup_HSem_both[OF assms(1) `x \<in> fst \` set (\<Gamma>@\<Delta>)`])
-      apply (rule below_trans[OF _ join_above2[OF the_lookup_HSem_both_compatible[OF assms(1) `x \<in> fst \` set (\<Gamma>@\<Delta>)`]]])
-      using goal2 by (auto simp add: map_add_dom_app_simps dom_map_of_conv_image_fst)
-  qed
-
-  show "?RHS \<sqsubseteq> ?LHS"
-  proof(rule HSem_below)
-  case goal1
-    show ?case
-      apply (rule fmap_expand_belowI)
-        apply auto[1]
-      apply (rule below_trans[OF _ HSem_refines_lookup[OF assms(2)]])
-        prefer 2 apply simp
-      apply (subst lookup_fmap_restr)
-        apply auto[2]
-      apply (erule HSem_refines_lookup[OF assms(1)])
-      done
-
-  case (goal2 x)
-    show ?case
-    proof(cases "x \<in> fst ` set \<Gamma>")
-    case True
-      show ?thesis
-        apply (subst the_lookup_HSem_both[OF assms(2) True])
-        apply (rule below_trans[OF _ join_above2[OF the_lookup_HSem_both_compatible[OF assms(2) True]]])
-        using True by (auto simp add: map_add_dom_app_simps dom_map_of_conv_image_fst)
-    next
-    case False
-      hence delta: "x \<in> fst ` set \<Delta>" using goal2 by auto
-      show ?thesis
-        apply (subst the_lookup_HSem_other[OF False])
-        apply (subst lookup_fmap_restr)
-          using delta apply auto[2]
-        apply (subst the_lookup_HSem_both[OF assms(1) goal2])
-        apply (rule below_trans[OF _ join_above2[OF the_lookup_HSem_both_compatible[OF assms(1) `x \<in> fst \` set (\<Gamma>@\<Delta>)`]]])
-        apply (rule cont2monofunE[OF ESem_cont `?LHS \<sqsubseteq> ?RHS`])
-        done
-    qed
   qed
 qed
 
@@ -533,27 +403,27 @@ case goal2
         also have "... \<sqsubseteq> \<lbrakk> body \<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>(fmap_restr (insert x (fdom \<rho> \<union> fst ` set \<Gamma>)) (\<lbrace>(x, body) # asToHeap as @ \<Gamma>\<rbrace>\<rho>))\<^esub>"
           apply (rule cont2monofunE[OF ESem_cont])
           apply (rule HSem_mono[OF _ _ goal3(2)])
-          apply (rule disjoint_is_HSem_cond'_ESem)
+          apply (rule disjoint_is_HSem_cond)
           apply (subst fdom)
           using disjoint apply auto[1]
-          apply (rule disjoint_is_HSem_cond'_ESem)
+          apply (rule disjoint_is_HSem_cond)
           using disjoint apply auto[1]
           done
         also have "... = \<lbrakk> body \<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>(fmap_restr (insert x (fdom \<rho> \<union> fst ` set \<Gamma>)) (\<lbrace>asToHeap as @ ((x, body) # \<Gamma>)\<rbrace>\<rho>))\<^esub>"
-          by (rule arg_cong[OF HSem_reorder_heap_append[OF x_not_as]])
+          by (rule arg_cong[OF HSem_reorder_head_append[OF x_not_as]])
         also have "... = \<lbrakk> body \<rbrakk>\<^bsub>\<lbrace>asToHeap as @ ((x, body) # \<Gamma>)\<rbrace>\<rho>\<^esub>"
           apply (rule arg_cong) back
           apply (rule HSem_redo[OF cond3, simplified (no_asm)])
-          apply (rule disjoint_is_HSem_cond'_ESem)
+          apply (rule disjoint_is_HSem_cond)
           using disjoint apply (auto simp del: fst_set_asToHeap)
           done
         also have "... = \<lbrakk> body \<rbrakk>\<^bsub>\<lbrace>(x, body) # asToHeap as @ \<Gamma>\<rbrace>\<rho>\<^esub>"
-          by (rule arg_cong[OF HSem_reorder_heap_append[OF x_not_as], symmetric])
+          by (rule arg_cong[OF HSem_reorder_head_append[OF x_not_as], symmetric])
         also note x = calculation
 
         show ?case
           apply (subst lookup_fmap_restr[OF _ x', simplified])
-          apply (subst HSem_unroll[OF cond2])
+          apply (subst HSem_eq[OF cond2])
           apply (subst the_lookup_join[OF compat1])
           apply (subst the_lookup_join[OF compat2])
           apply (rule join_mono[OF the_lookup_compatible[OF compat1] the_lookup_compatible[OF compat2]])
@@ -588,7 +458,7 @@ case goal2
           apply (auto simp del: fst_set_asToHeap)[1]
         apply (rule below_trans[OF HSem_refines_lookup[OF cond1]], assumption)
         apply (rule HSem_refines_lookup)
-          apply (rule disjoint_is_HSem_cond'_ESem)
+          apply (rule disjoint_is_HSem_cond)
           using disjoint apply (auto simp del: fst_set_asToHeap)[1]
         apply simp
         done
@@ -611,7 +481,7 @@ case goal2
           using fresh apply (metis fresh_star_Pair fresh_star_Cons heapVars_def set_bn_to_atom_heapVars)
           using too_lazy_to_do_it_for_more_than_fempty apply simp
         apply (rule below_trans[OF eq_imp_below HSem_heap_below, rotated])
-          apply (rule disjoint_is_HSem_cond'_ESem) using too_lazy_to_do_it_for_more_than_fempty apply simp
+          apply (rule disjoint_is_HSem_cond) using too_lazy_to_do_it_for_more_than_fempty apply simp
           using goal2 apply simp
         apply (rule arg_cong) back
           apply (cases "x' \<in> fst ` set (asToHeap as)")
@@ -635,7 +505,6 @@ theorem correctness:
   shows "\<lbrace>\<Gamma>'@\<Gamma>\<rbrace> \<le> \<lbrace>\<Delta>'@\<Delta>\<rbrace>"
   using assms
 proof(induct rule:reds_distinct_ind)
-print_cases
 case (Lambda x y e \<Gamma> \<Gamma>')
   show ?case by simp
 next
@@ -676,8 +545,8 @@ case (Application n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<Theta
   have "... = ?restr (\<lbrace>(n, e) # (x, App e y) # \<Gamma>' @ \<Gamma>\<rbrace>)"
     (* Adding a fresh variable *)
     apply (subst HSem_add_fresh[of fempty "(x, App e y) # \<Gamma>' @ \<Gamma>" n e, symmetric])
-    apply (metis fempty_is_HSem_cond' ESem_cont)
-    apply (metis fempty_is_HSem_cond' ESem_cont)
+    apply (rule fempty_is_HSem_cond)
+    apply (rule fempty_is_HSem_cond)
     using Application(1) apply (simp add: fresh_Pair fresh_Cons fresh_append exp_assn.fresh)
     apply simp
     done
@@ -687,8 +556,8 @@ case (Application n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<Theta
   have "... = ?restr (\<lbrace>(x, App (Var n) y) # (n, e) # \<Gamma>' @ \<Gamma>\<rbrace>)"
     (* Substituting the variable *)
     apply (rule arg_cong[OF HSem_subst_var_app[symmetric]])
-    apply (metis fempty_is_HSem_cond' ESem_cont)
-    apply (metis fempty_is_HSem_cond' ESem_cont)
+    apply (rule fempty_is_HSem_cond)
+    apply (rule fempty_is_HSem_cond)
     using Application(1) apply (simp add: fresh_Pair)
     done
   also
@@ -706,8 +575,8 @@ case (Application n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<Theta
   have "... = ?restr2 (\<lbrace>(x, App (Lam [z]. e') y) # (n, Lam [z]. e') # \<Delta>' @ \<Delta>\<rbrace>)"
     (* Substituting the variable *)
     apply (rule arg_cong[OF HSem_subst_var_app])
-    apply (metis fempty_is_HSem_cond' ESem_cont)
-    apply (metis fempty_is_HSem_cond' ESem_cont)
+    apply (rule fempty_is_HSem_cond)
+    apply (rule fempty_is_HSem_cond)
     using Application(1) apply (simp add: fresh_Pair)
     done
   also
@@ -717,17 +586,15 @@ case (Application n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<Theta
   have "... = (\<lbrace>(x, App (Lam [z]. e') y) # \<Delta>' @ \<Delta>\<rbrace>)"
     (* Removing a fresh variable *)
     apply (subst HSem_add_fresh[of fempty "(x, App (Lam [z]. e') y) # \<Delta>' @ \<Delta>" n "Lam [z]. e'", symmetric])
-    apply (metis fempty_is_HSem_cond' ESem_cont)
-    apply (metis fempty_is_HSem_cond' ESem_cont)
+    apply (rule fempty_is_HSem_cond)
+    apply (rule fempty_is_HSem_cond)
     using Application(1) apply (simp add: fresh_Pair fresh_Cons fresh_append exp_assn.fresh)
     apply simp
     done
   also
   have "... =  \<lbrace>(x, e'[z::=y]) # \<Delta>' @ \<Delta>\<rbrace>"
     (* Denotation of application *)
-    apply (rule HSem_subst_exp)
-    apply (metis fempty_is_HSem_cond' ESem_cont)
-    apply (metis fempty_is_HSem_cond' ESem_cont)
+    apply (rule HSem_subst_exp[OF fempty_is_HSem_cond fempty_is_HSem_cond])
     apply (simp)
     apply (subgoal_tac "atom z \<sharp> \<rho>'")
     apply (subst ESem.simps, assumption)
@@ -740,8 +607,8 @@ case (Application n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<Theta
       apply (subst sharp_Env)
       apply auto[1]
       apply (metis fresh_Pair not_self_fresh)
-      apply (metis fresh_Pair fst_conv heapVars_def heapVars_not_fresh imageI)
-      apply (metis fresh_Pair fst_conv heapVars_def heapVars_not_fresh imageI)
+      apply (metis (hide_lams, no_types) fresh_PairD(1) fresh_PairD(2) fresh_list_elem not_self_fresh)
+      apply (metis (hide_lams, no_types) fresh_PairD(1) fresh_PairD(2) fresh_list_elem not_self_fresh)
     done
   also
   have "... \<le> \<lbrace>\<Theta>' @ \<Theta>\<rbrace>" by (rule Application.hyps(11)[simplified])
@@ -773,8 +640,8 @@ case (Variable y e \<Gamma> x \<Gamma>' z \<Delta>' \<Delta>)
   have "... =  \<lbrace>(x, z) # (y, z) # \<Delta>' @ \<Delta>\<rbrace>"
     (* Substituting a variable *)
     apply (rule HSem_subst_var_var)
-    apply (rule fempty_is_HSem_cond'_ESem)
-    apply (rule fempty_is_HSem_cond'_ESem)
+    apply (rule fempty_is_HSem_cond)
+    apply (rule fempty_is_HSem_cond)
     using `x \<noteq> y` by (simp add: fresh_Pair fresh_at_base)
   also
   have "... =  \<lbrace>(y, z) # (x, z) # \<Delta>' @ \<Delta>\<rbrace>"
@@ -813,9 +680,9 @@ case (Let as \<Gamma> x body \<Gamma>' \<Delta>' \<Delta>)
   have "... \<le> \<lbrace>(x, body) # asToHeap as @ \<Gamma>' @ \<Gamma>\<rbrace>"
     (* Unrolling a let *)
     apply (rule HSem_unfold_let)
-    apply (rule fempty_is_HSem_cond'_ESem)
-    apply (rule fempty_is_HSem_cond'_ESem)
-    apply (rule fempty_is_HSem_cond'_ESem)
+    apply (rule fempty_is_HSem_cond)
+    apply (rule fempty_is_HSem_cond)
+    apply (rule fempty_is_HSem_cond)
     apply fact
     apply (rule d5)
     using Let(1) apply (auto simp add: fresh_star_Pair fresh_star_append)[1]

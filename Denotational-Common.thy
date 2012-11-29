@@ -36,8 +36,4 @@ end
 lemma sharp_star_Env: "set (bn as) \<sharp>* (\<rho> :: Env) \<longleftrightarrow> (\<forall> x \<in> fst`set (asToHeap as) . x \<notin> fdom \<rho>)"
   by(induct rule:asToHeap.induct, auto simp add: fresh_star_def exp_assn.bn_defs sharp_Env)
 
-lemma sharp_star_Env': "atom ` fst ` set \<Gamma> \<sharp>* (\<rho> :: Env) \<longleftrightarrow> fst ` set \<Gamma> \<inter> fdom \<rho> = {}"
-  by(induct rule:asToHeap.induct, auto simp add: fresh_star_def exp_assn.bn_defs sharp_Env)
-
-
 end

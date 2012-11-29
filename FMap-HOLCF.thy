@@ -755,6 +755,9 @@ lemma lookup_fmap_expand3[simp]:
   "finite S \<Longrightarrow> x \<notin> S \<Longrightarrow> lookup (fmap_expand m S) x = None"
   by (transfer, auto split:option.split)
 
+lemma fmap_expand_fdom[simp]: "fmap_expand \<rho> (fdom \<rho>) = \<rho>"
+  by (transfer, auto split:option.split)
+
 lemma fmap_expand_belowI:
   assumes "fdom \<rho>' = S"
   assumes "\<And> x. x \<in> fdom \<rho> \<Longrightarrow> x \<in> S \<Longrightarrow> the (lookup \<rho> x) \<sqsubseteq> the (lookup \<rho>' x)"
@@ -897,6 +900,12 @@ lemma fmap_bottom_inj[iff]: "finite x \<Longrightarrow> finite y \<Longrightarro
   apply (auto simp add: option.split option.split_asm)
   apply (metis option.simps(3))+
   done
+
+lemma fmap_expand_fempty[simp]: "fmap_expand fempty S = fmap_bottom S"
+  by (transfer, auto)
+
+lemma fmap_expand_fmap_bottom[simp]: "fmap_expand (fmap_bottom S') S = fmap_bottom S"
+  by (transfer, auto)
 
 lemma fmap_restr_fmap_bottom[simp]:
   "finite S \<Longrightarrow> finite S2 \<Longrightarrow> fmap_restr S (fmap_bottom S2) = fmap_bottom (S \<inter> S2)"
