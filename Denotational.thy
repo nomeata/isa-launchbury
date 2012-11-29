@@ -98,4 +98,16 @@ termination (eqvt) by lexicographic_order
 
 interpretation has_ESem ESem.
 
+lemma permute_ESem: "\<pi> \<bullet> ESem = ESem"
+  by (perm_simp, rule)
+
+lemmas heapExtendJoin_eqvt' = heapExtendJoin_eqvt[of _ ESem, unfolded permute_ESem]
+
+(* Re-Do the abbreviation from inside the the locale, as abbreviations are not exported *)
+abbreviation heapExtendJoin_cond''
+  where "heapExtendJoin_cond'' h \<rho> \<equiv>
+      fix_on_cond_jfc' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) 
+                        (\<lambda> \<rho>' . fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set h))"
+
+
 end

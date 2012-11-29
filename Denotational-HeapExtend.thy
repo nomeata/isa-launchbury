@@ -850,8 +850,6 @@ lemma heapExtendJoin_subst_exp:
   apply simp
   done
 
-
-
 end
 
 lemma heapExtendJoin_cond'_cong[fundef_cong]:
