@@ -38,7 +38,7 @@ case (Let as e Y0 Y)
   have conts: "\<forall>e\<in>snd ` set (asToHeap as). cont (ESem e)" using Let.hyps(2) by metis
   have "cont (ESem e)" using Let.hyps(3) by (rule contI, auto)
   moreover
-  have "range (\<lambda>i. heapExtendJoin (Y i) (asToHeap as)) <<| heapExtendJoin (Lub Y) (asToHeap as)"
+  have "range (\<lambda>i. HSem (asToHeap as)  (Y i)) <<| HSem (asToHeap as) (Lub Y)"
     apply (rule range_is_lubI2)
     apply (rule heapExtendJoin_monofun'')
       apply (erule Let.hyps(2))
@@ -58,7 +58,7 @@ case (Let as e Y0 Y)
       apply (rule `chain Y`)
    done
   moreover
-  have "chain (\<lambda>i. heapExtendJoin (Y i) (asToHeap as))"
+  have "chain (\<lambda>i. HSem (asToHeap as) (Y i))"
     apply (rule chainI)
     apply (rule heapExtendJoin_monofun'')
       apply (erule Let.hyps(2))
@@ -83,7 +83,7 @@ lemma ESem_cont: "cont (ESem e)"  using ESem_cont'[OF refl] by (rule contI)
 
 lemmas ESem_cont2cont[simp,cont2cont] = cont_compose[OF ESem_cont]
 
-abbreviation HSem ("\<lbrace>_\<rbrace>_"  [60,60] 60) where "\<lbrace>\<Gamma>\<rbrace>\<rho> \<equiv> heapExtendJoin \<rho> \<Gamma>"
+abbreviation HSem_syn ("\<lbrace>_\<rbrace>_"  [60,60] 60) where "\<lbrace>\<Gamma>\<rbrace>\<rho> \<equiv> HSem \<Gamma> \<rho>"
 
 abbreviation HSem_fempty  ("\<lbrace>_\<rbrace>"  [60] 60) where "\<lbrace>\<Gamma>\<rbrace> \<equiv> \<lbrace>\<Gamma>\<rbrace>fempty"
 
@@ -91,7 +91,7 @@ lemma HSem_def': "heapExtendJoin_cond' \<Gamma> \<rho> \<Longrightarrow>
   \<lbrace>\<Gamma>\<rbrace>\<rho> = fix_on (fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set \<Gamma>)) (\<lambda>\<rho>'. fmap_expand (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)) (fdom \<rho> \<union> fst ` set \<Gamma>)))
            (\<lambda>\<rho>'. fmap_expand \<rho> (fdom \<rho> \<union> fst ` set \<Gamma>) \<squnion> fmap_expand (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)) (fdom \<rho> \<union> fst ` set \<Gamma>))
  "
-  unfolding  heapExtendJoin_def
+  unfolding  HSem_def
   by (subst if_P, auto)
 
 lemma HSem_mono:
@@ -629,9 +629,6 @@ case (Let as exp \<rho> x y)
   have lookup_other: "\<And> \<rho> . the (lookup (\<lbrace>asToHeap as[x::a=y]\<rbrace>\<rho>) y) = the (lookup \<rho> y)"
     using `y \<notin> assn_vars as`
     by (auto simp add: the_lookup_HSem_other)
-
-  have "\<lbrace>asToHeap as\<rbrace>\<rho>(x f\<mapsto> the (lookup \<rho> y)) = heapExtendJoin (\<rho>(x f\<mapsto> the (lookup \<rho> y))) (asToHeap as)"
-    .. 
 
   have [simp]:"fdom \<rho> \<union> assn_vars as - {x} = fdom \<rho> \<union> assn_vars as"
     using `x \<notin> assn_vars as` `atom x \<sharp> \<rho>` by (auto simp add: sharp_Env)

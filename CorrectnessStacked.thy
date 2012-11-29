@@ -276,7 +276,7 @@ proof(rule below_antisym)
     using rho_fresh by auto
 
   show "\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho> \<sqsubseteq> \<lbrace>\<Gamma>@\<Delta>\<rbrace>\<rho>"
-  proof (induct \<Gamma> rule:heapExtendJoin_ind)
+  proof (rule heapExtendJoin_ind) back
   case goal1 show ?case by (auto simp add: adm_is_adm_on)
   next
   case goal2 show ?case by (auto simp add: to_bot_fmap_def)
