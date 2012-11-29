@@ -40,30 +40,30 @@ case (Let as e Y0 Y)
   moreover
   have "range (\<lambda>i. HSem (asToHeap as)  (Y i)) <<| HSem (asToHeap as) (Lub Y)"
     apply (rule range_is_lubI2)
-    apply (rule heapExtendJoin_monofun'')
+    apply (rule HSem_monofun'')
       apply (erule Let.hyps(2))
-      apply (rule disjoint_is_heapExtendJoin_cond'[OF unset conts])
-      apply (rule disjoint_is_heapExtendJoin_cond'[OF unset conts])
+      apply (rule disjoint_is_HSem_cond'[OF unset conts])
+      apply (rule disjoint_is_HSem_cond'[OF unset conts])
       apply (rule chainE[OF `chain Y`])
-    apply (rule heapExtendJoin_monofun'')
+    apply (rule HSem_monofun'')
       apply (erule Let.hyps(2))
-      apply (rule disjoint_is_heapExtendJoin_cond'[OF unset conts])
-      apply (rule disjoint_is_heapExtendJoin_cond'[OF unset[unfolded fdoms] conts])
+      apply (rule disjoint_is_HSem_cond'[OF unset conts])
+      apply (rule disjoint_is_HSem_cond'[OF unset[unfolded fdoms] conts])
       apply (rule is_ub_thelub[OF `chain Y`])
     apply (rule eq_imp_below)
-    apply (rule heapExtendJoin_cont'')
+    apply (rule HSem_cont'')
       apply (erule Let.hyps(2))
-      apply (rule disjoint_is_heapExtendJoin_cond'[OF unset[unfolded fdoms] conts])
-      apply (rule disjoint_is_heapExtendJoin_cond'[OF unset conts])
+      apply (rule disjoint_is_HSem_cond'[OF unset[unfolded fdoms] conts])
+      apply (rule disjoint_is_HSem_cond'[OF unset conts])
       apply (rule `chain Y`)
    done
   moreover
   have "chain (\<lambda>i. HSem (asToHeap as) (Y i))"
     apply (rule chainI)
-    apply (rule heapExtendJoin_monofun'')
+    apply (rule HSem_monofun'')
       apply (erule Let.hyps(2))
-      apply (rule disjoint_is_heapExtendJoin_cond'[OF unset conts])
-      apply (rule disjoint_is_heapExtendJoin_cond'[OF unset conts])
+      apply (rule disjoint_is_HSem_cond'[OF unset conts])
+      apply (rule disjoint_is_HSem_cond'[OF unset conts])
       apply (rule chainE[OF `chain Y`])
    done
   ultimately
@@ -87,7 +87,7 @@ abbreviation HSem_syn ("\<lbrace>_\<rbrace>_"  [60,60] 60) where "\<lbrace>\<Gam
 
 abbreviation HSem_fempty  ("\<lbrace>_\<rbrace>"  [60] 60) where "\<lbrace>\<Gamma>\<rbrace> \<equiv> \<lbrace>\<Gamma>\<rbrace>fempty"
 
-lemma HSem_def': "heapExtendJoin_cond' \<Gamma> \<rho> \<Longrightarrow>
+lemma HSem_def': "HSem_cond' \<Gamma> \<rho> \<Longrightarrow>
   \<lbrace>\<Gamma>\<rbrace>\<rho> = fix_on (fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set \<Gamma>)) (\<lambda>\<rho>'. fmap_expand (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)) (fdom \<rho> \<union> fst ` set \<Gamma>)))
            (\<lambda>\<rho>'. fmap_expand \<rho> (fdom \<rho> \<union> fst ` set \<Gamma>) \<squnion> fmap_expand (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)) (fdom \<rho> \<union> fst ` set \<Gamma>))
  "
@@ -95,20 +95,20 @@ lemma HSem_def': "heapExtendJoin_cond' \<Gamma> \<rho> \<Longrightarrow>
   by (subst if_P, auto)
 
 lemma HSem_mono:
-  assumes "heapExtendJoin_cond' \<Gamma> \<rho>1"
-  assumes "heapExtendJoin_cond' \<Gamma> \<rho>2"
+  assumes "HSem_cond' \<Gamma> \<rho>1"
+  assumes "HSem_cond' \<Gamma> \<rho>2"
   assumes "\<rho>1 \<sqsubseteq> \<rho>2"
   shows "\<lbrace>\<Gamma>\<rbrace>\<rho>1 \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<rho>2"
-  by(rule heapExtendJoin_monofun''[OF ESem_cont assms])
+  by(rule HSem_monofun''[OF ESem_cont assms])
 
-lemma disjoint_is_heapExtendJoin_cond'_ESem:
+lemma disjoint_is_HSem_cond'_ESem:
   assumes "fdom \<rho> \<inter> fst ` set h = {}"
-  shows "heapExtendJoin_cond' h \<rho>" 
-  by (metis disjoint_is_heapExtendJoin_cond'[OF assms] ESem_cont)
+  shows "HSem_cond' h \<rho>" 
+  by (metis disjoint_is_HSem_cond'[OF assms] ESem_cont)
 
-lemma fempty_is_heapExtendJoin_cond'_ESem[simp]:
-  "heapExtendJoin_cond' h fempty"
-  apply (rule disjoint_is_heapExtendJoin_cond'_ESem)
+lemma fempty_is_HSem_cond'_ESem[simp]:
+  "HSem_cond' h fempty"
+  apply (rule disjoint_is_HSem_cond'_ESem)
   by auto
 
 (*
@@ -125,12 +125,12 @@ lemma fmap_expand_fmap_bottom[simp]: "fmap_expand (fmap_bottom S') S = fmap_bott
 lemma fmap_expand_fdom[simp]: "fmap_expand \<rho> (fdom \<rho>) = \<rho>"
   by (transfer, auto split:option.split)
 
-lemma heapExtendJoin_cond'_Nil[simp]:
-  "heapExtendJoin_cond' [] \<rho>"
-  by (rule disjoint_is_heapExtendJoin_cond'_ESem, simp)
+lemma HSem_cond'_Nil[simp]:
+  "HSem_cond' [] \<rho>"
+  by (rule disjoint_is_HSem_cond'_ESem, simp)
 
 lemma HSem_Nil[simp]: "\<lbrace>[]\<rbrace>\<rho> = \<rho>"
-  apply (subst heapExtendJoin_eq[OF heapExtendJoin_cond'_Nil])
+  apply (subst HSem_eq[OF HSem_cond'_Nil])
   apply auto
   by (metis below.r_refl is_joinI to_bot_fmap_def to_bot_minimal)
 
@@ -169,24 +169,24 @@ lemma  fmap_join_belowI:
   by (metis "HOLCF-Join.join_above1" "HOLCF-Join.join_above2" below_fmap_def join_below)
 
 lemma HSem_compat: "compatible (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set \<Gamma>)) (\<lbrace>\<Gamma>\<rbrace>\<rho>)"
-  by (rule heapExtendJoin_compatible)
+  by (rule HSem_compatible)
 
-lemma HSem_unroll: "heapExtendJoin_cond' \<Gamma> \<rho> 
+lemma HSem_unroll: "HSem_cond' \<Gamma> \<rho> 
   \<Longrightarrow>
   \<lbrace>\<Gamma>\<rbrace>\<rho> = fmap_expand \<rho> (fdom \<rho> \<union> fst ` set \<Gamma>) \<squnion> (fmap_expand (heapToEnv \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>)) (fdom \<rho> \<union> fst ` set \<Gamma>))"
-  by (rule heapExtendJoin_eq)
+  by (rule HSem_eq)
 
 lemma HSem_there:
-  "heapExtendJoin_cond' \<Gamma> \<rho> \<Longrightarrow>
+  "HSem_cond' \<Gamma> \<rho> \<Longrightarrow>
   \<lbrace>\<Gamma>\<rbrace>\<rho> \<in> fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set \<Gamma>))
           (\<lambda>\<rho>'. fmap_expand (heapToEnv \<Gamma> (\<lambda>e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set \<Gamma>))"
-  by (drule heapExtendJoin_there)
+  by (drule HSem_there)
 
 lemma HSem_refines:
-  "heapExtendJoin_cond' \<Gamma> \<rho>' \<Longrightarrow> fmap_expand \<rho>' (fdom \<rho>' \<union> fst ` set \<Gamma>)  \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<rho>'"
-  by (rule heapExtendJoin_refines)
+  "HSem_cond' \<Gamma> \<rho>' \<Longrightarrow> fmap_expand \<rho>' (fdom \<rho>' \<union> fst ` set \<Gamma>)  \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<rho>'"
+  by (rule HSem_refines)
 
-lemma HSem_refines_lookup: "heapExtendJoin_cond' \<Gamma> \<rho> \<Longrightarrow> x \<in> fdom \<rho> \<Longrightarrow> the (lookup \<rho> x) \<sqsubseteq> the (lookup (\<lbrace>\<Gamma>\<rbrace>\<rho>) x)"
+lemma HSem_refines_lookup: "HSem_cond' \<Gamma> \<rho> \<Longrightarrow> x \<in> fdom \<rho> \<Longrightarrow> the (lookup \<rho> x) \<sqsubseteq> the (lookup (\<lbrace>\<Gamma>\<rbrace>\<rho>) x)"
   apply (drule HSem_refines)
   apply (drule fmap_belowE[of _ _ x])
   apply simp
@@ -195,30 +195,30 @@ lemma HSem_refines_lookup: "heapExtendJoin_cond' \<Gamma> \<rho> \<Longrightarro
 lemma the_lookup_HSem_other:
   assumes "y \<notin> fst ` set h"
   shows "the (lookup (\<lbrace>h\<rbrace>\<rho>) y) = the (lookup \<rho> y)"
-by (metis the_lookup_heapExtendJoin_other[OF assms])
+by (metis the_lookup_HSem_other[OF assms])
 
 lemma the_lookup_HSem_both:
-  assumes "heapExtendJoin_cond' h \<rho>"
+  assumes "HSem_cond' h \<rho>"
   assumes "y \<in> fst ` set h"
   shows "the (lookup (\<lbrace>h\<rbrace>\<rho>) y) =
     the (lookup (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) y) \<squnion> (\<lbrakk> the (map_of h y) \<rbrakk>\<^bsub>\<lbrace>h\<rbrace>\<rho>\<^esub>)"
-  by (metis  the_lookup_heapExtendJoin_both[OF assms])
+  by (metis  the_lookup_HSem_both[OF assms])
 
 lemma the_lookup_HSem_both_compatible:
-  assumes "heapExtendJoin_cond' h \<rho>"
+  assumes "HSem_cond' h \<rho>"
   assumes "y \<in> fst ` set h"
   shows "compatible (the (lookup (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) y)) (\<lbrakk> the (map_of h y) \<rbrakk>\<^bsub>\<lbrace>h\<rbrace>\<rho>\<^esub>)"
-  by (metis  the_lookup_heapExtendJoin_both_compatible[OF assms])
+  by (metis  the_lookup_HSem_both_compatible[OF assms])
 
 
 lemma the_lookup_HSem_heap:
-  assumes "heapExtendJoin_cond' h \<rho>"
+  assumes "HSem_cond' h \<rho>"
   assumes "y \<in> fst ` set h"
   assumes "y \<notin> fdom \<rho>"
   shows "the (lookup (\<lbrace>h\<rbrace>\<rho>) y) = \<lbrakk> the (map_of h y) \<rbrakk>\<^bsub>\<lbrace>h\<rbrace>\<rho>\<^esub>"
-  by (metis  the_lookup_heapExtendJoin_heap[OF assms])
+  by (metis  the_lookup_HSem_heap[OF assms])
 
-lemma HSem_heap_below: "heapExtendJoin_cond' \<Gamma> \<rho> \<Longrightarrow> x \<in> fst ` set \<Gamma> \<Longrightarrow> \<lbrakk> the (map_of \<Gamma> x) \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> \<sqsubseteq> the (lookup (\<lbrace>\<Gamma>\<rbrace>\<rho>) x)"
+lemma HSem_heap_below: "HSem_cond' \<Gamma> \<rho> \<Longrightarrow> x \<in> fst ` set \<Gamma> \<Longrightarrow> \<lbrakk> the (map_of \<Gamma> x) \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> \<sqsubseteq> the (lookup (\<lbrace>\<Gamma>\<rbrace>\<rho>) x)"
   apply (subst the_lookup_HSem_both, assumption+)
   apply (rule join_above2)
   apply (rule the_lookup_HSem_both_compatible, assumption+)
@@ -228,7 +228,7 @@ lemma HSem_below:
   assumes "fmap_expand \<rho> (fdom \<rho> \<union> fst ` set \<Gamma>) \<sqsubseteq> r"
   assumes "\<And>x. x \<in> fst ` set \<Gamma> \<Longrightarrow> \<lbrakk> the (map_of \<Gamma> x) \<rbrakk>\<^bsub>r\<^esub> \<sqsubseteq> the (lookup r x)"
   shows "\<lbrace>\<Gamma>\<rbrace>\<rho> \<sqsubseteq> r"
-  by (rule heapExtendJoin_below[OF assms ESem_cont])
+  by (rule HSem_below[OF assms ESem_cont])
 
 lemma fdom_fix_on:
   assumes "fix_on_cond S b F"
@@ -244,7 +244,7 @@ qed
 
 
 lemma iterative_HSem:
-  assumes "heapExtendJoin_cond' ((x, e) # \<Gamma>) \<rho>"
+  assumes "HSem_cond' ((x, e) # \<Gamma>) \<rho>"
   assumes "x \<notin> fst `set \<Gamma>"
   shows "\<lbrace>(x,e) # \<Gamma>\<rbrace>\<rho> =
       fix_on (fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>))) (\<lambda> \<rho>'.  fmap_expand (heapToEnv ((x, e) # \<Gamma>) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)) (fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>))))
@@ -275,9 +275,9 @@ proof(rule below_antisym)
   { fix \<rho>' assume "\<rho>' \<in> ?S"
     have fdom1: "(fdom \<rho>' \<union> fst ` set \<Gamma>) = ?d" using fdom[OF `\<rho>' \<in> ?S`] by auto
     have fdom2: "(fdom \<rho>' \<union> fst ` set ((x,e) # \<Gamma>)) = ?d" using fdom1 by auto
-    have "heapExtendJoin_cond' ((x,e) # \<Gamma>) \<rho>'" by (rule heapExtendJoin_cond'_of_member[OF assms(1) `\<rho>'\<in>?S`])
+    have "HSem_cond' ((x,e) # \<Gamma>) \<rho>'" by (rule HSem_cond'_of_member[OF assms(1) `\<rho>'\<in>?S`])
     from this[unfolded fdom2]
-    have "heapExtendJoin_cond' \<Gamma> \<rho>'"
+    have "HSem_cond' \<Gamma> \<rho>'"
       apply (subst (1 2) fdom1, rule fjc'_of_fun_below)
       apply (rule fun_belowI)
       apply (rule heapToEnv_mono)
@@ -286,14 +286,14 @@ proof(rule below_antisym)
       apply (simp add: assms(2))
       apply (rule cont_compose[OF fmap_expand_cont cont2cont_heapToEnv[OF ESem_cont]])
       done
-  } note heapExtendJoin_cond'_Gamma = this
+  } note HSem_cond'_Gamma = this
 
   have closedL: "closed_on ?S ?L"
     by (rule closed_on_jfc''[OF assms(1)])
 
   have closedR1: "closed_on ?S ?R1"
     apply (rule closed_onI)
-    apply (rule heapExtendJoin_ind)
+    apply (rule HSem_ind)
     apply (rule adm_is_adm_on[OF subcpo_mem_adm[OF subcpo_jfc'']])
     apply (rule down_closed.down_closedE[OF down_closed_jfc''], assumption)
     apply (frule fdom)
@@ -334,11 +334,11 @@ proof(rule below_antisym)
   have contR1: "cont_on ?S ?R1"
     apply (rule cont_onI2)
     apply (rule monofun_onI)
-    apply (erule (2) heapExtendJoin_monofun''[OF ESem_cont heapExtendJoin_cond'_Gamma heapExtendJoin_cond'_Gamma])
-    apply (rule eq_imp_below[OF heapExtendJoin_cont''])
+    apply (erule (2) HSem_monofun''[OF ESem_cont HSem_cond'_Gamma HSem_cond'_Gamma])
+    apply (rule eq_imp_below[OF HSem_cont''])
     apply auto[1]
-    apply (erule heapExtendJoin_cond'_Gamma[OF chain_on_lub_on])
-    apply (erule heapExtendJoin_cond'_Gamma[OF chain_on_is_on])
+    apply (erule HSem_cond'_Gamma[OF chain_on_lub_on])
+    apply (erule HSem_cond'_Gamma[OF chain_on_is_on])
     apply (erule chain_on_is_chain)
     done
 
@@ -387,8 +387,8 @@ proof(rule below_antisym)
     assume there: "\<rho>' \<in> ?S"
     hence [simp]:"fdom \<rho>' = ?d" by (rule fdom)
 
-    have inner_cond: "heapExtendJoin_cond' \<Gamma> \<rho>'"
-      by (rule heapExtendJoin_cond'_Gamma[OF there])
+    have inner_cond: "HSem_cond' \<Gamma> \<rho>'"
+      by (rule HSem_cond'_Gamma[OF there])
     have inner_refine: "\<rho>' \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<rho>'"
       apply (insert HSem_refines[OF inner_cond])
       apply (subst (asm) fmap_expand_noop)
@@ -469,8 +469,8 @@ proof(rule below_antisym)
 qed
 
 
-lemmas HSem_fresh[simp] = eqvt_fresh_cong2[of HSem, OF heapExtendJoin_eqvt']
- and   HSem_fresh_star[simp] = eqvt_fresh_star_cong2[of HSem, OF heapExtendJoin_eqvt']
+lemmas HSem_fresh[simp] = eqvt_fresh_cong2[of HSem, OF HSem_eqvt']
+ and   HSem_fresh_star[simp] = eqvt_fresh_star_cong2[of HSem, OF HSem_eqvt']
  and   asToHeap_fresh[simp] = eqvt_fresh_cong1[of asToHeap, OF asToHeap.eqvt]
  and   fresh_fmap_upd[simp] = eqvt_fresh_cong3[of fmap_upd, OF fmap_upd_eqvt]
 
@@ -615,14 +615,14 @@ case (Let as exp \<rho> x y)
   hence [simp]:"assn_vars (as[x::a=y]) = assn_vars as" 
      by (induct as rule: assn_vars.induct, auto)
 
-  have cond1: "heapExtendJoin_cond' (asToHeap as) (\<rho>(x f\<mapsto> the (lookup \<rho> y)))"
+  have cond1: "HSem_cond' (asToHeap as) (\<rho>(x f\<mapsto> the (lookup \<rho> y)))"
       (is "fix_on_cond_jfc' ?\<rho>1 ?F1")
-    apply (rule disjoint_is_heapExtendJoin_cond'_ESem)
+    apply (rule disjoint_is_HSem_cond'_ESem)
     apply (auto simp add:  `x \<notin> assn_vars as`)
     by (metis Let(1) fst_set_asToHeap sharp_star_Env)
-  have cond2: "heapExtendJoin_cond' (asToHeap as[x::a=y]) \<rho>"
+  have cond2: "HSem_cond' (asToHeap as[x::a=y]) \<rho>"
       (is "fix_on_cond_jfc' ?\<rho>2 ?F2")
-    apply (rule disjoint_is_heapExtendJoin_cond'_ESem)
+    apply (rule disjoint_is_HSem_cond'_ESem)
     apply (auto simp add:  `x \<notin> assn_vars as`)
     by (metis Let(1) fst_set_asToHeap sharp_star_Env)
 
@@ -842,19 +842,19 @@ case (App e v \<rho>1 \<rho>2)
     by simp
 next
 case (Let as e \<rho>1 \<rho>2)
-  have cond1: "heapExtendJoin_cond' (asToHeap as) \<rho>1"
+  have cond1: "HSem_cond' (asToHeap as) \<rho>1"
     (is "fix_on_cond_jfc' ?\<rho>1 ?F1")
-    apply (rule disjoint_is_heapExtendJoin_cond'_ESem)
+    apply (rule disjoint_is_HSem_cond'_ESem)
     using Let(1) by (auto simp add: sharp_star_Env)
-  have cond2: "heapExtendJoin_cond' (asToHeap as) \<rho>2"
+  have cond2: "HSem_cond' (asToHeap as) \<rho>2"
     (is "fix_on_cond_jfc' ?\<rho>2 ?F2")
-    apply (rule disjoint_is_heapExtendJoin_cond'_ESem)
+    apply (rule disjoint_is_HSem_cond'_ESem)
     using Let(2) by (auto simp add: sharp_star_Env)
   let "?S1" = "fix_join_compat'' ?\<rho>1 ?F1"
   let "?S2" = "fix_join_compat'' ?\<rho>2 ?F2"
 
   have "\<lbrace>asToHeap as\<rbrace>\<rho>2 \<sqsubseteq> fmap_expand (\<lbrace>asToHeap as\<rbrace>\<rho>1) (fdom (\<lbrace>asToHeap as\<rbrace>\<rho>2))"
-    apply (rule heapExtendJoin_ind'[OF cond2 adm_is_adm_on]) back back
+    apply (rule HSem_ind'[OF cond2 adm_is_adm_on]) back back
     apply auto[1]
     apply (auto simp add: to_bot_fmap_def)[1]
     apply (subst HSem_unroll[OF cond1])
@@ -983,21 +983,21 @@ case (App e x \<rho>1 \<rho>2)
     by simp
 next
 case (Let as e \<rho>1 \<rho>2)
-  have cond1: "heapExtendJoin_cond' (asToHeap as) \<rho>1"
+  have cond1: "HSem_cond' (asToHeap as) \<rho>1"
       (is "fix_on_cond_jfc' ?\<rho>1 ?F1")
-    apply (rule disjoint_is_heapExtendJoin_cond'_ESem)
+    apply (rule disjoint_is_HSem_cond'_ESem)
     using Let(1)
     by (auto simp add: sharp_star_Env)
-  have cond2: "heapExtendJoin_cond' (asToHeap as) \<rho>2"
+  have cond2: "HSem_cond' (asToHeap as) \<rho>2"
       (is "fix_on_cond_jfc' ?\<rho>2 ?F2")
-    apply (rule disjoint_is_heapExtendJoin_cond'_ESem)
+    apply (rule disjoint_is_HSem_cond'_ESem)
     using Let(2)
     by (auto simp add: sharp_star_Env)
 
   have "fdom \<rho>1 \<subseteq> fdom \<rho>2" by (metis Let(5) fmap_less_restrict)
 
   have "\<lbrace>asToHeap as\<rbrace>\<rho>1 \<le> \<lbrace>asToHeap as\<rbrace>\<rho>2"
-  proof (rule parallel_heapExtendJoin_ind[OF cond1 cond2])
+  proof (rule parallel_HSem_ind[OF cond1 cond2])
   case goal1 show ?case by (rule adm_is_adm_on, simp)
   case goal2
     show ?case
@@ -1107,11 +1107,11 @@ case (ACons x e as \<rho>1 \<rho>2)
 qed
 
 lemma HSem_add_fresh:
-  assumes cond1: "heapExtendJoin_cond' \<Gamma> \<rho>"
-  assumes cond2: "heapExtendJoin_cond' ((x,e) # \<Gamma>) \<rho>"
+  assumes cond1: "HSem_cond' \<Gamma> \<rho>"
+  assumes cond2: "HSem_cond' ((x,e) # \<Gamma>) \<rho>"
   assumes fresh: "atom x \<sharp> (\<rho>, \<Gamma>)"
   shows  "fmap_restr (fdom \<rho> \<union> heapVars \<Gamma>) (\<lbrace>(x, e) # \<Gamma>\<rbrace>\<rho>) = \<lbrace>\<Gamma>\<rbrace>\<rho>"
-proof(rule heapExtendJoin_add_fresh[OF assms, unfolded heapVars_def[symmetric]])
+proof(rule HSem_add_fresh[OF assms, unfolded heapVars_def[symmetric]])
 case (goal1 e \<rho>')
   assume "e \<in> snd ` set \<Gamma>"
   hence "atom x \<sharp> e"
@@ -1128,8 +1128,8 @@ case (goal1 e \<rho>')
 qed
 
 lemma ESem_add_fresh:
-  assumes cond1: "heapExtendJoin_cond' \<Gamma> \<rho>"
-  assumes cond2: "heapExtendJoin_cond' ((x,e') # \<Gamma>) \<rho>"
+  assumes cond1: "HSem_cond' \<Gamma> \<rho>"
+  assumes cond2: "HSem_cond' ((x,e') # \<Gamma>) \<rho>"
   assumes fresh: "atom x \<sharp> (\<rho>, \<Gamma>, e)"
   shows "\<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>(x, e') # \<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
 proof(rule ESem_ignores_fresh[symmetric])

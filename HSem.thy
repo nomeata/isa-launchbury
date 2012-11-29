@@ -1,4 +1,4 @@
-theory "Denotational-HeapExtend"
+theory HSem
   imports "HeapToEnv" DistinctVars "HOLCF-Set" "HOLCF-Down-Closed" "HOLCF-Fix-Join"
 begin
 
@@ -6,15 +6,15 @@ locale has_ESem =
   fixes ESem :: "'exp::pt \<Rightarrow> ('var::{cont_pt,at_base}, 'value) fmap \<Rightarrow> 'value::{pure_cpo,Nonempty_Meet_cpo,pcpo}"
 begin
 
-abbreviation heapExtendJoin_cond' :: "('var \<times> 'exp) list \<Rightarrow> ('var, 'value) fmap \<Rightarrow> bool"
-  where "heapExtendJoin_cond' h \<rho> \<equiv>
+abbreviation HSem_cond' :: "('var \<times> 'exp) list \<Rightarrow> ('var, 'value) fmap \<Rightarrow> bool"
+  where "HSem_cond' h \<rho> \<equiv>
       fix_on_cond_jfc' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) 
                         (\<lambda> \<rho>' . fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set h))"
 
 definition HSem :: "('var \<times> 'exp) list \<Rightarrow> ('var, 'value) fmap \<Rightarrow> ('var, 'value) fmap"
   where
   "HSem h \<rho> =
-    (if heapExtendJoin_cond' h \<rho>
+    (if HSem_cond' h \<rho>
     then fix_on (fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) (\<lambda> \<rho>' . fmap_expand (heapToEnv h (\<lambda> e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set h)))
       (\<lambda> \<rho>'. fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h) \<squnion> fmap_expand (heapToEnv h (\<lambda> e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set h))
     else (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)))"
@@ -59,10 +59,10 @@ lemma fix_join_cont':
   done
 
 
-lemma heapExtendJoin_monofun'':
+lemma HSem_monofun'':
   assumes cont: "\<And> e. e \<in> snd ` set h \<Longrightarrow> cont (ESem e)"
-  assumes cond1: "heapExtendJoin_cond' h \<rho>"
-  assumes cond2: "heapExtendJoin_cond' h \<rho>'"
+  assumes cond1: "HSem_cond' h \<rho>"
+  assumes cond2: "HSem_cond' h \<rho>'"
   assumes "\<rho> \<sqsubseteq> \<rho>'"
   shows "HSem h \<rho> \<sqsubseteq> HSem h \<rho>'"
     unfolding HSem_def
@@ -76,10 +76,10 @@ lemma heapExtendJoin_monofun'':
     apply (intro cont_compose[OF fmap_expand_cont] cont2cont_heapToEnv assms) apply assumption
     done
 
-lemma heapExtendJoin_cont'':
+lemma HSem_cont'':
   assumes cont: "\<And> e. e \<in> snd ` set h \<Longrightarrow> cont (ESem e)"
-  assumes cond1: "heapExtendJoin_cond' h (\<Squnion> i. Y i)"
-  assumes cond2: "\<And>i. heapExtendJoin_cond' h (Y i)"
+  assumes cond1: "HSem_cond' h (\<Squnion> i. Y i)"
+  assumes cond2: "\<And>i. HSem_cond' h (Y i)"
   assumes "chain Y"
   shows "HSem h (\<Squnion> i. Y  i) = (\<Squnion> i. HSem h (Y i))"
 proof-
@@ -228,8 +228,8 @@ lemma fmap_join_is_join_expand:
   apply (erule join_is_fmap_join[symmetric, OF compatible_expand])
   done
 
-lemma disjoint_is_heapExtendJoin_cond':
-  "fdom \<rho> \<inter> fst ` set h = {} \<Longrightarrow> (\<forall> e \<in> snd`set h. cont (ESem e)) \<Longrightarrow> heapExtendJoin_cond' h \<rho>"
+lemma disjoint_is_HSem_cond':
+  "fdom \<rho> \<inter> fst ` set h = {} \<Longrightarrow> (\<forall> e \<in> snd`set h. cont (ESem e)) \<Longrightarrow> HSem_cond' h \<rho>"
   apply (rule fix_on_cond_jfc'I)
   apply (rule cont_compose[OF fmap_expand_cont cont2cont_heapToEnv])
   apply (metis)
@@ -240,17 +240,17 @@ lemma disjoint_is_heapExtendJoin_cond':
   apply auto
   done
 
-lemma fempty_is_heapExtendJoin_cond':
-  "(\<forall> e \<in> snd`set h.  cont (ESem e)) \<Longrightarrow> heapExtendJoin_cond' h fempty"
-  apply (rule disjoint_is_heapExtendJoin_cond')
+lemma fempty_is_HSem_cond':
+  "(\<forall> e \<in> snd`set h.  cont (ESem e)) \<Longrightarrow> HSem_cond' h fempty"
+  apply (rule disjoint_is_HSem_cond')
   by auto
 
-lemma heapExtendJoin_cond'_cont:
-  "heapExtendJoin_cond' h \<rho> \<Longrightarrow> cont (\<lambda>x. fmap_expand (heapToEnv h (\<lambda>e. ESem e x)) (fdom \<rho> \<union> fst ` set h))"
+lemma HSem_cond'_cont:
+  "HSem_cond' h \<rho> \<Longrightarrow> cont (\<lambda>x. fmap_expand (heapToEnv h (\<lambda>e. ESem e x)) (fdom \<rho> \<union> fst ` set h))"
   by (rule cont_F_jfc'')
 
-lemma heapExtendJoin_ind':
-  assumes "heapExtendJoin_cond' h \<rho>"
+lemma HSem_ind':
+  assumes "HSem_cond' h \<rho>"
   assumes "adm_on (fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda> e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set h))) P"
   assumes "P (to_bot (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)))"
   assumes "\<And> y. y \<in> fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda> e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set h)) \<Longrightarrow>
@@ -266,25 +266,25 @@ lemma heapExtendJoin_ind':
   apply fact
   done
 
-lemma heapExtendJoin_ind:
-  assumes "heapExtendJoin_cond' h \<rho> \<Longrightarrow> adm_on (fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda> e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set h))) P"
-  assumes "heapExtendJoin_cond' h \<rho> \<Longrightarrow> P (to_bot (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)))"
-  assumes "\<And> y. heapExtendJoin_cond' h \<rho> \<Longrightarrow>
+lemma HSem_ind:
+  assumes "HSem_cond' h \<rho> \<Longrightarrow> adm_on (fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda> e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set h))) P"
+  assumes "HSem_cond' h \<rho> \<Longrightarrow> P (to_bot (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)))"
+  assumes "\<And> y. HSem_cond' h \<rho> \<Longrightarrow>
         y \<in> fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda> e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set h)) \<Longrightarrow>
         P y \<Longrightarrow>
         P (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h) \<squnion> fmap_expand (heapToEnv h (\<lambda>e. ESem e y)) (fdom \<rho> \<union> fst ` set h))"
   assumes "P (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h))"
   shows "P (HSem h \<rho>)"
-  apply (cases "heapExtendJoin_cond' h \<rho>")
-  apply (rule heapExtendJoin_ind'[OF _ assms(1,2,3)], assumption+)
+  apply (cases "HSem_cond' h \<rho>")
+  apply (rule HSem_ind'[OF _ assms(1,2,3)], assumption+)
   unfolding HSem_def
   apply (subst if_not_P, assumption)
   apply (rule assms(4))
   done
 
-lemma parallel_heapExtendJoin_ind:
-  assumes cond1: "heapExtendJoin_cond' h \<rho>"
-  assumes cond2: "heapExtendJoin_cond' h2 \<rho>2"
+lemma parallel_HSem_ind:
+  assumes cond1: "HSem_cond' h \<rho>"
+  assumes cond2: "HSem_cond' h2 \<rho>2"
   assumes "adm_on (fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) (\<lambda>\<rho>'. fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set h))
                   \<times> fix_join_compat'' (fmap_expand \<rho>2 (fdom \<rho>2 \<union> fst ` set h2)) (\<lambda>\<rho>'. fmap_expand (heapToEnv h2 (\<lambda>e. ESem e \<rho>')) (fdom \<rho>2 \<union> fst ` set h2)))
                  (\<lambda>\<rho>'. P (fst \<rho>') (snd \<rho>'))"
@@ -304,8 +304,8 @@ lemma parallel_heapExtendJoin_ind:
   by (rule assms(5))
 
 
-lemma heapExtendJoin_eq:
-  assumes "heapExtendJoin_cond' h \<rho>"
+lemma HSem_eq:
+  assumes "HSem_cond' h \<rho>"
   shows "HSem h \<rho> = fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h) \<squnion> fmap_expand (heapToEnv h (\<lambda>e. ESem e (HSem h \<rho>))) (fdom \<rho> \<union> fst ` set h)"
   unfolding HSem_def
   using assms
@@ -313,21 +313,21 @@ lemma heapExtendJoin_eq:
   apply (erule fix_on_jfc''_eq)
   done
 
-lemma heapExtendJoin_there:
-  assumes "heapExtendJoin_cond' h \<rho>"
+lemma HSem_there:
+  assumes "HSem_cond' h \<rho>"
   shows "HSem h \<rho> \<in> fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda> e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set h))"
   unfolding HSem_def
   apply (subst if_P[OF assms])
   apply (rule fix_on_there[OF fix_on_cond_jfc''[OF assms]])
   done
 
-lemma the_lookup_heapExtendJoin_other:
+lemma the_lookup_HSem_other:
   assumes "y \<notin> fst ` set h"
   shows "the (lookup (HSem h \<rho>) y) = the (lookup \<rho> y)"
-proof(cases "heapExtendJoin_cond' h \<rho>")
+proof(cases "HSem_cond' h \<rho>")
   case True show ?thesis
-    apply (subst heapExtendJoin_eq[OF True])
-    apply (subst the_lookup_join[OF rho_F_compat_jfc''[OF True heapExtendJoin_there[OF True]]])
+    apply (subst HSem_eq[OF True])
+    apply (subst the_lookup_join[OF rho_F_compat_jfc''[OF True HSem_there[OF True]]])
     apply (cases "y \<in> fdom \<rho>")
     apply (auto simp add: assms lookup_not_fdom)
     done
@@ -339,35 +339,35 @@ next
     done
 qed
 
-lemma the_lookup_heapExtendJoin_both:
-  assumes "heapExtendJoin_cond' h \<rho>"
+lemma the_lookup_HSem_both:
+  assumes "HSem_cond' h \<rho>"
   assumes "y \<in> fst ` set h"
   shows "the (lookup (HSem h \<rho>) y) =
     the (lookup (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) y) \<squnion> ESem (the (map_of h y)) (HSem h \<rho>)"
-  apply (subst heapExtendJoin_eq[OF assms(1)])
-  apply (subst the_lookup_join[OF rho_F_compat_jfc''[OF assms(1) heapExtendJoin_there[OF assms(1)]]])
+  apply (subst HSem_eq[OF assms(1)])
+  apply (subst the_lookup_join[OF rho_F_compat_jfc''[OF assms(1) HSem_there[OF assms(1)]]])
   apply (subst (2) lookup_fmap_expand1)
     using assms(2) apply auto[3]
   apply (subst lookupHeapToEnv[OF assms(2)])
   by (rule refl)
 
-lemma the_lookup_heapExtendJoin_both_compatible:
-  assumes "heapExtendJoin_cond' h \<rho>"
+lemma the_lookup_HSem_both_compatible:
+  assumes "HSem_cond' h \<rho>"
   assumes "y \<in> fst ` set h"
   shows "compatible (the (lookup (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) y)) (ESem (the (map_of h y)) (HSem h \<rho>))"
-  using the_lookup_compatible[OF rho_F_compat_jfc''[OF assms(1) heapExtendJoin_there[OF assms(1)]], of y]
+  using the_lookup_compatible[OF rho_F_compat_jfc''[OF assms(1) HSem_there[OF assms(1)]], of y]
   apply (subst (asm) (2) lookup_fmap_expand1)
     using assms(2) apply auto[3]
   apply (subst (asm) lookupHeapToEnv[OF assms(2)])
   .
 
-lemma the_lookup_heapExtendJoin_heap:
-  assumes "heapExtendJoin_cond' h \<rho>"
+lemma the_lookup_HSem_heap:
+  assumes "HSem_cond' h \<rho>"
   assumes "y \<in> fst ` set h"
   assumes "y \<notin> fdom \<rho>"
   shows "the (lookup (HSem h \<rho>) y) = ESem (the (map_of h y)) (HSem h \<rho>)"
-  apply (subst heapExtendJoin_eq[OF assms(1)])
-  apply (subst the_lookup_join[OF rho_F_compat_jfc''[OF assms(1) heapExtendJoin_there[OF assms(1)]]])
+  apply (subst HSem_eq[OF assms(1)])
+  apply (subst the_lookup_join[OF rho_F_compat_jfc''[OF assms(1) HSem_there[OF assms(1)]]])
   apply (subst lookup_fmap_expand2)
     using assms(2,3) apply auto[3]
   apply (subst lookup_fmap_expand1)
@@ -379,10 +379,10 @@ lemma compatible_fmap_bottom[simp]:
   "fdom x = y \<Longrightarrow> compatible x (fmap_bottom y)"
   by (metis below.r_refl compatibleI to_bot_fmap_def to_bot_minimal)
 
-lemma heapExtendJoin_compatible[simp]:
+lemma HSem_compatible[simp]:
   "compatible (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set \<Gamma>)) (HSem \<Gamma> \<rho>)"
   unfolding HSem_def
-  apply (cases "heapExtendJoin_cond' \<Gamma> \<rho>")
+  apply (cases "HSem_cond' \<Gamma> \<rho>")
   apply (simp)
   apply (rule compat_jfc'')
   apply (erule rho_jfc'')
@@ -390,9 +390,9 @@ lemma heapExtendJoin_compatible[simp]:
   apply simp
   done
   
-lemma fdom_heapExtendJoin[simp]:
+lemma fdom_HSem[simp]:
   "fdom (HSem h \<rho>) = fdom \<rho> \<union> fst ` set h"
-  apply (rule heapExtendJoin_ind)
+  apply (rule HSem_ind)
   apply (rule adm_is_adm_on)
   apply simp
   apply simp
@@ -427,19 +427,19 @@ proof-
     done
 qed
 
-lemma heapExtendJoin_refines:
-  assumes "heapExtendJoin_cond' h \<rho>"
+lemma HSem_refines:
+  assumes "HSem_cond' h \<rho>"
   shows "fmap_expand \<rho> (fdom \<rho> \<union> fst `set h) \<sqsubseteq> HSem h \<rho>"
-  apply (subst heapExtendJoin_eq[OF assms(1)])
-  apply (rule join_above1[OF rho_F_compat_jfc''[OF assms heapExtendJoin_there[OF assms]]])
+  apply (subst HSem_eq[OF assms(1)])
+  apply (rule join_above1[OF rho_F_compat_jfc''[OF assms HSem_there[OF assms]]])
 done
 
-lemma heapExtendJoin_below:
+lemma HSem_below:
   assumes "fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h) \<sqsubseteq> r"
   assumes "\<And>x. x \<in> fst ` set h \<Longrightarrow> ESem (the (map_of h x)) r \<sqsubseteq> the (lookup r x)"
   assumes cont: "\<And> e. cont (ESem e)"
   shows "HSem h \<rho> \<sqsubseteq> r"
-proof (rule heapExtendJoin_ind)
+proof (rule HSem_ind)
   from fmap_below_dom[OF assms(1)]
   have [simp]:"fdom r = fdom \<rho> \<union> fst ` set h" by simp
   {
@@ -462,11 +462,11 @@ qed
 
 (*
 
-lemma heapExtendJoin_cond'_eqvt[eqvt]:
- assumes "heapExtendJoin_cond' h eval \<rho>"
- shows "heapExtendJoin_cond' (\<pi> \<bullet> h) (\<pi> \<bullet> eval) (\<pi> \<bullet> \<rho>)"
+lemma HSem_cond'_eqvt[eqvt]:
+ assumes "HSem_cond' h eval \<rho>"
+ shows "HSem_cond' (\<pi> \<bullet> h) (\<pi> \<bullet> eval) (\<pi> \<bullet> \<rho>)"
 sor ry
-proof (rule heapExtendJoin_cond'I)
+proof (rule HSem_cond'I)
   fix \<rho>'
   assume "compatible (fmap_expand (\<pi> \<bullet> \<rho>) (fdom (\<pi> \<bullet> \<rho>) \<union> fst ` set (\<pi> \<bullet> h))) \<rho>'"
   hence "compatible (-\<pi> \<bullet> (fmap_expand (\<pi> \<bullet> \<rho>) (fdom (\<pi> \<bullet> \<rho>) \<union> fst ` set (\<pi> \<bullet> h)))) (-\<pi> \<bullet>\<rho>')"
@@ -475,7 +475,7 @@ proof (rule heapExtendJoin_cond'I)
     apply perm_simp by (metis pemute_minus_self permute_minus_cancel(1))
   hence "compatible (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h))
            (fmap_expand (heapToEnv h (\<lambda>e. eval e (- \<pi> \<bullet> \<rho>'))) (fdom \<rho> \<union> fst ` set h))"
-    by (rule heapExtendJoin_cond'D[OF assms])
+    by (rule HSem_cond'D[OF assms])
   hence "compatible (\<pi> \<bullet> (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)))
            (\<pi> \<bullet> (fmap_expand (heapToEnv h (\<lambda>e. eval e (- \<pi> \<bullet> \<rho>'))) (fdom \<rho> \<union> fst ` set h)))"
     by (rule compatible_eqvt)
@@ -487,7 +487,7 @@ next
   assume "e \<in> snd ` set (\<pi> \<bullet> h)"
   hence "- \<pi> \<bullet> e \<in> -\<pi> \<bullet> (snd ` set (\<pi> \<bullet> h))" by (metis mem_permute_iff)
   hence "-\<pi> \<bullet> e \<in> snd ` set h" apply perm_simp by (metis eqvt_bound permute_self unpermute_def)
-  hence "cont (eval (-\<pi> \<bullet> e))" using assms unfolding  heapExtendJoin_cond'_def by metis
+  hence "cont (eval (-\<pi> \<bullet> e))" using assms unfolding  HSem_cond'_def by metis
   thus "cont ((\<pi> \<bullet> eval) e)" by (metis perm_still_cont permute_fun_def)
 qed
 *)
@@ -674,12 +674,12 @@ proof-
     done
 qed
 
-lemma heapExtendJoin_cond'_cong[fundef_cong]:
+lemma HSem_cond'_cong[fundef_cong]:
   "\<lbrakk> env1 = env2 ; heap1 = heap2 ; (\<And> e. e \<in> snd ` set heap2 \<Longrightarrow> ESem e = ESem e) \<rbrakk>
-      \<Longrightarrow>  heapExtendJoin_cond' heap1 env1 \<longleftrightarrow> heapExtendJoin_cond'  heap2 env2"
+      \<Longrightarrow>  HSem_cond' heap1 env1 \<longleftrightarrow> HSem_cond'  heap2 env2"
   by (auto cong:heapToEnv_cong)
 
-lemma heapExtendJoin_cong[fundef_cong]:
+lemma HSem_cong[fundef_cong]:
   "\<lbrakk> env1 = env2 ; heap1 = heap2 ; (\<And> e. e \<in> snd ` set heap2 \<Longrightarrow> ESem e = ESem e) \<rbrakk>
       \<Longrightarrow> HSem heap1 env1 = HSem heap2 env2"
   unfolding HSem_def
@@ -692,13 +692,13 @@ lemma fdom_fix_join_compat'':
   by (metis assms(2) bottom_of_jfc'' fmap_below_dom subpcpo.bottom_of_minimal subpcpo_jfc'' to_bot_minimal)
 
 
-lemma heapExtendJoin_add_fresh:
-  assumes cond1: "heapExtendJoin_cond' \<Gamma> \<rho>"
-  assumes cond2: "heapExtendJoin_cond' ((x,e) # \<Gamma>) \<rho>"
+lemma HSem_add_fresh:
+  assumes cond1: "HSem_cond' \<Gamma> \<rho>"
+  assumes cond2: "HSem_cond' ((x,e) # \<Gamma>) \<rho>"
   assumes fresh: "atom x \<sharp> (\<rho>,\<Gamma>)"
   assumes step: "\<And>e \<rho>'. fdom \<rho>' = fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>) \<Longrightarrow> e \<in> snd ` set \<Gamma> \<Longrightarrow> ESem e \<rho>' = ESem e (fmap_restr (fdom \<rho>' - {x}) \<rho>')"
   shows  "fmap_restr (fdom \<rho> \<union> fst ` set \<Gamma>) (HSem ((x, e) # \<Gamma>) \<rho>) = HSem \<Gamma> \<rho>"
-proof (rule parallel_heapExtendJoin_ind[OF cond1 cond2])
+proof (rule parallel_HSem_ind[OF cond1 cond2])
 case goal1 show ?case by (auto intro:adm_is_adm_on)
 case goal2 show ?case by (auto)[1]
 case goal3
@@ -781,11 +781,11 @@ lemma fjc'_of_fun_below:
   done
 
 
-lemma heapExtendJoin_cond'_of_member:
-  assumes "heapExtendJoin_cond' \<Gamma> \<rho>"
+lemma HSem_cond'_of_member:
+  assumes "HSem_cond' \<Gamma> \<rho>"
   assumes "\<rho>' \<in> fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set \<Gamma>))
                 (\<lambda> \<rho>'.  fmap_expand (heapToEnv \<Gamma> (\<lambda>e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set \<Gamma>))" (is "_ \<in> ?S")
-  shows "heapExtendJoin_cond' \<Gamma>  \<rho>'"
+  shows "HSem_cond' \<Gamma>  \<rho>'"
 proof-
   let "fix_join_compat'' (fmap_expand \<rho> ?d) ?F" = "?S"
   have "fdom \<rho>' = ?d"
@@ -804,14 +804,14 @@ proof-
     done
 qed
 
-lemma heapExtendJoin_reorder:
+lemma HSem_reorder:
   assumes "distinctVars \<Gamma>"
   assumes "distinctVars \<Delta>"
   assumes "set \<Gamma> = set \<Delta>"
   shows "HSem \<Gamma> \<rho> = HSem \<Delta> \<rho>"
 by (simp add: HSem_def  heapToEnv_reorder[OF assms] assms(3))
 
-lemma heapExtendJoin_reorder_head:
+lemma HSem_reorder_head:
   assumes "x \<noteq> y"
   shows "HSem ((x,e1)#(y,e2)#\<Gamma>) \<rho> = HSem ((y,e2)#(x,e1)#\<Gamma>) \<rho>"
 proof-
@@ -822,7 +822,7 @@ proof-
     by simp
 qed
 
-lemma heapExtendJoin_reorder_head_append:
+lemma HSem_reorder_head_append:
   assumes "x \<notin> heapVars \<Gamma>"
   shows "HSem ((x,e)#\<Gamma>@\<Delta>) \<rho> = HSem (\<Gamma> @ ((x,e)#\<Delta>)) \<rho>"
 proof-
@@ -833,12 +833,12 @@ proof-
 qed  
 
 
-lemma heapExtendJoin_subst_exp:
-  assumes cond1: "heapExtendJoin_cond' ((x, e) # \<Gamma>) \<rho>"
-  assumes cond2: "heapExtendJoin_cond' ((x, e') # \<Gamma>) \<rho>"
+lemma HSem_subst_exp:
+  assumes cond1: "HSem_cond' ((x, e) # \<Gamma>) \<rho>"
+  assumes cond2: "HSem_cond' ((x, e') # \<Gamma>) \<rho>"
   assumes "\<And>\<rho>'. fdom \<rho>' = fdom \<rho> \<union> (fst`set ((x,e)#\<Gamma>)) \<Longrightarrow> ESem e \<rho>' = ESem e' \<rho>'"
   shows "HSem ((x,e)#\<Gamma>) \<rho> = HSem ((x,e')#\<Gamma>) \<rho>"
-  apply (rule parallel_heapExtendJoin_ind[OF cond1 cond2])
+  apply (rule parallel_HSem_ind[OF cond1 cond2])
   apply (auto intro: adm_is_adm_on)[1]
   apply simp
   apply (subst heapToEnv_subst_exp)
@@ -850,22 +850,22 @@ lemma heapExtendJoin_subst_exp:
 
 end
 
-lemma heapExtendJoin_cond'_cong[fundef_cong]:
+lemma HSem_cond'_cong[fundef_cong]:
   "\<lbrakk> (\<And> e. e \<in> snd ` set heap2 \<Longrightarrow> ESem1 e = ESem2 e) ; env1 = env2 ; heap1 = heap2  \<rbrakk>
-      \<Longrightarrow>  has_ESem.heapExtendJoin_cond' ESem1 heap1 env1 \<longleftrightarrow> has_ESem.heapExtendJoin_cond' ESem2  heap2 env2"
+      \<Longrightarrow>  has_ESem.HSem_cond' ESem1 heap1 env1 \<longleftrightarrow> has_ESem.HSem_cond' ESem2  heap2 env2"
   by (auto cong:heapToEnv_cong)
 
-lemma heapExtendJoin_cong[fundef_cong]:
+lemma HSem_cong[fundef_cong]:
   "\<lbrakk> (\<And> e. e \<in> snd ` set heap2 \<Longrightarrow> ESem1 e = ESem2 e); env1 = env2 ; heap1 = heap2  \<rbrakk>
       \<Longrightarrow> has_ESem.HSem ESem1 heap1 env1 = has_ESem.HSem  ESem2 heap2 env2"
   unfolding has_ESem.HSem_def
   by (auto cong:heapToEnv_cong)
 
-lemma heapExtendJoin_eqvt[eqvt]:
+lemma HSem_eqvt[eqvt]:
   "\<pi> \<bullet> has_ESem.HSem ESem h \<rho> = has_ESem.HSem (\<pi> \<bullet> ESem) (\<pi> \<bullet> h) (\<pi> \<bullet> \<rho>)"
-proof (cases "has_ESem.heapExtendJoin_cond' ESem h \<rho>")
+proof (cases "has_ESem.HSem_cond' ESem h \<rho>")
   case True
-  hence True_permuted: "has_ESem.heapExtendJoin_cond' (\<pi> \<bullet> ESem) (\<pi> \<bullet> h)  (\<pi> \<bullet> \<rho>)"
+  hence True_permuted: "has_ESem.HSem_cond' (\<pi> \<bullet> ESem) (\<pi> \<bullet> h)  (\<pi> \<bullet> \<rho>)"
     by -(drule has_ESem.fix_on_cond_jfc'_eqvt[where \<pi> = \<pi>], perm_simp, assumption)
 
   show ?thesis
@@ -879,7 +879,7 @@ proof (cases "has_ESem.heapExtendJoin_cond' ESem h \<rho>")
    done
 next
 case False 
-  hence False_permuted: "\<not> has_ESem.heapExtendJoin_cond' (\<pi> \<bullet> ESem) (\<pi> \<bullet> h) (\<pi> \<bullet> \<rho>)"
+  hence False_permuted: "\<not> has_ESem.HSem_cond' (\<pi> \<bullet> ESem) (\<pi> \<bullet> h) (\<pi> \<bullet> \<rho>)"
     apply -
     apply rule
     apply (erule notE)

@@ -1,5 +1,5 @@
 theory Denotational
-  imports "Denotational-Common" "Value-Meet" "Denotational-HeapExtend"
+  imports "Denotational-Common" "Value-Meet" "HSem"
 begin
 
 nominal_primrec
@@ -69,11 +69,11 @@ case (goal13 as \<rho> body as' \<rho>' body')
     apply (rule pure_fresh)+
     apply (subst spec[OF iffD1[OF meta_eq_to_obj_eq[OF eqvt_at_def] eqvt2]])
     apply (simp add:
-        heapExtendJoin_eqvt eqvt_apply[of _ asToHeap]
+        HSem_eqvt eqvt_apply[of _ asToHeap]
         permute_pure
         spec[OF iffD1[OF meta_eq_to_obj_eq[OF eqvt_def] asToHeap_eqvt]]
         asToHeap_eqvt)
-    apply (rule arg_cong[OF heapExtendJoin_cong[OF _ _ refl, rotated]])
+    apply (rule arg_cong[OF HSem_cong[OF _ _ refl, rotated]])
 
     apply (rule perm_supp_eq)
     using fresh1 fresh2
@@ -101,11 +101,11 @@ interpretation has_ESem ESem.
 lemma permute_ESem: "\<pi> \<bullet> ESem = ESem"
   by (perm_simp, rule)
 
-lemmas heapExtendJoin_eqvt' = heapExtendJoin_eqvt[of _ ESem, unfolded permute_ESem]
+lemmas HSem_eqvt' = HSem_eqvt[of _ ESem, unfolded permute_ESem]
 
 (* Re-Do the abbreviation from inside the the locale, as abbreviations are not exported *)
-abbreviation heapExtendJoin_cond''
-  where "heapExtendJoin_cond'' h \<rho> \<equiv>
+abbreviation HSem_cond''
+  where "HSem_cond'' h \<rho> \<equiv>
       fix_on_cond_jfc' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) 
                         (\<lambda> \<rho>' . fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set h))"
 
