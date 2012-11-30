@@ -3,6 +3,7 @@ imports "Nominal-Utils" "~~/src/HOL/Library/AList"
 begin
 
 abbreviation delete where "delete \<equiv> AList.delete"
+abbreviation update where "update \<equiv> AList.update"
 
 definition heapVars
   where "heapVars h = fst ` set h"

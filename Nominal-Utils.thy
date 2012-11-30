@@ -127,5 +127,8 @@ lemma delete_eqvt[eqvt]:
   "\<pi> \<bullet> AList.delete x \<Gamma> = AList.delete (\<pi> \<bullet> x) (\<pi> \<bullet> \<Gamma>)"
 by (induct \<Gamma>, auto)
 
+lemma update_eqvt[eqvt]:
+  "\<pi> \<bullet> AList.update x v \<Gamma> = AList.update (\<pi> \<bullet> x) (\<pi> \<bullet> v) (\<pi> \<bullet> \<Gamma>)"
+by (induct \<Gamma>, auto)
 
 end
