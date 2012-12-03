@@ -141,6 +141,9 @@ lift_definition fmap_of :: "('a \<times> 'b) list \<Rightarrow> ('a, 'b) fmap"
 lemma fdom_fmap_of[simp]: "fdom (fmap_of l) = fst ` set l"
   by (transfer, rule dom_map_of_conv_image_fst)
 
+lemma fmap_of_Nil[simp]: "fmap_of [] = fempty"
+ by (transfer, simp)
+
 lemma fmap_of_Cons[simp]: "fmap_of (p # l) = (fmap_of l)(fst p f\<mapsto> snd p)" 
   by (transfer, simp)
 

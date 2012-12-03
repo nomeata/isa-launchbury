@@ -51,6 +51,23 @@ lemma permute_transfer[transfer_rule]: "(op = ===> cr_fmap ===> cr_fmap) permute
   apply (auto simp add: cr_fmap_def permute_fmap_def simp del: dom_perm_rev simp add: dom_perm Rep_fmap[simplified] Abs_fmap_inverse)
   done
 
+lemma supp_transfer[transfer_rule]: "(cr_fmap ===> op =) supp supp" 
+  apply (rule fun_relI)+
+  apply (simp add: cr_fmap_def supp_def permute_fmap.rep_eq[symmetric] Rep_fmap_inject)
+  done
+
+lemma fresh_transfer[transfer_rule]: "(op = ===> cr_fmap ===> op =) fresh fresh" 
+  apply (rule fun_relI)+
+  apply (simp add: cr_fmap_def fresh_def)
+  using fun_relD[OF supp_transfer, unfolded cr_fmap_def]
+  by auto
+
+lemma fresh_star_transfer[transfer_rule]: "(op = ===> cr_fmap ===> op =) fresh_star fresh_star" 
+  apply (rule fun_relI)+
+  apply (simp add: cr_fmap_def fresh_star_def)
+  using fun_relD[OF fun_relD[OF fresh_transfer], unfolded cr_fmap_def]
+  by blast
+
 lemma permute_transfer2[transfer_rule]: "(op = ===> op = ===> op =) permute (permute :: perm \<Rightarrow> ('a::pt) set \<Rightarrow> 'a set)" 
   unfolding fun_rel_eq by (rule refl)
 
@@ -80,6 +97,7 @@ qed
 
 lemma perm_finite: "finite (dom m2) \<Longrightarrow> finite {m1. dom m1 = dom m2 \<and> ran m1 = ran m2}"
   by (rule map_between_finite[OF _ finite_range])
+
 
 lemma supp_set_elem_finite:
   assumes "finite S"
@@ -192,18 +210,7 @@ lemma supp_fmap:
 apply transfer
 apply (erule supp_map_union)
 by (metis Rel_eq_refl fun_rel_eq set_rel_eq)
-(*
-proof-
-  show "Transfer.Rel (op = ===> set_rel op =) supp supp"
-    by (metis Rel_eq_refl fun_rel_eq set_rel_eq)
-  next
-  show "Transfer.Rel (op = ===> set_rel op =) supp supp"
-    by (metis Rel_eq_refl fun_rel_eq set_rel_eq)
-  next
-  show "Transfer.Rel (op = ===> set_rel op = ===> op =) op = op ="
-    by (metis Rel_eq_refl fun_rel_eq set_rel_eq)
-qed
-*)
+
 
 instance "fmap" :: (fs,fs) fs
   by (default, auto intro: finite_sets_supp simp add: supp_fmap)
@@ -243,12 +250,11 @@ lemma fmap_add_eqvt[eqvt]:
 
 lift_definition fmap_id :: "('a, 'b) fmap \<Rightarrow> ('a, 'b) fmap" is "(\<lambda>x. x)" by simp
 
-print_quotients
-
 lemma fmap_of_eqvt[eqvt]:
   "\<pi> \<bullet> fmap_of l = fmap_of (\<pi> \<bullet> l)"
   (* apply transfer does not do anything here *)
   by (simp add: fmap_of_def permute_fmap_def map_fun_def Abs_fmap_inverse finite_dom_map_of map_of_eqvt)
+
 
 lemma sharp_Env: "atom x \<sharp> (\<rho> :: ('a::at_base, 'b::pure) fmap) \<longleftrightarrow> x \<notin> fdom \<rho>"
   apply (subst fresh_def)
@@ -257,5 +263,24 @@ lemma sharp_Env: "atom x \<sharp> (\<rho> :: ('a::at_base, 'b::pure) fmap) \<lon
   apply (simp add: fresh_finite_set_at_base[OF finite_fdom] pure_fresh)
   done
 
+lemma fmap_fmap_upd[simp]:
+  "fran (m(x f\<mapsto> v)) = insert v (fran (fmap_delete x m))"
+by (transfer, auto simp add: ran_def)
+
+lemma supp_fmap_upd[simp]:
+  "supp (m((x::'a::fs) f\<mapsto> v::'b::fs)) = supp (fmap_delete x m) \<union> supp x \<union> supp v"
+  apply (subst (1 2) supp_fmap)
+  apply (subst (1 2 3 4) supp_of_finite_sets)
+  apply simp_all[4]
+  apply auto
+  done
+
+lemma fresh_fmap_upd[simp]:
+  "a \<sharp> m((x::'a::fs) f\<mapsto> v::'b::fs) \<longleftrightarrow> (a \<sharp> (fmap_delete x m) \<and> a \<sharp> x \<and> a \<sharp> v)"
+  unfolding fresh_def by simp
+
+lemma fresh_star_fmap_upd[simp]:
+  "a \<sharp>* m((x::'a::fs) f\<mapsto> v::'b::fs) \<longleftrightarrow> (a \<sharp>* (fmap_delete x m) \<and> a \<sharp>* x \<and> a \<sharp>* v)"
+by (metis fresh_fmap_upd fresh_star_def)
 
 end
