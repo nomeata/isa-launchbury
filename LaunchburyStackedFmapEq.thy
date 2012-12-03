@@ -12,6 +12,38 @@ lemma fresh_star_fmap_of_distinct[simp]:
   "distinctVars (l::('a::fs \<times> 'b::fs) list) \<Longrightarrow> a \<sharp>* fmap_of l \<longleftrightarrow> a \<sharp>* l"
   by (metis fresh_fmap_of_distinct fresh_star_def)
 
+lemma fmapToList:
+  obtains h\<Gamma> where "\<Gamma> = fmap_of h\<Gamma>" and "distinctVars h\<Gamma>"
+proof-
+  have "finite (fdom \<Gamma>)" by simp
+  then obtain h\<Gamma> where "\<Gamma> = fmap_of h\<Gamma>" and "distinctVars h\<Gamma>"
+  proof(induct "fdom \<Gamma>" arbitrary: \<Gamma> thesis rule: finite_induct)
+  case (empty \<Gamma>)
+    hence "\<Gamma> = fmap_of []" by auto
+    thus ?case
+      by (rule empty(2), simp)
+  next
+  case (insert x d)
+    from `insert x d = fdom \<Gamma>` and `x \<notin> d`
+    have "d = fdom (fmap_delete x \<Gamma>)" by auto
+    then obtain h\<Gamma> where *: "fmap_delete x \<Gamma> = fmap_of h\<Gamma>" and d: "distinctVars h\<Gamma>"
+      by (rule insert.hyps(3))
+    have "x \<notin> fdom (fmap_of h\<Gamma>)" by (auto simp add: *[symmetric])
+    hence ne: "x \<notin> heapVars h\<Gamma>" by (simp add: heapVars_def)
+
+    have [simp]:"x \<in> fdom \<Gamma>" using insert(4) by auto
+     
+    show ?case
+    proof (rule insert(5))
+      show "\<Gamma> = fmap_of ((x, the (lookup \<Gamma> x)) # h\<Gamma>)"
+        by (simp add: *[symmetric])
+      show "distinctVars ((x, the (lookup \<Gamma> x)) # h\<Gamma>)"
+        using d ne by (simp add: distinctVars_Cons)
+    qed
+  qed
+  from that[OF this] show ?thesis.
+qed
+
 lemma reds_order_irrelevant:
  assumes "\<Gamma> : (x, e) # \<Gamma>' \<Down> \<Delta> : (x, z) # \<Delta>'"
  and "distinctVars (((x,e) # \<Gamma>') @ \<Gamma>)"
@@ -87,7 +119,7 @@ proof-
 qed
 
 
-lemma reds_order_exists:
+lemma reds_order_exists':
   assumes "fmap_of h\<Gamma> : x \<mapsto> e : fmap_of h\<Gamma>' \<Down> \<Delta> : x \<mapsto> z : \<Delta>'"
   and "distinctVars (((x,e)#h\<Gamma>')@ h\<Gamma>)"
   obtains h\<Delta> and h\<Delta>'
@@ -234,6 +266,43 @@ case (Let as x body \<Delta> z \<Delta>' h\<Gamma> h\<Gamma>' thesis)
       show "distinctVars (asToHeap as)" by fact
     qed
   qed fact+ 
+qed
+
+lemma reds_order_exists:
+  assumes "\<Gamma> : x \<mapsto> e : \<Gamma>' \<Down> \<Delta> : x \<mapsto> z : \<Delta>'"
+  assumes "x \<notin> fdom \<Gamma>"
+  assumes "x \<notin> fdom \<Gamma>'"
+  assumes "fdom \<Gamma>' \<inter> fdom \<Gamma> = {}"
+  obtains h\<Gamma> h\<Gamma>' h\<Delta> h\<Delta>'
+  where "h\<Gamma> : (x, e) # h\<Gamma>' \<Down> h\<Delta> : (x, z) # h\<Delta>'"
+  and "\<Gamma> = fmap_of h\<Gamma>"
+  and "\<Gamma>' = fmap_of h\<Gamma>'"
+  and "\<Delta> = fmap_of h\<Delta>"
+  and "\<Delta>' = fmap_of h\<Delta>'"
+  and "distinctVars (((x,e)#h\<Gamma>')@h\<Gamma>)"
+proof-
+  obtain h\<Gamma>
+  where "\<Gamma> = fmap_of h\<Gamma>" and d1: "distinctVars h\<Gamma>"
+    by (rule fmapToList)
+  moreover
+  obtain h\<Gamma>'
+  where "\<Gamma>' = fmap_of h\<Gamma>'" and d2: "distinctVars h\<Gamma>'"
+    by (rule fmapToList)
+  ultimately
+  have "fmap_of h\<Gamma> : x \<mapsto> e : fmap_of h\<Gamma>' \<Down> \<Delta> : x \<mapsto> z : \<Delta>'"
+    using assms(1) by simp
+  moreover
+  have "distinctVars (((x, e) # h\<Gamma>') @ h\<Gamma>)"
+    using d1 d2 assms(2,3,4) `\<Gamma> = _` `\<Gamma>' = _`
+    by (simp add: distinctVars_Cons distinctVars_append heapVars_def image_Un)
+  ultimately
+  obtain h\<Delta> h\<Delta>'
+  where "h\<Gamma> : (x, e) # h\<Gamma>' \<Down> h\<Delta> : (x, z) # h\<Delta>'"
+    and "\<Delta> = fmap_of h\<Delta>" "\<Delta>' = fmap_of h\<Delta>'" "distinctVars (((x, z) # h\<Delta>') @ h\<Delta>)"
+    by (rule reds_order_exists')
+  
+  show ?thesis
+    by (rule that, fact+)
 qed
 
 end

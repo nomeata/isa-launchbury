@@ -158,6 +158,9 @@ lemma fmap_delete_noop:
   "x \<notin> fdom m \<Longrightarrow> fmap_delete x m = m"
   by (transfer, auto)
 
+lemma fmap_upd_fmap_delete[simp]: "x \<in> fdom \<Gamma> \<Longrightarrow> fmap_delete x \<Gamma>(x f\<mapsto> the (lookup \<Gamma> x)) = \<Gamma>"
+  by (transfer, auto)
+ 
 lemma lookup_fmap_of[simp]:
   "lookup (fmap_of m) x = map_of m x"
   by (transfer, auto)
