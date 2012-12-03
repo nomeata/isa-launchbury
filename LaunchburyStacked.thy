@@ -278,6 +278,12 @@ lemma stack_not_empty:
   using assms
   by (induct rule:reds.induct, simp_all)
 
+lemma stack_same_head:
+  assumes "\<Gamma> : \<Gamma>' \<Down> \<Delta> : \<Delta>'"
+  shows "fst (hd \<Delta>') = fst (hd \<Gamma>')"
+  using assms
+  by (induct rule:reds.induct, simp_all)
+
 lemma stack_unchanged:
   assumes "\<Gamma> : (x, e) # \<Gamma>' \<Down> \<Delta> : (x, e') # \<Delta>'"
   shows "\<Delta>' = \<Gamma>'"

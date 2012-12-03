@@ -26,6 +26,9 @@ lemma eqvt_fresh_cong1: "(\<And>p x. p \<bullet> (f x) = f (p \<bullet> x)) \<Lo
   apply (auto simp add: eqvt_def permute_fun_def)
   done
 
+lemma eqvt_fresh_star_cong1: "(\<And>p x. p \<bullet> (f x) = f (p \<bullet> x)) \<Longrightarrow> a \<sharp>* x \<Longrightarrow> a \<sharp>* f x "
+  by (metis fresh_star_def eqvt_fresh_cong1)
+
 lemma eqvt_fresh_cong2:
   assumes eqvt: "(\<And>p x y. p \<bullet> (f x y) = f (p \<bullet> x) (p \<bullet> y))"
   and fresh1: "a \<sharp> x" and fresh2: "a \<sharp> y"
@@ -130,5 +133,19 @@ by (induct \<Gamma>, auto)
 lemma update_eqvt[eqvt]:
   "\<pi> \<bullet> AList.update x v \<Gamma> = AList.update (\<pi> \<bullet> x) (\<pi> \<bullet> v) (\<pi> \<bullet> \<Gamma>)"
 by (induct \<Gamma>, auto)
+
+lemma map_add_eqvt[eqvt]:
+  "\<pi> \<bullet> (m1 ++ m2) = (\<pi> \<bullet> m1) ++ (\<pi> \<bullet> m2)"
+  unfolding map_add_def
+  by (perm_simp, rule)
+
+lemma map_of_eqvt[eqvt]:
+  "\<pi> \<bullet> map_of l = map_of (\<pi> \<bullet> l)"
+  apply (induct l)
+  apply (simp add: permute_fun_def)
+  apply simp
+  apply perm_simp
+  apply auto
+  done
 
 end

@@ -1,5 +1,5 @@
 theory FMap
-  imports Main
+  imports Main "~~/src/HOL/Quotient_Examples/FSet" "~~/src/HOL/Library/DAList"
 begin
 
 typedef (open) ('a, 'b) fmap = "{x :: 'a \<rightharpoonup> 'b. finite (dom x) }"
@@ -122,5 +122,45 @@ lemma fmap_restr_not_finite:
 definition fmap_restr_l where
   "fmap_restr_l d = fmap_restr (set d)"
 
+lift_definition fmap_delete :: "'a \<Rightarrow> ('a, 'b) fmap \<Rightarrow> ('a, 'b) fmap"
+  is "\<lambda> x m. m(x := None)" by auto
+
+lemma fdom_fmap_delete[simp]:
+  "fdom (fmap_delete x m) = fdom m - {x}"
+  by (transfer, auto)
+
+lift_definition fmap_add :: "('a, 'b) fmap \<Rightarrow> ('a, 'b) fmap \<Rightarrow> ('a, 'b) fmap" (infixl "f++" 100) 
+  is "map_add" by auto
+
+lemma fdom_fmap_add[simp]: "fdom (m1 f++ m2) = fdom m1 \<union> fdom m2"
+  by (transfer, auto)
+
+lift_definition fmap_of :: "('a \<times> 'b) list \<Rightarrow> ('a, 'b) fmap"
+  is map_of by (rule finite_dom_map_of)
+
+lemma fdom_fmap_of[simp]: "fdom (fmap_of l) = fst ` set l"
+  by (transfer, rule dom_map_of_conv_image_fst)
+
+lemma fmap_of_Cons[simp]: "fmap_of (p # l) = (fmap_of l)(fst p f\<mapsto> snd p)" 
+  by (transfer, simp)
+
+lemma fmap_of_append[simp]: "fmap_of (l1 @ l2) = fmap_of l2 f++ fmap_of l1"
+  by (transfer, simp)
+
+lemma fmap_delete_fmap_upd[simp]:
+  "fmap_delete x (m(x f\<mapsto> v)) = fmap_delete x m"
+  by (transfer, simp)
+
+lemma fmap_delete_noop:
+  "x \<notin> fdom m \<Longrightarrow> fmap_delete x m = m"
+  by (transfer, auto)
+
+lemma lookup_fmap_of[simp]:
+  "lookup (fmap_of m) x = map_of m x"
+  by (transfer, auto)
+
+lemma fmap_delete_fmap_of[simp]:
+  "fmap_delete x (fmap_of m) = fmap_of (AList.delete x m)"
+  by (transfer, metis delete_conv')
 
 end

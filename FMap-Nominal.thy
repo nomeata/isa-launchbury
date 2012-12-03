@@ -1,5 +1,5 @@
 theory "FMap-Nominal"
-  imports FMap "./Nominal/Nominal/Nominal2" "~~/src/HOL/Library/Permutations" "~~/src/HOL/Library/FuncSet"
+  imports FMap "Nominal-Utils" "~~/src/HOL/Library/Permutations" "~~/src/HOL/Library/FuncSet"
 begin
 
 lemma dom_perm:
@@ -191,6 +191,8 @@ lemma supp_fmap:
   "supp (m:: ('a::fs, 'b::fs) fmap) = (supp (fdom m) \<union> supp (fran m))"
 apply transfer
 apply (erule supp_map_union)
+by (metis Rel_eq_refl fun_rel_eq set_rel_eq)
+(*
 proof-
   show "Transfer.Rel (op = ===> set_rel op =) supp supp"
     by (metis Rel_eq_refl fun_rel_eq set_rel_eq)
@@ -201,6 +203,7 @@ proof-
   show "Transfer.Rel (op = ===> set_rel op = ===> op =) op = op ="
     by (metis Rel_eq_refl fun_rel_eq set_rel_eq)
 qed
+*)
 
 instance "fmap" :: (fs,fs) fs
   by (default, auto intro: finite_sets_supp simp add: supp_fmap)
@@ -228,7 +231,24 @@ qed
 
 lemma fmap_restr_l_eqvt[eqvt]:
   "\<pi> \<bullet> fmap_restr_l d m = fmap_restr_l (\<pi> \<bullet> d) (\<pi> \<bullet> m)"
-    by (simp add: fmap_restr_l_def fmap_restr_eqvt set_eqvt)
+  by (simp add: fmap_restr_l_def fmap_restr_eqvt set_eqvt)
+
+lemma fmap_delete_eqvt[eqvt]:
+  "\<pi> \<bullet> fmap_delete x m = fmap_delete (\<pi> \<bullet> x) (\<pi> \<bullet> m)"
+  by (transfer, auto simp add: permute_fun_def fun_eq_iff)
+
+lemma fmap_add_eqvt[eqvt]:
+  "\<pi> \<bullet> fmap_add m1 m2 = fmap_add (\<pi> \<bullet> m1) (\<pi> \<bullet> m2)"
+  by (transfer, perm_simp, rule)
+
+lift_definition fmap_id :: "('a, 'b) fmap \<Rightarrow> ('a, 'b) fmap" is "(\<lambda>x. x)" by simp
+
+print_quotients
+
+lemma fmap_of_eqvt[eqvt]:
+  "\<pi> \<bullet> fmap_of l = fmap_of (\<pi> \<bullet> l)"
+  (* apply transfer does not do anything here *)
+  by (simp add: fmap_of_def permute_fmap_def map_fun_def Abs_fmap_inverse finite_dom_map_of map_of_eqvt)
 
 lemma sharp_Env: "atom x \<sharp> (\<rho> :: ('a::at_base, 'b::pure) fmap) \<longleftrightarrow> x \<notin> fdom \<rho>"
   apply (subst fresh_def)

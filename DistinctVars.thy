@@ -186,6 +186,12 @@ lemma the_map_of_snd:
   "x\<in> fst ` set \<Gamma> \<Longrightarrow> the (map_of \<Gamma> x) \<in> snd ` set \<Gamma>"
 by (induct \<Gamma>, auto)
 
+lemma distinctVars_map_of[simp]:
+  "distinctVars \<Gamma> \<Longrightarrow> (x,e) \<in> set \<Gamma> \<Longrightarrow> map_of \<Gamma> x = Some e"
+  apply (induct \<Gamma> rule:distinctVars.induct)
+  apply (auto simp add: heapVars_def)
+  by (metis map_of_eq_None_iff option.simps(2))
+
 lemma distinctVars_set_delete_insert:
   assumes "distinctVars \<Gamma>"
   assumes "(x,e) \<in> set \<Gamma>"
