@@ -2,6 +2,7 @@ theory IteratedFixedPoint
 imports Plain_HOLCF
 begin
 
+
 definition cfun_upd :: "('a::discrete_cpo \<rightarrow> 'b) \<rightarrow> 'a \<rightarrow> 'b \<rightarrow> ('a \<rightarrow> 'b)" where
  "cfun_upd = (\<Lambda> f a b x. if x=a then b else f\<cdot>x)"
 
@@ -112,19 +113,6 @@ proof(rule below_antisym[OF fix_least_below fix_least_below])
     done
   } note H_ignores_not_x1 = this
  
-  { fix \<rho> \<rho>' :: "'a \<Rightarrow> 'b"
-    assume *: "\<And> x. x \<noteq> x1 \<Longrightarrow> \<rho> x = \<rho>' x"
-    have "?H \<rho> = ?H \<rho>'"
-    apply (rule ext)
-    apply (rule ext)
-    apply (case_tac "x = x1")
-    using * by auto
-  } note H_cong = this
-  
-  { fix \<rho>
-    have "fix_syn (?H (fix_syn (?H \<rho>))) = fix_syn (?H \<rho>)"
-      by (rule arg_cong[OF H_cong[OF H_ignores_not_x1]])
-  } note H_idemp = this
 
   { fix \<rho> \<rho>'
     assume "e1\<cdot>\<rho>' \<sqsubseteq> \<rho> x1"
@@ -220,20 +208,6 @@ proof(rule below_antisym[OF fix_least_below fix_least_below])
     apply simp
     done
   } note H_ignores_not_x1 = this
- 
-  { fix \<rho> \<rho>' :: "'a \<rightarrow> 'b"
-    assume *: "\<And> x. x \<noteq> x1 \<Longrightarrow> \<rho>\<cdot>x = \<rho>'\<cdot>x"
-    have "?H \<rho> = ?H \<rho>'"
-    apply (rule ext)
-    apply (rule cfun_eqI)
-    apply (case_tac "x = x1")
-    using * by auto
-  } note H_cong = this
-  
-  { fix \<rho>
-    have "fix_syn (?H (fix_syn (?H \<rho>))) = fix_syn (?H \<rho>)"
-      by (rule arg_cong[OF H_cong[OF H_ignores_not_x1]])
-  } note H_idemp = this
 
   { fix \<rho> \<rho>'
     assume "e1\<cdot>\<rho>' \<sqsubseteq> \<rho>\<cdot>x1"
@@ -302,5 +276,131 @@ proof(rule below_antisym[OF fix_least_below fix_least_below])
   thus ?case by simp
 qed
 
+definition cfun_upd_on :: "('a::discrete_cpo \<rightarrow> 'b) \<rightarrow> 'a set discr \<rightarrow> ('a \<rightarrow> 'b) \<rightarrow> ('a \<rightarrow> 'b)" where
+ "cfun_upd_on = (\<Lambda> f S g x. if x \<in> undiscr S then g\<cdot>x else f\<cdot>x)"
+
+abbreviation cfun_upd_on_syn :: "('a::discrete_cpo \<rightarrow> 'b) \<Rightarrow> 'a set \<Rightarrow> ('a \<rightarrow> 'b) \<Rightarrow> ('a \<rightarrow> 'b)" ("_ ++\<^bsub>_\<^esub> _" [60,60,60] 60)
+  where "cfun_upd_on_syn f S g == cfun_upd_on\<cdot>f\<cdot>(Discr S)\<cdot>g"
+
+lemma cfun_upd_on_apply[simp]: "(f ++\<^bsub>S\<^esub> g)\<cdot>x = (if x \<in> S then g\<cdot>x else f\<cdot>x)"
+  unfolding cfun_upd_on_def by simp
+
+lemma cfun_upd_on_belowI:
+  assumes "\<And>x. x \<in> S \<Longrightarrow> g\<cdot>x \<sqsubseteq> h\<cdot>x"
+  assumes "\<And>x. x \<notin> S \<Longrightarrow> f\<cdot>x \<sqsubseteq> h\<cdot>x"
+  shows "f ++\<^bsub>S\<^esub> g \<sqsubseteq> h"
+  using assms
+  by -(rule cfun_belowI, simp)
+
+lemma
+  fixes \<rho> :: "'a::discrete_cpo \<rightarrow> 'b::pcpo"
+   and e1 :: "('a \<rightarrow> 'b) \<rightarrow> ('a \<rightarrow> 'b)"
+   and e2 :: "('a \<rightarrow> 'b) \<rightarrow> 'b"
+   and S :: "'a set" and x2 :: 'a
+  assumes ne:"x2 \<notin> S"
+  shows "fix\<cdot>(\<Lambda> \<rho>'. (\<rho> ++\<^bsub>S\<^esub> e1\<cdot>\<rho>')(x2 :\<cdot>= e2\<cdot>\<rho>')) =
+         fix\<cdot>(\<Lambda> \<rho>'. (\<rho> ++\<^bsub>S\<^esub> (fix\<cdot>(\<Lambda> \<rho>''. \<rho>' ++\<^bsub>S\<^esub> e1\<cdot>\<rho>'')))(x2 :\<cdot>= e2\<cdot>\<rho>'))" (is "fix_syn ?L = fix_syn ?R")
+proof(rule below_antisym[OF fix_least_below fix_least_below])
+  let ?H = "\<lambda> \<rho>' \<rho>''. \<rho>' ++\<^bsub>S\<^esub> e1\<cdot>\<rho>''"
+
+  { fix y \<rho>
+    assume "y \<notin> S"
+    hence "fix_syn (?H \<rho>)\<cdot>y = \<rho>\<cdot>y"
+    unfolding fix_def
+    apply simp
+    apply (subst lub_cfun[OF chain_iterate])
+    apply (subst lub_range_shift[symmetric, where j = 1, simplified, OF ch2ch_Rep_cfunL[OF chain_iterate]])
+    apply simp
+    done
+  } note H_ignores_not_S = this
+
+  { fix \<rho> \<rho>'
+    assume "\<And> x. x \<in> S \<Longrightarrow> e1\<cdot>\<rho>'\<cdot>x \<sqsubseteq> \<rho>\<cdot>x"
+    hence "?H \<rho> \<rho>' \<sqsubseteq> \<rho>"
+      by (metis cfun_upd_on_belowI below_refl)
+  } note H_noop = this
+
+  note fix_eq_R = fix_eq[where F = "Abs_cfun ?R", simplified]
+  note fix_eq_L = fix_eq[where F = "Abs_cfun ?L", simplified]
+  note fix_eq_HR = fix_eq[where F = "Abs_cfun (?H (fix_syn ?R))", simplified]
+
+  have HR_is_R: "fix_syn (?H (fix_syn ?R)) = fix_syn ?R"
+  proof(rule cfun_eqI)
+    case (goal1 x)
+    show ?case
+    proof(cases "x \<in> S")
+    case True[simp]
+      hence [simp]:"x \<noteq> x2" using ne by metis
+      have "fix_syn (?H (fix_syn ?R))\<cdot>x = fix_syn ?R\<cdot>x"
+        by (subst (2) fix_eq_R, simp)
+      thus ?thesis by simp
+    next
+    case False[simp]
+      show ?thesis
+        by (subst fix_eq_HR, simp)
+    qed
+  qed
+
+  have HLL_below_L: "?H (fix_syn ?L) (fix_syn ?L) \<sqsubseteq> (fix_syn ?L)"
+  proof(rule H_noop)
+    fix x
+    assume [simp]:"x \<in> S"
+    hence [simp]:"x \<noteq> x2" using ne by metis
+    show "e1\<cdot>(fix_syn ?L)\<cdot>x \<sqsubseteq> (fix_syn ?L)\<cdot>x"
+      apply (subst fix_eq_L) back by simp
+  qed
+
+  case goal2
+  have "?R (fix_syn ?L) \<sqsubseteq> fix_syn ?L"
+  proof(rule cfun_upd_belowI)
+    show "e2\<cdot>(fix_syn ?L) \<sqsubseteq> (fix_syn ?L)\<cdot>x2"
+      by (subst (2) fix_eq_L, simp)
+    fix x
+    assume "x2 \<noteq> x"
+    hence [simp]:"x \<noteq> x2" by metis
+    show "(\<rho> ++\<^bsub>S\<^esub> (fix_syn (?H (fix_syn ?L))))\<cdot>x \<sqsubseteq> (fix_syn ?L)\<cdot>x"
+    proof(cases "x \<in> S")
+    case True[simp]
+      from HLL_below_L
+      have "(fix_syn (?H (fix_syn ?L))) \<sqsubseteq> (fix_syn ?L)"
+        by -(rule fix_least_below, simp)
+      hence "(fix_syn (?H (fix_syn ?L)))\<cdot>x \<sqsubseteq> (fix_syn ?L)\<cdot>x"
+        by (rule monofun_cfun_fun)
+      thus ?thesis
+        by simp
+    next
+    case False[simp]
+      show ?thesis
+        by (subst fix_eq_L, simp)
+    qed
+  qed
+  thus ?case by simp
+
+  case goal1
+  have "?L (fix_syn ?R) \<sqsubseteq> fix_syn ?R"
+  proof(rule cfun_upd_belowI)
+    show "e2\<cdot>(fix_syn ?R) \<sqsubseteq> (fix_syn ?R)\<cdot>x2"
+      by (subst (2) fix_eq_R, simp)
+    fix x
+    assume "x2 \<noteq> x"
+    hence [simp]:"x \<noteq> x2" by metis
+    show "(\<rho> ++\<^bsub>S\<^esub> e1\<cdot>(fix_syn ?R))\<cdot>x \<sqsubseteq> (fix_syn ?R)\<cdot>x"
+    proof(cases "x \<in> S")
+    case True[simp]
+      have "e1\<cdot>(fix_syn ?R)\<cdot>x \<sqsubseteq> e1\<cdot>(fix_syn (?H (fix_syn ?R)))\<cdot>x"
+        by (simp add: HR_is_R)
+      hence "e1\<cdot>(fix_syn ?R)\<cdot>x \<sqsubseteq> (fix_syn (?H (fix_syn ?R)))\<cdot>x"
+        by (subst fix_eq_HR, simp)
+      hence "e1\<cdot>(fix_syn ?R)\<cdot>x \<sqsubseteq> (fix_syn ?R)\<cdot>x"
+        by (subst (2) fix_eq_R, simp)
+      thus ?thesis by simp
+    next
+    case False[simp]
+      show ?thesis
+        by (subst fix_eq_R, simp)
+    qed
+  qed
+  thus ?case by simp
+qed
 
 end
