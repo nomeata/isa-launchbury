@@ -138,9 +138,31 @@ qed
 lemma finite_transfer[transfer_rule]: "(op = ===> op =) finite finite" 
   unfolding fun_rel_eq by (rule refl)
 
+
+(* This seems to be required to work around a bug in the transfer package, which generates these with a "setrel op =" constraint. *)
+lemma [transfer_rule]:
+  "(op = ===> cr_fmap) (\<lambda>S. if finite S then \<lambda>x. if x \<in> S then Some \<bottom> else None else Map.empty) fmap_bottom"
+  using fmap_bottom.transfer
+  unfolding set_rel_eq.
+
+lemma [transfer_rule]: "(cr_fmap ===> op = ===> cr_fmap)
+ (\<lambda>m1 S. if finite S then \<lambda>x. if x \<in> S then Some \<bottom> else m1 x else Map.empty)
+ fmap_extend"
+  using fmap_extend.transfer
+  unfolding set_rel_eq.
+
+lemma [transfer_rule]: "(cr_fmap ===> op = ===> cr_fmap)
+     (\<lambda>m1 S.
+         if finite S
+         then \<lambda>x. if x \<in> S then Some (case m1 x of None \<Rightarrow> \<bottom> | Some x \<Rightarrow> x) else None
+         else Map.empty)
+     fmap_expand"
+  using fmap_expand.transfer
+  unfolding set_rel_eq.
+
 lemma fmap_bottom_eqvt:
   "finite S \<Longrightarrow> \<pi> \<bullet> (fmap_bottom S :: ('a::pt, 'b::{cont_pt,pcpo}) fmap) = fmap_bottom (\<pi> \<bullet> S)"
-  by (transfer, perm_simp, rule refl)
+  by (transfer,perm_simp, rule refl)
 
 lemma fmap_update_eqvt[eqvt]:
   "\<pi> \<bullet> fmap_update m1 (m2 :: ('a::{cont_pt,cpo}, 'b::{cont_pt,cpo}) fmap) = fmap_update (\<pi> \<bullet> m1) (\<pi> \<bullet> m2)"
