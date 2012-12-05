@@ -324,37 +324,53 @@ proof(rule below_antisym[OF fix_least_below fix_least_below])
   note fix_eq_L = fix_eq[where F = "Abs_cfun ?L", simplified]
   note fix_eq_HR = fix_eq[where F = "Abs_cfun (?H (fix_syn ?R))", simplified]
 
-  have HR_is_R: "fix_syn (?H (fix_syn ?R)) = fix_syn ?R"
-  proof(rule cfun_eqI)
-    case (goal1 x)
-    show ?case
-    proof(cases "x \<in> S")
-    case True[simp]
-      hence [simp]:"x \<noteq> x2" using ne by metis
-      have "fix_syn (?H (fix_syn ?R))\<cdot>x = fix_syn ?R\<cdot>x"
-        by (subst (2) fix_eq_R, simp)
-      thus ?thesis by simp
-    next
-    case False[simp]
-      show ?thesis
-        by (subst fix_eq_HR, simp)
-    qed
-  qed
+  have HR_not_S[simp]: "\<And> x. x \<notin> S \<Longrightarrow> fix_syn (?H (fix_syn ?R))\<cdot>x = fix_syn ?R \<cdot> x"
+     by (subst fix_eq_HR, simp)
+
+  have HR_S[simp]: "\<And> x. x \<in> S \<Longrightarrow> fix_syn (?H (fix_syn ?R))\<cdot>x = e1\<cdot>(fix_syn (?H (fix_syn ?R)))\<cdot>x"
+    apply (subgoal_tac "x \<noteq> x2")
+    apply (subst fix_eq_HR)
+    apply simp
+    using ne by metis
+
+  have L_S[simp]: "\<And> x. x \<in> S \<Longrightarrow> (fix_syn ?L)\<cdot>x = e1\<cdot>(fix_syn ?L)\<cdot>x"
+    apply (subgoal_tac "x \<noteq> x2")
+    apply (subst (1) fix_eq_L)
+    apply simp
+    using ne by metis
+
+  have L_x2[simp]: "(fix_syn ?L)\<cdot>x2 = e2\<cdot>(fix_syn ?L)"
+    by (subst (1) fix_eq_L, simp)
+
+  have L_not_S_x2[simp]: "\<And> x. x \<notin> S \<Longrightarrow> x \<noteq> x2 \<Longrightarrow> (fix_syn ?L)\<cdot>x = \<rho>\<cdot>x"
+    by (subst (1) fix_eq_L, simp)
+
+  have R_S[simp]: "\<And> x. x \<in> S \<Longrightarrow> fix_syn ?R \<cdot> x = e1\<cdot>(fix_syn (?H (fix_syn ?R)))\<cdot>x"
+    apply (subgoal_tac "x \<noteq> x2")
+    apply (subst fix_eq_R)
+    apply simp
+    using ne by metis
+
+  have R_x2[simp]: "fix_syn ?R \<cdot> x2 = e2\<cdot>(fix_syn ?R)"
+    by (subst fix_eq_R, simp)
+
+  have R_not_S[simp]: "\<And> x. x \<notin> S \<Longrightarrow> x \<noteq> x2 \<Longrightarrow> fix_syn ?R \<cdot> x = \<rho>\<cdot>x"
+    by (subst fix_eq_R, simp)
+
+  have HR_is_R[simp]: "fix_syn (?H (fix_syn ?R)) = fix_syn ?R"
+    apply (rule cfun_eqI)
+    apply (case_tac "x \<in> S")
+    apply simp_all
+    done
 
   have HLL_below_L: "?H (fix_syn ?L) (fix_syn ?L) \<sqsubseteq> (fix_syn ?L)"
-  proof(rule H_noop)
-    fix x
-    assume [simp]:"x \<in> S"
-    hence [simp]:"x \<noteq> x2" using ne by metis
-    show "e1\<cdot>(fix_syn ?L)\<cdot>x \<sqsubseteq> (fix_syn ?L)\<cdot>x"
-      apply (subst fix_eq_L) back by simp
-  qed
+    by (rule H_noop, simp)
 
   case goal2
   have "?R (fix_syn ?L) \<sqsubseteq> fix_syn ?L"
   proof(rule cfun_upd_belowI)
     show "e2\<cdot>(fix_syn ?L) \<sqsubseteq> (fix_syn ?L)\<cdot>x2"
-      by (subst (2) fix_eq_L, simp)
+      by simp
     fix x
     assume "x2 \<noteq> x"
     hence [simp]:"x \<noteq> x2" by metis
@@ -369,37 +385,19 @@ proof(rule below_antisym[OF fix_least_below fix_least_below])
       thus ?thesis
         by simp
     next
-    case False[simp]
-      show ?thesis
-        by (subst fix_eq_L, simp)
+    case False
+      thus ?thesis by simp
     qed
   qed
   thus ?case by simp
 
   case goal1
   have "?L (fix_syn ?R) \<sqsubseteq> fix_syn ?R"
-  proof(rule cfun_upd_belowI)
-    show "e2\<cdot>(fix_syn ?R) \<sqsubseteq> (fix_syn ?R)\<cdot>x2"
-      by (subst (2) fix_eq_R, simp)
-    fix x
-    assume "x2 \<noteq> x"
-    hence [simp]:"x \<noteq> x2" by metis
-    show "(\<rho> ++\<^bsub>S\<^esub> e1\<cdot>(fix_syn ?R))\<cdot>x \<sqsubseteq> (fix_syn ?R)\<cdot>x"
-    proof(cases "x \<in> S")
-    case True[simp]
-      have "e1\<cdot>(fix_syn ?R)\<cdot>x \<sqsubseteq> e1\<cdot>(fix_syn (?H (fix_syn ?R)))\<cdot>x"
-        by (simp add: HR_is_R)
-      hence "e1\<cdot>(fix_syn ?R)\<cdot>x \<sqsubseteq> (fix_syn (?H (fix_syn ?R)))\<cdot>x"
-        by (subst fix_eq_HR, simp)
-      hence "e1\<cdot>(fix_syn ?R)\<cdot>x \<sqsubseteq> (fix_syn ?R)\<cdot>x"
-        by (subst (2) fix_eq_R, simp)
-      thus ?thesis by simp
-    next
-    case False[simp]
-      show ?thesis
-        by (subst fix_eq_R, simp)
-    qed
-  qed
+    apply(rule cfun_upd_belowI)
+    apply simp
+    apply (case_tac "x \<notin> S")
+    apply simp_all
+    done
   thus ?case by simp
 qed
 
