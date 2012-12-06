@@ -148,4 +148,7 @@ lemma map_of_eqvt[eqvt]:
   apply auto
   done
 
+lemma pure_fresh_star[simp]: "a \<sharp>* (x :: 'a :: pure)"
+  by (simp add: fresh_star_def pure_fresh)
+
 end

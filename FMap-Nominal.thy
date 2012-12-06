@@ -275,12 +275,12 @@ lemma supp_fmap_upd[simp]:
   apply auto
   done
 
-lemma fresh_fmap_upd[simp]:
+lemma fresh_fmap_upd_eq:
   "a \<sharp> m((x::'a::fs) f\<mapsto> v::'b::fs) \<longleftrightarrow> (a \<sharp> (fmap_delete x m) \<and> a \<sharp> x \<and> a \<sharp> v)"
   unfolding fresh_def by simp
 
-lemma fresh_star_fmap_upd[simp]:
+lemma fresh_star_fmap_upd_eq:
   "a \<sharp>* m((x::'a::fs) f\<mapsto> v::'b::fs) \<longleftrightarrow> (a \<sharp>* (fmap_delete x m) \<and> a \<sharp>* x \<and> a \<sharp>* v)"
-by (metis fresh_fmap_upd fresh_star_def)
+by (metis fresh_fmap_upd_eq fresh_star_def)
 
 end
