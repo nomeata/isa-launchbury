@@ -73,6 +73,17 @@ lemma lookupHeapToEnvNotAppend[simp]:
   shows "the (lookup (heapToEnv (\<Gamma>@h) f) x) = the (lookup (heapToEnv h f) x)"
   using assms by (induct \<Gamma>, auto)
 
+lemma heapToEnv_remove_Cons_fmap_restr:
+  "finite S \<Longrightarrow> x \<notin> S \<Longrightarrow> fst `set \<Gamma> \<subseteq> S \<Longrightarrow> fmap_restr S (heapToEnv ((x, e) # \<Gamma>) eval) = heapToEnv \<Gamma> eval"
+  apply (rule fmap_eqI)
+  apply auto[1]
+  apply (subgoal_tac "xa \<noteq> x")
+  apply (case_tac "xa \<in> fst`set \<Gamma>")
+  apply simp
+  apply simp
+  apply auto
+  done
+
 
 lemma heapToEnv_remove_Cons_fmap_expand:
   "finite S \<Longrightarrow> x \<notin> S \<Longrightarrow> fmap_expand (heapToEnv ((x, e) # \<Gamma>) eval) S = fmap_expand (heapToEnv \<Gamma> eval) S"

@@ -375,88 +375,99 @@ lemma fix1_cong:
   by (metis fmap_below_dom assms(3))
 *)
 
-lift_definition fmap_update :: "('a, 'b) fmap \<Rightarrow> ('a, 'b) fmap  \<Rightarrow> ('a, 'b) fmap"
-  is "\<lambda>m1 m2 x. (
-    case m2 x of Some y1 \<Rightarrow> Some y1 | None \<Rightarrow> m1 x 
-     )"
-  apply (rule_tac B = "dom fun1 \<union> dom fun2" in  finite_subset)
-  by (auto simp add: map_def split add: option.split_asm)
 
-lemma fdom_fmap_update[simp]: "fdom (fmap_update m1 m2) = fdom m1 \<union> fdom m2"
-  by (transfer, auto simp add: dom_def split:option.split)
+lemma  fmap_add_belowI:
+  assumes "fdom x \<union> fdom y = fdom z"
+  and "\<And> a. a \<in> fdom y \<Longrightarrow> the (lookup y a) \<sqsubseteq> the (lookup z a)"
+  and "\<And> a. a \<in> fdom x \<Longrightarrow> a \<notin> fdom y \<Longrightarrow> the (lookup x a) \<sqsubseteq> the (lookup z a)"
+  shows  "fmap_add x y \<sqsubseteq> z"
+  using assms 
+  apply -
+  apply (rule fmap_belowI)
+  apply auto[1]
+  by (metis fdomIff lookup_fmap_add1 lookup_fmap_add2 the.simps)
 
-lemma lookup_fmap_update1[simp]: "x \<in> fdom m2 \<Longrightarrow> lookup (fmap_update m1 m2) x = lookup m2 x"
-  by (transfer, auto)
-
-lemma lookup_fmap_update2[simp]:  "x \<notin> fdom m2 \<Longrightarrow> lookup (fmap_update m1 m2) x = lookup m1 x"
-  by (transfer, auto simp add: dom_def )
-
-lemma [simp]: "fmap_update \<rho> fempty = \<rho>"
-  by (transfer, auto)
-
-lemma fmap_update_rho[simp]: "fmap_update \<rho> (fmap_update \<rho> x) = fmap_update \<rho> x"
-  by (transfer, auto split add: option.split)
-
-lemma fmap_update_cont1: "cont (\<lambda> x. fmap_update x (m::('a, 'b::cpo) fmap))"
+lemma fmap_add_cont1: "cont (\<lambda> x. fmap_add x (m::('a::type, 'b::cpo) fmap))"
 proof(rule fmap_contI)
-  fix x y :: "('a, 'b::cpo) fmap"
+  fix x y :: "('a, 'b) fmap"
   assume "x \<sqsubseteq> y"
   hence "fdom x = fdom y" by (rule fmap_below_dom)
-  thus "fdom (fmap_update x m) = fdom (fmap_update y m)"  by simp 
+  thus "fdom (fmap_add x m) = fdom (fmap_add y m)"  by simp 
 next
-  fix x y :: "('a, 'b::cpo) fmap"
+  fix x y :: "('a, 'b) fmap"
   assume "x \<sqsubseteq> y"
   fix z :: 'a  
-  show "the (lookup (fmap_update x m) z) \<sqsubseteq> the (lookup (fmap_update y m) z)"
+  show "the (lookup (fmap_add x m) z) \<sqsubseteq> the (lookup (fmap_add y m) z)"
     using `x \<sqsubseteq> y`
     by(cases "z \<in> fdom m", auto elim: fmap_belowE)
 next
-  fix Y :: "nat \<Rightarrow> ('a, 'b::cpo) fmap"
-  assume c1: "chain Y" and c2: "chain (\<lambda>i. fmap_update (Y i) m)"
+  fix Y :: "nat \<Rightarrow> ('a, 'b) fmap"
+  assume c1: "chain Y" and c2: "chain (\<lambda>i. fmap_add (Y i) m)"
   fix x :: 'a
-  show "the (lookup (fmap_update (\<Squnion> i. Y i) m) x) \<sqsubseteq> the (lookup (\<Squnion> i. fmap_update (Y i) m) x)"
+  show "the (lookup (fmap_add (\<Squnion> i. Y i) m) x) \<sqsubseteq> the (lookup (\<Squnion> i. fmap_add (Y i) m) x)"
     by (cases "x \<in> fdom m", auto simp add: lookup_cont[OF c2] lookup_cont[OF c1])
 qed
 
-lemma fmap_update_cont2: "cont (\<lambda> x. fmap_update m (x::('a, 'b::cpo) fmap))"
+lemma fmap_add_cont2: "cont (\<lambda> x. fmap_add m (x::('a::type, 'b::cpo) fmap))"
 proof(rule fmap_contI)
-  fix x y :: "('a, 'b::cpo) fmap"
+  fix x y :: "('a, 'b) fmap"
   assume "x \<sqsubseteq> y"
   hence "fdom x = fdom y" by (rule fmap_below_dom)
-  thus "fdom (fmap_update m x) = fdom (fmap_update m y)" by simp
+  thus "fdom (fmap_add m x) = fdom (fmap_add m y)" by simp
 next
-  fix x y :: "('a, 'b::cpo) fmap"
+  fix x y :: "('a, 'b) fmap"
   assume "x \<sqsubseteq> y"
   hence "fdom x = fdom y" by (rule fmap_below_dom)
   fix z :: 'a  
-  show "the (lookup (fmap_update m x) z) \<sqsubseteq> the (lookup (fmap_update m y) z)"
+  show "the (lookup (fmap_add m x) z) \<sqsubseteq> the (lookup (fmap_add m y) z)"
     using `x \<sqsubseteq> y` `fdom x = fdom y`
     by(cases "z \<in> fdom x", auto elim: fmap_belowE)
 next
-  fix Y :: "nat \<Rightarrow> ('a, 'b::cpo) fmap"
-  assume c1: "chain Y" and c2: "chain (\<lambda>i. fmap_update m (Y i))"
+  fix Y :: "nat \<Rightarrow> ('a, 'b) fmap"
+  assume c1: "chain Y" and c2: "chain (\<lambda>i. fmap_add m (Y i))"
     hence [simp]:"\<And> i. fdom (Y i) =  fdom (\<Squnion> i . Y i)"
       by (metis chain_fdom(1) chain_fdom(2))
   fix x :: 'a
-  show "the (lookup (fmap_update m (\<Squnion> i. Y i)) x) \<sqsubseteq> the (lookup (\<Squnion> i. fmap_update m (Y i)) x)"
+  show "the (lookup (fmap_add m (\<Squnion> i. Y i)) x) \<sqsubseteq> the (lookup (\<Squnion> i. fmap_add m (Y i)) x)"
     by (cases "x \<in> fdom (\<Squnion> i . Y i)", auto simp add: lookup_cont[OF c2] lookup_cont[OF c1])
 qed
 
-lemma fmap_update_cont2cont[simp, cont2cont]:
+lemma fmap_add_cont2cont[simp, cont2cont]:
   assumes "cont f"
   assumes "cont g"
-  shows "cont (\<lambda> x. fmap_update (f x) (g x :: ('a, 'b::cpo) fmap))"
-by (rule cont_apply[OF assms(1) fmap_update_cont1 cont_compose[OF fmap_update_cont2 assms(2)]])
+  shows "cont (\<lambda> x. fmap_add (f x) (g x :: ('a, 'b::cpo) fmap))"
+by (rule cont_apply[OF assms(1) fmap_add_cont1 cont_compose[OF fmap_add_cont2 assms(2)]])
 
-lemma fmap_update_upd_swap: 
-  "x \<notin> fdom \<rho>' \<Longrightarrow> fmap_update (\<rho>(x f\<mapsto> z)) \<rho>' = (fmap_update \<rho> \<rho>')(x f\<mapsto> z)"
-  apply (rule fmap_eqI[rule_format])
-  apply auto[1]
-  apply (case_tac "x = xa")
-  apply auto[1]
-  apply (case_tac "xa \<in> fdom \<rho>'")
-  apply (auto)
+lemma fmap_add_mono:
+  assumes "x1 \<sqsubseteq> (x2 :: ('a::type, 'b::cpo) fmap)"
+  assumes "y1 \<sqsubseteq> y2"
+  shows "fmap_add x1 y1 \<sqsubseteq> fmap_add x2 y2"
+by (rule below_trans[OF cont2monofunE[OF fmap_add_cont1 assms(1)] cont2monofunE[OF fmap_add_cont2 assms(2)]])
+
+lemma fmap_upd_belowI:
+  assumes "fdom \<rho>' = insert x (fdom \<rho>)"
+  assumes "\<And> z . z \<in> fdom \<rho> \<Longrightarrow> z \<noteq> x \<Longrightarrow> the (lookup \<rho> z) \<sqsubseteq> the (lookup \<rho>' z)" 
+  assumes "y \<sqsubseteq> the (lookup \<rho>' x)"
+  shows  "\<rho>(x f\<mapsto> y) \<sqsubseteq> \<rho>'"
+  apply (rule fmap_belowI')
+  using assms apply simp
+  using assms
+  apply (case_tac "xa = x")
+  apply auto
   done
+
+lemma fmap_upd_belowI2:
+  assumes "fdom \<rho> = insert x (fdom \<rho>')"
+  assumes "\<And> z . z \<in> fdom \<rho> \<Longrightarrow> z \<noteq> x \<Longrightarrow> the (lookup \<rho> z) \<sqsubseteq> the (lookup \<rho>' z)" 
+  assumes "the (lookup \<rho> x) \<sqsubseteq> y"
+  shows  "\<rho> \<sqsubseteq> \<rho>'(x f\<mapsto> y)"
+  apply (rule fmap_belowI')
+  using assms apply simp
+  using assms
+  apply (case_tac "xa = x")
+  apply auto
+  done
+
 
 lemma fmap_restr_belowI:
   assumes  "\<And> x. x \<in> S \<Longrightarrow> the (lookup (fmap_restr S m1) x) \<sqsubseteq> the (lookup (fmap_restr S m2) x)"
@@ -866,6 +877,15 @@ next
   case False thus ?thesis by (transfer, auto)
 qed
 
+lemma fmap_upd_expand:
+  "finite S \<Longrightarrow>
+   x \<in> S \<Longrightarrow>
+   fmap_expand (\<rho>(x f\<mapsto> y)) S = (fmap_expand \<rho> (S - {x}))(x f\<mapsto> y)"
+   apply (rule fmap_eqI, auto)
+   apply (case_tac "xa \<in> fdom (\<rho>(x f\<mapsto> y))", auto)
+   apply (case_tac "xa = x", auto)
+   done
+
 
 
 lift_definition fmap_bottom :: "'a set  \<Rightarrow> ('a, 'b::pcpo) fmap"
@@ -918,8 +938,17 @@ lemma restr_extend_cut:
 (*
 definition fix_extend :: "('a, 'b::pcpo) fmap \<Rightarrow> 'a set \<Rightarrow> (('a, 'b) fmap \<Rightarrow> ('a, 'b) fmap) \<Rightarrow> ('a, 'b) fmap"
   where
-  "fix_extend h S nh = fmap_update h (fix1 (fmap_bottom S)  (\<Lambda> h'. (nh (fmap_update h h') )))"
+  "fix_extend h S nh = fmap_add h (fix1 (fmap_bottom S)  (\<Lambda> h'. (nh (fmap_add h h') )))"
 *)
+
+
+lemma fmap_bottom_insert:
+  "finite S \<Longrightarrow>
+  fmap_bottom (insert x S) = (fmap_bottom S)(x f\<mapsto> \<bottom>)"
+  apply (rule fmap_eqI)
+  apply auto[1]
+  apply (case_tac "xa = x", auto)
+  done
 
 instantiation fmap :: (type,pcpo) order
 begin
@@ -1044,6 +1073,14 @@ lemma fmap_bottom_less[simp]:
   apply simp
   by (rule rev_finite_subset)
 
+
+lemma adm_lookup: assumes "adm P" shows "adm (\<lambda> \<rho>. P (the (lookup \<rho> x)))"
+  apply (rule admI)
+  apply (subst lookup_cont)
+  apply assumption
+  apply (erule admD[OF assms lookup_chain])
+  apply metis
+  done
 
 instance fmap :: (type, Nonempty_Meet_cpo) Bounded_Nonempty_Meet_cpo
 apply default

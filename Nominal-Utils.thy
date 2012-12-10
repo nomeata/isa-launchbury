@@ -65,6 +65,12 @@ proof-
   thus ?thesis by simp
 qed
 
+lemma eqvt_fresh_star_cong3:
+  assumes eqvt: "(\<And>p x y z. p \<bullet> (f x y z) = f (p \<bullet> x) (p \<bullet> y) (p \<bullet> z))"
+  and fresh1: "a \<sharp>* x" and fresh2: "a \<sharp>* y" and fresh3: "a \<sharp>* z"
+  shows "a \<sharp>* f x y z"
+  by (metis fresh_star_def eqvt_fresh_cong3 assms)
+
 lemma funpow_eqvt[simp,eqvt]:
   "\<pi> \<bullet> ((f :: 'a \<Rightarrow> 'a::pt) ^^ n) = (\<pi> \<bullet> f) ^^ (\<pi> \<bullet> n)"
  apply (induct n)

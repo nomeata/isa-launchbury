@@ -135,6 +135,43 @@ lift_definition fmap_add :: "('a, 'b) fmap \<Rightarrow> ('a, 'b) fmap \<Rightar
 lemma fdom_fmap_add[simp]: "fdom (m1 f++ m2) = fdom m1 \<union> fdom m2"
   by (transfer, auto)
 
+lemma lookup_fmap_add1[simp]: "x \<in> fdom m2 \<Longrightarrow> lookup (fmap_add m1 m2) x = lookup m2 x"
+  by (transfer, auto)
+
+lemma lookup_fmap_add2[simp]:  "x \<notin> fdom m2 \<Longrightarrow> lookup (fmap_add m1 m2) x = lookup m1 x"
+  apply transfer
+  by (metis map_add_dom_app_simps(3))
+
+lemma [simp]: "fmap_add \<rho> fempty = \<rho>"
+  by (transfer, auto)
+
+lemma map_add_noop: "dom m1 \<subseteq> dom m2 \<Longrightarrow> m1 ++ m2 = m2"
+  apply rule
+  apply (case_tac "x \<in> dom m2")
+  apply (auto simp add: map_add_dom_app_simps(1))
+  done
+
+lemma fmap_add_overwrite: "fdom m1 \<subseteq> fdom m2 \<Longrightarrow> fmap_add m1 m2 = m2"
+  by (transfer, rule map_add_noop)
+
+lemma fmap_add_rho[simp]: "fmap_add \<rho> (fmap_add \<rho> x) = fmap_add \<rho> x"
+  apply (rule fmap_add_overwrite)
+  by (metis Un_upper1 fdom_fmap_add)
+
+lemma fmap_add_upd_swap: 
+  "x \<notin> fdom \<rho>' \<Longrightarrow> fmap_add (\<rho>(x f\<mapsto> z)) \<rho>' = (fmap_add \<rho> \<rho>')(x f\<mapsto> z)"
+  apply transfer
+  by (metis map_add_upd_left)
+
+lemma fmap_restr_join: "fmap_restr S (m1 f++ m2) = fmap_restr S m1 f++ fmap_restr S m2"
+  apply (cases "finite S")
+  apply (rule fmap_eqI)
+  apply auto[1]
+  apply (case_tac "x \<in> fdom m2")
+  apply auto
+  apply (simp add: fmap_restr_not_finite)
+  done
+
 lift_definition fmap_of :: "('a \<times> 'b) list \<Rightarrow> ('a, 'b) fmap"
   is map_of by (rule finite_dom_map_of)
 
@@ -169,4 +206,5 @@ lemma fmap_delete_fmap_of[simp]:
   "fmap_delete x (fmap_of m) = fmap_of (AList.delete x m)"
   by (transfer, metis delete_conv')
 
+  
 end

@@ -1085,16 +1085,18 @@ case (goal2 Y Z)
   show "(\<Squnion> i. Y i) (\<Squnion> j. Z j) \<sqsubseteq> (\<Squnion> j. (\<Squnion> i. Y i) (Z j))" by simp
 qed
 
-
-lemma fix_on_cont'':
+lemma fix_on_cont:
   fixes Y :: "nat => 'a"
   assumes "chain Y"
-  and pcpo: "subpcpo S"
-  and closed: "\<And> i. closed_on S (F (Y i))"
-  and cont_on: "\<And> i. cont_on S (F (Y i))"
+  and cond: "\<And> i. fix_on_cond S b (F (Y i))"
   and cont: "cont F"
-  shows  "fix_on S (F (\<Squnion> i. Y i)) \<sqsubseteq> (\<Squnion> i. fix_on S (F (Y i)))"
+  shows  "fix_on' b (F (\<Squnion> i. Y i)) \<sqsubseteq> (\<Squnion> i. fix_on' b (F (Y i)))"
 proof-
+  have pcpo: "subpcpo S" by (metis cond fix_on_cond.simps)
+  have closed: "\<And> i. closed_on S (F (Y i))" by (metis cond fix_on_cond.simps)
+  have cont_on: "\<And> i. cont_on S (F (Y i))"  by (metis cond fix_on_cond.simps)
+  have [simp]: "b = bottom_of S" by (metis cond fix_on_cond.simps)
+
   have closed_on_lub: "closed_on S (F (\<Squnion>i. Y i))"
    by (rule admD[OF adm_subst[OF cont adm_closed_on[OF pcpo]] `chain Y` closed])
   have cont_on_lub: "cont_on S (F (\<Squnion>i. Y i))"
@@ -1135,46 +1137,18 @@ proof-
     by simp
 qed
 
-(*
-lemma fix_on_cont':
+
+lemma fix_on_cont'':
   fixes Y :: "nat => 'a"
   assumes "chain Y"
-  and pcpo: "\<And> y. subpcpo (S y)"
-  and closed: "\<And> y. closed_on (S y) (F y)"
-  and cont_on: "\<And> y. cont_on (S y) (F y)"
+  and pcpo: "subpcpo S"
+  and closed: "\<And> i. closed_on S (F (Y i))"
+  and cont_on: "\<And> i. cont_on S (F (Y i))"
   and cont: "cont F"
-  and same_bottom: "\<And> i . bottom_of (S (Y i)) = bottom_of (S (\<Squnion> i. Y i))"
-  shows  "fix_on (S (\<Squnion> i. Y i)) (F (\<Squnion> i. Y i)) \<sqsubseteq> (\<Squnion> i. fix_on (S (Y i)) (F (Y i)))"
-proof-
-  note chain = subpcpo.closed_is_chain[OF pcpo closed cont_on2mono_on[OF cont_on]]
-
-  thm diag_lub
-  have "(\<Squnion> k. (F (\<Squnion> i. Y i) ^^ k) (bottom_of (S (\<Squnion> i. Y i)))) \<sqsubseteq>
-    (\<Squnion> i.  \<Squnion> k. (F (Y i) ^^ k) (bottom_of (S (Y i))))"
-    apply (subst cont2contlubE[OF cont `chain Y`])
-    apply (subst lub_compow)
-    apply (rule ch2ch_cont[OF `cont F` `chain Y`]) 
-    prefer 2
-    find_theorems lub compow
-    
-    thm  cont_on2contlubE[OF cont_on]
-    apply (subst same_bottom)
-    apply (subst diag_lub)
-    prefer 3
-    apply (subst lub_fun)
-    prefer 2
-    apply (subst diag_lub)
-    prefer 3
-    apply (rule below_refl)
-
-    
-    so rry
-  thus ?thesis
-    using chain  pcpo
-    unfolding fix_on'_def
-    by simp
-qed
-*)
+  shows  "fix_on S (F (\<Squnion> i. Y i)) \<sqsubseteq> (\<Squnion> i. fix_on S (F (Y i)))"
+  apply (rule fix_on_cont[OF `chain Y` _ `cont F`])
+  apply (rule fix_on_condI[OF pcpo refl closed cont_on])
+  done
 
 class subpcpo_partition =
   fixes to_bot :: "'a \<Rightarrow> 'a"

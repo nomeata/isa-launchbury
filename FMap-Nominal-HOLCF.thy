@@ -164,8 +164,8 @@ lemma fmap_bottom_eqvt:
   "finite S \<Longrightarrow> \<pi> \<bullet> (fmap_bottom S :: ('a::pt, 'b::{cont_pt,pcpo}) fmap) = fmap_bottom (\<pi> \<bullet> S)"
   by (transfer,perm_simp, rule refl)
 
-lemma fmap_update_eqvt[eqvt]:
-  "\<pi> \<bullet> fmap_update m1 (m2 :: ('a::{cont_pt,cpo}, 'b::{cont_pt,cpo}) fmap) = fmap_update (\<pi> \<bullet> m1) (\<pi> \<bullet> m2)"
+lemma fmap_add_eqvt[eqvt]:
+  "\<pi> \<bullet> fmap_add m1 (m2 :: ('a::{cont_pt,cpo}, 'b::{cont_pt,cpo}) fmap) = fmap_add (\<pi> \<bullet> m1) (\<pi> \<bullet> m2)"
   by (transfer, perm_simp, rule refl)
 
 lemma fmap_extend_eqvt[eqvt]:
