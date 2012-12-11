@@ -705,31 +705,6 @@ proof -
     by (simp add: fix_on_def)
 qed
 
-lemma parallel_fix_on_ind2:
-  assumes "fix_on_cond S1 b1 F"
-  assumes "fix_on_cond S2 b2 G"
-  assumes adm: "adm_on (S1 \<times> S2) (\<lambda>x. P (fst x) (snd x))"
-  assumes base: "P (F b1) (G b2)"
-  assumes step: "!!y z. \<lbrakk> y \<in> S1 ; z \<in> S2; P y z \<rbrakk> \<Longrightarrow> P (F y) (G z)"
-  shows "P (fix_on' b1 F) (fix_on' b2 G)"
-sorry
-
-
-(*
-lemma fix_on_larger_subpcpo:
-  assumes pcpo1: "subpcpo S1"
-  assumes pcpo2: "subpcpo S2"
-  assumes closedF: "closed_on S1 F"
-  assumes chainF: "cont_on S1 F"
-  assumes closedG: "closed_on S2 G"
-  assumes chainG: "cont_on S2 G"
-  assumes "S1 \<subseteq> S2"
-  assumes "bottom_of S1 = bottom_of S2"
-  shows "fix_on S1 F = fix_on S2 F"
-  unfolding fix_on'_def
-  using assms by auto
-*)
-
 lemma fix_on_mono2:
   assumes "fix_on_cond S1 b1 F"
   assumes "fix_on_cond S2 b2 G"

@@ -1073,6 +1073,14 @@ lemma fmap_bottom_less[simp]:
   apply simp
   by (rule rev_finite_subset)
 
+lemma fmap_upd_less[simp, intro]:
+  "\<rho>1 \<le> \<rho>2 \<Longrightarrow> v1 = v2 \<Longrightarrow> \<rho>1(x f\<mapsto> v1) \<le> \<rho>2(x f\<mapsto> v2)"
+  apply (rule fmap_less_eqI)
+  apply (auto dest: fmap_less_fdom)[1]
+  apply (case_tac "xa = x")
+  apply (auto dest: fmap_less_eqD)
+  done
+
 
 lemma adm_lookup: assumes "adm P" shows "adm (\<lambda> \<rho>. P (the (lookup \<rho> x)))"
   apply (rule admI)

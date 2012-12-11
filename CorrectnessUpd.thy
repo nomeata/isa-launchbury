@@ -60,6 +60,13 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
   hence [simp]:"x \<in> fst ` set \<Gamma>"
     by (metis heapVars_def heapVars_from_set)
 
+  have "x \<notin> fst ` set \<Delta>"
+    sorry
+
+  have subset: "heapVars (delete x \<Gamma>) \<subseteq> heapVars \<Delta>"
+    sorry
+
+
   case 2
   have "\<lbrace>\<Gamma>\<rbrace>\<rho> = \<lbrace>(x,e) # delete x \<Gamma>\<rbrace>\<rho>"
     apply (rule HSem_reorder)
@@ -75,10 +82,28 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
   also have "\<dots> = fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> fst ` set (delete x \<Gamma>))))
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set (delete x \<Gamma>)) (\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>'\<^esub>))"
     apply (rule fix_on_cong[OF _ arg_cong[OF  Variable.hyps(3)]])
-    sorry
+    apply (rule iterative_HSem'_cond)
+    using 2
+    apply (auto simp add: heapVars_def)
+    done
   also have "\<dots> \<le> fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> fst ` set \<Delta>)))
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set \<Delta>) (\<lbrace>\<Delta>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>'\<^esub>))"
-    thm Variable.hyps(4)
+    apply (rule parallel_fix_on_ind)
+    apply (rule fix_on_cond_cong[OF iterative_HSem'_cond])
+      apply simp
+      apply (rule arg_cong[OF Variable.hyps(3)])
+      using 2
+      apply (auto simp add: heapVars_def)[1]
+    apply (rule iterative_HSem'_cond[OF `x \<notin> fst \` set \<Delta>`])
+    apply (rule adm_is_adm_on)
+      apply simp
+    apply (rule fmap_bottom_less)
+      apply simp
+      apply simp
+      using subset
+      apply auto[1]
+      apply (metis diff_single_insert heapVars_def heapVars_from_set insert_iff set_mp)
+    apply (rule fmap_upd_less)
     sorry
   also have "\<dots> = fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> fst `set \<Delta>)))
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set \<Delta>) (\<lbrace>\<Delta>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<rho>'\<^esub>))"
