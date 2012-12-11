@@ -71,7 +71,7 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
     by (rule iterative_HSem, simp)
   also have "\<dots> = fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> fst ` set (delete x \<Gamma>))))
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set (delete x \<Gamma>)) (\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'\<^esub>))"
-    sorry
+    by (rule iterative_HSem', simp)
   also have "\<dots> = fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> fst ` set (delete x \<Gamma>))))
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set (delete x \<Gamma>)) (\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>'\<^esub>))"
     apply (rule fix_on_cong[OF _ arg_cong[OF  Variable.hyps(3)]])
@@ -82,7 +82,7 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
     sorry
   also have "\<dots> = fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> fst `set \<Delta>)))
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set \<Delta>) (\<lbrace>\<Delta>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<rho>'\<^esub>))"
-    sorry
+    by (rule iterative_HSem'[symmetric, OF reds_avoids_live[OF distinct_redsD1[OF Variable(2)], unfolded heapVars_def]], simp_all)
   also have "\<dots> = \<lbrace>(x,z) # \<Delta>\<rbrace>\<rho>"
     by (rule iterative_HSem[symmetric, OF reds_avoids_live[OF distinct_redsD1[OF Variable(2)], unfolded heapVars_def]], simp_all)
   finally

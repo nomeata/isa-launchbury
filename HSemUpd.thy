@@ -364,14 +364,9 @@ begin
       apply simp
       done
 
-    have "HSem ((x,e) # \<Gamma>) \<rho> =
-      fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> fst ` set \<Gamma>))) (\<lambda>\<rho>'. (\<rho> f++ heapToEnv \<Gamma> (\<lambda>e. ESem e \<rho>'))(x f\<mapsto> ESem e \<rho>'))"
+    have "HSem ((x,e) # \<Gamma>) \<rho> = fix_on' b L"
       by (simp add: HSem_def' fmap_add_upd)
-    also have "\<dots> = fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> fst ` set \<Gamma>)))
-         (\<lambda>\<rho>'. (\<rho> f++
-                fmap_restr (fst ` set \<Gamma>)
-                 (fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> fst ` set \<Gamma>)))
-                   (\<lambda>\<rho>''. \<rho>' f++ heapToEnv \<Gamma> (\<lambda>e. ESem e \<rho>''))))(x f\<mapsto> ESem e \<rho>'))"
+    also have "\<dots> = fix_on' b R"
       by (rule iterative_fmap_add)
     also have "\<dots> = fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> fst ` set \<Gamma>)))
             (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set \<Gamma>) (HSem \<Gamma> \<rho>'))( x f\<mapsto> ESem e \<rho>'))"
@@ -382,6 +377,48 @@ begin
       by (metis Un_commute Un_left_absorb)
     finally show ?thesis.
   qed
+
+  lemma iterative_HSem':
+    assumes "x \<notin> fst ` set \<Gamma>"
+    shows "fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> fst ` set \<Gamma>)))
+            (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set \<Gamma>) (HSem \<Gamma> \<rho>'))( x f\<mapsto> ESem e \<rho>')) 
+       = fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> fst ` set \<Gamma>)))
+            (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set \<Gamma>) (HSem \<Gamma> \<rho>'))( x f\<mapsto> ESem e (HSem \<Gamma> \<rho>')))"
+  proof-
+    interpret iterative
+      where e1 =  "\<lambda> \<rho>'. heapToEnv \<Gamma> (\<lambda> e. ESem e \<rho>')"
+      and e2 = "\<lambda> \<rho>'. ESem e \<rho>'"
+      and S = "fst ` set \<Gamma>"
+      and x = x
+      and D =  "insert x (fdom \<rho> \<union> fst ` set \<Gamma>) "
+      apply -
+      apply unfold_locales
+      apply (intro cont2cont ESem_cont)+
+      apply simp
+      using assms
+      apply simp
+      apply simp
+      done
+
+    have "fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> fst ` set \<Gamma>)))
+            (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set \<Gamma>) (HSem \<Gamma> \<rho>'))( x f\<mapsto> ESem e \<rho>')) =
+          fix_on' b R"
+      apply (rule fix_on_cong[symmetric, OF condR])
+      apply (simp add: HSem_def')
+      apply (drule sym)
+      apply simp
+      by (metis Un_commute Un_left_absorb)
+    also have "\<dots> = fix_on' b L"
+      by (rule iterative_fmap_add[symmetric])
+    also have "\<dots> = fix_on' b R'"
+      by (rule iterative_fmap_add')
+    also have "\<dots> = fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> fst ` set \<Gamma>)))
+            (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set \<Gamma>) (HSem \<Gamma> \<rho>'))( x f\<mapsto> ESem e (HSem \<Gamma> \<rho>')))"
+      sorry
+    finally
+    show ?thesis.
+  qed
+
 
   lemma HSem_subst_expr_below:
     assumes below: "ESem e1 (HSem ((x, e2) # \<Gamma>) \<rho>) \<sqsubseteq> ESem e2 (HSem ((x, e2) # \<Gamma>) \<rho>)"
