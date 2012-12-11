@@ -1085,13 +1085,32 @@ case (goal2 Y Z)
   show "(\<Squnion> i. Y i) (\<Squnion> j. Z j) \<sqsubseteq> (\<Squnion> j. (\<Squnion> i. Y i) (Z j))" by simp
 qed
 
+lemma fix_on_cond_adm:
+  "adm (fix_on_cond S b)"
+proof(rule admI)
+  fix Y
+  assume "chain Y" and "\<forall>i. fix_on_cond S b (Y i)"
+  hence cond: "\<And> i. fix_on_cond S b (Y i)" by simp
+  have "subpcpo S" 
+    by (metis cond fix_on_cond.simps)
+
+  show "fix_on_cond S b (\<Squnion> i. Y i)"
+    apply (rule fix_on_condI[OF `subpcpo S`])
+    apply (metis cond fix_on_cond.simps)
+    apply (rule admD[OF adm_closed_on[OF `subpcpo S`] `chain Y`])
+      apply (metis cond fix_on_cond.simps)
+    apply (rule admD[OF adm_cont_on[OF `subpcpo S`] `chain Y`])
+      apply (metis cond fix_on_cond.simps)
+  done
+qed
+
 lemma fix_on_cont:
   fixes Y :: "nat => 'a"
   assumes "chain Y"
   and cond: "\<And> i. fix_on_cond S b (F (Y i))"
   and cont: "cont F"
-  shows  "fix_on' b (F (\<Squnion> i. Y i)) \<sqsubseteq> (\<Squnion> i. fix_on' b (F (Y i)))"
-proof-
+  shows  "fix_on' b (F (\<Squnion> i. Y i)) = (\<Squnion> i. fix_on' b (F (Y i)))"
+proof(rule below_antisym)
   have pcpo: "subpcpo S" by (metis cond fix_on_cond.simps)
   have closed: "\<And> i. closed_on S (F (Y i))" by (metis cond fix_on_cond.simps)
   have cont_on: "\<And> i. cont_on S (F (Y i))"  by (metis cond fix_on_cond.simps)
@@ -1131,10 +1150,26 @@ proof-
     apply (rule below_refl)
     done
     
-  thus ?thesis
+  thus "fix_on' b (F (\<Squnion> i. Y i)) \<sqsubseteq> (\<Squnion> i. fix_on' b (F (Y i)))"
     using chain chain_lub pcpo
     unfolding fix_on'_def
     by simp
+
+  have "chain (\<lambda>i. fix_on' b (F (Y i)))"
+    apply (rule chainI)
+    apply (rule fix_on_mono[OF cond cond])
+    by (metis assms(1) cont cont2monofunE fun_belowD po_class.chainE)
+  moreover
+  { fix i
+    have "fix_on' b (F (Y i)) \<sqsubseteq> fix_on' b (F (\<Squnion> i. Y i))"
+      apply (rule fix_on_mono)
+      apply fact
+      apply (rule admD[OF adm_subst[OF `cont F` fix_on_cond_adm] `chain Y` cond])
+      by (metis assms(1) cont cont2monofunE fun_belowD is_ub_thelub)
+  }
+  ultimately
+  show "(\<Squnion> i. fix_on' b (F (Y i))) \<sqsubseteq> fix_on' b (F (\<Squnion> i. Y i))"
+    by (rule lub_below)
 qed
 
 
@@ -1145,7 +1180,7 @@ lemma fix_on_cont'':
   and closed: "\<And> i. closed_on S (F (Y i))"
   and cont_on: "\<And> i. cont_on S (F (Y i))"
   and cont: "cont F"
-  shows  "fix_on S (F (\<Squnion> i. Y i)) \<sqsubseteq> (\<Squnion> i. fix_on S (F (Y i)))"
+  shows  "fix_on S (F (\<Squnion> i. Y i)) = (\<Squnion> i. fix_on S (F (Y i)))"
   apply (rule fix_on_cont[OF `chain Y` _ `cont F`])
   apply (rule fix_on_condI[OF pcpo refl closed cont_on])
   done

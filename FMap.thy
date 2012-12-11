@@ -25,10 +25,10 @@ lift_definition
 lemma fmap_upd_fdom[simp]: "fdom (h ( x f\<mapsto> v)) = insert x (fdom h)"
   by (transfer, auto)
 
-lemma the_lookup_fmap_upd[simp]: "the (lookup (h (x f\<mapsto> v)) x) = v"
+lemma the_lookup_fmap_upd[simp]: "lookup (h (x f\<mapsto> v)) x = Some v"
   by (transfer, auto)
 
-lemma the_lookup_fmap_upd_other[simp]: "x' \<noteq> x \<Longrightarrow> the (lookup (h (x f\<mapsto> v)) x') = the (lookup h x')"
+lemma the_lookup_fmap_upd_other[simp]: "x' \<noteq> x \<Longrightarrow> lookup (h (x f\<mapsto> v)) x' = lookup h x'"
   by (transfer, auto)
 
 lemma fmap_upd_overwrite[simp]: "f (x f\<mapsto> y) (x f\<mapsto> z) = f (x f\<mapsto> z)"

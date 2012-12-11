@@ -2,18 +2,6 @@ theory HSemUpd
   imports "HeapToEnv" DistinctVars "HOLCF-Set" "HOLCF-Down-Closed"
 begin
 
-lemma fdom_fix_on:
-  assumes "fix_on_cond S b F"
-  shows  "fdom (fix_on' b F) = fdom b"
-proof-
-  have "fix_on' b F \<in> S"
-    by (rule fix_on_there[OF assms])
-  hence "b \<sqsubseteq> fix_on' b F"
-    by (metis assms bottom_of_subpcpo_bot_minimal fix_on_cond.simps subpcpo_is_subpcpo_bot)
-  thus ?thesis
-    by (metis fmap_below_dom)
-qed
-
 
 lemma sharp_star_Env': "atom ` fst ` set \<Gamma> \<sharp>* (\<rho> :: ('var::{cont_pt,at_base}, 'value::{pure_cpo,Nonempty_Meet_cpo,pcpo}) fmap) \<longleftrightarrow> fst ` set \<Gamma> \<inter> fdom \<rho> = {}"
   by(induct \<Gamma>, auto simp add: fresh_star_def sharp_Env)
@@ -81,6 +69,7 @@ proof-
 qed
 
 end
+
 
 locale has_cont_ESem = has_ESem +
   assumes ESem_cont: "\<And> e. cont (ESem e)"
@@ -353,15 +342,13 @@ begin
     shows "HSem \<Gamma> \<rho>1 \<sqsubseteq> HSem \<Gamma> \<rho>2"
     by(rule HSem_monofun''[OF ESem_cont assms])
 
-  (*
   lemma iterative_HSem:
-    assumes "HSem_cond' ((x, e) # \<Gamma>) \<rho>"
-    assumes "x \<notin> fst `set \<Gamma>"
+    assumes "x \<notin> fst ` set \<Gamma>"
     shows "HSem ((x,e) # \<Gamma>) \<rho> =
-        fix_on (fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>))) (\<lambda> \<rho>'.  fmap_expand (heapToEnv ((x, e) # \<Gamma>) (\<lambda>e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>))))
-                (\<lambda> \<rho>'. (HSem \<Gamma> \<rho>')
-                        \<squnion> (fmap_bottom (fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>))(x f\<mapsto> ESem e \<rho>') 
-                        \<squnion> (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>)))))" (is "_ = fix_on ?S ?R")
+         fix_on' (fmap_bottom (fdom \<rho> \<union> insert x (fst ` set \<Gamma>)))
+            (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set \<Gamma>) (HSem \<Gamma> \<rho>'))( x f\<mapsto> ESem e \<rho>'))"
+sorry
+(*
   apply (subst HSem_def'[OF assms(1)])
   proof(rule below_antisym)
     interpret subpcpo ?S by (rule subpcpo_jfc'')

@@ -57,37 +57,42 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' \<rho>)
     by (metis order_trans)
 next
 case (Variable x e \<Gamma> L \<Delta> z \<rho>)
+  hence [simp]:"x \<in> fst ` set \<Gamma>"
+    by (metis heapVars_def heapVars_from_set)
+
   case 2
   have "\<lbrace>\<Gamma>\<rbrace>\<rho> = \<lbrace>(x,e) # delete x \<Gamma>\<rbrace>\<rho>"
+    apply (rule HSem_reorder)
+    apply (simp_all add: Variable(5) distinctVars_Cons distinctVars_delete)[2]
+    apply (rule distinctVars_set_delete_insert[symmetric, OF Variable(5) Variable(1)])
+    done
+  also have "\<dots> = fix_on' (fmap_bottom (fdom \<rho> \<union> insert x (fst ` set (delete x \<Gamma>))))
+    (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set (delete x \<Gamma>)) (\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>))"
+    by (rule iterative_HSem, simp)
+  also have "\<dots> = fix_on' (fmap_bottom (fdom \<rho> \<union> insert x (fst ` set (delete x \<Gamma>))))
+    (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set (delete x \<Gamma>)) (\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'\<^esub>))"
     sorry
-  also have "\<dots> = fix_on' (fmap_bottom (fdom \<rho> \<union> insert x (fst `set \<Gamma>)))
-    (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set \<Gamma>) (\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>))"
-    sorry
-  also have "\<dots> = fix_on' (fmap_bottom (fdom \<rho> \<union> insert x (fst `set \<Gamma>)))
-    (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set \<Gamma>) (\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'\<^esub>))"
-    sorry
-  also have "\<dots> = fix_on' (fmap_bottom (fdom \<rho> \<union> insert x (fst `set \<Gamma>)))
-    (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set \<Gamma>) (\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>'\<^esub>))"
+  also have "\<dots> = fix_on' (fmap_bottom (fdom \<rho> \<union> insert x (fst ` set (delete x \<Gamma>))))
+    (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set (delete x \<Gamma>)) (\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>'\<^esub>))"
     apply (rule fix_on_cong[OF _ arg_cong[OF  Variable.hyps(3)]])
     sorry
-  also have "\<dots> \<le> fix_on' (fmap_bottom (fdom \<rho> \<union> insert x (fst `set \<Gamma>)))
-    (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set \<Gamma>) (\<lbrace>\<Delta>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>'\<^esub>))"
+  also have "\<dots> \<le> fix_on' (fmap_bottom (fdom \<rho> \<union> insert x (fst ` set \<Delta>)))
+    (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set \<Delta>) (\<lbrace>\<Delta>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>'\<^esub>))"
     thm Variable.hyps(4)
     sorry
-  also have "\<dots> = fix_on' (fmap_bottom (fdom \<rho> \<union> insert x (fst `set \<Gamma>)))
-    (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set \<Gamma>) (\<lbrace>\<Delta>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<rho>'\<^esub>))"
+  also have "\<dots> = fix_on' (fmap_bottom (fdom \<rho> \<union> insert x (fst `set \<Delta>)))
+    (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set \<Delta>) (\<lbrace>\<Delta>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<rho>'\<^esub>))"
     sorry
   also have "\<dots> = \<lbrace>(x,z) # \<Delta>\<rbrace>\<rho>"
-    sorry
+    by (rule iterative_HSem[symmetric, OF reds_avoids_live[OF distinct_redsD1[OF Variable(2)], unfolded heapVars_def]], simp_all)
   finally
   show le: ?case.
 
   case 1
   have "\<lbrakk> Var x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk> Var x \<rbrakk>\<^bsub>\<lbrace>(x, z) # \<Delta>\<rbrace>\<rho>\<^esub>"
-    using le
-    sorry
+    by (simp add: fmap_less_eqD[OF le])
   also have "\<dots> =  \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>(x, z) # \<Delta>\<rbrace>\<rho>\<^esub>"
-    sorry
+    by (simp add: the_lookup_HSem_heap)
   finally
   show ?case.
 next
