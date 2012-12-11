@@ -163,6 +163,11 @@ lemma fmap_add_upd_swap:
   apply transfer
   by (metis map_add_upd_left)
 
+lemma fmap_add_upd: 
+  "fmap_add \<rho> (\<rho>'(x f\<mapsto> z)) = (fmap_add \<rho> \<rho>')(x f\<mapsto> z)"
+  apply transfer
+  by (metis map_add_upd)
+
 lemma fmap_restr_join: "fmap_restr S (m1 f++ m2) = fmap_restr S m1 f++ fmap_restr S m2"
   apply (cases "finite S")
   apply (rule fmap_eqI)

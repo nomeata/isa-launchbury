@@ -66,21 +66,21 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
     apply (simp_all add: Variable(5) distinctVars_Cons distinctVars_delete)[2]
     apply (rule distinctVars_set_delete_insert[symmetric, OF Variable(5) Variable(1)])
     done
-  also have "\<dots> = fix_on' (fmap_bottom (fdom \<rho> \<union> insert x (fst ` set (delete x \<Gamma>))))
+  also have "\<dots> = fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> fst ` set (delete x \<Gamma>))))
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set (delete x \<Gamma>)) (\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>))"
     by (rule iterative_HSem, simp)
-  also have "\<dots> = fix_on' (fmap_bottom (fdom \<rho> \<union> insert x (fst ` set (delete x \<Gamma>))))
+  also have "\<dots> = fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> fst ` set (delete x \<Gamma>))))
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set (delete x \<Gamma>)) (\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'\<^esub>))"
     sorry
-  also have "\<dots> = fix_on' (fmap_bottom (fdom \<rho> \<union> insert x (fst ` set (delete x \<Gamma>))))
+  also have "\<dots> = fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> fst ` set (delete x \<Gamma>))))
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set (delete x \<Gamma>)) (\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>'\<^esub>))"
     apply (rule fix_on_cong[OF _ arg_cong[OF  Variable.hyps(3)]])
     sorry
-  also have "\<dots> \<le> fix_on' (fmap_bottom (fdom \<rho> \<union> insert x (fst ` set \<Delta>)))
+  also have "\<dots> \<le> fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> fst ` set \<Delta>)))
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set \<Delta>) (\<lbrace>\<Delta>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>'\<^esub>))"
     thm Variable.hyps(4)
     sorry
-  also have "\<dots> = fix_on' (fmap_bottom (fdom \<rho> \<union> insert x (fst `set \<Delta>)))
+  also have "\<dots> = fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> fst `set \<Delta>)))
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set \<Delta>) (\<lbrace>\<Delta>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<rho>'\<^esub>))"
     sorry
   also have "\<dots> = \<lbrace>(x,z) # \<Delta>\<rbrace>\<rho>"
