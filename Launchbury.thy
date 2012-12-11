@@ -81,8 +81,59 @@ case (Let as \<Gamma> body L \<Delta> z)
     by (rule Let.hyps(4)[OF `x \<in> set L`])
 qed
 
-lemma reds_pres_distinctVars:
-  "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> distinctVars \<Gamma> \<Longrightarrow> distinctVars \<Delta>"
+inductive distinct_reds :: "heap \<Rightarrow> exp \<Rightarrow> var list \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool" ("_ : _ \<Down>d\<^bsub>_\<^esub> _ : _" [50,50,50,50] 50)
+where
+  DLambda: "distinctVars \<Gamma> \<Longrightarrow> \<Gamma> : (Lam [x]. e) \<Down>d\<^bsub>L\<^esub> \<Gamma> : (Lam [x]. e)" 
+ | DApplication: "\<lbrakk>
+    atom y \<sharp> (\<Gamma>,e,x,L,\<Delta>,\<Theta>,z) ;
+    \<Gamma> : e \<Down>d\<^bsub>x#L\<^esub> \<Delta> : (Lam [y]. e');
+    \<Delta> : e'[y ::= x] \<Down>d\<^bsub>L\<^esub> \<Theta> : z;
+    distinctVars \<Gamma>;
+    distinctVars \<Theta>
+  \<rbrakk>  \<Longrightarrow>
+    \<Gamma> : App e x \<Down>d\<^bsub>L\<^esub> \<Theta> : z" 
+ | DVariable: "\<lbrakk>
+    (x,e) \<in> set \<Gamma>;
+    delete x \<Gamma> : e \<Down>d\<^bsub>x#L\<^esub> \<Delta> : z;
+    distinctVars \<Gamma>;
+    distinctVars ((x,z) # \<Delta>)
+  \<rbrakk> \<Longrightarrow> \<Gamma> : Var x \<Down>d\<^bsub>L\<^esub> (x, z) # \<Delta> : z"
+ | DLet: "\<lbrakk>
+    set (bn as) \<sharp>* (\<Gamma>, Let as body, L);
+    distinctVars (asToHeap as);
+    asToHeap as @ \<Gamma> : body \<Down>d\<^bsub>L\<^esub> \<Delta> : z;
+    distinctVars \<Gamma>;
+    distinctVars \<Delta>
+  \<rbrakk> \<Longrightarrow>  \<Gamma> : Let as body \<Down>d\<^bsub>L\<^esub> \<Delta> : z"
+
+equivariance distinct_reds
+
+nominal_inductive distinct_reds
+  avoids DApplication: "y"
+  apply (auto simp add: fresh_star_def fresh_Cons fresh_Pair exp_assn.fresh)
+  done
+
+lemma distinct_redsD1:
+  "\<Gamma> : e \<Down>d\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> \<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
+  apply (nominal_induct rule: distinct_reds.strong_induct)
+  apply (auto intro:reds.intros simp add: fresh_star_Pair fresh_Pair)
+  done
+
+lemma distinct_redsD2:
+  "\<Gamma> : e \<Down>d\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> distinctVars \<Gamma>"
+  apply (nominal_induct rule: distinct_reds.strong_induct)
+  apply (auto)
+  done
+
+lemma distinct_redsD3:
+  "\<Gamma> : e \<Down>d\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> distinctVars \<Delta>"
+  apply (nominal_induct rule: distinct_reds.strong_induct)
+  apply (auto)
+  done
+
+
+lemma distinct_redsI:
+  "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> distinctVars \<Gamma> \<Longrightarrow> \<Gamma> : e \<Down>d\<^bsub>L\<^esub> \<Delta> : z"
 proof (nominal_induct rule: reds.strong_induct)
   case (Variable x e \<Gamma> L \<Delta> z)
     have "x \<notin> heapVars \<Delta>"
@@ -92,12 +143,23 @@ proof (nominal_induct rule: reds.strong_induct)
     moreover
     have "distinctVars (delete x \<Gamma>)"
       by (rule distinctVars_delete[OF Variable(4)])
-    hence "distinctVars \<Delta>" by (rule Variable.hyps)
+    hence "delete x \<Gamma> : e \<Down>d\<^bsub>x # L\<^esub> \<Delta> : z" by (rule Variable.hyps)
+    moreover
+    hence "distinctVars \<Delta>" by (rule distinct_redsD3)
+    hence "distinctVars ((x, z) # \<Delta>)"
+      using `x \<notin> heapVars \<Delta>` by (simp add: distinctVars_Cons)
     ultimately
     show ?case
-      by (rule distinctVars.intros)
-qed (auto intro: distinctVars_append_asToHeap)
+      using Variable
+      by (metis distinct_reds.DVariable)
+qed (auto intro: distinctVars_append_asToHeap dest: distinct_redsD3 intro!: distinct_reds.intros simp add: fresh_star_Pair)
+lemma reds_pres_distinctVars:
 
+  "\<Gamma> : \<Gamma>' \<Down>\<^bsub>L\<^esub> \<Delta> : \<Delta>' \<Longrightarrow> distinctVars \<Gamma> \<Longrightarrow> distinctVars \<Delta>"
+by (metis distinct_redsD3 distinct_redsI)
+
+lemmas reds_distinct_ind = distinct_reds.induct[OF distinct_redsI, consumes 2, case_names Lambda Application Variable Let]
+lemmas reds_distinct_strong_ind = distinct_reds.strong_induct[OF distinct_redsI, consumes 2, case_names Lambda Application Variable Let]
 
 lemma reds_fresh:" \<lbrakk> \<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z;
    atom (x::var) \<sharp> (\<Gamma>, e)

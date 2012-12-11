@@ -109,5 +109,4 @@ lemmas HSem_fresh[simp] = eqvt_fresh_cong2[of HSem, OF HSem_eqvt']
  and   fresh_fmap_upd[simp] = eqvt_fresh_cong3[of fmap_upd, OF fmap_upd_eqvt]
  and   fresh_star_fmap_upd[simp] = eqvt_fresh_star_cong3[of fmap_upd, OF fmap_upd_eqvt]
 
-
 end

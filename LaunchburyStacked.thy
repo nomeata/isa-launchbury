@@ -95,11 +95,6 @@ where
 equivariance distinct_reds
 
 nominal_inductive distinct_reds
-(*
-  avoids LetACons: "v"
-apply (auto simp add: fresh_star_def fresh_Pair exp_assn.fresh exp_assn.bn_defs)
-done
-*)
   avoids DApplication: "n" and "z"
   apply (auto simp add: fresh_star_def fresh_Cons fresh_Pair exp_assn.fresh)
   done
