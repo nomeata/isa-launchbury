@@ -446,38 +446,6 @@ lemma True and set_vars_as_l [simp]: "set (vars_as_l as) = vars_as as"
 lemma finite_vars_as[simp]: "finite (vars_as as)"
   by (metis set_vars_as_l finite_set)
 
-nominal_primrec frees and frees_as
-where
-  "frees (Var x) = {x}"
- |"frees (App e x) = insert x (frees e)"
- |"frees (Lam [x]. e) = (frees e) - {x}"
- |"frees (Let as body) = (frees body \<union> frees_as as) - (vars_as as)"
- |"frees_as ANil = {}"
- |"frees_as (ACons v e as) = frees e \<union> frees_as as"
-apply(simp add: eqvt_def frees_frees_as_graph_def)
-apply(rule, perm_simp, rule)
-apply auto[1]
-
-apply(case_tac x)
-apply(case_tac a rule: exp_assn.exhaust(1))
-apply auto[4]
-apply(case_tac b rule: exp_assn.exhaust(2))
-apply auto[2]
-apply auto[1]
-apply auto[1]
-apply auto[1]
-apply auto[1]
-apply auto[1]
-apply auto[1]
-apply auto[1]
-apply auto[1]
-apply auto[1]
-apply auto[1]
-apply auto[1]
-
-sorry
-termination (eqvt) by lexicographic_order
-
 lemma shows
   True and bn_subst[simp]: "set (bn as) \<sharp>* (y, z) \<Longrightarrow> bn (subst_assn as y z) = bn as"
 by(induct rule:subst_subst_assn.induct)
