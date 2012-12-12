@@ -1025,6 +1025,10 @@ lemma fmap_less_restrict:
   apply (auto simp add:restrict_map_def split:option.split_asm)
   by (metis option.simps(3))
 
+lemma fmap_less_to_eq_restrict:
+  "\<rho>1 \<le> \<rho>2 \<Longrightarrow> S \<subseteq> fdom \<rho>1 \<Longrightarrow> fmap_restr S \<rho>1 = fmap_restr S \<rho>2"
+by (metis (full_types) finite_fdom fmap_expand_fdom fmap_less_restrict fmap_restr_fmap_expand2 subset_trans)
+  
 lemma fmap_restr_less:
   "fmap_restr S \<rho> \<le> \<rho>"
   unfolding less_eq_fmap_def
@@ -1080,6 +1084,15 @@ lemma fmap_upd_less[simp, intro]:
   apply (case_tac "xa = x")
   apply (auto dest: fmap_less_eqD)
   done
+
+lemma fmap_update_less[simp, intro]:
+  "\<rho>1 \<le> \<rho>1' \<Longrightarrow> \<rho>2 \<le> \<rho>2' \<Longrightarrow>  (fdom \<rho>2' - fdom \<rho>2) \<inter> fdom \<rho>1 = {} \<Longrightarrow> \<rho>1 f++ \<rho>2 \<le> \<rho>1' f++ \<rho>2'"
+  apply (rule fmap_less_eqI)
+  apply (auto dest: fmap_less_fdom)[1]
+  apply (case_tac "x \<in> fdom \<rho>2")
+  apply (auto dest: fmap_less_eqD fmap_less_fdom)
+  apply (metis fmap_less_eqD fmap_less_fdom lookup_fmap_add1 set_mp)
+  by (metis Diff_iff Diff_triv fmap_less_eqD lookup_fmap_add2)
 
 
 lemma adm_lookup: assumes "adm P" shows "adm (\<lambda> \<rho>. P (the (lookup \<rho> x)))"

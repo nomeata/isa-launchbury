@@ -137,6 +137,27 @@ begin
     "fdom (HSem h \<rho>) = fdom \<rho> \<union> fst ` set h"
     by (subst HSem_eq, simp)
 
+  lemma fmap_restr_fmap_add[simp]:"fmap_restr (fdom \<rho>1 - fdom \<rho>2) \<rho>1 f++ \<rho>2 = \<rho>1 f++ \<rho>2"
+    apply (rule fmap_eqI)
+    apply auto[1]
+    apply auto
+    done
+
+  lemma fmap_restr_fmap_addI:"S = fdom \<rho>1 - fdom \<rho>2 \<Longrightarrow> fmap_restr S \<rho>1 f++ \<rho>2 = \<rho>1 f++ \<rho>2"
+    apply (rule fmap_eqI)
+    apply auto[1]
+    apply auto
+    done
+
+  lemma HSem_restr:
+    "HSem h (fmap_restr (fdom \<rho> - fst ` set h) \<rho>) = HSem h \<rho>"
+    apply (rule parallel_HSem_ind)
+    apply simp
+    apply auto
+    apply (subst fmap_restr_fmap_addI)
+    apply simp_all
+    done
+
   (*
   lemma HSem_refines:
     assumes "HSem_cond' h \<rho>"

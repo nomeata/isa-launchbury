@@ -112,6 +112,10 @@ lemma fmap_restr_fmap_restr[simp]:
  "finite d1 \<Longrightarrow> finite d2 \<Longrightarrow> fmap_restr d1 (fmap_restr d2 x) = fmap_restr (d1 \<inter> d2) x"
  by (transfer, auto simp add: restrict_map_def)
 
+lemma fmap_restr_fmap_restr_subset:
+ "finite d2 \<Longrightarrow> d1 \<subseteq> d2 \<Longrightarrow> fmap_restr d1 (fmap_restr d2 x) = fmap_restr d1 x"
+ by (metis Int_absorb2 finite_subset fmap_restr_fmap_restr)
+
 lemma fmap_restr_useless: "finite S \<Longrightarrow> fdom m \<subseteq> S \<Longrightarrow> fmap_restr S m = m"
   by (rule fmap_eqI, auto)
 

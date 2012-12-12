@@ -60,14 +60,30 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
   hence [simp]:"x \<in> fst ` set \<Gamma>"
     by (metis heapVars_def heapVars_from_set)
 
+  case 2
+
   have "x \<notin> fst ` set \<Delta>"
-    sorry
+    by (rule reds_avoids_live[OF distinct_redsD1[OF Variable.hyps(2)], unfolded heapVars_def], simp_all)
 
   have subset: "heapVars (delete x \<Gamma>) \<subseteq> heapVars \<Delta>"
-    sorry
+    by (rule reds_doesnt_forget[OF distinct_redsD1[OF Variable.hyps(2)]])
 
+  have new_fresh[simp]: "(fst ` set \<Delta> - (fst ` set \<Gamma> - {x})) \<inter> fdom \<rho> = {}"
+    using reds_avoids_live[OF distinct_redsD1[OF Variable.hyps(2)], unfolded heapVars_def] 2
+    by (auto simp add: heapVars_def)
 
-  case 2
+  have [simp]: "insert x (fdom \<rho> \<union> (fst ` set \<Gamma> - {x})) - fst ` set \<Delta> = insert x (fdom \<rho> - fst ` set \<Gamma>)"
+    using new_fresh subset `x \<notin> _` by (auto simp add: heapVars_def simp del:new_fresh)
+
+  have [simp]: "insert x (fdom \<rho> \<union> fst ` set \<Delta>) - fst ` set \<Delta> = insert x (fdom \<rho> - fst ` set \<Gamma>)"
+    using new_fresh subset `x \<notin> _` by (auto simp add: heapVars_def simp del:new_fresh)
+
+  have [simp]: "\<And>s. (s \<union> (fst ` set \<Gamma> - {x})) \<inter> (fst ` set \<Gamma> - {x}) =  (fst ` set \<Gamma> - {x})"
+    by auto
+
+  have [simp]: "insert x (fdom \<rho> \<union> fst ` set \<Delta> \<union> fst ` set \<Delta>) \<inter> fst ` set \<Delta> = fst ` set \<Delta>"
+    by auto
+
   have "\<lbrace>\<Gamma>\<rbrace>\<rho> = \<lbrace>(x,e) # delete x \<Gamma>\<rbrace>\<rho>"
     apply (rule HSem_reorder)
     apply (simp_all add: Variable(5) distinctVars_Cons distinctVars_delete)[2]
@@ -104,7 +120,44 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
       apply auto[1]
       apply (metis diff_single_insert heapVars_def heapVars_from_set insert_iff set_mp)
     apply (rule fmap_upd_less)
-    sorry
+
+    apply (rule fmap_update_less[OF order_refl])
+    apply (subst fmap_less_restrict)
+    apply (rule conjI)
+    apply (simp, drule sym, drule sym, simp)
+      using subset apply (auto simp add: heapVars_def) [1]
+    apply (subst fmap_restr_fmap_restr_subset)
+      apply simp
+      using subset apply (auto simp add: heapVars_def) [1]
+    apply simp
+
+    apply (subst conjunct2[OF Variable.hyps(4)[unfolded fmap_less_restrict]])
+      apply (drule sym, drule sym)
+      using 2 apply (auto simp add: heapVars_def)[1]
+    apply (subst fmap_restr_fmap_restr_subset)
+      apply simp
+      apply simp
+    apply (subst (1 2) HSem_restr[symmetric])
+    apply (rule arg_cong) back back
+    apply (drule sym)
+    apply (drule sym)
+    apply simp
+    apply (erule fmap_less_to_eq_restrict)
+      apply simp
+      apply auto[1]
+    
+    apply (simp, drule sym, drule sym, simp)
+
+    apply (rule arg_cong) back
+    apply simp
+    apply (drule sym)
+    apply (drule sym)
+    apply (subst (1 2) HSem_restr[symmetric])
+    apply (rule arg_cong) back
+    apply simp
+    apply (erule fmap_less_to_eq_restrict)
+    apply auto[1]
+    done
   also have "\<dots> = fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> fst `set \<Delta>)))
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set \<Delta>) (\<lbrace>\<Delta>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<rho>'\<^esub>))"
     by (rule iterative_HSem'[symmetric, OF reds_avoids_live[OF distinct_redsD1[OF Variable(2)], unfolded heapVars_def]], simp_all)
