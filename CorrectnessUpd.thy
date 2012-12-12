@@ -78,23 +78,30 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
   have [simp]: "insert x (fdom \<rho> \<union> fst ` set \<Delta>) - fst ` set \<Delta> = insert x (fdom \<rho> - fst ` set \<Gamma>)"
     using new_fresh subset `x \<notin> _` by (auto simp add: heapVars_def simp del:new_fresh)
 
-  have [simp]: "\<And>s. (s \<union> (fst ` set \<Gamma> - {x})) \<inter> (fst ` set \<Gamma> - {x}) =  (fst ` set \<Gamma> - {x})"
-    by auto
-
-  have [simp]: "insert x (fdom \<rho> \<union> fst ` set \<Delta> \<union> fst ` set \<Delta>) \<inter> fst ` set \<Delta> = fst ` set \<Delta>"
-    by auto
-
   have [simp]: "(insert x (fdom \<rho> \<union> (fst ` set \<Gamma> - {x})) \<inter> fst ` set \<Delta>) = fst ` set \<Gamma> - {x}"
     using new_fresh subset `x \<notin> _` by (auto simp add: heapVars_def simp del:new_fresh)
+
+  have [simp]:"\<And> x y . x \<union> y \<union> y = x \<union> y" "\<And> x y. (x \<union> y) \<inter> y = y"
+    by auto
 
   have [simp]: "insert x (fdom \<rho> \<union> (fst ` set \<Gamma> - {x})) - (fst ` set  \<Gamma> - {x}) = insert x (fdom \<rho> - fst ` set \<Gamma>)"
     by auto
 
-  have [simp]: "(fst ` set \<Gamma> - {x}) \<inter> (fdom \<rho> \<union> (fst ` set \<Gamma> - {x}) \<union> (fst ` set \<Gamma> - {x})) = (fst ` set \<Gamma> - {x})"
+  have [simp]: "(fst ` set \<Gamma> - {x}) \<inter> (fdom \<rho> \<union> (fst ` set \<Gamma> - {x})) = (fst ` set \<Gamma> - {x})"
     by auto
 
   have [simp]: "(fdom \<rho> - fst ` set \<Gamma>) \<inter> (fdom \<rho> \<union> (fst ` set \<Gamma> - {x})) = (fdom \<rho> - fst ` set \<Gamma>)"
     by auto
+
+  have condGamma: "fix_on_cond {\<rho>' . fmap_bottom (insert x (fdom \<rho> \<union> fst ` set (delete x \<Gamma>))) \<sqsubseteq> \<rho>'}
+                               (fmap_bottom (insert x (fdom \<rho> \<union> fst ` set (delete x \<Gamma>))))
+                               (\<lambda>\<rho>'a. (\<rho> f++ fmap_restr (fst ` set (delete x \<Gamma>)) (\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'a))(x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>'a\<^esub>))"
+    apply (rule fix_on_cond_cong[OF iterative_HSem'_cond])
+      apply simp
+      apply (rule arg_cong[OF Variable.hyps(3)])
+      using 2
+      apply (auto simp add: heapVars_def)[1]
+    done
 
   have "\<lbrace>\<Gamma>\<rbrace>\<rho> = \<lbrace>(x,e) # delete x \<Gamma>\<rbrace>\<rho>"
     apply (rule HSem_reorder)
@@ -111,49 +118,32 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set (delete x \<Gamma>)) (\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>'\<^esub>))"
     apply (rule fix_on_cong[OF _ arg_cong[OF  Variable.hyps(3)]])
     apply (rule iterative_HSem'_cond)
-    using 2
-    apply (auto simp add: heapVars_def)
-    done
+    using 2 by (auto simp add: heapVars_def)
   also have "\<dots> \<le> fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> fst ` set \<Delta>)))
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set \<Delta>) (\<lbrace>\<Delta>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>'\<^esub>))"
     apply (subst fmap_less_restrict)
-   
-    apply (rule parallel_fix_on_ind)
-    apply (rule fix_on_cond_cong[OF iterative_HSem'_cond])
-      apply simp
-      apply (rule arg_cong[OF Variable.hyps(3)])
-      using 2
-      apply (auto simp add: heapVars_def)[1]
-    apply (rule iterative_HSem'_cond[OF `x \<notin> fst \` set \<Delta>`])
-    
-    apply (rule adm_is_adm_on)
-      apply (intro adm_lemmas cont2cont)
+    apply (rule parallel_fix_on_ind[OF condGamma iterative_HSem'_cond[OF `x \<notin> fst \` set \<Delta>`]])
+    apply (intro adm_is_adm_on adm_lemmas cont2cont)
+    (* bottom *)
     using subset apply (auto simp add: heapVars_def)[1]
+    (* step *)
     apply simp
       apply (drule sym)
       apply (drule sym)
-    apply simp
-    apply (subst fmap_restr_fmap_upd)
-      apply simp
-      apply simp
-    apply (rule arg_cong2[where f = "\<lambda> \<rho>. fmap_upd \<rho> x"])
-    apply (subst fmap_restr_add)
-    apply (rule arg_cong2[where f = "op f++"])
-    apply (rule fmap_restr_useless[symmetric])
-      apply simp
-      apply auto[1]
-    apply (subst fmap_restr_fmap_restr)
-      apply simp
-      apply simp
-    apply simp
+    apply (simp add: fmap_restr_fmap_upd fmap_restr_add)
+    apply (rule arg_cong2[where f = "\<lambda> \<rho>. fmap_upd \<rho> x", OF arg_cong2[where f = "op f++"]])
+
+    (* \<rho> *)
+    apply (subst fmap_restr_useless[symmetric], auto)[1]
+
+    (* \<Gamma> *)
     apply (subst Variable.hyps(4)[unfolded fmap_less_restrict])
       using 2 apply (auto simp add: heapVars_def)[1]
     apply simp
-    apply (rule arg_cong) back
     apply (subst (1 2) HSem_restr[symmetric])
     apply simp
     
-    apply (rule arg_cong) back
+    (* x *)
     apply (subst (1 2) HSem_restr[symmetric])
     apply simp
     done
