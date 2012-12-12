@@ -324,7 +324,7 @@ lemma HSem_unfold_let:
   assumes fresh: "set (bn as) \<sharp>* (x, Let as body, \<Gamma>, \<rho>)"
   assumes too_lazy_to_do_it_for_more_than_fempty: "\<rho> = fempty"
   shows "\<lbrace>(x, Let as body) # \<Gamma>\<rbrace>\<rho> \<le> \<lbrace>(x, body) # asToHeap as @ \<Gamma>\<rbrace>\<rho>"
-proof (rule iffD2[OF fmap_less_restrict], rule conjI)
+proof (rule iffD2[OF fmap_less_restrict])
   from fresh
   have fresh_Gamma: "atom ` fst ` set (asToHeap as) \<sharp>* \<Gamma>"
     by (metis fresh_star_Pair heapVars_def set_bn_to_atom_heapVars)
@@ -368,9 +368,7 @@ proof (rule iffD2[OF fmap_less_restrict], rule conjI)
       done
   } note Gamma_eq = this
 
-
-case goal1 show ?case by auto
-case goal2
+case goal1
   have "\<lbrace>(x, Let as body) # \<Gamma>\<rbrace>\<rho> = fmap_restr (insert x (fdom \<rho> \<union> fst`set \<Gamma>)) (\<lbrace>(x, body) # asToHeap as @ \<Gamma>\<rbrace>\<rho>)"
   proof(rule below_antisym)
     show below: "\<lbrace>(x, Let as body) # \<Gamma>\<rbrace>\<rho> \<sqsubseteq> fmap_restr (insert x (fdom \<rho> \<union> fst`set \<Gamma>)) (\<lbrace>(x, body) # asToHeap as @ \<Gamma>\<rbrace>\<rho>)"

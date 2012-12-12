@@ -117,15 +117,6 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
   also have "\<dots> \<le> fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> fst ` set \<Delta>)))
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set \<Delta>) (\<lbrace>\<Delta>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>'\<^esub>))"
     apply (subst fmap_less_restrict)
-    apply (rule conjI)
-    apply (subst fdom_fix_on[OF iterative_HSem'_cond[OF `x \<notin> fst \` set \<Delta>`]])
-    apply (subst fdom_fix_on)
-      apply (rule fix_on_cond_cong[OF iterative_HSem'_cond])
-        apply simp
-        apply (rule arg_cong[OF Variable.hyps(3)])
-        using 2
-        apply (auto simp add: heapVars_def)[1]
-    using subset apply (auto simp add: heapVars_def)[1]
    
     apply (rule parallel_fix_on_ind)
     apply (rule fix_on_cond_cong[OF iterative_HSem'_cond])
@@ -155,7 +146,7 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
       apply simp
       apply simp
     apply simp
-    apply (subst conjunct2[OF Variable.hyps(4)[unfolded fmap_less_restrict]])
+    apply (subst Variable.hyps(4)[unfolded fmap_less_restrict])
       using 2 apply (auto simp add: heapVars_def)[1]
     apply simp
     apply (rule arg_cong) back

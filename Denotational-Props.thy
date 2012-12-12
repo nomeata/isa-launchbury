@@ -588,7 +588,7 @@ case (Let as e \<rho>1 \<rho>2)
     using Let(2)
     by (auto simp add: sharp_star_Env)
 
-  have "fdom \<rho>1 \<subseteq> fdom \<rho>2" by (metis Let(5) fmap_less_restrict)
+  have "fdom \<rho>1 \<subseteq> fdom \<rho>2" by (metis Let(5) fmap_less_fdom)
 
   have "\<lbrace>asToHeap as\<rbrace>\<rho>1 \<le> \<lbrace>asToHeap as\<rbrace>\<rho>2"
   proof (rule parallel_HSem_ind[OF cond1 cond2])

@@ -1035,15 +1035,15 @@ lemma fmap_less_fdom:
   by (metis less_eq_fmap_def)
 
 lemma fmap_less_restrict:
-  "\<rho>1 \<le> \<rho>2 \<longleftrightarrow> (fdom \<rho>1 \<subseteq> fdom \<rho>2 \<and> \<rho>1 = fmap_restr (fdom \<rho>1) \<rho>2)"
+  "\<rho>1 \<le> \<rho>2 \<longleftrightarrow> \<rho>1 = fmap_restr (fdom \<rho>1) \<rho>2"
   unfolding less_eq_fmap_def
   apply transfer
   apply (auto simp add:restrict_map_def split:option.split_asm)
-  by (metis option.simps(3))
+  by (metis option.simps(3))+
 
 lemma fmap_less_to_eq_restrict:
   "\<rho>1 \<le> \<rho>2 \<Longrightarrow> S \<subseteq> fdom \<rho>1 \<Longrightarrow> fmap_restr S \<rho>1 = fmap_restr S \<rho>2"
-by (metis (full_types) finite_fdom fmap_expand_fdom fmap_less_restrict fmap_restr_fmap_expand2 subset_trans)
+  by (metis finite_fdom fmap_less_restrict fmap_restr_fmap_restr_subset)
   
 lemma fmap_restr_less:
   "fmap_restr S \<rho> \<le> \<rho>"
