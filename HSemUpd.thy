@@ -200,7 +200,7 @@ begin
       done
     ultimately
     show ?case
-      by (simp add: fmap_restr_join)
+      by (simp add: fmap_restr_add)
   qed
   
   lemma HSem_reorder:

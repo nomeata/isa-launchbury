@@ -523,6 +523,22 @@ next
 case False thus ?thesis by -(rule contI2[OF fmap_restr_monofun], simp add: fmap_restr_def)
 qed
 
+lemma fmap_restr_fdom_cont'[simp, cont2cont]:
+  assumes "cont f"
+  assumes "cont g"
+  shows "cont (\<lambda> x. fmap_restr (S (fdom (f x))) (g x))"
+proof (rule contI)
+  case (goal1 Y)
+  have [simp]:"\<And> i. fdom (f (Y i)) = fdom (f (\<Squnion>i. Y i))"
+    apply (subst cont2contlubE[OF `cont f` `chain Y`])
+    using ch2ch_cont[OF `cont f` `chain Y`]
+    by (metis chain_fdom)
+  show "?case"
+    apply simp
+    apply (subst cont2contlubE[OF cont_compose[OF fmap_restr_cont `cont g`] `chain Y`])
+    by (metis assms(2) ch2ch_cont cpo_lubI fmap_restr_cont goal1)
+qed    
+
 lemmas fmap_restr_cont2cont[simp,cont2cont] = cont_compose[OF fmap_restr_cont]
 
 lemma fmap_restr_l_cont:

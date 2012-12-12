@@ -172,7 +172,7 @@ lemma fmap_add_upd:
   apply transfer
   by (metis map_add_upd)
 
-lemma fmap_restr_join: "fmap_restr S (m1 f++ m2) = fmap_restr S m1 f++ fmap_restr S m2"
+lemma fmap_restr_add: "fmap_restr S (m1 f++ m2) = fmap_restr S m1 f++ fmap_restr S m2"
   apply (cases "finite S")
   apply (rule fmap_eqI)
   apply auto[1]
@@ -180,6 +180,14 @@ lemma fmap_restr_join: "fmap_restr S (m1 f++ m2) = fmap_restr S m1 f++ fmap_rest
   apply auto
   apply (simp add: fmap_restr_not_finite)
   done
+
+lemma fmap_restr_fmap_upd: "x \<in> S \<Longrightarrow> finite S \<Longrightarrow> fmap_restr S (m1(x f\<mapsto> v)) = (fmap_restr S m1)(x f\<mapsto> v)"
+  apply (rule fmap_eqI)
+  apply auto[1]
+  apply (case_tac "xa = x")
+  apply auto
+  done
+
 
 lift_definition fmap_of :: "('a \<times> 'b) list \<Rightarrow> ('a, 'b) fmap"
   is map_of by (rule finite_dom_map_of)
