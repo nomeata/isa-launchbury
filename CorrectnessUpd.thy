@@ -180,19 +180,30 @@ case (Let as \<Gamma> body L \<Delta> z \<rho>)
     have "a \<notin> fdom \<rho>" and "a \<notin> heapVars \<Gamma>"
       using 1 by auto
   }
-  hence  [simp]: "set (bn as) \<sharp>* (\<lbrace>\<Gamma>\<rbrace>\<rho>)"
+  hence "set (bn as) \<sharp>* \<rho>"
     apply (subst fresh_star_def)
     apply (subst  set_bn_to_atom_heapVars)
     apply (auto simp add: sharp_Env heapVars_def)
     done
+  hence  [simp]: "set (bn as) \<sharp>* (\<lbrace>\<Gamma>\<rbrace>\<rho>)"
+    using Let(1) by simp
   
   have hyp: "fdom \<rho> - heapVars (asToHeap as @ \<Gamma>) \<subseteq> set L"
     using 1 by auto
 
+  have d1: "distinctVars (\<Gamma> @ asToHeap as)"
+    using Let(1) Let(4) Let(8)
+    apply (simp add: distinctVars_append )
+    by (metis Int_commute fresh_assn_distinct)
+  
+  have f1: "atom ` fst ` set (asToHeap as) \<sharp>* (\<Gamma>, \<rho>)"
+    using Let(1) `_ \<sharp>* \<rho>`
+    by (simp add: set_bn_to_atom_heapVars heapVars_def fresh_star_Pair)
+
   have "\<lbrakk> Terms.Let as body \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk> body \<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
     by simp
   also have "\<dots> =  \<lbrakk> body \<rbrakk>\<^bsub>\<lbrace>asToHeap as @ \<Gamma>\<rbrace>\<rho>\<^esub>"
-    sorry
+    by (rule arg_cong[OF HSem_merge[OF d1 f1]])
   also have "\<dots> =  \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>"
     by (rule Let.hyps(6)[OF hyp])
   finally
@@ -200,9 +211,11 @@ case (Let as \<Gamma> body L \<Delta> z \<rho>)
 
   case 2
   have "\<lbrace>\<Gamma>\<rbrace>\<rho> \<le> \<lbrace>asToHeap as @ \<Gamma>\<rbrace>\<rho>"
-    sorry
+    by (rule HSem_less[OF d1 f1])
   also have "\<dots> \<le> \<lbrace>\<Delta>\<rbrace>\<rho>"
     by (rule Let.hyps(7)[OF hyp])
   finally
   show ?case.
 qed
+
+end
