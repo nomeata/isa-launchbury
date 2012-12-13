@@ -494,6 +494,8 @@ lemma HSem_cong[fundef_cong]:
   unfolding has_ESem.HSem_def
   by (auto cong:heapToEnv_cong)
 
+subsection {* Equivariance *}
+
 lemma subcpo_eqvt[eqvt]:
   fixes S :: "('a::cont_pt) set"
   assumes "subcpo S"
@@ -536,29 +538,6 @@ lemma bottom_of_eqvt:
   assumes "subpcpo S"
   shows "\<pi> \<bullet> (bottom_of (S ::('a::cont_pt) set)) = bottom_of (\<pi> \<bullet> S)"
   by (rule bottom_of_subpcpo_bot[symmetric, OF subpcpo_bot_eqvt[OF  subpcpo_is_subpcpo_bot[OF assms]]])
-
-(*
-lemma fix_on_jfc'_eqvt:
-  fixes \<rho> :: "'a::{Bounded_Nonempty_Meet_cpo,subpcpo_partition,cont_pt}"
-  assumes "cont F"
-  assumes F_pres_compat:"\<And> x. compatible \<rho> x \<Longrightarrow> compatible \<rho> (F x)"
-  shows "\<pi> \<bullet> fix_on (fix_join_compat' \<rho>) (\<lambda> \<rho>'. \<rho> \<squnion> F \<rho>') = fix_on (fix_join_compat' (\<pi> \<bullet> \<rho>))  (\<lambda> \<rho>'. (\<pi> \<bullet> \<rho>) \<squnion> (\<pi> \<bullet> F) \<rho>')"
-proof-
-  have cont_permuted: "cont (\<pi> \<bullet> F)" 
-    by (metis assms(1) perm_still_cont)
-  have F_pres_compat_permuted: "(\<And> x. compatible (\<pi> \<bullet> \<rho>) x \<Longrightarrow> compatible (\<pi> \<bullet> \<rho>) ((\<pi> \<bullet> F) x))"
-    by (metis assms(2) compatible_eqvt eqvt_bound eqvt_lambda unpermute_def)
-  show ?thesis
-    apply (rule parallel_fix_on_ind[OF subpcpo_jfc' subpcpo_jfc' _ closed_on_jfc'[OF assms] cont_on_jfc'[OF assms] closed_on_jfc'[OF cont_permuted F_pres_compat_permuted] cont_on_jfc'[OF cont_permuted F_pres_compat_permuted] ])
-    apply (rule adm_is_adm_on)
-    apply auto
-    apply (subst bottom_of_eqvt[OF subpcpo_jfc'])
-    apply (subst fix_join_compat'_eqvt, rule)
-    apply perm_simp
-    apply rule
-    done
-qed
-*)
 
 lemma closed_on_eqvt:
   "closed_on S F \<Longrightarrow> closed_on (\<pi> \<bullet> S) (\<pi> \<bullet> F)"
