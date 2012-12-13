@@ -2,7 +2,6 @@ theory "Denotational-PropsUpd"
   imports "DenotationalUpd"  "HOLCF-Utils"
 begin
 
-
 lemma ESem_cont':"Y0 = Y 0 \<Longrightarrow> chain Y \<Longrightarrow> range (\<lambda>i. \<lbrakk> e \<rbrakk>\<^bsub>Y i\<^esub>) <<| \<lbrakk> e \<rbrakk>\<^bsub>(\<Squnion> i. Y i)\<^esub> " and
   "\<And>e. e \<in> snd ` set (asToHeap as) \<Longrightarrow> cont (ESem e)"
 proof(nominal_induct e and as avoiding: Y0  arbitrary: Y rule:exp_assn.strong_induct)
@@ -80,71 +79,6 @@ lemmas ESem_cont2cont[simp,cont2cont] = cont_compose[OF ESem_cont]
 abbreviation HSem_syn ("\<lbrace>_\<rbrace>_"  [60,60] 60) where "\<lbrace>\<Gamma>\<rbrace>\<rho> \<equiv> HSem \<Gamma> \<rho>"
 
 abbreviation HSem_fempty  ("\<lbrace>_\<rbrace>"  [60] 60) where "\<lbrace>\<Gamma>\<rbrace> \<equiv> \<lbrace>\<Gamma>\<rbrace>fempty"
-
-(*
-
-lemma fresh_fmap_upd'[simp]: "\<lbrakk> atom a \<sharp> \<rho>; atom x \<sharp> a ; atom a \<sharp> v \<rbrakk> \<Longrightarrow> atom a \<sharp> \<rho>(x f\<mapsto> v)"
-  by (metis fresh_at_base(2) fresh_fmap_upd)
-  
-lemma fresh_fmap_upd_lookup[simp]: "S \<sharp>* (\<rho>::Env) \<Longrightarrow> S \<sharp>* x \<Longrightarrow> S \<sharp>* \<rho>(x f\<mapsto> the (lookup \<rho> y))"
-  by (auto simp add: fresh_append fresh_star_fmap_upd_eq intro: eqvt_fresh_star_cong2[where f = fmap_delete, OF fmap_delete_eqvt])
-
-
-lemma fmap_upd_join:
-  assumes "S = insert x (fdom \<rho>1)"
-  and "x \<notin> fdom \<rho>1"
-  and "x \<notin> fdom \<rho>2"
-  and compat1: "compatible (\<rho>1(x f\<mapsto> y)) (fmap_expand \<rho>2 S)"
-  shows "(\<rho>1(x f\<mapsto> y)) \<squnion> (fmap_expand \<rho>2 S) = (\<rho>1 \<squnion> (fmap_expand \<rho>2 (S - {x})))(x f\<mapsto> y)" (is "?L = ?R")
-proof(rule fmap_eqI)
-  have "finite S" using assms(1) by auto
-
-  have *: "\<And> xa . xa \<in> S \<Longrightarrow> xa \<noteq> x \<Longrightarrow> the (lookup (fmap_expand \<rho>2 (S - {x})) xa) = the (lookup (fmap_expand \<rho>2 S) xa)"
-    using `finite S` by (case_tac "xa \<in> fdom \<rho>2", auto)
-
-  have compat2: "compatible \<rho>1 (fmap_expand \<rho>2 (S - {x}))"
-    apply (rule compatible_fmap_is_compatible)
-    apply (rule compatible_fmapI)
-    using compat1
-    apply -
-    apply (drule_tac x = xa in compatible_fmapE[OF compatible_is_compatible_fmap])
-    apply auto[1]
-    using assms(1) apply auto[1]
-    apply (subst * )
-    using assms(1) apply simp
-    apply (metis assms(2))
-
-    apply (subst (asm) the_lookup_fmap_upd_other)
-    apply (metis `x \<notin> fdom \<rho>1`)
-    apply assumption
-    using assms(2) assms(1)
-    by auto
-
-  show "fdom ?L = fdom ?R"
-    using compat1 compat2 by auto
-  fix xa
-  assume "xa \<in> fdom ?L"
-  hence "xa \<in> S" by (metis assms(1) compat1 fdom_join fmap_upd_fdom)
-  show "the (lookup ?L xa) = the (lookup ?R xa)"
-  proof(cases "xa = x")
-    case True
-    thus ?thesis
-      apply (subst the_lookup_join[OF compat1])
-      apply (subst lookup_fmap_expand2[OF `finite S` `xa \<in> S`])
-      using `x \<notin> fdom \<rho>2` compat2  `xa \<in> S`
-      by auto
-  next
-    case False
-    thus ?thesis
-      apply simp
-      apply (subst the_lookup_join[OF compat1], auto)
-      apply (subst the_lookup_join[OF compat2])
-      apply (case_tac "xa \<in> fdom \<rho>2")
-      using `finite S`  `xa \<in> S`
-      by auto
-  qed
-qed
-*)
 
 lemma ESem_subst: "x \<noteq> y \<Longrightarrow> atom x \<sharp> \<rho> \<Longrightarrow>  \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> \<lbrakk>Var y\<rbrakk>\<^bsub>\<rho>\<^esub>)\<^esub> = \<lbrakk> e[x::= y] \<rbrakk>\<^bsub>\<rho>\<^esub>"
   and 

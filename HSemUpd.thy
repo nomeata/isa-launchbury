@@ -137,17 +137,11 @@ begin
     "fdom (HSem h \<rho>) = fdom \<rho> \<union> fst ` set h"
     by (subst HSem_eq, simp)
 
-  lemma fmap_restr_fmap_add[simp]:"fmap_restr (fdom \<rho>1 - fdom \<rho>2) \<rho>1 f++ \<rho>2 = \<rho>1 f++ \<rho>2"
+  lemma fmap_restr_fmap_addI:"finite S \<Longrightarrow> fdom \<rho>1 - fdom \<rho>2 \<subseteq> S \<Longrightarrow> fmap_restr S \<rho>1 f++ \<rho>2 = \<rho>1 f++ \<rho>2"
     apply (rule fmap_eqI)
     apply auto[1]
     apply auto
-    done
-
-  lemma fmap_restr_fmap_addI:"S = fdom \<rho>1 - fdom \<rho>2 \<Longrightarrow> fmap_restr S \<rho>1 f++ \<rho>2 = \<rho>1 f++ \<rho>2"
-    apply (rule fmap_eqI)
-    apply auto[1]
-    apply auto
-    done
+    by (metis lookup_fmap_add1 lookup_fmap_add2 lookup_fmap_restr)
 
   lemma HSem_restr:
     "HSem h (fmap_restr (fdom \<rho> - fst ` set h) \<rho>) = HSem h \<rho>"
@@ -157,51 +151,6 @@ begin
     apply (subst fmap_restr_fmap_addI)
     apply simp_all
     done
-
-  (*
-  lemma HSem_refines:
-    assumes "HSem_cond' h \<rho>"
-    shows "fmap_expand \<rho> (fdom \<rho> \<union> fst `set h) \<sqsubseteq> HSem h \<rho>"
-    apply (subst HSem_eq[OF assms(1)])
-    apply (rule join_above1[OF rho_F_compat_jfc''[OF assms HSem_there[OF assms]]])
-  done
-  *)
-  
-  lemma HSem_add_fresh:
-    assumes fresh: "atom x \<sharp> (\<rho>,\<Gamma>)"
-    assumes step: "\<And>e \<rho>'. fdom \<rho>' = fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>) \<Longrightarrow> e \<in> snd ` set \<Gamma> \<Longrightarrow> ESem e \<rho>' = ESem e (fmap_restr (fdom \<rho>' - {x}) \<rho>')"
-    shows  "fmap_restr (fdom \<rho> \<union> fst ` set \<Gamma>) (HSem ((x, e) # \<Gamma>) \<rho>) = HSem \<Gamma> \<rho>"
-  proof (rule parallel_HSem_ind)
-  case goal1 show ?case by auto
-  case goal2 show ?case by auto
-  case (goal3 y z)
-    have "fmap_restr (fdom \<rho> \<union> fst ` set \<Gamma>) \<rho> = \<rho>"
-      apply (rule fmap_restr_useless)
-      by auto
-    moreover
-  
-    have "x \<notin> fdom \<rho> \<union> fst ` set \<Gamma>"
-      using fresh
-      apply (auto simp add: sharp_Env fresh_Pair)
-      by (metis fresh_PairD(1) fresh_list_elem not_self_fresh)
-    hence [simp]:"fdom y - {x} = fdom \<rho> \<union> fst ` set \<Gamma>"
-      by (metis Diff_insert_absorb List.set.simps(2) Un_insert_right fst_conv goal3(1) goal3(2) image_insert)
-  
-    have "fmap_restr (fdom \<rho> \<union> fst`set \<Gamma>) (heapToEnv ((x, e) # \<Gamma>) (\<lambda>e. ESem e y)) = heapToEnv \<Gamma> (\<lambda>e. ESem e z)"
-      apply (subst heapToEnv_remove_Cons_fmap_restr[OF _ `x \<notin> fdom \<rho> \<union> fst \` set \<Gamma>`])
-        apply simp
-        apply simp
-      apply (rule heapToEnv_cong[OF refl])
-      apply (subst step)
-      using goal3(1) apply simp      
-      apply assumption
-      using `_ = z`[symmetric]
-      apply simp
-      done
-    ultimately
-    show ?case
-      by (simp add: fmap_restr_add)
-  qed
   
   lemma HSem_reorder:
     assumes "distinctVars \<Gamma>"
@@ -230,32 +179,7 @@ begin
       unfolding HSem_def  heapToEnv_reorder_head_append[OF assms]
       by simp
   qed  
-  
-  
-  lemma HSem_subst_exp:
-    assumes "\<And>\<rho>'. fdom \<rho>' = fdom \<rho> \<union> (fst`set ((x,e)#\<Gamma>)) \<Longrightarrow> ESem e \<rho>' = ESem e' \<rho>'"
-    shows "HSem ((x,e)#\<Gamma>) \<rho> = HSem ((x,e')#\<Gamma>) \<rho>"
-    apply (rule parallel_HSem_ind)
-    apply (auto)[1]
-    apply simp
-    apply (subst heapToEnv_subst_exp)
-    apply (rule assms)
-    apply simp+
-    done
-  
-  (*
-  lemma HSem_refines_lookup: "HSem_cond' \<Gamma> \<rho> \<Longrightarrow> x \<in> fdom \<rho> \<Longrightarrow> the (lookup \<rho> x) \<sqsubseteq> the (lookup (HSem \<Gamma> \<rho>) x)"
-    apply (drule HSem_refines)
-    apply (drule fmap_belowE[of _ _ x])
-    apply simp
-    done
-  *)
-
-  lemma HSem_heap_below: "x \<in> fst ` set \<Gamma> \<Longrightarrow> ESem (the (map_of \<Gamma> x)) (HSem \<Gamma> \<rho>) \<sqsubseteq> the (lookup (HSem \<Gamma> \<rho>) x)"
-    apply (simp add: the_lookup_HSem_heap)
-    done
-  
-  
+    
   lemma fmap_restr_HSem_noop:
     assumes "fst`set \<Gamma> \<inter> fdom \<rho> = {}"
     shows "fmap_restr (fdom \<rho>) (HSem \<Gamma> \<rho>) = \<rho>"
@@ -270,99 +194,10 @@ begin
     assumes "fst`set \<Gamma> \<inter> fdom \<rho> = {}"
     shows "\<rho> \<le> HSem \<Gamma> \<rho>"
     using assms
-  by (metis fdom_HSem fmap_less_restrict fmap_restr_HSem_noop sup_ge1)
-  
-  
-
-  lemma HSem_below:
-    assumes "fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h) \<sqsubseteq> r"
-    assumes "\<And>x. x \<in> fst ` set h \<Longrightarrow> ESem (the (map_of h x)) r \<sqsubseteq> the (lookup r x)"
-    shows "HSem h \<rho> \<sqsubseteq> r"
-  proof (rule HSem_ind)
-    from fmap_below_dom[OF assms(1)]
-    have [simp]:"fdom r = fdom \<rho> \<union> fst ` set h" by simp
-    {
-    case goal1 show ?case by (auto intro: adm_is_adm_on)
-    case goal2 show ?case by (simp add: to_bot_fmap_def)
-    case (goal3 \<rho>')
-      show ?case
-      apply (rule fmap_add_belowI)
-      apply (metis `fdom r = fdom \<rho> \<union> fst \` set h` heapToEnv_fdom)
-
-      apply simp
-      apply (subst lookupHeapToEnv, assumption)
-      apply (erule below_trans[OF cont2monofunE[OF ESem_cont goal3(2)] assms(2)])
-      
-      apply (rule below_trans[OF eq_imp_below fmap_belowE[OF assms(1)]])
-      apply simp
-      done
-    next
-    }
-  qed  
+  by (metis fmap_less_restrict fmap_restr_HSem_noop)
 
   lemma HSem_Nil[simp]: "HSem [] \<rho> = \<rho>"
     by (subst HSem_eq, simp)
-
-  (*
-  lemma HSem_redo:
-    shows "HSem \<Gamma> (fmap_restr (fdom \<rho> \<union> fst ` set \<Delta>) (HSem (\<Gamma>@\<Delta>) \<rho>)) = HSem (\<Gamma> @ \<Delta>) \<rho>" (is "?LHS = ?RHS")
-  proof (rule below_antisym)
-    show "?LHS \<sqsubseteq> ?RHS"
-    proof(rule HSem_below)
-    case goal1
-      show ?case
-        apply (rule fmap_expand_fmap_restr_below)
-        apply auto
-        done
-    case (goal2 x)
-      hence "x \<in> fst ` set (\<Gamma>@\<Delta>)" by auto
-      show ?case
-        apply (subst the_lookup_HSem_both[OF assms(1) `x \<in> fst \` set (\<Gamma>@\<Delta>)`])
-        apply (rule below_trans[OF _ join_above2[OF the_lookup_HSem_both_compatible[OF assms(1) `x \<in> fst \` set (\<Gamma>@\<Delta>)`]]])
-        using goal2 by (auto simp add: map_add_dom_app_simps dom_map_of_conv_image_fst)
-    qed
-  
-    show "?RHS \<sqsubseteq> ?LHS"
-    proof(rule HSem_below)
-    case goal1
-      show ?case
-        apply (rule fmap_expand_belowI)
-          apply auto[1]
-        apply (rule below_trans[OF _ HSem_refines_lookup[OF assms(2)]])
-          prefer 2 apply simp
-        apply (subst lookup_fmap_restr)
-          apply auto[2]
-        apply (erule HSem_refines_lookup[OF assms(1)])
-        done
-  
-    case (goal2 x)
-      show ?case
-      proof(cases "x \<in> fst ` set \<Gamma>")
-      case True
-        show ?thesis
-          apply (subst the_lookup_HSem_both[OF assms(2) True])
-          apply (rule below_trans[OF _ join_above2[OF the_lookup_HSem_both_compatible[OF assms(2) True]]])
-          using True by (auto simp add: map_add_dom_app_simps dom_map_of_conv_image_fst)
-      next
-      case False
-        hence delta: "x \<in> fst ` set \<Delta>" using goal2 by auto
-        show ?thesis
-          apply (subst the_lookup_HSem_other[OF False])
-          apply (subst lookup_fmap_restr)
-            using delta apply auto[2]
-          apply (subst the_lookup_HSem_both[OF assms(1) goal2])
-          apply (rule below_trans[OF _ join_above2[OF the_lookup_HSem_both_compatible[OF assms(1) `x \<in> fst \` set (\<Gamma>@\<Delta>)`]]])
-          apply (rule cont2monofunE[OF ESem_cont `?LHS \<sqsubseteq> ?RHS`])
-          done
-      qed
-    qed
-  qed
-  *)
-
-  lemma HSem_mono:
-    assumes "\<rho>1 \<sqsubseteq> \<rho>2"
-    shows "HSem \<Gamma> \<rho>1 \<sqsubseteq> HSem \<Gamma> \<rho>2"
-    by(rule HSem_monofun''[OF ESem_cont assms])
 
   lemma iterative_HSem:
     assumes "x \<notin> fst ` set \<Gamma>"
@@ -460,31 +295,6 @@ begin
     finally
     show ?thesis.
   qed
-
-
-  lemma HSem_subst_expr_below:
-    assumes below: "ESem e1 (HSem ((x, e2) # \<Gamma>) \<rho>) \<sqsubseteq> ESem e2 (HSem ((x, e2) # \<Gamma>) \<rho>)"
-    shows "HSem ((x, e1) # \<Gamma>) \<rho> \<sqsubseteq> HSem ((x, e2) # \<Gamma>) \<rho>"
-  proof (rule HSem_ind[where h = "(x, e1) # \<Gamma>"])
-  case goal1 show ?case by auto
-  case goal2 show ?case by simp
-  case (goal3 \<rho>')
-    show ?case
-      apply (subst HSem_eq)
-      apply (rule fmap_add_mono)
-      apply simp
-      apply (subst (1 2) heapToEnv.simps)
-      apply (rule fmap_upd_mono)
-      apply (rule cont2monofunE[OF cont2cont_heapToEnv[OF ESem_cont] goal3(2)])
-      apply (rule below_trans[OF cont2monofunE[OF ESem_cont goal3(2)] below])
-      done
-  qed    
-  
-  lemma HSem_subst_expr:
-    assumes below1: "ESem e1 (HSem ((x, e2) # \<Gamma>) \<rho>) \<sqsubseteq> ESem e2 (HSem ((x, e2) # \<Gamma>) \<rho>)"
-    assumes below2: "ESem e2 (HSem ((x, e1) # \<Gamma>) \<rho>) \<sqsubseteq> ESem e1 (HSem ((x, e1) # \<Gamma>) \<rho>)"
-    shows "HSem ((x, e1) # \<Gamma>) \<rho> = HSem ((x, e2) # \<Gamma>) \<rho>"
-    by (metis assms HSem_subst_expr_below below_antisym)
 
 end
 
@@ -608,14 +418,6 @@ proof-
     apply (rule parallel_fix_on_ind[OF assms permuted])
     apply (rule adm_is_adm_on, auto)[1]
     by (auto simp add: eqvt_apply)
-qed
-
-lemma to_bot_eqvt[eqvt,simp]: "\<pi> \<bullet> to_bot (\<rho>::'a::{subpcpo_partition,cont_pt}) = to_bot (\<pi> \<bullet> \<rho>)"
-proof(rule below_antisym)
-  show "to_bot (\<pi> \<bullet> \<rho>) \<sqsubseteq> \<pi> \<bullet> to_bot \<rho>"
-    by (metis perm_cont_simp to_bot_minimal unrelated)
-  show "\<pi> \<bullet> to_bot \<rho> \<sqsubseteq> to_bot (\<pi> \<bullet> \<rho>)"
-    by (metis eqvt_bound perm_cont_simp to_bot_minimal unrelated)
 qed
 
 lemma HSem_eqvt[eqvt]:
