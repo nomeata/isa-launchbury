@@ -26,14 +26,14 @@ proof-
   have le: "\<lbrace>[(x, e)] @ \<Gamma>\<rbrace> \<le> \<lbrace>[(x, z)] @ \<Delta>\<rbrace>"
     by (rule CorrectnessStacked.correctness)
 
-  have "\<lbrace>\<Gamma>\<rbrace> = fmap_restr (fst ` set \<Gamma>) (\<lbrace>(x, e) # \<Gamma>\<rbrace>)"
-    apply (rule HSem_add_fresh[OF fempty_is_HSem_cond fempty_is_HSem_cond, simplified (no_asm), unfolded heapVars_def, symmetric])
+  have "\<lbrace>\<Gamma>\<rbrace> = fmap_restr (heapVars \<Gamma>) (\<lbrace>(x, e) # \<Gamma>\<rbrace>)"
+    apply (rule HSem_add_fresh[OF fempty_is_HSem_cond fempty_is_HSem_cond, simplified (no_asm), symmetric])
     using fresh apply (simp add: fresh_Pair)
     done
-  also have "... \<le> fmap_restr (fst ` set \<Delta>) (\<lbrace>(x, z) # \<Delta>\<rbrace>)"
-    by (rule fmap_restr_le[OF le Launchbury.reds_doesnt_forget[unfolded heapVars_def, OF assms(1)], simplified])
+  also have "... \<le> fmap_restr (heapVars \<Delta>) (\<lbrace>(x, z) # \<Delta>\<rbrace>)"
+    by (rule fmap_restr_le[OF le Launchbury.reds_doesnt_forget[OF assms(1)], simplified])
   also have "... = \<lbrace>\<Delta>\<rbrace>"
-    apply (rule HSem_add_fresh[OF fempty_is_HSem_cond fempty_is_HSem_cond, simplified (no_asm), unfolded heapVars_def])
+    apply (rule HSem_add_fresh[OF fempty_is_HSem_cond fempty_is_HSem_cond, simplified (no_asm)])
     using fresh apply (simp add: fresh_Pair)
     done
   finally show "\<lbrace>\<Gamma>\<rbrace> \<le> \<lbrace>\<Delta>\<rbrace>".

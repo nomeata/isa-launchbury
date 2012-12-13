@@ -19,7 +19,7 @@ lemma heapToEnv_eqvt[eqvt]:
   "\<pi> \<bullet> heapToEnv h eval = heapToEnv (\<pi> \<bullet> h) (\<pi> \<bullet> eval)"
   by (induct h eval rule:heapToEnv.induct, auto simp add: fmap_upd_eqvt  permute_fun_def)
 
-lemma heapToEnv_fdom[simp]:"fdom (heapToEnv h eval) = fst ` set h"
+lemma heapToEnv_fdom[simp]:"fdom (heapToEnv h eval) = heapVars h"
   by (induct h eval rule:heapToEnv.induct, auto)
 
 lemma heapToEnv_cong[fundef_cong]:
@@ -28,7 +28,7 @@ lemma heapToEnv_cong[fundef_cong]:
  by (induct heap2 eval2 arbitrary:heap1 rule:heapToEnv.induct, auto)
 
 lemma lookupHeapToEnv:
-  assumes "v \<in> fst ` set h"
+  assumes "v \<in> heapVars h"
   shows "the (lookup (heapToEnv h f) v) = f (the (map_of h v))"
   using assms
   apply (induct h)
@@ -38,28 +38,28 @@ lemma lookupHeapToEnv:
   done
 
 lemma lookupHeapToEnvE:
-  assumes "v \<in> fst ` set h"
+  assumes "v \<in> heapVars h"
   obtains e where "(v, e) \<in> set h" and "\<And> f. the (lookup (heapToEnv h f) v) = f e"
 proof(rule that)
   show "(v, (the (map_of h v))) \<in> set h"
-    by (metis assms domD dom_map_of_conv_image_fst map_of_is_SomeD the.simps)
+    by (metis assms domD dom_map_of_conv_heapVars map_of_is_SomeD the.simps)
   fix f
   show "the (lookup (heapToEnv h f) v) = f (the (map_of h v))"
     by (rule lookupHeapToEnv[OF assms])
 qed
 
 lemma lookupHeapToEnvE2:
-  assumes "v \<in> fst ` set h"
+  assumes "v \<in> heapVars h"
   obtains e where "(v, e) \<in> set h" and "\<And> f. the (lookup (heapToEnv h f) v) = f e" and "\<And> f. the (lookup (heapToEnv (h@h') f) v) = f e"
 proof(rule that)
   show "(v, (the (map_of h v))) \<in> set h"
-    by (metis assms domD dom_map_of_conv_image_fst map_of_is_SomeD the.simps)
+    by (metis assms domD dom_map_of_conv_heapVars map_of_is_SomeD the.simps)
   fix f
   show "the (lookup (heapToEnv h f) v) = f (the (map_of h v))"
     by (rule lookupHeapToEnv[OF assms])
   show "the (lookup (heapToEnv (h @ h') f) v) = f (the (map_of h v))"
     apply (subst lookupHeapToEnv)
-    using assms apply (auto simp add: map_add_dom_app_simps dom_map_of_conv_image_fst)
+    using assms apply (auto simp add: map_add_dom_app_simps)
     done
 qed
 
@@ -69,16 +69,16 @@ lemma lookupHeapToEnvNotCons[simp]:
   using assms by simp
 
 lemma lookupHeapToEnvNotAppend[simp]:
-  assumes "x \<notin> fst ` set \<Gamma>"
+  assumes "x \<notin> heapVars \<Gamma>"
   shows "the (lookup (heapToEnv (\<Gamma>@h) f) x) = the (lookup (heapToEnv h f) x)"
   using assms by (induct \<Gamma>, auto)
 
 lemma heapToEnv_remove_Cons_fmap_restr:
-  "finite S \<Longrightarrow> x \<notin> S \<Longrightarrow> fst `set \<Gamma> \<subseteq> S \<Longrightarrow> fmap_restr S (heapToEnv ((x, e) # \<Gamma>) eval) = heapToEnv \<Gamma> eval"
+  "finite S \<Longrightarrow> x \<notin> S \<Longrightarrow> heapVars \<Gamma> \<subseteq> S \<Longrightarrow> fmap_restr S (heapToEnv ((x, e) # \<Gamma>) eval) = heapToEnv \<Gamma> eval"
   apply (rule fmap_eqI)
   apply auto[1]
   apply (subgoal_tac "xa \<noteq> x")
-  apply (case_tac "xa \<in> fst`set \<Gamma>")
+  apply (case_tac "xa \<in> heapVars \<Gamma>")
   apply simp
   apply simp
   apply auto
@@ -90,7 +90,7 @@ lemma heapToEnv_remove_Cons_fmap_expand:
   apply (rule fmap_eqI)
   apply simp
   apply (subgoal_tac "xa \<noteq> x")
-  apply (case_tac "xa \<in> fst`set \<Gamma>")
+  apply (case_tac "xa \<in> heapVars \<Gamma>")
   apply simp
   apply simp
   apply auto
@@ -99,7 +99,7 @@ lemma heapToEnv_remove_Cons_fmap_expand:
 lemma heapToEnv_mono:
   "finite d1 \<Longrightarrow>
    d1 = d2 \<Longrightarrow>
-   x \<notin> fst ` set \<Gamma> \<Longrightarrow>
+   x \<notin> heapVars \<Gamma> \<Longrightarrow>
   fmap_expand (heapToEnv \<Gamma> eval) d1 \<sqsubseteq> fmap_expand (heapToEnv ((x,e) # \<Gamma>) eval) d2"
    apply (erule subst)
    apply (rule fmap_expand_belowI)
@@ -124,8 +124,6 @@ lemma heapToEnv_reorder_head_append:
   apply (auto simp del: heapToEnv.simps simp add: heapToEnv_reorder_head)
   apply simp
   done
-
-
 
 lemma heapToEnv_delete_insert:
   assumes "distinctVars \<Gamma>"

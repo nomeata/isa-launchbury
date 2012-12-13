@@ -15,7 +15,7 @@ proof-
 qed
 
 
-lemma sharp_star_Env': "atom ` fst ` set \<Gamma> \<sharp>* (\<rho> :: ('var::{cont_pt,at_base}, 'value::{pure_cpo,Nonempty_Meet_cpo,pcpo}) fmap) \<longleftrightarrow> fst ` set \<Gamma> \<inter> fdom \<rho> = {}"
+lemma sharp_star_Env': "atom ` heapVars \<Gamma> \<sharp>* (\<rho> :: ('var::{cont_pt,at_base}, 'value::{pure_cpo,Nonempty_Meet_cpo,pcpo}) fmap) \<longleftrightarrow> heapVars \<Gamma> \<inter> fdom \<rho> = {}"
   by(induct \<Gamma>, auto simp add: fresh_star_def sharp_Env)
 
 locale has_ESem =
@@ -24,20 +24,20 @@ begin
 
 abbreviation HSem_cond' :: "('var \<times> 'exp) list \<Rightarrow> ('var, 'value) fmap \<Rightarrow> bool"
   where "HSem_cond' h \<rho> \<equiv>
-      fix_on_cond_jfc' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) 
-                        (\<lambda> \<rho>' . fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set h))"
+      fix_on_cond_jfc' (fmap_expand \<rho> (fdom \<rho> \<union> heapVars h)) 
+                        (\<lambda> \<rho>' . fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (fdom \<rho> \<union> heapVars h))"
 
 definition HSem :: "('var \<times> 'exp) list \<Rightarrow> ('var, 'value) fmap \<Rightarrow> ('var, 'value) fmap"
   where
   "HSem h \<rho> =
     (if HSem_cond' h \<rho>
-    then fix_on (fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) (\<lambda> \<rho>' . fmap_expand (heapToEnv h (\<lambda> e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set h)))
-      (\<lambda> \<rho>'. fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h) \<squnion> fmap_expand (heapToEnv h (\<lambda> e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set h))
-    else (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)))"
+    then fix_on (fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> heapVars h)) (\<lambda> \<rho>' . fmap_expand (heapToEnv h (\<lambda> e. ESem e \<rho>')) (fdom \<rho> \<union> heapVars h)))
+      (\<lambda> \<rho>'. fmap_expand \<rho> (fdom \<rho> \<union> heapVars h) \<squnion> fmap_expand (heapToEnv h (\<lambda> e. ESem e \<rho>')) (fdom \<rho> \<union> heapVars h))
+    else (fmap_expand \<rho> (fdom \<rho> \<union> heapVars h)))"
 
 lemma HSem_def': "HSem_cond' \<Gamma> \<rho> \<Longrightarrow>
-  HSem \<Gamma> \<rho> = fix_on (fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set \<Gamma>)) (\<lambda>\<rho>'. fmap_expand (heapToEnv \<Gamma> (\<lambda>e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set \<Gamma>)))
-           (\<lambda>\<rho>'. fmap_expand \<rho> (fdom \<rho> \<union> fst ` set \<Gamma>) \<squnion> fmap_expand (heapToEnv \<Gamma> (\<lambda>e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set \<Gamma>))
+  HSem \<Gamma> \<rho> = fix_on (fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> heapVars \<Gamma>)) (\<lambda>\<rho>'. fmap_expand (heapToEnv \<Gamma> (\<lambda>e. ESem e \<rho>')) (fdom \<rho> \<union> heapVars \<Gamma>)))
+           (\<lambda>\<rho>'. fmap_expand \<rho> (fdom \<rho> \<union> heapVars \<Gamma>) \<squnion> fmap_expand (heapToEnv \<Gamma> (\<lambda>e. ESem e \<rho>')) (fdom \<rho> \<union> heapVars \<Gamma>))
  "
   unfolding  HSem_def
   by (subst if_P, auto)
@@ -109,12 +109,12 @@ lemma HSem_cont'':
 proof-
   have fdoms[simp]:"\<And> i. fdom (Y i) = fdom (\<Squnion> i. Y i)" (is "\<And> _ .(_ = ?d)") by (metis chain_fdom `chain Y`) 
 
-  have "fix_on       (fix_join_compat'' (\<Squnion> i. fmap_expand (Y i)  (?d \<union> fst ` set h)) (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (?d \<union> fst ` set h)))
-             (\<lambda>\<rho>'.                     (\<Squnion> i. fmap_expand (Y i)  (?d \<union> fst ` set h)) \<squnion>
-                      fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (?d \<union> fst ` set h)) =
-       (\<Squnion> i. fix_on  (fix_join_compat''      (fmap_expand (Y i) (?d \<union> fst ` set h))  (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (?d \<union> fst ` set h)))
-                                        (\<lambda>\<rho>'. fmap_expand (Y i) (?d \<union> fst ` set h) \<squnion>
-                      fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (?d \<union> fst ` set h))) "
+  have "fix_on       (fix_join_compat'' (\<Squnion> i. fmap_expand (Y i)  (?d \<union> heapVars h)) (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (?d \<union> heapVars h)))
+             (\<lambda>\<rho>'.                     (\<Squnion> i. fmap_expand (Y i)  (?d \<union> heapVars h)) \<squnion>
+                      fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (?d \<union> heapVars h)) =
+       (\<Squnion> i. fix_on  (fix_join_compat''      (fmap_expand (Y i) (?d \<union> heapVars h))  (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (?d \<union> heapVars h)))
+                                        (\<lambda>\<rho>'. fmap_expand (Y i) (?d \<union> heapVars h) \<squnion>
+                      fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (?d \<union> heapVars h))) "
     by (rule fix_on_join_cont'''[OF 
           ch2ch_cont[OF fmap_expand_cont `chain Y`]
           cond2[unfolded fdoms]
@@ -253,7 +253,7 @@ lemma fmap_join_is_join_expand:
   done
 
 lemma disjoint_is_HSem_cond':
-  "fdom \<rho> \<inter> fst ` set h = {} \<Longrightarrow> (\<forall> e \<in> snd`set h. cont (ESem e)) \<Longrightarrow> HSem_cond' h \<rho>"
+  "fdom \<rho> \<inter> heapVars h = {} \<Longrightarrow> (\<forall> e \<in> snd`set h. cont (ESem e)) \<Longrightarrow> HSem_cond' h \<rho>"
   apply (rule fix_on_cond_jfc'I)
   apply (rule cont_compose[OF fmap_expand_cont cont2cont_heapToEnv])
   apply (metis)
@@ -265,16 +265,16 @@ lemma disjoint_is_HSem_cond':
   done
 
 lemma HSem_cond'_cont:
-  "HSem_cond' h \<rho> \<Longrightarrow> cont (\<lambda>x. fmap_expand (heapToEnv h (\<lambda>e. ESem e x)) (fdom \<rho> \<union> fst ` set h))"
+  "HSem_cond' h \<rho> \<Longrightarrow> cont (\<lambda>x. fmap_expand (heapToEnv h (\<lambda>e. ESem e x)) (fdom \<rho> \<union> heapVars h))"
   by (rule cont_F_jfc'')
 
 lemma HSem_ind':
   assumes "HSem_cond' h \<rho>"
-  assumes "adm_on (fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda> e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set h))) P"
-  assumes "P (to_bot (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)))"
-  assumes "\<And> y. y \<in> fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda> e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set h)) \<Longrightarrow>
+  assumes "adm_on (fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> heapVars h)) (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda> e. ESem e \<rho>')) (fdom \<rho> \<union> heapVars h))) P"
+  assumes "P (to_bot (fmap_expand \<rho> (fdom \<rho> \<union> heapVars h)))"
+  assumes "\<And> y. y \<in> fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> heapVars h)) (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda> e. ESem e \<rho>')) (fdom \<rho> \<union> heapVars h)) \<Longrightarrow>
         P y \<Longrightarrow>
-        P (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h) \<squnion> fmap_expand (heapToEnv h (\<lambda>e. ESem e y)) (fdom \<rho> \<union> fst ` set h))"
+        P (fmap_expand \<rho> (fdom \<rho> \<union> heapVars h) \<squnion> fmap_expand (heapToEnv h (\<lambda>e. ESem e y)) (fdom \<rho> \<union> heapVars h))"
   shows "P (HSem h \<rho>)"
   unfolding HSem_def
   apply (subst if_P[OF assms(1)])
@@ -286,13 +286,13 @@ lemma HSem_ind':
   done
 
 lemma HSem_ind:
-  assumes "HSem_cond' h \<rho> \<Longrightarrow> adm_on (fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda> e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set h))) P"
-  assumes "HSem_cond' h \<rho> \<Longrightarrow> P (to_bot (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)))"
+  assumes "HSem_cond' h \<rho> \<Longrightarrow> adm_on (fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> heapVars h)) (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda> e. ESem e \<rho>')) (fdom \<rho> \<union> heapVars h))) P"
+  assumes "HSem_cond' h \<rho> \<Longrightarrow> P (to_bot (fmap_expand \<rho> (fdom \<rho> \<union> heapVars h)))"
   assumes "\<And> y. HSem_cond' h \<rho> \<Longrightarrow>
-        y \<in> fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda> e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set h)) \<Longrightarrow>
+        y \<in> fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> heapVars h)) (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda> e. ESem e \<rho>')) (fdom \<rho> \<union> heapVars h)) \<Longrightarrow>
         P y \<Longrightarrow>
-        P (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h) \<squnion> fmap_expand (heapToEnv h (\<lambda>e. ESem e y)) (fdom \<rho> \<union> fst ` set h))"
-  assumes "P (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h))"
+        P (fmap_expand \<rho> (fdom \<rho> \<union> heapVars h) \<squnion> fmap_expand (heapToEnv h (\<lambda>e. ESem e y)) (fdom \<rho> \<union> heapVars h))"
+  assumes "P (fmap_expand \<rho> (fdom \<rho> \<union> heapVars h))"
   shows "P (HSem h \<rho>)"
   apply (cases "HSem_cond' h \<rho>")
   apply (rule HSem_ind'[OF _ assms(1,2,3)], assumption+)
@@ -304,17 +304,17 @@ lemma HSem_ind:
 lemma parallel_HSem_ind:
   assumes cond1: "HSem_cond' h \<rho>"
   assumes cond2: "HSem_cond' h2 \<rho>2"
-  assumes "adm_on (fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) (\<lambda>\<rho>'. fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set h))
-                  \<times> fix_join_compat'' (fmap_expand \<rho>2 (fdom \<rho>2 \<union> fst ` set h2)) (\<lambda>\<rho>'. fmap_expand (heapToEnv h2 (\<lambda>e. ESem e \<rho>')) (fdom \<rho>2 \<union> fst ` set h2)))
+  assumes "adm_on (fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> heapVars h)) (\<lambda>\<rho>'. fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (fdom \<rho> \<union> heapVars h))
+                  \<times> fix_join_compat'' (fmap_expand \<rho>2 (fdom \<rho>2 \<union> heapVars h2)) (\<lambda>\<rho>'. fmap_expand (heapToEnv h2 (\<lambda>e. ESem e \<rho>')) (fdom \<rho>2 \<union> heapVars h2)))
                  (\<lambda>\<rho>'. P (fst \<rho>') (snd \<rho>'))"
-  assumes "P (fmap_bottom (fdom \<rho> \<union> fst ` set h)) (fmap_bottom (fdom \<rho>2 \<union> fst ` set h2))"
-  assumes "\<And>y z. y \<in> fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h))
-               (\<lambda>\<rho>'. fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set h)) \<Longrightarrow>
-          z \<in> fix_join_compat'' (fmap_expand \<rho>2 (fdom \<rho>2 \<union> fst ` set h2))
-               (\<lambda>\<rho>'. fmap_expand (heapToEnv h2 (\<lambda>e. ESem e \<rho>')) (fdom \<rho>2 \<union> fst ` set h2)) \<Longrightarrow>
+  assumes "P (fmap_bottom (fdom \<rho> \<union> heapVars h)) (fmap_bottom (fdom \<rho>2 \<union> heapVars h2))"
+  assumes "\<And>y z. y \<in> fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> heapVars h))
+               (\<lambda>\<rho>'. fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (fdom \<rho> \<union> heapVars h)) \<Longrightarrow>
+          z \<in> fix_join_compat'' (fmap_expand \<rho>2 (fdom \<rho>2 \<union> heapVars h2))
+               (\<lambda>\<rho>'. fmap_expand (heapToEnv h2 (\<lambda>e. ESem e \<rho>')) (fdom \<rho>2 \<union> heapVars h2)) \<Longrightarrow>
           P y z \<Longrightarrow>
-          P (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h) \<squnion> fmap_expand (heapToEnv h (\<lambda>e. ESem e y)) (fdom \<rho> \<union> fst ` set h))
-           (fmap_expand \<rho>2 (fdom \<rho>2 \<union> fst ` set h2) \<squnion> fmap_expand (heapToEnv h2 (\<lambda>e. ESem e z)) (fdom \<rho>2 \<union> fst ` set h2)) "
+          P (fmap_expand \<rho> (fdom \<rho> \<union> heapVars h) \<squnion> fmap_expand (heapToEnv h (\<lambda>e. ESem e y)) (fdom \<rho> \<union> heapVars h))
+           (fmap_expand \<rho>2 (fdom \<rho>2 \<union> heapVars h2) \<squnion> fmap_expand (heapToEnv h2 (\<lambda>e. ESem e z)) (fdom \<rho>2 \<union> heapVars h2)) "
   shows "P (HSem h \<rho>) (HSem h2 \<rho>2)"
   unfolding HSem_def if_P[OF cond1] if_P[OF cond2]
   apply (rule parallel_fix_on_ind[OF fix_on_cond_jfc''[OF cond1] fix_on_cond_jfc''[OF cond2]])
@@ -325,7 +325,7 @@ lemma parallel_HSem_ind:
 
 lemma HSem_eq:
   assumes "HSem_cond' h \<rho>"
-  shows "HSem h \<rho> = fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h) \<squnion> fmap_expand (heapToEnv h (\<lambda>e. ESem e (HSem h \<rho>))) (fdom \<rho> \<union> fst ` set h)"
+  shows "HSem h \<rho> = fmap_expand \<rho> (fdom \<rho> \<union> heapVars h) \<squnion> fmap_expand (heapToEnv h (\<lambda>e. ESem e (HSem h \<rho>))) (fdom \<rho> \<union> heapVars h)"
   unfolding HSem_def
   using assms
   apply (simp)
@@ -334,14 +334,14 @@ lemma HSem_eq:
 
 lemma HSem_there:
   assumes "HSem_cond' h \<rho>"
-  shows "HSem h \<rho> \<in> fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda> e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set h))"
+  shows "HSem h \<rho> \<in> fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> heapVars h)) (\<lambda> \<rho>'. fmap_expand (heapToEnv h (\<lambda> e. ESem e \<rho>')) (fdom \<rho> \<union> heapVars h))"
   unfolding HSem_def
   apply (subst if_P[OF assms])
   apply (rule fix_on_there[OF fix_on_cond_jfc''[OF assms]])
   done
 
 lemma the_lookup_HSem_other:
-  assumes "y \<notin> fst ` set h"
+  assumes "y \<notin> heapVars h"
   shows "the (lookup (HSem h \<rho>) y) = the (lookup \<rho> y)"
 proof(cases "HSem_cond' h \<rho>")
   case True show ?thesis
@@ -360,9 +360,9 @@ qed
 
 lemma the_lookup_HSem_both:
   assumes "HSem_cond' h \<rho>"
-  assumes "y \<in> fst ` set h"
+  assumes "y \<in> heapVars h"
   shows "the (lookup (HSem h \<rho>) y) =
-    the (lookup (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) y) \<squnion> ESem (the (map_of h y)) (HSem h \<rho>)"
+    the (lookup (fmap_expand \<rho> (fdom \<rho> \<union> heapVars h)) y) \<squnion> ESem (the (map_of h y)) (HSem h \<rho>)"
   apply (subst HSem_eq[OF assms(1)])
   apply (subst the_lookup_join[OF rho_F_compat_jfc''[OF assms(1) HSem_there[OF assms(1)]]])
   apply (subst (2) lookup_fmap_expand1)
@@ -372,8 +372,8 @@ lemma the_lookup_HSem_both:
 
 lemma the_lookup_HSem_both_compatible:
   assumes "HSem_cond' h \<rho>"
-  assumes "y \<in> fst ` set h"
-  shows "compatible (the (lookup (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h)) y)) (ESem (the (map_of h y)) (HSem h \<rho>))"
+  assumes "y \<in> heapVars h"
+  shows "compatible (the (lookup (fmap_expand \<rho> (fdom \<rho> \<union> heapVars h)) y)) (ESem (the (map_of h y)) (HSem h \<rho>))"
   using the_lookup_compatible[OF rho_F_compat_jfc''[OF assms(1) HSem_there[OF assms(1)]], of y]
   apply (subst (asm) (2) lookup_fmap_expand1)
     using assms(2) apply auto[3]
@@ -382,7 +382,7 @@ lemma the_lookup_HSem_both_compatible:
 
 lemma the_lookup_HSem_heap:
   assumes "HSem_cond' h \<rho>"
-  assumes "y \<in> fst ` set h"
+  assumes "y \<in> heapVars h"
   assumes "y \<notin> fdom \<rho>"
   shows "the (lookup (HSem h \<rho>) y) = ESem (the (map_of h y)) (HSem h \<rho>)"
   apply (subst HSem_eq[OF assms(1)])
@@ -399,7 +399,7 @@ lemma compatible_fmap_bottom[simp]:
   by (metis below.r_refl compatibleI to_bot_fmap_def to_bot_minimal)
 
 lemma HSem_compatible[simp]:
-  "compatible (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set \<Gamma>)) (HSem \<Gamma> \<rho>)"
+  "compatible (fmap_expand \<rho> (fdom \<rho> \<union> heapVars \<Gamma>)) (HSem \<Gamma> \<rho>)"
   unfolding HSem_def
   apply (cases "HSem_cond' \<Gamma> \<rho>")
   apply (simp)
@@ -410,7 +410,7 @@ lemma HSem_compatible[simp]:
   done
   
 lemma fdom_HSem[simp]:
-  "fdom (HSem h \<rho>) = fdom \<rho> \<union> fst ` set h"
+  "fdom (HSem h \<rho>) = fdom \<rho> \<union> heapVars h"
   apply (rule HSem_ind)
   apply (rule adm_is_adm_on)
   apply simp
@@ -425,7 +425,7 @@ lemma fdom_HSem[simp]:
 
 lemma HSem_refines:
   assumes "HSem_cond' h \<rho>"
-  shows "fmap_expand \<rho> (fdom \<rho> \<union> fst `set h) \<sqsubseteq> HSem h \<rho>"
+  shows "fmap_expand \<rho> (fdom \<rho> \<union> heapVars h) \<sqsubseteq> HSem h \<rho>"
   apply (subst HSem_eq[OF assms(1)])
   apply (rule join_above1[OF rho_F_compat_jfc''[OF assms HSem_there[OF assms]]])
 done
@@ -635,31 +635,31 @@ lemma HSem_add_fresh:
   assumes cond1: "HSem_cond' \<Gamma> \<rho>"
   assumes cond2: "HSem_cond' ((x,e) # \<Gamma>) \<rho>"
   assumes fresh: "atom x \<sharp> (\<rho>,\<Gamma>)"
-  assumes step: "\<And>e \<rho>'. fdom \<rho>' = fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>) \<Longrightarrow> e \<in> snd ` set \<Gamma> \<Longrightarrow> ESem e \<rho>' = ESem e (fmap_restr (fdom \<rho>' - {x}) \<rho>')"
-  shows  "fmap_restr (fdom \<rho> \<union> fst ` set \<Gamma>) (HSem ((x, e) # \<Gamma>) \<rho>) = HSem \<Gamma> \<rho>"
+  assumes step: "\<And>e \<rho>'. fdom \<rho>' = fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>) \<Longrightarrow> e \<in> snd ` set \<Gamma> \<Longrightarrow> ESem e \<rho>' = ESem e (fmap_restr (fdom \<rho>' - {x}) \<rho>')"
+  shows  "fmap_restr (fdom \<rho> \<union> heapVars \<Gamma>) (HSem ((x, e) # \<Gamma>) \<rho>) = HSem \<Gamma> \<rho>"
 proof (rule parallel_HSem_ind[OF cond1 cond2])
 case goal1 show ?case by (auto intro:adm_is_adm_on)
 case goal2 show ?case by (auto)[1]
 case goal3
-  have "fmap_restr (fdom \<rho> \<union> fst ` set \<Gamma>) (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>))) = fmap_expand \<rho> (fdom \<rho> \<union> fst ` set \<Gamma>)"
+  have "fmap_restr (fdom \<rho> \<union> heapVars \<Gamma>) (fmap_expand \<rho> (fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>))) = fmap_expand \<rho> (fdom \<rho> \<union> heapVars \<Gamma>)"
     apply (subst fmap_restr_fmap_expand2)
     by auto
   moreover
 
-  have "x \<notin> fdom \<rho> \<union> fst ` set \<Gamma>"
+  have "x \<notin> fdom \<rho> \<union> heapVars \<Gamma>"
     using fresh
     apply (auto simp add: sharp_Env fresh_Pair)
-    by (metis fresh_PairD(1) fresh_list_elem not_self_fresh)
-  hence [simp]:"fdom z - {x} = fdom \<rho> \<union> fst ` set \<Gamma>"
+    by (metis heapVars_not_fresh)
+  hence [simp]:"fdom z - {x} = fdom \<rho> \<union> heapVars \<Gamma>"
     using fdom_fix_join_compat''[OF fix_on_cond_jfc''[OF cond2] goal3(2)]
     by auto
 
-  have "fmap_restr (fdom \<rho> \<union> fst`set \<Gamma>) (fmap_expand (heapToEnv ((x, e) # \<Gamma>) (\<lambda>e. ESem e z)) (fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>)))
-    =  fmap_expand (heapToEnv \<Gamma> (\<lambda>e. ESem e y)) (fdom \<rho> \<union> fst ` set \<Gamma>) "
+  have "fmap_restr (fdom \<rho> \<union> heapVars \<Gamma>) (fmap_expand (heapToEnv ((x, e) # \<Gamma>) (\<lambda>e. ESem e z)) (fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>)))
+    =  fmap_expand (heapToEnv \<Gamma> (\<lambda>e. ESem e y)) (fdom \<rho> \<union> heapVars \<Gamma>) "
     apply (subst fmap_restr_fmap_expand2)
       apply simp
       apply auto[1]
-    apply (subst heapToEnv_remove_Cons_fmap_expand[OF _ `x \<notin> fdom \<rho> \<union> fst \` set \<Gamma>`])
+    apply (subst heapToEnv_remove_Cons_fmap_expand[OF _ `x \<notin> fdom \<rho> \<union> heapVars \<Gamma>`])
       apply simp
     apply (rule arg_cong[OF heapToEnv_cong[OF refl]])
     apply (subst step)
@@ -722,22 +722,22 @@ lemma fjc'_of_fun_below:
 
 lemma HSem_cond'_of_member:
   assumes "HSem_cond' \<Gamma> \<rho>"
-  assumes "\<rho>' \<in> fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set \<Gamma>))
-                (\<lambda> \<rho>'.  fmap_expand (heapToEnv \<Gamma> (\<lambda>e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set \<Gamma>))" (is "_ \<in> ?S")
+  assumes "\<rho>' \<in> fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> heapVars \<Gamma>))
+                (\<lambda> \<rho>'.  fmap_expand (heapToEnv \<Gamma> (\<lambda>e. ESem e \<rho>')) (fdom \<rho> \<union> heapVars \<Gamma>))" (is "_ \<in> ?S")
   shows "HSem_cond' \<Gamma>  \<rho>'"
 proof-
   let "fix_join_compat'' (fmap_expand \<rho> ?d) ?F" = "?S"
   have "fdom \<rho>' = ?d"
     using fdom_fix_join_compat''[OF fix_on_cond_jfc''[OF assms(1)] assms(2)]
     by auto
-  have fdom[simp]:"fdom \<rho>' \<union> fst ` set \<Gamma> = ?d"
+  have fdom[simp]:"fdom \<rho>' \<union> heapVars \<Gamma> = ?d"
     using fdom_fix_join_compat''[OF fix_on_cond_jfc''[OF assms(1)] assms(2)]
     by auto
   show ?thesis
     apply (rule fjc'_of_member)
     apply (rule assms(1)[unfolded fdom[symmetric]])
     apply (subst fmap_expand_noop)
-    apply (metis `fdom \<rho>' = fdom \<rho> \<union> fst \` set \<Gamma>` `fdom \<rho>' \<union> fst \` set \<Gamma> =fdom \<rho> \<union> fst \` set \<Gamma>`)
+    apply (metis `fdom \<rho>' = fdom \<rho> \<union> heapVars \<Gamma>` `fdom \<rho>' \<union> heapVars \<Gamma> =fdom \<rho> \<union> heapVars \<Gamma>`)
     apply (rule assms(2)[unfolded fdom[symmetric]])
     apply (simp add:to_bot_fmap_def)
     done
@@ -748,7 +748,7 @@ lemma HSem_reorder:
   assumes "distinctVars \<Delta>"
   assumes "set \<Gamma> = set \<Delta>"
   shows "HSem \<Gamma> \<rho> = HSem \<Delta> \<rho>"
-by (simp add: HSem_def  heapToEnv_reorder[OF assms] assms(3))
+by (simp add: HSem_def heapVars_def heapToEnv_reorder[OF assms] assms(3))
 
 lemma HSem_reorder_head:
   assumes "x \<noteq> y"
@@ -757,8 +757,8 @@ proof-
   have "set ((x,e1)#(y,e2)#\<Gamma>) = set ((y,e2)#(x,e1)#\<Gamma>)"
     by auto
   thus ?thesis      
-    unfolding HSem_def  heapToEnv_reorder_head[OF assms]
-    by simp
+    unfolding HSem_def heapToEnv_reorder_head[OF assms]
+    by (simp add: heapVars_def)
 qed
 
 lemma HSem_reorder_head_append:
@@ -767,7 +767,7 @@ lemma HSem_reorder_head_append:
 proof-
   have "set ((x,e)#\<Gamma>@\<Delta>) = set (\<Gamma> @ ((x,e)#\<Delta>))" by auto
   thus ?thesis
-    unfolding HSem_def  heapToEnv_reorder_head_append[OF assms]
+    unfolding HSem_def heapToEnv_reorder_head_append[OF assms]
     by simp
 qed  
 
@@ -775,7 +775,7 @@ qed
 lemma HSem_subst_exp:
   assumes cond1: "HSem_cond' ((x, e) # \<Gamma>) \<rho>"
   assumes cond2: "HSem_cond' ((x, e') # \<Gamma>) \<rho>"
-  assumes "\<And>\<rho>'. fdom \<rho>' = fdom \<rho> \<union> (fst`set ((x,e)#\<Gamma>)) \<Longrightarrow> ESem e \<rho>' = ESem e' \<rho>'"
+  assumes "\<And>\<rho>'. fdom \<rho>' = fdom \<rho> \<union> (heapVars ((x,e)#\<Gamma>)) \<Longrightarrow> ESem e \<rho>' = ESem e' \<rho>'"
   shows "HSem ((x,e)#\<Gamma>) \<rho> = HSem ((x,e')#\<Gamma>) \<rho>"
   apply (rule parallel_HSem_ind[OF cond1 cond2])
   apply (auto intro: adm_is_adm_on)[1]
@@ -794,7 +794,7 @@ lemma HSem_refines_lookup: "HSem_cond' \<Gamma> \<rho> \<Longrightarrow> x \<in>
   apply simp
   done
 
-lemma HSem_heap_below: "HSem_cond' \<Gamma> \<rho> \<Longrightarrow> x \<in> fst ` set \<Gamma> \<Longrightarrow> ESem (the (map_of \<Gamma> x)) (HSem \<Gamma> \<rho>) \<sqsubseteq> the (lookup (HSem \<Gamma> \<rho>) x)"
+lemma HSem_heap_below: "HSem_cond' \<Gamma> \<rho> \<Longrightarrow> x \<in> heapVars \<Gamma> \<Longrightarrow> ESem (the (map_of \<Gamma> x)) (HSem \<Gamma> \<rho>) \<sqsubseteq> the (lookup (HSem \<Gamma> \<rho>) x)"
   apply (subst the_lookup_HSem_both, assumption+)
   apply (rule join_above2)
   apply (rule the_lookup_HSem_both_compatible, assumption+)
@@ -802,7 +802,7 @@ lemma HSem_heap_below: "HSem_cond' \<Gamma> \<rho> \<Longrightarrow> x \<in> fst
 
 
 lemma fmap_restr_HSem_noop:
-  assumes "fst`set \<Gamma> \<inter> fdom \<rho> = {}"
+  assumes "heapVars \<Gamma> \<inter> fdom \<rho> = {}"
   shows "fmap_restr (fdom \<rho>) (HSem \<Gamma> \<rho>) = \<rho>"
   apply (rule fmap_eqI)
   using assms apply auto[1]
@@ -812,7 +812,7 @@ lemma fmap_restr_HSem_noop:
   done
 
 lemma HSem_disjoint_less:
-  assumes "fst`set \<Gamma> \<inter> fdom \<rho> = {}"
+  assumes "heapVars \<Gamma> \<inter> fdom \<rho> = {}"
   shows "\<rho> \<le> HSem \<Gamma> \<rho>"
   using assms
 by (metis fdom_HSem fmap_less_restrict fmap_restr_HSem_noop sup_ge1)
@@ -823,12 +823,12 @@ locale has_cont_ESem = has_ESem +
   assumes ESem_cont: "\<And> e. cont (ESem e)"
 begin
   lemma HSem_below:
-    assumes "fmap_expand \<rho> (fdom \<rho> \<union> fst ` set h) \<sqsubseteq> r"
-    assumes "\<And>x. x \<in> fst ` set h \<Longrightarrow> ESem (the (map_of h x)) r \<sqsubseteq> the (lookup r x)"
+    assumes "fmap_expand \<rho> (fdom \<rho> \<union> heapVars h) \<sqsubseteq> r"
+    assumes "\<And>x. x \<in> heapVars h \<Longrightarrow> ESem (the (map_of h x)) r \<sqsubseteq> the (lookup r x)"
     shows "HSem h \<rho> \<sqsubseteq> r"
   proof (rule HSem_ind)
     from fmap_below_dom[OF assms(1)]
-    have [simp]:"fdom r = fdom \<rho> \<union> fst ` set h" by simp
+    have [simp]:"fdom r = fdom \<rho> \<union> heapVars h" by simp
     {
     case goal1 show ?case by (auto intro: adm_is_adm_on)
     case goal2 show ?case by (simp add: to_bot_fmap_def)
@@ -847,7 +847,7 @@ begin
   qed  
 
   lemma disjoint_is_HSem_cond:
-    "fdom \<rho> \<inter> fst ` set h = {} \<Longrightarrow> HSem_cond' h \<rho>"
+    "fdom \<rho> \<inter> heapVars h = {} \<Longrightarrow> HSem_cond' h \<rho>"
     apply (erule disjoint_is_HSem_cond')
     apply rule
     apply (rule ESem_cont)
@@ -869,8 +869,8 @@ begin
 
   lemma HSem_redo:
     assumes "HSem_cond' (\<Gamma> @ \<Delta>) \<rho>"
-    assumes "HSem_cond' \<Gamma> (fmap_restr (fdom \<rho> \<union> fst ` set \<Delta>) (HSem (\<Gamma> @ \<Delta>) \<rho>))"
-    shows "HSem \<Gamma> (fmap_restr (fdom \<rho> \<union> fst ` set \<Delta>) (HSem (\<Gamma>@\<Delta>) \<rho>)) = HSem (\<Gamma> @ \<Delta>) \<rho>" (is "?LHS = ?RHS")
+    assumes "HSem_cond' \<Gamma> (fmap_restr (fdom \<rho> \<union> heapVars \<Delta>) (HSem (\<Gamma> @ \<Delta>) \<rho>))"
+    shows "HSem \<Gamma> (fmap_restr (fdom \<rho> \<union> heapVars \<Delta>) (HSem (\<Gamma>@\<Delta>) \<rho>)) = HSem (\<Gamma> @ \<Delta>) \<rho>" (is "?LHS = ?RHS")
   proof (rule below_antisym)
     show "?LHS \<sqsubseteq> ?RHS"
     proof(rule HSem_below)
@@ -880,10 +880,10 @@ begin
         apply auto
         done
     case (goal2 x)
-      hence "x \<in> fst ` set (\<Gamma>@\<Delta>)" by auto
+      hence "x \<in> heapVars (\<Gamma>@\<Delta>)" by auto
       show ?case
-        apply (subst the_lookup_HSem_both[OF assms(1) `x \<in> fst \` set (\<Gamma>@\<Delta>)`])
-        apply (rule below_trans[OF _ join_above2[OF the_lookup_HSem_both_compatible[OF assms(1) `x \<in> fst \` set (\<Gamma>@\<Delta>)`]]])
+        apply (subst the_lookup_HSem_both[OF assms(1) `x \<in> heapVars (\<Gamma>@\<Delta>)`])
+        apply (rule below_trans[OF _ join_above2[OF the_lookup_HSem_both_compatible[OF assms(1) `x \<in> heapVars (\<Gamma>@\<Delta>)`]]])
         using goal2 by (auto simp add: map_add_dom_app_simps dom_map_of_conv_image_fst)
     qed
   
@@ -902,7 +902,7 @@ begin
   
     case (goal2 x)
       show ?case
-      proof(cases "x \<in> fst ` set \<Gamma>")
+      proof(cases "x \<in> heapVars \<Gamma>")
       case True
         show ?thesis
           apply (subst the_lookup_HSem_both[OF assms(2) True])
@@ -910,13 +910,13 @@ begin
           using True by (auto simp add: map_add_dom_app_simps dom_map_of_conv_image_fst)
       next
       case False
-        hence delta: "x \<in> fst ` set \<Delta>" using goal2 by auto
+        hence delta: "x \<in> heapVars \<Delta>" using goal2 by auto
         show ?thesis
           apply (subst the_lookup_HSem_other[OF False])
           apply (subst lookup_fmap_restr)
             using delta apply auto[2]
           apply (subst the_lookup_HSem_both[OF assms(1) goal2])
-          apply (rule below_trans[OF _ join_above2[OF the_lookup_HSem_both_compatible[OF assms(1) `x \<in> fst \` set (\<Gamma>@\<Delta>)`]]])
+          apply (rule below_trans[OF _ join_above2[OF the_lookup_HSem_both_compatible[OF assms(1) `x \<in> heapVars (\<Gamma>@\<Delta>)`]]])
           apply (rule cont2monofunE[OF ESem_cont `?LHS \<sqsubseteq> ?RHS`])
           done
       qed
@@ -932,21 +932,21 @@ begin
 
   lemma iterative_HSem:
     assumes "HSem_cond' ((x, e) # \<Gamma>) \<rho>"
-    assumes "x \<notin> fst `set \<Gamma>"
+    assumes "x \<notin> heapVars \<Gamma>"
     shows "HSem ((x,e) # \<Gamma>) \<rho> =
-        fix_on (fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>))) (\<lambda> \<rho>'.  fmap_expand (heapToEnv ((x, e) # \<Gamma>) (\<lambda>e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>))))
+        fix_on (fix_join_compat'' (fmap_expand \<rho> (fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>))) (\<lambda> \<rho>'.  fmap_expand (heapToEnv ((x, e) # \<Gamma>) (\<lambda>e. ESem e \<rho>')) (fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>))))
                 (\<lambda> \<rho>'. (HSem \<Gamma> \<rho>')
-                        \<squnion> (fmap_bottom (fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>))(x f\<mapsto> ESem e \<rho>') 
-                        \<squnion> (fmap_expand \<rho> (fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>)))))" (is "_ = fix_on ?S ?R")
+                        \<squnion> (fmap_bottom (fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>))(x f\<mapsto> ESem e \<rho>') 
+                        \<squnion> (fmap_expand \<rho> (fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>)))))" (is "_ = fix_on ?S ?R")
   apply (subst HSem_def'[OF assms(1)])
   proof(rule below_antisym)
     interpret subpcpo ?S by (rule subpcpo_jfc'')
   
-    let "?d" = "fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>)"
+    let "?d" = "fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>)"
   
     let "fix_on _ ?L" = "fix_on ?S
                          (\<lambda>\<rho>'. fmap_expand \<rho> ?d \<squnion>
-                               fmap_expand (heapToEnv ((x, e) # \<Gamma>) (\<lambda>e. ESem e \<rho>')) (fdom \<rho> \<union> fst ` set ((x, e) # \<Gamma>)))"
+                               fmap_expand (heapToEnv ((x, e) # \<Gamma>) (\<lambda>e. ESem e \<rho>')) (fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>)))"
     let "(\<lambda> \<rho>'. ?L1 \<rho>' \<squnion> ?L2 \<rho>')" = ?L
     let "(\<lambda> \<rho>'. ?R1 \<rho>' \<squnion> (?R2 \<rho>' \<squnion> ?R3 \<rho>'))" = ?R
   
@@ -960,8 +960,8 @@ begin
     } note fdom = this
   
     { fix \<rho>' assume "\<rho>' \<in> ?S"
-      have fdom1: "(fdom \<rho>' \<union> fst ` set \<Gamma>) = ?d" using fdom[OF `\<rho>' \<in> ?S`] by auto
-      have fdom2: "(fdom \<rho>' \<union> fst ` set ((x,e) # \<Gamma>)) = ?d" using fdom1 by auto
+      have fdom1: "(fdom \<rho>' \<union> heapVars \<Gamma>) = ?d" using fdom[OF `\<rho>' \<in> ?S`] by auto
+      have fdom2: "(fdom \<rho>' \<union> heapVars ((x,e) # \<Gamma>)) = ?d" using fdom1 by auto
       have "HSem_cond' ((x,e) # \<Gamma>) \<rho>'" by (rule HSem_cond'_of_member[OF assms(1) `\<rho>'\<in>?S`])
       from this[unfolded fdom2]
       have "HSem_cond' \<Gamma> \<rho>'"
@@ -1102,7 +1102,7 @@ begin
         next
         case False
           show ?thesis
-          proof (cases "x' \<in> fst ` set \<Gamma>")
+          proof (cases "x' \<in> heapVars \<Gamma>")
           case True
             have "the (lookup (heapToEnv \<Gamma> (\<lambda>e. ESem e \<rho>')) x') \<sqsubseteq> the (lookup (HSem \<Gamma> \<rho>') x')"
               apply (subst HSem_eq[OF inner_cond])

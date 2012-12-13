@@ -65,7 +65,7 @@ next
 case (Application y \<Gamma> e x L \<Delta> \<Theta> z e') thus ?case by auto
 next
 case (Variable  x e \<Gamma> L \<Delta> z) thus ?case
-   by (auto simp add: heapVars_def, metis fst_conv imageI)
+   using heapVars_from_set[OF Variable(1)] by auto
 next
 case (Let as \<Gamma> body L \<Delta> z)
   have "x \<notin> heapVars \<Gamma>" by fact moreover
@@ -76,7 +76,7 @@ case (Let as \<Gamma> body L \<Delta> z)
     apply (induct as rule: asToHeap.induct)
     apply (auto simp add: exp_assn.bn_defs fresh_star_insert fresh_star_Pair)
     by (metis finite_set fresh_finite_set_at_base fresh_set)  ultimately
-  have "x \<notin> heapVars (asToHeap as @ \<Gamma>)" by (auto simp del:fst_set_asToHeap)  
+  have "x \<notin> heapVars (asToHeap as @ \<Gamma>)" by (auto simp del:heapVars_asToHeap)  
   thus ?case
     by (rule Let.hyps(4)[OF `x \<in> set L`])
 qed

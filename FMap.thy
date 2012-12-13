@@ -192,9 +192,6 @@ lemma fmap_restr_fmap_upd: "x \<in> S \<Longrightarrow> finite S \<Longrightarro
 lift_definition fmap_of :: "('a \<times> 'b) list \<Rightarrow> ('a, 'b) fmap"
   is map_of by (rule finite_dom_map_of)
 
-lemma fdom_fmap_of[simp]: "fdom (fmap_of l) = fst ` set l"
-  by (transfer, rule dom_map_of_conv_image_fst)
-
 lemma fmap_of_Nil[simp]: "fmap_of [] = fempty"
  by (transfer, simp)
 

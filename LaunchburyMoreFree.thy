@@ -131,7 +131,7 @@ case (Let as \<Gamma> body L \<Delta> z L')
   hence "atom x \<notin> set (bn as)"
     by (auto simp add: set_bn_to_atom_heapVars)
   hence "set (bn as) \<sharp>* x"
-    by (auto simp add: fresh_star_def heapVars_def image_Un fresh_at_base )
+    by (auto simp add: fresh_star_def fresh_at_base)
     
   hence "set (bn as) \<sharp>* set L'"
     using Let(3) Let.prems(2)

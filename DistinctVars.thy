@@ -41,7 +41,7 @@ lemma fresh_heap_expr:
 
 lemma fresh_heap_expr':
   assumes "a \<sharp> \<Gamma>"
-  and "e \<in> snd` set \<Gamma>"
+  and "e \<in> snd ` set \<Gamma>"
   shows "a \<sharp> e"
   using assms
   by (induct \<Gamma>, auto simp add: fresh_Cons)
@@ -155,8 +155,6 @@ lemma heapVars_delete[simp]:
   "heapVars (delete x \<Gamma>) = heapVars \<Gamma> - {x}"
   by (induct \<Gamma>, auto)
 
-lemmas fst_set_delete[simp] = heapVars_delete[unfolded heapVars_def]
-
 lemma distinctVars_delete:
   "distinctVars \<Gamma> \<Longrightarrow> distinctVars (delete x \<Gamma>)"
   apply (induct \<Gamma> rule:distinctVars.induct)
@@ -182,8 +180,12 @@ proof-
   thus "heapVars \<Delta> \<inter> heapVars \<Gamma> = {}" by auto
 qed
 
+lemma dom_map_of_conv_heapVars[simp]:
+  "dom (map_of xys) = heapVars xys"
+  by (induct xys) (auto simp add: dom_if)
+
 lemma the_map_of_snd:
-  "x\<in> fst ` set \<Gamma> \<Longrightarrow> the (map_of \<Gamma> x) \<in> snd ` set \<Gamma>"
+  "x\<in> heapVars \<Gamma> \<Longrightarrow> the (map_of \<Gamma> x) \<in> snd ` set \<Gamma>"
 by (induct \<Gamma>, auto)
 
 lemma distinctVars_map_of[simp]:

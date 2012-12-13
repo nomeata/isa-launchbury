@@ -111,8 +111,8 @@ case (Application n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<Theta
       apply (subst sharp_Env)
       apply auto[1]
       apply (metis fresh_Pair not_self_fresh)
-      apply (metis (hide_lams, no_types) fresh_PairD(1) fresh_PairD(2) fresh_list_elem not_self_fresh)
-      apply (metis (hide_lams, no_types) fresh_PairD(1) fresh_PairD(2) fresh_list_elem not_self_fresh)
+      apply (metis (hide_lams, mono_tags) fresh_Pair heapVars_not_fresh)
+      apply (metis (hide_lams, mono_tags) fresh_Pair heapVars_not_fresh)
     done
   also
   have "... \<le> \<lbrace>\<Theta>' @ \<Theta>\<rbrace>" by (rule Application.hyps(11)[simplified])

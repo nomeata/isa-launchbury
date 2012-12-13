@@ -3,7 +3,7 @@ theory HSemUpd
 begin
 
 
-lemma sharp_star_Env': "atom ` fst ` set \<Gamma> \<sharp>* (\<rho> :: ('var::{cont_pt,at_base}, 'value::{pure_cpo,Nonempty_Meet_cpo,pcpo}) fmap) \<longleftrightarrow> fst ` set \<Gamma> \<inter> fdom \<rho> = {}"
+lemma sharp_star_Env': "atom ` heapVars \<Gamma> \<sharp>* (\<rho> :: ('var::{cont_pt,at_base}, 'value::{pure_cpo,Nonempty_Meet_cpo,pcpo}) fmap) \<longleftrightarrow> heapVars \<Gamma> \<inter> fdom \<rho> = {}"
   by(induct \<Gamma>, auto simp add: fresh_star_def sharp_Env)
 
 locale has_ESem =
@@ -14,18 +14,18 @@ definition HSem :: "('var \<times> 'exp) list \<Rightarrow> ('var, 'value) fmap 
   where
   "\<lbrace>h\<rbrace>\<rho> = 
     (if (\<forall> e \<in> snd `set h. cont (ESem e))
-     then  fix_on' (fmap_bottom (fdom \<rho> \<union> fst ` set h)) (\<lambda> \<rho>'. \<rho> f++ heapToEnv h (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))
-     else (fmap_bottom (fdom \<rho> \<union> fst ` set h)))"
+     then  fix_on' (fmap_bottom (fdom \<rho> \<union> heapVars h)) (\<lambda> \<rho>'. \<rho> f++ heapToEnv h (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))
+     else (fmap_bottom (fdom \<rho> \<union> heapVars h)))"
 
 lemma HSem_def'':
   assumes "\<And> e. e \<in> snd ` set h \<Longrightarrow> cont (ESem e)"
-  shows "\<lbrace>h\<rbrace>\<rho> = fix_on' (fmap_bottom (fdom \<rho> \<union> fst ` set h)) (\<lambda> \<rho>'. \<rho> f++ heapToEnv h (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
+  shows "\<lbrace>h\<rbrace>\<rho> = fix_on' (fmap_bottom (fdom \<rho> \<union> heapVars h)) (\<lambda> \<rho>'. \<rho> f++ heapToEnv h (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
   unfolding HSem_def using assms by metis
 
 lemma fix_on_cond_HSem':
   assumes cont: "\<And> e. e \<in> snd ` set h \<Longrightarrow> cont (ESem e)"
-  shows "fix_on_cond {x. fmap_bottom (fdom \<rho> \<union> fst ` set h) \<sqsubseteq> x}
-          (fmap_bottom (fdom \<rho> \<union> fst ` set h)) (\<lambda>\<rho>'. \<rho> f++ heapToEnv h (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
+  shows "fix_on_cond {x. fmap_bottom (fdom \<rho> \<union> heapVars h) \<sqsubseteq> x}
+          (fmap_bottom (fdom \<rho> \<union> heapVars h)) (\<lambda>\<rho>'. \<rho> f++ heapToEnv h (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
   apply (rule fix_on_condI)
   apply (rule subpcpo_cone_above)
   apply (rule bottom_of_cone_above)
@@ -58,13 +58,13 @@ proof-
     apply (erule cont)+
     unfolding fdoms
     apply (rule eq_imp_below)
-    proof (rule fix_on_cont[OF `chain Y`, where S = "{x . fmap_bottom (fdom (\<Squnion> i. Y i) \<union> fst `set h) \<sqsubseteq> x}"])
+    proof (rule fix_on_cont[OF `chain Y`, where S = "{x . fmap_bottom (fdom (\<Squnion> i. Y i) \<union> heapVars h) \<sqsubseteq> x}"])
       show "cont (\<lambda>a b. a f++ heapToEnv h (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>b\<^esub>))"
         by (rule cont2cont_lambda[OF fmap_add_cont1])
       fix i
         from fix_on_cond_HSem'[OF cont, where \<rho> = "Y i", unfolded fdoms]
-        show "fix_on_cond {x. fmap_bottom (fdom (\<Squnion> i. Y i) \<union> fst ` set h) \<sqsubseteq> x}
-               (fmap_bottom (fdom (Lub Y) \<union> fst ` set h)) (\<lambda>a. Y i f++ heapToEnv h (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>a\<^esub>))"
+        show "fix_on_cond {x. fmap_bottom (fdom (\<Squnion> i. Y i) \<union> heapVars h) \<sqsubseteq> x}
+               (fmap_bottom (fdom (Lub Y) \<union> heapVars h)) (\<lambda>a. Y i f++ heapToEnv h (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>a\<^esub>))"
            by metis
     qed
 qed
@@ -77,18 +77,18 @@ locale has_cont_ESem = has_ESem +
 begin
 
   lemma HSem_def':
-    shows "\<lbrace>h\<rbrace>\<rho> = fix_on' (fmap_bottom (fdom \<rho> \<union> fst ` set h)) (\<lambda> \<rho>'. \<rho> f++ heapToEnv h (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
+    shows "\<lbrace>h\<rbrace>\<rho> = fix_on' (fmap_bottom (fdom \<rho> \<union> heapVars h)) (\<lambda> \<rho>'. \<rho> f++ heapToEnv h (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
     unfolding HSem_def using ESem_cont by metis
 
   lemma fix_on_cond_HSem:
-    shows "fix_on_cond {x. fmap_bottom (fdom \<rho> \<union> fst ` set h) \<sqsubseteq> x}
-            (fmap_bottom (fdom \<rho> \<union> fst ` set h)) (\<lambda>\<rho>'. \<rho> f++ heapToEnv h (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
+    shows "fix_on_cond {x. fmap_bottom (fdom \<rho> \<union> heapVars h) \<sqsubseteq> x}
+            (fmap_bottom (fdom \<rho> \<union> heapVars h)) (\<lambda>\<rho>'. \<rho> f++ heapToEnv h (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
     apply (rule fix_on_cond_HSem') using ESem_cont by metis
 
   lemma HSem_ind:
     assumes "adm P"
-    assumes "P (fmap_bottom (fdom \<rho> \<union> fst ` set h))"
-    assumes step: "\<And> y. fdom y = fdom \<rho> \<union> fst ` set h \<Longrightarrow>
+    assumes "P (fmap_bottom (fdom \<rho> \<union> heapVars h))"
+    assumes step: "\<And> y. fdom y = fdom \<rho> \<union> heapVars h \<Longrightarrow>
           P y \<Longrightarrow>  P (\<rho> f++ (heapToEnv h (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>y\<^esub>)))"
     shows "P (\<lbrace>h\<rbrace>\<rho>)"
     unfolding HSem_def'
@@ -102,9 +102,9 @@ begin
   
   lemma parallel_HSem_ind:
     assumes "adm (\<lambda>\<rho>'. P (fst \<rho>') (snd \<rho>'))"
-    assumes "P (fmap_bottom (fdom \<rho> \<union> fst ` set h)) (fmap_bottom (fdom \<rho>2 \<union> fst ` set h2))"
-    assumes step: "\<And>y z. fdom y = fdom \<rho> \<union> fst ` set h \<Longrightarrow>
-            fdom z = fdom \<rho>2 \<union> fst ` set h2 \<Longrightarrow>
+    assumes "P (fmap_bottom (fdom \<rho> \<union> heapVars h)) (fmap_bottom (fdom \<rho>2 \<union> heapVars h2))"
+    assumes step: "\<And>y z. fdom y = fdom \<rho> \<union> heapVars h \<Longrightarrow>
+            fdom z = fdom \<rho>2 \<union> heapVars h2 \<Longrightarrow>
             P y z \<Longrightarrow>
             P (\<rho> f++ (heapToEnv h (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>y\<^esub>))) (\<rho>2 f++ (heapToEnv h2 (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>z\<^esub>)))"
     shows "P (\<lbrace>h\<rbrace>\<rho>) (\<lbrace>h2\<rbrace>\<rho>2)"
@@ -122,19 +122,19 @@ begin
     by (rule fix_on_eq[OF fix_on_cond_HSem])  
   
   lemma the_lookup_HSem_other:
-    assumes "y \<notin> fst ` set h"
+    assumes "y \<notin> heapVars h"
     shows "the (lookup (\<lbrace>h\<rbrace>\<rho>) y) = the (lookup \<rho> y)"
     apply (subst HSem_eq)
     using assms by simp
   
   lemma the_lookup_HSem_heap:
-    assumes "y \<in> fst ` set h"
+    assumes "y \<in> heapVars h"
     shows "the (lookup (\<lbrace>h\<rbrace>\<rho>) y) = \<lbrakk> the (map_of h y) \<rbrakk>\<^bsub>\<lbrace>h\<rbrace>\<rho>\<^esub>"
     apply (subst HSem_eq)
     using assms by (simp add: lookupHeapToEnv)
 
   lemma fdom_HSem[simp]:
-    "fdom (\<lbrace>h\<rbrace>\<rho>) = fdom \<rho> \<union> fst ` set h"
+    "fdom (\<lbrace>h\<rbrace>\<rho>) = fdom \<rho> \<union> heapVars h"
     by (subst HSem_eq, simp)
 
   lemma fmap_restr_fmap_addI:"finite S \<Longrightarrow> fdom \<rho>1 - fdom \<rho>2 \<subseteq> S \<Longrightarrow> fmap_restr S \<rho>1 f++ \<rho>2 = \<rho>1 f++ \<rho>2"
@@ -144,7 +144,7 @@ begin
     by (metis lookup_fmap_add1 lookup_fmap_add2 lookup_fmap_restr)
 
   lemma HSem_restr:
-    "\<lbrace>h\<rbrace>(fmap_restr (fdom \<rho> - fst ` set h) \<rho>) = \<lbrace>h\<rbrace>\<rho>"
+    "\<lbrace>h\<rbrace>(fmap_restr (fdom \<rho> - heapVars h) \<rho>) = \<lbrace>h\<rbrace>\<rho>"
     apply (rule parallel_HSem_ind)
     apply simp
     apply auto
@@ -157,7 +157,7 @@ begin
     assumes "distinctVars \<Delta>"
     assumes "set \<Gamma> = set \<Delta>"
     shows "\<lbrace>\<Gamma>\<rbrace>\<rho> = \<lbrace>\<Delta>\<rbrace>\<rho>"
-  by (simp add: HSem_def  heapToEnv_reorder[OF assms] assms(3))
+  by (simp add: HSem_def' heapToEnv_reorder[OF assms] assms(3) heapVars_def)
   
   lemma HSem_reorder_head:
     assumes "x \<noteq> y"
@@ -167,7 +167,7 @@ begin
       by auto
     thus ?thesis      
       unfolding HSem_def  heapToEnv_reorder_head[OF assms]
-      by simp
+      by (simp add: heapVars_def)
   qed
   
   lemma HSem_reorder_head_append:
@@ -177,11 +177,11 @@ begin
     have "set ((x,e)#\<Gamma>@\<Delta>) = set (\<Gamma> @ ((x,e)#\<Delta>))" by auto
     thus ?thesis
       unfolding HSem_def  heapToEnv_reorder_head_append[OF assms]
-      by simp
+      by (simp add: )
   qed  
     
   lemma fmap_restr_HSem_noop:
-    assumes "fst`set \<Gamma> \<inter> fdom \<rho> = {}"
+    assumes "heapVars \<Gamma> \<inter> fdom \<rho> = {}"
     shows "fmap_restr (fdom \<rho>) (\<lbrace>\<Gamma>\<rbrace>\<rho>) = \<rho>"
     apply (rule fmap_eqI)
     using assms apply auto[1]
@@ -191,7 +191,7 @@ begin
     done
   
   lemma HSem_disjoint_less:
-    assumes "fst`set \<Gamma> \<inter> fdom \<rho> = {}"
+    assumes "heapVars \<Gamma> \<inter> fdom \<rho> = {}"
     shows "\<rho> \<le> \<lbrace>\<Gamma>\<rbrace>\<rho>"
     using assms
   by (metis fmap_less_restrict fmap_restr_HSem_noop)
@@ -200,17 +200,17 @@ begin
     by (subst HSem_eq, simp)
 
   lemma iterative_HSem:
-    assumes "x \<notin> fst ` set \<Gamma>"
+    assumes "x \<notin> heapVars \<Gamma>"
     shows "\<lbrace>(x,e) # \<Gamma>\<rbrace>\<rho> =
-         fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> fst ` set \<Gamma>)))
-            (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
+         fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> heapVars \<Gamma>)))
+            (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
   proof-
     interpret iterative
       where e1 =  "\<lambda> \<rho>'. heapToEnv \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)"
       and e2 = "\<lambda> \<rho>'. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>"
-      and S = "fst ` set \<Gamma>"
+      and S = "heapVars \<Gamma>"
       and x = x
-      and D =  "insert x (fdom \<rho> \<union> fst ` set \<Gamma>) "
+      and D =  "insert x (fdom \<rho> \<union> heapVars \<Gamma>) "
       apply -
       apply unfold_locales
       using assms
@@ -220,8 +220,8 @@ begin
       by (simp add: HSem_def' fmap_add_upd)
     also have "\<dots> = fix_on' b R"
       by (rule iterative_fmap_add)
-    also have "\<dots> = fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> fst ` set \<Gamma>)))
-            (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
+    also have "\<dots> = fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> heapVars \<Gamma>)))
+            (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
       apply (rule fix_on_cong[OF condR])
       apply (simp add: HSem_def')
       apply (drule sym)
@@ -231,17 +231,17 @@ begin
   qed
 
   lemma iterative_HSem'_cond:
-    assumes "x \<notin> fst ` set \<Gamma>"
-    shows "fix_on_cond {\<rho>'. fmap_bottom (insert x (fdom \<rho> \<union> fst ` set \<Gamma>)) \<sqsubseteq> \<rho>'}
-             (fmap_bottom (insert x (fdom \<rho> \<union> fst ` set \<Gamma>)))
-             (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>'\<^esub>))"
+    assumes "x \<notin> heapVars \<Gamma>"
+    shows "fix_on_cond {\<rho>'. fmap_bottom (insert x (fdom \<rho> \<union> heapVars \<Gamma>)) \<sqsubseteq> \<rho>'}
+             (fmap_bottom (insert x (fdom \<rho> \<union> heapVars \<Gamma>)))
+             (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>'\<^esub>))"
   proof-
     interpret iterative
       where e1 =  "\<lambda> \<rho>'. heapToEnv \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)"
       and e2 = "\<lambda> \<rho>'. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>"
-      and S = "fst ` set \<Gamma>"
+      and S = "heapVars \<Gamma>"
       and x = x
-      and D =  "insert x (fdom \<rho> \<union> fst ` set \<Gamma>) "
+      and D =  "insert x (fdom \<rho> \<union> heapVars \<Gamma>) "
       apply -
       apply unfold_locales
       using assms
@@ -256,25 +256,25 @@ begin
   qed
 
   lemma iterative_HSem':
-    assumes "x \<notin> fst ` set \<Gamma>"
-    shows "fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> fst ` set \<Gamma>)))
-            (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)) 
-       = fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> fst ` set \<Gamma>)))
-            (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>'\<^esub>))"
+    assumes "x \<notin> heapVars \<Gamma>"
+    shows "fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> heapVars \<Gamma>)))
+            (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)) 
+       = fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> heapVars \<Gamma>)))
+            (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>'\<^esub>))"
   proof-
     interpret iterative
       where e1 =  "\<lambda> \<rho>'. heapToEnv \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)"
       and e2 = "\<lambda> \<rho>'. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>"
-      and S = "fst ` set \<Gamma>"
+      and S = "heapVars \<Gamma>"
       and x = x
-      and D =  "insert x (fdom \<rho> \<union> fst ` set \<Gamma>) "
+      and D =  "insert x (fdom \<rho> \<union> heapVars \<Gamma>) "
       apply -
       apply unfold_locales
       using assms
       by (simp_all add: ESem_cont)
 
-    have "fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> fst ` set \<Gamma>)))
-            (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)) =
+    have "fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> heapVars \<Gamma>)))
+            (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)) =
           fix_on' b R"
       apply (rule fix_on_cong[symmetric, OF condR])
       apply (simp add: HSem_def')
@@ -285,8 +285,8 @@ begin
       by (rule iterative_fmap_add[symmetric])
     also have "\<dots> = fix_on' b R'"
       by (rule iterative_fmap_add')
-    also have "\<dots> = fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> fst ` set \<Gamma>)))
-            (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (fst ` set \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>'\<^esub>))"
+    also have "\<dots> = fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> heapVars \<Gamma>)))
+            (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>'\<^esub>))"
       apply (rule fix_on_cong[OF condR'])
       apply (simp add: HSem_def')
       apply (drule sym)

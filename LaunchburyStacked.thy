@@ -291,33 +291,6 @@ proof-
   show ?thesis by simp
 qed
 
-(*
-lemma reds_avoids_live:
-  "\<lbrakk> \<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z;
-   x \<in> set L;
-   x \<notin> heapVars \<Gamma>
-  \<rbrakk> \<Longrightarrow> x \<notin> heapVars \<Delta>"
-proof(induct rule:reds.induct)
-case (Lambda \<Gamma> x e L) thus ?case by auto
-next
-case (Application y \<Gamma> e x L \<Delta> \<Theta> z e') thus ?case by auto
-next
-case (Variable  x e \<Gamma> L \<Delta> z) thus ?case by (auto simp add: heapVars_def, metis fst_conv imageI)
-next
-case (Let as \<Gamma> L body \<Delta> z)
-  have "x \<notin> heapVars \<Gamma>" by fact moreover
-  have "x \<notin> heapVars (asToHeap as)"
-    using `set (bn as) \<sharp>* (\<Gamma>, L)` and `x \<in> set L`
-    apply -
-    apply (induct as rule: asToHeap.induct)
-    apply (auto simp add: exp_assn.bn_defs fresh_star_insert fresh_star_Pair)
-    by (metis finite_set fresh_finite_set_at_base fresh_set)  ultimately
-  have "x \<notin> heapVars (asToHeap as @ \<Gamma>)" by (auto simp del:fst_set_asToHeap)  
-  thus ?case
-    by (rule Let.hyps(4)[OF `x \<in> set L`])
-qed
-*)
-
 lemma reds_fresh':" \<lbrakk> \<Gamma> : \<Gamma>' \<Down>d \<Delta> : \<Delta>';
    atom (x::var) \<sharp> (\<Gamma> , snd (hd \<Gamma>'))
   \<rbrakk> \<Longrightarrow> atom x \<sharp> (\<Delta>, snd (hd \<Delta>')) \<or> x \<in> heapVars \<Delta>"
