@@ -175,7 +175,6 @@ case (goal2 x \<Gamma> e \<Delta>)
   hence "(x,e) \<in> set \<Delta>"
     by (metis ListMem_iff elem)
   note Delta' = heapToEnv_delete_insert[OF `distinctVars \<Delta>` this]
-  thm Delta'
 
   have "distinctVars (delete x \<Delta>)" 
     by (rule distinctVars_delete[OF goal2(4)])

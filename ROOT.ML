@@ -1,5 +1,7 @@
-(*
-  no_document use_thys ["This_Theory1", "This_Theory2"];
-  use_thys ["That_Theory1", "That_Theory2", "That_Theory3"];
-*)
-use_thys ["Launchbury"];
+no_document use_thys ["~~/src/HOL/Library/FuncSet"];
+
+quick_and_dirty := true;
+Toplevel.skip_proofs := true;
+Goal.parallel_proofs := 0;
+
+use_thys ["Correctness","CorrectnessUpd"];

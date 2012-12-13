@@ -1,5 +1,5 @@
 theory "FMap-Nominal"
-  imports FMap "Nominal-Utils" "~~/src/HOL/Library/Permutations" "~~/src/HOL/Library/FuncSet"
+  imports FMap "Nominal-Utils" "~~/src/HOL/Library/FuncSet"
 begin
 
 lemma dom_perm:

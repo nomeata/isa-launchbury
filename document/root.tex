@@ -1,4 +1,4 @@
-\documentclass[11pt,a4paper]{article}
+\documentclass[11pt,a4paper,parskip=half]{scrbook}
 \usepackage{isabelle,isabellesym}
 
 % further packages required for unusual symbols (see also
@@ -13,48 +13,152 @@
   %option greek for \<euro>
   %option english (default language) for \<guillemotleft>, \<guillemotright>
 
-%\usepackage[only,bigsqcap]{stmaryrd}
+\usepackage[only,bigsqcap]{stmaryrd}
   %for \<Sqinter>
 
 %\usepackage{eufrak}
   %for \<AA> ... \<ZZ>, \<aa> ... \<zz> (also included in amssymb)
 
-%\usepackage{textcomp}
+%\usepackagetcomp}
   %for \<onequarter>, \<onehalf>, \<threequarters>, \<degree>, \<cent>,
   %\<currency>
 
 % this should be the last package used
 \usepackage{pdfsetup}
 
-% urls in roman style, theory text in math-similar italics
+% urls in roman style, theoryt in math-similar italics
 \urlstyle{rm}
 \isabellestyle{it}
 
 % for uniform font size
 %\renewcommand{\isastyle}{\isastyleminor}
 
+% From src/HOL/HOLCF/document/root
+\newcommand{\isasymnotsqsubseteq}{\isamath{\not\sqsubseteq}}
+
 
 \begin{document}
 
-\title{isa-launchbury}
-\author{By jojo}
+\title{Correctness Launchbury's Natural Semantics for Lazy Evaluation}
+\author{Joachim Breitner}
 \maketitle
 
 \tableofcontents
 
-% sane default for proof documents
-\parindent 0pt\parskip 0.5ex
+\chapter{Introduction}
 
-% generated text of all theories
-\input{session}
+\section{Theory overview}
+
+Chapter \ref{ch_aux} contains auxillary theories, not necessarily tied to Launchbury's semantics. The base theories are kept independent of Nominal and HOLCF where possible, the lemmas combining them are in theories of their own, creatively named by appending Nominal, HOLCF or both.  You will find the chapter:
+\begin{itemize}
+\item General utility functions extending HOLCF resp.\ Nominal (\isa{Nominal-Utils}, \isa{HOLCF-Utils}).
+\item A theory combining notions from HOLCF and Nominal, e.g. continutiy of permutation (\isa{Nominal-Utils}).
+\item A notion of distinctly named associative lists (\isa{DistinctVars}). 
+\item A generalisation of some parts of HOLCF to work on a set as a carrier instead of a type (\isa{HOLCF-Set}).
+\item Binary joins in the context of HOLCF (\isa{HOLCF-Join}).
+\item A notion of down-closed sets in the context of HOLCF (\isa{HOLCF-Down-Closed}).
+\item A theory of fixed points of binary joins (\isa{HOLCF-Fix-Join}).
+\item A type for finite maps with a chain-complete partial order (\isa{FMap}, \isa{FMap-Nominal}, \isa{FMap-HOLCF}, \isa{FMap-Nominal-HOLCF}.
+\end{itemize}
+
+Chapter \ref{ch_natsem} defines Launchbury's natural semantics, while \ref{ch_natsemstack} provides a variant with an explicit stack and proves them equivalent.
+
+Chapter \ref{ch_dendom} sets the stage for the denotational semantics by defining the denotational domain, proving that binary meets exist.
+
+Chapter \ref{ch_denjoin} defines the denotational semantics where $\sqcup$ means the least upper bound, and proves Launchbury's semantics correct via the stacked semantics. The theory HSem is abstract in the denotation of expressions.
+
+Chapter \ref{ch_denupd} defines the denotational semantics where $\sqcup$ means right-sided update, and proves Launchbury's semantics correct using the proof from his paper. Again, the theory \isa{HSem} is abstract in the denotation of expressions.
+
+% generatedt of all theories
+
+\newcommand{\theory}[1]{\section{#1}\label{sec_#1}\input{#1.tex}}
+
+\chapter{Auxillary theories}
+\label{ch_aux}
+
+\theory{Nominal-Utils}
+
+\theory{HOLCF-Utils}
+
+\theory{Nominal-HOLCF}
+
+\theory{DistinctVars}
+
+\theory{HOLCF-Set}
+
+\theory{HOLCF-Join}
+
+\theory{HOLCF-Down-Closed}
+
+\theory{HOLCF-Fix-Join}
+
+\theory{FMap}
+
+\theory{FMap-Nominal}
+
+\theory{FMap-HOLCF}
+
+\theory{FMap-Nominal-HOLCF}
+
+
+\chapter{Launchbury's natural semantics}
+\label{ch_natsem}
+
+\theory{Terms}
+\theory{Heap}
+
+\theory{Launchbury}
+
+\chapter{Stackful natural semantics}
+\label{ch_natsemstack}
+
+\theory{LaunchburyStacked}
+
+\theory{LaunchburyMoreFree}
+
+\theory{Launchbury-Unstack}
+
+\chapter{Denotational domain}
+\label{ch_dendom}
+
+\theory{Denotational-Common}
+
+\theory{Value-Meet}
+
+\theory{HeapToEnv}
+
+\chapter{Denotational semantics with join}
+\label{ch_denjoin}
+
+\theory{HSem}
+
+\theory{Denotational}
+
+\theory{Denotational-Props}
+
+\theory{CorrectnessStacked}
+
+\theory{Correctness}
+
+\chapter{Denotational semantics with update}
+\label{ch_denupd}
+
+\theory{HSemUpd}
+
+\theory{DenotationalUpd}
+
+\theory{Denotational-PropsUpd}
+
+\theory{CorrectnessUpd}
+
+
+%%% Local Variables:
+%%% mode: l
+%%% TeX-master: "root"
+%%% End:
 
 % optional bibliography
 %\bibliographystyle{abbrv}
 %\bibliography{root}
 
 \end{document}
-
-%%% Local Variables:
-%%% mode: latex
-%%% TeX-master: t
-%%% End:
