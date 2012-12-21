@@ -2,8 +2,8 @@ theory "Correctness-Counterexample"
 imports "Denotational-Props" Launchbury
 begin
 
-text {* In this theory we show that Theorem 2 in Launchbury's original paper does not hold if one
-take @{term "op \<squnion>"} to mean the least upper bound, by giving a counter example. *}
+text {* In this theory we show that Theorem 2 in Launchbury's original paper \cite{launchbury} does not hold if one
+take @{text "\<squnion>"} to mean the least upper bound, by giving a counter example. *}
 
 theorem counterexample:
   assumes correct: "
