@@ -1,4 +1,4 @@
-\documentclass[11pt,a4paper,parskip=half]{scrbook}
+\documentclass[11pt,a4paper,parskip=half, abstraction]{scrartcl}
 \usepackage{isabelle,isabellesym}
 
 % further packages required for unusual symbols (see also
@@ -39,17 +39,29 @@
 
 \begin{document}
 
-\title{Correctness Launchbury's Natural Semantics for Lazy Evaluation}
+\title{The Correctness of Launchbury's Natural Semantics for Lazy Evaluation}
 \author{Joachim Breitner}
 \maketitle
 
+\begin{abstract}
+In his seminal paper „Natural Semantics for Lazy Evaluation“ \cite{launchbury},
+John Launchbury proves his semantics correct with respect to a denotational
+semantics. We have formalized both semantics and identified an ambiguity in
+what the $\sqcup$ operator should do: If it is understood as the least upper
+bound, as hinted at in the paper, the original proof fails.  We fix the proof
+by taking a detour via a modified natural semantics with an explicit stack. In
+addition, we show that the original proof goes through when $\sqcup$ is
+understood to be a right-sided update.
+\end{abstract}
+
 \tableofcontents
 
-\chapter{Introduction}
+\section{Introduction}
 
-\section{Theory overview}
+TODO
+\subsection{Theory overview}
 
-Chapter \ref{ch_aux} contains auxillary theories, not necessarily tied to Launchbury's semantics. The base theories are kept independent of Nominal and HOLCF where possible, the lemmas combining them are in theories of their own, creatively named by appending Nominal, HOLCF or both.  You will find the chapter:
+Chapter \ref{ch_aux} contains auxillary theories, not necessarily tied to Launchbury's semantics. The base theories are kept independent of Nominal and HOLCF where possible, the lemmas combining them are in theories of their own, creatively named by appending \isar{-Nominal}, \isar{-HOLCF} or both.  You will find the section:
 \begin{itemize}
 \item General utility functions extending HOLCF resp.\ Nominal (\isa{Nominal-Utils}, \isa{HOLCF-Utils}).
 \item A theory combining notions from HOLCF and Nominal, e.g. continutiy of permutation (\isa{Nominal-Utils}).
@@ -58,7 +70,7 @@ Chapter \ref{ch_aux} contains auxillary theories, not necessarily tied to Launch
 \item Binary joins in the context of HOLCF (\isa{HOLCF-Join}).
 \item A notion of down-closed sets in the context of HOLCF (\isa{HOLCF-Down-Closed}).
 \item A theory of fixed points of binary joins (\isa{HOLCF-Fix-Join}).
-\item A type for finite maps with a chain-complete partial order (\isa{FMap}, \isa{FMap-Nominal}, \isa{FMap-HOLCF}, \isa{FMap-Nominal-HOLCF}.
+\item A type for finite maps with a chain-complete partial order (\isa{FMap}, \isa{FMap-Nominal}, \isa{FMap-HOLCF}, \isa{FMap-Nominal-HOLCF}).
 \end{itemize}
 
 Chapter \ref{ch_natsem} defines Launchbury's natural semantics, while \ref{ch_natsemstack} provides a variant with an explicit stack and proves them equivalent.
@@ -69,11 +81,10 @@ Chapter \ref{ch_denjoin} defines the denotational semantics where $\sqcup$ means
 
 Chapter \ref{ch_denupd} defines the denotational semantics where $\sqcup$ means right-sided update, and proves Launchbury's semantics correct using the proof from his paper. Again, the theory \isa{HSem} is abstract in the dconcrete enotation of expressions.
 
-% generatedt of all theories
+\newcommand{\theory}[1]{\subsection{#1}\label{sec_#1}\input{#1.tex}}
 
-\newcommand{\theory}[1]{\section{#1}\label{sec_#1}\input{#1.tex}}
-
-\chapter{Auxillary theories}
+\clearpage
+\section{Auxillary theories}
 \label{ch_aux}
 
 \theory{Nominal-Utils}
@@ -101,7 +112,8 @@ Chapter \ref{ch_denupd} defines the denotational semantics where $\sqcup$ means 
 \theory{FMap-Nominal-HOLCF}
 
 
-\chapter{Launchbury's natural semantics}
+\clearpage
+\section{Launchbury's natural semantics}
 \label{ch_natsem}
 
 \theory{Terms}
@@ -109,7 +121,8 @@ Chapter \ref{ch_denupd} defines the denotational semantics where $\sqcup$ means 
 
 \theory{Launchbury}
 
-\chapter{Stackful natural semantics}
+\clearpage
+\section{Stackful natural semantics}
 \label{ch_natsemstack}
 
 \theory{LaunchburyStacked}
@@ -118,7 +131,7 @@ Chapter \ref{ch_denupd} defines the denotational semantics where $\sqcup$ means 
 
 \theory{Launchbury-Unstack}
 
-\chapter{Denotational domain}
+\section{Denotational domain}
 \label{ch_dendom}
 
 \theory{Denotational-Common}
@@ -127,7 +140,8 @@ Chapter \ref{ch_denupd} defines the denotational semantics where $\sqcup$ means 
 
 \theory{HeapToEnv}
 
-\chapter{Denotational semantics with join}
+\clearpage
+\section{Denotational semantics with join}
 \label{ch_denjoin}
 
 \theory{HSem}
@@ -142,7 +156,8 @@ Chapter \ref{ch_denupd} defines the denotational semantics where $\sqcup$ means 
 
 \theory{Correctness}
 
-\chapter{Denotational semantics with update}
+\clearpage
+\section{Denotational semantics with update}
 \label{ch_denupd}
 
 \theory{HSemUpd}
@@ -153,13 +168,12 @@ Chapter \ref{ch_denupd} defines the denotational semantics where $\sqcup$ means 
 
 \theory{CorrectnessUpd}
 
+\clearpage
+\section{Conclusion}
 
-%%% Local Variables:
-%%% mode: l
-%%% TeX-master: "root"
-%%% End:
+TODO
 
-% optional bibliography
+\clearpage
 \bibliographystyle{abbrv}
 \bibliography{root}
 

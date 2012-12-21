@@ -3,7 +3,7 @@ imports
   "HOLCF"
 begin
 
-subsection {* Binary Joins and compatibility *}
+subsubsection {* Binary Joins and compatibility *}
 
 context cpo
 begin
@@ -245,7 +245,7 @@ begin
     unfolding compatible_def by (metis insert_commute is_lub_bin minimal)+
 end
 
-subsection {* Towards meets: Lower bounds *}
+subsubsection {* Towards meets: Lower bounds *}
 
 context po
 begin
@@ -267,7 +267,7 @@ lemma is_lb_insert [simp]: "(insert x A) >| y = (y \<sqsubseteq> x \<and> A >| y
 lemma is_lb_downward: "[|S >| l; y \<sqsubseteq> l|] ==> S >| y"
   unfolding is_lb_def by (fast intro: below_trans)
 
-subsection {* Greatest lower bounds *}
+subsubsection {* Greatest lower bounds *}
 
 definition is_glb :: "'a set => 'a => bool" (infix ">>|" 55) where
   "S >>| x <-> S >| x \<and> (\<forall>u. S >| u --> u \<sqsubseteq> x)"

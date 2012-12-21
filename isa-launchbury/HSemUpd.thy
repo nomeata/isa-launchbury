@@ -304,7 +304,7 @@ lemma HSem_cong[fundef_cong]:
   unfolding has_ESem.HSem_def
   by (auto cong:heapToEnv_cong)
 
-subsection {* Equivariance *}
+subsubsection {* Equivariance *}
 
 lemma subcpo_eqvt[eqvt]:
   fixes S :: "('a::cont_pt) set"
