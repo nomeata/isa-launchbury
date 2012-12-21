@@ -98,7 +98,6 @@ case (Let as exp \<rho> x y)
 
   have lookup_other: "\<And> \<rho> . the (lookup (\<lbrace>asToHeap as[x::a=y]\<rbrace>\<rho>) y) = the (lookup \<rho> y)"
     using `y \<notin> assn_vars as`
-    thm the_lookup_HSem_other
     by (auto simp add: the_lookup_HSem_other)
 
   have [simp]:"fdom \<rho> \<union> assn_vars as - {x} = fdom \<rho> \<union> assn_vars as"
