@@ -4,4 +4,4 @@ quick_and_dirty := true;
 Toplevel.skip_proofs := true;
 Goal.parallel_proofs := 0;
 
-use_thys ["Correctness","CorrectnessUpd"];
+use_thys ["Correctness","CorrectnessUpd","Correctness-Counterexample"];

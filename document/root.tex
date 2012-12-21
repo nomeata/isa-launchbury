@@ -65,9 +65,9 @@ Chapter \ref{ch_natsem} defines Launchbury's natural semantics, while \ref{ch_na
 
 Chapter \ref{ch_dendom} sets the stage for the denotational semantics by defining the denotational domain, proving that binary meets exist.
 
-Chapter \ref{ch_denjoin} defines the denotational semantics where $\sqcup$ means the least upper bound, and proves Launchbury's semantics correct via the stacked semantics. The theory HSem is abstract in the denotation of expressions.
+Chapter \ref{ch_denjoin} defines the denotational semantics where $\sqcup$ means the least upper bound. We show that Launchbury's Theorem 2 as stated is false for this semantics, and provide an alternative proof, that avoids the problematic generalisation, via the stacked semantics. The theory HSem is abstract in the concrete denotation of expressions.
 
-Chapter \ref{ch_denupd} defines the denotational semantics where $\sqcup$ means right-sided update, and proves Launchbury's semantics correct using the proof from his paper. Again, the theory \isa{HSem} is abstract in the denotation of expressions.
+Chapter \ref{ch_denupd} defines the denotational semantics where $\sqcup$ means right-sided update, and proves Launchbury's semantics correct using the proof from his paper. Again, the theory \isa{HSem} is abstract in the dconcrete enotation of expressions.
 
 % generatedt of all theories
 
@@ -135,6 +135,8 @@ Chapter \ref{ch_denupd} defines the denotational semantics where $\sqcup$ means 
 \theory{Denotational}
 
 \theory{Denotational-Props}
+
+\theory{Correctness-Counterexample}
 
 \theory{CorrectnessStacked}
 

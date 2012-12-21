@@ -53,7 +53,11 @@ lemma join_above2: "compatible x y \<Longrightarrow> y \<sqsubseteq> x \<squnion
   apply auto
   by (metis is_lubD1 is_ub_insert lub_eqI)  
 
-lemma larger_is_join: "x \<sqsubseteq> y \<Longrightarrow> x \<squnion> y = y"
+lemma larger_is_join1: "y \<sqsubseteq> x \<Longrightarrow> x \<squnion> y = x"
+  unfolding join_def
+  by (metis doubleton_eq_iff lub_bin)
+
+lemma larger_is_join2: "x \<sqsubseteq> y \<Longrightarrow> x \<squnion> y = y"
   unfolding join_def
   by (metis is_lub_bin lub_bin)
 
