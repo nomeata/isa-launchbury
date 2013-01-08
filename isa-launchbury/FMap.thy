@@ -128,7 +128,7 @@ lemma fmap_restr_fmap_upd: "x \<in> S \<Longrightarrow> finite S \<Longrightarro
   apply auto
   done
 
-subsubsection {* Delete *}
+subsubsection {* Deleting *}
 
 lift_definition fmap_delete :: "'a \<Rightarrow> 'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b"
   is "\<lambda> x m. m(x := None)" by auto
@@ -152,7 +152,7 @@ lemma fran_fmap_upd[simp]:
   "fran (m(x f\<mapsto> v)) = insert v (fran (fmap_delete x m))"
 by (transfer, auto simp add: ran_def)
  
-subsubsection {* Addition (mergeing) of finite maps *}
+subsubsection {* Addition (merging) of finite maps *}
 
 lift_definition fmap_add :: "'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b" (infixl "f++" 100) 
   is "map_add" by auto

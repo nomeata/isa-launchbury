@@ -1480,6 +1480,4 @@ begin
   apply (simp add: to_bot_fmap_def)
   done
 end
-
-
 end
