@@ -48,6 +48,8 @@ lemma fmap_belowE:
   apply (transfer, auto)
   done
 
+subsubsection {* The order is chain-complete *}
+
 definition fmap_lub_raw where
   "fmap_lub_raw S = (\<lambda> x. 
       if (x \<in> dom (S 0))
@@ -158,6 +160,8 @@ qed
 lemma unfold_lub_fmap:  "chain (Y::nat => 'a f\<rightharpoonup> 'b::cpo) \<Longrightarrow> lub (range Y) = fmap_lub Y"
   by (rule lub_eqI, rule is_lub_fmap)
 
+subsubsection {* Continuity and finite maps *}
+
 lemma chain_fdom:
   assumes "chain (Y :: nat \<Rightarrow> 'a\<Colon>type f\<rightharpoonup> 'b\<Colon>cpo) "
   shows "fdom (Y i) = fdom (Y 0)" and "fdom (\<Squnion> i. Y i) = fdom (Y 0)"
@@ -267,9 +271,6 @@ proof (intro contI2  monofunI fmap_belowI)
   thus "fdom (f x1(v f\<mapsto> h x1)) = fdom (f x2(v f\<mapsto> h x2))"
     by (simp add: fmap_below_dom)
 
-  (*  have finite_transfer[transfer_rule]: "(op = ===> op =) \<sqsubseteq> \<sqsubseteq>" 
-  unfolding fun_rel_eq by (rule refl) *)
-
   fix v'
   assume "v' \<in> fdom (f x1(v f\<mapsto> h x1))"  and "v' \<in> fdom (f x2(v f\<mapsto> h x2))"
   thus "the (lookup (f x1(v f\<mapsto> h x1)) v') \<sqsubseteq> the (lookup (f x2(v f\<mapsto> h x2)) v')"
@@ -317,44 +318,30 @@ next
   qed
 qed      
 
-lemma fdom_pred_adm[intro]: "adm (\<lambda> a. P (fdom a))" 
+lemma fdom_adm[intro]: "adm (\<lambda> a. P (fdom a))" 
   by (rule admI, metis chain_fdom(2))
 
-(*
-lemma fdom_fix1[simp]: assumes "x \<sqsubseteq> F\<cdot>x" shows "fdom (fix1 x F) = fdom x"
-  apply (rule fix1_ind[OF fdom_pred_adm refl assms])
-  using  fmap_below_dom[OF monofun_cfun_arg[of x _ F]]  fmap_below_dom[OF assms]
-  by auto
-
-lemma fdom_chainFrom_funpow[simp]: "chainFrom F x ==> fdom ((F^^i) x) = fdom x"
-  apply (induct i)
+lemma fdom_adm2:
+  "cont u \<Longrightarrow> cont v \<Longrightarrow> adm (\<lambda>x. P (fdom (u x)) (fdom (v x)))"
+  apply (rule admI)
+  apply (frule (1) chain_fdom(2)[OF ch2ch_cont])
+  apply (frule (1) chain_fdom(2)[OF ch2ch_cont]) back
+  apply (erule (1) ssubst[OF cont2contlubE])
+  apply (erule (1) ssubst[OF cont2contlubE])
   apply simp
-  by (metis FixRestr.iterate_stays_above fmap_below_dom)
+  done
 
-lemma fdom_chainFrom_funpow2[simp]: "chainFrom F x ==> fdom (F ((F^^i) x)) = fdom x"
-  by (metis fdom_chainFrom_funpow funpow.simps(2) o_apply)
+lemma fdom_adm_eq[simp]:
+   "adm (\<lambda>\<rho>. fdom \<rho> = z)"
+   by (rule fdom_adm)
 
-lemma fdom_fixR[simp]: assumes "chainFrom F x" shows "fdom (fixR x F) = fdom x"
-  apply (rule fixR_ind[OF fdom_pred_adm refl assms])
-  by (simp add: fdom_chainFrom_funpow2[OF assms])
-
-lemma fixR_cong: 
-  assumes "chainFrom F a" and "chainFrom G a"
-      and "\<And> x. fdom x = fdom a \<Longrightarrow> F x = G x"
-  shows "fixR a F = fixR a G"
-  apply (rule parallel_fixR_ind[OF _ assms(1) assms(2) refl])
-  apply auto[1]
-  by (metis fmap_below_dom assms(3))
-
-lemma fix1_cong: 
-  assumes "a \<sqsubseteq> F \<cdot> a" and "a \<sqsubseteq> G \<cdot> a"
-      and "\<And> x. fdom x = fdom a \<Longrightarrow> F\<cdot>x = G\<cdot>x"
-  shows "fix1 a F = fix1 a G"
-  apply (rule parallel_fix1_ind[OF _ assms(1) assms(2) refl])
-  apply auto[1]
-  by (metis fmap_below_dom assms(3))
-*)
-
+lemma adm_lookup: assumes "adm P" shows "adm (\<lambda> \<rho>. P (the (lookup \<rho> x)))"
+  apply (rule admI)
+  apply (subst lookup_cont)
+  apply assumption
+  apply (erule admD[OF assms lookup_chain])
+  apply metis
+  done
 
 lemma  fmap_add_belowI:
   assumes "fdom x \<union> fdom y = fdom z"
@@ -365,7 +352,7 @@ lemma  fmap_add_belowI:
   apply -
   apply (rule fmap_belowI)
   apply auto[1]
-  by (metis fdomIff lookup_fmap_add1 lookup_fmap_add2 the.simps)
+  by (metis fdomIff lookup_fmap_add1 lookup_fmap_add2)
 
 lemma fmap_add_cont1: "cont (\<lambda> x. fmap_add x (m::('a::type f\<rightharpoonup> 'b::cpo)))"
 proof(rule fmap_contI)
@@ -458,7 +445,7 @@ case True thus ?thesis
   apply -
   apply (rule fmap_belowI)
   apply (simp add: `fdom m1 = fdom m2`)
-  by (metis Int_iff assms(1) fdom_fmap_restr the.simps)
+  by (metis Int_iff assms(1) fdom_fmap_restr)
 next
 case False thus ?thesis unfolding fmap_restr_def by simp
 qed
@@ -521,8 +508,7 @@ qed
 
 lemmas fmap_restr_cont2cont[simp,cont2cont] = cont_compose[OF fmap_restr_cont]
 
-
-(* A definition of fmap_meep that requires compatible fmaps *)
+subsubsection {* Binary joins of finite maps *}
 
 lift_definition fmap_join :: "'a f\<rightharpoonup> 'b::pcpo \<Rightarrow> 'a f\<rightharpoonup> 'b  \<Rightarrow> 'a f\<rightharpoonup> 'b"
   is "\<lambda>m1 m2 x. (
@@ -535,6 +521,9 @@ lift_definition fmap_join :: "'a f\<rightharpoonup> 'b::pcpo \<Rightarrow> 'a f\
   apply (rule_tac B = "dom fun1 \<union> dom fun2" in  finite_subset)
   by (auto simp add: map_def split add: option.split_asm)
 
+lift_definition compatible_fmap :: "'a f\<rightharpoonup> 'b::pcpo  \<Rightarrow> 'a f\<rightharpoonup> 'b \<Rightarrow> bool"
+  is "\<lambda> m1 m2 . (\<forall> z \<in> dom m1 \<inter> dom m2 . compatible (the (m1 z)) (the (m2 z)))"..
+
 lemma fdom_fmap_join[simp]: "fdom (fmap_join m1 m2) = fdom m1 \<union> fdom m2"
   by (transfer, auto simp add: dom_def split:option.split)
 
@@ -543,9 +532,6 @@ lemma [simp]: "fmap_join \<rho> fempty = \<rho>"
 
 lemma [simp]: "fmap_join fempty \<rho> = \<rho>"
   by (transfer, auto split:option.split)
-
-lift_definition compatible_fmap :: "'a f\<rightharpoonup> 'b::pcpo  \<Rightarrow> 'a f\<rightharpoonup> 'b \<Rightarrow> bool"
-  is "\<lambda> m1 m2 . (\<forall> z \<in> dom m1 \<inter> dom m2 . compatible (the (m1 z)) (the (m2 z)))"..
 
 lemma compatible_fmap_def':
   "compatible_fmap m1 m2 = (\<forall> z \<in> fdom m1 \<inter> fdom m2 . compatible (the (lookup m1 z)) (the (lookup m2 z)))"
@@ -672,6 +658,8 @@ case (goal2 x)
   qed
 qed
 
+subsubsection {* Expanding and extending finite maps *}
+
 lift_definition fmap_expand :: "'a f\<rightharpoonup> 'b::pcpo \<Rightarrow> 'a set  \<Rightarrow> 'a f\<rightharpoonup> 'b"
   is "\<lambda> m1 S. (if finite S then (\<lambda> x. if x \<in> S then Some (case m1 x of (Some x) => x | None => \<bottom>) else None) else empty)"
   apply (case_tac "finite set")
@@ -761,6 +749,10 @@ lemma lookup_fmap_expand3[simp]:
 
 lemma fmap_expand_fdom[simp]: "fmap_expand \<rho> (fdom \<rho>) = \<rho>"
   by (transfer, auto split:option.split)
+
+lemma restr_extend_cut:
+  "finite d \<Longrightarrow> d' \<subseteq> d \<Longrightarrow> fdom x = d' \<Longrightarrow> fmap_restr d' (fmap_extend x (d - d')) = x "
+  by (rule fmap_eqI, auto)
 
 lemma fmap_expand_belowI:
   assumes "fdom \<rho>' = S"
@@ -879,7 +871,7 @@ lemma fmap_upd_expand:
    apply (case_tac "xa = x", auto)
    done
 
-
+subsubsection {* Bottoms *}
 
 lift_definition fmap_bottom :: "'a set  \<Rightarrow> 'a f\<rightharpoonup> 'b::pcpo"
   is "\<lambda> S. (if finite S then (\<lambda> x. if x \<in> S then Some \<bottom> else None) else empty)"
@@ -924,17 +916,6 @@ lemma fmap_restr_fmap_bottom[simp]:
   "finite S \<Longrightarrow> finite S2 \<Longrightarrow> fmap_restr S (fmap_bottom S2) = fmap_bottom (S \<inter> S2)"
   by (transfer, auto simp add: restrict_map_def)
 
-lemma restr_extend_cut:
-  "finite d \<Longrightarrow> d' \<subseteq> d \<Longrightarrow> fdom x = d' \<Longrightarrow> fmap_restr d' (fmap_extend x (d - d')) = x "
-  by (rule fmap_eqI, auto)
-
-(*
-definition fix_extend :: "'a f\<rightharpoonup> 'b::pcpo \<Rightarrow> 'a set \<Rightarrow> ('a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b) \<Rightarrow> 'a f\<rightharpoonup> 'b"
-  where
-  "fix_extend h S nh = fmap_add h (fix1 (fmap_bottom S)  (\<Lambda> h'. (nh (fmap_add h h') )))"
-*)
-
-
 lemma fmap_bottom_insert:
   "finite S \<Longrightarrow>
   fmap_bottom (insert x S) = (fmap_bottom S)(x f\<mapsto> \<bottom>)"
@@ -942,6 +923,8 @@ lemma fmap_bottom_insert:
   apply auto[1]
   apply (case_tac "xa = x", auto)
   done
+
+subsubsection {* Relation "`Added bindings, otherwise equal"' *}
 
 instantiation fmap :: (type,pcpo) order
 begin
@@ -967,7 +950,6 @@ lemma fmap_less_eqD:
   shows "lookup \<rho> x = lookup \<rho>' x"
   using assms
   unfolding less_eq_fmap_def by auto
-
 
 lemma fmap_antisym: assumes  "(x:: 'a f\<rightharpoonup> 'b::pcpo) \<le> y" and "y \<le> x" shows "x = y "
 proof(rule fmap_eqI[rule_format])
@@ -1032,24 +1014,6 @@ lemma less_fmap_expand:
   unfolding less_eq_fmap_def
   by (transfer, auto)
 
-lemma fdom_adm:
-   "adm (\<lambda>\<rho>. P (fdom \<rho>))"
-   by (metis admI chain_fdom(2))
-
-lemma fdom_adm2:
-  "cont u \<Longrightarrow> cont v \<Longrightarrow> adm (\<lambda>x. P (fdom (u x)) (fdom (v x)))"
-  apply (rule admI)
-  apply (frule (1) chain_fdom(2)[OF ch2ch_cont])
-  apply (frule (1) chain_fdom(2)[OF ch2ch_cont]) back
-  apply (erule (1) ssubst[OF cont2contlubE])
-  apply (erule (1) ssubst[OF cont2contlubE])
-  apply simp
-  done
-
-lemma fdom_adm_eq[simp]:
-   "adm (\<lambda>\<rho>. fdom \<rho> = z)"
-   by (rule fdom_adm)
-
 lemma adm_less_fmap [simp]:
   "[|cont (\<lambda>x. u x); cont (\<lambda>x. v x)|] ==> adm (\<lambda>x. u x \<le> ((v x)::'a::type f\<rightharpoonup> 'b::pcpo))"
   apply (subst fmap_less_restrict)
@@ -1087,14 +1051,7 @@ lemma fmap_update_less[simp, intro]:
   apply (metis fmap_less_eqD fmap_less_fdom lookup_fmap_add1 set_mp)
   by (metis Diff_iff Diff_triv fmap_less_eqD lookup_fmap_add2)
 
-
-lemma adm_lookup: assumes "adm P" shows "adm (\<lambda> \<rho>. P (the (lookup \<rho> x)))"
-  apply (rule admI)
-  apply (subst lookup_cont)
-  apply assumption
-  apply (erule admD[OF assms lookup_chain])
-  apply metis
-  done
+subsubsection {* A setup for defining a fixed point of finite maps iteratively *}
 
 lemma fdom_fix_on:
   assumes "fix_on_cond S b F"
@@ -1349,11 +1306,10 @@ begin
   qed
 
 
-
   lemma HLL_below_L: "H (fix_on' b L) (fix_on' b L) \<sqsubseteq> (fix_on' b L)"
     by (rule H_noop, simp_all)
-  
 
+  
   lemma iterative_fmap_add:
     shows "fix_on' b L = fix_on' b R"
   proof(rule below_antisym)
@@ -1443,6 +1399,8 @@ begin
   qed
 end
 
+subsubsection {* Finite maps have greatest lowest bounds *}
+
 instance fmap :: (type, Nonempty_Meet_cpo) Bounded_Nonempty_Meet_cpo
 apply default
 proof-
@@ -1502,6 +1460,8 @@ proof-
     done
   thus "\<exists> z. S >>| z" by auto
 qed
+
+subsubsection {* Finite maps can be partitioned in pcpo's *} 
 
 instantiation fmap :: (type, pcpo) subpcpo_partition
 begin
