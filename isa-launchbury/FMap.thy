@@ -2,6 +2,8 @@ theory FMap
   imports Main "~~/src/HOL/Quotient_Examples/FSet" "~~/src/HOL/Library/DAList"
 begin
 
+subsubsection {* The type of finite maps *}
+
 typedef (open) ('a, 'b) fmap  (infixr "f\<rightharpoonup>" 1) = "{x :: 'a \<rightharpoonup> 'b. finite (dom x) }"
   proof show "empty \<in> {x. finite (dom x)}" by simp qed
 
@@ -17,22 +19,6 @@ lift_definition fempty :: "'key f\<rightharpoonup> 'value" is Map.empty by simp
 
 lemma fempty_fdom[simp]: "fdom fempty = {}"
   by (transfer, auto)
-
-lift_definition
-  fmap_upd :: "'key f\<rightharpoonup> 'value \<Rightarrow> 'key \<Rightarrow> 'value \<Rightarrow> 'key f\<rightharpoonup> 'value" ("_'(_ f\<mapsto> _')" [900,900]900)
-  is "\<lambda> m x v. m( x \<mapsto> v)"  by simp
-
-lemma fmap_upd_fdom[simp]: "fdom (h (x f\<mapsto> v)) = insert x (fdom h)"
-  by (transfer, auto)
-
-lemma the_lookup_fmap_upd[simp]: "lookup (h (x f\<mapsto> v)) x = Some v"
-  by (transfer, auto)
-
-lemma the_lookup_fmap_upd_other[simp]: "x' \<noteq> x \<Longrightarrow> lookup (h (x f\<mapsto> v)) x' = lookup h x'"
-  by (transfer, auto)
-
-lemma fmap_upd_overwrite[simp]: "f (x f\<mapsto> y) (x f\<mapsto> z) = f (x f\<mapsto> z)"
-  by (transfer, auto) 
 
 lemma fdomIff: "(a : fdom m) = (lookup m a ~= None)"
  by (transfer, auto)
@@ -84,12 +70,32 @@ proof(transfer)
   qed
 qed
 
+subsubsection {* Updates *}
+
+lift_definition
+  fmap_upd :: "'key f\<rightharpoonup> 'value \<Rightarrow> 'key \<Rightarrow> 'value \<Rightarrow> 'key f\<rightharpoonup> 'value" ("_'(_ f\<mapsto> _')" [900,900]900)
+  is "\<lambda> m x v. m( x \<mapsto> v)"  by simp
+
+lemma fmap_upd_fdom[simp]: "fdom (h (x f\<mapsto> v)) = insert x (fdom h)"
+  by (transfer, auto)
+
+lemma the_lookup_fmap_upd[simp]: "lookup (h (x f\<mapsto> v)) x = Some v"
+  by (transfer, auto)
+
+lemma the_lookup_fmap_upd_other[simp]: "x' \<noteq> x \<Longrightarrow> lookup (h (x f\<mapsto> v)) x' = lookup h x'"
+  by (transfer, auto)
+
+lemma fmap_upd_overwrite[simp]: "f (x f\<mapsto> y) (x f\<mapsto> z) = f (x f\<mapsto> z)"
+  by (transfer, auto) 
+
 lemma fmap_upd_twist: "a \<noteq> c \<Longrightarrow> (m(a f\<mapsto> b))(c f\<mapsto> d) = (m(c f\<mapsto> d))(a f\<mapsto> b)"
   apply (rule fmap_eqI)
   apply auto[1]
   apply (case_tac "x = a", auto)
   apply (case_tac "x = c", auto)
   done
+
+subsubsection {* Restriction *}
 
 lift_definition fmap_restr :: "'a set \<Rightarrow> 'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b"
   is "\<lambda> S m. (if finite S then (restrict_map m S) else empty)" by auto
@@ -115,8 +121,14 @@ lemma fmap_restr_not_finite:
   "\<not> finite S \<Longrightarrow> fmap_restr S \<rho> = fempty"
   by (transfer, simp)
 
-definition fmap_restr_l where
-  "fmap_restr_l d = fmap_restr (set d)"
+lemma fmap_restr_fmap_upd: "x \<in> S \<Longrightarrow> finite S \<Longrightarrow> fmap_restr S (m1(x f\<mapsto> v)) = (fmap_restr S m1)(x f\<mapsto> v)"
+  apply (rule fmap_eqI)
+  apply auto[1]
+  apply (case_tac "xa = x")
+  apply auto
+  done
+
+subsubsection {* Delete *}
 
 lift_definition fmap_delete :: "'a \<Rightarrow> 'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b"
   is "\<lambda> x m. m(x := None)" by auto
@@ -124,6 +136,19 @@ lift_definition fmap_delete :: "'a \<Rightarrow> 'a f\<rightharpoonup> 'b \<Righ
 lemma fdom_fmap_delete[simp]:
   "fdom (fmap_delete x m) = fdom m - {x}"
   by (transfer, auto)
+
+lemma fmap_delete_fmap_upd[simp]:
+  "fmap_delete x (m(x f\<mapsto> v)) = fmap_delete x m"
+  by (transfer, simp)
+
+lemma fmap_delete_noop:
+  "x \<notin> fdom m \<Longrightarrow> fmap_delete x m = m"
+  by (transfer, auto)
+
+lemma fmap_upd_fmap_delete[simp]: "x \<in> fdom \<Gamma> \<Longrightarrow> fmap_delete x \<Gamma>(x f\<mapsto> the (lookup \<Gamma> x)) = \<Gamma>"
+  by (transfer, auto)
+ 
+subsubsection {* Addition (mergeing) of finite maps *}
 
 lift_definition fmap_add :: "'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b" (infixl "f++" 100) 
   is "map_add" by auto
@@ -141,14 +166,12 @@ lemma lookup_fmap_add2[simp]:  "x \<notin> fdom m2 \<Longrightarrow> lookup (fma
 lemma [simp]: "fmap_add \<rho> fempty = \<rho>"
   by (transfer, auto)
 
-lemma map_add_noop: "dom m1 \<subseteq> dom m2 \<Longrightarrow> m1 ++ m2 = m2"
+lemma fmap_add_overwrite: "fdom m1 \<subseteq> fdom m2 \<Longrightarrow> fmap_add m1 m2 = m2"
+  apply transfer
   apply rule
   apply (case_tac "x \<in> dom m2")
   apply (auto simp add: map_add_dom_app_simps(1))
   done
-
-lemma fmap_add_overwrite: "fdom m1 \<subseteq> fdom m2 \<Longrightarrow> fmap_add m1 m2 = m2"
-  by (transfer, rule map_add_noop)
 
 lemma fmap_add_rho[simp]: "fmap_add \<rho> (fmap_add \<rho> x) = fmap_add \<rho> x"
   apply (rule fmap_add_overwrite)
@@ -173,13 +196,7 @@ lemma fmap_restr_add: "fmap_restr S (m1 f++ m2) = fmap_restr S m1 f++ fmap_restr
   apply (simp add: fmap_restr_not_finite)
   done
 
-lemma fmap_restr_fmap_upd: "x \<in> S \<Longrightarrow> finite S \<Longrightarrow> fmap_restr S (m1(x f\<mapsto> v)) = (fmap_restr S m1)(x f\<mapsto> v)"
-  apply (rule fmap_eqI)
-  apply auto[1]
-  apply (case_tac "xa = x")
-  apply auto
-  done
-
+subsubsection {* Conversion from associative lists *}
 
 lift_definition fmap_of :: "('a \<times> 'b) list \<Rightarrow> 'a f\<rightharpoonup> 'b"
   is map_of by (rule finite_dom_map_of)
@@ -193,17 +210,6 @@ lemma fmap_of_Cons[simp]: "fmap_of (p # l) = (fmap_of l)(fst p f\<mapsto> snd p)
 lemma fmap_of_append[simp]: "fmap_of (l1 @ l2) = fmap_of l2 f++ fmap_of l1"
   by (transfer, simp)
 
-lemma fmap_delete_fmap_upd[simp]:
-  "fmap_delete x (m(x f\<mapsto> v)) = fmap_delete x m"
-  by (transfer, simp)
-
-lemma fmap_delete_noop:
-  "x \<notin> fdom m \<Longrightarrow> fmap_delete x m = m"
-  by (transfer, auto)
-
-lemma fmap_upd_fmap_delete[simp]: "x \<in> fdom \<Gamma> \<Longrightarrow> fmap_delete x \<Gamma>(x f\<mapsto> the (lookup \<Gamma> x)) = \<Gamma>"
-  by (transfer, auto)
- 
 lemma lookup_fmap_of[simp]:
   "lookup (fmap_of m) x = map_of m x"
   by (transfer, auto)
@@ -211,6 +217,5 @@ lemma lookup_fmap_of[simp]:
 lemma fmap_delete_fmap_of[simp]:
   "fmap_delete x (fmap_of m) = fmap_of (AList.delete x m)"
   by (transfer, metis delete_conv')
-
   
 end

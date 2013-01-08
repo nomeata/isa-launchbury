@@ -236,10 +236,6 @@ case goal2
   finally show ?case.
 qed
 
-lemma fmap_restr_l_eqvt[eqvt]:
-  "\<pi> \<bullet> fmap_restr_l d m = fmap_restr_l (\<pi> \<bullet> d) (\<pi> \<bullet> m)"
-  by (simp add: fmap_restr_l_def fmap_restr_eqvt set_eqvt)
-
 lemma fmap_delete_eqvt[eqvt]:
   "\<pi> \<bullet> fmap_delete x m = fmap_delete (\<pi> \<bullet> x) (\<pi> \<bullet> m)"
   by (transfer, auto simp add: permute_fun_def fun_eq_iff)
