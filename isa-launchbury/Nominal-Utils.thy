@@ -2,24 +2,25 @@ theory "Nominal-Utils"
 imports "Nominal/Nominal/Nominal2" "~~/src/HOL/Library/AList"
 begin
 
-lemma not_self_fresh[simp]: "atom x \<sharp> (x::'a::at_base) \<longleftrightarrow> False"
-  by (metis fresh_at_base(2))
+subsubsection {* Lemmas helping with equivariance proofs *}
 
-lemma image_eqvt[eqvt]: "\<pi> \<bullet> (f ` S) = (\<pi> \<bullet> f) ` (\<pi> \<bullet> S)"
-  unfolding permute_set_def permute_fun_def
-  by (auto simp add: image_def)
+lemma perm_rel_lemma:
+  assumes "\<And> \<pi> x y. r (\<pi> \<bullet> x) (\<pi> \<bullet> y) \<Longrightarrow> r x y"
+  shows "r (\<pi> \<bullet> x) (\<pi> \<bullet> y) \<longleftrightarrow> r x y" (is "?l \<longleftrightarrow> ?r")
+proof
+  show "?l \<Longrightarrow> ?r" by fact
+next
+  assume "r x y"
+  hence "r (- \<pi> \<bullet> \<pi> \<bullet> x) (- \<pi> \<bullet> \<pi> \<bullet> y)" by simp
+  thus "?l" by (rule assms)
+qed
 
-lemma range_eqvt: "\<pi> \<bullet> range Y = range (\<pi> \<bullet> Y)"
-  unfolding image_eqvt UNIV_eqvt ..
+lemma eqvt2I:
+  assumes "(\<And> p x y. p \<bullet> f x y = f (p \<bullet> x) (p \<bullet> y))"
+  shows "eqvt (\<lambda> p. f (fst p) (snd p))"
+  by (auto simp add: eqvt_def eqvt_lambda assms unpermute_def)
 
-lemma option_case_eqvt[eqvt]:
-  "\<pi> \<bullet> option_case d f x = option_case (\<pi> \<bullet> d) (\<pi> \<bullet> f) (\<pi> \<bullet> x)"
-  by(cases x, auto simp add: permute_fun_def)
-
-lemma fresh_star_singleton: "{ x } \<sharp>* e \<longleftrightarrow> x \<sharp> e"
-  by (simp add: fresh_star_def)
-
-lemma [simp]:"atom x \<sharp> x \<longleftrightarrow> False" by (metis fresh_at_base(2))
+subsubsection {* Freshness via equivariance *}
 
 lemma eqvt_fresh_cong1: "(\<And>p x. p \<bullet> (f x) = f (p \<bullet> x)) \<Longrightarrow> a \<sharp> x \<Longrightarrow> a \<sharp> f x "
   apply (rule fresh_fun_eqvt_app[of f])
@@ -71,12 +72,77 @@ lemma eqvt_fresh_star_cong3:
   shows "a \<sharp>* f x y z"
   by (metis fresh_star_def eqvt_fresh_cong3 assms)
 
+subsubsection {* Additional simplification rules *}
+
+lemma not_self_fresh[simp]: "atom x \<sharp> x \<longleftrightarrow> False"
+  by (metis fresh_at_base(2))
+
+lemma fresh_star_singleton: "{ x } \<sharp>* e \<longleftrightarrow> x \<sharp> e"
+  by (simp add: fresh_star_def)
+
+subsubsection {* Additional equivariance lemmas *}
+
+lemma image_eqvt[eqvt]: "\<pi> \<bullet> (f ` S) = (\<pi> \<bullet> f) ` (\<pi> \<bullet> S)"
+  unfolding permute_set_def permute_fun_def
+  by (auto simp add: image_def)
+
+lemma range_eqvt: "\<pi> \<bullet> range Y = range (\<pi> \<bullet> Y)"
+  unfolding image_eqvt UNIV_eqvt ..
+
+lemma option_case_eqvt[eqvt]:
+  "\<pi> \<bullet> option_case d f x = option_case (\<pi> \<bullet> d) (\<pi> \<bullet> f) (\<pi> \<bullet> x)"
+  by(cases x, auto simp add: permute_fun_def)
+
 lemma funpow_eqvt[simp,eqvt]:
   "\<pi> \<bullet> ((f :: 'a \<Rightarrow> 'a::pt) ^^ n) = (\<pi> \<bullet> f) ^^ (\<pi> \<bullet> n)"
  apply (induct n)
  apply (auto simp add: permute_fun_def permute_pure)[1]
  apply (auto simp add: permute_pure)
  by (metis (no_types) eqvt_lambda permute_fun_app_eq)
+
+lemma delete_eqvt[eqvt]:
+  "\<pi> \<bullet> AList.delete x \<Gamma> = AList.delete (\<pi> \<bullet> x) (\<pi> \<bullet> \<Gamma>)"
+by (induct \<Gamma>, auto)
+
+lemma update_eqvt[eqvt]:
+  "\<pi> \<bullet> AList.update x v \<Gamma> = AList.update (\<pi> \<bullet> x) (\<pi> \<bullet> v) (\<pi> \<bullet> \<Gamma>)"
+by (induct \<Gamma>, auto)
+
+lemma map_add_eqvt[eqvt]:
+  "\<pi> \<bullet> (m1 ++ m2) = (\<pi> \<bullet> m1) ++ (\<pi> \<bullet> m2)"
+  unfolding map_add_def
+  by (perm_simp, rule)
+
+lemma map_of_eqvt[eqvt]:
+  "\<pi> \<bullet> map_of l = map_of (\<pi> \<bullet> l)"
+  apply (induct l)
+  apply (simp add: permute_fun_def)
+  apply simp
+  apply perm_simp
+  apply auto
+  done
+
+subsubsection {* Freshness lemmas *}
+
+lemma fresh_star_Cons:
+  "S \<sharp>* (x # xs) = (S \<sharp>* x \<and> S \<sharp>* xs)"
+by (metis fresh_star_def fresh_Cons)
+
+lemma fresh_star_append:
+  shows "a \<sharp>* (xs @ ys) \<longleftrightarrow> a \<sharp>* xs \<and> a \<sharp>* ys"
+by (metis fresh_star_def fresh_append)
+
+lemma fresh_list_elem:
+  assumes "a \<sharp> \<Gamma>"
+  and "e \<in> set \<Gamma>"
+  shows "a \<sharp> e"
+using assms
+by(induct \<Gamma>)(auto simp add: fresh_Cons)
+
+lemma pure_fresh_star[simp]: "a \<sharp>* (x :: 'a :: pure)"
+  by (simp add: fresh_star_def pure_fresh)
+
+subsubsection {* Freshness and support for subsets of variables *}
 
 lemma supp_mono: "finite (B::'a::at_base set) \<Longrightarrow> A \<subseteq> B \<Longrightarrow> supp A \<subseteq> supp B"
   apply (subst (1 2) supp_finite_set_at_base)
@@ -102,59 +168,5 @@ lemma fresh_star_set_subset:
 lemma fresh_star_fun_eqvt_app: "eqvt f \<Longrightarrow> a \<sharp>* x \<Longrightarrow> a \<sharp>* f x "
   by (metis fresh_star_def fresh_fun_eqvt_app)
 
-lemma eqvt2I:
-  assumes "(\<And> p x y. p \<bullet> f x y = f (p \<bullet> x) (p \<bullet> y))"
-  shows "eqvt (\<lambda> p. f (fst p) (snd p))"
-  by (auto simp add: eqvt_def eqvt_lambda assms unpermute_def)
-
-lemma fresh_fun_eqvt_app2: 
-  assumes "(\<And> p x y. p \<bullet> f x y = f (p \<bullet> x) (p \<bullet> y))"
-  shows "a \<sharp> x \<Longrightarrow> a \<sharp> y \<Longrightarrow> a \<sharp> f x y"
-  by (intro fresh_fun_eqvt_app[of "\<lambda> p. f (fst p) (snd p)" _ "(x, y)", simplified, unfolded fresh_Pair] eqvt2I assms conjI)
-
-lemma fresh_star_fun_eqvt_app2: 
-  assumes "(\<And> p x y. p \<bullet> f x y = f (p \<bullet> x) (p \<bullet> y))"
-  shows "a \<sharp>* x \<Longrightarrow> a \<sharp>* y \<Longrightarrow> a \<sharp>* f x y"
-  by (intro fresh_star_fun_eqvt_app[of "\<lambda> p. f (fst p) (snd p)" _ "(x, y)", simplified, unfolded fresh_star_Pair] eqvt2I assms conjI)
-
-lemma fresh_star_Cons:
-  "S \<sharp>* (x # xs) = (S \<sharp>* x \<and> S \<sharp>* xs)"
-by (metis fresh_star_def fresh_Cons)
-
-lemma fresh_star_append:
-  shows "a \<sharp>* (xs @ ys) \<longleftrightarrow> a \<sharp>* xs \<and> a \<sharp>* ys"
-by (metis fresh_star_def fresh_append)
-
-lemma fresh_list_elem:
-  assumes "a \<sharp> \<Gamma>"
-  and "e \<in> set \<Gamma>"
-  shows "a \<sharp> e"
-using assms
-by(induct \<Gamma>)(auto simp add: fresh_Cons)
-
-lemma delete_eqvt[eqvt]:
-  "\<pi> \<bullet> AList.delete x \<Gamma> = AList.delete (\<pi> \<bullet> x) (\<pi> \<bullet> \<Gamma>)"
-by (induct \<Gamma>, auto)
-
-lemma update_eqvt[eqvt]:
-  "\<pi> \<bullet> AList.update x v \<Gamma> = AList.update (\<pi> \<bullet> x) (\<pi> \<bullet> v) (\<pi> \<bullet> \<Gamma>)"
-by (induct \<Gamma>, auto)
-
-lemma map_add_eqvt[eqvt]:
-  "\<pi> \<bullet> (m1 ++ m2) = (\<pi> \<bullet> m1) ++ (\<pi> \<bullet> m2)"
-  unfolding map_add_def
-  by (perm_simp, rule)
-
-lemma map_of_eqvt[eqvt]:
-  "\<pi> \<bullet> map_of l = map_of (\<pi> \<bullet> l)"
-  apply (induct l)
-  apply (simp add: permute_fun_def)
-  apply simp
-  apply perm_simp
-  apply auto
-  done
-
-lemma pure_fresh_star[simp]: "a \<sharp>* (x :: 'a :: pure)"
-  by (simp add: fresh_star_def pure_fresh)
 
 end

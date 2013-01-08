@@ -16,17 +16,6 @@ class discr_pt =
 instance discr_pt \<subseteq> cont_pt
  by (default, auto)
 
-lemma perm_rel_lemma:
-  assumes "\<And> \<pi> x y. r (\<pi> \<bullet> x) (\<pi> \<bullet> y) \<Longrightarrow> r x y"
-  shows "r (\<pi> \<bullet> x) (\<pi> \<bullet> y) \<longleftrightarrow> r x y" (is "?l \<longleftrightarrow> ?r")
-proof
-  show "?l \<Longrightarrow> ?r" by fact
-next
-  assume "r x y"
-  hence "r (- \<pi> \<bullet> \<pi> \<bullet> x) (- \<pi> \<bullet> \<pi> \<bullet> y)" by simp
-  thus "?l" by (rule assms)
-qed
-
 lemma (in cont_pt) perm_cont_simp[simp]: "\<pi> \<bullet> x \<sqsubseteq> \<pi> \<bullet> y \<longleftrightarrow> x \<sqsubseteq> y"
   apply rule
   apply (drule cont2monofunE[OF perm_cont, of _ _ "-\<pi>"], simp)[1]
