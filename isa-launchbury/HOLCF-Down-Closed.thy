@@ -75,7 +75,7 @@ proof(rule contains_bottomsI)
   hence [simp]: "fdom x = d" by (rule assms(3))
   assume "d' \<subseteq> d"
   have "fmap_extend (fmap_restr d' x) (d - d') \<sqsubseteq> x"
-  proof (induct rule: fmap_belowI')
+  proof (induct rule: fmap_belowI)
   case 1 thus ?case by (auto simp add: `finite d` finite_subset[OF `d' \<subseteq> d`])
   case (2 var)
     hence "var \<in> d" by (metis `fdom x = d`)

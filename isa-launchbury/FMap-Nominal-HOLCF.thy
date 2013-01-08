@@ -4,7 +4,7 @@ begin
 
 instance "fmap" :: (pt, cont_pt) cont_pt
 apply default
-proof(intro contI2 monofunI fmap_belowI')
+proof(intro contI2 monofunI fmap_belowI)
   fix \<pi> m1 m2
   assume "m1 \<sqsubseteq> (m2 :: 'a f\<rightharpoonup> 'b)"
   hence "fdom m1 = fdom m2"

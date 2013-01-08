@@ -88,7 +88,7 @@ lemma  fmap_join_belowI:
   shows  "x \<squnion> y \<sqsubseteq> z"
   using assms 
   apply -
-  apply (rule fmap_belowI')
+  apply (rule fmap_belowI)
   apply (metis join_above1 below_fmap_def)
   by (metis "HOLCF-Join.join_above1" "HOLCF-Join.join_above2" below_fmap_def join_below)
 
@@ -1109,7 +1109,7 @@ case goal1
       note compat1 = rho_F_compat_fjc[OF cond1 goal3(1)]
       note compat2 = rho_F_compat_fjc[OF cond2 HSem_there[OF cond2]]
       show ?case
-      proof(rule fmap_belowI')
+      proof(rule fmap_belowI)
       case goal1 show ?case by (auto simp add: fdom_join[OF compat1, simplified])
       case (goal2 x')
         hence x': "x' \<in> insert x (fdom \<rho> \<union> heapVars \<Gamma>)"

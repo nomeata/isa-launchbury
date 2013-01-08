@@ -146,7 +146,7 @@ case (goal2 x)
 next
 case (goal3 x a)
   have "m1 \<sqsubseteq> fmap_upd (m1 \<squnion> m2) x a"
-    apply (rule fmap_belowI')
+    apply (rule fmap_belowI)
     apply (simp)[1]
     apply (metis "HOLCF-Join.join_above1" assms fmap_below_dom goal3(1) insert_absorb)
     apply (case_tac "xa = x")
@@ -154,7 +154,7 @@ case (goal3 x a)
     by (rule fmap_belowE[OF join_above1[OF assms]])
   moreover
   have "m2 \<sqsubseteq> fmap_upd (m1 \<squnion> m2) x a"
-    apply (rule fmap_belowI')
+    apply (rule fmap_belowI)
     apply (simp)[1]
     apply (metis "HOLCF-Join.join_above2" assms below_fmap_def goal3(2) insert_absorb)
     apply (case_tac "xa = x")
@@ -975,7 +975,7 @@ begin
     have closedR2: "closed_on ?R2"
       apply (rule closed_onI)
       apply (rule down_closed.down_closedE[OF down_closed_fjc F_pres_compat''[OF assms(1)]], assumption)
-      apply (rule fmap_belowI')
+      apply (rule fmap_belowI)
       apply (frule fdom, auto)[1]
       apply (case_tac "xaa = x", simp_all)
       done    
@@ -1057,7 +1057,7 @@ begin
         by (rule below_trans[OF join_above2[OF compatR2R3[OF there]] join_above2[OF compatR1R2R3[OF there]]])
   
       have "?L2 \<rho>' \<sqsubseteq> ?R1 \<rho>' \<squnion> ?R2 \<rho>'"
-      proof (rule fmap_belowI')
+      proof (rule fmap_belowI)
       case goal1 show ?case
         by (subst fdom_join[OF compatR1R2[OF there]], auto)
       case (goal2 x')

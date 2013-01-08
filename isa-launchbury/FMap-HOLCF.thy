@@ -4,6 +4,8 @@ begin
 
 default_sort type
 
+subsubsection {* A partial order on finite maps *}
+
 instantiation fmap :: (type, po) po
 begin
   definition "(a::'a f\<rightharpoonup> 'b) \<sqsubseteq> b \<equiv> (fdom a = fdom b) \<and> (\<forall>x \<in> fdom a. the (lookup a x) \<sqsubseteq> the (lookup b x))"
@@ -26,7 +28,7 @@ next
 qed
 end
 
-lemma fmap_belowI':
+lemma fmap_belowI:
   assumes "fdom a = fdom b"
     and "\<And> x. \<lbrakk>
       x \<in> fdom a;
@@ -35,18 +37,6 @@ lemma fmap_belowI':
   shows "a \<sqsubseteq> b"
   using assms
   by (metis below_fmap_def)
-
-lemma fmap_belowI:
-  assumes "fdom a = fdom b"
-    and "\<And> x y y2. \<lbrakk>
-      x \<in> fdom a;
-      x \<in> fdom b;
-      lookup a x = Some y ;
-      lookup b x = Some y2
-      \<rbrakk>  \<Longrightarrow> y \<sqsubseteq> y2"
-  shows "a \<sqsubseteq> b"
-  using assms
-  by (metis below_fmap_def lookup.rep_eq domIff fdom.rep_eq not_None_eq the.simps)
 
 lemma fmap_belowE:
   assumes "m1 \<sqsubseteq> m2"
@@ -105,24 +95,21 @@ proof(rule is_lubI)
 
     show "m \<sqsubseteq> fmap_lub S"
     proof(rule fmap_belowI)
-      fix x y y2
-      assume "lookup (fmap_lub S) x = Some y2"
-
+      fix x
       assume "x \<in> fdom m"
       hence c2: "chain (\<lambda> i. the (Rep_fmap (S i) x))" using `chain S`
         unfolding chain_def below_fmap_def lookup.rep_eq
         by auto            
 
-      assume "lookup m x = Some y"
-      hence "y = the (Rep_fmap (S i) x)"  using `m = _` by (auto simp add: lookup.rep_eq)
-      hence ylt: "y \<sqsubseteq> (\<Squnion>i::nat. the (Rep_fmap (S i) x))" 
+      have "the (lookup m x) = the (Rep_fmap (S i) x)"  using `m = _` by (auto simp add: lookup.rep_eq)
+      hence ylt: "the (lookup m x) \<sqsubseteq> (\<Squnion>i::nat. the (Rep_fmap (S i) x))" 
           using is_ub_thelub[OF c2] by (auto simp add: lookup.rep_eq)
-
+      also
       have "x \<in> fdom (S 0) " using `x \<in> fdom m` by simp
-      hence "lookup (fmap_lub S) x = Some (\<Squnion>i::nat. the (Rep_fmap (S i) x))"
+      hence "(\<Squnion>i::nat. the (Rep_fmap (S i) x)) = the (lookup (fmap_lub S) x)"
         by (auto simp add: fmap_lub.rep_eq lookup.rep_eq fmap_lub_raw_def fdom.rep_eq)        
-      thus "y \<sqsubseteq> y2" using `lookup m _ = _` ylt `lookup (fmap_lub S) x = Some y2`
-        by simp
+      finally
+      show "the (lookup m x) \<sqsubseteq> the (lookup (fmap_lub S) x)".
     qed simp
   qed
 next
@@ -135,11 +122,6 @@ next
   show "fmap_lub S \<sqsubseteq> u "
   proof(rule fmap_belowI)
     fix x
-    fix y
-    fix y2
-    assume "lookup (fmap_lub S) x = Some y" 
-    assume "lookup u x = Some y2" 
-    hence "y2 = the (Rep_fmap u x)"  by (auto simp add: lookup.rep_eq)
 
     assume  "x \<in> fdom (fmap_lub S)"
     hence c2: "chain (\<lambda> i. the (Rep_fmap (S i) x))" (is "chain ?S2") using `chain S`
@@ -158,10 +140,8 @@ next
       using ub_rangeD[OF `range S <| u`] `x \<in> fdom u`
       by (auto intro: ub_rangeI simp add:  below_fmap_def lookup.rep_eq)
      
-    hence "the (lookup (fmap_lub S) x) \<sqsubseteq> the (lookup u x)"
+    thus "the (lookup (fmap_lub S) x) \<sqsubseteq> the (lookup u x)"
       by (rule is_lubD2[OF lub_at_x])
-    thus "y \<sqsubseteq> y2"
-      using `_ = Some y` `_ = Some y2` by simp
   qed simp
 }
 qed
@@ -253,7 +233,7 @@ lemma fmap_contI:
        x \<in> fdom (f (\<Squnion> i. Y i)) \<Longrightarrow> x \<in> fdom (\<Squnion> i. f (Y i)) \<Longrightarrow>
        the (lookup (f (\<Squnion> i. Y i)) x) \<sqsubseteq> the (lookup (\<Squnion> i. f (Y i)) x)" (is "PROP ?a3") 
   shows "cont (f :: 'c::cpo \<Rightarrow> 'a f\<rightharpoonup> 'b::cpo)"
-proof(intro contI2 monofunI fmap_belowI')
+proof(intro contI2 monofunI fmap_belowI)
   fix x y :: 'c
   assume "x \<sqsubseteq> y"
   thus "fdom (f x) = fdom (f y)" using assms(1) by auto
@@ -270,7 +250,7 @@ qed fact+
 
 lemma fmap_upd_mono:
   "\<rho>1 \<sqsubseteq> \<rho>2 \<Longrightarrow> v1 \<sqsubseteq> v2 \<Longrightarrow> \<rho>1(x f\<mapsto> v1) \<sqsubseteq> \<rho>2(x f\<mapsto> v2)"
-  apply (rule fmap_belowI')
+  apply (rule fmap_belowI)
   apply (auto dest:fmap_below_dom)[1]
   apply (case_tac "xa = x")
   apply simp
@@ -280,7 +260,7 @@ lemma fmap_upd_mono:
 lemma fmap_upd_cont[simp,cont2cont]:
   assumes "cont f" and "cont h"
   shows "cont (\<lambda> x. fmap_upd (f x) v (h x) :: 'a f\<rightharpoonup> 'b::cpo)"
-proof (intro contI2  monofunI fmap_belowI')
+proof (intro contI2  monofunI fmap_belowI)
   fix x1 x2 :: 'c
   assume "x1 \<sqsubseteq> x2"
   hence "f x1 \<sqsubseteq> f x2" by -(erule cont2monofunE[OF `cont f`])
@@ -449,7 +429,7 @@ lemma fmap_upd_belowI:
   assumes "\<And> z . z \<in> fdom \<rho> \<Longrightarrow> z \<noteq> x \<Longrightarrow> the (lookup \<rho> z) \<sqsubseteq> the (lookup \<rho>' z)" 
   assumes "y \<sqsubseteq> the (lookup \<rho>' x)"
   shows  "\<rho>(x f\<mapsto> y) \<sqsubseteq> \<rho>'"
-  apply (rule fmap_belowI')
+  apply (rule fmap_belowI)
   using assms apply simp
   using assms
   apply (case_tac "xa = x")
@@ -461,7 +441,7 @@ lemma fmap_upd_belowI2:
   assumes "\<And> z . z \<in> fdom \<rho> \<Longrightarrow> z \<noteq> x \<Longrightarrow> the (lookup \<rho> z) \<sqsubseteq> the (lookup \<rho>' z)" 
   assumes "the (lookup \<rho> x) \<sqsubseteq> y"
   shows  "\<rho> \<sqsubseteq> \<rho>'(x f\<mapsto> y)"
-  apply (rule fmap_belowI')
+  apply (rule fmap_belowI)
   using assms apply simp
   using assms
   apply (case_tac "xa = x")
@@ -488,7 +468,7 @@ lemma fmap_restr_belowI2:
   assumes "fdom m2 = fdom m1 \<inter> S"
   assumes  "\<And> x. x \<in> S \<Longrightarrow> x \<in> fdom m1 \<Longrightarrow> the (lookup m1 x) \<sqsubseteq> the (lookup m2 x)"
   shows "fmap_restr S m1 \<sqsubseteq> m2"
-  apply (rule fmap_belowI')
+  apply (rule fmap_belowI)
   apply (simp add: assms(1,2))
   apply (simp add: assms(1,2))
   apply (rule assms(3))
@@ -511,7 +491,7 @@ lemma fmap_restr_cont:  "cont (fmap_restr S)"
 proof(cases "finite S")
 case True thus ?thesis apply -
   apply (rule contI2[OF fmap_restr_monofun])
-  apply (rule fmap_belowI')
+  apply (rule fmap_belowI)
   apply (simp add: chain_fdom(2))[1]
   apply auto
   apply (subst lookup_cont, assumption)+
@@ -613,21 +593,21 @@ lemma compatible_fmap_disjoint_fdom:
 
 lemma fmap_join_below1:
   "compatible_fmap m1 m2 \<Longrightarrow> fdom m1 = fdom m2 \<Longrightarrow> m1 \<sqsubseteq> fmap_join m1 m2"
-  apply (rule fmap_belowI', simp)
+  apply (rule fmap_belowI, simp)
   apply transfer
   apply (auto simp add: intro!:join_above1 split:option.split)
   by (metis domI the.simps)
 
 lemma fmap_join_below2:
   "compatible_fmap m1 m2 \<Longrightarrow> fdom m1 = fdom m2 \<Longrightarrow> m2 \<sqsubseteq> fmap_join m1 m2"
-  apply (rule fmap_belowI', simp)
+  apply (rule fmap_belowI, simp)
   apply transfer
   apply (auto simp add: intro!:join_above2 split:option.split)
   by (metis domI the.simps)
 
 lemma fmap_join_least:
   "compatible_fmap m1 m2 \<Longrightarrow> fdom m1 = fdom m2 \<Longrightarrow> m1 \<sqsubseteq> m \<Longrightarrow> m2 \<sqsubseteq> m \<Longrightarrow> fmap_join m1 m2 \<sqsubseteq> m"
-  apply (rule fmap_belowI', metis below_fmap_def fmap_join_below2)
+  apply (rule fmap_belowI, metis below_fmap_def fmap_join_below2)
   apply (drule_tac x = x in fmap_belowE)
   apply (drule_tac x = x in fmap_belowE)
   apply transfer
@@ -640,7 +620,7 @@ lemma fmap_join_mono:
   assumes "a \<sqsubseteq> c"
   assumes "b \<sqsubseteq> d"
   shows "fmap_join a b \<sqsubseteq> fmap_join c d"
-proof (rule fmap_belowI')
+proof (rule fmap_belowI)
 case goal1 thus ?case using assms by  (simp add: fmap_below_dom) 
 next
 case (goal2 x)
@@ -786,7 +766,7 @@ lemma fmap_expand_belowI:
   assumes "fdom \<rho>' = S"
   assumes "\<And> x. x \<in> fdom \<rho> \<Longrightarrow> x \<in> S \<Longrightarrow> the (lookup \<rho> x) \<sqsubseteq> the (lookup \<rho>' x)"
   shows "fmap_expand \<rho> S \<sqsubseteq> \<rho>'"
-  apply (rule fmap_belowI')
+  apply (rule fmap_belowI)
   apply (metis assms(1) fdom_fmap_expand finite_fdom)
   apply (case_tac "x \<in> fdom \<rho>")
   apply (metis assms(1) assms(2) finite_fdom lookup_fmap_expand1)
@@ -804,7 +784,7 @@ lemma fmap_extend_monofun:
 proof(cases "finite S")
 case True
   show ?thesis
-  proof (rule monofunI, rule fmap_belowI')
+  proof (rule monofunI, rule fmap_belowI)
   case goal1 thus ?case using True by (simp add: fmap_below_dom)
   case (goal2 m1 m2 x) thus ?case
     using goal2 True
@@ -820,7 +800,7 @@ lemma fmap_expand_monofun:
 proof(cases "finite S")
 case True
   show ?thesis
-  proof (rule monofunI, rule fmap_belowI')
+  proof (rule monofunI, rule fmap_belowI)
   case goal1 thus *: ?case using True by (simp add: fmap_below_dom)
   case (goal2 m1 m2 x) thus ?case
     using goal2 True
@@ -1340,7 +1320,7 @@ begin
     shows "H \<rho>' \<rho>'' \<sqsubseteq> \<rho>'"
       using assms
       apply -
-      apply (rule fmap_belowI')
+      apply (rule fmap_belowI)
       using there apply (auto simp add: D_def)[1]
       apply (case_tac "x \<in> fdom (e1 \<rho>')")
       apply simp
@@ -1504,13 +1484,13 @@ proof-
   have "S >>| z"
     apply (rule is_glbI)
     apply (rule is_lbI)
-    apply (rule fmap_belowI')
+    apply (rule fmap_belowI)
     apply simp
     apply (rule is_lbD)
     apply (rule is_glbD1)
     apply (rule z, simp)
     apply auto
-    apply (rule fmap_belowI')
+    apply (rule fmap_belowI)
     apply (metis `S \<noteq> {}` `\<And>m. m \<in> S \<Longrightarrow> fdom m = fdom b` `fdom z = fdom b` all_not_in_conv fmap_below_dom is_lbD)
     apply (rule is_glbD2)
     apply (rule z, simp)
