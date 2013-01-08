@@ -191,12 +191,12 @@ case (Let as exp \<rho> x y)
      by (induct as rule: assn_vars.induct, auto)
 
   have cond1: "HSem_cond' (asToHeap as) (\<rho>(x f\<mapsto> the (lookup \<rho> y)))"
-      (is "fix_on_cond_jfc' ?\<rho>1 ?F1")
+      (is "fix_join_cond ?\<rho>1 ?F1")
     apply (rule disjoint_is_HSem_cond)
     apply (auto simp add:  `x \<notin> assn_vars as`)
     by (metis Let(1) heapVars_asToHeap sharp_star_Env)
   have cond2: "HSem_cond' (asToHeap as[x::a=y]) \<rho>"
-      (is "fix_on_cond_jfc' ?\<rho>2 ?F2")
+      (is "fix_join_cond ?\<rho>2 ?F2")
     apply (rule disjoint_is_HSem_cond)
     apply (auto simp add:  `x \<notin> assn_vars as`)
     by (metis Let(1) heapVars_asToHeap sharp_star_Env)
@@ -214,18 +214,18 @@ case (Let as exp \<rho> x y)
     apply auto[3]
     done
 
-  have "fix_on (fix_join_compat'' ?\<rho>1 ?F1) (\<lambda> \<rho>'. ?\<rho>1 \<squnion> ?F1 \<rho>') \<sqsubseteq> (fix_on (fix_join_compat'' ?\<rho>2 ?F2) (\<lambda> \<rho>'. ?\<rho>2 \<squnion> ?F2 \<rho>')) ( x f\<mapsto> the (lookup (fix_on (fix_join_compat'' ?\<rho>2 ?F2) (\<lambda> \<rho>'. ?\<rho>2 \<squnion> ?F2 \<rho>')) y))"
+  have "fix_on (fix_join_compat ?\<rho>1 ?F1) (\<lambda> \<rho>'. ?\<rho>1 \<squnion> ?F1 \<rho>') \<sqsubseteq> (fix_on (fix_join_compat ?\<rho>2 ?F2) (\<lambda> \<rho>'. ?\<rho>2 \<squnion> ?F2 \<rho>')) ( x f\<mapsto> the (lookup (fix_on (fix_join_compat ?\<rho>2 ?F2) (\<lambda> \<rho>'. ?\<rho>2 \<squnion> ?F2 \<rho>')) y))"
     (is "?L \<sqsubseteq> ?R( x f\<mapsto> the (lookup ?R y))")
-  proof (rule fix_on_ind[OF fix_on_cond_jfc''[OF cond1]])
+  proof (rule fix_on_ind[OF fix_on_cond_fjc[OF cond1]])
   case goal1 show ?case by (auto intro: adm_is_adm_on)
   case goal2
     show ?case
-      apply (subst bottom_of_jfc'')
+      apply (subst bottom_of_fjc)
       apply (subst to_bot_fmap_def)
       apply (rule fmap_bottom_below)
       apply (subst (2) fmap_upd_fdom)
-      apply (subst fdom_fix_on[OF fix_on_cond_jfc''[OF cond2]])
-      apply (simp add: bottom_of_jfc'' to_bot_fmap_def)
+      apply (subst fdom_fix_on[OF fix_on_cond_fjc[OF cond2]])
+      apply (simp add: bottom_of_fjc to_bot_fmap_def)
       done
   case (goal3 \<rho>')
     let "?F1' \<rho>'" = "fmap_expand (heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)) (fdom \<rho> \<union> heapVars (asToHeap as))"
@@ -236,7 +236,7 @@ case (Let as exp \<rho> x y)
     have "\<dots> = (?\<rho>1' \<squnion> ?F1' \<rho>')(x f\<mapsto> the (lookup \<rho> y))"
       apply (subst fmap_upd_join)
       using `atom x \<sharp> \<rho>` `x \<notin> assn_vars as` apply (auto simp add: sharp_Env)[3]
-      using rho_F_compat_jfc''[OF cond1 goal3(1)] apply (metis *)
+      using rho_F_compat_fjc[OF cond1 goal3(1)] apply (metis *)
       by auto
     also
     { have "?F1' \<rho>' \<sqsubseteq> ?F1' (?R( x f\<mapsto> the (lookup ?R y)))"
@@ -244,55 +244,55 @@ case (Let as exp \<rho> x y)
       also
       have "... = ?F2 ?R"
         apply (subst `_ \<Longrightarrow> _ \<Longrightarrow> heapToEnv _ _ = _`[OF `x \<noteq> y` ])
-          using `atom x \<sharp> \<rho>` `x \<notin> assn_vars as` fdom_fix_on[OF fix_on_cond_jfc''[OF cond2]]
-          apply (simp add: sharp_Env bottom_of_jfc'')
+          using `atom x \<sharp> \<rho>` `x \<notin> assn_vars as` fdom_fix_on[OF fix_on_cond_fjc[OF cond2]]
+          apply (simp add: sharp_Env bottom_of_fjc)
         by simp
       also note calculation     
     } 
     hence "... \<sqsubseteq> (?\<rho>2 \<squnion> ?F2 ?R)( x f\<mapsto> the (lookup \<rho> y))"
       apply (rule cont2monofunE[OF
               fmap_upd_cont[OF cont_id cont_const]
-              join_mono'[OF rho_F_compat_jfc''[OF cond2 fix_on_there[OF fix_on_cond_jfc''[OF cond2]]]]
+              join_mono'[OF rho_F_compat_fjc[OF cond2 fix_on_there[OF fix_on_cond_fjc[OF cond2]]]]
               , rotated])
       apply simp
     done
     also have "... = ?R( x f\<mapsto> the (lookup \<rho> y))"
-      by (rule arg_cong[OF fix_on_eq[OF fix_on_cond_jfc''[OF cond2], symmetric]])
+      by (rule arg_cong[OF fix_on_eq[OF fix_on_cond_fjc[OF cond2], symmetric]])
     also have "... = ?R( x f\<mapsto> the (lookup ?R y))"
       by (subst lookup_other[of \<rho>, unfolded HSem_def'[OF cond2]], rule)
     finally show "?\<rho>1 \<squnion> ?F1 \<rho>' \<sqsubseteq> ?R( x f\<mapsto> the (lookup ?R y))".
   qed
   also
   have "?R (x f\<mapsto> the (lookup ?R y)) \<sqsubseteq> ?L"
-  proof (rule fix_on_ind[OF fix_on_cond_jfc''[OF cond2]])
+  proof (rule fix_on_ind[OF fix_on_cond_fjc[OF cond2]])
   case goal1 show ?case by (auto intro: adm_is_adm_on)
   case goal2
     show ?case
-      apply (subst fix_on_eq[OF fix_on_cond_jfc''[OF cond1]])
-      apply (subst bottom_of_jfc'')
+      apply (subst fix_on_eq[OF fix_on_cond_fjc[OF cond1]])
+      apply (subst bottom_of_fjc)
       apply (subst to_bot_fmap_def)
       apply (subst fdom_fmap_expand)
         apply simp
       
       apply (rule fmap_upd_belowI)
-        apply (subst fdom_join[OF rho_F_compat_jfc''[OF cond1 fix_on_there[OF fix_on_cond_jfc''[OF cond1]]]])
+        apply (subst fdom_join[OF rho_F_compat_fjc[OF cond1 fix_on_there[OF fix_on_cond_fjc[OF cond1]]]])
         apply simp
 
       apply simp
-      apply (subst the_lookup_join[OF rho_F_compat_jfc''[OF cond1 fix_on_there[OF fix_on_cond_jfc''[OF cond1]]]])
-      apply (rule rev_below_trans[OF join_above1[OF the_lookup_compatible[OF rho_F_compat_jfc''[OF cond1 fix_on_there[OF fix_on_cond_jfc''[OF cond1]]]]]])
+      apply (subst the_lookup_join[OF rho_F_compat_fjc[OF cond1 fix_on_there[OF fix_on_cond_fjc[OF cond1]]]])
+      apply (rule rev_below_trans[OF join_above1[OF the_lookup_compatible[OF rho_F_compat_fjc[OF cond1 fix_on_there[OF fix_on_cond_fjc[OF cond1]]]]]])
       apply (cases "y \<in> fdom \<rho>")
-      using  `y \<notin> assn_vars as` apply (auto simp add: bottom_of_jfc'' to_bot_fmap_def lookup_not_fdom)
+      using  `y \<notin> assn_vars as` apply (auto simp add: bottom_of_fjc to_bot_fmap_def lookup_not_fdom)
       done
   case (goal3 \<rho>')
     let "?F1' \<rho>'" = "fmap_expand (heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)) (fdom \<rho> \<union> heapVars (asToHeap as))"
     let "?F2' \<rho>'" = "fmap_expand (heapToEnv (asToHeap as[x::a=y]) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)) (insert x (fdom \<rho> \<union> assn_vars as))"
     have "fdom \<rho>' = fdom \<rho> \<union> heapVars (asToHeap as)"
-      using fdom_fix_join_compat''[OF fix_on_cond_jfc''[OF cond2] goal3(1)] by simp
+      using fdom_fix_join_compat[OF fix_on_cond_fjc[OF cond2] goal3(1)] by simp
 
     have "(?\<rho>2 \<squnion> ?F2 \<rho>') (x f\<mapsto> the (lookup (?\<rho>2 \<squnion> ?F2 \<rho>') y)) = (?\<rho>2 \<squnion> ?F2 \<rho>')(x f\<mapsto> the (lookup \<rho> y))"
       apply (rule arg_cong) back
-      apply (subst the_lookup_join[OF rho_F_compat_jfc''[OF cond2 goal3(1)]])
+      apply (subst the_lookup_join[OF rho_F_compat_fjc[OF cond2 goal3(1)]])
       apply (case_tac "y \<in> fdom \<rho>")
       using `y \<notin> assn_vars as`
       by (auto simp add: sharp_Env lookup_not_fdom)
@@ -303,7 +303,7 @@ case (Let as exp \<rho> x y)
       apply (rule compatible_insert)
         using `atom x \<sharp> \<rho>` `x \<notin> assn_vars as` apply (auto simp add: sharp_Env)[3]
       apply simp
-      apply (rule rho_F_compat_jfc''[OF cond2 goal3(1), simplified])
+      apply (rule rho_F_compat_fjc[OF cond2 goal3(1), simplified])
       apply simp
       done
     also
@@ -312,14 +312,14 @@ case (Let as exp \<rho> x y)
     also
     have "... = ?\<rho>1 \<squnion> ?F1 (\<rho>'(x f\<mapsto> the (lookup \<rho>' y)))"
       apply (subst `_ \<Longrightarrow> _ \<Longrightarrow> heapToEnv _ _ = _`[OF `x \<noteq> y` ])
-        using `atom x \<sharp> \<rho>` `fdom \<rho>' = _` `x \<notin> assn_vars as` fdom_fix_on[OF fix_on_cond_jfc''[OF cond2]]
-        apply (simp add: sharp_Env bottom_of_jfc'')
+        using `atom x \<sharp> \<rho>` `fdom \<rho>' = _` `x \<notin> assn_vars as` fdom_fix_on[OF fix_on_cond_fjc[OF cond2]]
+        apply (simp add: sharp_Env bottom_of_fjc)
       by simp
     also
     from `\<rho>'(x f\<mapsto> the (lookup \<rho>' y)) \<sqsubseteq> ?L`
     have  "... \<sqsubseteq> ?L"
-      unfolding bottom_of_jfc''
-      by (rule join_jfc''[OF rho_jfc''[OF cond1] F_pres_compat''[OF cond1], unfolded fjc''_iff])
+      unfolding bottom_of_fjc
+      by (rule join_fjc[OF rho_fjc[OF cond1] F_pres_compat''[OF cond1], unfolded fjc_iff])
     finally
     show "(?\<rho>2 \<squnion> ?F2 \<rho>') (x f\<mapsto> the (lookup (?\<rho>2 \<squnion> ?F2 \<rho>') y)) \<sqsubseteq> ?L".
   qed
@@ -418,26 +418,26 @@ case (App e v \<rho>1 \<rho>2)
 next
 case (Let as e \<rho>1 \<rho>2)
   have cond1: "HSem_cond' (asToHeap as) \<rho>1"
-    (is "fix_on_cond_jfc' ?\<rho>1 ?F1")
+    (is "fix_join_cond ?\<rho>1 ?F1")
     apply (rule disjoint_is_HSem_cond)
     using Let(1) by (auto simp add: sharp_star_Env)
   have cond2: "HSem_cond' (asToHeap as) \<rho>2"
-    (is "fix_on_cond_jfc' ?\<rho>2 ?F2")
+    (is "fix_join_cond ?\<rho>2 ?F2")
     apply (rule disjoint_is_HSem_cond)
     using Let(2) by (auto simp add: sharp_star_Env)
-  let "?S1" = "fix_join_compat'' ?\<rho>1 ?F1"
-  let "?S2" = "fix_join_compat'' ?\<rho>2 ?F2"
+  let "?S1" = "fix_join_compat ?\<rho>1 ?F1"
+  let "?S2" = "fix_join_compat ?\<rho>2 ?F2"
 
   have "\<lbrace>asToHeap as\<rbrace>\<rho>2 \<sqsubseteq> fmap_expand (\<lbrace>asToHeap as\<rbrace>\<rho>1) (fdom (\<lbrace>asToHeap as\<rbrace>\<rho>2))"
     apply (rule HSem_ind'[OF cond2 adm_is_adm_on]) back back
     apply auto[1]
     apply (auto simp add: to_bot_fmap_def)[1]
     apply (subst HSem_eq[OF cond1])
-    apply (subst fmap_expand_join[OF finite_fdom rho_F_compat_jfc''[OF cond1 HSem_there[OF cond1]]])
+    apply (subst fmap_expand_join[OF finite_fdom rho_F_compat_fjc[OF cond1 HSem_there[OF cond1]]])
 
     apply (erule join_mono[OF
-        rho_F_compat_jfc''[OF cond2]
-        fmap_expand_compatible[OF finite_fdom rho_F_compat_jfc''[OF cond1 HSem_there[OF cond1]]]
+        rho_F_compat_fjc[OF cond2]
+        fmap_expand_compatible[OF finite_fdom rho_F_compat_fjc[OF cond1 HSem_there[OF cond1]]]
         ])
     
     apply (rule below_trans[OF cont2monofunE[OF fmap_expand_cont `\<rho>2 \<sqsubseteq> fmap_expand \<rho>1 (fdom \<rho>2)`]])
@@ -559,12 +559,12 @@ case (App e x \<rho>1 \<rho>2)
 next
 case (Let as e \<rho>1 \<rho>2)
   have cond1: "HSem_cond' (asToHeap as) \<rho>1"
-      (is "fix_on_cond_jfc' ?\<rho>1 ?F1")
+      (is "fix_join_cond ?\<rho>1 ?F1")
     apply (rule disjoint_is_HSem_cond)
     using Let(1)
     by (auto simp add: sharp_star_Env)
   have cond2: "HSem_cond' (asToHeap as) \<rho>2"
-      (is "fix_on_cond_jfc' ?\<rho>2 ?F2")
+      (is "fix_join_cond ?\<rho>2 ?F2")
     apply (rule disjoint_is_HSem_cond)
     using Let(2)
     by (auto simp add: sharp_star_Env)
@@ -581,11 +581,11 @@ case (Let as e \<rho>1 \<rho>2)
       done
   case (goal3 \<rho>1' \<rho>2')
     have [simp]:"fdom \<rho>1' = fdom \<rho>1 \<union> heapVars (asToHeap as)" and [simp]:"fdom \<rho>2' = fdom \<rho>2 \<union> heapVars (asToHeap as)"
-      using fdom_fix_join_compat''[OF fix_on_cond_jfc''[OF cond1] goal3(1)]
-      using fdom_fix_join_compat''[OF fix_on_cond_jfc''[OF cond2] goal3(2)]
+      using fdom_fix_join_compat[OF fix_on_cond_fjc[OF cond1] goal3(1)]
+      using fdom_fix_join_compat[OF fix_on_cond_fjc[OF cond2] goal3(2)]
       by simp+  
-    note compat1 = rho_F_compat_jfc''[OF cond1 goal3(1)]
-    note compat2 = rho_F_compat_jfc''[OF cond2 goal3(2)]
+    note compat1 = rho_F_compat_fjc[OF cond1 goal3(1)]
+    note compat2 = rho_F_compat_fjc[OF cond2 goal3(2)]
 
     have prem: "atom ` (fdom \<rho>2' - fdom \<rho>1') \<sharp>* as"
       using Let(6) Let(1) Let(2)
@@ -775,7 +775,7 @@ proof(rule HSem_subst_expr[OF cond1 cond2])
     by simp
   also have "... = \<lbrakk> e \<rbrakk>\<^bsub>(\<lbrace>(x, App e y) # (n, e) # \<Gamma>\<rbrace>\<rho>)\<^esub>"
     apply (subst HSem_eq[OF cond2])
-    apply (subst the_lookup_join[OF rho_F_compat_jfc''[OF cond2 HSem_there[OF cond2]]])
+    apply (subst the_lookup_join[OF rho_F_compat_fjc[OF cond2 HSem_there[OF cond2]]])
     apply simp
     done
   finally
@@ -786,7 +786,7 @@ proof(rule HSem_subst_expr[OF cond1 cond2])
     by simp
   also have "... = \<lbrakk> e \<rbrakk>\<^bsub>(\<lbrace>(x, App (Var n) y) # (n, e) # \<Gamma>\<rbrace>\<rho>)\<^esub>"
     apply (subst HSem_eq[OF cond1])
-    apply (subst the_lookup_join[OF rho_F_compat_jfc''[OF cond1 HSem_there[OF cond1]]])
+    apply (subst the_lookup_join[OF rho_F_compat_fjc[OF cond1 HSem_there[OF cond1]]])
     apply simp
     done
   finally
@@ -807,7 +807,7 @@ proof(rule HSem_subst_expr[OF cond1 cond2])
     by simp
   also have "... = \<lbrakk> e \<rbrakk>\<^bsub>(\<lbrace>(x, e) # (n, e) # \<Gamma>\<rbrace>\<rho>)\<^esub>"
     apply (subst HSem_eq[OF cond2])
-    apply (subst the_lookup_join[OF rho_F_compat_jfc''[OF cond2 HSem_there[OF cond2]]])
+    apply (subst the_lookup_join[OF rho_F_compat_fjc[OF cond2 HSem_there[OF cond2]]])
     apply simp
     done
   finally
@@ -818,7 +818,7 @@ proof(rule HSem_subst_expr[OF cond1 cond2])
     by simp
   also have "... = \<lbrakk> e \<rbrakk>\<^bsub>(\<lbrace>(x, Var n) # (n, e) # \<Gamma>\<rbrace>\<rho>)\<^esub>"
     apply (subst HSem_eq[OF cond1])
-    apply (subst the_lookup_join[OF rho_F_compat_jfc''[OF cond1 HSem_there[OF cond1]]])
+    apply (subst the_lookup_join[OF rho_F_compat_fjc[OF cond1 HSem_there[OF cond1]]])
     apply simp
     done
   finally
@@ -851,7 +851,7 @@ show rho: "fmap_expand (fmap_expand \<rho> (fdom \<rho> \<union> heapVars \<Delt
 case (goal3 x)
   note cond1 = goal3(1)
   have  "fdom x = fdom \<rho> \<union> heapVars \<Delta>"
-    using fdom_fix_join_compat''[OF fix_on_cond_jfc''[OF cond1] goal3(2)]
+    using fdom_fix_join_compat[OF fix_on_cond_fjc[OF cond1] goal3(2)]
     by simp
   {
     fix v e
@@ -872,8 +872,8 @@ case (goal3 x)
       by (metis cont2monofunE[OF ESem_cont])
   } note e_less = this
 
-  note compat = rho_F_compat_jfc''[OF cond1 goal3(2)]
-  note compat2 = rho_F_compat_jfc''[OF cond2 HSem_there[OF cond2]]
+  note compat = rho_F_compat_fjc[OF cond1 goal3(2)]
+  note compat2 = rho_F_compat_fjc[OF cond2 HSem_there[OF cond2]]
   show ?case
     apply (subst fmap_expand_join[OF _ compat], simp)
     apply (rule join_below[OF fmap_expand_compatible[OF _ compat] rho], simp)
@@ -939,8 +939,8 @@ proof(rule below_antisym)
     by simp
 
   case (goal3 \<rho>')
-    note compat = rho_F_compat_jfc''[OF cond1 goal3(2)]
-    note compat2 = rho_F_compat_jfc''[OF cond2 HSem_there[OF cond2]]
+    note compat = rho_F_compat_fjc[OF cond1 goal3(2)]
+    note compat2 = rho_F_compat_fjc[OF cond2 HSem_there[OF cond2]]
 
     have "fmap_expand (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>\<^esub>)) (fdom (\<lbrace>\<Delta>\<rbrace>\<rho>) \<union> heapVars \<Gamma>) \<sqsubseteq> \<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho> "
     proof (rule fmap_expand_belowI)
@@ -983,9 +983,9 @@ proof(rule below_antisym)
   show rho: "fmap_expand \<rho> (fdom \<rho> \<union> heapVars (\<Gamma> @ \<Delta>)) \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho> ".
 
   case (goal3 \<rho>')
-    note compat = rho_F_compat_jfc''[OF cond2 goal3(2)]
-    note compat2 = rho_F_compat_jfc''[OF cond1 HSem_there[OF cond1]]
-    note compat3 = rho_F_compat_jfc''[OF cond3 HSem_there[OF cond3]]
+    note compat = rho_F_compat_fjc[OF cond2 goal3(2)]
+    note compat2 = rho_F_compat_fjc[OF cond1 HSem_there[OF cond1]]
+    note compat3 = rho_F_compat_fjc[OF cond3 HSem_there[OF cond3]]
 
     have "fmap_expand (heapToEnv (\<Gamma> @ \<Delta>) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>)) (fdom \<rho> \<union> heapVars (\<Gamma> @ \<Delta>)) \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>"
     proof (rule fmap_expand_belowI)
@@ -1099,15 +1099,15 @@ case goal1
     case goal2 show ?case by (auto simp add: to_bot_fmap_def)
     case (goal3 \<rho>')
       have fdom: "fdom \<rho>' = insert x (fdom \<rho> \<union> heapVars \<Gamma>)"
-        using fdom_fix_join_compat''[OF fix_on_cond_jfc''[OF cond1] goal3(1)]
+        using fdom_fix_join_compat[OF fix_on_cond_fjc[OF cond1] goal3(1)]
         by simp
 
       hence [simp]: "set (bn as) \<sharp>* \<rho>'"
         using disjoint
         by (auto simp add: set_bn_to_atom_heapVars fresh_star_def sharp_Env)
 
-      note compat1 = rho_F_compat_jfc''[OF cond1 goal3(1)]
-      note compat2 = rho_F_compat_jfc''[OF cond2 HSem_there[OF cond2]]
+      note compat1 = rho_F_compat_fjc[OF cond1 goal3(1)]
+      note compat2 = rho_F_compat_fjc[OF cond2 HSem_there[OF cond2]]
       show ?case
       proof(rule fmap_belowI')
       case goal1 show ?case by (auto simp add: fdom_join[OF compat1, simplified])

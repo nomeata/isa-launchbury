@@ -106,6 +106,15 @@ lemma iterate_closed_on: "closed_on S F \<Longrightarrow> closed_on S (F^^i)"
   unfolding closed_on_def
   by (induct i, auto)
 
+lemma closed_on_Union:
+  assumes "\<And> i. closed_on (S i) F"
+  shows "closed_on (\<Union>i. S i) F"
+  apply (rule closed_onI)
+  apply (erule UN_E)
+  apply (rule UN_I[OF UNIV_I])
+  apply (erule closed_onE[OF assms])
+  done
+
 lemma monofun_onE: 
   "[|monofun_on S f; x\<in> S; y \<in> S; x \<sqsubseteq> y|] ==> f x \<sqsubseteq> f y"
 by (simp add: monofun_on_def)

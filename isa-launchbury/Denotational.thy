@@ -112,7 +112,7 @@ lemmas HSem_fresh[simp] = eqvt_fresh_cong2[of HSem, OF HSem_eqvt']
 (* Re-Do the abbreviation from inside the the locale, as abbreviations are not exported *)
 abbreviation HSem_cond''
   where "HSem_cond'' h \<rho> \<equiv>
-      fix_on_cond_jfc' (fmap_expand \<rho> (fdom \<rho> \<union> heapVars h)) 
+      fix_join_cond (fmap_expand \<rho> (fdom \<rho> \<union> heapVars h)) 
                         (\<lambda> \<rho>' . fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (fdom \<rho> \<union> heapVars h))"
 
 

@@ -63,7 +63,7 @@ proof-
         apply (rule adm_is_adm_on)
         apply auto[1]
       apply (simp add: to_bot_fmap_def)
-      apply (subst the_lookup_join[OF rho_F_compat_jfc''], assumption)
+      apply (subst the_lookup_join[OF rho_F_compat_fjc], assumption)
       apply simp_all
       done
     finally
@@ -90,7 +90,7 @@ proof-
 
   txt {* Establish that all joins occuring in the proof are well-defined. *}
   have cond: "HSem_cond'' \<Gamma> \<rho>"
-    apply (intro fix_on_cond_jfc'I cont_compose[OF fmap_expand_cont cont2cont_heapToEnv] ESem_cont)
+    apply (intro fix_join_condI cont_compose[OF fmap_expand_cont cont2cont_heapToEnv] ESem_cont)
     apply (rule compatible_fmap_is_compatible[OF compatible_fmapI])
     apply (auto simp add: \<rho>_def \<Gamma>_def)
     done
