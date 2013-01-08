@@ -50,14 +50,13 @@ lemma HSem_monofun'':
 lemma HSem_cont'':
   assumes cont: "\<And> e. e \<in> snd ` set h \<Longrightarrow> cont (ESem e)"
   assumes "chain Y"
-  shows "\<lbrace>h\<rbrace>(\<Squnion> i. Y  i) \<sqsubseteq> (\<Squnion> i. \<lbrace>h\<rbrace>(Y i))"
+  shows "\<lbrace>h\<rbrace>(\<Squnion> i. Y  i) = (\<Squnion> i. \<lbrace>h\<rbrace>(Y i))"
 proof-
   have fdoms:"\<And> i. fdom (Y i) = fdom (\<Squnion> i. Y i)" (is "\<And> _ .(_ = ?d)") by (metis chain_fdom `chain Y`) 
   show ?thesis
     apply (subst (1 2) HSem_def'')
     apply (erule cont)+
     unfolding fdoms
-    apply (rule eq_imp_below)
     proof (rule fix_on_cont[OF `chain Y`, where S = "{x . fmap_bottom (fdom (\<Squnion> i. Y i) \<union> heapVars h) \<sqsubseteq> x}"])
       show "cont (\<lambda>a b. a f++ heapToEnv h (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>b\<^esub>))"
         by (rule cont2cont_lambda[OF fmap_add_cont1])

@@ -1,5 +1,5 @@
 theory "Denotational-Props"
-  imports "Denotational"  "HOLCF-Utils"
+  imports "Denotational"
 begin
 
 
@@ -36,40 +36,21 @@ case (Let as e Y0 Y)
   have unset: "\<And>i. fdom (Y i) \<inter> (heapVars (asToHeap as)) = {}"
     using Let by (metis fdoms disjoint_iff_not_equal sharp_star_Env)
   have conts: "\<forall>e\<in>snd ` set (asToHeap as). cont (ESem e)" using Let.hyps(2) by metis
-  have "cont (ESem e)" using Let.hyps(3) by (rule contI, auto)
-  moreover
-  have "range (\<lambda>i. HSem (asToHeap as)  (Y i)) <<| HSem (asToHeap as) (Lub Y)"
-    apply (rule range_is_lubI2)
-    apply (rule HSem_monofun'')
-      apply (erule Let.hyps(2))
-      apply (rule disjoint_is_HSem_cond'[OF unset conts])
-      apply (rule disjoint_is_HSem_cond'[OF unset conts])
-      apply (rule chainE[OF `chain Y`])
-    apply (rule HSem_monofun'')
-      apply (erule Let.hyps(2))
-      apply (rule disjoint_is_HSem_cond'[OF unset conts])
-      apply (rule disjoint_is_HSem_cond'[OF unset[unfolded fdoms] conts])
-      apply (rule is_ub_thelub[OF `chain Y`])
-    apply (rule eq_imp_below)
-    apply (rule HSem_cont'')
-      apply (erule Let.hyps(2))
-      apply (rule disjoint_is_HSem_cond'[OF unset[unfolded fdoms] conts])
-      apply (rule disjoint_is_HSem_cond'[OF unset conts])
-      apply (rule `chain Y`)
-   done
-  moreover
-  have "chain (\<lambda>i. HSem (asToHeap as) (Y i))"
+  have cont: "cont (ESem e)" using Let.hyps(3) by (rule contI, auto)
+  have cond: "HSem_cond'' (asToHeap as) (\<Squnion> i. Y i)" by (rule disjoint_is_HSem_cond'[OF unset[unfolded fdoms] conts])
+  have conds: "\<And>i. HSem_cond'' (asToHeap as) (Y i)" by (rule disjoint_is_HSem_cond'[OF unset conts])
+
+  have chain: "chain (\<lambda>i. HSem (asToHeap as) (Y i))"
     apply (rule chainI)
-    apply (rule HSem_monofun'')
-      apply (erule Let.hyps(2))
-      apply (rule disjoint_is_HSem_cond'[OF unset conts])
-      apply (rule disjoint_is_HSem_cond'[OF unset conts])
-      apply (rule chainE[OF `chain Y`])
-   done
-  ultimately
-  show ?case
+    apply (rule HSem_monofun''[OF Let.hyps(2) conds conds chainE[OF `chain Y`]])
+    by assumption
+
+  have "(\<Squnion> i. HSem (asToHeap as) (Y i)) = HSem (asToHeap as) (Lub Y)"
+    apply (rule HSem_cont''[OF Let.hyps(2) cond conds `chain Y`, symmetric])
+    by assumption
+  thus ?case
     apply simp
-    by (metis cont_def lub_eqI)
+    by (metis Let(3) chain)
 next
 case ANil thus ?case by auto
 next

@@ -1,5 +1,5 @@
 theory "Denotational-PropsUpd"
-  imports "DenotationalUpd"  "HOLCF-Utils"
+  imports "DenotationalUpd"
 begin
 
 lemma ESem_cont':"Y0 = Y 0 \<Longrightarrow> chain Y \<Longrightarrow> range (\<lambda>i. \<lbrakk> e \<rbrakk>\<^bsub>Y i\<^esub>) <<| \<lbrakk> e \<rbrakk>\<^bsub>(\<Squnion> i. Y i)\<^esub> " and
@@ -36,30 +36,18 @@ case (Let as e Y0 Y)
     using Let by (metis fdoms disjoint_iff_not_equal sharp_star_Env)
   have conts: "\<forall>e\<in>snd ` set (asToHeap as). cont (ESem e)" using Let.hyps(2) by metis
   have "cont (ESem e)" using Let.hyps(3) by (rule contI, auto)
-  moreover
-  have "range (\<lambda>i. HSem (asToHeap as)  (Y i)) <<| HSem (asToHeap as) (Lub Y)"
-    apply (rule range_is_lubI2)
-    apply (rule HSem_monofun'')
-      apply (erule Let.hyps(2))
-      apply (rule chainE[OF `chain Y`])
-    apply (rule HSem_monofun'')
-      apply (erule Let.hyps(2))
-      apply (rule is_ub_thelub[OF `chain Y`])
-    apply (rule HSem_cont'')
-      apply (erule Let.hyps(2))
-      apply (rule `chain Y`)
-   done
-  moreover
-  have "chain (\<lambda>i. HSem (asToHeap as) (Y i))"
+
+  have chain: "chain (\<lambda>i. HSem (asToHeap as) (Y i))"
     apply (rule chainI)
-    apply (rule HSem_monofun'')
-      apply (erule Let.hyps(2))
-      apply (rule chainE[OF `chain Y`])
-   done
-  ultimately
-  show ?case
+    apply (rule HSem_monofun''[OF Let.hyps(2)  chainE[OF `chain Y`]])
+    by assumption
+
+  have "(\<Squnion> i. HSem (asToHeap as) (Y i)) = HSem (asToHeap as) (Lub Y)"
+    apply (rule HSem_cont''[OF Let.hyps(2) `chain Y`, symmetric])
+    by assumption
+  thus ?case
     apply simp
-    by (metis cont_def lub_eqI)
+    by (metis Let(3) chain)
 next
 case ANil thus ?case by auto
 next
