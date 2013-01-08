@@ -2,6 +2,8 @@ theory "FMap-Nominal-HOLCF"
 imports "Nominal-HOLCF" "FMap-Nominal" "FMap-HOLCF" "Nominal-Utils"
 begin
 
+subsubsection {* Permutation of finite maps is continuous *}
+
 instance "fmap" :: (pt, cont_pt) cont_pt
 apply default
 proof(intro contI2 monofunI fmap_belowI)
@@ -69,75 +71,10 @@ next
   thus "the (lookup (\<pi> \<bullet> (\<Squnion> i. Y i)) x) \<sqsubseteq> the (lookup (\<Squnion> i. \<pi> \<bullet> Y i) x)" by auto
 qed
 
-(*
-lemma fix1_eqvt[simp,eqvt]:
-  "\<pi> \<bullet> fix1 x f = fix1 (\<pi> \<bullet> x) (\<pi> \<bullet> f)"
-proof(cases "x \<sqsubseteq> f \<cdot> x")
-  case True thus ?thesis
-  apply -
-  using [[show_types]] [[show_sorts]]
-  apply (rule parallel_fix1_ind)
-  apply auto[1]
-  by -(rule parallel_fix1_ind, auto dest:cont2monofunE[OF perm_cont] simp add: Cfun_app_eqvt)
-next
-  case False thus ?thesis
-  unfolding fix1_def
-  apply (subst if_not_P, assumption)
-  apply (subst if_not_P)
-  apply (metis Cfun_app_eqvt perm_cont_simp)
-  apply rule
-  done
-qed
-*)
-
-lemma chain_shift_funpow[simp]: 
-  "chain (\<lambda>i. (f ^^ i) x) \<Longrightarrow> chain (\<lambda>i. f ((f ^^ i) x))"
-proof-
-  have tmp: "\<And> i. f ((f ^^ i) x) = (f ^^ (Suc i)) x"
-    by (metis funpow.simps(2) o_apply)
-  show "chain (\<lambda>i. (f ^^ i) x) \<Longrightarrow> chain (\<lambda>i. f ((f ^^ i) x))"
-    apply (subst tmp)
-    by (rule chain_shift[of _ 1, simplified])
-qed
-
-(*
-lemma chainFrom_eqvt[simp,eqvt]:
-  "chainFrom f (x :: 'a :: cont_pt) \<Longrightarrow> chainFrom (\<pi> \<bullet> f) (\<pi> \<bullet> x)"
-  unfolding chainFrom_def
-  apply (auto simp only:funpow_eqvt[symmetric, simplified permute_pure] permute_fun_app_eq[symmetric] perm_cont_simp)
-  apply (subst Lub_eqvt[symmetric])
-  apply (rule cpo, rule chainI, auto)[1]
-  apply (subst Lub_eqvt[symmetric])
-  apply (rule cpo, rule chain_shift_funpow, rule chainI, auto)[1]
-  apply (auto simp only:funpow_eqvt[symmetric, simplified permute_pure] permute_fun_app_eq[symmetric] perm_cont_simp)
-  done  
-
-lemma fixR_eqvt[simp,eqvt]:
-  "\<pi> \<bullet> fixR (x::'a::cont_pt) f = fixR (\<pi> \<bullet> x) (\<pi> \<bullet> f)"
-proof(cases "chainFrom f x")
-  case True thus ?thesis
-  apply -
-  apply (rule parallel_fixR_ind)
-  apply auto[1]
-  apply assumption
-  apply (erule chainFrom_eqvt)
-  apply rule
-  apply (simp add: permute_fun_app_eq)
-  done
-next
-  case False thus ?thesis
-  unfolding fixR_def
-  apply (subst if_not_P, assumption)
-  apply (subst if_not_P)
-  apply (metis chainFrom_eqvt permute_minus_cancel(2))
-  apply rule
-  done
-qed  
-*)
+subsubsection {* Equivariance lemmas *}
 
 lemma finite_transfer[transfer_rule]: "(op = ===> op =) finite finite" 
   unfolding fun_rel_eq by (rule refl)
-
 
 (* This seems to be required to work around a bug in the transfer package, which generates these with a "setrel op =" constraint. *)
 lemma [transfer_rule]:
@@ -181,14 +118,6 @@ lemma compatible_eqvt[eqvt]:
   unfolding compatible_def
   by (metis empty_eqvt insert_eqvt perm_is_lub_simp)
 
-lemma permute_under_all:
-  "(\<forall> x . P (\<pi> \<bullet> x)) \<Longrightarrow> (\<forall> x. P x)"
-  by (metis eqvt_bound)
-
-lemma permute_under_ball:
-  "(\<forall> x \<in> (- \<pi> \<bullet> S). P (\<pi> \<bullet> x)) \<Longrightarrow> (\<forall> x \<in> S . P x)"
-  by (metis mem_eqvt permute_minus_cancel(1) permute_pure) 
-
 lemma compatible_fmap_eqvt[eqvt]:
   "compatible_fmap m1 (m2 :: 'a::pt f\<rightharpoonup> 'b::{cont_pt,pcpo}) \<Longrightarrow> compatible_fmap (\<pi> \<bullet> m1) (\<pi> \<bullet> m2)"
   unfolding compatible_fmap_def'
@@ -216,29 +145,17 @@ lemma fmap_join_eqvt[eqvt]:
   "\<pi> \<bullet> fmap_join m1 (m2 :: 'a::{pt} f\<rightharpoonup> 'b::{cont_pt, pcpo}) = fmap_join (\<pi> \<bullet> m1) (\<pi> \<bullet> m2)"
   by (transfer, perm_simp, rule refl)
 
-
-lemma below_eqvt [eqvt]:
-    "\<pi> \<bullet> (x \<sqsubseteq> y) = (\<pi> \<bullet> x \<sqsubseteq> \<pi> \<bullet> (y::'a::cont_pt))" by (auto simp add: permute_pure)
-
-definition fmap_bottom_l where
-  "fmap_bottom_l d = fmap_bottom (set d)"
-
-lemma fmap_bottom_l_eqvt[eqvt]:
-  "\<pi> \<bullet> fmap_bottom_l d = (fmap_bottom_l (\<pi> \<bullet> d) :: 'a::pt f\<rightharpoonup> 'b::{pcpo,cont_pt})"
-  by (simp add: fmap_bottom_l_def fmap_bottom_eqvt set_eqvt)
+subsubsection {* Freshness of @{term fmap_bottom} *}
 
 lemma fresh_fmap_bottom_set[simp]:
-  "x \<sharp> d \<Longrightarrow> x \<sharp> (fmap_bottom (set d) :: 'a::pt f\<rightharpoonup> 'b::{pcpo,cont_pt})"
-  unfolding fmap_bottom_l_def[symmetric]
-  apply (erule fresh_fun_eqvt_app[rotated])
-  apply (rule eqvtI)
-  apply (rule eq_reflection)
-  by (metis fmap_bottom_l_eqvt permute_fun_def permute_minus_cancel(1))
+  assumes "x \<sharp> d"
+  shows "x \<sharp> (fmap_bottom (set d) :: 'a::pt f\<rightharpoonup> 'b::{pcpo,cont_pt})"
+  apply (rule eqvt_fresh_cong1[OF _ assms])
+  by (simp add: fmap_bottom_eqvt set_eqvt)
 
 lemma fresh_star_fmap_bottom_set[simp]:
   "x \<sharp>* d \<Longrightarrow> x \<sharp>* (fmap_bottom (set d) :: 'a::pt f\<rightharpoonup> 'b::{pcpo,cont_pt})"
   by (metis fresh_star_def fresh_fmap_bottom_set)
-
 
 end
 

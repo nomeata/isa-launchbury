@@ -20,6 +20,14 @@ lemma eqvt2I:
   shows "eqvt (\<lambda> p. f (fst p) (snd p))"
   by (auto simp add: eqvt_def eqvt_lambda assms unpermute_def)
 
+lemma permute_under_all:
+  "(\<forall> x . P (\<pi> \<bullet> x)) \<Longrightarrow> (\<forall> x. P x)"
+  by (metis eqvt_bound)
+
+lemma permute_under_ball:
+  "(\<forall> x \<in> (- \<pi> \<bullet> S). P (\<pi> \<bullet> x)) \<Longrightarrow> (\<forall> x \<in> S . P x)"
+  by (metis mem_eqvt permute_minus_cancel(1) permute_pure) 
+
 subsubsection {* Freshness via equivariance *}
 
 lemma eqvt_fresh_cong1: "(\<And>p x. p \<bullet> (f x) = f (p \<bullet> x)) \<Longrightarrow> a \<sharp> x \<Longrightarrow> a \<sharp> f x "

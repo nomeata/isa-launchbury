@@ -3,6 +3,7 @@ imports
   "Nominal/Nominal/Nominal2" "Nominal-Utils" "~~/src/HOL/HOLCF/HOLCF"
 begin
 
+
 subsubsection {* Type class of continous permutations and variations thereof *}
 
 class cont_pt = 
@@ -55,6 +56,9 @@ lemma perm_bottom[simp,eqvt]: "\<pi> \<bullet> \<bottom> = (\<bottom>::'a::{cont
   hence "\<pi> \<bullet> \<bottom> \<sqsubseteq> (\<bottom>::'a::{cont_pt,pcpo})" by simp
   thus "\<pi> \<bullet> \<bottom> = (\<bottom>::'a::{cont_pt,pcpo})" by simp
 qed
+
+lemma below_eqvt [eqvt]:
+    "\<pi> \<bullet> (x \<sqsubseteq> y) = (\<pi> \<bullet> x \<sqsubseteq> \<pi> \<bullet> (y::'a::cont_pt))" by (auto simp add: permute_pure)
 
 lemma lub_eqvt[simp]:
   "(\<exists> z. S <<| (z::'a::{cont_pt})) \<Longrightarrow> \<pi> \<bullet> lub S = lub (\<pi> \<bullet> S)"
