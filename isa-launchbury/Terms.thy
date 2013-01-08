@@ -2,6 +2,12 @@ theory Terms
   imports Main  "./Nominal/Nominal/Nominal2" 
 begin
 
+subsubsection {* Variables (names) and expressions *}
+
+text {*
+The type of variables is abstract and provided by the Nominal package. All we know is that it is countable.
+*}
+
 atom_decl var
 
 nominal_datatype exp =
@@ -15,8 +21,55 @@ binder
   bn
 where "bn ANil = []" | "bn (ACons x t as) = (atom x) # (bn as)"
 
+abbreviation
+  LetBe :: "var\<Rightarrow>exp\<Rightarrow>exp\<Rightarrow>exp" ("let _ be _ in _ " [100,100,100] 100)
+where
+  "let x be t1 in t2 \<equiv> Let (ACons x t1 ANil) t2"
+
 type_synonym heap = "(var \<times> exp) list"
 
+
+subsubsection {* Testing alpha equivalence *}
+              
+lemma alpha_test:
+  shows "Lam [x]. (Var x) = Lam [y]. (Var y)"
+  by (simp add: Abs1_eq_iff exp_assn.fresh fresh_at_base)
+
+lemma alpha_test2:
+  shows "let x be (Var x) in (Var x) = let y be (Var y) in (Var y)"
+  by (simp add: exp_assn.bn_defs Abs1_eq_iff fresh_Pair add:exp_assn.fresh fresh_at_base)
+
+lemma alpha_test3:
+  shows "
+    Let (ACons x (Var y) (ACons y (Var x) ANil)) (Var x)
+    =
+    Let (ACons y (Var x) (ACons x (Var y) ANil)) (Var y)" (is "Let ?la ?lb = _")
+  apply (simp add: exp_assn.bn_defs Abs1_eq_iff fresh_Pair add:exp_assn.fresh fresh_at_base)
+  apply (simp add: Abs_swap2[of "atom x" "(?lb,?la)" "[atom x, atom y]" "atom y"])
+done
+
+subsubsection {* Variables bound by an assignment *}
+
+nominal_primrec  
+  assn_vars :: "assn \<Rightarrow> var set"
+where
+  "assn_vars ANil = {}"
+| " assn_vars (ACons x _ as) = insert x (assn_vars as)"
+unfolding eqvt_def assn_vars_graph_def
+ apply rule
+ apply perm_simp
+ apply (rule refl)
+ apply rule
+ apply(case_tac x rule: exp_assn.exhaust(2))
+ apply auto
+ done
+
+termination (eqvt) by lexicographic_order
+
+lemma assn_vars_finite[simp]: "finite (assn_vars as)"
+ by(induct as rule: assn_vars.induct, auto)
+
+subsubsection {* Substitution *}
 
 fun subst_var :: "var \<Rightarrow> var \<Rightarrow> var \<Rightarrow> var" ("_[_::v=_]" [1000,100,100] 1000)
 where "x[y ::v= z] = (if x = y then z else x)"
@@ -27,6 +80,9 @@ lemma subst_var_eqvts[eqvt]:
 by auto
 
 type_synonym sum_type = "exp \<times> var \<times> var + assn \<times> var \<times> var \<Rightarrow> exp + assn"
+
+text {* The Nominal has some issues with mutually recursive definitions and equivariance that we
+work around here in a very ugly way, hoping that in later versions of Nominal, this works automatically *}
 
 definition f1 ::
     "(exp \<times> var \<times> var + assn \<times> var \<times> var \<Rightarrow> exp + assn \<Rightarrow> bool)
@@ -200,56 +256,6 @@ next
 qed
 qed
 
-(*
-Suggestion for a product-base fixed point, unused 
-
-definition f3 where
- "f3 \<equiv>(\<lambda> p .
-  ((\<lambda> x1 x2.
-                    (\<exists> x y z.
-                        x1 = (Var x, y, z) \<and> x2 = (Var (x[y::v=z]))) \<or>
-                    (\<exists>subst e v y z.
-                        x1 = (App e v, y, z) \<and>
-                        x2 = (App (subst (e, y, z)) (v[y::v=z])) \<and>
-                        fst p (e, y, z) (subst (e, y, z))) \<or>
-                    (\<exists>subst subst_assn as y z body.
-                        x1 = (Launchbury.Let as body, y, z) \<and>
-                        x2 = (Launchbury.Let
-                              (subst_assn (as, y, z))
-                              (subst (body, y, z))) \<and>
-                        set (bn as) \<sharp>* (y, z) \<and>
-                        snd p (as, y, z) (subst_assn (as, y, z)) \<and>
-                        fst p (body, y, z) (subst (body, y, z))) \<or>
-                    (\<exists>subst x y z e.
-                        x1 = (Lam [x]. e, y, z) \<and>
-                        x2 = (Lam [x]. (subst (e, y, z))) \<and>
-                        atom x \<sharp> (y, z) \<and>
-                        fst p ((e, y, z)) ((subst (e, y, z))))
-  ),(\<lambda> x1 x2.                     
-                    (\<exists> y z. x1 = (ANil, y, z) \<and> x2 = ANil) \<or>
-                    (\<exists>subst subst_assn as y z v e.
-                        x1 = (ACons v e as, y, z) \<and>
-                        x2 = (ACons v (subst (e, y, z)) (subst_assn (as, y, z))) \<and>
-                        fst p ((e, y, z)) ((subst (e, y, z))) \<and>
-                        snd p ((as, y, z)) ((subst_assn (as, y, z))))
-   ))
-)"
-
-
-definition conv where
-  "conv \<equiv> (\<lambda> fp. (\<lambda> x1 x2. sum_case (\<lambda> x1. sum_case (\<lambda> x2. fst fp x1 x2) (\<lambda> x2. False) x2) (\<lambda> x1. (sum_case (\<lambda> x2. False) (\<lambda> x2. snd fp x1 x2) x2)) x1))"
-
-lemma substAltEnc2:"
-lfp f2  = conv (lfp f3)"
-oops
-
-lemma sumC_rewrite:
- "(\<lambda>x. THE_default undefined (lfp f1 x)) = 
-  (sum_case (\<lambda>x1 . Inl (THE_default undefined (fst (lfp f3) x1)))
-            (\<lambda>x2 . Inr (THE_default undefined (snd (lfp f3) x2))))"
-oops
-*)
-
 (* Helper lemmas provided by Christian Urban *)
 
 lemma Projl_permute:
@@ -416,81 +422,11 @@ qed(auto)
 
 termination (eqvt) by lexicographic_order
 
-nominal_primrec vars_as
-where
-  "vars_as ANil = {}"
- |"vars_as (ACons v e as) = insert v (vars_as as)"
-apply(simp add: eqvt_def vars_as_graph_def)
-apply(rule, perm_simp, rule)
-apply auto[1]
-apply(case_tac x rule: exp_assn.exhaust(2))
-apply auto
-done
-termination (eqvt) by lexicographic_order
-
-nominal_primrec vars_as_l
-where
-  "vars_as_l ANil = []"
- |"vars_as_l (ACons v e as) =  v # (vars_as_l as)"
-apply(simp add: eqvt_def vars_as_l_graph_def)
-apply(rule, perm_simp, rule)
-apply auto[1]
-apply(case_tac x rule: exp_assn.exhaust(2))
-apply auto
-done
-termination (eqvt) by lexicographic_order
-
-lemma True and set_vars_as_l [simp]: "set (vars_as_l as) = vars_as as"
-  by (nominal_induct and as rule:exp_assn.strong_induct, auto)
-
-lemma finite_vars_as[simp]: "finite (vars_as as)"
-  by (metis set_vars_as_l finite_set)
-
 lemma shows
   True and bn_subst[simp]: "set (bn as) \<sharp>* (y, z) \<Longrightarrow> bn (subst_assn as y z) = bn as"
 by(induct rule:subst_subst_assn.induct)
   (auto simp add: exp_assn.bn_defs fresh_star_insert)
 
-abbreviation
-  LetBe :: "var\<Rightarrow>exp\<Rightarrow>exp\<Rightarrow>exp" ("let _ be _ in _ " [100,100,100] 100)
-where
-  "let x be t1 in t2 \<equiv> Let (ACons x t1 ANil) t2"
-              
-lemma alpha_test:
-  shows "Lam [x]. (Var x) = Lam [y]. (Var y)"
-  by (simp add: exp_assn.eq_iff Abs1_eq_iff exp_assn.fresh fresh_at_base)
-
-lemma alpha_test2:
-  shows "let x be (Var x) in (Var x) = let y be (Var y) in (Var y)"
-  by (simp add: exp_assn.bn_defs Abs1_eq_iff fresh_Pair add:exp_assn.fresh fresh_at_base)
-
-lemma alpha_test3:
-  shows "
-    Let (ACons x (Var y) (ACons y (Var x) ANil)) (Var x)
-    =
-    Let (ACons y (Var x) (ACons x (Var y) ANil)) (Var y)" (is "Let ?la ?lb = _")
-  apply (simp add: exp_assn.bn_defs Abs1_eq_iff fresh_Pair add:exp_assn.fresh fresh_at_base)
-  apply (simp add: Abs_swap2[of "atom x" "(?lb,?la)" "[atom x, atom y]" "atom y"])
-done
-
-nominal_primrec  
-  assn_vars :: "assn \<Rightarrow> var set"
-where
-  "assn_vars ANil = {}"
-| " assn_vars (ACons x _ as) = insert x (assn_vars as)"
-unfolding eqvt_def assn_vars_graph_def
- apply rule
- apply perm_simp
- apply (rule refl)
- apply rule
- apply(case_tac x rule: exp_assn.exhaust(2))
- apply auto
- done
-
-termination (eqvt) by lexicographic_order
-
-lemma assn_vars_finite[simp]: "finite (assn_vars as)"
- by(induct as rule: assn_vars.induct, auto)
 
 lemma subst_is_fresh[simp]:
 assumes "atom y \<sharp> z"
