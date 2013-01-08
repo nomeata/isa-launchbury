@@ -4,7 +4,7 @@ begin
 
 default_sort type
 
-function heapToEnv :: "('var \<times> 'exp) list \<Rightarrow> ('exp \<Rightarrow> 'value) \<Rightarrow> ('var, 'value) fmap"
+function heapToEnv :: "('var \<times> 'exp) list \<Rightarrow> ('exp \<Rightarrow> 'value) \<Rightarrow> 'var f\<rightharpoonup> 'value"
 where
   "heapToEnv [] _ = fempty"
 | "heapToEnv ((x,e)#h) eval = (heapToEnv h eval) (x f\<mapsto> eval e)"
