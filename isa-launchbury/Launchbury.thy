@@ -2,6 +2,16 @@ theory Launchbury
 imports Terms Heap
 begin
 
+subsubsection {* The natural semantics *}
+
+text {* This is the semantics as in \cite{launchbury} with two exceptions:
+\begin{itemize}
+\item Explicit freshness equirements for bound variables in the application and the let rule.
+\item An additional parameter that stores variables that have to be avoided, but do not occur
+in the judgment otherwise.
+\end{itemize}
+*}
+
 inductive reds :: "heap \<Rightarrow> exp \<Rightarrow> var list \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool" ("_ : _ \<Down>\<^bsub>_\<^esub> _ : _" [50,50,50,50] 50)
 where
   Lambda: "\<Gamma> : (Lam [x]. e) \<Down>\<^bsub>L\<^esub> \<Gamma> : (Lam [x]. e)" 
@@ -22,6 +32,8 @@ nominal_inductive reds
 apply (auto simp add: fresh_star_def fresh_Pair exp_assn.fresh)
 done
 
+subsubsection {* Example evaluations *}
+
 lemma eval_test:
   "[] : (Let (ACons x (Lam [y]. Var y) ANil) (Var x)) \<Down>\<^bsub>[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y)"
 apply(auto intro!: Lambda Application Variable Let
@@ -31,6 +43,12 @@ done
 lemma eval_test2:
   "y \<noteq> x \<Longrightarrow> n \<noteq> y \<Longrightarrow> n \<noteq> x \<Longrightarrow>[] : (Let (ACons x (Lam [y]. Var y) ANil) (App (Var x) x)) \<Down>\<^bsub>[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y)"
   by (auto intro!: Lambda Application Variable Let simp add: fresh_Pair fresh_at_base fresh_Cons fresh_Nil exp_assn.fresh fresh_star_def)
+
+subsubsection {* Properties of the semantics *}
+
+text {*
+Heap entries are never removed.
+*}
 
 lemma reds_doesnt_forget:
   "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> heapVars \<Gamma> \<subseteq> heapVars \<Delta>"
@@ -53,6 +71,10 @@ case(Variable v e \<Gamma> L \<Delta> z)
     qed
   qed
 qed (auto)
+
+text {*
+Live variables are not added to the heap.
+*}
 
 lemma reds_avoids_live:
   "\<lbrakk> \<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z;
@@ -80,6 +102,11 @@ case (Let as \<Gamma> body L \<Delta> z)
   thus ?case
     by (rule Let.hyps(4)[OF `x \<in> set L`])
 qed
+
+text {*
+This is the same semantics with additional distinctiveness requirements. This is defined in order to
+obtain a more convenient induction rule.
+*}
 
 inductive distinct_reds :: "heap \<Rightarrow> exp \<Rightarrow> var list \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool" ("_ : _ \<Down>d\<^bsub>_\<^esub> _ : _" [50,50,50,50] 50)
 where
@@ -153,13 +180,17 @@ proof (nominal_induct rule: reds.strong_induct)
       using Variable
       by (metis distinct_reds.DVariable)
 qed (auto intro: distinctVars_append_asToHeap dest: distinct_redsD3 intro!: distinct_reds.intros simp add: fresh_star_Pair)
-lemma reds_pres_distinctVars:
 
+lemma reds_pres_distinctVars:
   "\<Gamma> : \<Gamma>' \<Down>\<^bsub>L\<^esub> \<Delta> : \<Delta>' \<Longrightarrow> distinctVars \<Gamma> \<Longrightarrow> distinctVars \<Delta>"
 by (metis distinct_redsD3 distinct_redsI)
 
 lemmas reds_distinct_ind = distinct_reds.induct[OF distinct_redsI, consumes 2, case_names Lambda Application Variable Let]
 lemmas reds_distinct_strong_ind = distinct_reds.strong_induct[OF distinct_redsI, consumes 2, case_names Lambda Application Variable Let]
+
+text {*
+Fresh variables either stay fresh or are added to the heap.
+*}
 
 lemma reds_fresh:" \<lbrakk> \<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z;
    atom (x::var) \<sharp> (\<Gamma>, e)
@@ -224,6 +255,10 @@ case (Let as \<Gamma> body L \<Delta> z)
       using reds_doesnt_forget[OF Let.hyps(3)] by auto
     qed
 qed
+
+text {*
+Reducing the set of variables to avoid is always possible.
+*} 
 
 lemma reds_smaller_L: "\<lbrakk> \<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z;
    set L' \<subseteq> set L

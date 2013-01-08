@@ -2,6 +2,10 @@ theory Heap
 imports Terms "DistinctVars-Nominal" "Nominal-Utils"
 begin
 
+subsubsection {* Conversion from assignments to heaps *}
+
+text {* assn is the data type required by Nominal, while the associative list heap is what we
+want to work with. Once Nominal supports nested data types, this could be merged. *}
 
 function asToHeap_raw :: "assn_raw \<Rightarrow> (var \<times> exp_raw) list"
 where ANilToHeap_raw: "asToHeap_raw ANil_raw = []"

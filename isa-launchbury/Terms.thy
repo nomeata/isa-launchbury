@@ -82,7 +82,7 @@ by auto
 type_synonym sum_type = "exp \<times> var \<times> var + assn \<times> var \<times> var \<Rightarrow> exp + assn"
 
 text {* The Nominal has some issues with mutually recursive definitions and equivariance that we
-work around here in a very ugly way, hoping that in later versions of Nominal, this works automatically *}
+work around here in a very ugly way, hoping that in later versions of Nominal, this works automatically. *}
 
 definition f1 ::
     "(exp \<times> var \<times> var + assn \<times> var \<times> var \<Rightarrow> exp + assn \<Rightarrow> bool)
