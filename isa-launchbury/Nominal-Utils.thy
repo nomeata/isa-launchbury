@@ -160,6 +160,9 @@ by(induct \<Gamma>)(auto simp add: fresh_Cons)
 lemma pure_fresh_star[simp]: "a \<sharp>* (x :: 'a :: pure)"
   by (simp add: fresh_star_def pure_fresh)
 
+lemma supp_set_mem: "x \<in> set L \<Longrightarrow> supp x \<subseteq> supp L"
+  by (induct L, auto simp add: supp_Cons)
+
 subsubsection {* Freshness and support for subsets of variables *}
 
 lemma supp_mono: "finite (B::'a::at_base set) \<Longrightarrow> A \<subseteq> B \<Longrightarrow> supp A \<subseteq> supp B"

@@ -2,6 +2,11 @@ theory LaunchburyMoreFree
 imports Terms Heap Launchbury
 begin
 
+text {*
+This variant of the original semantics allocates an additional free variable in the application case.
+This is a prelimary step towards the equivalence of the original and the stacked semantics.
+*}
+
 inductive reds :: "heap \<Rightarrow> exp \<Rightarrow> var list \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool" ("_ : _ \<Down>*\<^bsub>_\<^esub> _ : _" [50,50,50,50] 50)
 where
   Lambda: "\<Gamma> : (Lam [x]. e) \<Down>*\<^bsub>L\<^esub> \<Gamma> : (Lam [x]. e)" 

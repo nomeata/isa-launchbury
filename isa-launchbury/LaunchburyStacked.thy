@@ -2,6 +2,17 @@ theory LaunchburyStacked
 imports Terms Heap
 begin
 
+subsubsection {* The stackful natural semantics *}
+
+text {* This semantics is a slight modification of the original semantics:
+\begin{itemize}
+\item The expression to be evaluated is the first element in the second associative list (the "`stack"').
+\item To evaluating a variable its binding is moved on top of the stack.
+\item When an application @{term "f x"} is evaluated, a new name @{term n} is created, the expression to be 
+evaluated is remembered as @{term "f x"} and @{term "(n, f)"} is put on top of the stack.
+\end{itemize}
+*}
+
 inductive reds :: "heap \<Rightarrow> heap \<Rightarrow> heap \<Rightarrow> heap \<Rightarrow> bool" ("_ : _ \<Down> _ : _" [50,50,50,50] 50)
 where
   Lambda: "\<Gamma> : (x, (Lam [y]. e)) # \<Gamma>' \<Down> \<Gamma> : (x, (Lam [y]. e)) # \<Gamma>'" 
@@ -30,6 +41,7 @@ nominal_inductive reds
   avoids Application: "n" and "z"
   by (auto simp add: fresh_star_def fresh_Cons fresh_Pair exp_assn.fresh)
 
+subsubsection {* Example evaluations *}
 
 lemma eval_test:
   "y \<noteq> x \<Longrightarrow> [] : [(x, Let (ACons y (Lam [z]. Var z) ANil) (Var y))] \<Down> [(y, Lam [z]. Var z)] : [(x, (Lam [z]. Var z))]"
@@ -54,6 +66,12 @@ lemma eval_test2:
   apply (simp add: fresh_Pair fresh_Cons fresh_at_base fresh_Nil exp_assn.fresh fresh_star_def)
   done
 
+subsubsection {* Properties of the semantics *}
+
+text {*
+This is the same semantics with additional distinctiveness requirements. This is defined in order to
+obtain a more convenient induction rule.
+*}
 
 inductive distinct_reds :: "heap \<Rightarrow> heap \<Rightarrow> heap \<Rightarrow> heap \<Rightarrow> bool" ("_ : _ \<Down>d _ : _" [50,50,50,50] 50)
 where
@@ -261,11 +279,15 @@ case (DLet as \<Gamma> x body \<Gamma>' \<Delta>' \<Delta>)
   case 2 show ?case using DLet by simp
 qed
 
+text {* Heap entries are never removed. *}
+
 lemma reds_doesnt_forget:
  assumes "\<Gamma> : \<Gamma>' \<Down> \<Delta> : \<Delta>'"
  assumes "distinctVars (\<Gamma>'@\<Gamma>)"
  shows "heapVars \<Gamma> \<subseteq> heapVars \<Delta>" and "heapVars \<Gamma>' \<subseteq> heapVars \<Delta>'"
 by (rule reds_doesnt_forget'[OF distinct_redsI[OF assms]])+
+
+text {* The stack is never empty. *}
 
 lemma stack_not_empty:
   assumes "\<Gamma> : \<Gamma>' \<Down> \<Delta> : \<Delta>'"
@@ -273,11 +295,15 @@ lemma stack_not_empty:
   using assms
   by (induct rule:reds.induct, simp_all)
 
+text {* Evaluation does not change the name of the evaluation variable. *}
+
 lemma stack_same_head:
   assumes "\<Gamma> : \<Gamma>' \<Down> \<Delta> : \<Delta>'"
   shows "fst (hd \<Delta>') = fst (hd \<Gamma>')"
   using assms
   by (induct rule:reds.induct, simp_all)
+
+text {* Evaluation does not touch the tail of the stack. *}
 
 lemma stack_unchanged:
   assumes "\<Gamma> : (x, e) # \<Gamma>' \<Down> \<Delta> : (x, e') # \<Delta>'"
@@ -290,6 +316,10 @@ proof-
   from this[OF assms]
   show ?thesis by simp
 qed
+
+text {* 
+Fresh variables either stay fresh or are added to the heap.
+*}
 
 lemma reds_fresh':" \<lbrakk> \<Gamma> : \<Gamma>' \<Down>d \<Delta> : \<Delta>';
    atom (x::var) \<sharp> (\<Gamma> , snd (hd \<Gamma>'))

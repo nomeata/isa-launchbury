@@ -2,8 +2,7 @@ theory "Launchbury-Unstack"
 imports Launchbury LaunchburyStacked LaunchburyMoreFree
 begin
 
-lemma supp_set_mem: "x \<in> set L \<Longrightarrow> supp x \<subseteq> supp L"
-  by (induct L, auto simp add: supp_Cons)
+subsubsection {* Stacked evaluation implies original evaluation. *}
 
 lemma forget_stack:
   assumes "\<Gamma> : \<Gamma>' \<Down> \<Delta> : \<Delta>'"
@@ -68,6 +67,8 @@ case (Let as \<Gamma> x body \<Gamma>' \<Delta> \<Delta>' S)
   show ?case
     by (simp, rule Launchbury.Let[OF fresh Let.hyps(5) hyp])
 qed
+
+subsubsection {* Original evaluation implies stacked evaluation. *}
 
 lemma add_stack:
   assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
