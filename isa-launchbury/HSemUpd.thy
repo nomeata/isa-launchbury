@@ -1,5 +1,5 @@
 theory HSemUpd
-  imports "HeapToEnv" DistinctVars "HOLCF-Set" "HOLCF-Down-Closed"
+  imports "HeapToEnv" "DistinctVars-Nominal" "HOLCF-Set" "HOLCF-Down-Closed"
 begin
 
 

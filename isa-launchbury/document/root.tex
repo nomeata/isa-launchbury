@@ -101,11 +101,11 @@ Our contributions are:
 
 \subsection{Theory overview}
 
-Chapter \ref{ch_aux} contains auxillary theories, not necessarily tied to Launchbury's semantics. The base theories are kept independent of Nominal and HOLCF where possible, the lemmas combining them are in theories of their own, creatively named by appending \isar{-Nominal}, \isar{-HOLCF} or both.  You will find the section:
+Chapter \ref{ch_aux} contains auxillary theories, not necessarily tied to Launchbury's semantics. The base theories are kept independent of Nominal and HOLCF where possible, the lemmas combining them are in theories of their own, creatively named by appending \isa{-Nominal}, \isa{-HOLCF} or both.  You will find the section:
 \begin{itemize}
 \item General utility functions extending HOLCF resp.\ Nominal (\isa{Nominal-Utils}, \isa{HOLCF-Utils}).
 \item A theory combining notions from HOLCF and Nominal, e.g. continutiy of permutation (\isa{Nominal-Utils}).
-\item A notion of distinctly named associative lists (\isa{DistinctVars}). 
+\item A notion of distinctly named associative lists (\isa{DistinctVars}, \isa{DistinctVars-Nominal}). 
 \item A generalisation of some parts of HOLCF to work on a set as a carrier instead of a type (\isa{HOLCF-Set}).
 \item Binary joins in the context of HOLCF (\isa{HOLCF-Join}).
 \item A notion of down-closed sets in the context of HOLCF (\isa{HOLCF-Down-Closed}).
@@ -153,6 +153,8 @@ I’d like to thank Andreas Lochbihler for his gladly given and usually very eff
 \theory{Nominal-HOLCF}
 
 \theory{DistinctVars}
+
+\theory{DistinctVars-Nominal}
 
 \theory{HOLCF-Set}
 

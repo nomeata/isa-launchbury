@@ -1,5 +1,5 @@
 theory Heap
-imports Terms DistinctVars "Nominal-Utils" "~~/src/HOL/Library/AList"
+imports Terms "DistinctVars-Nominal" "Nominal-Utils"
 begin
 
 

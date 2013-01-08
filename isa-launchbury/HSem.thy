@@ -1,5 +1,5 @@
 theory HSem
-  imports "HeapToEnv" DistinctVars "HOLCF-Set" "HOLCF-Down-Closed" "HOLCF-Fix-Join"
+  imports "HeapToEnv" "DistinctVars-Nominal" "HOLCF-Set" "HOLCF-Down-Closed" "HOLCF-Fix-Join"
 begin
 
 lemma fdom_fix_on:
