@@ -5,6 +5,8 @@ begin
 abbreviation delete where "delete \<equiv> AList.delete"
 abbreviation update where "update \<equiv> AList.update"
 
+subsubsection {* The domain of a associative list *}
+
 definition heapVars
   where "heapVars h = fst ` set h"
 
@@ -22,6 +24,19 @@ lemma finite_heapVars[simp]:
   "finite (heapVars \<Gamma>)"
   by (auto simp add: heapVars_def)
 
+lemma delete_no_there:
+  "x \<notin> heapVars \<Gamma> \<Longrightarrow> delete x \<Gamma> = \<Gamma>"
+  by (induct \<Gamma>, auto)
+
+lemma heapVars_delete_subset:
+  "heapVars (delete x \<Gamma>) \<subseteq> heapVars \<Gamma>"
+  by (induct \<Gamma>, auto)
+
+lemma heapVars_delete[simp]:
+  "heapVars (delete x \<Gamma>) = heapVars \<Gamma> - {x}"
+  by (induct \<Gamma>, auto)
+
+subsubsection {* Junk-free associative lists *}
 
 inductive distinctVars  where
   [simp]: "distinctVars []" |
@@ -30,11 +45,9 @@ inductive distinctVars  where
 lemma [simp]: "distinctVars [x]"
   by (cases x, auto)
 
-
 lemma distinctVars_appendI:
   "distinctVars \<Gamma> \<Longrightarrow> distinctVars \<Delta> \<Longrightarrow> heapVars \<Gamma> \<inter> heapVars \<Delta> = {} \<Longrightarrow> distinctVars (\<Gamma> @ \<Delta>)"
   by (induct \<Gamma> rule:distinctVars.induct, auto)
-
 
 lemma distinctVars_ConsD:
   assumes "distinctVars ((x,e) # \<Gamma>)"
@@ -92,19 +105,6 @@ proof-
     by auto
 qed
 
-
-lemma delete_no_there:
-  "x \<notin> heapVars \<Gamma> \<Longrightarrow> delete x \<Gamma> = \<Gamma>"
-  by (induct \<Gamma>, auto)
-
-lemma heapVars_delete_subset:
-  "heapVars (delete x \<Gamma>) \<subseteq> heapVars \<Gamma>"
-  by (induct \<Gamma>, auto)
-
-lemma heapVars_delete[simp]:
-  "heapVars (delete x \<Gamma>) = heapVars \<Gamma> - {x}"
-  by (induct \<Gamma>, auto)
-
 lemma distinctVars_delete:
   "distinctVars \<Gamma> \<Longrightarrow> distinctVars (delete x \<Gamma>)"
   apply (induct \<Gamma> rule:distinctVars.induct)
@@ -114,10 +114,6 @@ lemma distinctVars_delete:
 lemma dom_map_of_conv_heapVars[simp]:
   "dom (map_of xys) = heapVars xys"
   by (induct xys) (auto simp add: dom_if)
-
-lemma the_map_of_snd:
-  "x\<in> heapVars \<Gamma> \<Longrightarrow> the (map_of \<Gamma> x) \<in> snd ` set \<Gamma>"
-by (induct \<Gamma>, auto)
 
 lemma distinctVars_map_of[simp]:
   "distinctVars \<Gamma> \<Longrightarrow> (x,e) \<in> set \<Gamma> \<Longrightarrow> map_of \<Gamma> x = Some e"
@@ -137,5 +133,9 @@ lemma distinctVars_set_delete_insert:
     apply (metis fst_conv imageI)
   apply auto
   done
+
+lemma the_map_of_snd:
+  "x\<in> heapVars \<Gamma> \<Longrightarrow> the (map_of \<Gamma> x) \<in> snd ` set \<Gamma>"
+by (induct \<Gamma>, auto)
 
 end
