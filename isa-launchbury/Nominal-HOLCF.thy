@@ -3,6 +3,7 @@ imports
   "Nominal/Nominal/Nominal2" "Nominal-Utils" "~~/src/HOL/HOLCF/HOLCF"
 begin
 
+subsubsection {* Type class of continous permutations and variations thereof *}
 
 class cont_pt = 
   cpo + 
@@ -63,6 +64,8 @@ lemma Lub_eqvt: "(\<exists> z. range F <<| z) \<Longrightarrow> \<pi> \<bullet> 
   apply (subst lub_eqvt, assumption)
   apply (metis permute_set_eq_image range_composition)
   done
+
+subsubsection {* Instance for @{type cfun} *}
 
 instantiation "cfun" :: (cont_pt, cont_pt) pt
 begin
