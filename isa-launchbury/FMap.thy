@@ -147,6 +147,10 @@ lemma fmap_delete_noop:
 
 lemma fmap_upd_fmap_delete[simp]: "x \<in> fdom \<Gamma> \<Longrightarrow> fmap_delete x \<Gamma>(x f\<mapsto> the (lookup \<Gamma> x)) = \<Gamma>"
   by (transfer, auto)
+
+lemma fran_fmap_upd[simp]:
+  "fran (m(x f\<mapsto> v)) = insert v (fran (fmap_delete x m))"
+by (transfer, auto simp add: ran_def)
  
 subsubsection {* Addition (mergeing) of finite maps *}
 

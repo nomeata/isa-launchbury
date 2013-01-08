@@ -108,6 +108,16 @@ lemma update_eqvt[eqvt]:
   "\<pi> \<bullet> AList.update x v \<Gamma> = AList.update (\<pi> \<bullet> x) (\<pi> \<bullet> v) (\<pi> \<bullet> \<Gamma>)"
 by (induct \<Gamma>, auto)
 
+lemma dom_perm:
+  "dom (\<pi> \<bullet> f) = \<pi> \<bullet> (dom f)"
+  unfolding dom_def by (perm_simp) (simp)
+
+lemmas dom_perm_rev[simp,eqvt] = dom_perm[symmetric]
+
+lemma ran_perm[simp]:
+  "\<pi> \<bullet> (ran f) = ran (\<pi> \<bullet> f)"
+  unfolding ran_def by (perm_simp) (simp)
+
 lemma map_add_eqvt[eqvt]:
   "\<pi> \<bullet> (m1 ++ m2) = (\<pi> \<bullet> m1) ++ (\<pi> \<bullet> m2)"
   unfolding map_add_def

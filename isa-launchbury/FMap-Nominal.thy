@@ -2,15 +2,7 @@ theory "FMap-Nominal"
   imports FMap "Nominal-Utils" "~~/src/HOL/Library/FuncSet"
 begin
 
-lemma dom_perm:
-  "dom (\<pi> \<bullet> f) = \<pi> \<bullet> (dom f)"
-  unfolding dom_def by (perm_simp) (simp)
-
-lemmas dom_perm_rev[simp] = dom_perm[symmetric]
-
-lemma ran_perm[simp]:
-  "\<pi> \<bullet> (ran f) = ran (\<pi> \<bullet> f)"
-  unfolding ran_def by (perm_simp) (simp)
+subsubsection {* Permtuations on finite maps *}
 
 instantiation "fmap" :: (pt,pt) pt
 begin
@@ -22,29 +14,6 @@ begin
   apply(transfer, simp)+
   done
 end
-
-lemma lookup_eqvt[eqvt]:
-  "\<pi> \<bullet> lookup m x = lookup (\<pi> \<bullet> m) (\<pi> \<bullet> x)"
-  by (transfer, auto simp add: permute_fun_def)
-
-lemma mem_transfer[transfer_rule]: "(op = ===> op = ===> op =) op \<in> op \<in>" 
-  apply (rule fun_relI)+
-  apply (simp)
-  done
-
-lemma the_lookup_eqvt:
-  "x \<in> fdom m \<Longrightarrow> \<pi> \<bullet> the (lookup m x) = the (lookup (\<pi> \<bullet> m) (\<pi> \<bullet> x))"
-  by (transfer fixing: x, auto simp add: dom_def permute_fun_def)
-
-lemma fempty_eqvt[eqvt, simp]:
-  "\<pi> \<bullet> fempty = fempty"
-  by (transfer, auto simp add: permute_fun_def)
-
-lemma fempty_supp[simp]: "supp fempty = {}"
-  by (metis eqvtI fempty_eqvt supp_fun_eqvt)
-
-lemma fempty_fresh[simp]: "a \<sharp> fempty"
-  by (simp add: fresh_def)
 
 lemma permute_transfer[transfer_rule]: "(op = ===> cr_fmap ===> cr_fmap) permute permute" 
   apply (rule fun_relI)+
@@ -71,10 +40,7 @@ lemma fresh_star_transfer[transfer_rule]: "(op = ===> cr_fmap ===> op =) fresh_s
 lemma permute_transfer2[transfer_rule]: "(op = ===> op = ===> op =) permute (permute :: perm \<Rightarrow> ('a::pt) set \<Rightarrow> 'a set)" 
   unfolding fun_rel_eq by (rule refl)
 
-lemma fdom_perm: "fdom (\<pi> \<bullet> f) = \<pi> \<bullet> (fdom f)"
-  apply transfer by (rule dom_perm)
-lemmas fdom_perm_rev[simp,eqvt] = fdom_perm[symmetric]
-
+subsubsection {* Finite maps have finite support *}
 
 lemma map_between_finite:
   assumes "finite A"
@@ -94,10 +60,8 @@ proof (rule finite_imageD[OF finite_subset])
     by (metis not_Some_eq)
 qed
 
-
 lemma perm_finite: "finite (dom m2) \<Longrightarrow> finite {m1. dom m1 = dom m2 \<and> ran m1 = ran m2}"
   by (rule map_between_finite[OF _ finite_range])
-
 
 lemma supp_set_elem_finite:
   assumes "finite S"
@@ -211,9 +175,32 @@ apply transfer
 apply (erule supp_map_union)
 by (metis Rel_eq_refl fun_rel_eq set_rel_eq)
 
-
 instance "fmap" :: (fs,fs) fs
   by (default, auto intro: finite_sets_supp simp add: supp_fmap)
+
+subsubsection {* Equivariance lemmas related to finite maps *}
+
+lemma lookup_eqvt[eqvt]:
+  "\<pi> \<bullet> lookup m x = lookup (\<pi> \<bullet> m) (\<pi> \<bullet> x)"
+  by (transfer, auto simp add: permute_fun_def)
+
+lemma the_lookup_eqvt:
+  "x \<in> fdom m \<Longrightarrow> \<pi> \<bullet> the (lookup m x) = the (lookup (\<pi> \<bullet> m) (\<pi> \<bullet> x))"
+  by (transfer fixing: x, auto simp add: dom_def permute_fun_def)
+
+lemma fempty_eqvt[eqvt, simp]:
+  "\<pi> \<bullet> fempty = fempty"
+  by (transfer, auto simp add: permute_fun_def)
+
+lemma fempty_supp[simp]: "supp fempty = {}"
+  by (metis eqvtI fempty_eqvt supp_fun_eqvt)
+
+lemma fempty_fresh[simp]: "a \<sharp> fempty"
+  by (simp add: fresh_def)
+
+lemma fdom_perm: "fdom (\<pi> \<bullet> f) = \<pi> \<bullet> (fdom f)"
+  apply transfer by (rule dom_perm)
+lemmas fdom_perm_rev[simp,eqvt] = fdom_perm[symmetric]
 
 lemma fmap_upd_eqvt[eqvt]: "p \<bullet> (fmap_upd f x y) = fmap_upd (p \<bullet> f) (p \<bullet> x) (p \<bullet> y)"
   by (transfer, auto simp add:permute_fun_def fun_eq_iff)
@@ -244,13 +231,12 @@ lemma fmap_add_eqvt[eqvt]:
   "\<pi> \<bullet> fmap_add m1 m2 = fmap_add (\<pi> \<bullet> m1) (\<pi> \<bullet> m2)"
   by (transfer, perm_simp, rule)
 
-lift_definition fmap_id :: "'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b" is "(\<lambda>x. x)" by simp
-
 lemma fmap_of_eqvt[eqvt]:
   "\<pi> \<bullet> fmap_of l = fmap_of (\<pi> \<bullet> l)"
   (* apply transfer does not do anything here *)
   by (simp add: fmap_of_def permute_fmap_def map_fun_def Abs_fmap_inverse finite_dom_map_of map_of_eqvt)
 
+subsubsection {* Freshness and support *}
 
 lemma sharp_Env: "atom x \<sharp> (\<rho> :: 'a::at_base f\<rightharpoonup> 'b::pure) \<longleftrightarrow> x \<notin> fdom \<rho>"
   apply (subst fresh_def)
@@ -258,10 +244,6 @@ lemma sharp_Env: "atom x \<sharp> (\<rho> :: 'a::at_base f\<rightharpoonup> 'b::
   apply (subst (1 2) fresh_def[symmetric])
   apply (simp add: fresh_finite_set_at_base[OF finite_fdom] pure_fresh)
   done
-
-lemma fmap_fmap_upd[simp]:
-  "fran (m(x f\<mapsto> v)) = insert v (fran (fmap_delete x m))"
-by (transfer, auto simp add: ran_def)
 
 lemma supp_fmap_upd[simp]:
   "supp (m((x::'a::fs) f\<mapsto> v::'b::fs)) = supp (fmap_delete x m) \<union> supp x \<union> supp v"

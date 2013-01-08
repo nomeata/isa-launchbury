@@ -541,9 +541,6 @@ qed
 
 lemmas fmap_restr_cont2cont[simp,cont2cont] = cont_compose[OF fmap_restr_cont]
 
-lemma fmap_restr_l_cont:
-  "cont (fmap_restr_l l)" unfolding fmap_restr_l_def by (rule fmap_restr_cont)
-
 
 (* A definition of fmap_meep that requires compatible fmaps *)
 
