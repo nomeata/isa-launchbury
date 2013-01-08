@@ -2,7 +2,13 @@ theory "HOLCF-Set"
  imports HOLCF
 begin
 
+text {*
+This theory provides variants of various HOLCF definitions with an explicit carrier set.
+*}
+
 default_sort cpo
+
+subsubsection {* Sets forming (pointed) chain-complete partial orders *}
 
 locale subcpo =
   fixes S :: "'a set"
@@ -32,12 +38,16 @@ lemma subpcpoI2:
   shows "subpcpo S"
 unfolding subpcpo_def by (metis subcpo_def assms)
 
+subsubsection {* Definitions *}
+
 locale subpcpo_syn = 
   fixes S :: "'a set" 
 begin
 
+text {* This locale collects the definitions of various operations on subpcpo's without requiring that it is a subpcpo *}
+
 definition chain_on :: "(nat => 'a) => bool" where
-  "chain_on Y = ((\<forall>i. Y i \<sqsubseteq> Y (Suc i) \<and> (\<forall>i. Y i \<in> S)))"
+  "chain_on Y = (\<forall>i. Y i \<sqsubseteq> Y (Suc i) \<and> (\<forall>i. Y i \<in> S))"
 
 definition
   adm_on :: "('a::cpo => bool) \<Rightarrow> bool" where
@@ -61,6 +71,8 @@ where
   "closed_on f = (\<forall> x\<in> S. f x \<in> S)"
 
 end
+
+subsubsection {* Introduction and elimination rules *}
 
 interpretation subpcpo_syn S for S.
 
@@ -89,6 +101,10 @@ by (simp add: closed_on_def)
 lemma const_closed_on[simp,intro]:
   "x \<in> S \<Longrightarrow> closed_on S (\<lambda>_ . x)"
 by (simp add: closed_on_def)
+
+lemma iterate_closed_on: "closed_on S F \<Longrightarrow> closed_on S (F^^i)"
+  unfolding closed_on_def
+  by (induct i, auto)
 
 lemma monofun_onE: 
   "[|monofun_on S f; x\<in> S; y \<in> S; x \<sqsubseteq> y|] ==> f x \<sqsubseteq> f y"
@@ -191,16 +207,54 @@ lemma adm_is_adm_on:
   "adm P \<Longrightarrow> adm_on S P"
   unfolding adm_def adm_on_def by (metis (full_types) chain_on_def po_class.chainI)
 
+lemma ch2chain_on_monofun_on:
+  shows "[|monofun_on S1 f; chain_on S1 Y; f ` S1 \<subseteq> S2 |] ==> chain_on S2 (\<lambda>i. f (Y i))"
+proof-
+  show "[|monofun_on S1 f; chain_on S1 Y; f ` S1 \<subseteq> S2 |] ==> chain_on S2 (\<lambda>i. f (Y i))"
+    apply (rule chain_onI)
+    apply (erule monofun_onE)
+    apply (erule chain_on_is_on)+
+    apply (erule chain_onE)
+    apply (erule subsetD)
+    apply (rule imageI)
+    apply (erule chain_on_is_on)
+    done
+qed
+
+lemma ch2ch_cont_on:
+  assumes "cont_on S1 f" and "chain_on S1 Y" and "f ` S1 \<subseteq> S2"
+  shows "chain_on S2 (\<lambda>i. f (Y i))"
+  by (rule ch2chain_on_monofun_on[OF cont_on2mono_on[OF assms(1)] assms(2) assms(3)])
+
+lemma ch2ch_cont_on':
+  assumes "cont_on S1 f" and "chain_on S1 Y" and "closed_on S1 f"
+  shows "chain_on S1 (\<lambda>i. f (Y i))"
+  apply (rule ch2chain_on_monofun_on[OF cont_on2mono_on[OF assms(1)] assms(2)])
+  by (metis assms(3) closed_on_def image_subsetI)
+
+lemma adm_on_subst:
+  assumes cont: "cont_on S1 t"  and closed: "t ` S1 \<subseteq> S2" and  adm: "adm_on S2 P" 
+  shows "adm_on S1 (\<lambda>x. P (t x))"
+proof-
+  from cont closed adm
+  show ?thesis
+  by (auto simp add: adm_on_def cont_on2contlubE ch2ch_cont_on)
+qed
+
+lemma chain_on_product:
+  assumes "chain_on S1 Y" and "chain_on S2 Z"
+  shows "chain_on (S1 \<times> S2) (\<lambda> i. (Y i, Z i))"
+  using assms by (auto simp add: chain_on_def)
+
+subsubsection {* Locale relations *}
+
 sublocale subpcpo < subpcpo_syn.
 
 lemma subpcpo_is_subcpo: "subpcpo S \<Longrightarrow> subcpo S" unfolding subpcpo_def subcpo_def by simp
 
 sublocale subpcpo < subcpo by (rule subpcpo_is_subcpo[OF subpcpo_axioms])
 
-
-lemma subcpo_mem_adm:
-  "subcpo S \<Longrightarrow> adm (\<lambda> x. x \<in> S)"
-  by (rule admI, metis subcpo.cpo')
+subsubsection {* Lemmas requiring chain-completeness *}
 
 context subpcpo
 begin
@@ -221,10 +275,6 @@ lemma bottom_ofI:
   shows "x = bottom_of"
   using assms 
   by (metis below_antisym bottom_of_minimal bottom_of_there)
-
-lemma iterate_closed_on: "closed_on F \<Longrightarrow> closed_on (F^^i)"
-  unfolding closed_on_def
-  by (induct i, auto)
 
 lemma closed_is_chain [simp]: "closed_on F \<Longrightarrow> monofun_on F \<Longrightarrow> chain (\<lambda>i. (F^^i) bottom_of)"
   apply (rule chainI)
@@ -328,10 +378,7 @@ case goal2
   apply rule
   done
 qed
-
 end
-
-interpretation subpcpo_syn S for S.
 
 
 lemma cont_on_comp:
@@ -363,6 +410,57 @@ proof-
   qed
 qed
 
+subsubsection {* Admissibility of various definitions from this theory *}
+
+lemma subcpo_mem_adm:
+  "subcpo S \<Longrightarrow> adm (\<lambda> x. x \<in> S)"
+  by (rule admI, metis subcpo.cpo')
+
+lemma adm_closed_on:
+  assumes "subpcpo S"
+  shows "adm (closed_on S)"
+proof (rule admI[rule_format], rule closed_onI)
+  case (goal1 Y x)
+    have "chain (\<lambda> i. Y i x)"  by (rule ch2ch_fun[OF `chain Y`])
+    with  closed_onE[OF goal1(2) `x\<in>S`]
+    have "(\<Squnion> i. Y i x) \<in> S" by (metis subpcpo.pcpo[OF assms])
+    thus ?case by (metis lub_fun[OF `chain Y`])
+qed
+
+lemma adm_monofun_on:
+  assumes "subpcpo S"
+  shows "adm (monofun_on S)"
+proof (rule admI[rule_format], rule monofun_onI)
+  case (goal1 Y x y)
+    have "(\<Squnion> i. Y i x) \<sqsubseteq> (\<Squnion> i. Y i y)"
+      apply (rule lub_mono[OF ch2ch_fun[OF `chain Y`]  ch2ch_fun[OF `chain Y`]])
+      apply (rule monofun_onE[OF goal1(2) goal1(3) goal1(4) goal1(5)])
+      done
+    thus "(\<Squnion> i. Y i) x \<sqsubseteq> (\<Squnion> i. Y i) y" by (metis lub_fun[OF `chain Y`])
+qed
+
+lemma adm_cont_on:
+  assumes "subpcpo S"
+  shows "adm (cont_on S)"
+proof (rule admI[rule_format], rule subpcpo.cont_onI2[OF assms(1)])
+case goal1 thus ?case by (metis admD[OF adm_monofun_on[OF assms]] cont_on2mono_on)
+next
+case (goal2 Y Z)
+  have "(\<Squnion> i. Y i) (\<Squnion> j. Z j) = (\<Squnion> i. Y i (\<Squnion> j. Z j))" by (metis lub_fun[OF `chain Y`])
+  also have "... = (\<Squnion> i. (\<Squnion> j. Y i (Z j)))" by (subst cont_on2contlubE[OF goal2(2) goal2(3)], rule)
+  also have "... = (\<Squnion> i. Y i (Z i))"
+    apply (rule diag_lub[OF ch2ch_fun[OF goal2(1)]])
+    by (metis chain_on_is_chain[OF ch2ch_cont_on[OF goal2(2) goal2(3)]] subsetI)
+  also have "... = (\<Squnion> j. (\<Squnion> i. Y i (Z j)))"
+    apply (rule diag_lub[OF _ ch2ch_fun[OF goal2(1)], symmetric])
+    by (metis chain_on_is_chain[OF ch2ch_cont_on[OF goal2(2) goal2(3)]] subsetI)
+  also have "... = (\<Squnion> j. (\<Squnion> i. Y i) (Z j))" by (subst lub_fun[OF `chain Y`], rule)
+  finally
+  show "(\<Squnion> i. Y i) (\<Squnion> j. Z j) \<sqsubseteq> (\<Squnion> j. (\<Squnion> i. Y i) (Z j))" by simp
+qed
+
+
+subsubsection {* A locale with an explicit bottom element *}
 
 locale subpcpo_bot = subpcpo S for S +
   fixes b
@@ -403,45 +501,7 @@ proof
     by (rule bottom_ofI[symmetric, OF assms(2) assms(3)])
 qed
 
-
-lemma ch2chain_on_monofun_on:
-  shows "[|monofun_on S1 f; chain_on S1 Y; f ` S1 \<subseteq> S2 |] ==> chain_on S2 (\<lambda>i. f (Y i))"
-proof-
-  show "[|monofun_on S1 f; chain_on S1 Y; f ` S1 \<subseteq> S2 |] ==> chain_on S2 (\<lambda>i. f (Y i))"
-    apply (rule chain_onI)
-    apply (erule monofun_onE)
-    apply (erule chain_on_is_on)+
-    apply (erule chain_onE)
-    apply (erule subsetD)
-    apply (rule imageI)
-    apply (erule chain_on_is_on)
-    done
-qed
-
-lemma ch2ch_cont_on:
-  assumes "cont_on S1 f" and "chain_on S1 Y" and "f ` S1 \<subseteq> S2"
-  shows "chain_on S2 (\<lambda>i. f (Y i))"
-  by (rule ch2chain_on_monofun_on[OF cont_on2mono_on[OF assms(1)] assms(2) assms(3)])
-
-lemma ch2ch_cont_on':
-  assumes "cont_on S1 f" and "chain_on S1 Y" and "closed_on S1 f"
-  shows "chain_on S1 (\<lambda>i. f (Y i))"
-  apply (rule ch2chain_on_monofun_on[OF cont_on2mono_on[OF assms(1)] assms(2)])
-  by (metis assms(3) closed_on_def image_subsetI)
-
-lemma adm_on_subst:
-  assumes cont: "cont_on S1 t"  and closed: "t ` S1 \<subseteq> S2" and  adm: "adm_on S2 P" 
-  shows "adm_on S1 (\<lambda>x. P (t x))"
-proof-
-  from cont closed adm
-  show ?thesis
-  by (auto simp add: adm_on_def cont_on2contlubE ch2ch_cont_on)
-qed
-
-lemma chain_on_product:
-  assumes "chain_on S1 Y" and "chain_on S2 Z"
-  shows "chain_on (S1 \<times> S2) (\<lambda> i. (Y i, Z i))"
-  using assms by (auto simp add: chain_on_def)
+subsubsection {* Various subpcpo's and their properties *}
 
 lemma subpcpo_UNIV:
   shows "subpcpo (UNIV::'a::pcpo set)"
@@ -450,7 +510,6 @@ lemma subpcpo_UNIV:
 lemma subpcpo_cone_above:
   shows "subpcpo {y . x \<sqsubseteq> y}"
   by (rule subpcpoI,  auto intro:admD)
-
 
 lemma bottom_of_cone_above[simp]:
   shows "bottom_of {y . x \<sqsubseteq> y} = x"
@@ -529,7 +588,6 @@ qed
 lemma subcpo_Inter:
   "(\<And>i. subcpo (S i)) \<Longrightarrow> subcpo (\<Inter> i. S i)"
   unfolding subcpo_def by (metis INT_iff UNIV_I)
-
 lemma
   assumes "\<And>i. subpcpo (S i)"
   assumes "\<And> i j. bottom_of (S i) = bottom_of (S j)"
@@ -580,6 +638,108 @@ proof(rule subpcpo_botI)
 }
 qed
 
+subsubsection {* Lemmas about function iteration *}
+
+lemma lub_compow:
+  fixes  Y :: "nat \<Rightarrow> 'a \<Rightarrow> 'a"
+  assumes "chain Y"
+  and cont: "\<And> i . cont (Y i)"
+  shows "(\<Squnion>i. Y i) ^^ k = (\<Squnion>i. Y i ^^ k)"
+proof (induct k)
+case 0 thus ?case by auto
+next
+case (Suc k)
+  { 
+  fix k have "chain (\<lambda>i. Y i ^^ k)"
+  proof(induct k)
+  case (Suc k)
+    show ?case
+    proof(rule chainI[OF fun_belowI])
+      case (goal1 i x)
+        have "Y i ((Y i ^^ k) x) \<sqsubseteq> Y (Suc i) ((Y i ^^ k) x)"
+          using `chain Y` by (rule fun_belowD[OF chainE])
+        also have "... \<sqsubseteq> Y (Suc i) ((Y (Suc i) ^^ k) x)"
+           by (rule cont2monofunE[OF cont fun_belowD[OF chainE[OF Suc]]])
+        finally show ?case by simp
+    qed
+  qed simp
+  } note c2 = this
+  have c3: "\<And> x. chain (\<lambda>i. (Y i ^^ k) x)" by (rule ch2ch_fun[OF c2])
+  have c4: "\<And> j. \<And> x. chain (\<lambda>i. Y i ((Y j ^^ k) x))" by (rule ch2ch_fun[OF assms(1)])
+  have c5: "\<And> i. \<And> x. chain (\<lambda>j. Y i ((Y j ^^ k) x))" by (rule ch2ch_cont[OF cont c3])
+  show ?case
+  proof(rule ext)
+    fix x
+    have "((\<Squnion> i. Y i) ^^ Suc k) x = (\<Squnion> i. Y i) (((\<Squnion> i. Y i) ^^ k) x)" by simp
+    also have "... = (\<Squnion> i. Y i) ((\<Squnion> i. Y i ^^k) x)" by (simp add: Suc)
+    also have "... = (\<Squnion> i. Y i) (\<Squnion> i. (Y i ^^k) x)" by (subst lub_fun[OF c2], rule)
+    also have "... = (\<Squnion> i. (Y i (\<Squnion> j. (Y j ^^k) x)))" by (subst lub_fun[OF `chain Y`], rule)
+    also have "... = (\<Squnion> i. (\<Squnion> j. Y i ((Y j ^^k) x)))" by (subst cont2contlubE[OF cont c3], rule) 
+    also have "... = (\<Squnion> i.  Y i ((Y i ^^k) x))" by (subst diag_lub[OF c4 c5], rule)
+    also have "... = (\<Squnion> i. (Y i ^^(Suc k)) x)" by simp
+    also have "... = (\<Squnion> i. (Y i ^^(Suc k))) x" by (subst lub_fun[OF c2], rule)
+    finally show "((\<Squnion> i. Y i) ^^ Suc k) x = (\<Squnion> i. Y i ^^ Suc k) x".
+  qed
+qed
+
+lemma chain_on_compow:
+  assumes "chain Y"
+  and cont: "\<And> i . cont_on S (Y i)"
+  and closed: "\<And> i . closed_on S (Y i)"
+  and "x \<in> S"
+  shows "chain_on S (\<lambda>i. (Y i ^^ k) x)"
+proof-
+  { fix i k have "(Y i ^^ k) x \<in> S"
+    by (induct k, simp_all add: `x \<in> S` closed_onE[OF closed])
+  } note S = this
+  show ?thesis
+  proof(induct k)
+  case 0 show ?case by (rule chain_onI[OF _ S], simp)
+  case (Suc k)
+    show ?case
+    proof(rule chain_onI[OF _ S])
+      case (goal1 i)
+        have "Y i ((Y i ^^ k) x) \<sqsubseteq> Y (Suc i) ((Y i ^^ k) x)"
+          using `chain Y` by (rule fun_belowD[OF chainE])
+        also have "... \<sqsubseteq> Y (Suc i) ((Y (Suc i) ^^ k) x)"
+          by (rule monofun_onE[OF cont_on2mono_on[OF cont] S S chainE[OF chain_on_is_chain[OF Suc]]])
+        finally show ?case by simp
+    qed
+  qed
+qed
+
+lemma lub_on_compow:
+  fixes  Y :: "nat \<Rightarrow> 'a \<Rightarrow> 'a"
+  assumes "chain Y"
+  and cont: "\<And> i . cont_on S (Y i)"
+  and closed: "\<And> i . closed_on S (Y i)"
+  and "x \<in> S"
+  shows "((\<Squnion>i. Y i) ^^ k) x = (\<Squnion>i. (Y i ^^ k) x)"
+proof (induct k)
+case 0 thus ?case by auto
+next
+{ fix i k have "(Y i ^^ k) x \<in> S"
+  by (induct k, simp_all add: `x \<in> S` closed_onE[OF closed])
+} note S = this
+
+case (Suc k)
+  have c2: "\<And> k. chain_on S (\<lambda>i. (Y i ^^ k) x)" by (rule chain_on_compow[OF assms])
+  have c4: "\<And> j. \<And> x. chain (\<lambda>i. Y i ((Y j ^^ k) x))" by (rule ch2ch_fun[OF `chain Y`])
+  have c5: "\<And> i. chain_on S (\<lambda>j. Y i ((Y j ^^ k) x))" apply (rule ch2ch_cont_on[OF cont c2]) using closed by (metis closed_on_def image_subsetI)
+
+  have "((\<Squnion> i. Y i) ^^ Suc k) x = (\<Squnion> i. Y i) (((\<Squnion> i. Y i) ^^ k) x)" by simp
+  also have "... = (\<Squnion> i. Y i) (\<Squnion> i. (Y i ^^k) x)" by (simp add: Suc)
+  also have "... = (\<Squnion> i. (Y i (\<Squnion> j. (Y j ^^k) x)))" by (subst lub_fun[OF `chain Y`], rule)
+  also have "... = (\<Squnion> i. (\<Squnion> j. Y i ((Y j ^^k) x)))" by (subst cont_on2contlubE[OF cont c2], rule) 
+  also have "... = (\<Squnion> i.  Y i ((Y i ^^k) x))" by (rule diag_lub[OF c4 chain_on_is_chain[OF c5]])
+  also have "... = (\<Squnion> i. (Y i ^^(Suc k)) x)" by simp
+  finally show "((\<Squnion> i. Y i) ^^ Suc k) x = (\<Squnion> i. (Y i ^^ Suc k) x)".
+qed
+
+
+subsubsection {* Fixed points in unpointed chain-complete partial orders *}
+
+text {* These fixed points take the initial value as an explicit argument, as there is no canonical bottom element. *}
 
 definition
   "fix_on'" :: "'a \<Rightarrow> ('a \<Rightarrow> 'a) \<Rightarrow> 'a" where
@@ -592,6 +752,8 @@ lemmas fix_on_def = fix_on'_def
 
 abbreviation fix_on where
   "fix_on S \<equiv> fix_on' (subpcpo_syn.bottom_of S)"
+
+text {* The following definition identifies when @{term F} has a fixed point in @{term S}. *}
 
 inductive fix_on_cond
   for S b F
@@ -682,7 +844,7 @@ proof -
     case (Suc i)
       have "((F ^^ i) (bottom_of S1)) \<in> S1" by (rule closed_onE[OF iterate_closed_on[OF closedF] bottom_of_there])
       moreover
-      have "((G ^^ i) (bottom_of S2)) \<in> S2" by (rule closed_onE[OF s2.iterate_closed_on[OF closedG] s2.bottom_of_there])
+      have "((G ^^ i) (bottom_of S2)) \<in> S2" by (rule closed_onE[OF iterate_closed_on[OF closedG] s2.bottom_of_there])
       ultimately
       show ?case using Suc by (simp add: step[simplified])
     qed
@@ -721,27 +883,16 @@ lemma fix_on_same:
   "b1 = b2 \<Longrightarrow> fix_on b1 F = fix_on b2 F"
   by simp
 
-
 lemma fix_on_mono:
   assumes "fix_on_cond S b F"
   assumes "fix_on_cond S b G"
   assumes below: "\<And> x. x \<in> S \<Longrightarrow> F x \<sqsubseteq> G x"
   shows "fix_on' b F \<sqsubseteq> fix_on' b G"
-proof -
-  from assms(1,2)
-  have pcpo: "subpcpo S" and closedF: "closed_on S F" and contF: "cont_on S F" and [simp]:"b = bottom_of S"
-  and  closedG: "closed_on S G" and contG: "cont_on S G"
-     by (metis fix_on_cond.cases)+
-
+proof-
+  have "monofun_on S G" by (metis assms(2) cont_on2mono_on fix_on_cond.simps)
   show ?thesis
-    apply (rule parallel_fix_on_ind[OF assms(1) assms(2)_ below_refl])
-    apply (rule adm_is_adm_on, simp)
-    apply (rule below_trans[OF below ], assumption)
-    apply (erule (2) monofun_onE[OF cont_on2mono_on[OF contG]])
-    done
+    by (rule fix_on_mono2[OF assms(1,2) below_refl below_trans[OF below monofun_onE[OF `monofun_on _ _`]]])
 qed
-
-find_theorems cont_on name:cong
 
 lemma fix_on_cond_cong:
   assumes "fix_on_cond S b F"
@@ -892,172 +1043,17 @@ proof(rule fix_on_eqI[OF assms(2), symmetric])
   thus "G (fix_on' b (\<lambda>x. F (G x))) \<sqsubseteq> z" by (simp add: `_ = z`)
 qed
 
-
-context subpcpo
-begin
-  lemma fix_on_const[simp]:
-    assumes "x \<in> S"
-    shows "fix_on S (\<lambda> _. x) = x"
-  proof-
-    have "fix_on_cond S bottom_of (\<lambda>_ . x)"
-      apply (rule fix_on_condI[OF subpcpo_axioms refl])
-      apply (rule closed_onI[OF assms])
-      apply (rule cont_is_cont_on[OF cont_const])
-      done  
-    thus ?thesis
-      by (rule fix_on_eq)
-  qed
-end
-
-
-
-
-lemma comp_cont:
-  assumes "cont f"
-  assumes "cont g"
-  shows "cont (f o g)"
-  apply (rule contI2)
-  apply (metis monofunI cont2monofunE[OF assms(1)] cont2monofunE[OF assms(2)] o_apply)
-  apply (simp add: cont2contlubE[OF assms(2)] cont2contlubE[OF assms(1) ch2ch_cont[OF `cont g`]])
-  done
-
-lemma lub_compow:
-  fixes  Y :: "nat \<Rightarrow> 'a \<Rightarrow> 'a"
-  assumes "chain Y"
-  and cont: "\<And> i . cont (Y i)"
-  shows "(\<Squnion>i. Y i) ^^ k = (\<Squnion>i. Y i ^^ k)"
-proof (induct k)
-case 0 thus ?case by auto
-next
-case (Suc k)
-  { 
-  fix k have "chain (\<lambda>i. Y i ^^ k)"
-  proof(induct k)
-  case (Suc k)
-    show ?case
-    proof(rule chainI[OF fun_belowI])
-      case (goal1 i x)
-        have "Y i ((Y i ^^ k) x) \<sqsubseteq> Y (Suc i) ((Y i ^^ k) x)"
-          using `chain Y` by (rule fun_belowD[OF chainE])
-        also have "... \<sqsubseteq> Y (Suc i) ((Y (Suc i) ^^ k) x)"
-           by (rule cont2monofunE[OF cont fun_belowD[OF chainE[OF Suc]]])
-        finally show ?case by simp
-    qed
-  qed simp
-  } note c2 = this
-  have c3: "\<And> x. chain (\<lambda>i. (Y i ^^ k) x)" by (rule ch2ch_fun[OF c2])
-  have c4: "\<And> j. \<And> x. chain (\<lambda>i. Y i ((Y j ^^ k) x))" by (rule ch2ch_fun[OF assms(1)])
-  have c5: "\<And> i. \<And> x. chain (\<lambda>j. Y i ((Y j ^^ k) x))" by (rule ch2ch_cont[OF cont c3])
-  show ?case
-  proof(rule ext)
-    fix x
-    have "((\<Squnion> i. Y i) ^^ Suc k) x = (\<Squnion> i. Y i) (((\<Squnion> i. Y i) ^^ k) x)" by simp
-    also have "... = (\<Squnion> i. Y i) ((\<Squnion> i. Y i ^^k) x)" by (simp add: Suc)
-    also have "... = (\<Squnion> i. Y i) (\<Squnion> i. (Y i ^^k) x)" by (subst lub_fun[OF c2], rule)
-    also have "... = (\<Squnion> i. (Y i (\<Squnion> j. (Y j ^^k) x)))" by (subst lub_fun[OF `chain Y`], rule)
-    also have "... = (\<Squnion> i. (\<Squnion> j. Y i ((Y j ^^k) x)))" by (subst cont2contlubE[OF cont c3], rule) 
-    also have "... = (\<Squnion> i.  Y i ((Y i ^^k) x))" by (subst diag_lub[OF c4 c5], rule)
-    also have "... = (\<Squnion> i. (Y i ^^(Suc k)) x)" by simp
-    also have "... = (\<Squnion> i. (Y i ^^(Suc k))) x" by (subst lub_fun[OF c2], rule)
-    finally show "((\<Squnion> i. Y i) ^^ Suc k) x = (\<Squnion> i. Y i ^^ Suc k) x".
-  qed
-qed
-
-lemma chain_on_compow:
-  assumes "chain Y"
-  and cont: "\<And> i . cont_on S (Y i)"
-  and closed: "\<And> i . closed_on S (Y i)"
-  and "x \<in> S"
-  shows "chain_on S (\<lambda>i. (Y i ^^ k) x)"
+lemma (in subpcpo) fix_on_const[simp]:
+  assumes "x \<in> S"
+  shows "fix_on S (\<lambda> _. x) = x"
 proof-
-  { fix i k have "(Y i ^^ k) x \<in> S"
-    by (induct k, simp_all add: `x \<in> S` closed_onE[OF closed])
-  } note S = this
-  show ?thesis
-  proof(induct k)
-  case 0 show ?case by (rule chain_onI[OF _ S], simp)
-  case (Suc k)
-    show ?case
-    proof(rule chain_onI[OF _ S])
-      case (goal1 i)
-        have "Y i ((Y i ^^ k) x) \<sqsubseteq> Y (Suc i) ((Y i ^^ k) x)"
-          using `chain Y` by (rule fun_belowD[OF chainE])
-        also have "... \<sqsubseteq> Y (Suc i) ((Y (Suc i) ^^ k) x)"
-          by (rule monofun_onE[OF cont_on2mono_on[OF cont] S S chainE[OF chain_on_is_chain[OF Suc]]])
-        finally show ?case by simp
-    qed
-  qed
-qed
-
-lemma lub_on_compow:
-  fixes  Y :: "nat \<Rightarrow> 'a \<Rightarrow> 'a"
-  assumes "chain Y"
-  and cont: "\<And> i . cont_on S (Y i)"
-  and closed: "\<And> i . closed_on S (Y i)"
-  and "x \<in> S"
-  shows "((\<Squnion>i. Y i) ^^ k) x = (\<Squnion>i. (Y i ^^ k) x)"
-proof (induct k)
-case 0 thus ?case by auto
-next
-{ fix i k have "(Y i ^^ k) x \<in> S"
-  by (induct k, simp_all add: `x \<in> S` closed_onE[OF closed])
-} note S = this
-
-case (Suc k)
-  have c2: "\<And> k. chain_on S (\<lambda>i. (Y i ^^ k) x)" by (rule chain_on_compow[OF assms])
-  have c4: "\<And> j. \<And> x. chain (\<lambda>i. Y i ((Y j ^^ k) x))" by (rule ch2ch_fun[OF `chain Y`])
-  have c5: "\<And> i. chain_on S (\<lambda>j. Y i ((Y j ^^ k) x))" apply (rule ch2ch_cont_on[OF cont c2]) using closed by (metis closed_on_def image_subsetI)
-
-  have "((\<Squnion> i. Y i) ^^ Suc k) x = (\<Squnion> i. Y i) (((\<Squnion> i. Y i) ^^ k) x)" by simp
-  also have "... = (\<Squnion> i. Y i) (\<Squnion> i. (Y i ^^k) x)" by (simp add: Suc)
-  also have "... = (\<Squnion> i. (Y i (\<Squnion> j. (Y j ^^k) x)))" by (subst lub_fun[OF `chain Y`], rule)
-  also have "... = (\<Squnion> i. (\<Squnion> j. Y i ((Y j ^^k) x)))" by (subst cont_on2contlubE[OF cont c2], rule) 
-  also have "... = (\<Squnion> i.  Y i ((Y i ^^k) x))" by (rule diag_lub[OF c4 chain_on_is_chain[OF c5]])
-  also have "... = (\<Squnion> i. (Y i ^^(Suc k)) x)" by simp
-  finally show "((\<Squnion> i. Y i) ^^ Suc k) x = (\<Squnion> i. (Y i ^^ Suc k) x)".
-qed
-
-lemma adm_closed_on:
-  assumes "subpcpo S"
-  shows "adm (closed_on S)"
-proof (rule admI[rule_format], rule closed_onI)
-  case (goal1 Y x)
-    have "chain (\<lambda> i. Y i x)"  by (rule ch2ch_fun[OF `chain Y`])
-    with  closed_onE[OF goal1(2) `x\<in>S`]
-    have "(\<Squnion> i. Y i x) \<in> S" by (metis subpcpo.pcpo[OF assms])
-    thus ?case by (metis lub_fun[OF `chain Y`])
-qed
-
-lemma adm_monofun_on:
-  assumes "subpcpo S"
-  shows "adm (monofun_on S)"
-proof (rule admI[rule_format], rule monofun_onI)
-  case (goal1 Y x y)
-    have "(\<Squnion> i. Y i x) \<sqsubseteq> (\<Squnion> i. Y i y)"
-      apply (rule lub_mono[OF ch2ch_fun[OF `chain Y`]  ch2ch_fun[OF `chain Y`]])
-      apply (rule monofun_onE[OF goal1(2) goal1(3) goal1(4) goal1(5)])
-      done
-    thus "(\<Squnion> i. Y i) x \<sqsubseteq> (\<Squnion> i. Y i) y" by (metis lub_fun[OF `chain Y`])
-qed
-
-lemma adm_cont_on:
-  assumes "subpcpo S"
-  shows "adm (cont_on S)"
-proof (rule admI[rule_format], rule subpcpo.cont_onI2[OF assms(1)])
-case goal1 thus ?case by (metis admD[OF adm_monofun_on[OF assms]] cont_on2mono_on)
-next
-case (goal2 Y Z)
-  have "(\<Squnion> i. Y i) (\<Squnion> j. Z j) = (\<Squnion> i. Y i (\<Squnion> j. Z j))" by (metis lub_fun[OF `chain Y`])
-  also have "... = (\<Squnion> i. (\<Squnion> j. Y i (Z j)))" by (subst cont_on2contlubE[OF goal2(2) goal2(3)], rule)
-  also have "... = (\<Squnion> i. Y i (Z i))"
-    apply (rule diag_lub[OF ch2ch_fun[OF goal2(1)]])
-    by (metis chain_on_is_chain[OF ch2ch_cont_on[OF goal2(2) goal2(3)]] subsetI)
-  also have "... = (\<Squnion> j. (\<Squnion> i. Y i (Z j)))"
-    apply (rule diag_lub[OF _ ch2ch_fun[OF goal2(1)], symmetric])
-    by (metis chain_on_is_chain[OF ch2ch_cont_on[OF goal2(2) goal2(3)]] subsetI)
-  also have "... = (\<Squnion> j. (\<Squnion> i. Y i) (Z j))" by (subst lub_fun[OF `chain Y`], rule)
-  finally
-  show "(\<Squnion> i. Y i) (\<Squnion> j. Z j) \<sqsubseteq> (\<Squnion> j. (\<Squnion> i. Y i) (Z j))" by simp
+  have "fix_on_cond S bottom_of (\<lambda>_ . x)"
+    apply (rule fix_on_condI[OF subpcpo_axioms refl])
+    apply (rule closed_onI[OF assms])
+    apply (rule cont_is_cont_on[OF cont_const])
+    done  
+  thus ?thesis
+    by (rule fix_on_eq)
 qed
 
 lemma fix_on_cond_adm:
@@ -1159,6 +1155,8 @@ lemma fix_on_cont'':
   apply (rule fix_on_cont[OF `chain Y` _ `cont F`])
   apply (rule fix_on_condI[OF pcpo refl closed cont_on])
   done
+
+subsubsection {* Typeclass for types as disjoint union of pointed chain-complete partial orders *}
 
 class subpcpo_partition =
   fixes to_bot :: "'a \<Rightarrow> 'a"
