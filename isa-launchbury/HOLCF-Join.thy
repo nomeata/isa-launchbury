@@ -294,7 +294,6 @@ text {* glbs are unique *}
 lemma is_glb_unique: "[|S >>| x; S >>| y|] ==> x = y"
   unfolding is_glb_def is_lb_def by (blast intro: below_antisym)
 
-
 text {* technical lemmas about @{term glb} and @{term is_glb} *}
 
 lemma is_glb_glb: "M >>| x ==> M >>| glb M"
@@ -320,14 +319,16 @@ lemma is_glb_maximal: "[|S >| x; x \<in> S|] ==> S >>| x"
 
 lemma glb_maximal: "[|S >| x; x \<in> S|] ==> glb S = x"
   by (rule is_glb_maximal [THEN glb_eqI])
-
 end
-
 
 lemma (in cpo) Meet_insert: "S >>| l \<Longrightarrow> {x, l} >>| l2 \<Longrightarrow> insert x S >>| l2"
   apply (rule is_glbI)
   apply (metis is_glb_above_iff is_glb_def is_lb_insert)
   by (metis is_glb_above_iff is_glb_def is_glb_singleton is_lb_insert)
+
+subsubsection {* Type classes for various kinds of meets *}
+
+text {* Binary, hence finite meets. *}
 
 class Finite_Meet_cpo = cpo +
   assumes binary_meet_exists: "\<exists> l. l \<sqsubseteq> x \<and> l \<sqsubseteq> y \<and> (\<forall> z. z \<sqsubseteq> x \<longrightarrow> z \<sqsubseteq> y \<longrightarrow> z \<sqsubseteq> l)"
@@ -350,6 +351,8 @@ begin
   apply (metis Meet_insert binary_meet_exists')
   done
 end
+
+text {* Meets for finite nonempty sets with a lower bound. *}
 
 class Bounded_Nonempty_Meet_cpo = cpo +
   assumes bounded_nonempty_meet_exists: "S \<noteq> {} \<Longrightarrow> (\<exists>z. S >| z) \<Longrightarrow> \<exists>x. S >>| x"
@@ -377,6 +380,7 @@ begin
     by (rule nonempty_ub_implies_lub_exists, auto)
 end
 
+text {* Meets for finite nonempty sets. *}
 
 class Nonempty_Meet_cpo = cpo +
   assumes nonempty_meet_exists: "S \<noteq> {} \<Longrightarrow> \<exists>x. S >>| x"
@@ -401,35 +405,6 @@ begin
   subclass Bounded_Nonempty_Meet_cpo
   apply default by (metis nonempty_meet_exists)
 end
-
-(* More about Joins aka least upper bounds *)
-
-lemma (in pcpo) join_empty: "lub {} = (\<bottom>::'a)"
-  by (metis (full_types) is_lub_def is_ub_empty lub_eqI minimal)
-
-class Join_cpo = cpo +
-  assumes join_exists: "\<exists>x. S <<| x"
-begin
-  lemma lub_belowI: "\<lbrakk>\<And> x. x \<in> S \<Longrightarrow> x \<sqsubseteq> z \<rbrakk> \<Longrightarrow> lub S  \<sqsubseteq> z"
-    by (metis is_lubD2 is_ubI join_exists lub_eqI)
-
-  lemma join_def': "x \<squnion> y = lub {x, y}"
-    unfolding join_def using join_exists by auto
-
-  lemma arb_join_belowI: "x \<sqsubseteq> z \<Longrightarrow> y \<sqsubseteq> z \<Longrightarrow> x \<squnion> y \<sqsubseteq> z"
-    unfolding join_def'
-    by (auto intro: lub_belowI)
-  
-  lemma arb_join_above1: "x \<sqsubseteq> x \<squnion> y"
-    unfolding join_def'
-    by (metis is_lubD1 is_ub_insert join_exists lub_eqI)
-  
-  lemma arb_join_above2: "y \<sqsubseteq> x \<squnion> y"
-    unfolding join_def'
-    by (metis is_lubD1 is_ub_insert join_exists lub_eqI)
-end
-
-(* Compatible is downclosed in Nonempty_Meet_exists *)
 
 lemma (in Bounded_Nonempty_Meet_cpo) compatible_down_closed:
     assumes "compatible x y"
@@ -460,6 +435,8 @@ lemma join_mono':
   shows "a \<squnion> b \<sqsubseteq> c \<squnion> d"
   apply (rule join_mono[OF _ assms(1) assms(2) assms(3)])
   by (metis assms(1) assms(2) assms(3) compatible_down_closed2 compatible_sym)
+
+subsubsection {* Bifinite domains with finite nonempty meets have arbitrary nonempty meets. *}
 
 class Finite_Meet_bifinite_cpo = Finite_Meet_cpo + bifinite
 
@@ -525,6 +502,5 @@ proof (default)
   qed
   thus "\<exists>x. S >>| x"..
 qed
-
 
 end

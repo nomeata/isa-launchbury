@@ -133,7 +133,7 @@ But this causes issues with HOLCF: In order to work effectively with fixed point
 
 Hence the partial order is changed so that only maps with the same domain are compareable. Assuing the values form a chain-complete partial order, we now have a chain-complete partial order on finite maps. Unfortunately, we now no longer have a bottom element for the whole type. In fact, the type is now the disjoint union of many pointed chain-complete partial orders. This makes proofs with fixed points relatively unwieldy, as we have to handle the domains of the maps explicitly. The theory \isa{HOLCF-Set} definines the notion of a set forming a pcpo and provides variants of some HOLCF function to work with an explicit carrier set instead of the whole universe of the type.
 
-The theory \isa{HOLCF-Join} defines the binary join operator $\sqcup$ in a partial order as defined by HOLCF, together with the \isa{compatible} predicate, expressing that the least upper bound exists for its arguments.
+The theory \isa{HOLCF-Join} defines the binary join operator $\sqcup$ in a partial order as defined by HOLCF, together with the \isa{compatible} predicate, expressing that the least upper bound exists for its arguments. It also contains typeclasses for the existance of meets (greatest lower bounds) in various settings and a proof that bifinite domains with meets for all finite nonempty sets have meets for arbitrary nonempty sets.
 
 \subsection{Acknowledgement}
 
