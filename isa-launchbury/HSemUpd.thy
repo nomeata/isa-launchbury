@@ -3,14 +3,14 @@ theory HSemUpd
 begin
 
 
-lemma sharp_star_Env': "atom ` heapVars \<Gamma> \<sharp>* (\<rho> :: ('var::{cont_pt,at_base}, 'value::{pure_cpo,Nonempty_Meet_cpo,pcpo}) fmap) \<longleftrightarrow> heapVars \<Gamma> \<inter> fdom \<rho> = {}"
+lemma sharp_star_Env': "atom ` heapVars \<Gamma> \<sharp>* (\<rho> :: 'var::{cont_pt,at_base} f\<rightharpoonup> 'value::{pure_cpo,Nonempty_Meet_cpo,pcpo}) \<longleftrightarrow> heapVars \<Gamma> \<inter> fdom \<rho> = {}"
   by(induct \<Gamma>, auto simp add: fresh_star_def sharp_Env)
 
 locale has_ESem =
-  fixes ESem :: "'exp::pt \<Rightarrow> ('var::{cont_pt,at_base}, 'value) fmap \<Rightarrow> 'value::{pure_cpo,Nonempty_Meet_cpo,pcpo}" ("\<lbrakk> _ \<rbrakk>\<^bsub>_\<^esub>"  [60,60] 60)
+  fixes ESem :: "'exp::pt \<Rightarrow> 'var::{cont_pt,at_base} f\<rightharpoonup> 'value \<Rightarrow> 'value::{pure_cpo,Nonempty_Meet_cpo,pcpo}" ("\<lbrakk> _ \<rbrakk>\<^bsub>_\<^esub>"  [60,60] 60)
 begin
 
-definition HSem :: "('var \<times> 'exp) list \<Rightarrow> ('var, 'value) fmap \<Rightarrow> ('var, 'value) fmap" ("\<lbrace>_\<rbrace>_"  [60,60] 60)
+definition HSem :: "('var \<times> 'exp) list \<Rightarrow> 'var f\<rightharpoonup> 'value \<Rightarrow> 'var f\<rightharpoonup> 'value" ("\<lbrace>_\<rbrace>_"  [60,60] 60)
   where
   "\<lbrace>h\<rbrace>\<rho> = 
     (if (\<forall> e \<in> snd `set h. cont (ESem e))

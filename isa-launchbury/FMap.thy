@@ -2,27 +2,27 @@ theory FMap
   imports Main "~~/src/HOL/Quotient_Examples/FSet" "~~/src/HOL/Library/DAList"
 begin
 
-typedef (open) ('a, 'b) fmap = "{x :: 'a \<rightharpoonup> 'b. finite (dom x) }"
+typedef (open) ('a, 'b) fmap  (infixr "f\<rightharpoonup>" 1) = "{x :: 'a \<rightharpoonup> 'b. finite (dom x) }"
   proof show "empty \<in> {x. finite (dom x)}" by simp qed
 
 setup_lifting type_definition_fmap
 
-lift_definition fdom :: "('key, 'value) fmap \<Rightarrow> 'key set" is "dom" ..
+lift_definition fdom :: "'key f\<rightharpoonup> 'value \<Rightarrow> 'key set" is "dom" ..
 
-lift_definition fran :: "('key, 'value) fmap \<Rightarrow> 'value set" is "ran" ..
+lift_definition fran :: "'key f\<rightharpoonup> 'value \<Rightarrow> 'value set" is "ran" ..
 
-lift_definition lookup :: "('key, 'value) fmap \<Rightarrow> 'key \<Rightarrow> 'value option" is "(\<lambda> x. x)" ..
+lift_definition lookup :: "'key f\<rightharpoonup> 'value \<Rightarrow> 'key \<Rightarrow> 'value option" is "(\<lambda> x. x)" ..
 
-lift_definition fempty :: "('key, 'value) fmap" is Map.empty by simp
+lift_definition fempty :: "'key f\<rightharpoonup> 'value" is Map.empty by simp
 
 lemma fempty_fdom[simp]: "fdom fempty = {}"
   by (transfer, auto)
 
 lift_definition
-  fmap_upd :: "('key, 'value) fmap \<Rightarrow> 'key \<Rightarrow> 'value \<Rightarrow> ('key, 'value) fmap" ("_'(_ f\<mapsto> _')" [900,900]900)
+  fmap_upd :: "'key f\<rightharpoonup> 'value \<Rightarrow> 'key \<Rightarrow> 'value \<Rightarrow> 'key f\<rightharpoonup> 'value" ("_'(_ f\<mapsto> _')" [900,900]900)
   is "\<lambda> m x v. m( x \<mapsto> v)"  by simp
 
-lemma fmap_upd_fdom[simp]: "fdom (h ( x f\<mapsto> v)) = insert x (fdom h)"
+lemma fmap_upd_fdom[simp]: "fdom (h (x f\<mapsto> v)) = insert x (fdom h)"
   by (transfer, auto)
 
 lemma the_lookup_fmap_upd[simp]: "lookup (h (x f\<mapsto> v)) x = Some v"
@@ -58,7 +58,7 @@ lemma fmap_eqI[intro]:
   shows "a = b"
 using assms
 proof(transfer)
-  fix a b :: "('a \<rightharpoonup> 'b)"
+  fix a b :: "'a \<rightharpoonup> 'b"
   assume d: "dom a = dom b"
   assume eq: "\<And> x. x \<in> dom a \<Longrightarrow> the (a x) = the (b x)"
   show "a = b"
@@ -84,26 +84,18 @@ proof(transfer)
   qed
 qed
 
-lemma fmap_upd_twist: "a ~= c ==> (m(a f\<mapsto> b))(c f\<mapsto> d) = (m(c f\<mapsto> d))(a f\<mapsto> b)"
+lemma fmap_upd_twist: "a \<noteq> c \<Longrightarrow> (m(a f\<mapsto> b))(c f\<mapsto> d) = (m(c f\<mapsto> d))(a f\<mapsto> b)"
   apply (rule fmap_eqI)
   apply auto[1]
   apply (case_tac "x = a", auto)
   apply (case_tac "x = c", auto)
   done
 
-lift_definition fmap_restr :: "'a set \<Rightarrow> ('a, 'b) fmap => ('a, 'b) fmap"
+lift_definition fmap_restr :: "'a set \<Rightarrow> 'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b"
   is "\<lambda> S m. (if finite S then (restrict_map m S) else empty)" by auto
 
 lemma lookup_fmap_restr[simp]: "finite S \<Longrightarrow> x \<in> S \<Longrightarrow> lookup (fmap_restr S m) x = lookup m x"
   by (transfer, auto)
-
-(*
-lemma [transfer_rule]:"(op = ===> set_rel op = ===> op =) op = op ="
-  unfolding set_rel_eq fun_rel_eq by (rule refl)
-
-lemma [transfer_rule]: "(op = ===> set_rel op = ===> set_rel op =) op \<inter> op \<inter> "
-  unfolding set_rel_eq fun_rel_eq by (rule refl)
-*)
 
 lemma fdom_fmap_restr[simp]: "finite S \<Longrightarrow> fdom (fmap_restr S m) = fdom m \<inter> S"
   by (transfer, simp)
@@ -126,14 +118,14 @@ lemma fmap_restr_not_finite:
 definition fmap_restr_l where
   "fmap_restr_l d = fmap_restr (set d)"
 
-lift_definition fmap_delete :: "'a \<Rightarrow> ('a, 'b) fmap \<Rightarrow> ('a, 'b) fmap"
+lift_definition fmap_delete :: "'a \<Rightarrow> 'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b"
   is "\<lambda> x m. m(x := None)" by auto
 
 lemma fdom_fmap_delete[simp]:
   "fdom (fmap_delete x m) = fdom m - {x}"
   by (transfer, auto)
 
-lift_definition fmap_add :: "('a, 'b) fmap \<Rightarrow> ('a, 'b) fmap \<Rightarrow> ('a, 'b) fmap" (infixl "f++" 100) 
+lift_definition fmap_add :: "'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b" (infixl "f++" 100) 
   is "map_add" by auto
 
 lemma fdom_fmap_add[simp]: "fdom (m1 f++ m2) = fdom m1 \<union> fdom m2"
@@ -189,7 +181,7 @@ lemma fmap_restr_fmap_upd: "x \<in> S \<Longrightarrow> finite S \<Longrightarro
   done
 
 
-lift_definition fmap_of :: "('a \<times> 'b) list \<Rightarrow> ('a, 'b) fmap"
+lift_definition fmap_of :: "('a \<times> 'b) list \<Rightarrow> 'a f\<rightharpoonup> 'b"
   is map_of by (rule finite_dom_map_of)
 
 lemma fmap_of_Nil[simp]: "fmap_of [] = fempty"

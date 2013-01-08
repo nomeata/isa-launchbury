@@ -22,7 +22,7 @@ fixrec Fn_project :: "Value \<rightarrow> Value \<rightarrow> Value"
 abbreviation Fn_project_abbr (infix "\<down>Fn" 55)
   where "f \<down>Fn v \<equiv> Fn_project\<cdot>f\<cdot>v"
 
-type_synonym Env = "(var, Value) fmap"
+type_synonym Env = "var f\<rightharpoonup> Value"
 
 instantiation Value :: pure_cpo
 begin

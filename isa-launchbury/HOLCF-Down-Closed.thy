@@ -96,7 +96,7 @@ proof(rule contains_bottomsI)
 qed
 
 lemma down_closed_restrict_image:
-  fixes S :: "('a, 'b::pcpo) fmap set"
+  fixes S :: "('a f\<rightharpoonup> ('b::pcpo))  set"
   assumes "down_closed S"
   and "\<And> x. x \<in> S \<Longrightarrow> fdom x = d"
   and "finite d"

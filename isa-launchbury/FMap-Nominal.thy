@@ -14,7 +14,7 @@ lemma ran_perm[simp]:
 
 instantiation "fmap" :: (pt,pt) pt
 begin
-  lift_definition permute_fmap :: "perm \<Rightarrow> ('a::pt,'b::pt) fmap \<Rightarrow> ('a,'b) fmap"
+  lift_definition permute_fmap :: "perm \<Rightarrow> 'a::pt f\<rightharpoonup> 'b::pt \<Rightarrow> 'a f\<rightharpoonup> 'b"
     is "\<lambda> p f . p \<bullet> f" by (simp del: dom_perm_rev add:dom_perm)
   
   instance
@@ -206,7 +206,7 @@ lemma supp_fmap_transfer[transfer_rule]:
   by (simp add: permute_fmap.rep_eq[symmetric] Rep_fmap_inject)
 
 lemma supp_fmap:
-  "supp (m:: ('a::fs, 'b::fs) fmap) = (supp (fdom m) \<union> supp (fran m))"
+  "supp (m:: 'a::fs f\<rightharpoonup> 'b::fs) = (supp (fdom m) \<union> supp (fran m))"
 apply transfer
 apply (erule supp_map_union)
 by (metis Rel_eq_refl fun_rel_eq set_rel_eq)
@@ -248,7 +248,7 @@ lemma fmap_add_eqvt[eqvt]:
   "\<pi> \<bullet> fmap_add m1 m2 = fmap_add (\<pi> \<bullet> m1) (\<pi> \<bullet> m2)"
   by (transfer, perm_simp, rule)
 
-lift_definition fmap_id :: "('a, 'b) fmap \<Rightarrow> ('a, 'b) fmap" is "(\<lambda>x. x)" by simp
+lift_definition fmap_id :: "'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b" is "(\<lambda>x. x)" by simp
 
 lemma fmap_of_eqvt[eqvt]:
   "\<pi> \<bullet> fmap_of l = fmap_of (\<pi> \<bullet> l)"
@@ -256,7 +256,7 @@ lemma fmap_of_eqvt[eqvt]:
   by (simp add: fmap_of_def permute_fmap_def map_fun_def Abs_fmap_inverse finite_dom_map_of map_of_eqvt)
 
 
-lemma sharp_Env: "atom x \<sharp> (\<rho> :: ('a::at_base, 'b::pure) fmap) \<longleftrightarrow> x \<notin> fdom \<rho>"
+lemma sharp_Env: "atom x \<sharp> (\<rho> :: 'a::at_base f\<rightharpoonup> 'b::pure) \<longleftrightarrow> x \<notin> fdom \<rho>"
   apply (subst fresh_def)
   apply (simp  add: supp_fmap)
   apply (subst (1 2) fresh_def[symmetric])

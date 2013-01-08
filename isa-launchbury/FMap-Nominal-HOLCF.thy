@@ -6,7 +6,7 @@ instance "fmap" :: (pt, cont_pt) cont_pt
 apply default
 proof(intro contI2 monofunI fmap_belowI')
   fix \<pi> m1 m2
-  assume "m1 \<sqsubseteq> (m2 :: ('a, 'b) fmap)"
+  assume "m1 \<sqsubseteq> (m2 :: 'a f\<rightharpoonup> 'b)"
   hence "fdom m1 = fdom m2"
     by (rule fmap_below_dom)
 
@@ -34,7 +34,7 @@ proof(intro contI2 monofunI fmap_belowI')
 
 next
   fix \<pi> Y
-  assume "chain (Y\<Colon>nat \<Rightarrow> ('a, 'b) fmap)"
+  assume "chain (Y\<Colon>nat \<Rightarrow> 'a f\<rightharpoonup> 'b)"
   assume "chain (\<lambda>i. \<pi> \<bullet> Y i)"
   
   show "fdom (\<pi> \<bullet> (\<Squnion> i. Y i)) = fdom (\<Squnion> i. \<pi> \<bullet> Y i)"
@@ -161,19 +161,19 @@ lemma [transfer_rule]: "(cr_fmap ===> op = ===> cr_fmap)
   unfolding set_rel_eq.
 
 lemma fmap_bottom_eqvt:
-  "finite S \<Longrightarrow> \<pi> \<bullet> (fmap_bottom S :: ('a::pt, 'b::{cont_pt,pcpo}) fmap) = fmap_bottom (\<pi> \<bullet> S)"
+  "finite S \<Longrightarrow> \<pi> \<bullet> (fmap_bottom S :: 'a::pt f\<rightharpoonup> 'b::{cont_pt,pcpo}) = fmap_bottom (\<pi> \<bullet> S)"
   by (transfer,perm_simp, rule refl)
 
 lemma fmap_add_eqvt[eqvt]:
-  "\<pi> \<bullet> fmap_add m1 (m2 :: ('a::{cont_pt,cpo}, 'b::{cont_pt,cpo}) fmap) = fmap_add (\<pi> \<bullet> m1) (\<pi> \<bullet> m2)"
+  "\<pi> \<bullet> fmap_add m1 (m2 :: 'a::{cont_pt,cpo} f\<rightharpoonup> 'b::{cont_pt,cpo}) = fmap_add (\<pi> \<bullet> m1) (\<pi> \<bullet> m2)"
   by (transfer, perm_simp, rule refl)
 
 lemma fmap_extend_eqvt[eqvt]:
-  "\<pi> \<bullet> fmap_extend (m :: ('a::{pt}, 'b::{cont_pt,pcpo}) fmap) S = fmap_extend (\<pi> \<bullet> m) (\<pi> \<bullet> S)"
+  "\<pi> \<bullet> fmap_extend (m :: 'a::{pt} f\<rightharpoonup> 'b::{cont_pt,pcpo}) S = fmap_extend (\<pi> \<bullet> m) (\<pi> \<bullet> S)"
   by (transfer, perm_simp, rule refl)
 
 lemma fmap_expand_eqvt[eqvt]:
-  "\<pi> \<bullet> fmap_expand (m :: ('a::{pt}, 'b::{cont_pt,pcpo}) fmap) S = fmap_expand (\<pi> \<bullet> m) (\<pi> \<bullet> S)"
+  "\<pi> \<bullet> fmap_expand (m :: 'a::{pt} f\<rightharpoonup> 'b::{cont_pt,pcpo}) S = fmap_expand (\<pi> \<bullet> m) (\<pi> \<bullet> S)"
   by (transfer, perm_simp, rule refl)
 
 lemma compatible_eqvt[eqvt]:
@@ -190,7 +190,7 @@ lemma permute_under_ball:
   by (metis mem_eqvt permute_minus_cancel(1) permute_pure) 
 
 lemma compatible_fmap_eqvt[eqvt]:
-  "compatible_fmap m1 (m2 :: ('a::pt, 'b::{cont_pt,pcpo}) fmap) \<Longrightarrow> compatible_fmap (\<pi> \<bullet> m1) (\<pi> \<bullet> m2)"
+  "compatible_fmap m1 (m2 :: 'a::pt f\<rightharpoonup> 'b::{cont_pt,pcpo}) \<Longrightarrow> compatible_fmap (\<pi> \<bullet> m1) (\<pi> \<bullet> m2)"
   unfolding compatible_fmap_def'
   apply (rule permute_under_ball[of \<pi>])
   apply rule
@@ -213,7 +213,7 @@ case True
 qed
 
 lemma fmap_join_eqvt[eqvt]:
-  "\<pi> \<bullet> fmap_join m1 (m2 :: ('a::{pt}, 'b::{cont_pt, pcpo}) fmap) = fmap_join (\<pi> \<bullet> m1) (\<pi> \<bullet> m2)"
+  "\<pi> \<bullet> fmap_join m1 (m2 :: 'a::{pt} f\<rightharpoonup> 'b::{cont_pt, pcpo}) = fmap_join (\<pi> \<bullet> m1) (\<pi> \<bullet> m2)"
   by (transfer, perm_simp, rule refl)
 
 
@@ -224,11 +224,11 @@ definition fmap_bottom_l where
   "fmap_bottom_l d = fmap_bottom (set d)"
 
 lemma fmap_bottom_l_eqvt[eqvt]:
-  "\<pi> \<bullet> fmap_bottom_l d = (fmap_bottom_l (\<pi> \<bullet> d) :: ('a::pt, 'b::{pcpo,cont_pt}) fmap)"
+  "\<pi> \<bullet> fmap_bottom_l d = (fmap_bottom_l (\<pi> \<bullet> d) :: 'a::pt f\<rightharpoonup> 'b::{pcpo,cont_pt})"
   by (simp add: fmap_bottom_l_def fmap_bottom_eqvt set_eqvt)
 
 lemma fresh_fmap_bottom_set[simp]:
-  "x \<sharp> d \<Longrightarrow> x \<sharp> (fmap_bottom (set d) :: ('a::pt, 'b::{pcpo,cont_pt}) fmap)"
+  "x \<sharp> d \<Longrightarrow> x \<sharp> (fmap_bottom (set d) :: 'a::pt f\<rightharpoonup> 'b::{pcpo,cont_pt})"
   unfolding fmap_bottom_l_def[symmetric]
   apply (erule fresh_fun_eqvt_app[rotated])
   apply (rule eqvtI)
@@ -236,7 +236,7 @@ lemma fresh_fmap_bottom_set[simp]:
   by (metis fmap_bottom_l_eqvt permute_fun_def permute_minus_cancel(1))
 
 lemma fresh_star_fmap_bottom_set[simp]:
-  "x \<sharp>* d \<Longrightarrow> x \<sharp>* (fmap_bottom (set d) :: ('a::pt, 'b::{pcpo,cont_pt}) fmap)"
+  "x \<sharp>* d \<Longrightarrow> x \<sharp>* (fmap_bottom (set d) :: 'a::pt f\<rightharpoonup> 'b::{pcpo,cont_pt})"
   by (metis fresh_star_def fresh_fmap_bottom_set)
 
 

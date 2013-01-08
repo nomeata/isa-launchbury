@@ -15,19 +15,19 @@ proof-
 qed
 
 
-lemma sharp_star_Env': "atom ` heapVars \<Gamma> \<sharp>* (\<rho> :: ('var::{cont_pt,at_base}, 'value::{pure_cpo,Nonempty_Meet_cpo,pcpo}) fmap) \<longleftrightarrow> heapVars \<Gamma> \<inter> fdom \<rho> = {}"
+lemma sharp_star_Env': "atom ` heapVars \<Gamma> \<sharp>* (\<rho> :: 'var::{cont_pt,at_base} f\<rightharpoonup> 'value::{pure_cpo,Nonempty_Meet_cpo,pcpo}) \<longleftrightarrow> heapVars \<Gamma> \<inter> fdom \<rho> = {}"
   by(induct \<Gamma>, auto simp add: fresh_star_def sharp_Env)
 
 locale has_ESem =
-  fixes ESem :: "'exp::pt \<Rightarrow> ('var::{cont_pt,at_base}, 'value) fmap \<Rightarrow> 'value::{pure_cpo,Nonempty_Meet_cpo,pcpo}"
+  fixes ESem :: "'exp::pt \<Rightarrow> 'var::{cont_pt,at_base} f\<rightharpoonup> 'value \<Rightarrow> 'value::{pure_cpo,Nonempty_Meet_cpo,pcpo}"
 begin
 
-abbreviation HSem_cond' :: "('var \<times> 'exp) list \<Rightarrow> ('var, 'value) fmap \<Rightarrow> bool"
+abbreviation HSem_cond' :: "('var \<times> 'exp) list \<Rightarrow> 'var f\<rightharpoonup> 'value \<Rightarrow> bool"
   where "HSem_cond' h \<rho> \<equiv>
       fix_join_cond (fmap_expand \<rho> (fdom \<rho> \<union> heapVars h)) 
                         (\<lambda> \<rho>' . fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (fdom \<rho> \<union> heapVars h))"
 
-definition HSem :: "('var \<times> 'exp) list \<Rightarrow> ('var, 'value) fmap \<Rightarrow> ('var, 'value) fmap"
+definition HSem :: "('var \<times> 'exp) list \<Rightarrow> 'var f\<rightharpoonup> 'value \<Rightarrow> 'var f\<rightharpoonup> 'value"
   where
   "HSem h \<rho> =
     (if HSem_cond' h \<rho>
@@ -170,15 +170,15 @@ case (goal3 x a)
 qed
 
 lemma fdom_compatible[simp]:
-  "compatible m1 (m2::(('a::type), ('b::pcpo)) fmap) \<Longrightarrow> fdom m1 = fdom m2"
+  "compatible m1 (m2::'a::type f\<rightharpoonup> 'b::pcpo) \<Longrightarrow> fdom m1 = fdom m2"
 by (metis join_above1 join_above2 fmap_below_dom)
 
 lemma fdom_join[simp]:
-  "compatible m1 (m2::('a::type, ('b::pcpo)) fmap) \<Longrightarrow> fdom (m1 \<squnion> m2) = fdom m1"
+  "compatible m1 (m2::'a::type f\<rightharpoonup> 'b::pcpo) \<Longrightarrow> fdom (m1 \<squnion> m2) = fdom m1"
   by (metis join_above1 fmap_below_dom)
 
 lemma join_is_fmap_join:
-  assumes "compatible m1 (m2::('a::type, 'b::pcpo) fmap)"
+  assumes "compatible m1 (m2::'a::type f\<rightharpoonup> 'b::pcpo)"
   shows "m1 \<squnion> m2 = fmap_join m1 m2"
   apply (rule is_joinI)
   apply (rule fmap_join_below1[OF compatible_is_compatible_fmap[OF assms] fdom_compatible[OF assms]])
@@ -187,7 +187,7 @@ lemma join_is_fmap_join:
   done
 
 lemma the_lookup_compatible:
-  assumes "compatible m1 (m2::('a::type, ('b::pcpo)) fmap)"
+  assumes "compatible m1 (m2::'a::type f\<rightharpoonup> 'b::pcpo)"
   shows "compatible (the (lookup m1 x)) (the (lookup m2 x))"
 proof(cases "x \<in> fdom m1")
 case True hence "x \<in> fdom m2" by (metis fdom_compatible[OF assms])
@@ -200,7 +200,7 @@ case False
 qed
 
 lemma the_lookup_join:
-  assumes "compatible m1 (m2::(('a::type), ('b::pcpo)) fmap)"
+  assumes "compatible m1 (m2::'a::type f\<rightharpoonup> 'b::pcpo)"
   shows "the (lookup (m1 \<squnion> m2) x) = the (lookup m1 x) \<squnion> the (lookup m2 x)"
 proof(cases "x \<in> fdom m1")
 case True hence "x \<in> fdom m2" by (metis fdom_compatible[OF assms])
@@ -233,13 +233,13 @@ lemma fmap_join_expand: "compatible_fmap m1 m2 \<Longrightarrow> fmap_join m1 m2
   apply (simp add: compatible_is_compatible_fmap[OF compatible_expand])
   done
 
-lemma fmap_restr_compatible: "finite S \<Longrightarrow> compatible m1 (m2\<Colon>('a\<Colon>type, 'b\<Colon>pcpo) fmap) \<Longrightarrow> compatible (fmap_restr S m1) (fmap_restr S m2)"
+lemma fmap_restr_compatible: "finite S \<Longrightarrow> compatible m1 (m2\<Colon>'a::type f\<rightharpoonup> 'b::pcpo) \<Longrightarrow> compatible (fmap_restr S m1) (fmap_restr S m2)"
   apply (rule compatible_fmap_is_compatible)
   apply (rule compatible_fmapI)
   apply (auto elim: the_lookup_compatible)
   done
 
-lemma fmap_restr_join: "finite S \<Longrightarrow> compatible m1 (m2\<Colon>('a\<Colon>type, 'b\<Colon>pcpo) fmap) \<Longrightarrow> fmap_restr S (m1 \<squnion> m2) = fmap_restr S m1 \<squnion> fmap_restr S m2"
+lemma fmap_restr_join: "finite S \<Longrightarrow> compatible m1 (m2\<Colon>'a::type f\<rightharpoonup> 'b::pcpo) \<Longrightarrow> fmap_restr S (m1 \<squnion> m2) = fmap_restr S m1 \<squnion> fmap_restr S m2"
   apply (frule (1) fmap_restr_compatible)
   apply (rule fmap_eqI)
   apply simp
@@ -247,7 +247,7 @@ lemma fmap_restr_join: "finite S \<Longrightarrow> compatible m1 (m2\<Colon>('a\
   done
 
 lemma fmap_join_is_join_expand:
-  "compatible_fmap m1 (m2::('a, 'b::pcpo) fmap) \<Longrightarrow> fmap_join m1 m2 = fmap_expand m1 (fdom m1 \<union> fdom m2) \<squnion> fmap_expand m2 (fdom m1 \<union> fdom m2)"
+  "compatible_fmap m1 (m2::'a f\<rightharpoonup> 'b::pcpo) \<Longrightarrow> fmap_join m1 m2 = fmap_expand m1 (fdom m1 \<union> fdom m2) \<squnion> fmap_expand m2 (fdom m1 \<union> fdom m2)"
   apply (subst fmap_join_expand, assumption)
   apply (erule join_is_fmap_join[symmetric, OF compatible_expand])
   done
