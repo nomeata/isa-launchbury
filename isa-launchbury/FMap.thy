@@ -224,5 +224,160 @@ lemma lookup_fmap_of[simp]:
 lemma fmap_delete_fmap_of[simp]:
   "fmap_delete x (fmap_of m) = fmap_of (AList.delete x m)"
   by (transfer, metis delete_conv')
+
+subsubsection {* Less-than-relation for extending finite maps *}
+
+instantiation fmap :: (type,type) order
+begin
+  definition "\<rho> \<le> \<rho>' = ((fdom \<rho> \<subseteq> fdom \<rho>') \<and> (\<forall>x \<in> fdom \<rho>. lookup \<rho> x = lookup \<rho>' x))"
+  definition "(\<rho>::'a f\<rightharpoonup> 'b) < \<rho>' = (\<rho> \<noteq> \<rho>' \<and> \<rho> \<le> \<rho>')"
+
+  lemma fmap_less_eqI[intro]:
+    assumes assm1: "fdom \<rho> \<subseteq> fdom \<rho>'"
+      and assm2:  "\<And> x. \<lbrakk> x \<in> fdom \<rho> ; x \<in> fdom \<rho>'  \<rbrakk> \<Longrightarrow> \<rho> f! x = \<rho>' f! x "
+     shows "\<rho> \<le> \<rho>'"
+   unfolding less_eq_fmap_def
+   apply rule
+   apply fact
+   apply rule+
+   apply (frule subsetD[OF `_ \<subseteq> _`])
+   apply (frule  assm2)
+   apply (auto iff: fdomIff)
+   done
   
+  lemma fmap_less_eqD:
+    assumes "\<rho> \<le> \<rho>'"
+    assumes "x \<in> fdom \<rho>"
+    shows "lookup \<rho> x = lookup \<rho>' x"
+    using assms
+    unfolding less_eq_fmap_def by auto
+  
+  lemma fmap_antisym: assumes  "(x:: 'a f\<rightharpoonup> 'b) \<le> y" and "y \<le> x" shows "x = y "
+  proof(rule fmap_eqI[rule_format])
+      show "fdom x = fdom y" using `x \<le> y` and `y \<le> x` unfolding less_eq_fmap_def by auto
+      
+      fix v
+      assume "v \<in> fdom x"
+      hence "v \<in> fdom y" using `fdom _ = _` by simp
+  
+      thus "x f! v = y f! v"
+        using `x \<le> y` `v \<in> fdom x` unfolding less_eq_fmap_def by simp
+    qed
+  
+  lemma fmap_trans: assumes  "(x:: 'a f\<rightharpoonup> 'b) \<le> y" and "y \<le> z" shows "x \<le> z"
+  proof
+    show "fdom x \<subseteq> fdom z" using `x \<le> y` and `y \<le> z` unfolding less_eq_fmap_def
+      by -(rule order_trans [of _ "fdom y"], auto)
+    
+    fix v
+    assume "v \<in> fdom x" and "v \<in> fdom z"
+    hence "v \<in> fdom y" using `x \<le> y`  unfolding less_eq_fmap_def by auto
+    hence "lookup y v = lookup x v"
+      using `x \<le> y` `v \<in> fdom x` unfolding less_eq_fmap_def by auto
+    moreover
+    have "lookup y v = lookup z v"
+      by (rule fmap_less_eqD[OF `y \<le> z`  `v \<in> fdom y`])
+    ultimately
+    show "x f! v = z f! v" by auto
+  qed
+  
+  instance
+    apply default
+    using fmap_antisym apply (auto simp add: less_fmap_def)[1]
+    apply (auto simp add: less_eq_fmap_def)[1]
+    using fmap_trans apply assumption
+    using fmap_antisym apply assumption
+    done
+end
+
+lemma fmap_less_fdom:
+  "\<rho>1 \<le> \<rho>2 \<Longrightarrow> fdom \<rho>1 \<subseteq> fdom \<rho>2"
+  by (metis less_eq_fmap_def)
+
+lemma fmap_less_restrict:
+  "\<rho>1 \<le> \<rho>2 \<longleftrightarrow> \<rho>1 = fmap_restr (fdom \<rho>1) \<rho>2"
+  unfolding less_eq_fmap_def
+  apply transfer
+  apply (auto simp add:restrict_map_def split:option.split_asm)
+  by (metis option.simps(3))+
+
+lemma fmap_less_to_eq_restrict:
+  "\<rho>1 \<le> \<rho>2 \<Longrightarrow> S \<subseteq> fdom \<rho>1 \<Longrightarrow> fmap_restr S \<rho>1 = fmap_restr S \<rho>2"
+  by (metis finite_fdom fmap_less_restrict fmap_restr_fmap_restr_subset)
+  
+lemma fmap_restr_less:
+  "fmap_restr S \<rho> \<le> \<rho>"
+  unfolding less_eq_fmap_def
+  by (transfer, auto)
+
+lemma less_fmap_expand:
+  "finite S \<Longrightarrow> fdom \<rho> \<subseteq> S \<Longrightarrow> \<rho> \<le> fmap_expand \<rho> S"
+  unfolding less_eq_fmap_def
+  by (transfer, auto)
+
+lemma adm_less_fmap [simp]:
+  "[|cont (\<lambda>x. u x); cont (\<lambda>x. v x)|] ==> adm (\<lambda>x. u x \<le> ((v x)::'a::type f\<rightharpoonup> 'b::pcpo))"
+  apply (subst fmap_less_restrict)
+  apply (intro adm_lemmas fdom_adm2, assumption+)
+  apply (rule contI)
+  apply (subst chain_fdom(1)[OF ch2ch_cont[of u]], assumption+)
+  apply (subst cont2contlubE[of u], assumption+)
+  apply (subst chain_fdom(2)[OF ch2ch_cont[of u]], assumption+)
+  apply (rule contE)
+  apply auto
+  done
+
+lemma fmap_bottom_less[simp]:
+  "finite S2 \<Longrightarrow> S1 \<subseteq> S2 \<Longrightarrow> fmap_bottom S1 \<le> fmap_bottom S2"
+  apply (subgoal_tac "finite S1")
+  apply (rule fmap_less_eqI)
+  apply simp
+  apply simp
+  by (rule rev_finite_subset)
+
+lemma fmap_upd_less[simp, intro]:
+  "\<rho>1 \<le> \<rho>2 \<Longrightarrow> v1 = v2 \<Longrightarrow> \<rho>1(x f\<mapsto> v1) \<le> \<rho>2(x f\<mapsto> v2)"
+  apply (rule fmap_less_eqI)
+  apply (auto dest: fmap_less_fdom)[1]
+  apply (case_tac "xa = x")
+  apply (auto dest: fmap_less_eqD)
+  done
+
+lemma fmap_update_less[simp, intro]:
+  "\<rho>1 \<le> \<rho>1' \<Longrightarrow> \<rho>2 \<le> \<rho>2' \<Longrightarrow>  (fdom \<rho>2' - fdom \<rho>2) \<inter> fdom \<rho>1 = {} \<Longrightarrow> \<rho>1 f++ \<rho>2 \<le> \<rho>1' f++ \<rho>2'"
+  apply (rule fmap_less_eqI)
+  apply (auto dest: fmap_less_fdom)[1]
+  apply (case_tac "x \<in> fdom \<rho>2")
+  apply (auto dest: fmap_less_eqD fmap_less_fdom)
+  apply (metis fmap_less_eqD fmap_less_fdom lookup_fmap_add1 set_mp)
+  by (metis Diff_iff Diff_triv fmap_less_eqD lookup_fmap_add2)
+
+lemma fmap_restr_le:
+  assumes "\<rho>1 \<le> \<rho>2"
+  assumes "S1 \<subseteq> S2"
+  assumes [simp]:"finite S2"
+  shows "fmap_restr S1 \<rho>1 \<le> fmap_restr S2 \<rho>2"
+proof-
+  have [simp]: "finite S1"
+    by (rule finite_subset[OF `S1 \<subseteq> S2` `finite S2`])
+  show ?thesis
+  proof (rule fmap_less_eqI)
+    have "fdom \<rho>1 \<subseteq> fdom \<rho>2"
+      by (metis assms(1) less_eq_fmap_def)
+    thus "fdom (fmap_restr S1 \<rho>1) \<subseteq> fdom (fmap_restr S2 \<rho>2)"
+      using `S1 \<subseteq> S2`
+      by auto
+  next
+    fix x
+    assume "x \<in> fdom (fmap_restr S1 \<rho>1) "
+    hence [simp]:"x \<in> fdom \<rho>1" and [simp]:"x \<in> S1" and [simp]: "x \<in> S2"
+      by (auto intro: set_mp[OF `S1 \<subseteq> S2`])
+    have "\<rho>1 f! x = \<rho>2 f! x"
+      by (metis `x \<in> fdom \<rho>1` assms(1) less_eq_fmap_def)
+    thus "(fmap_restr S1 \<rho>1) f! x = (fmap_restr S2 \<rho>2) f! x"
+      by simp
+  qed
+qed
+  
+
 end
