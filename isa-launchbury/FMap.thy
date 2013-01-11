@@ -310,31 +310,6 @@ lemma fmap_restr_less:
   unfolding less_eq_fmap_def
   by (transfer, auto)
 
-lemma less_fmap_expand:
-  "finite S \<Longrightarrow> fdom \<rho> \<subseteq> S \<Longrightarrow> \<rho> \<le> fmap_expand \<rho> S"
-  unfolding less_eq_fmap_def
-  by (transfer, auto)
-
-lemma adm_less_fmap [simp]:
-  "[|cont (\<lambda>x. u x); cont (\<lambda>x. v x)|] ==> adm (\<lambda>x. u x \<le> ((v x)::'a::type f\<rightharpoonup> 'b::pcpo))"
-  apply (subst fmap_less_restrict)
-  apply (intro adm_lemmas fdom_adm2, assumption+)
-  apply (rule contI)
-  apply (subst chain_fdom(1)[OF ch2ch_cont[of u]], assumption+)
-  apply (subst cont2contlubE[of u], assumption+)
-  apply (subst chain_fdom(2)[OF ch2ch_cont[of u]], assumption+)
-  apply (rule contE)
-  apply auto
-  done
-
-lemma fmap_bottom_less[simp]:
-  "finite S2 \<Longrightarrow> S1 \<subseteq> S2 \<Longrightarrow> fmap_bottom S1 \<le> fmap_bottom S2"
-  apply (subgoal_tac "finite S1")
-  apply (rule fmap_less_eqI)
-  apply simp
-  apply simp
-  by (rule rev_finite_subset)
-
 lemma fmap_upd_less[simp, intro]:
   "\<rho>1 \<le> \<rho>2 \<Longrightarrow> v1 = v2 \<Longrightarrow> \<rho>1(x f\<mapsto> v1) \<le> \<rho>2(x f\<mapsto> v2)"
   apply (rule fmap_less_eqI)
