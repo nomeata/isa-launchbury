@@ -2,24 +2,7 @@ theory HSem
   imports "HeapToEnv" "DistinctVars-Nominal" "HOLCF-Fix-Join-Nominal" "FMap-Utils"
 begin
 
-subsubsection {* Auxillary lemmas connecting @{theory "HOLCF-Fix-Join"} and @{theory FMap}. *}
-
-lemma fdom_fix_on:
-  assumes "fix_on_cond S b F"
-  shows  "fdom (fix_on' b F) = fdom b"
-proof-
-  have "fix_on' b F \<in> S"
-    by (rule fix_on_there[OF assms])
-  hence "b \<sqsubseteq> fix_on' b F"
-    by (metis assms bottom_of_subpcpo_bot_minimal fix_on_cond.simps subpcpo_is_subpcpo_bot)
-  thus ?thesis
-    by (metis fmap_below_dom)
-qed
-
-lemma sharp_star_Env': "atom ` heapVars \<Gamma> \<sharp>* (\<rho> :: 'var::{cont_pt,at_base} f\<rightharpoonup> 'value::{pure_cpo,Nonempty_Meet_cpo,pcpo}) \<longleftrightarrow> heapVars \<Gamma> \<inter> fdom \<rho> = {}"
-  by(induct \<Gamma>, auto simp add: fresh_star_def sharp_Env)
-
-subsubsection {* A locale abstract in the expression semantics *}
+subsubsection {* A locale for heap semantics, abstract in the expression semantics *}
 
 text {*
 The following theory about semantics of heap is abstract in the type and semantics of expressions.

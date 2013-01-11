@@ -2,9 +2,12 @@ theory HSemUpd
   imports "HeapToEnv" "DistinctVars-Nominal"  "HOLCF-Fix-Join-Nominal" "FMap-Utils"
 begin
 
+subsubsection {* A locale for heap semantics, abstract in the expression semantics *}
 
-lemma sharp_star_Env': "atom ` heapVars \<Gamma> \<sharp>* (\<rho> :: 'var::{cont_pt,at_base} f\<rightharpoonup> 'value::{pure_cpo,Nonempty_Meet_cpo,pcpo}) \<longleftrightarrow> heapVars \<Gamma> \<inter> fdom \<rho> = {}"
-  by(induct \<Gamma>, auto simp add: fresh_star_def sharp_Env)
+text {*
+This theory follows closely the theory @{text HSem}, but uses right-sided updates of envrionments
+instead of least upper bounds. 
+*}
 
 locale has_ESem =
   fixes ESem :: "'exp::pt \<Rightarrow> 'var::{cont_pt,at_base} f\<rightharpoonup> 'value \<Rightarrow> 'value::{pure_cpo,Nonempty_Meet_cpo,pcpo}" ("\<lbrakk> _ \<rbrakk>\<^bsub>_\<^esub>"  [60,60] 60)
@@ -34,6 +37,8 @@ lemma fix_on_cond_HSem':
   apply (rule contE[OF fmap_add_cont2cont[OF cont_const cont2cont_heapToEnv[OF assms]] chain_on_is_chain])
     apply assumption+
   done
+
+subsubsection {* Continuity *}
 
 lemma HSem_monofun'':
   assumes cont: "\<And> e. e \<in> snd ` set h \<Longrightarrow> cont (ESem e)"
@@ -67,9 +72,7 @@ proof-
            by metis
     qed
 qed
-
 end
-
 
 locale has_cont_ESem = has_ESem +
   assumes ESem_cont: "\<And> e. cont (ESem e)"
@@ -83,6 +86,9 @@ begin
     shows "fix_on_cond {x. fmap_bottom (fdom \<rho> \<union> heapVars h) \<sqsubseteq> x}
             (fmap_bottom (fdom \<rho> \<union> heapVars h)) (\<lambda>\<rho>'. \<rho> f++ heapToEnv h (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
     apply (rule fix_on_cond_HSem') using ESem_cont by metis
+
+
+subsubsection {* Induction and other lemmas about @{term HSem} *}
 
   lemma HSem_ind:
     assumes "adm P"
@@ -197,6 +203,8 @@ begin
 
   lemma HSem_Nil[simp]: "\<lbrace>[]\<rbrace>\<rho> = \<rho>"
     by (subst HSem_eq, simp)
+
+subsubsection {* Iterative definition of the heap semantics *}
 
   lemma iterative_HSem:
     assumes "x \<notin> heapVars \<Gamma>"

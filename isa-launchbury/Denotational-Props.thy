@@ -875,7 +875,7 @@ proof(rule below_antisym)
   qed
 qed
 
-subsubsection {* The semantics of let only add new bindings *}
+subsubsection {* The semantics of let only adds new bindings *}
 
 text {*
 The following lemma is not as general as possible and specialized to @{text "\<rho> = fempty"}, as that is

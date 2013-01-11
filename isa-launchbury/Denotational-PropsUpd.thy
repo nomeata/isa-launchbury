@@ -2,6 +2,8 @@ theory "Denotational-PropsUpd"
   imports "DenotationalUpd"
 begin
 
+subsubsection {* Continuity of the semantics *}
+
 lemma ESem_cont':"Y0 = Y 0 \<Longrightarrow> chain Y \<Longrightarrow> range (\<lambda>i. \<lbrakk> e \<rbrakk>\<^bsub>Y i\<^esub>) <<| \<lbrakk> e \<rbrakk>\<^bsub>(\<Squnion> i. Y i)\<^esub> " and
   "\<And>e. e \<in> snd ` set (asToHeap as) \<Longrightarrow> cont (ESem e)"
 proof(nominal_induct e and as avoiding: Y0  arbitrary: Y rule:exp_assn.strong_induct)
@@ -67,6 +69,8 @@ lemmas ESem_cont2cont[simp,cont2cont] = cont_compose[OF ESem_cont]
 abbreviation HSem_syn ("\<lbrace>_\<rbrace>_"  [60,60] 60) where "\<lbrace>\<Gamma>\<rbrace>\<rho> \<equiv> HSem \<Gamma> \<rho>"
 
 abbreviation HSem_fempty  ("\<lbrace>_\<rbrace>"  [60] 60) where "\<lbrace>\<Gamma>\<rbrace> \<equiv> \<lbrace>\<Gamma>\<rbrace>fempty"
+
+subsubsection {* Denotation of Substitution *}
 
 lemma ESem_subst: "x \<noteq> y \<Longrightarrow> atom x \<sharp> \<rho> \<Longrightarrow>  \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> \<lbrakk>Var y\<rbrakk>\<^bsub>\<rho>\<^esub>)\<^esub> = \<lbrakk> e[x::= y] \<rbrakk>\<^bsub>\<rho>\<^esub>"
   and 
@@ -187,6 +191,8 @@ case (ANil \<rho> x y) thus ?case by auto
 next
 case(ACons var exp as \<rho> x y)  thus ?case by auto
 qed
+
+subsubsection {* The semantics ignores fresh variables *}
 
 lemma ESem_ignores_fresh:
   "\<rho>1 \<le> \<rho>2 \<Longrightarrow> atom ` (fdom \<rho>2 - fdom \<rho>1) \<sharp>* e \<Longrightarrow> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>1\<^esub> = \<lbrakk>e\<rbrakk>\<^bsub>\<rho>2\<^esub>"
@@ -316,6 +322,7 @@ case (ACons x e as \<rho>1 \<rho>2)
   show ?case by simp
 qed
 
+subsubsection {* Binding more variables increases knowledge *}
 
 lemma HSem_subset_below:
   assumes fresh: "atom ` heapVars \<Gamma> \<sharp>* (\<Delta>, \<rho>)" 
@@ -369,6 +376,8 @@ case (goal3 x)
     qed
   qed
 qed
+
+subsubsection {* Additional, fresh bindings in one or two steps *}
 
 lemma HSem_merge:
   assumes distinct1: "distinctVars (\<Delta> @ \<Gamma>)"
@@ -468,6 +477,8 @@ proof(rule below_antisym)
   qed
 qed
 
+subsubsection {* The semantics of let only adds new bindings *}
+
 lemma HSem_less:
   assumes distinct1: "distinctVars (\<Delta> @ \<Gamma>)"
   assumes fresh: "atom ` heapVars \<Gamma> \<sharp>* (\<Delta>, \<rho>)"
@@ -483,5 +494,4 @@ proof-
   finally
   show ?thesis.
 qed
-
 end

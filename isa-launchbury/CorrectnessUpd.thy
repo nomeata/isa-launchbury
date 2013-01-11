@@ -2,6 +2,10 @@ theory CorrectnessUpd
 imports "Denotational-PropsUpd" "Launchbury"
 begin
 
+text {*
+This is the main correctness theorem, Theorem 2 from \cite{launchbury}.
+*}
+
 theorem correctness:
   assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
   and     "distinctVars \<Gamma>"
