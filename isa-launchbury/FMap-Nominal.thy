@@ -198,6 +198,9 @@ lemma fempty_supp[simp]: "supp fempty = {}"
 lemma fempty_fresh[simp]: "a \<sharp> fempty"
   by (simp add: fresh_def)
 
+lemma fempty_fresh_star[simp]: "a \<sharp>* fempty"
+  by (simp add: fresh_star_def)
+
 lemma fdom_perm: "fdom (\<pi> \<bullet> f) = \<pi> \<bullet> (fdom f)"
   apply transfer by (rule dom_perm)
 lemmas fdom_perm_rev[simp,eqvt] = fdom_perm[symmetric]

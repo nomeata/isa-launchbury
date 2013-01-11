@@ -1051,6 +1051,33 @@ lemma fmap_update_less[simp, intro]:
   apply (metis fmap_less_eqD fmap_less_fdom lookup_fmap_add1 set_mp)
   by (metis Diff_iff Diff_triv fmap_less_eqD lookup_fmap_add2)
 
+lemma fmap_restr_le:
+  assumes "\<rho>1 \<le> \<rho>2"
+  assumes "S1 \<subseteq> S2"
+  assumes [simp]:"finite S2"
+  shows "fmap_restr S1 \<rho>1 \<le> fmap_restr S2 \<rho>2"
+proof-
+  have [simp]: "finite S1"
+    by (rule finite_subset[OF `S1 \<subseteq> S2` `finite S2`])
+  show ?thesis
+  proof (rule fmap_less_eqI)
+    have "fdom \<rho>1 \<subseteq> fdom \<rho>2"
+      by (metis assms(1) less_eq_fmap_def)
+    thus "fdom (fmap_restr S1 \<rho>1) \<subseteq> fdom (fmap_restr S2 \<rho>2)"
+      using `S1 \<subseteq> S2`
+      by auto
+  next
+    fix x
+    assume "x \<in> fdom (fmap_restr S1 \<rho>1) "
+    hence [simp]:"x \<in> fdom \<rho>1" and [simp]:"x \<in> S1" and [simp]: "x \<in> S2"
+      by (auto intro: set_mp[OF `S1 \<subseteq> S2`])
+    have "the (lookup \<rho>1 x) = the (lookup \<rho>2 x)"
+      by (metis `x \<in> fdom \<rho>1` assms(1) less_eq_fmap_def)
+    thus "the (lookup (fmap_restr S1 \<rho>1) x) = the (lookup (fmap_restr S2 \<rho>2) x)"
+      by simp
+  qed
+qed
+
 subsubsection {* A setup for defining a fixed point of finite maps iteratively *}
 
 lemma fdom_fix_on:

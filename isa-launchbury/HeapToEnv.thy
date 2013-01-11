@@ -4,6 +4,8 @@ begin
 
 default_sort type
 
+subsubsection {* Conversion from heaps to environments *} 
+
 function heapToEnv :: "('var \<times> 'exp) list \<Rightarrow> ('exp \<Rightarrow> 'value) \<Rightarrow> 'var f\<rightharpoonup> 'value"
 where
   "heapToEnv [] _ = fempty"
@@ -108,6 +110,8 @@ lemma heapToEnv_mono:
    apply simp
    apply (metis the_lookup_fmap_upd_other[symmetric])
    done
+
+subsubsection {* Reordering lemmas *}
 
 lemma heapToEnv_reorder_head:
   assumes "x \<noteq> y"

@@ -4,6 +4,7 @@ begin
 
 default_sort cpo
 
+subsubsection {* Variables are discretely ordered *}
 
 instantiation var :: discrete_cpo
 begin
@@ -13,6 +14,7 @@ end
 
 instance var :: cont_pt  by default auto
 
+subsubsection {* The semantic domain for values and environments *}
 
 domain Value = Fn (lazy "Value \<rightarrow> Value")
 

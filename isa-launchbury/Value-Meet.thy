@@ -2,6 +2,7 @@ theory "Value-Meet"
   imports "HOLCF-Join"  "Denotational-Common"
 begin
 
+subsubsection {* The binary meet of two values *}
 
 fixrec value_meet :: "Value \<rightarrow> Value \<rightarrow> Value"
   where "value_meet\<cdot>(Fn\<cdot>f)\<cdot>(Fn\<cdot>g) = Fn\<cdot>(\<Lambda> x. value_meet\<cdot>(f\<cdot>x)\<cdot>(g\<cdot>x))"

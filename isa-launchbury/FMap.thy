@@ -15,6 +15,9 @@ lift_definition fran :: "'key f\<rightharpoonup> 'value \<Rightarrow> 'value set
 
 lift_definition lookup :: "'key f\<rightharpoonup> 'value \<Rightarrow> 'key \<Rightarrow> 'value option" is "(\<lambda> x. x)" ..
 
+abbreviation the_lookup (infix "f!" 55)
+  where "m f! x \<equiv> the (lookup m x)"
+
 lift_definition fempty :: "'key f\<rightharpoonup> 'value" is Map.empty by simp
 
 lemma fempty_fdom[simp]: "fdom fempty = {}"

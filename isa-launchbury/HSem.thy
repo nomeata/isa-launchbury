@@ -2,6 +2,8 @@ theory HSem
   imports "HeapToEnv" "DistinctVars-Nominal" "HOLCF-Set" "HOLCF-Down-Closed" "HOLCF-Fix-Join"
 begin
 
+subsubsection {* Auxillary lemmas connecting @{theory "HOLCF-Fix-Join"} and @{theory FMap}. *}
+
 lemma fdom_fix_on:
   assumes "fix_on_cond S b F"
   shows  "fdom (fix_on' b F) = fdom b"
@@ -14,18 +16,38 @@ proof-
     by (metis fmap_below_dom)
 qed
 
-
 lemma sharp_star_Env': "atom ` heapVars \<Gamma> \<sharp>* (\<rho> :: 'var::{cont_pt,at_base} f\<rightharpoonup> 'value::{pure_cpo,Nonempty_Meet_cpo,pcpo}) \<longleftrightarrow> heapVars \<Gamma> \<inter> fdom \<rho> = {}"
   by(induct \<Gamma>, auto simp add: fresh_star_def sharp_Env)
+
+subsubsection {* A locale abstract in the expression semantics *}
+
+text {*
+The following theory about semantics of heap is abstract in the type and semantics of expressions.
+Also, care is taken that lemmas required to prove continuity of the heap semantics are provideded
+before requiring continuity of the expression semantics.
+*}
 
 locale has_ESem =
   fixes ESem :: "'exp::pt \<Rightarrow> 'var::{cont_pt,at_base} f\<rightharpoonup> 'value \<Rightarrow> 'value::{pure_cpo,Nonempty_Meet_cpo,pcpo}"
 begin
 
+text {*
+This definition captures the notion of compatible heaps and envirnoments, i.e. those heaps where,
+in the course of calculating the semantics, all joins exist.
+*}
+
 abbreviation HSem_cond' :: "('var \<times> 'exp) list \<Rightarrow> 'var f\<rightharpoonup> 'value \<Rightarrow> bool"
   where "HSem_cond' h \<rho> \<equiv>
       fix_join_cond (fmap_expand \<rho> (fdom \<rho> \<union> heapVars h)) 
                         (\<lambda> \<rho>' . fmap_expand (heapToEnv h (\<lambda>e. ESem e \<rho>')) (fdom \<rho> \<union> heapVars h))"
+
+text {*
+The following definition is in fact just
+\[
+@{text "\<lbrace>h\<rbrace>\<rho> = \<rho>'. \<rho> \<squnion> heapToEnv h (\<lbrakk>-\<rbrakk>\<^bsub>\<rho>'\<^esub>)"}
+\]
+with addiditional book-keeping for domain of the map and the condition that all joins exist.
+*}
 
 definition HSem :: "('var \<times> 'exp) list \<Rightarrow> 'var f\<rightharpoonup> 'value \<Rightarrow> 'var f\<rightharpoonup> 'value"
   where
@@ -35,6 +57,10 @@ definition HSem :: "('var \<times> 'exp) list \<Rightarrow> 'var f\<rightharpoon
       (\<lambda> \<rho>'. fmap_expand \<rho> (fdom \<rho> \<union> heapVars h) \<squnion> fmap_expand (heapToEnv h (\<lambda> e. ESem e \<rho>')) (fdom \<rho> \<union> heapVars h))
     else (fmap_expand \<rho> (fdom \<rho> \<union> heapVars h)))"
 
+text {*
+Given the predcondition hold, we can unfold the definition directly.
+*}
+
 lemma HSem_def': "HSem_cond' \<Gamma> \<rho> \<Longrightarrow>
   HSem \<Gamma> \<rho> = fix_on (fix_join_compat (fmap_expand \<rho> (fdom \<rho> \<union> heapVars \<Gamma>)) (\<lambda>\<rho>'. fmap_expand (heapToEnv \<Gamma> (\<lambda>e. ESem e \<rho>')) (fdom \<rho> \<union> heapVars \<Gamma>)))
            (\<lambda>\<rho>'. fmap_expand \<rho> (fdom \<rho> \<union> heapVars \<Gamma>) \<squnion> fmap_expand (heapToEnv \<Gamma> (\<lambda>e. ESem e \<rho>')) (fdom \<rho> \<union> heapVars \<Gamma>))
@@ -42,46 +68,7 @@ lemma HSem_def': "HSem_cond' \<Gamma> \<rho> \<Longrightarrow>
   unfolding  HSem_def
   by (subst if_P, auto)
 
-
-(* More special version first, just to check proof *)
-lemma fix_join_cont':
-  fixes F :: "'a::pcpo \<Rightarrow> 'a"
-  assumes "chain Y"
-  assumes "cont F"
-  assumes "\<And> y::'a. cont (\<lambda>x. y \<squnion> x)"
-  assumes "\<And> y::'a. cont (\<lambda>x. x \<squnion> y)"
-  shows "(\<mu> x. (\<Squnion>i. Y i) \<squnion> F x) \<sqsubseteq> (\<Squnion> i. (\<mu> x. Y i \<squnion> F x))"
-  apply (rule Fix.fix_least_below)
-  apply (subst beta_cfun[OF cont_compose[OF assms(3) assms(2)]])
-  apply (subst cont2contlubE[OF assms(2)])
-  apply (rule ch2ch_cont[OF _ `chain Y`])
-  apply (rule cont_compose[OF cont_Rep_cfun2 cont2cont_LAM]) 
-  apply (rule cont_compose[OF assms(3) assms(2)])
-  apply (rule assms(4))
-  
-  apply (subst cont2contlubE[OF assms(3)])
-  defer
-  apply (subst cont2contlubE[OF assms(4) `chain Y`])
-  apply (subst diag_lub)
-  prefer 3
-  apply (subst Fix.fix_eq) back
-  apply (subst beta_cfun[OF cont_compose[OF assms(3) assms(2)]])
-  apply (rule below_refl)
-  apply (rule ch2ch_cont[OF _ `chain Y`])
-  apply (rule cont_compose[OF assms(3)])
-  apply (rule cont_compose[OF `cont F`])
-  apply (rule cont_compose[OF cont_Rep_cfun2 cont2cont_LAM]) 
-  apply (rule cont_compose[OF assms(3) assms(2)])
-  apply fact
-  apply (rule ch2ch_cont[OF _ `chain Y`])
-  apply fact
-  apply (rule ch2ch_cont[OF _ `chain Y`])
-  apply (rule cont_compose[OF `cont F`])
-  apply (rule cont_compose[OF cont_Rep_cfun2 cont2cont_LAM]) 
-  apply (rule cont_compose[OF assms(3) assms(2)])
-  apply fact
-  done
-
+subsubsection {* Continutiy of the heap semantics *}
 
 lemma HSem_monofun'':
   assumes cont: "\<And> e. e \<in> snd ` set h \<Longrightarrow> cont (ESem e)"
@@ -126,6 +113,7 @@ proof-
     by (simp add: cont2contlubE[OF fmap_expand_cont `chain Y`])
 qed
 
+subsubsection {* On compatibility of finite maps *}
 
 lemma compatible_fmap_is_compatible: "compatible_fmap m1 m2 \<Longrightarrow> fdom m1 = fdom m2 \<Longrightarrow> compatible m1 m2"
   apply (rule compatibleI[of _ "fmap_join m1 m2"])
@@ -213,7 +201,6 @@ case False
   thus ?thesis by (metis fdomIff join_self fdom_compatible[OF assms] fdom_join[OF assms])
 qed
 
-
 lemma compatible_expand: "compatible_fmap m1 m2 \<Longrightarrow> compatible (fmap_expand m1 (fdom m1 \<union> fdom m2)) (fmap_expand m2 (fdom m1 \<union> fdom m2))"
   apply (rule compatible_fmap_is_compatible)
   apply (erule compatible_fmap_expand)
@@ -252,6 +239,8 @@ lemma fmap_join_is_join_expand:
   apply (erule join_is_fmap_join[symmetric, OF compatible_expand])
   done
 
+subsubsection {* Disjoint heaps and environments are compatible and derived lemmas *}
+
 lemma disjoint_is_HSem_cond':
   "fdom \<rho> \<inter> heapVars h = {} \<Longrightarrow> (\<forall> e \<in> snd`set h. cont (ESem e)) \<Longrightarrow> HSem_cond' h \<rho>"
   apply (rule fix_join_condI)
@@ -264,9 +253,7 @@ lemma disjoint_is_HSem_cond':
   apply auto
   done
 
-lemma HSem_cond'_cont:
-  "HSem_cond' h \<rho> \<Longrightarrow> cont (\<lambda>x. fmap_expand (heapToEnv h (\<lambda>e. ESem e x)) (fdom \<rho> \<union> heapVars h))"
-  by (rule cont_F_fjc)
+subsubsection {* Inductions over the heap semantics *}
 
 lemma HSem_ind':
   assumes "HSem_cond' h \<rho>"
@@ -394,18 +381,19 @@ lemma the_lookup_HSem_heap:
   apply (subst lookupHeapToEnv[OF assms(2)])
   by (simp)
 
-lemma compatible_fmap_bottom[simp]:
-  "fdom x = y \<Longrightarrow> compatible x (fmap_bottom y)"
-  by (metis below.r_refl compatibleI to_bot_fmap_def to_bot_minimal)
+lemma HSem_refines:
+  assumes "HSem_cond' h \<rho>"
+  shows "fmap_expand \<rho> (fdom \<rho> \<union> heapVars h) \<sqsubseteq> HSem h \<rho>"
+  apply (subst HSem_eq[OF assms(1)])
+  apply (rule join_above1[OF rho_F_compat_fjc[OF assms HSem_there[OF assms]]])
+done
 
 lemma HSem_compatible[simp]:
   "compatible (fmap_expand \<rho> (fdom \<rho> \<union> heapVars \<Gamma>)) (HSem \<Gamma> \<rho>)"
-  unfolding HSem_def
   apply (cases "HSem_cond' \<Gamma> \<rho>")
-  apply (simp)
-  apply (rule compat_fjc)
-  apply (erule rho_fjc)
-  apply (erule fix_on_there[OF fix_on_cond_fjc])
+  apply (drule HSem_refines)
+  apply (metis below.r_refl ub_implies_compatible)
+  unfolding HSem_def
   apply simp
   done
   
@@ -423,13 +411,7 @@ lemma fdom_HSem[simp]:
   apply simp+
   done
 
-lemma HSem_refines:
-  assumes "HSem_cond' h \<rho>"
-  shows "fmap_expand \<rho> (fdom \<rho> \<union> heapVars h) \<sqsubseteq> HSem h \<rho>"
-  apply (subst HSem_eq[OF assms(1)])
-  apply (rule join_above1[OF rho_F_compat_fjc[OF assms HSem_there[OF assms]]])
-done
-
+subsubsection {* Equivariance of @{theory "HOLCF-Set"} definitions (to be moved to theory of its own) *}
 
 lemma subcpo_eqvt[eqvt]:
   fixes S :: "('a::cont_pt) set"
@@ -553,8 +535,6 @@ proof(rule below_antisym)
     by (metis eqvt_bound perm_cont_simp to_bot_minimal unrelated)
 qed
 
-
-
 lemma fix_join_cond_eqvt[eqvt]:
   shows "fix_join_cond \<rho> (F::'a::{subpcpo_partition,cont_pt} \<Rightarrow> 'a) \<Longrightarrow> fix_join_cond (\<pi> \<bullet> \<rho>) (\<pi> \<bullet> F)"
   apply (erule fix_join_cond.induct)
@@ -602,6 +582,7 @@ lemma fdom_fix_join_compat:
   shows "fdom \<rho>' = fdom \<rho>"
   by (metis assms(2) bottom_of_fjc fmap_below_dom subpcpo.bottom_of_minimal subpcpo_fjc to_bot_minimal)
 
+subsubsection {* Adding a fresh variable to a heap does not affect its semantics *} 
 
 lemma HSem_add_fresh:
   assumes cond1: "HSem_cond' \<Gamma> \<rho>"
@@ -715,6 +696,8 @@ proof-
     done
 qed
 
+subsubsection {* Reordering lemmas for HSem *}
+
 lemma HSem_reorder:
   assumes "distinctVars \<Gamma>"
   assumes "distinctVars \<Delta>"
@@ -743,6 +726,7 @@ proof-
     by simp
 qed  
 
+subsubsection {* Substitution *}
 
 lemma HSem_subst_exp:
   assumes cond1: "HSem_cond' ((x, e) # \<Gamma>) \<rho>"
@@ -759,6 +743,7 @@ lemma HSem_subst_exp:
   apply simp
   done
 
+subsubsection {* Refinement relations *}
 
 lemma HSem_refines_lookup: "HSem_cond' \<Gamma> \<rho> \<Longrightarrow> x \<in> fdom \<rho> \<Longrightarrow> the (lookup \<rho> x) \<sqsubseteq> the (lookup (HSem \<Gamma> \<rho>) x)"
   apply (drule HSem_refines)
@@ -771,7 +756,6 @@ lemma HSem_heap_below: "HSem_cond' \<Gamma> \<rho> \<Longrightarrow> x \<in> hea
   apply (rule join_above2)
   apply (rule the_lookup_HSem_both_compatible, assumption+)
   done
-
 
 lemma fmap_restr_HSem_noop:
   assumes "heapVars \<Gamma> \<inter> fdom \<rho> = {}"
@@ -790,6 +774,14 @@ lemma HSem_disjoint_less:
 by (metis fdom_HSem fmap_less_restrict fmap_restr_HSem_noop sup_ge1)
 
 end
+
+subsubsection {* Requiring continuity of the expression semantics *}
+
+text {*
+The lemmas above ought to be sufficient to prove continuity of the expression semantics. Hence, we
+extend the locale by assuming this for alle expressions, and repeat some of the lemmas above, discharing
+their more specific assumptions.
+*}
 
 locale has_cont_ESem = has_ESem +
   assumes ESem_cont: "\<And> e. cont (ESem e)"
@@ -838,6 +830,14 @@ begin
     apply auto
     by (metis below.r_refl is_joinI to_bot_fmap_def to_bot_minimal)
 
+  lemma HSem_mono:
+    assumes "HSem_cond' \<Gamma> \<rho>1"
+    assumes "HSem_cond' \<Gamma> \<rho>2"
+    assumes "\<rho>1 \<sqsubseteq> \<rho>2"
+    shows "HSem \<Gamma> \<rho>1 \<sqsubseteq> HSem \<Gamma> \<rho>2"
+    by(rule HSem_monofun''[OF ESem_cont assms])
+
+subsubsection {* Re-calculating the semantics of the heap is idempotent *} 
 
   lemma HSem_redo:
     assumes "HSem_cond' (\<Gamma> @ \<Delta>) \<rho>"
@@ -894,13 +894,8 @@ begin
       qed
     qed
   qed
-  
-  lemma HSem_mono:
-    assumes "HSem_cond' \<Gamma> \<rho>1"
-    assumes "HSem_cond' \<Gamma> \<rho>2"
-    assumes "\<rho>1 \<sqsubseteq> \<rho>2"
-    shows "HSem \<Gamma> \<rho>1 \<sqsubseteq> HSem \<Gamma> \<rho>2"
-    by(rule HSem_monofun''[OF ESem_cont assms])
+
+subsubsection {* The heap semantics can also be define inductively over the heap *}  
 
   lemma iterative_HSem:
     assumes "HSem_cond' ((x, e) # \<Gamma>) \<rho>"
@@ -1126,6 +1121,7 @@ begin
       by (rule R_there[unfolded fjc_iff, unfolded bottom_of_fjc])
   qed
   
+  subsubsection {* Substitution *}
   
   lemma HSem_subst_expr_below:
     assumes cond1: "HSem_cond' ((x, e1) # \<Gamma>) \<rho>"
@@ -1159,9 +1155,9 @@ begin
     assumes below2: "ESem e2 (HSem ((x, e1) # \<Gamma>) \<rho>) \<sqsubseteq> ESem e1 (HSem ((x, e1) # \<Gamma>) \<rho>)"
     shows "HSem ((x, e1) # \<Gamma>) \<rho> = HSem ((x, e2) # \<Gamma>) \<rho>"
     by (metis assms HSem_subst_expr_below below_antisym)
-
 end
 
+subsubsection {* Equivariance of @{term HSem} *}
 
 lemma HSem_cond'_cong[fundef_cong]:
   "\<lbrakk> (\<And> e. e \<in> snd ` set heap2 \<Longrightarrow> ESem1 e = ESem2 e) ; env1 = env2 ; heap1 = heap2  \<rbrakk>
