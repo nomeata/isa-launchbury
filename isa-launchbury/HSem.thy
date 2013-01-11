@@ -96,132 +96,6 @@ proof-
     by (simp add: cont2contlubE[OF fmap_expand_cont `chain Y`])
 qed
 
-subsubsection {* On compatibility of finite maps *}
-
-lemma compatible_fmap_is_compatible: "compatible_fmap m1 m2 \<Longrightarrow> fdom m1 = fdom m2 \<Longrightarrow> compatible m1 m2"
-  apply (rule compatibleI[of _ "fmap_join m1 m2"])
-  apply (erule (1) fmap_join_below1)
-  apply (erule (1) fmap_join_below2)
-  apply (erule (3) fmap_join_least)
-  done
-
-lemma compatible_is_compatible_fmap: assumes "compatible m1 m2" shows "compatible_fmap m1 m2"
-proof (rule compatible_fmapI, rule compatibleI)
-case (goal1 x)
-  show "m1 f! x \<sqsubseteq> (m1 \<squnion> m2) f! x"
-    by (rule fmap_belowE[OF join_above1[OF assms]])
-next
-case (goal2 x)
-  show "m2 f! x \<sqsubseteq> (m1 \<squnion> m2) f! x"
-    by (rule fmap_belowE[OF join_above2[OF assms]])
-next
-case (goal3 x a)
-  have "m1 \<sqsubseteq> fmap_upd (m1 \<squnion> m2) x a"
-    apply (rule fmap_belowI)
-    apply (simp)[1]
-    apply (metis "HOLCF-Join.join_above1" assms fmap_below_dom goal3(1) insert_absorb)
-    apply (case_tac "xa = x")
-    apply (auto simp add: goal3)
-    by (rule fmap_belowE[OF join_above1[OF assms]])
-  moreover
-  have "m2 \<sqsubseteq> fmap_upd (m1 \<squnion> m2) x a"
-    apply (rule fmap_belowI)
-    apply (simp)[1]
-    apply (metis "HOLCF-Join.join_above2" assms below_fmap_def goal3(2) insert_absorb)
-    apply (case_tac "xa = x")
-    apply (auto simp add: goal3)
-    by (rule fmap_belowE[OF join_above2[OF assms]])
-  ultimately
-  have "m1 \<squnion> m2 \<sqsubseteq> fmap_upd (m1 \<squnion> m2) x a"
-    by (rule join_below[OF assms])
-  moreover
-  have "fmap_upd (m1 \<squnion> m2) x a f! x = a" by simp
-  ultimately  
-  show "(m1 \<squnion> m2) f! x \<sqsubseteq> a" by (metis fmap_belowE)
-qed
-
-lemma fdom_compatible[simp]:
-  "compatible m1 (m2::'a::type f\<rightharpoonup> 'b::pcpo) \<Longrightarrow> fdom m1 = fdom m2"
-by (metis join_above1 join_above2 fmap_below_dom)
-
-lemma fdom_join[simp]:
-  "compatible m1 (m2::'a::type f\<rightharpoonup> 'b::pcpo) \<Longrightarrow> fdom (m1 \<squnion> m2) = fdom m1"
-  by (metis join_above1 fmap_below_dom)
-
-lemma join_is_fmap_join:
-  assumes "compatible m1 (m2::'a::type f\<rightharpoonup> 'b::pcpo)"
-  shows "m1 \<squnion> m2 = fmap_join m1 m2"
-  apply (rule is_joinI)
-  apply (rule fmap_join_below1[OF compatible_is_compatible_fmap[OF assms] fdom_compatible[OF assms]])
-  apply (rule fmap_join_below2[OF compatible_is_compatible_fmap[OF assms] fdom_compatible[OF assms]])
-  apply (erule (1) fmap_join_least[OF compatible_is_compatible_fmap[OF assms] fdom_compatible[OF assms]])
-  done
-
-lemma the_lookup_compatible:
-  assumes "compatible m1 (m2::'a::type f\<rightharpoonup> 'b::pcpo)"
-  shows "compatible (m1 f! x) (m2 f! x)"
-proof(cases "x \<in> fdom m1")
-case True hence "x \<in> fdom m2" by (metis fdom_compatible[OF assms])
-  thus ?thesis
-    by (metis Int_iff True compatible_fmap_def' compatible_is_compatible_fmap[OF assms])
-next
-case False
-  thus ?thesis
-    by (metis assms compatible_refl fdomIff fdom_compatible)
-qed
-
-lemma the_lookup_join:
-  assumes "compatible m1 (m2::'a::type f\<rightharpoonup> 'b::pcpo)"
-  shows "(m1 \<squnion> m2) f! x = (m1 f! x) \<squnion> (m2 f! x)"
-proof(cases "x \<in> fdom m1")
-case True hence "x \<in> fdom m2" by (metis fdom_compatible[OF assms])
-  show ?thesis
-  apply (subst join_is_fmap_join[OF assms])
-  apply (rule lookup_fmap_join1[OF compatible_is_compatible_fmap[OF assms]])
-  by fact+
-next
-case False
-  thus ?thesis by (metis fdomIff join_self fdom_compatible[OF assms] fdom_join[OF assms])
-qed
-
-lemma compatible_expand: "compatible_fmap m1 m2 \<Longrightarrow> compatible (fmap_expand m1 (fdom m1 \<union> fdom m2)) (fmap_expand m2 (fdom m1 \<union> fdom m2))"
-  apply (rule compatible_fmap_is_compatible)
-  apply (erule compatible_fmap_expand)
-  apply simp
-  done
-
-lemma fmap_join_expand: "compatible_fmap m1 m2 \<Longrightarrow> fmap_join m1 m2 = (fmap_join (fmap_expand m1 (fdom m1 \<union> fdom m2)) (fmap_expand m2 (fdom m1 \<union> fdom m2)))"
-  apply (rule fmap_eqI)
-  apply simp
-  apply simp
-  apply (erule disjE)
-  apply (case_tac "x \<in> fdom m2")
-  apply (simp add: compatible_is_compatible_fmap[OF compatible_expand])
-  apply (simp add: compatible_is_compatible_fmap[OF compatible_expand])
-  apply (case_tac "x \<in> fdom m1")
-  apply (simp add: compatible_is_compatible_fmap[OF compatible_expand])
-  apply (simp add: compatible_is_compatible_fmap[OF compatible_expand])
-  done
-
-lemma fmap_restr_compatible: "finite S \<Longrightarrow> compatible m1 (m2\<Colon>'a::type f\<rightharpoonup> 'b::pcpo) \<Longrightarrow> compatible (fmap_restr S m1) (fmap_restr S m2)"
-  apply (rule compatible_fmap_is_compatible)
-  apply (rule compatible_fmapI)
-  apply (auto elim: the_lookup_compatible)
-  done
-
-lemma fmap_restr_join: "finite S \<Longrightarrow> compatible m1 (m2\<Colon>'a::type f\<rightharpoonup> 'b::pcpo) \<Longrightarrow> fmap_restr S (m1 \<squnion> m2) = fmap_restr S m1 \<squnion> fmap_restr S m2"
-  apply (frule (1) fmap_restr_compatible)
-  apply (rule fmap_eqI)
-  apply simp
-  apply (simp add: the_lookup_join)
-  done
-
-lemma fmap_join_is_join_expand:
-  "compatible_fmap m1 (m2::'a f\<rightharpoonup> 'b::pcpo) \<Longrightarrow> fmap_join m1 m2 = fmap_expand m1 (fdom m1 \<union> fdom m2) \<squnion> fmap_expand m2 (fdom m1 \<union> fdom m2)"
-  apply (subst fmap_join_expand, assumption)
-  apply (erule join_is_fmap_join[symmetric, OF compatible_expand])
-  done
-
 subsubsection {* Disjoint heaps and environments are compatible and derived lemmas *}
 
 lemma disjoint_is_HSem_cond':
@@ -229,7 +103,7 @@ lemma disjoint_is_HSem_cond':
   apply (rule fix_join_condI)
   apply (rule cont_compose[OF fmap_expand_cont cont2cont_heapToEnv])
   apply (metis)
-  apply (rule compatible_fmap_is_compatible[OF compatible_fmapI])
+  apply (rule compatible_fmapI)
   apply (case_tac "x \<in> fdom \<rho>")
   apply simp
   apply (subst lookup_fmap_expand2)

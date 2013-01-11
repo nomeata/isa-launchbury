@@ -99,7 +99,7 @@ lemma compatible_insert:
   and "x \<notin> fdom \<rho>2"
   and compat: "compatible \<rho>1 (fmap_expand \<rho>2 (fdom \<rho>1))"  
   shows "compatible (\<rho>1(x f\<mapsto> y)) (fmap_expand \<rho>2 S)"
-proof(rule compatible_fmap_is_compatible[OF compatible_fmapI])
+proof(rule compatible_fmapI)
 case (goal1 z)
   show ?case
   apply(cases "z = x")
@@ -111,62 +111,6 @@ next
 case goal2 with assms(1) show ?case by simp
 qed
     
-
-lemma fmap_upd_join:
-  assumes "S = insert x (fdom \<rho>1)"
-  and "x \<notin> fdom \<rho>1"
-  and "x \<notin> fdom \<rho>2"
-  and compat1: "compatible (\<rho>1(x f\<mapsto> y)) (fmap_expand \<rho>2 S)"
-  shows "(\<rho>1(x f\<mapsto> y)) \<squnion> (fmap_expand \<rho>2 S) = (\<rho>1 \<squnion> (fmap_expand \<rho>2 (S - {x})))(x f\<mapsto> y)" (is "?L = ?R")
-proof(rule fmap_eqI)
-  have "finite S" using assms(1) by auto
-
-  have *: "\<And> xa . xa \<in> S \<Longrightarrow> xa \<noteq> x \<Longrightarrow> fmap_expand \<rho>2 (S - {x}) f! xa = fmap_expand \<rho>2 S f! xa"
-    using `finite S` by (case_tac "xa \<in> fdom \<rho>2", auto)
-
-  have compat2: "compatible \<rho>1 (fmap_expand \<rho>2 (S - {x}))"
-    apply (rule compatible_fmap_is_compatible)
-    apply (rule compatible_fmapI)
-    using compat1
-    apply -
-    apply (drule_tac x = xa in compatible_fmapE[OF compatible_is_compatible_fmap])
-    apply auto[1]
-    using assms(1) apply auto[1]
-    apply (subst *)
-    using assms(1) apply simp
-    apply (metis assms(2))
-
-    apply (subst (asm) the_lookup_fmap_upd_other)
-    apply (metis `x \<notin> fdom \<rho>1`)
-    apply assumption
-    using assms(2) assms(1)
-    by auto
-
-  show "fdom ?L = fdom ?R"
-    using compat1 compat2 by auto
-  fix y
-  assume "y \<in> fdom ?L"
-  hence "y \<in> S" by (metis assms(1) compat1 fdom_join fmap_upd_fdom)
-  show "?L f! y = ?R f! y"
-  proof(cases "y = x")
-    case True
-    thus ?thesis
-      apply (subst the_lookup_join[OF compat1])
-      apply (subst lookup_fmap_expand2[OF `finite S` `y\<in> S`])
-      using `x \<notin> fdom \<rho>2` compat2  `y\<in> S`
-      by auto
-  next
-    case False
-    thus ?thesis
-      apply simp
-      apply (subst the_lookup_join[OF compat1], auto)
-      apply (subst the_lookup_join[OF compat2])
-      apply (case_tac "y \<in> fdom \<rho>2")
-      using `finite S`  `y \<in> S`
-      by auto
-  qed
-qed
-
 subsubsection {* Denotation of Substitution *}
 
 lemma ESem_subst: "x \<noteq> y \<Longrightarrow> atom x \<sharp> \<rho> \<Longrightarrow>  \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> \<lbrakk>Var y\<rbrakk>\<^bsub>\<rho>\<^esub>)\<^esub> = \<lbrakk> e[x::= y] \<rbrakk>\<^bsub>\<rho>\<^esub>"
@@ -348,7 +292,7 @@ lemma fmap_expand_compatible:
   assumes [simp]: "finite S"
   assumes compat:"compatible \<rho>1 \<rho>2"
   shows "compatible (fmap_expand \<rho>1 S) (fmap_expand \<rho>2 S)"
-  apply (rule compatible_fmap_is_compatible[OF compatible_fmapI])
+  apply (rule compatible_fmapI)
   apply (case_tac "x \<in> fdom \<rho>1")
   apply (auto simp add: fdom_compatible[OF compat] intro: the_lookup_compatible[OF compat])
   done
@@ -1062,5 +1006,4 @@ case goal1
   thus ?case
     by (rule subst[where s = "insert q Q", standard, rotated], auto)
 qed
-
 end

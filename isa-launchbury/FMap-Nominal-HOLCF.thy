@@ -109,38 +109,6 @@ lemma fmap_expand_eqvt[eqvt]:
   "\<pi> \<bullet> fmap_expand (m :: 'a::{pt} f\<rightharpoonup> 'b::{cont_pt,pcpo}) S = fmap_expand (\<pi> \<bullet> m) (\<pi> \<bullet> S)"
   by (transfer, perm_simp, rule refl)
 
-lemma compatible_eqvt[eqvt]:
-  "compatible (x::'a::cont_pt) y \<Longrightarrow> compatible (\<pi> \<bullet> x) (\<pi> \<bullet> y)"
-  unfolding compatible_def
-  by (metis empty_eqvt insert_eqvt perm_is_lub_simp)
-
-lemma compatible_fmap_eqvt[eqvt]:
-  "compatible_fmap m1 (m2 :: 'a::pt f\<rightharpoonup> 'b::{cont_pt,pcpo}) \<Longrightarrow> compatible_fmap (\<pi> \<bullet> m1) (\<pi> \<bullet> m2)"
-  unfolding compatible_fmap_def'
-  apply (rule permute_under_ball[of \<pi>])
-  apply rule
-  apply (simp add: inter_eqvt)
-  apply (erule_tac x = z in ballE)
-  apply (simp only: the_lookup_eqvt[symmetric] compatible_eqvt)
-  apply auto
-  done
-
-lemma join_eqvt[simp,eqvt]:
-  "\<pi> \<bullet> join (x::'a::{cont_pt}) y = join (\<pi> \<bullet> x) (\<pi> \<bullet> y)"
-proof (cases "\<exists> z. {x, y} <<| z")
-case False
-  hence "\<not> (\<exists> z. {\<pi> \<bullet> x, \<pi> \<bullet> y} <<| z)" by (metis perm_is_lub_simp empty_eqvt insert_eqvt eqvt_bound)
-  thus ?thesis using False unfolding join_def by auto
-next
-case True
-  hence "\<exists> z. {\<pi> \<bullet> x, \<pi> \<bullet> y} <<| z" by (metis perm_is_lub_simp empty_eqvt insert_eqvt)
-  thus ?thesis using True unfolding join_def by (auto simp add: empty_eqvt insert_eqvt)
-qed
-
-lemma fmap_join_eqvt[eqvt]:
-  "\<pi> \<bullet> fmap_join m1 (m2 :: 'a::{pt} f\<rightharpoonup> 'b::{cont_pt, pcpo}) = fmap_join (\<pi> \<bullet> m1) (\<pi> \<bullet> m2)"
-  by (transfer, perm_simp, rule refl)
-
 subsubsection {* Freshness of @{term fmap_bottom} *}
 
 lemma fresh_fmap_bottom_set[simp]:

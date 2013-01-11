@@ -1,8 +1,8 @@
 theory "HOLCF-Set-Nominal"
-imports "HOLCF-Set" "Nominal-HOLCF"
+imports "HOLCF-Set" "HOLCF-Join" "Nominal-HOLCF"
 begin
 
-subsubsection {* Equivariance of @{theory "HOLCF-Set"} definitions (to be moved to theory of its own) *}
+subsubsection {* Equivariance of @{theory "HOLCF-Set"} and @{theory "HOLCF-Join"} definitions *}
 
 lemma subcpo_eqvt[eqvt]:
   fixes S :: "('a::cont_pt) set"
@@ -19,7 +19,6 @@ proof(rule subcpoI)
   ultimately
   have "(\<Squnion> i. (- \<pi> \<bullet> Y) i) \<in> S" by (metis subcpo.cpo[OF assms])
   hence "\<pi> \<bullet> (\<Squnion> i. (- \<pi> \<bullet> Y) i) \<in> \<pi> \<bullet> S"  by (metis mem_permute_iff)
-  find_theorems permute cont
   thus "(\<Squnion> i. Y i) \<in> \<pi> \<bullet> S"
     apply -
     apply (subst (asm) cont2contlubE[OF perm_cont `chain (-\<pi> \<bullet> Y)`])
@@ -126,5 +125,21 @@ proof(rule below_antisym)
     by (metis eqvt_bound perm_cont_simp to_bot_minimal unrelated)
 qed
 
+lemma compatible_eqvt[eqvt]:
+  "compatible (x::'a::cont_pt) y \<Longrightarrow> compatible (\<pi> \<bullet> x) (\<pi> \<bullet> y)"
+  unfolding compatible_def
+  by (metis empty_eqvt insert_eqvt perm_is_lub_simp)
+
+lemma join_eqvt[simp,eqvt]:
+  "\<pi> \<bullet> ((x::'a::{cont_pt}) \<squnion> y) = (\<pi> \<bullet> x) \<squnion> (\<pi> \<bullet> y)"
+proof (cases "\<exists> z. {x, y} <<| z")
+case False
+  hence "\<not> (\<exists> z. {\<pi> \<bullet> x, \<pi> \<bullet> y} <<| z)" by (metis perm_is_lub_simp empty_eqvt insert_eqvt eqvt_bound)
+  thus ?thesis using False unfolding cpo_class.join_def by auto
+next
+case True
+  hence "\<exists> z. {\<pi> \<bullet> x, \<pi> \<bullet> y} <<| z" by (metis perm_is_lub_simp empty_eqvt insert_eqvt)
+  thus ?thesis using True unfolding cpo_class.join_def by (auto simp add: empty_eqvt insert_eqvt)
+qed
 end
 

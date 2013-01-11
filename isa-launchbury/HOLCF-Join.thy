@@ -1,6 +1,5 @@
 theory "HOLCF-Join"
-imports 
-  "HOLCF"
+imports "HOLCF"
 begin
 
 subsubsection {* Binary Joins and compatibility *}
@@ -37,7 +36,14 @@ proof-
   thus ?thesis unfolding join_def by (metis lub_eqI)
 qed
 
-lemma compatible_sym: "compatible x y ==> compatible y x"
+lemma is_join_and_compatible:
+  assumes "x \<sqsubseteq> z"
+  assumes "y \<sqsubseteq> z"
+  assumes "\<And> a. \<lbrakk> x \<sqsubseteq> a ; y \<sqsubseteq> a \<rbrakk> \<Longrightarrow> z \<sqsubseteq> a"
+  shows "compatible x y \<and> x \<squnion> y = z"
+by (metis compatibleI is_joinI assms)
+
+lemma compatible_sym: "compatible x y \<Longrightarrow> compatible y x"
   unfolding compatible_def by (metis insert_commute)
 
 lemma compatible_sym_iff: "compatible x y \<longleftrightarrow> compatible y x"
