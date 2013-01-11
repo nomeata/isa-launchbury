@@ -77,5 +77,4 @@ proof-
   }
   thus "heapVars \<Delta> \<inter> heapVars \<Gamma> = {}" by auto
 qed
-
 end

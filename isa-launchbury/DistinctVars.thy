@@ -137,5 +137,4 @@ lemma distinctVars_set_delete_insert:
 lemma the_map_of_snd:
   "x\<in> heapVars \<Gamma> \<Longrightarrow> the (map_of \<Gamma> x) \<in> snd ` set \<Gamma>"
 by (induct \<Gamma>, auto)
-
 end

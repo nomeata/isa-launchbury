@@ -188,6 +188,4 @@ lemma fresh_star_set_subset:
 
 lemma fresh_star_fun_eqvt_app: "eqvt f \<Longrightarrow> a \<sharp>* x \<Longrightarrow> a \<sharp>* f x "
   by (metis fresh_star_def fresh_fun_eqvt_app)
-
-
 end
