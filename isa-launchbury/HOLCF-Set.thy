@@ -12,31 +12,29 @@ subsubsection {* Sets forming (pointed) chain-complete partial orders *}
 
 locale subcpo =
   fixes S :: "'a set"
-  assumes cpo': "(\<forall>Y. (chain Y \<longrightarrow> (\<forall> i. Y i \<in> S) \<longrightarrow> (\<Squnion> i. Y i) \<in> S))"
+  assumes cpo: "(\<forall>Y. (chain Y \<longrightarrow> (\<forall> i. Y i \<in> S) \<longrightarrow> (\<Squnion> i. Y i) \<in> S))"
 
 lemma subcpoI:
   assumes "\<And> Y. \<lbrakk> chain Y; \<And> i. Y i \<in> S \<rbrakk> \<Longrightarrow> (\<Squnion> i. Y i) \<in> S"
   shows "subcpo S"
 unfolding subcpo_def by (metis assms)
 
-locale subpcpo =
-  fixes S :: "'a set"
-  assumes pcpo: "(\<forall>Y. (chain Y \<longrightarrow> (\<forall> i. Y i \<in> S) \<longrightarrow> (\<Squnion> i. Y i) \<in> S))
-          \<and>  (\<exists> z \<in> S. \<forall> y \<in> S. z \<sqsubseteq> y)"
+locale subpcpo = subcpo + 
+  assumes bottom_exists: "\<exists> z \<in> S. \<forall> y \<in> S. z \<sqsubseteq> y"
 
 lemma subpcpoI:
   assumes "\<And> Y. \<lbrakk> chain Y; \<And> i. Y i \<in> S \<rbrakk> \<Longrightarrow> (\<Squnion> i. Y i) \<in> S"
   assumes "b \<in> S"
   assumes "\<And> y. y \<in> S \<Longrightarrow> b \<sqsubseteq> y"
   shows "subpcpo S"
-unfolding subpcpo_def by (metis assms)
+by (unfold_locales)(metis assms(1), metis assms(2,3))
 
 lemma subpcpoI2:
   assumes "subcpo S"
   assumes "b \<in> S"
   assumes "\<And> y. y \<in> S \<Longrightarrow> b \<sqsubseteq> y"
   shows "subpcpo S"
-unfolding subpcpo_def by (metis subcpo_def assms)
+by (unfold_locales)(metis subcpo_def assms(1), metis assms(2,3))
 
 subsubsection {* Definitions *}
 
@@ -271,7 +269,7 @@ begin
 lemma shows bottom_of_there[simp]: "bottom_of \<in> S"
       and bottom_of_minimal[simp]: "\<And> x. x \<in> S \<Longrightarrow> bottom_of \<sqsubseteq> x"
 proof-
-  from pcpo obtain y where y: "y \<in> S \<and> (\<forall> x \<in> S. y \<sqsubseteq> x)" unfolding subpcpo_def by auto
+  from bottom_exists obtain y where y: "y \<in> S \<and> (\<forall> x \<in> S. y \<sqsubseteq> x)" by auto
   hence "bottom_of \<in> S \<and> (\<forall>y \<in> S. bottom_of \<sqsubseteq> y)"
     unfolding bottom_of_def
     by (rule theI[where a = y], metis y po_eq_conv)
@@ -306,10 +304,9 @@ lemma closed_is_chain_on: "closed_on F \<Longrightarrow> monofun_on F \<Longrigh
   apply (erule closed_onE[OF iterate_closed_on bottom_of_there])
   done
 
-
 lemma chain_on_lub_on:
   "chain_on Y \<Longrightarrow> (\<Squnion> i. Y i) \<in> S"
-  unfolding chain_on_def by (metis chain_def pcpo)
+  unfolding chain_on_def by (metis chain_def cpo)
 
 lemma cont_onI2:
   fixes f :: "'a::cpo => 'b::cpo"
@@ -423,7 +420,7 @@ subsubsection {* Admissibility of various definitions from this theory *}
 
 lemma subcpo_mem_adm:
   "subcpo S \<Longrightarrow> adm (\<lambda> x. x \<in> S)"
-  by (rule admI, metis subcpo.cpo')
+  by (rule admI, metis subcpo.cpo)
 
 lemma adm_closed_on:
   assumes "subpcpo S"
@@ -432,7 +429,7 @@ proof (rule admI[rule_format], rule closed_onI)
   case (goal1 Y x)
     have "chain (\<lambda> i. Y i x)"  by (rule ch2ch_fun[OF `chain Y`])
     with  closed_onE[OF goal1(2) `x\<in>S`]
-    have "(\<Squnion> i. Y i x) \<in> S" by (metis subpcpo.pcpo[OF assms])
+    have "(\<Squnion> i. Y i x) \<in> S" by (metis assms subcpo.cpo subpcpo_is_subcpo)
     thus ?case by (metis lub_fun[OF `chain Y`])
 qed
 
@@ -468,8 +465,12 @@ case (goal2 Y Z)
   show "(\<Squnion> i. Y i) (\<Squnion> j. Z j) \<sqsubseteq> (\<Squnion> j. (\<Squnion> i. Y i) (Z j))" by simp
 qed
 
-
 subsubsection {* A locale with an explicit bottom element *}
+
+text {*
+This is only a notational convenience to assert the pcpo-property and the bottom element
+in one step.
+*}
 
 locale subpcpo_bot = subpcpo S for S +
   fixes b
@@ -550,7 +551,7 @@ proof(rule subpcpo_botI)
   hence "chain (\<lambda> i. g (Y i))"
     by (metis ch2ch_cont[OF `cont g`])
   ultimately
-  have "(\<Squnion> i. g (Y i)) \<in> S" by (metis pcpo)
+  have "(\<Squnion> i. g (Y i)) \<in> S" by (metis cpo)
   hence "f (\<Squnion> i. g (Y i)) \<in> f` S" by (rule imageI)
   hence "(\<Squnion> i. f (g (Y i))) \<in> f` S" by (metis cont2contlubE[OF `cont f` `chain (\<lambda>i. g (Y i))` ])
   thus "(\<Squnion> i. Y i) \<in> f` S" by (metis "*" cut lub_eq)
@@ -582,7 +583,7 @@ proof(rule subpcpoI)
   hence "\<And> i. fst (Y i) \<in> S1" and  "\<And> i. snd (Y i) \<in> S2"
     by (metis mem_Sigma_iff surjective_pairing)+
   ultimately
-  have "(\<Squnion> i. fst (Y i)) \<in> S1" and "(\<Squnion> i. snd (Y i)) \<in> S2" using pcpo s2.pcpo by auto
+  have "(\<Squnion> i. fst (Y i)) \<in> S1" and "(\<Squnion> i. snd (Y i)) \<in> S2" using cpo s2.cpo by auto
   thus "(\<Squnion> i. Y i) \<in> S1 \<times> S2" by (auto simp add: lub_prod[OF `chain Y`])
   next
   show "(bottom_of S1, bottom_of S2) \<in> S1 \<times> S2" by simp
@@ -635,7 +636,7 @@ proof(rule subpcpo_botI)
   assume "\<And> i. Y i \<in> S1 \<inter> S2"
   hence "\<And> i. Y i \<in> S1" and  "\<And> i. Y i \<in> S2" by auto
   ultimately
-  have "(\<Squnion> i. Y i) \<in> S1" and "(\<Squnion> i. Y i) \<in> S2" using pcpo s2.cpo' by auto
+  have "(\<Squnion> i. Y i) \<in> S1" and "(\<Squnion> i. Y i) \<in> S2" using cpo s2.cpo by auto
   thus "(\<Squnion> i. Y i) \<in> S1 \<inter> S2" by auto
   next
   show "b1 \<in> S1 \<inter> S2" by (auto simp add: bot_in_2 bottom_of_subpcpo_bot_there[OF assms(1)])

@@ -17,7 +17,7 @@ proof(rule subcpoI)
   hence "\<And> i. - \<pi> \<bullet> Y i \<in> S" by (metis (full_types) mem_permute_iff permute_minus_cancel(1))
   hence "\<And> i. (- \<pi> \<bullet> Y) i \<in> S" by (metis eqvt_apply permute_pure)
   ultimately
-  have "(\<Squnion> i. (- \<pi> \<bullet> Y) i) \<in> S" by (metis subcpo.cpo'[OF assms])
+  have "(\<Squnion> i. (- \<pi> \<bullet> Y) i) \<in> S" by (metis subcpo.cpo[OF assms])
   hence "\<pi> \<bullet> (\<Squnion> i. (- \<pi> \<bullet> Y) i) \<in> \<pi> \<bullet> S"  by (metis mem_permute_iff)
   find_theorems permute cont
   thus "(\<Squnion> i. Y i) \<in> \<pi> \<bullet> S"
@@ -31,7 +31,7 @@ lemma subpcpo_bot_eqvt[eqvt]:
   assumes "subpcpo_bot S b"
   shows "subpcpo_bot (\<pi> \<bullet> S) (\<pi> \<bullet> b)"
   apply (rule subpcpo_botI)
-  apply (metis subcpo.cpo'[OF subcpo_eqvt[OF subpcpo_is_subcpo[OF subpcpo_bot_is_subpcpo[OF assms]]]])
+  apply (metis subcpo.cpo[OF subcpo_eqvt[OF subpcpo_is_subcpo[OF subpcpo_bot_is_subpcpo[OF assms]]]])
   apply (metis bottom_of_subpcpo_bot_there[OF assms] mem_permute_iff)
   apply (metis (full_types) bottom_of_subpcpo_bot_minimal[OF assms] eqvt_bound mem_permute_iff perm_cont_simp)
   done

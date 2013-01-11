@@ -22,7 +22,7 @@ lemma subpcpo_fjc: "subpcpo (fix_join_compat \<rho> F)"
 
 lemma subpcpo_bot_fjc: "subpcpo_bot (fix_join_compat \<rho> F) (to_bot \<rho>)"
   apply (rule subpcpo_botI)
-  apply (metis subcpo.cpo' subcpo_fjc)
+  apply (metis subcpo.cpo subcpo_fjc)
   apply (auto)
   by (metis to_bot_fix_on to_bot_minimal unrelated)
 
