@@ -31,7 +31,7 @@ lemma heapToEnv_cong[fundef_cong]:
 
 lemma lookupHeapToEnv:
   assumes "v \<in> heapVars h"
-  shows "the (lookup (heapToEnv h f) v) = f (the (map_of h v))"
+  shows "(heapToEnv h f) f! v = f (the (map_of h v))"
   using assms
   apply (induct h)
   apply simp
@@ -41,25 +41,25 @@ lemma lookupHeapToEnv:
 
 lemma lookupHeapToEnvE:
   assumes "v \<in> heapVars h"
-  obtains e where "(v, e) \<in> set h" and "\<And> f. the (lookup (heapToEnv h f) v) = f e"
+  obtains e where "(v, e) \<in> set h" and "\<And> f. (heapToEnv h f) f! v = f e"
 proof(rule that)
   show "(v, (the (map_of h v))) \<in> set h"
     by (metis assms domD dom_map_of_conv_heapVars map_of_is_SomeD the.simps)
   fix f
-  show "the (lookup (heapToEnv h f) v) = f (the (map_of h v))"
+  show "(heapToEnv h f) f! v = f (the (map_of h v))"
     by (rule lookupHeapToEnv[OF assms])
 qed
 
 lemma lookupHeapToEnvE2:
   assumes "v \<in> heapVars h"
-  obtains e where "(v, e) \<in> set h" and "\<And> f. the (lookup (heapToEnv h f) v) = f e" and "\<And> f. the (lookup (heapToEnv (h@h') f) v) = f e"
+  obtains e where "(v, e) \<in> set h" and "\<And> f. (heapToEnv h f) f! v = f e" and "\<And> f. heapToEnv (h@h') f f! v = f e"
 proof(rule that)
   show "(v, (the (map_of h v))) \<in> set h"
     by (metis assms domD dom_map_of_conv_heapVars map_of_is_SomeD the.simps)
   fix f
-  show "the (lookup (heapToEnv h f) v) = f (the (map_of h v))"
+  show "heapToEnv h f f! v = f (the (map_of h v))"
     by (rule lookupHeapToEnv[OF assms])
-  show "the (lookup (heapToEnv (h @ h') f) v) = f (the (map_of h v))"
+  show "heapToEnv (h @ h') f f! v = f (the (map_of h v))"
     apply (subst lookupHeapToEnv)
     using assms apply (auto simp add: map_add_dom_app_simps)
     done
@@ -67,12 +67,12 @@ qed
 
 lemma lookupHeapToEnvNotCons[simp]:
   assumes "x \<noteq> y"
-  shows "the (lookup (heapToEnv ((y,e)#h) f) x) = the (lookup (heapToEnv h f) x)"
+  shows "heapToEnv ((y,e)#h) f f! x = heapToEnv h f f! x"
   using assms by simp
 
 lemma lookupHeapToEnvNotAppend[simp]:
   assumes "x \<notin> heapVars \<Gamma>"
-  shows "the (lookup (heapToEnv (\<Gamma>@h) f) x) = the (lookup (heapToEnv h f) x)"
+  shows "heapToEnv (\<Gamma>@h) f f! x = heapToEnv h f f! x"
   using assms by (induct \<Gamma>, auto)
 
 lemma heapToEnv_remove_Cons_fmap_restr:

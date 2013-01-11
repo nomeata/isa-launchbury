@@ -23,7 +23,7 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' \<rho>)
     using 1 reds_doesnt_forget[OF distinct_redsD1[OF Application.hyps(9)]]
     by auto
 
-  have [simp]: "the (lookup (\<lbrace>\<Gamma>\<rbrace>\<rho>) x) = the (lookup (\<lbrace>\<Delta>\<rbrace>\<rho>) x)"
+  have [simp]: "\<lbrace>\<Gamma>\<rbrace>\<rho> f! x = \<lbrace>\<Delta>\<rbrace>\<rho> f! x"
   proof(cases "x \<in> heapVars \<Gamma>")
   case True
     thus ?thesis

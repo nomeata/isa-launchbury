@@ -25,14 +25,14 @@ proof(intro contI2 monofunI fmap_belowI)
     using `x \<in> fdom (\<pi> \<bullet> m1)` `x \<in> fdom (\<pi> \<bullet> m2)`
     by (simp add: fdom_perm mem_permute_iff del: fdom_perm_rev)+
 
-  have "the (lookup (\<pi> \<bullet> m1) x) = \<pi> \<bullet> the (lookup m1 x2)"
+  have "(\<pi> \<bullet> m1) f! x = \<pi> \<bullet> (m1 f! x2)"
     by (simp add: the_lookup_eqvt[OF `x2 \<in> fdom m1`]  `x = _`)
-  also have "... \<sqsubseteq> \<pi> \<bullet> the (lookup m2 x2)"
+  also have "... \<sqsubseteq> \<pi> \<bullet> (m2 f! x2)"
     by -(subst perm_cont_simp, rule fmap_belowE[OF `m1 \<sqsubseteq> m2`])
-  also have "... \<sqsubseteq> the (lookup (\<pi> \<bullet> m2) x)"
+  also have "... \<sqsubseteq> (\<pi> \<bullet> m2) f! x"
     using `x = _`
     by (simp add: the_lookup_eqvt[OF `x2 \<in> fdom m2`]  )
-  finally show "the (lookup (\<pi> \<bullet> m1) x) \<sqsubseteq> the (lookup (\<pi> \<bullet> m2) x)".
+  finally show "(\<pi> \<bullet> m1) f! x \<sqsubseteq> (\<pi> \<bullet> m2) f! x".
 
 next
   fix \<pi> Y
@@ -53,22 +53,22 @@ next
   hence "x2 \<in> fdom (Y 0)"
     by (simp add: chain_fdom(2)[OF `chain Y`])
     
-  have "the (lookup (\<pi> \<bullet> (\<Squnion> i. Y i)) x) = \<pi> \<bullet> (the (lookup (\<Squnion> i. Y i) x2))"
+  have "\<pi> \<bullet> (\<Squnion> i. Y i) f! x = \<pi> \<bullet> ((\<Squnion> i. Y i) f! x2)"
     by (simp add: the_lookup_eqvt[OF `x2 \<in> fdom (\<Squnion> i. Y i)`]  `x = _`)
-  also have "... = \<pi> \<bullet> (\<Squnion>i. (the (lookup (Y i) x2)))"
+  also have "... = \<pi> \<bullet> (\<Squnion>i. (Y i f! x2))"
     by (subst lookup_cont[OF `chain Y`], rule refl)
-  also have "... = (\<Squnion>i. \<pi> \<bullet> (the (lookup (Y i) x2)))"
+  also have "... = (\<Squnion>i. \<pi> \<bullet> (Y i f! x2))"
     by (rule cont2contlubE[OF perm_cont, OF lookup_chain[OF `chain Y`]])
-  also have "... = (\<Squnion>i. the (lookup (\<pi> \<bullet> (Y i)) x))"
+  also have "... = (\<Squnion>i. \<pi> \<bullet> Y i f! x)"
     using `x2 \<in> fdom (Y 0)` chain_fdom(1)[OF `chain Y`] `x = _`
     apply (subst the_lookup_eqvt)
     apply auto
     done
-  also have "... = the (lookup (\<Squnion>i. \<pi> \<bullet> (Y i)) x)"
+  also have "... = (\<Squnion>i. \<pi> \<bullet> Y i) f! x"
     by (subst lookup_cont[OF `chain (\<lambda>i. \<pi> \<bullet> Y i)`], rule refl)
   finally
-  have "the (lookup (\<pi> \<bullet> (\<Squnion> i. Y i)) x) = the (lookup (\<Squnion> i. \<pi> \<bullet> Y i) x)" .
-  thus "the (lookup (\<pi> \<bullet> (\<Squnion> i. Y i)) x) \<sqsubseteq> the (lookup (\<Squnion> i. \<pi> \<bullet> Y i) x)" by auto
+  have "\<pi> \<bullet> (\<Squnion> i. Y i) f! x = (\<Squnion> i. \<pi> \<bullet> Y i) f! x" .
+  thus "\<pi> \<bullet> (\<Squnion> i. Y i) f! x \<sqsubseteq> (\<Squnion> i. \<pi> \<bullet> Y i) f! x" by auto
 qed
 
 subsubsection {* Equivariance lemmas *}

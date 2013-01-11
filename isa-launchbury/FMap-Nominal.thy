@@ -185,7 +185,7 @@ lemma lookup_eqvt[eqvt]:
   by (transfer, auto simp add: permute_fun_def)
 
 lemma the_lookup_eqvt:
-  "x \<in> fdom m \<Longrightarrow> \<pi> \<bullet> the (lookup m x) = the (lookup (\<pi> \<bullet> m) (\<pi> \<bullet> x))"
+  "x \<in> fdom m \<Longrightarrow> \<pi> \<bullet> (m f! x) = (\<pi> \<bullet> m) f! (\<pi> \<bullet> x)"
   by (transfer fixing: x, auto simp add: dom_def permute_fun_def)
 
 lemma fempty_eqvt[eqvt, simp]:
@@ -218,11 +218,11 @@ case goal2
   from goal2(2) have "x \<in> \<pi> \<bullet> fdom m \<inter> \<pi> \<bullet> d" by (metis (full_types) fdom_fmap_restr fdom_perm_rev goal1 inter_eqvt)
   then obtain y where "x = \<pi> \<bullet> y" and "y \<in> fdom m \<inter> d" by (auto simp add: permute_set_def)
 
-  have "the (lookup (\<pi> \<bullet> fmap_restr d m) x) = the (lookup (\<pi> \<bullet> fmap_restr d m) (\<pi> \<bullet> y))" by (simp add: `x = _`)
-  also have "... = \<pi> \<bullet> (the (lookup (fmap_restr d m) y))" using `finite d` `y \<in> fdom m \<inter> d` by (metis fdom_fmap_restr the_lookup_eqvt)
-  also have "... = \<pi> \<bullet> (the (lookup m y))" using `y \<in> _` by (simp add: lookup_fmap_restr[OF `finite d`])
-  also have "... = the (lookup (\<pi> \<bullet> m) x)" using `x = _` `y \<in> _` by (simp add: the_lookup_eqvt)
-  also have "... = the (lookup (fmap_restr (\<pi> \<bullet> d) (\<pi> \<bullet> m)) x)" using `x \<in> _ \<inter> _` by (simp add: lookup_fmap_restr[OF `finite (\<pi> \<bullet> d)`])
+  have "(\<pi> \<bullet> fmap_restr d m) f! x = (\<pi> \<bullet> fmap_restr d m) f! (\<pi> \<bullet> y)" by (simp add: `x = _`)
+  also have "... = \<pi> \<bullet> ((fmap_restr d m) f! y)" using `finite d` `y \<in> fdom m \<inter> d` by (metis fdom_fmap_restr the_lookup_eqvt)
+  also have "... = \<pi> \<bullet> (m f! y)" using `y \<in> _` by (simp add: lookup_fmap_restr[OF `finite d`])
+  also have "... = (\<pi> \<bullet> m) f! x" using `x = _` `y \<in> _` by (simp add: the_lookup_eqvt)
+  also have "... = fmap_restr (\<pi> \<bullet> d) (\<pi> \<bullet> m) f! x" using `x \<in> _ \<inter> _` by (simp add: lookup_fmap_restr[OF `finite (\<pi> \<bullet> d)`])
   finally show ?case.
 qed
 

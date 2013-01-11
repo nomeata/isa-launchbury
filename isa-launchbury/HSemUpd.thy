@@ -122,13 +122,13 @@ begin
   
   lemma the_lookup_HSem_other:
     assumes "y \<notin> heapVars h"
-    shows "the (lookup (\<lbrace>h\<rbrace>\<rho>) y) = the (lookup \<rho> y)"
+    shows "(\<lbrace>h\<rbrace>\<rho>) f! y = \<rho> f! y"
     apply (subst HSem_eq)
     using assms by simp
   
   lemma the_lookup_HSem_heap:
     assumes "y \<in> heapVars h"
-    shows "the (lookup (\<lbrace>h\<rbrace>\<rho>) y) = \<lbrakk> the (map_of h y) \<rbrakk>\<^bsub>\<lbrace>h\<rbrace>\<rho>\<^esub>"
+    shows "(\<lbrace>h\<rbrace>\<rho>) f! y = \<lbrakk> the (map_of h y) \<rbrakk>\<^bsub>\<lbrace>h\<rbrace>\<rho>\<^esub>"
     apply (subst HSem_eq)
     using assms by (simp add: lookupHeapToEnv)
 

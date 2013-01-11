@@ -70,7 +70,7 @@ abbreviation HSem_fempty  ("\<lbrace>_\<rbrace>"  [60] 60) where "\<lbrace>\<Gam
 
 lemma ESem_subst: "x \<noteq> y \<Longrightarrow> atom x \<sharp> \<rho> \<Longrightarrow>  \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> \<lbrakk>Var y\<rbrakk>\<^bsub>\<rho>\<^esub>)\<^esub> = \<lbrakk> e[x::= y] \<rbrakk>\<^bsub>\<rho>\<^esub>"
   and 
-  "x \<noteq> y \<Longrightarrow> atom x \<sharp> \<rho> \<Longrightarrow>  heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> the (lookup \<rho> y))\<^esub>)
+  "x \<noteq> y \<Longrightarrow> atom x \<sharp> \<rho> \<Longrightarrow>  heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> \<rho> f! y)\<^esub>)
                     = heapToEnv (asToHeap as[x::a=y]) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>) "
 proof (nominal_induct e and as  avoiding: \<rho> x y rule:exp_assn.strong_induct)
 case (Var var \<rho> x y) thus ?case by auto
@@ -84,41 +84,41 @@ case (Let as exp \<rho> x y)
   hence [simp]:"assn_vars (as[x::a=y]) = assn_vars as" 
      by (induct as rule: assn_vars.induct, auto)
 
-  have lookup_other: "\<And> \<rho> . the (lookup (\<lbrace>asToHeap as[x::a=y]\<rbrace>\<rho>) y) = the (lookup \<rho> y)"
+  have lookup_other: "\<And> \<rho> . (\<lbrace>asToHeap as[x::a=y]\<rbrace>\<rho>) f! y = \<rho> f! y"
     using `y \<notin> assn_vars as`
     by (auto simp add: the_lookup_HSem_other)
 
   have [simp]:"fdom \<rho> \<union> assn_vars as - {x} = fdom \<rho> \<union> assn_vars as"
     using `x \<notin> assn_vars as` `atom x \<sharp> \<rho>` by (auto simp add: sharp_Env)
 
-  have *: "fmap_expand (\<rho>(x f\<mapsto> the (lookup \<rho> y))) (fdom (\<rho>(x f\<mapsto> the (lookup \<rho> y))) \<union> heapVars (asToHeap as))
-        = (fmap_expand \<rho> (fdom \<rho> \<union> heapVars (asToHeap as)))(x f\<mapsto> the (lookup \<rho> y))" (is "_ = ?\<rho>1'(x f\<mapsto> _)")
+  have *: "fmap_expand (\<rho>(x f\<mapsto> \<rho> f! y)) (fdom (\<rho>(x f\<mapsto> \<rho> f! y)) \<union> heapVars (asToHeap as))
+        = (fmap_expand \<rho> (fdom \<rho> \<union> heapVars (asToHeap as)))(x f\<mapsto> \<rho> f! y)" (is "_ = ?\<rho>1'(x f\<mapsto> _)")
     apply (subst fmap_upd_expand)
     apply auto[3]
     done
 
-  let ?b1 = "fmap_bottom (fdom (\<rho>(x f\<mapsto> the (lookup \<rho> y))) \<union> heapVars (asToHeap as))"
+  let ?b1 = "fmap_bottom (fdom (\<rho>(x f\<mapsto> \<rho> f! y)) \<union> heapVars (asToHeap as))"
   let ?b2 = "fmap_bottom (fdom \<rho> \<union> heapVars (asToHeap as[x::a=y]))"
-  let ?\<rho>1 = "\<rho>(x f\<mapsto> the (lookup \<rho> y))"
+  let ?\<rho>1 = "\<rho>(x f\<mapsto> \<rho> f! y)"
   let ?\<rho>2 = \<rho>
   let ?F1 = "\<lambda>\<rho>' . heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)"
   let ?F2 = "\<lambda>\<rho>' . heapToEnv (asToHeap as[x::a=y]) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)"
   let ?L = "fix_on' ?b1 (\<lambda> \<rho>'. ?\<rho>1 f++ ?F1 \<rho>')"
   let ?R = "fix_on' ?b2 (\<lambda> \<rho>'. ?\<rho>2 f++ ?F2 \<rho>')"
 
-  have "\<lbrace>asToHeap as\<rbrace>(\<rho>(x f\<mapsto> the (lookup \<rho> y))) \<sqsubseteq> (\<lbrace>asToHeap (as[x ::a= y])\<rbrace>\<rho>)(x f\<mapsto> the (lookup (\<lbrace>asToHeap (as[x ::a= y])\<rbrace>\<rho>) y))"
-    (is "?L \<sqsubseteq> ?R( x f\<mapsto> the (lookup ?R y))")
+  have "\<lbrace>asToHeap as\<rbrace>(\<rho>(x f\<mapsto> \<rho> f! y)) \<sqsubseteq> (\<lbrace>asToHeap (as[x ::a= y])\<rbrace>\<rho>)(x f\<mapsto> \<lbrace>asToHeap (as[x ::a= y])\<rbrace>\<rho> f! y)"
+    (is "?L \<sqsubseteq> ?R( x f\<mapsto> ?R f! y)")
   proof (rule HSem_ind) back back back
   case goal1 show ?case by simp
   case goal2 show ?case by simp
   case (goal3 \<rho>')
-    have "?\<rho>1 f++ ?F1 \<rho>' = (\<rho> f++ ?F1 \<rho>')(x f\<mapsto> the (lookup \<rho> y))"
+    have "?\<rho>1 f++ ?F1 \<rho>' = (\<rho> f++ ?F1 \<rho>')(x f\<mapsto> \<rho> f! y)"
       apply (rule fmap_add_upd_swap)
       using `x \<notin> assn_vars as` by simp
     also
-    have  "... \<sqsubseteq> (\<rho> f++ ?F2 ?R)( x f\<mapsto> the (lookup \<rho> y))"
+    have  "... \<sqsubseteq> (\<rho> f++ ?F2 ?R)( x f\<mapsto> \<rho> f! y)"
     proof (rule cont2monofunE[OF fmap_upd_cont[OF fmap_add_cont2 cont_const]])
-      have "?F1 \<rho>' \<sqsubseteq> ?F1 (?R( x f\<mapsto> the (lookup ?R y)))"
+      have "?F1 \<rho>' \<sqsubseteq> ?F1 (?R( x f\<mapsto> ?R f! y))"
         by (rule cont2monofunE[OF cont2cont_heapToEnv[OF ESem_cont] goal3(2)])
       also
       have "... = ?F2 ?R"
@@ -128,15 +128,15 @@ case (Let as exp \<rho> x y)
       finally
       show "?F1 \<rho>' \<sqsubseteq> ?F2 ?R".
     qed
-    also have "... = ?R( x f\<mapsto> the (lookup \<rho> y))"
+    also have "... = ?R( x f\<mapsto> \<rho> f! y)"
       by (rule arg_cong[OF HSem_eq[symmetric]])
-    also have "... = ?R( x f\<mapsto> the (lookup ?R y))"
+    also have "... = ?R( x f\<mapsto> ?R f! y)"
       using `y \<notin> assn_vars as` by (simp add: the_lookup_HSem_other)
     finally
-    show "?\<rho>1 f++ ?F1 \<rho>' \<sqsubseteq> ?R( x f\<mapsto> the (lookup ?R y))".
+    show "?\<rho>1 f++ ?F1 \<rho>' \<sqsubseteq> ?R( x f\<mapsto> ?R f! y)".
   qed
   also
-  have "?R (x f\<mapsto> the (lookup ?R y)) \<sqsubseteq> ?L"
+  have "?R (x f\<mapsto> ?R f! y) \<sqsubseteq> ?L"
   proof (rule HSem_ind) back 
   case goal1 show ?case by auto
   case goal2 show ?case
@@ -147,25 +147,25 @@ case (Let as exp \<rho> x y)
     apply (simp add: lookup_not_fdom)
     done
   case (goal3 \<rho>')
-    have "(?\<rho>2 f++ ?F2 \<rho>') (x f\<mapsto> the (lookup (?\<rho>2 f++ ?F2 \<rho>') y)) = (?\<rho>2 f++ ?F2 \<rho>')(x f\<mapsto> the (lookup \<rho> y))"
+    have "(?\<rho>2 f++ ?F2 \<rho>') (x f\<mapsto> (?\<rho>2 f++ ?F2 \<rho>') f! y) = (?\<rho>2 f++ ?F2 \<rho>')(x f\<mapsto> \<rho> f! y)"
       using `y \<notin> assn_vars as` by simp
     also
     have "... = (?\<rho>1 f++ ?F2 \<rho>')"
       apply (rule fmap_add_upd_swap[symmetric])
       using `x \<notin> assn_vars as` by simp
     also
-    have "... = ?\<rho>1 f++ ?F1 (\<rho>'(x f\<mapsto> the (lookup \<rho>' y)))"
+    have "... = ?\<rho>1 f++ ?F1 (\<rho>'(x f\<mapsto> \<rho>' f! y))"
       apply (subst `_ \<Longrightarrow> _ \<Longrightarrow> heapToEnv _ _ = _`[OF `x \<noteq> y` ])
       using `atom x \<sharp> \<rho>` `x \<notin> assn_vars as` goal3(1) apply (simp add: sharp_Env)
       by rule
     also
     have  "... \<sqsubseteq> ?\<rho>1 f++ ?F1 ?L"
-      by (rule cont2monofunE[OF fmap_add_cont2cont[OF cont_const cont2cont_heapToEnv[OF ESem_cont]]  `\<rho>'(x f\<mapsto> the (lookup \<rho>' y)) \<sqsubseteq> ?L`])
+      by (rule cont2monofunE[OF fmap_add_cont2cont[OF cont_const cont2cont_heapToEnv[OF ESem_cont]]  `\<rho>'(x f\<mapsto> \<rho>' f! y) \<sqsubseteq> ?L`])
     also
     have  "... = ?L"
       by (rule HSem_eq[symmetric])
     finally
-    show "(?\<rho>2 f++ ?F2 \<rho>') (x f\<mapsto> the (lookup (?\<rho>2 f++ ?F2 \<rho>') y)) \<sqsubseteq> ?L".
+    show "(?\<rho>2 f++ ?F2 \<rho>') (x f\<mapsto> (?\<rho>2 f++ ?F2 \<rho>') f! y) \<sqsubseteq> ?L".
   qed
   finally
   show ?case
@@ -221,7 +221,7 @@ case (App e x \<rho>1 \<rho>2)
     by (auto simp add: fresh_star_def exp_assn.fresh)
   note hyps = App.hyps[OF App.prems(1) this]
   moreover
-  have "the (lookup \<rho>1 x) = the (lookup \<rho>2 x)"
+  have "\<rho>1 f! x = \<rho>2 f! x"
   proof(cases "x \<in> fdom \<rho>1")
   case True
     show ?thesis

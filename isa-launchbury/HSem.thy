@@ -125,11 +125,11 @@ lemma compatible_fmap_is_compatible: "compatible_fmap m1 m2 \<Longrightarrow> fd
 lemma compatible_is_compatible_fmap: assumes "compatible m1 m2" shows "compatible_fmap m1 m2"
 proof (rule compatible_fmapI, rule compatibleI)
 case (goal1 x)
-  show "the (lookup m1 x) \<sqsubseteq> the (lookup (m1 \<squnion> m2) x)"
+  show "m1 f! x \<sqsubseteq> (m1 \<squnion> m2) f! x"
     by (rule fmap_belowE[OF join_above1[OF assms]])
 next
 case (goal2 x)
-  show "the (lookup m2 x) \<sqsubseteq> the (lookup (m1 \<squnion> m2) x)"
+  show "m2 f! x \<sqsubseteq> (m1 \<squnion> m2) f! x"
     by (rule fmap_belowE[OF join_above2[OF assms]])
 next
 case (goal3 x a)
@@ -152,9 +152,9 @@ case (goal3 x a)
   have "m1 \<squnion> m2 \<sqsubseteq> fmap_upd (m1 \<squnion> m2) x a"
     by (rule join_below[OF assms])
   moreover
-  have "the (lookup (fmap_upd (m1 \<squnion> m2) x a) x) = a" by simp
+  have "fmap_upd (m1 \<squnion> m2) x a f! x = a" by simp
   ultimately  
-  show "the (lookup (m1 \<squnion> m2) x) \<sqsubseteq> a" by (metis fmap_belowE)
+  show "(m1 \<squnion> m2) f! x \<sqsubseteq> a" by (metis fmap_belowE)
 qed
 
 lemma fdom_compatible[simp]:
@@ -176,7 +176,7 @@ lemma join_is_fmap_join:
 
 lemma the_lookup_compatible:
   assumes "compatible m1 (m2::'a::type f\<rightharpoonup> 'b::pcpo)"
-  shows "compatible (the (lookup m1 x)) (the (lookup m2 x))"
+  shows "compatible (m1 f! x) (m2 f! x)"
 proof(cases "x \<in> fdom m1")
 case True hence "x \<in> fdom m2" by (metis fdom_compatible[OF assms])
   thus ?thesis
@@ -189,7 +189,7 @@ qed
 
 lemma the_lookup_join:
   assumes "compatible m1 (m2::'a::type f\<rightharpoonup> 'b::pcpo)"
-  shows "the (lookup (m1 \<squnion> m2) x) = the (lookup m1 x) \<squnion> the (lookup m2 x)"
+  shows "(m1 \<squnion> m2) f! x = (m1 f! x) \<squnion> (m2 f! x)"
 proof(cases "x \<in> fdom m1")
 case True hence "x \<in> fdom m2" by (metis fdom_compatible[OF assms])
   show ?thesis
@@ -329,7 +329,7 @@ lemma HSem_there:
 
 lemma the_lookup_HSem_other:
   assumes "y \<notin> heapVars h"
-  shows "the (lookup (HSem h \<rho>) y) = the (lookup \<rho> y)"
+  shows "(HSem h \<rho>) f! y = \<rho> f! y"
 proof(cases "HSem_cond' h \<rho>")
   case True show ?thesis
     apply (subst HSem_eq[OF True])
@@ -348,8 +348,8 @@ qed
 lemma the_lookup_HSem_both:
   assumes "HSem_cond' h \<rho>"
   assumes "y \<in> heapVars h"
-  shows "the (lookup (HSem h \<rho>) y) =
-    the (lookup (fmap_expand \<rho> (fdom \<rho> \<union> heapVars h)) y) \<squnion> ESem (the (map_of h y)) (HSem h \<rho>)"
+  shows "HSem h \<rho> f! y =
+    (fmap_expand \<rho> (fdom \<rho> \<union> heapVars h) f! y) \<squnion> ESem (the (map_of h y)) (HSem h \<rho>)"
   apply (subst HSem_eq[OF assms(1)])
   apply (subst the_lookup_join[OF rho_F_compat_fjc[OF assms(1) HSem_there[OF assms(1)]]])
   apply (subst (2) lookup_fmap_expand1)
@@ -360,7 +360,7 @@ lemma the_lookup_HSem_both:
 lemma the_lookup_HSem_both_compatible:
   assumes "HSem_cond' h \<rho>"
   assumes "y \<in> heapVars h"
-  shows "compatible (the (lookup (fmap_expand \<rho> (fdom \<rho> \<union> heapVars h)) y)) (ESem (the (map_of h y)) (HSem h \<rho>))"
+  shows "compatible (fmap_expand \<rho> (fdom \<rho> \<union> heapVars h) f! y) (ESem (the (map_of h y)) (HSem h \<rho>))"
   using the_lookup_compatible[OF rho_F_compat_fjc[OF assms(1) HSem_there[OF assms(1)]], of y]
   apply (subst (asm) (2) lookup_fmap_expand1)
     using assms(2) apply auto[3]
@@ -371,7 +371,7 @@ lemma the_lookup_HSem_heap:
   assumes "HSem_cond' h \<rho>"
   assumes "y \<in> heapVars h"
   assumes "y \<notin> fdom \<rho>"
-  shows "the (lookup (HSem h \<rho>) y) = ESem (the (map_of h y)) (HSem h \<rho>)"
+  shows "(HSem h \<rho>) f! y = ESem (the (map_of h y)) (HSem h \<rho>)"
   apply (subst HSem_eq[OF assms(1)])
   apply (subst the_lookup_join[OF rho_F_compat_fjc[OF assms(1) HSem_there[OF assms(1)]]])
   apply (subst lookup_fmap_expand2)
@@ -745,13 +745,13 @@ lemma HSem_subst_exp:
 
 subsubsection {* Refinement relations *}
 
-lemma HSem_refines_lookup: "HSem_cond' \<Gamma> \<rho> \<Longrightarrow> x \<in> fdom \<rho> \<Longrightarrow> the (lookup \<rho> x) \<sqsubseteq> the (lookup (HSem \<Gamma> \<rho>) x)"
+lemma HSem_refines_lookup: "HSem_cond' \<Gamma> \<rho> \<Longrightarrow> x \<in> fdom \<rho> \<Longrightarrow> \<rho> f! x \<sqsubseteq> (HSem \<Gamma> \<rho>) f! x"
   apply (drule HSem_refines)
   apply (drule fmap_belowE[of _ _ x])
   apply simp
   done
 
-lemma HSem_heap_below: "HSem_cond' \<Gamma> \<rho> \<Longrightarrow> x \<in> heapVars \<Gamma> \<Longrightarrow> ESem (the (map_of \<Gamma> x)) (HSem \<Gamma> \<rho>) \<sqsubseteq> the (lookup (HSem \<Gamma> \<rho>) x)"
+lemma HSem_heap_below: "HSem_cond' \<Gamma> \<rho> \<Longrightarrow> x \<in> heapVars \<Gamma> \<Longrightarrow> ESem (the (map_of \<Gamma> x)) (HSem \<Gamma> \<rho>) \<sqsubseteq> (HSem \<Gamma> \<rho>) f! x"
   apply (subst the_lookup_HSem_both, assumption+)
   apply (rule join_above2)
   apply (rule the_lookup_HSem_both_compatible, assumption+)
@@ -788,7 +788,7 @@ locale has_cont_ESem = has_ESem +
 begin
   lemma HSem_below:
     assumes "fmap_expand \<rho> (fdom \<rho> \<union> heapVars h) \<sqsubseteq> r"
-    assumes "\<And>x. x \<in> heapVars h \<Longrightarrow> ESem (the (map_of h x)) r \<sqsubseteq> the (lookup r x)"
+    assumes "\<And>x. x \<in> heapVars h \<Longrightarrow> ESem (the (map_of h x)) r \<sqsubseteq> r f! x"
     shows "HSem h \<rho> \<sqsubseteq> r"
   proof (rule HSem_ind)
     from fmap_below_dom[OF assms(1)]
@@ -1071,7 +1071,7 @@ subsubsection {* The heap semantics can also be define inductively over the heap
           show ?thesis
           proof (cases "x' \<in> heapVars \<Gamma>")
           case True
-            have "the (lookup (heapToEnv \<Gamma> (\<lambda>e. ESem e \<rho>')) x') \<sqsubseteq> the (lookup (HSem \<Gamma> \<rho>') x')"
+            have "heapToEnv \<Gamma> (\<lambda>e. ESem e \<rho>') f! x' \<sqsubseteq> HSem \<Gamma> \<rho>' f! x'"
               apply (subst HSem_eq[OF inner_cond])
               apply (subst the_lookup_join[OF rho_F_compat_fjc[OF inner_cond  HSem_there[OF inner_cond]]])
               apply (insert the_lookup_compatible[OF rho_F_compat_fjc[OF inner_cond  HSem_there[OF inner_cond]], of x'])

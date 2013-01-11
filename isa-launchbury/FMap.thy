@@ -43,7 +43,7 @@ lemma finite_fran[simp]: "finite (fran m)"
 
 lemma fmap_eqI[intro]:
   assumes "fdom a = fdom b"
-  and "\<And> x. x \<in> fdom a \<Longrightarrow> the (lookup a x) = the (lookup b x)"
+  and "\<And> x. x \<in> fdom a \<Longrightarrow> a f! x = b f! x"
   shows "a = b"
 using assms
 proof(transfer)
@@ -148,7 +148,7 @@ lemma fmap_delete_noop:
   "x \<notin> fdom m \<Longrightarrow> fmap_delete x m = m"
   by (transfer, auto)
 
-lemma fmap_upd_fmap_delete[simp]: "x \<in> fdom \<Gamma> \<Longrightarrow> fmap_delete x \<Gamma>(x f\<mapsto> the (lookup \<Gamma> x)) = \<Gamma>"
+lemma fmap_upd_fmap_delete[simp]: "x \<in> fdom \<Gamma> \<Longrightarrow> fmap_delete x \<Gamma>(x f\<mapsto> \<Gamma> f! x) = \<Gamma>"
   by (transfer, auto)
 
 lemma fran_fmap_upd[simp]:
@@ -163,34 +163,34 @@ lift_definition fmap_add :: "'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<righth
 lemma fdom_fmap_add[simp]: "fdom (m1 f++ m2) = fdom m1 \<union> fdom m2"
   by (transfer, auto)
 
-lemma lookup_fmap_add1[simp]: "x \<in> fdom m2 \<Longrightarrow> lookup (fmap_add m1 m2) x = lookup m2 x"
+lemma lookup_fmap_add1[simp]: "x \<in> fdom m2 \<Longrightarrow> lookup (m1 f++ m2) x = lookup m2 x"
   by (transfer, auto)
 
-lemma lookup_fmap_add2[simp]:  "x \<notin> fdom m2 \<Longrightarrow> lookup (fmap_add m1 m2) x = lookup m1 x"
+lemma lookup_fmap_add2[simp]:  "x \<notin> fdom m2 \<Longrightarrow> lookup (m1 f++ m2) x = lookup m1 x"
   apply transfer
   by (metis map_add_dom_app_simps(3))
 
-lemma [simp]: "fmap_add \<rho> fempty = \<rho>"
+lemma [simp]: "\<rho> f++ fempty = \<rho>"
   by (transfer, auto)
 
-lemma fmap_add_overwrite: "fdom m1 \<subseteq> fdom m2 \<Longrightarrow> fmap_add m1 m2 = m2"
+lemma fmap_add_overwrite: "fdom m1 \<subseteq> fdom m2 \<Longrightarrow> m1 f++ m2 = m2"
   apply transfer
   apply rule
   apply (case_tac "x \<in> dom m2")
   apply (auto simp add: map_add_dom_app_simps(1))
   done
 
-lemma fmap_add_rho[simp]: "fmap_add \<rho> (fmap_add \<rho> x) = fmap_add \<rho> x"
+lemma fmap_add_rho[simp]: "\<rho> f++ (\<rho> f++ x) = \<rho> f++ x"
   apply (rule fmap_add_overwrite)
   by (metis Un_upper1 fdom_fmap_add)
 
 lemma fmap_add_upd_swap: 
-  "x \<notin> fdom \<rho>' \<Longrightarrow> fmap_add (\<rho>(x f\<mapsto> z)) \<rho>' = (fmap_add \<rho> \<rho>')(x f\<mapsto> z)"
+  "x \<notin> fdom \<rho>' \<Longrightarrow> \<rho>(x f\<mapsto> z) f++ \<rho>' = (\<rho> f++ \<rho>')(x f\<mapsto> z)"
   apply transfer
   by (metis map_add_upd_left)
 
 lemma fmap_add_upd: 
-  "fmap_add \<rho> (\<rho>'(x f\<mapsto> z)) = (fmap_add \<rho> \<rho>')(x f\<mapsto> z)"
+  "\<rho> f++ (\<rho>'(x f\<mapsto> z)) = (\<rho> f++ \<rho>')(x f\<mapsto> z)"
   apply transfer
   by (metis map_add_upd)
 

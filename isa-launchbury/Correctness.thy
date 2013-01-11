@@ -44,12 +44,12 @@ proof-
   have "\<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<^esub> = \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>(x, e) # \<Gamma>\<rbrace>\<^esub>"
     apply (rule ESem_add_fresh[OF fempty_is_HSem_cond fempty_is_HSem_cond, symmetric])
     using fresh by (simp add: fresh_Pair)
-  also have "... = the (lookup (\<lbrace>(x, e) # \<Gamma>\<rbrace>) x)"
+  also have "... = \<lbrace>(x, e) # \<Gamma>\<rbrace> f! x"
     apply (rule the_lookup_HSem_heap[of _ "(x, e) # \<Gamma>" x, simplified (no_asm), symmetric])
     apply (rule fempty_is_HSem_cond)
     apply simp_all    
     done
-  also have "... = the (lookup (\<lbrace>(x, z) # \<Delta>\<rbrace>) x)"
+  also have "... = \<lbrace>(x, z) # \<Delta>\<rbrace> f! x"
     apply (rule arg_cong[OF fmap_less_eqD[OF le, simplified]])
     apply simp
     done

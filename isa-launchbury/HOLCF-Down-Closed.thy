@@ -82,12 +82,12 @@ proof(rule contains_bottomsI)
     show ?case
     proof (cases "var \<in> d'")
     case True 
-      thus "the (lookup (fmap_extend (fmap_restr d' x) (d - d')) var) \<sqsubseteq> the (lookup x var)"
+      thus "fmap_extend (fmap_restr d' x) (d - d') f! var \<sqsubseteq> x f! var"
         by (simp add:`finite d` finite_subset[OF `d' \<subseteq> d` `finite d`])
     next
     case False
       hence "var \<in> d - d'" using 2(2) `fdom x = d` by auto
-      thus "the (lookup (fmap_extend (fmap_restr d' x) (d - d')) var) \<sqsubseteq> the (lookup x var)"
+      thus "fmap_extend (fmap_restr d' x) (d - d') f! var \<sqsubseteq> x f! var"
         by (simp add:`finite d` finite_subset[OF `d' \<subseteq> d` `finite d`])
     qed
   qed
