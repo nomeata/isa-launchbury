@@ -1,5 +1,5 @@
 theory HSem
-  imports "HeapToEnv" "DistinctVars-Nominal" "HOLCF-Set" "HOLCF-Down-Closed" "HOLCF-Fix-Join"
+  imports "HeapToEnv" "DistinctVars-Nominal" "HOLCF-Fix-Join-Nominal" "FMap-Utils"
 begin
 
 subsubsection {* Auxillary lemmas connecting @{theory "HOLCF-Fix-Join"} and @{theory FMap}. *}
@@ -411,159 +411,6 @@ lemma fdom_HSem[simp]:
   apply simp+
   done
 
-subsubsection {* Equivariance of @{theory "HOLCF-Set"} definitions (to be moved to theory of its own) *}
-
-lemma subcpo_eqvt[eqvt]:
-  fixes S :: "('a::cont_pt) set"
-  assumes "subcpo S"
-  shows "subcpo (\<pi> \<bullet> S)"
-proof(rule subcpoI)
-  fix Y :: "nat \<Rightarrow> 'a"
-  assume "chain Y"
-    hence "chain (-\<pi> \<bullet> Y)" by (rule chain_eqvt)
-  moreover
-  assume "\<And> i. Y i \<in> \<pi> \<bullet> S"
-  hence "\<And> i. - \<pi> \<bullet> Y i \<in> S" by (metis (full_types) mem_permute_iff permute_minus_cancel(1))
-  hence "\<And> i. (- \<pi> \<bullet> Y) i \<in> S" by (metis eqvt_apply permute_pure)
-  ultimately
-  have "(\<Squnion> i. (- \<pi> \<bullet> Y) i) \<in> S" by (metis subcpo.cpo'[OF assms])
-  hence "\<pi> \<bullet> (\<Squnion> i. (- \<pi> \<bullet> Y) i) \<in> \<pi> \<bullet> S"  by (metis mem_permute_iff)
-  find_theorems permute cont
-  thus "(\<Squnion> i. Y i) \<in> \<pi> \<bullet> S"
-    apply -
-    apply (subst (asm) cont2contlubE[OF perm_cont `chain (-\<pi> \<bullet> Y)`])
-    by (metis image_image permute_minus_cancel(1) permute_set_eq_image range_eqvt)
-qed
-
-lemma subpcpo_bot_eqvt[eqvt]:
-  fixes S :: "('a::cont_pt) set"
-  assumes "subpcpo_bot S b"
-  shows "subpcpo_bot (\<pi> \<bullet> S) (\<pi> \<bullet> b)"
-  apply (rule subpcpo_botI)
-  apply (metis subcpo.cpo'[OF subcpo_eqvt[OF subpcpo_is_subcpo[OF subpcpo_bot_is_subpcpo[OF assms]]]])
-  apply (metis bottom_of_subpcpo_bot_there[OF assms] mem_permute_iff)
-  apply (metis (full_types) bottom_of_subpcpo_bot_minimal[OF assms] eqvt_bound mem_permute_iff perm_cont_simp)
-  done
-
-lemma subpcpo_eqvt[eqvt]:
-  fixes S :: "('a::cont_pt) set"
-  assumes "subpcpo S"
-  shows "subpcpo (\<pi> \<bullet> S)"
-  by (rule subpcpo_bot_is_subpcpo[OF subpcpo_bot_eqvt[OF subpcpo_is_subpcpo_bot[OF assms]]])
-
-lemma bottom_of_eqvt:
-  assumes "subpcpo S"
-  shows "\<pi> \<bullet> (bottom_of (S ::('a::cont_pt) set)) = bottom_of (\<pi> \<bullet> S)"
-  by (rule bottom_of_subpcpo_bot[symmetric, OF subpcpo_bot_eqvt[OF  subpcpo_is_subpcpo_bot[OF assms]]])
-
-lemma closed_on_eqvt:
-  "closed_on S F \<Longrightarrow> closed_on (\<pi> \<bullet> S) (\<pi> \<bullet> F)"
-  apply (rule closed_onI)
-  apply (simp add: permute_set_def)
-  by (metis closed_onE eqvt_apply)
-
-lemma cont_eqvt[eqvt]:
-  "cont (F::'a::cont_pt \<Rightarrow> 'b::cont_pt) \<Longrightarrow> cont (\<pi> \<bullet> F)"
-  apply (rule contI)
-  apply (drule_tac Y = "unpermute \<pi> Y" in contE)
-  apply (auto intro: chain_eqvt simp add: unpermute_def)[1]
-  apply (drule perm_is_lub_eqvt[of _ _ "\<pi>"])
-  apply (subst (asm) eqvt_apply[of _ F])
-  apply (subst (asm) lub_eqvt)
-  apply (rule cpo)
-  apply (auto intro: chain_eqvt simp add: unpermute_def)[1]
-  apply perm_simp
-  apply assumption
-  done
-
-lemma chain_on_eqvt:
-  "chain_on (S::'a::cont_pt set) Y \<Longrightarrow> chain_on (\<pi> \<bullet> S) (\<pi> \<bullet> Y)"
-  apply (rule chain_onI)
-  apply (drule_tac i = i in chain_onE)
-  apply (metis perm_cont_simp permute_fun_app_eq permute_pure)
-  apply (drule_tac i = i in chain_on_is_on)
-  by (metis (full_types) mem_permute_iff permute_fun_app_eq permute_pure)
-
-lemma cont_on_eqvt:
-  "cont_on S (F::'a::cont_pt \<Rightarrow> 'b::cont_pt) \<Longrightarrow> cont_on (\<pi> \<bullet> S) (\<pi> \<bullet> F)"
-  apply (rule cont_onI)
-  apply (drule_tac Y = "unpermute \<pi> Y" in cont_onE)
-  apply (auto intro: chain_eqvt simp add: unpermute_def)[1]
-  apply (metis chain_on_eqvt permute_minus_cancel(2))
-  apply (drule perm_is_lub_eqvt[of _ _ "\<pi>"])
-  apply (subst (asm) eqvt_apply[of _ F])
-  apply (subst (asm) lub_eqvt)
-  apply (rule cpo)
-  apply (drule chain_on_is_chain)
-  apply (auto intro: chain_eqvt simp add: unpermute_def)[1]
-  apply perm_simp
-  apply assumption
-  done
-
-
-lemma fix_on_cond_eqvt:
-  assumes "fix_on_cond S (b::'a::cont_pt) F"
-  shows "fix_on_cond (\<pi> \<bullet> S) (\<pi> \<bullet> b) (\<pi> \<bullet> F)"
-proof
-  from assms
-  have pcpo1: "subpcpo S" and closed: "closed_on S F" and cont: "cont_on S F" and [simp]:"b = bottom_of S"
-    by (metis fix_on_cond.cases)+
-
-  show "subpcpo (\<pi> \<bullet> S)" by (rule subpcpo_eqvt[OF pcpo1])
-  show "bottom_of (\<pi> \<bullet> S) = \<pi> \<bullet> b" by (simp add: bottom_of_eqvt[OF pcpo1, symmetric])
-  show "closed_on (\<pi> \<bullet> S) (\<pi> \<bullet> F)" by (rule closed_on_eqvt[OF closed])
-  show "cont_on (\<pi> \<bullet> S) (\<pi> \<bullet> F)" by (rule cont_on_eqvt[OF cont])
-qed
-
-lemma fix_on_eqvt:
-  assumes "fix_on_cond S (b::'a::cont_pt) F"
-  shows "\<pi> \<bullet> (fix_on' b F) = fix_on' (\<pi> \<bullet> b) (\<pi> \<bullet> F)"
-proof-
-  have permuted: "fix_on_cond (\<pi> \<bullet> S) (\<pi> \<bullet> b) (\<pi> \<bullet> F)"
-    by (rule fix_on_cond_eqvt[OF assms])
-  show ?thesis
-    apply (rule parallel_fix_on_ind[OF assms permuted])
-    apply (rule adm_is_adm_on, auto)[1]
-    by (auto simp add: eqvt_apply)
-qed
-
-lemma to_bot_eqvt[eqvt,simp]: "\<pi> \<bullet> to_bot (\<rho>::'a::{subpcpo_partition,cont_pt}) = to_bot (\<pi> \<bullet> \<rho>)"
-proof(rule below_antisym)
-  show "to_bot (\<pi> \<bullet> \<rho>) \<sqsubseteq> \<pi> \<bullet> to_bot \<rho>"
-    by (metis perm_cont_simp to_bot_minimal unrelated)
-  show "\<pi> \<bullet> to_bot \<rho> \<sqsubseteq> to_bot (\<pi> \<bullet> \<rho>)"
-    by (metis eqvt_bound perm_cont_simp to_bot_minimal unrelated)
-qed
-
-lemma fix_join_cond_eqvt[eqvt]:
-  shows "fix_join_cond \<rho> (F::'a::{subpcpo_partition,cont_pt} \<Rightarrow> 'a) \<Longrightarrow> fix_join_cond (\<pi> \<bullet> \<rho>) (\<pi> \<bullet> F)"
-  apply (erule fix_join_cond.induct)
-  apply (rule fix_join_condI)
-  apply (erule cont_eqvt)
-  apply (erule_tac x = i in meta_allE) 
-  apply (drule compatible_eqvt[where \<pi> = \<pi>], perm_simp, assumption)
-  done
-
-lemma fix_join_compat_eqvt:
-  fixes \<rho> :: "'a::{Bounded_Nonempty_Meet_cpo,subpcpo_partition,cont_pt}"
-  assumes "fix_join_cond \<rho> F"
-  shows "\<pi> \<bullet> fix_join_compat \<rho> F = fix_join_compat (\<pi> \<bullet> \<rho>) (\<pi> \<bullet> F)"
-proof-
-  show ?thesis
-    apply (auto simp add: permute_set_eq)
-    apply (subst (asm) perm_cont_simp[symmetric, of _ _ \<pi>])
-    apply (subst (asm) fix_on_eqvt[OF fix_on_cond_fjc[OF assms(1), unfolded bottom_of_fjc]])
-    apply simp
-    apply perm_simp
-    apply assumption
-    
-    apply (subst  perm_cont_simp[symmetric, of _ _ "\<pi>"])
-    apply (subst  fix_on_eqvt[OF fix_on_cond_fjc[OF assms(1), unfolded bottom_of_fjc]])
-    apply simp
-    apply perm_simp
-    apply assumption
-    done
-qed
 
 lemma HSem_cond'_cong[fundef_cong]:
   "\<lbrakk> env1 = env2 ; heap1 = heap2 ; (\<And> e. e \<in> snd ` set heap2 \<Longrightarrow> ESem e = ESem e) \<rbrakk>
@@ -575,12 +422,6 @@ lemma HSem_cong[fundef_cong]:
       \<Longrightarrow> HSem heap1 env1 = HSem heap2 env2"
   unfolding HSem_def
   by (auto cong:heapToEnv_cong)
-
-lemma fdom_fix_join_compat:
-  assumes "fix_on_cond S (bottom_of S) (\<lambda>\<rho>'. \<rho> \<squnion> F \<rho>')"
-  assumes "\<rho>' \<in> fix_join_compat \<rho> F"
-  shows "fdom \<rho>' = fdom \<rho>"
-  by (metis assms(2) bottom_of_fjc fmap_below_dom subpcpo.bottom_of_minimal subpcpo_fjc to_bot_minimal)
 
 subsubsection {* Adding a fresh variable to a heap does not affect its semantics *} 
 
@@ -771,8 +612,7 @@ lemma HSem_disjoint_less:
   assumes "heapVars \<Gamma> \<inter> fdom \<rho> = {}"
   shows "\<rho> \<le> HSem \<Gamma> \<rho>"
   using assms
-by (metis fdom_HSem fmap_less_restrict fmap_restr_HSem_noop sup_ge1)
-
+by (metis fmap_less_restrict fmap_restr_HSem_noop)
 end
 
 subsubsection {* Requiring continuity of the expression semantics *}
@@ -1175,14 +1015,14 @@ lemma HSem_eqvt[eqvt]:
 proof (cases "has_ESem.HSem_cond' ESem h \<rho>")
   case True
   hence True_permuted: "has_ESem.HSem_cond' (\<pi> \<bullet> ESem) (\<pi> \<bullet> h)  (\<pi> \<bullet> \<rho>)"
-    by -(drule has_ESem.fix_join_cond_eqvt[where \<pi> = \<pi>], perm_simp, assumption)
+    by -(drule fix_join_cond_eqvt[where \<pi> = \<pi>], perm_simp, assumption)
 
   show ?thesis
    unfolding has_ESem.HSem_def
    apply (simp only: if_P[OF True] if_P[OF True_permuted])
-   apply (subst has_ESem.fix_on_eqvt[OF fix_on_cond_fjc[OF True]])
-   apply (subst has_ESem.bottom_of_eqvt[OF subpcpo_fjc])
-   apply (subst has_ESem.fix_join_compat_eqvt[OF True])
+   apply (subst fix_on_eqvt[OF fix_on_cond_fjc[OF True]])
+   apply (subst bottom_of_eqvt[OF subpcpo_fjc])
+   apply (subst fix_join_compat_eqvt[OF True])
    apply perm_simp
    apply rule
    done
@@ -1192,7 +1032,7 @@ case False
     apply -
     apply rule
     apply (erule notE)
-    apply (drule has_ESem.fix_join_cond_eqvt[where \<pi> = "- \<pi>"])
+    apply (drule fix_join_cond_eqvt[where \<pi> = "- \<pi>"])
     apply perm_simp
     by (metis (no_types) eqvt_bound pemute_minus_self unpermute_def)
   show ?thesis
@@ -1202,6 +1042,4 @@ case False
    apply rule
    done
 qed
-
-
 end

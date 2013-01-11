@@ -23,7 +23,7 @@ lift_definition fempty :: "'key f\<rightharpoonup> 'value" is Map.empty by simp
 lemma fempty_fdom[simp]: "fdom fempty = {}"
   by (transfer, auto)
 
-lemma fdomIff: "(a : fdom m) = (lookup m a ~= None)"
+lemma fdomIff: "(a : fdom m) = (lookup m a \<noteq> None)"
  by (transfer, auto)
 
 lemma lookup_not_fdom: "x \<notin> fdom m \<Longrightarrow> lookup m x = None"

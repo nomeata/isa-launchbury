@@ -215,5 +215,4 @@ case (Let as \<Gamma> body L \<Delta> z \<rho>)
   finally
   show ?case.
 qed
-
 end
