@@ -109,8 +109,9 @@ Chapter \ref{ch_aux} contains auxillary theories, not necessarily tied to Launch
 \item A generalisation of some parts of HOLCF to work on a set as a carrier instead of a type (\isa{HOLCF-Set}, \isa{HOLCF-Set-Nominal}).
 \item Binary joins in the context of HOLCF (\isa{HOLCF-Join}).
 \item A notion of down-closed sets in the context of HOLCF (\isa{HOLCF-Down-Closed}).
-\item A theory of fixed points of binary joins (\isa{HOLCF-Fix-Join}).
+\item A theory of fixed points of binary joins (\isa{HOLCF-Fix-Join}, \isa{HOLCF-Fix-Join-Nominal}).
 \item A type for finite maps with a chain-complete partial order (\isa{FMap}, \isa{FMap-Nominal}, \isa{FMap-HOLCF}, \isa{FMap-Nominal-HOLCF}).
+\item The theory \isa{Fmap-Utils} adds lemmas that combine finite maps with the various other non-standard auxillary theories.
 \end{itemize}
 
 Chapter \ref{ch_natsem} defines Launchbury's natural semantics, while \ref{ch_natsemstack} provides a variant with an explicit stack and proves them equivalent.
@@ -131,13 +132,13 @@ To effectively use Nominal datat types need to be in the \isa{fs} type class, in
 
 But this causes issues with HOLCF: In order to work effectively with fixed points in HOLCF, the partial order for the type ought to have least upper bounds to all countable chains. With the usual order on partial maps, where binding additional variables makes the map larger, this is not possible in our type: Clearly the limit of a chain where at each step a new variable is added cannot have finite support.
 
-Hence the partial order is changed so that only maps with the same domain are compareable. Assuing the values form a chain-complete partial order, we now have a chain-complete partial order on finite maps. Unfortunately, we now no longer have a bottom element for the whole type. In fact, the type is now the disjoint union of many pointed chain-complete partial orders. This makes proofs with fixed points relatively unwieldy, as we have to handle the domains of the maps explicitly. The theory \isa{HOLCF-Set} definines the notion of a set forming a pcpo and provides variants of some HOLCF function to work with an explicit carrier set instead of the whole universe of the type.
+Hence the partial order is changed so that only maps with the same domain are compareable. Assuing the values form a chain-complete partial order, we now have a chain-complete partial order on finite maps. Unfortunately, we now no longer have a bottom element for the whole type. In fact, the type is now the disjoint union of many pointed chain-complete partial orders. This makes proofs with fixed points relatively unwieldy, as we have to handle the domains of the maps explicitly. The theory \isa{HOLCF-Set} definines the notion of a set forming a pcpo and provides variants of some HOLCF function to work with an explicit carrier set instead of the whole universe of the type. It also introduces the type class \isa{subpcpo-partition} for types that are disjoint unions of pcpos.
 
 The theory \isa{HOLCF-Join} defines the binary join operator $\sqcup$ in a partial order as defined by HOLCF, together with the \isa{compatible} predicate, expressing that the least upper bound exists for its arguments. It also contains typeclasses for the existance of meets (greatest lower bounds) in various settings and a proof that bifinite domains with meets for all finite nonempty sets have meets for arbitrary nonempty sets.
 
 \subsection{Acknowledgement}
 
-I’d like to thank Andreas Lochbihler for his gladly given and usually very effective help during the development of this theory. I’d also like to thank Brian Huffmann and Christian Urban for their help about HOLCF and Nominal, respectively. This work was supported by the Deutsche Telekom Stiftung.
+I’d like to thank Andreas Lochbihler for his gladly given and usually very effective help during the development of this theory. I’d also like to thank Brian Huffmann and Christian Urban for their help on HOLCF and Nominal, respectively. This work was supported by the Deutsche Telekom Stiftung.
 
 \clearpage
 \newcommand{\theory}[1]{\subsection{#1}\label{sec_#1}\input{#1.tex}}
