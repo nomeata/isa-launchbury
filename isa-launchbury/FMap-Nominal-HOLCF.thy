@@ -101,10 +101,6 @@ lemma fmap_bottom_eqvt:
   "finite S \<Longrightarrow> \<pi> \<bullet> (fmap_bottom S :: 'a::pt f\<rightharpoonup> 'b::{cont_pt,pcpo}) = fmap_bottom (\<pi> \<bullet> S)"
   by (transfer,perm_simp, rule refl)
 
-lemma fmap_add_eqvt[eqvt]:
-  "\<pi> \<bullet> fmap_add m1 (m2 :: 'a::{cont_pt,cpo} f\<rightharpoonup> 'b::{cont_pt,cpo}) = fmap_add (\<pi> \<bullet> m1) (\<pi> \<bullet> m2)"
-  by (transfer, perm_simp, rule refl)
-
 lemma fmap_extend_eqvt[eqvt]:
   "\<pi> \<bullet> fmap_extend (m :: 'a::{pt} f\<rightharpoonup> 'b::{cont_pt,pcpo}) S = fmap_extend (\<pi> \<bullet> m) (\<pi> \<bullet> S)"
   by (transfer, perm_simp, rule refl)

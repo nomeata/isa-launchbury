@@ -231,7 +231,7 @@ lemma fmap_delete_eqvt[eqvt]:
   by (transfer, auto simp add: permute_fun_def fun_eq_iff)
 
 lemma fmap_add_eqvt[eqvt]:
-  "\<pi> \<bullet> fmap_add m1 m2 = fmap_add (\<pi> \<bullet> m1) (\<pi> \<bullet> m2)"
+  "\<pi> \<bullet> m1 f++ m2 = (\<pi> \<bullet> m1) f++ (\<pi> \<bullet> m2)"
   by (transfer, perm_simp, rule)
 
 lemma fmap_of_eqvt[eqvt]:

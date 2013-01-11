@@ -347,29 +347,29 @@ lemma  fmap_add_belowI:
   assumes "fdom x \<union> fdom y = fdom z"
   and "\<And> a. a \<in> fdom y \<Longrightarrow> y f! a \<sqsubseteq> z f! a"
   and "\<And> a. a \<in> fdom x \<Longrightarrow> a \<notin> fdom y \<Longrightarrow> x f! a \<sqsubseteq> z f! a"
-  shows  "fmap_add x y \<sqsubseteq> z"
+  shows  "x f++ y \<sqsubseteq> z"
   using assms 
   apply -
   apply (rule fmap_belowI)
   apply auto[1]
   by (metis fdomIff lookup_fmap_add1 lookup_fmap_add2)
 
-lemma fmap_add_cont1: "cont (\<lambda> x. fmap_add x (m::('a::type f\<rightharpoonup> 'b::cpo)))"
+lemma fmap_add_cont1: "cont (\<lambda> x. x f++ m::('a::type f\<rightharpoonup> 'b::cpo))"
 proof(rule fmap_contI)
   fix x y :: "'a f\<rightharpoonup> 'b"
   assume "x \<sqsubseteq> y"
   hence "fdom x = fdom y" by (rule fmap_below_dom)
-  thus "fdom (fmap_add x m) = fdom (fmap_add y m)"  by simp 
+  thus "fdom (x f++ m) = fdom (y f++ m)"  by simp 
 next
   fix x y :: "'a f\<rightharpoonup> 'b"
   assume "x \<sqsubseteq> y"
   fix z :: 'a  
-  show "(fmap_add x m) f! z \<sqsubseteq> (fmap_add y m) f! z"
+  show "(x f++ m) f! z \<sqsubseteq> (y f++ m) f! z"
     using `x \<sqsubseteq> y`
     by(cases "z \<in> fdom m", auto elim: fmap_belowE)
 next
   fix Y :: "nat \<Rightarrow> 'a f\<rightharpoonup> 'b"
-  assume c1: "chain Y" and c2: "chain (\<lambda>i. fmap_add (Y i) m)"
+  assume c1: "chain Y" and c2: "chain (\<lambda>i. Y i f++ m)"
   fix x :: 'a
   show "(\<Squnion> i. Y i) f++ m f! x \<sqsubseteq> (\<Squnion> i. Y i f++ m) f! x"
     by (cases "x \<in> fdom m", auto simp add: lookup_cont[OF c2] lookup_cont[OF c1])

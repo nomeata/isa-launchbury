@@ -148,7 +148,7 @@ lemma fmap_delete_noop:
   "x \<notin> fdom m \<Longrightarrow> fmap_delete x m = m"
   by (transfer, auto)
 
-lemma fmap_upd_fmap_delete[simp]: "x \<in> fdom \<Gamma> \<Longrightarrow> fmap_delete x \<Gamma>(x f\<mapsto> \<Gamma> f! x) = \<Gamma>"
+lemma fmap_upd_fmap_delete[simp]: "x \<in> fdom \<Gamma> \<Longrightarrow> (fmap_delete x \<Gamma>)(x f\<mapsto> \<Gamma> f! x) = \<Gamma>"
   by (transfer, auto)
 
 lemma fran_fmap_upd[simp]:
