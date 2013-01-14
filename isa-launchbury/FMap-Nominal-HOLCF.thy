@@ -83,12 +83,6 @@ lemma [transfer_rule]:
   unfolding set_rel_eq.
 
 lemma [transfer_rule]: "(cr_fmap ===> op = ===> cr_fmap)
- (\<lambda>m1 S. if finite S then \<lambda>x. if x \<in> S then Some \<bottom> else m1 x else Map.empty)
- fmap_extend"
-  using fmap_extend.transfer
-  unfolding set_rel_eq.
-
-lemma [transfer_rule]: "(cr_fmap ===> op = ===> cr_fmap)
      (\<lambda>m1 S.
          if finite S
          then \<lambda>x. if x \<in> S then Some (case m1 x of None \<Rightarrow> \<bottom> | Some x \<Rightarrow> x) else None
@@ -100,10 +94,6 @@ lemma [transfer_rule]: "(cr_fmap ===> op = ===> cr_fmap)
 lemma fmap_bottom_eqvt:
   "finite S \<Longrightarrow> \<pi> \<bullet> (fmap_bottom S :: 'a::pt f\<rightharpoonup> 'b::{cont_pt,pcpo}) = fmap_bottom (\<pi> \<bullet> S)"
   by (transfer,perm_simp, rule refl)
-
-lemma fmap_extend_eqvt[eqvt]:
-  "\<pi> \<bullet> fmap_extend (m :: 'a::{pt} f\<rightharpoonup> 'b::{cont_pt,pcpo}) S = fmap_extend (\<pi> \<bullet> m) (\<pi> \<bullet> S)"
-  by (transfer, perm_simp, rule refl)
 
 lemma fmap_expand_eqvt[eqvt]:
   "\<pi> \<bullet> fmap_expand (m :: 'a::{pt} f\<rightharpoonup> 'b::{cont_pt,pcpo}) S = fmap_expand (\<pi> \<bullet> m) (\<pi> \<bullet> S)"
@@ -122,4 +112,3 @@ lemma fresh_star_fmap_bottom_set[simp]:
   by (metis fresh_star_def fresh_fmap_bottom_set)
 
 end
-
