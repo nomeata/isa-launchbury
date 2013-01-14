@@ -855,11 +855,6 @@ end
 
 subsubsection {* Equivariance of @{term HSem} *}
 
-lemma HSem_cond'_cong[fundef_cong]:
-  "\<lbrakk> (\<And> e. e \<in> snd ` set heap2 \<Longrightarrow> ESem1 e = ESem2 e) ; env1 = env2 ; heap1 = heap2  \<rbrakk>
-      \<Longrightarrow>  has_ESem.HSem_cond' ESem1 heap1 env1 \<longleftrightarrow> has_ESem.HSem_cond' ESem2  heap2 env2"
-  by (auto cong:heapToEnv_cong)
-
 lemma HSem_cong[fundef_cong]:
   "\<lbrakk> (\<And> e. e \<in> snd ` set heap2 \<Longrightarrow> ESem1 e = ESem2 e); env1 = env2 ; heap1 = heap2  \<rbrakk>
       \<Longrightarrow> has_ESem.HSem ESem1 heap1 env1 = has_ESem.HSem  ESem2 heap2 env2"

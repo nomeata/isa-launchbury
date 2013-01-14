@@ -28,10 +28,6 @@ lemma delete_no_there:
   "x \<notin> heapVars \<Gamma> \<Longrightarrow> delete x \<Gamma> = \<Gamma>"
   by (induct \<Gamma>, auto)
 
-lemma heapVars_delete_subset:
-  "heapVars (delete x \<Gamma>) \<subseteq> heapVars \<Gamma>"
-  by (induct \<Gamma>, auto)
-
 lemma heapVars_delete[simp]:
   "heapVars (delete x \<Gamma>) = heapVars \<Gamma> - {x}"
   by (induct \<Gamma>, auto)

@@ -15,25 +15,6 @@ begin
   done
 end
 
-lemma permute_transfer[transfer_rule]: "(op = ===> cr_fmap ===> cr_fmap) permute permute" 
-  apply (rule fun_relI)+
-  apply (auto simp add: cr_fmap_def permute_fmap_def simp del: dom_perm_rev simp add: dom_perm Rep_fmap[simplified] Abs_fmap_inverse)
-  done
-
-lemma supp_transfer[transfer_rule]: "(cr_fmap ===> op =) supp supp" 
-  apply (rule fun_relI)+
-  apply (simp add: cr_fmap_def supp_def permute_fmap.rep_eq[symmetric] Rep_fmap_inject)
-  done
-
-lemma fresh_transfer[transfer_rule]: "(op = ===> cr_fmap ===> op =) fresh fresh" 
-  apply (rule fun_relI)+
-  apply (simp add: cr_fmap_def fresh_def)
-  using fun_relD[OF supp_transfer, unfolded cr_fmap_def]
-  by auto
-
-lemma permute_transfer2[transfer_rule]: "(op = ===> op = ===> op =) permute (permute :: perm \<Rightarrow> ('a::pt) set \<Rightarrow> 'a set)" 
-  unfolding fun_rel_eq by (rule refl)
-
 subsubsection {* Finite maps have finite support *}
 
 lemma map_between_finite:

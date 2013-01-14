@@ -321,16 +321,6 @@ qed
 lemma fdom_adm[intro]: "adm (\<lambda> a. P (fdom a))" 
   by (rule admI, metis chain_fdom(2))
 
-lemma fdom_adm2:
-  "cont u \<Longrightarrow> cont v \<Longrightarrow> adm (\<lambda>x. P (fdom (u x)) (fdom (v x)))"
-  apply (rule admI)
-  apply (frule (1) chain_fdom(2)[OF ch2ch_cont])
-  apply (frule (1) chain_fdom(2)[OF ch2ch_cont]) back
-  apply (erule (1) ssubst[OF cont2contlubE])
-  apply (erule (1) ssubst[OF cont2contlubE])
-  apply simp
-  done
-
 lemma fdom_adm_eq[simp]:
    "adm (\<lambda>\<rho>. fdom \<rho> = z)"
    by (rule fdom_adm)
@@ -441,17 +431,6 @@ next
 case False thus ?thesis unfolding fmap_restr_def by simp
 qed
 
-lemma fmap_restr_belowI2:
-  assumes "finite S"
-  assumes "fdom m2 = fdom m1 \<inter> S"
-  assumes  "\<And> x. x \<in> S \<Longrightarrow> x \<in> fdom m1 \<Longrightarrow> m1 f! x \<sqsubseteq> m2 f! x"
-  shows "fmap_restr S m1 \<sqsubseteq> m2"
-  apply (rule fmap_belowI)
-  apply (simp add: assms(1,2))
-  apply (simp add: assms(1,2))
-  apply (rule assms(3))
-  by auto
-
 lemma fmap_restr_monofun:  "monofun (fmap_restr S)"
 proof (cases "finite S")
   case True thus ?thesis
@@ -502,7 +481,7 @@ lemmas fmap_restr_cont2cont[simp,cont2cont] = cont_compose[OF fmap_restr_cont]
 lemma adm_less_fmap [simp]:
   "[|cont (\<lambda>x. u x); cont (\<lambda>x. v x)|] ==> adm (\<lambda>x. u x \<le> ((v x)::'a::type f\<rightharpoonup> 'b::pcpo))"
   apply (subst fmap_less_restrict)
-  apply (intro adm_lemmas fdom_adm2, assumption+)
+  apply (intro adm_lemmas, assumption+)
   apply (rule contI)
   apply (subst chain_fdom(1)[OF ch2ch_cont[of u]], assumption+)
   apply (subst cont2contlubE[of u], assumption+)

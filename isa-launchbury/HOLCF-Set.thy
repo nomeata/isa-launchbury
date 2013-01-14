@@ -125,14 +125,6 @@ lemma monofun_on_cong:
   "\<lbrakk> \<And> x. x \<in> S \<Longrightarrow> f x = g x \<rbrakk> \<Longrightarrow> monofun_on S f = monofun_on S g"
   unfolding monofun_on_def by metis
 
-lemma ub2ub_monofun_on: 
-  "[|monofun_on S f; \<And> i. Y i \<in> S; u \<in> S; range Y <| u|] ==> range (\<lambda>i. f (Y i)) <| f u"
-apply (rule ub_rangeI)
-apply (erule  monofun_onE)
-apply assumption+
-apply (erule ub_rangeD)
-done
-
 lemma monofun_on_comp:
   assumes "monofun_on S1 f"
   and "monofun_on S2 g"
@@ -745,12 +737,6 @@ lemma fix_on_def':
   unfolding fix_on_def
   by (simp add: fix_on_def fix_on_condD1[OF assms])
 
-lemma iterate_below_fix_on: assumes "fix_on_cond S b F" shows "(F^^i) b \<sqsubseteq> fix_on' b F"
-  apply (subst fix_on_def'[OF assms])
-  apply (rule is_ub_thelub[OF fix_on_condD1[OF assms]])
-  done
-
-
 lemma fix_on_ind:
   assumes "fix_on_cond S b F"
   assumes adm: "adm_on S P"
@@ -846,10 +832,6 @@ lemma fix_on_mono2:
   apply (rule assms(3))
   apply (metis assms(4))
   done
-
-lemma fix_on_same:
-  "b1 = b2 \<Longrightarrow> fix_on b1 F = fix_on b2 F"
-  by simp
 
 lemma fix_on_mono:
   assumes "fix_on_cond S b F"
@@ -1110,19 +1092,6 @@ proof(rule below_antisym)
   show "(\<Squnion> i. fix_on' b (F (Y i))) \<sqsubseteq> fix_on' b (F (\<Squnion> i. Y i))"
     by (rule lub_below)
 qed
-
-
-lemma fix_on_cont'':
-  fixes Y :: "nat => 'a"
-  assumes "chain Y"
-  and pcpo: "subpcpo S"
-  and closed: "\<And> i. closed_on S (F (Y i))"
-  and cont_on: "\<And> i. cont_on S (F (Y i))"
-  and cont: "cont F"
-  shows  "fix_on S (F (\<Squnion> i. Y i)) = (\<Squnion> i. fix_on S (F (Y i)))"
-  apply (rule fix_on_cont[OF `chain Y` _ `cont F`])
-  apply (rule fix_on_condI[OF pcpo refl closed cont_on])
-  done
 
 subsubsection {* Typeclass for types as disjoint union of pointed chain-complete partial orders *}
 

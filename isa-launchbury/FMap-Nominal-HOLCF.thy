@@ -73,24 +73,6 @@ qed
 
 subsubsection {* Equivariance lemmas *}
 
-lemma finite_transfer[transfer_rule]: "(op = ===> op =) finite finite" 
-  unfolding fun_rel_eq by (rule refl)
-
-(* This seems to be required to work around a bug in the transfer package, which generates these with a "setrel op =" constraint. *)
-lemma [transfer_rule]:
-  "(op = ===> cr_fmap) (\<lambda>S. if finite S then \<lambda>x. if x \<in> S then Some \<bottom> else None else Map.empty) fmap_bottom"
-  using fmap_bottom.transfer
-  unfolding set_rel_eq.
-
-lemma [transfer_rule]: "(cr_fmap ===> op = ===> cr_fmap)
-     (\<lambda>m1 S.
-         if finite S
-         then \<lambda>x. if x \<in> S then Some (case m1 x of None \<Rightarrow> \<bottom> | Some x \<Rightarrow> x) else None
-         else Map.empty)
-     fmap_expand"
-  using fmap_expand.transfer
-  unfolding set_rel_eq.
-
 lemma fmap_bottom_eqvt:
   "finite S \<Longrightarrow> \<pi> \<bullet> (fmap_bottom S :: 'a::pt f\<rightharpoonup> 'b::{cont_pt,pcpo}) = fmap_bottom (\<pi> \<bullet> S)"
   by (transfer,perm_simp, rule refl)
@@ -98,17 +80,5 @@ lemma fmap_bottom_eqvt:
 lemma fmap_expand_eqvt[eqvt]:
   "\<pi> \<bullet> fmap_expand (m :: 'a::{pt} f\<rightharpoonup> 'b::{cont_pt,pcpo}) S = fmap_expand (\<pi> \<bullet> m) (\<pi> \<bullet> S)"
   by (transfer, perm_simp, rule refl)
-
-subsubsection {* Freshness of @{term fmap_bottom} *}
-
-lemma fresh_fmap_bottom_set[simp]:
-  assumes "x \<sharp> d"
-  shows "x \<sharp> (fmap_bottom (set d) :: 'a::pt f\<rightharpoonup> 'b::{pcpo,cont_pt})"
-  apply (rule eqvt_fresh_cong1[OF _ assms])
-  by (simp add: fmap_bottom_eqvt set_eqvt)
-
-lemma fresh_star_fmap_bottom_set[simp]:
-  "x \<sharp>* d \<Longrightarrow> x \<sharp>* (fmap_bottom (set d) :: 'a::pt f\<rightharpoonup> 'b::{pcpo,cont_pt})"
-  by (metis fresh_star_def fresh_fmap_bottom_set)
 
 end

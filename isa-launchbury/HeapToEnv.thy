@@ -39,53 +39,10 @@ lemma lookupHeapToEnv:
   apply auto
   done
 
-lemma lookupHeapToEnvE:
-  assumes "v \<in> heapVars h"
-  obtains e where "(v, e) \<in> set h" and "\<And> f. (heapToEnv h f) f! v = f e"
-proof(rule that)
-  show "(v, (the (map_of h v))) \<in> set h"
-    by (metis assms domD dom_map_of_conv_heapVars map_of_is_SomeD the.simps)
-  fix f
-  show "(heapToEnv h f) f! v = f (the (map_of h v))"
-    by (rule lookupHeapToEnv[OF assms])
-qed
-
-lemma lookupHeapToEnvE2:
-  assumes "v \<in> heapVars h"
-  obtains e where "(v, e) \<in> set h" and "\<And> f. (heapToEnv h f) f! v = f e" and "\<And> f. heapToEnv (h@h') f f! v = f e"
-proof(rule that)
-  show "(v, (the (map_of h v))) \<in> set h"
-    by (metis assms domD dom_map_of_conv_heapVars map_of_is_SomeD the.simps)
-  fix f
-  show "heapToEnv h f f! v = f (the (map_of h v))"
-    by (rule lookupHeapToEnv[OF assms])
-  show "heapToEnv (h @ h') f f! v = f (the (map_of h v))"
-    apply (subst lookupHeapToEnv)
-    using assms apply (auto simp add: map_add_dom_app_simps)
-    done
-qed
-
-lemma lookupHeapToEnvNotCons[simp]:
-  assumes "x \<noteq> y"
-  shows "heapToEnv ((y,e)#h) f f! x = heapToEnv h f f! x"
-  using assms by simp
-
 lemma lookupHeapToEnvNotAppend[simp]:
   assumes "x \<notin> heapVars \<Gamma>"
   shows "heapToEnv (\<Gamma>@h) f f! x = heapToEnv h f f! x"
   using assms by (induct \<Gamma>, auto)
-
-lemma heapToEnv_remove_Cons_fmap_restr:
-  "finite S \<Longrightarrow> x \<notin> S \<Longrightarrow> heapVars \<Gamma> \<subseteq> S \<Longrightarrow> fmap_restr S (heapToEnv ((x, e) # \<Gamma>) eval) = heapToEnv \<Gamma> eval"
-  apply (rule fmap_eqI)
-  apply auto[1]
-  apply (subgoal_tac "xa \<noteq> x")
-  apply (case_tac "xa \<in> heapVars \<Gamma>")
-  apply simp
-  apply simp
-  apply auto
-  done
-
 
 lemma heapToEnv_remove_Cons_fmap_expand:
   "finite S \<Longrightarrow> x \<notin> S \<Longrightarrow> fmap_expand (heapToEnv ((x, e) # \<Gamma>) eval) S = fmap_expand (heapToEnv \<Gamma> eval) S"

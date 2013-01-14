@@ -180,10 +180,6 @@ lemma fmap_add_overwrite: "fdom m1 \<subseteq> fdom m2 \<Longrightarrow> m1 f++ 
   apply (auto simp add: map_add_dom_app_simps(1))
   done
 
-lemma fmap_add_rho[simp]: "\<rho> f++ (\<rho> f++ x) = \<rho> f++ x"
-  apply (rule fmap_add_overwrite)
-  by (metis Un_upper1 fdom_fmap_add)
-
 lemma fmap_add_upd_swap: 
   "x \<notin> fdom \<rho>' \<Longrightarrow> \<rho>(x f\<mapsto> z) f++ \<rho>' = (\<rho> f++ \<rho>')(x f\<mapsto> z)"
   apply transfer
@@ -301,10 +297,6 @@ lemma fmap_less_restrict:
   apply (auto simp add:restrict_map_def split:option.split_asm)
   by (metis option.simps(3))+
 
-lemma fmap_less_to_eq_restrict:
-  "\<rho>1 \<le> \<rho>2 \<Longrightarrow> S \<subseteq> fdom \<rho>1 \<Longrightarrow> fmap_restr S \<rho>1 = fmap_restr S \<rho>2"
-  by (metis finite_fdom fmap_less_restrict fmap_restr_fmap_restr_subset)
-  
 lemma fmap_restr_less:
   "fmap_restr S \<rho> \<le> \<rho>"
   unfolding less_eq_fmap_def

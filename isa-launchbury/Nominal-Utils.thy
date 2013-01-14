@@ -15,28 +15,12 @@ next
   thus "?l" by (rule assms)
 qed
 
-lemma eqvt2I:
-  assumes "(\<And> p x y. p \<bullet> f x y = f (p \<bullet> x) (p \<bullet> y))"
-  shows "eqvt (\<lambda> p. f (fst p) (snd p))"
-  by (auto simp add: eqvt_def eqvt_lambda assms unpermute_def)
-
-lemma permute_under_all:
-  "(\<forall> x . P (\<pi> \<bullet> x)) \<Longrightarrow> (\<forall> x. P x)"
-  by (metis eqvt_bound)
-
-lemma permute_under_ball:
-  "(\<forall> x \<in> (- \<pi> \<bullet> S). P (\<pi> \<bullet> x)) \<Longrightarrow> (\<forall> x \<in> S . P x)"
-  by (metis mem_eqvt permute_minus_cancel(1) permute_pure) 
-
 subsubsection {* Freshness via equivariance *}
 
 lemma eqvt_fresh_cong1: "(\<And>p x. p \<bullet> (f x) = f (p \<bullet> x)) \<Longrightarrow> a \<sharp> x \<Longrightarrow> a \<sharp> f x "
   apply (rule fresh_fun_eqvt_app[of f])
   apply (auto simp add: eqvt_def permute_fun_def)
   done
-
-lemma eqvt_fresh_star_cong1: "(\<And>p x. p \<bullet> (f x) = f (p \<bullet> x)) \<Longrightarrow> a \<sharp>* x \<Longrightarrow> a \<sharp>* f x "
-  by (metis fresh_star_def eqvt_fresh_cong1)
 
 lemma eqvt_fresh_cong2:
   assumes eqvt: "(\<And>p x y. p \<bullet> (f x y) = f (p \<bullet> x) (p \<bullet> y))"
@@ -112,10 +96,6 @@ lemma delete_eqvt[eqvt]:
   "\<pi> \<bullet> AList.delete x \<Gamma> = AList.delete (\<pi> \<bullet> x) (\<pi> \<bullet> \<Gamma>)"
 by (induct \<Gamma>, auto)
 
-lemma update_eqvt[eqvt]:
-  "\<pi> \<bullet> AList.update x v \<Gamma> = AList.update (\<pi> \<bullet> x) (\<pi> \<bullet> v) (\<pi> \<bullet> \<Gamma>)"
-by (induct \<Gamma>, auto)
-
 lemma dom_perm:
   "dom (\<pi> \<bullet> f) = \<pi> \<bullet> (dom f)"
   unfolding dom_def by (perm_simp) (simp)
@@ -174,10 +154,6 @@ lemma fresh_subset:
   "finite B \<Longrightarrow> x \<sharp> (B :: 'a::at_base set) \<Longrightarrow> A \<subseteq> B \<Longrightarrow> x \<sharp> A"
   by (auto dest:supp_mono simp add: fresh_def)
 
-lemma fresh_set_subset:
-  "x \<sharp> (B :: 'a::at_base list) \<Longrightarrow> set A \<subseteq> set B \<Longrightarrow> x \<sharp> A"
-  by (metis fresh_set fresh_subset[OF finite_set])
-
 lemma fresh_star_subset:
   "finite B \<Longrightarrow> x \<sharp>* (B :: 'a::at_base set) \<Longrightarrow> A \<subseteq> B \<Longrightarrow> x \<sharp>* A"
   by (metis fresh_star_def fresh_subset)
@@ -185,7 +161,4 @@ lemma fresh_star_subset:
 lemma fresh_star_set_subset:
   "x \<sharp>* (B :: 'a::at_base list) \<Longrightarrow> set A \<subseteq> set B \<Longrightarrow> x \<sharp>* A"
   by (metis fresh_star_set fresh_star_subset[OF finite_set])
-
-lemma fresh_star_fun_eqvt_app: "eqvt f \<Longrightarrow> a \<sharp>* x \<Longrightarrow> a \<sharp>* f x "
-  by (metis fresh_star_def fresh_fun_eqvt_app)
 end

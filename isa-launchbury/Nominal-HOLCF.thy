@@ -24,17 +24,17 @@ lemma (in cont_pt) perm_cont_simp[simp]: "\<pi> \<bullet> x \<sqsubseteq> \<pi> 
   apply (erule cont2monofunE[OF perm_cont, of _ _ "\<pi>"])
   done
 
-lemma perm_is_ub_simp[simp]: "\<pi> \<bullet> S <| \<pi> \<bullet> (x::'a::{cont_pt}) \<longleftrightarrow> S <| x"
+lemma perm_is_ub_simp[simp]: "\<pi> \<bullet> S <| \<pi> \<bullet> (x::'a::cont_pt) \<longleftrightarrow> S <| x"
   by (auto simp add: is_ub_def permute_set_def)
 
-lemma perm_is_ub_eqvt[simp,eqvt]: "S <| (x::'a::{cont_pt}) ==> \<pi> \<bullet> S <| \<pi> \<bullet> x"
+lemma perm_is_ub_eqvt[simp,eqvt]: "S <| (x::'a::cont_pt) \<Longrightarrow> \<pi> \<bullet> S <| \<pi> \<bullet> x"
   by simp
 
-lemma perm_is_lub_simp[simp]: "\<pi> \<bullet> S <<| \<pi> \<bullet> (x::'a::{cont_pt}) \<longleftrightarrow> S <<| x"
+lemma perm_is_lub_simp[simp]: "\<pi> \<bullet> S <<| \<pi> \<bullet> (x::'a::cont_pt) \<longleftrightarrow> S <<| x"
   apply (rule perm_rel_lemma)
   by (metis is_lubI is_lubD1 is_lubD2 perm_cont_simp perm_is_ub_simp)
 
-lemma perm_is_lub_eqvt[simp,eqvt]: "S <<| (x::'a::{cont_pt}) ==> \<pi> \<bullet> S <<| \<pi> \<bullet> x"
+lemma perm_is_lub_eqvt[simp,eqvt]: "S <<| (x::'a::cont_pt) ==> \<pi> \<bullet> S <<| \<pi> \<bullet> x"
   by simp
 
 lemmas perm_cont2cont[simp,cont2cont] = cont_compose[OF perm_cont]
@@ -47,7 +47,6 @@ proof
   show "cont f \<Longrightarrow> cont (\<pi> \<bullet> f)" using imp[of "f" "\<pi>"].
   show "cont (\<pi> \<bullet> f) \<Longrightarrow> cont (f)" using imp[of "\<pi> \<bullet> f" "-\<pi>"] by simp
 qed
-
 
 lemma perm_bottom[simp,eqvt]: "\<pi> \<bullet> \<bottom> = (\<bottom>::'a::{cont_pt,pcpo})"
   proof-
@@ -63,11 +62,6 @@ lemma below_eqvt [eqvt]:
 lemma lub_eqvt[simp]:
   "(\<exists> z. S <<| (z::'a::{cont_pt})) \<Longrightarrow> \<pi> \<bullet> lub S = lub (\<pi> \<bullet> S)"
   by (metis lub_eqI perm_is_lub_simp)
-
-lemma Lub_eqvt: "(\<exists> z. range F <<| z) \<Longrightarrow> \<pi> \<bullet> (\<Squnion> n ::nat. ((F n) :: 'a :: cont_pt)) = (\<Squnion> n. \<pi> \<bullet> (F n))"
-  apply (subst lub_eqvt, assumption)
-  apply (metis permute_set_eq_image range_composition)
-  done
 
 subsubsection {* Instance for @{type cfun} *}
 
@@ -87,11 +81,6 @@ lemma permute_cfun_eq: "permute p = (\<lambda> f. (Abs_cfun (permute p)) oo f oo
 
 instance "cfun" :: (cont_pt, cont_pt) cont_pt
   by (default,subst permute_cfun_eq, auto)
-
-lemma Lam_eqvt:
-  "cont f \<Longrightarrow> \<pi> \<bullet> Abs_cfun f = Abs_cfun (\<pi> \<bullet> f)"
-  unfolding permute_fun_def permute_cfun_def
-  by auto
 
 lemma Cfun_app_eqvt[eqvt]:
   "\<pi> \<bullet> (f \<cdot> x) = (\<pi> \<bullet> f) \<cdot> (\<pi> \<bullet> x)"
