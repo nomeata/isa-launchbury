@@ -91,7 +91,7 @@ proof-
   txt {* Establish that all joins occuring in the proof are well-defined. *}
   have cond: "HSem_cond'' \<Gamma> \<rho>"
     apply (intro fix_join_condI cont_compose[OF fmap_expand_cont cont2cont_heapToEnv] ESem_cont)
-    apply (rule compatible_fmap_is_compatible[OF compatible_fmapI])
+    apply (rule compatible_fmapI)
     apply (auto simp add: \<rho>_def \<Gamma>_def)
     done
 
