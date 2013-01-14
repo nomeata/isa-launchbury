@@ -115,12 +115,6 @@ lemma dom_map_of_conv_heapVars[simp]:
   "dom (map_of xys) = heapVars xys"
   by (induct xys) (auto simp add: dom_if)
 
-lemma distinctVars_map_of[simp]:
-  "distinctVars \<Gamma> \<Longrightarrow> (x,e) \<in> set \<Gamma> \<Longrightarrow> map_of \<Gamma> x = Some e"
-  apply (induct \<Gamma> rule:distinctVars.induct)
-  apply (auto simp add: heapVars_def)
-  by (metis map_of_eq_None_iff option.simps(2))
-
 lemma distinctVars_set_delete_insert:
   assumes "distinctVars \<Gamma>"
   assumes "(x,e) \<in> set \<Gamma>"

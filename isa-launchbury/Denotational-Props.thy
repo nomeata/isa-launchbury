@@ -73,22 +73,6 @@ abbreviation HSem_syn ("\<lbrace>_\<rbrace>_"  [60,60] 60) where "\<lbrace>\<Gam
 abbreviation HSem_fempty  ("\<lbrace>_\<rbrace>"  [60] 60) where "\<lbrace>\<Gamma>\<rbrace> \<equiv> \<lbrace>\<Gamma>\<rbrace>fempty"
 
 (* TODO: Where to put this *)
-
-lemma  fmap_join_belowI:
-  assumes "compatible x y"
-  assumes "fdom z = fdom x"
-  and "\<And> a. a \<in> fdom x \<Longrightarrow> x f! a \<sqsubseteq> z f! a"
-  and "\<And> a. a \<in> fdom x \<Longrightarrow> y f! a \<sqsubseteq> z f! a"
-  shows  "x \<squnion> y \<sqsubseteq> z"
-  using assms 
-  apply -
-  apply (rule fmap_belowI)
-  apply (metis join_above1 below_fmap_def)
-  by (metis "HOLCF-Join.join_above1" "HOLCF-Join.join_above2" below_fmap_def join_below)
-
-
-lemma fresh_fmap_upd'[simp]: "\<lbrakk> atom a \<sharp> \<rho>; atom x \<sharp> a ; atom a \<sharp> v \<rbrakk> \<Longrightarrow> atom a \<sharp> \<rho>(x f\<mapsto> v)"
-  by (metis fresh_at_base(2) fresh_fmap_upd)
   
 lemma fresh_fmap_upd_lookup[simp]: "S \<sharp>* (\<rho>::Env) \<Longrightarrow> S \<sharp>* x \<Longrightarrow> S \<sharp>* \<rho>(x f\<mapsto> \<rho> f! y)"
   by (auto simp add: fresh_append fresh_star_fmap_upd_eq intro: eqvt_fresh_star_cong2[where f = fmap_delete, OF fmap_delete_eqvt])

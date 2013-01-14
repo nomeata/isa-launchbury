@@ -1,5 +1,5 @@
 theory "HOLCF-Fix-Join"
-  imports "HOLCF-Set" "HOLCF-Join" "HOLCF-Down-Closed"
+  imports "HOLCF-Set" "HOLCF-Join"
 begin
 
 subsubsection {* A carrier set for fixed points of binary joins *}
@@ -29,8 +29,8 @@ lemma subpcpo_bot_fjc: "subpcpo_bot (fix_join_compat \<rho> F) (to_bot \<rho>)"
 lemma bottom_of_fjc: "bottom_of (fix_join_compat \<rho> F) = to_bot \<rho>"
   by (rule bottom_of_subpcpo_bot[OF subpcpo_bot_fjc])
 
-lemma down_closed_fjc: "down_closed (fix_join_compat \<rho> F)"
-  by (auto intro: down_closedI dest:below_trans)
+lemma down_closed_fjc: "\<And>x y. x \<in> fix_join_compat \<rho> F \<Longrightarrow> y \<sqsubseteq> x \<Longrightarrow> y \<in> fix_join_compat \<rho> F"
+  by (auto dest:below_trans)
 
 lemma compat_fjc: "x \<in> fix_join_compat \<rho> F \<Longrightarrow> y \<in> fix_join_compat \<rho> F \<Longrightarrow> compatible x y"
   by (auto elim:ub_implies_compatible)
@@ -176,8 +176,7 @@ lemma fix_on_join_cont_general:
   fixes F :: "'a::Bounded_Nonempty_Meet_cpo \<Rightarrow> 'a"
   assumes "subpcpo S'"
   assumes pcpo_i: "\<And> i. subpcpo (S i)"
-  assumes "down_closed S'"
-  assumes down_closed: "\<And> i. down_closed (S i)"
+  assumes down_closed: "\<And>x y. x \<in> S' \<Longrightarrow> y \<sqsubseteq> x \<Longrightarrow> y \<in> S'"
   assumes same_bottoms: "\<And> i j. bottom_of (S i) = bottom_of (S j)"
   assumes same_bottoms'[simp]: "\<And> i. bottom_of (S i) = bottom_of S'"
   assumes "chain Y"
@@ -191,7 +190,6 @@ lemma fix_on_join_cont_general:
     (is "fix_on _ _ = Lub ?F")
 proof-
   interpret subpcpo S' by fact
-  interpret down_closed S' by fact
 
   have coF: "cont_on S' F" by (rule cont_is_cont_on[OF `cont F`])
 
@@ -260,7 +258,7 @@ proof-
     done
   ultimately
   have F_in_S: "\<And> i. fix_on (S i) (\<lambda>x. Y i \<squnion> F x) \<in> S'"
-    by (rule down_closedE)
+    by (rule down_closed)
 
   have chF: "chain ?F"
     apply (rule chainI)
@@ -351,6 +349,11 @@ proof(rule fix_on_join_cont_general)
   fix i
   show "closed_on (fix_join_compat (\<Squnion> i. Y i) F) (\<lambda>x. (\<Squnion> i. Y i) \<squnion> F x)"
     by (rule closed_on_fjc[OF focj'])
-qed (intro subpcpo_fjc down_closed_fjc rho_F_compat_fjc closed_on_fjc assms)+
+  next
+  fix x y
+  assume "x \<in> fix_join_compat (\<Squnion> i. Y i) F" and "y \<sqsubseteq> x"
+  thus "y \<in> fix_join_compat (\<Squnion> i. Y i) F"
+    by (rule down_closed_fjc)
+qed (intro subpcpo_fjc  rho_F_compat_fjc closed_on_fjc assms)+
 
 end

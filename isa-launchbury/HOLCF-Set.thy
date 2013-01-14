@@ -650,48 +650,6 @@ qed
 
 subsubsection {* Lemmas about function iteration *}
 
-lemma lub_compow:
-  fixes  Y :: "nat \<Rightarrow> 'a \<Rightarrow> 'a"
-  assumes "chain Y"
-  and cont: "\<And> i . cont (Y i)"
-  shows "(\<Squnion>i. Y i) ^^ k = (\<Squnion>i. Y i ^^ k)"
-proof (induct k)
-case 0 thus ?case by auto
-next
-case (Suc k)
-  { 
-  fix k have "chain (\<lambda>i. Y i ^^ k)"
-  proof(induct k)
-  case (Suc k)
-    show ?case
-    proof(rule chainI[OF fun_belowI])
-      case (goal1 i x)
-        have "Y i ((Y i ^^ k) x) \<sqsubseteq> Y (Suc i) ((Y i ^^ k) x)"
-          using `chain Y` by (rule fun_belowD[OF chainE])
-        also have "... \<sqsubseteq> Y (Suc i) ((Y (Suc i) ^^ k) x)"
-           by (rule cont2monofunE[OF cont fun_belowD[OF chainE[OF Suc]]])
-        finally show ?case by simp
-    qed
-  qed simp
-  } note c2 = this
-  have c3: "\<And> x. chain (\<lambda>i. (Y i ^^ k) x)" by (rule ch2ch_fun[OF c2])
-  have c4: "\<And> j. \<And> x. chain (\<lambda>i. Y i ((Y j ^^ k) x))" by (rule ch2ch_fun[OF assms(1)])
-  have c5: "\<And> i. \<And> x. chain (\<lambda>j. Y i ((Y j ^^ k) x))" by (rule ch2ch_cont[OF cont c3])
-  show ?case
-  proof(rule ext)
-    fix x
-    have "((\<Squnion> i. Y i) ^^ Suc k) x = (\<Squnion> i. Y i) (((\<Squnion> i. Y i) ^^ k) x)" by simp
-    also have "... = (\<Squnion> i. Y i) ((\<Squnion> i. Y i ^^k) x)" by (simp add: Suc)
-    also have "... = (\<Squnion> i. Y i) (\<Squnion> i. (Y i ^^k) x)" by (subst lub_fun[OF c2], rule)
-    also have "... = (\<Squnion> i. (Y i (\<Squnion> j. (Y j ^^k) x)))" by (subst lub_fun[OF `chain Y`], rule)
-    also have "... = (\<Squnion> i. (\<Squnion> j. Y i ((Y j ^^k) x)))" by (subst cont2contlubE[OF cont c3], rule) 
-    also have "... = (\<Squnion> i.  Y i ((Y i ^^k) x))" by (subst diag_lub[OF c4 c5], rule)
-    also have "... = (\<Squnion> i. (Y i ^^(Suc k)) x)" by simp
-    also have "... = (\<Squnion> i. (Y i ^^(Suc k))) x" by (subst lub_fun[OF c2], rule)
-    finally show "((\<Squnion> i. Y i) ^^ Suc k) x = (\<Squnion> i. Y i ^^ Suc k) x".
-  qed
-qed
-
 lemma chain_on_compow:
   assumes "chain Y"
   and cont: "\<And> i . cont_on S (Y i)"

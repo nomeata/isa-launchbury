@@ -31,12 +31,6 @@ lemma fresh_transfer[transfer_rule]: "(op = ===> cr_fmap ===> op =) fresh fresh"
   using fun_relD[OF supp_transfer, unfolded cr_fmap_def]
   by auto
 
-lemma fresh_star_transfer[transfer_rule]: "(op = ===> cr_fmap ===> op =) fresh_star fresh_star" 
-  apply (rule fun_relI)+
-  apply (simp add: cr_fmap_def fresh_star_def)
-  using fun_relD[OF fun_relD[OF fresh_transfer], unfolded cr_fmap_def]
-  by blast
-
 lemma permute_transfer2[transfer_rule]: "(op = ===> op = ===> op =) permute (permute :: perm \<Rightarrow> ('a::pt) set \<Rightarrow> 'a set)" 
   unfolding fun_rel_eq by (rule refl)
 

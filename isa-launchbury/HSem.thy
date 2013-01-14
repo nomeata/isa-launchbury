@@ -356,7 +356,7 @@ lemma fjc'_of_fun_below:
   shows "fix_join_cond \<rho> G"
   apply (rule fix_join_condI[OF assms(3)])
   apply (rule compat_fjc[OF rho_fjc[OF assms(1)]])
-  apply (rule down_closed.down_closedE[OF down_closed_fjc _ fun_belowD[OF assms(2)]])
+  apply (rule down_closed_fjc[OF _ fun_belowD[OF assms(2)]])
   apply (rule F_pres_compat''[OF assms(1)])
   
   apply (induct_tac i)
@@ -366,10 +366,9 @@ lemma fjc'_of_fun_below:
 
   apply (simp only: funpow.simps o_apply id_apply)
   apply (rule join_fjc[OF rho_fjc[OF assms(1)]])
-  apply (rule down_closed.down_closedE[OF down_closed_fjc _ fun_belowD[OF assms(2)]])
+  apply (rule down_closed_fjc[OF _ fun_belowD[OF assms(2)]])
   apply (erule F_pres_compat''[OF assms(1)])
   done
-
 
 lemma HSem_cond'_of_member:
   assumes "HSem_cond' \<Gamma> \<rho>"
@@ -646,7 +645,7 @@ subsubsection {* The heap semantics can also be define inductively over the heap
       apply (rule closed_onI)
       apply (rule HSem_ind)
       apply (rule adm_is_adm_on[OF subcpo_mem_adm[OF subcpo_fjc]])
-      apply (rule down_closed.down_closedE[OF down_closed_fjc], assumption)
+      apply (rule down_closed_fjc, assumption)
       apply (frule fdom)
       apply (auto simp add:to_bot_fmap_def simp del:fjc_iff)[1]
       apply (rule join_fjc)
@@ -654,7 +653,7 @@ subsubsection {* The heap semantics can also be define inductively over the heap
        apply (frule fdom, auto)[1]
        apply assumption
       
-      apply (rule down_closed.down_closedE[OF down_closed_fjc F_pres_compat''[OF assms(1)]], assumption) back
+      apply (rule down_closed_fjc[OF F_pres_compat''[OF assms(1)]], assumption) back
       apply (rule heapToEnv_mono)
       apply simp
       apply (frule fdom, auto)[1]
@@ -666,7 +665,7 @@ subsubsection {* The heap semantics can also be define inductively over the heap
       
     have closedR2: "closed_on ?R2"
       apply (rule closed_onI)
-      apply (rule down_closed.down_closedE[OF down_closed_fjc F_pres_compat''[OF assms(1)]], assumption)
+      apply (rule down_closed_fjc[OF F_pres_compat''[OF assms(1)]], assumption)
       apply (rule fmap_belowI)
       apply (frule fdom, auto)[1]
       apply (case_tac "xaa = x", simp_all)

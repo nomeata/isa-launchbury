@@ -335,14 +335,6 @@ lemma fdom_adm_eq[simp]:
    "adm (\<lambda>\<rho>. fdom \<rho> = z)"
    by (rule fdom_adm)
 
-lemma adm_lookup: assumes "adm P" shows "adm (\<lambda> \<rho>. P (\<rho> f! x))"
-  apply (rule admI)
-  apply (subst lookup_cont)
-  apply assumption
-  apply (erule admD[OF assms lookup_chain])
-  apply metis
-  done
-
 lemma  fmap_add_belowI:
   assumes "fdom x \<union> fdom y = fdom z"
   and "\<And> a. a \<in> fdom y \<Longrightarrow> y f! a \<sqsubseteq> z f! a"
@@ -751,9 +743,6 @@ lemma fmap_bottom_below_iff[iff]:
   "finite S \<Longrightarrow> fmap_bottom S \<sqsubseteq> \<rho> \<longleftrightarrow> S = fdom \<rho>"
   by (metis fdom_fmap_bottom fmap_below_dom fmap_bottom_below)
 
-lemma fmap_bottom_eqI[intro!]: "x = y \<Longrightarrow> fmap_bottom x = fmap_bottom y"
-  by (transfer, auto)
-
 lemma fmap_bottom_inj[iff]: "finite x \<Longrightarrow> finite y \<Longrightarrow> fmap_bottom x = fmap_bottom y \<longleftrightarrow> x = y"
   apply transfer
   apply (auto simp add: option.split option.split_asm)
@@ -996,14 +985,6 @@ begin
     apply (case_tac "xa \<in> S")
     apply simp_all
     done
-
-  lemma H_ignores_not_S:
-    fixes y \<rho>'
-    assumes "y \<notin> S" and there: "(\<rho>' :: 'a f\<rightharpoonup> 'b) \<in> cpo"
-    shows "lookup (fix_on' b (H \<rho>')) y = lookup \<rho>' y"
-      using assms
-      apply (subst fix_on_eq[OF condH[OF there]])
-      by simp
   
   lemma H_noop:
     fixes \<rho>' \<rho>''

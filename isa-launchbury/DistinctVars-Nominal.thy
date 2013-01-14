@@ -28,13 +28,6 @@ lemma fresh_heap_expr':
   using assms
   by (induct \<Gamma>, auto simp add: fresh_Cons fresh_Pair)
 
-lemma fresh_star_heap_expr:
-  assumes "S \<sharp>* \<Gamma>"
-  and "(x,e) \<in> set \<Gamma>"
-  shows "S \<sharp>* e"
-  using assms
-  by (metis fresh_star_def fresh_heap_expr)
-
 lemma fresh_star_heap_expr':
   assumes "S \<sharp>* \<Gamma>"
   and "e \<in> snd ` set \<Gamma>"
