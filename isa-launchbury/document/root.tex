@@ -33,6 +33,7 @@
 \usepackage{graphicx}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
+\usepackage{mathpartir}
 
 % this should be the last package used
 \usepackage{pdfsetup}
@@ -41,6 +42,9 @@
 \urlstyle{rm}
 \isabellestyle{it}
 
+% Isabelle does not like *} in a text {* ... *} block
+% Concrete implemenation thanks to http://www.mrunix.de/forums/showpost.php?p=235085&postcount=5
+\newenvironment{alignstar}{\csname align*\endcsname}{\csname endalign*\endcsname}
 
 \begin{document}
 
@@ -135,6 +139,8 @@ Chapter \ref{ch_dendom} sets the stage for the denotational semantics by definin
 Chapter \ref{ch_denjoin} defines the denotational semantics where $\sqcup$ means the least upper bound. We show that Launchbury's Theorem 2 as stated is false for this semantics, and provide an alternative proof, that avoids the problematic generalization, via the stacked semantics. The semantics for heaps given in \isa{HSem} is abstract in the concrete type and denotation of expressions.
 
 Chapter \ref{ch_denupd} defines the denotational semantics where $\sqcup$ means right-sided update, and proves Launchbury's semantics correct using the proof from his paper. Again, the heap semantics in \isa{HSemUpd} is abstract in the concrete type and denotation of expressions.
+
+\input{Everything.tex}
 
 \subsection{Reusable components}
 

@@ -68,6 +68,12 @@ case (Let as \<Gamma> x body \<Gamma>' \<Delta> \<Delta>' S)
     by (simp, rule Launchbury.Let[OF fresh Let.hyps(5) hyp])
 qed
 
+lemma forget_stack_nice:
+  assumes "\<Gamma> : (x, e) # \<Gamma>' \<Down> \<Delta> : (x, z) # \<Delta>'"
+  and "supp L \<subseteq> supp \<Gamma>'"
+  shows "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
+using forget_stack[OF assms(1)] assms(2) by auto
+
 subsubsection {* Original evaluation implies stacked evaluation. *}
 
 lemma add_stack:
