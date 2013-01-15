@@ -103,6 +103,8 @@ Our contributions are:
 
 Lidia Sánchez-Gil, Mercedes Hidalgo-Herrero and Yolanda Ortega-Mallén have worked on formal aspects of Launchbury’s semantics as well. On the one hand, they identified a step in his adequacy proof relating the standard and the resourced denotational semantics that is not as trivial as it seems at first and worked out the proof as a detailed pen-and-paper proof \cite{functionspaces}. They also plan to prove the equivalency between Launchbury’s natural semantics and a variant thereof which was used by Launchbury in the adequacy proof in the theorem prover Coq. As one step in that direction, they address the naming issues and suggest a mixed representation, using de Bruijn indices for locally bound variables and names for free variables \cite{nameless}. This corresponds to our treatment of names, using the Nominal logic machinery locally but not for names bound in heaps.
 
+The same group extended Launchbury’s semantic for distributed lazy evaluation \cite{distributed}. In their modified natural semantics the heap retains the expression under evaluation with a special flag, marking them as blocked. Furthermore, the expression under evaluation has a name. Therefore the non-distributed part of their semantics is very similar to our stacked semantics. This supports our claim that the stacked semantics is well suited for further proofs and extensions.
+
 \begin{figure}
 \begin{center}
   \includegraphics[width=\textwidth]{session_graph}
