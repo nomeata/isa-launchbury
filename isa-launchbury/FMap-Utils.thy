@@ -14,5 +14,4 @@ lemma fdom_fix_join_compat:
 
 lemma sharp_star_Env': "atom ` heapVars \<Gamma> \<sharp>* (\<rho> :: 'var::{cont_pt,at_base} f\<rightharpoonup> 'value::{pure_cpo,Nonempty_Meet_cpo,pcpo}) \<longleftrightarrow> heapVars \<Gamma> \<inter> fdom \<rho> = {}"
   by(induct \<Gamma>, auto simp add: fresh_star_def sharp_Env)
-
 end
