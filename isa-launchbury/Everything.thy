@@ -4,7 +4,7 @@ imports DenotationalEquivalences Correctness CorrectnessUpd "Correctness-Counter
 begin
 
 notation (latex output) fmap_expand ("_\<^bsub>'(_')\<^esub>" [50, 60] 90)
-notation (latex output) fempty ("\<bottom>\<^bsub>f\<^esub>")
+notation (latex output) fempty ("\<emptyset>\<^bsub>f\<^esub>")
 
 notation (latex output) DenotationalUpd.ESem ("\<lbrakk> _ \<rbrakk>\<^bsup>u\<^esup>\<^bsub>_\<^esub>"  [60,60] 60)
 notation (latex output) "Denotational-PropsUpd.HSem_syn" ("\<lbrace>_\<rbrace>\<^bsup>u\<^esup>_"  [60,60] 60)
@@ -43,6 +43,9 @@ demonstrated by the following lemma:
 \[
 @{thm Terms[no_vars]}
 \]
+These expressions are, due to the machinery of the Nominal package, actually alpha-equivalency-classes 
+so the identity @{thm alpha_test[no_vars]} is a theorem.
+
 Heaps are of type @{typ "(var \<times> exp) list"}.
 *}
 
