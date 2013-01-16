@@ -449,5 +449,7 @@ and
 by(induct e y z and as y z rule:subst_subst_assn.induct)
   (auto simp add:exp_assn.fresh fresh_at_base fresh_star_Pair exp_assn.bn_defs fresh_star_insert)
 
+lemma let_binders_fresh[simp]: "set (bn as) \<sharp>* Terms.Let as body"
+  by (metis Diff_iff exp_assn.supp(3) finite_supp fresh_finite_atom_set fresh_star_def fresh_star_set fresh_star_supp_conv supp_of_atom_list)
 
 end

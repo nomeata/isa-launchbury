@@ -169,9 +169,9 @@ case (Variable y e \<Gamma> x \<Gamma>' z \<Delta>' \<Delta>)
   show "\<lbrace>((x, Var y) # \<Gamma>') @ \<Gamma>\<rbrace> \<le> \<lbrace>((x, z) # \<Delta>') @ (y, z) # \<Delta>\<rbrace>".
 
 next
-case (Let as \<Gamma> x body \<Gamma>' \<Delta>' \<Delta>)
+case (Let as \<Gamma> x \<Gamma>' body \<Delta>' \<Delta>)
   have "distinctVars (asToHeap as @ ((x, Terms.Let as body) # \<Gamma>') @ \<Gamma>)"
-    by (metis Let(1) Let(2) Let(3) distinctVars_append_asToHeap fresh_star_Pair fresh_star_list(1) fresh_star_list(2))
+    by (metis Let(1) Let(2) Let(3) distinctVars_append_asToHeap fresh_star_Cons fresh_star_Pair fresh_star_append let_binders_fresh)
   hence d3: "distinctVars ((x, body) # asToHeap as @ \<Gamma>' @ \<Gamma>)"
     and d4: "distinctVars (((x, body) # \<Gamma>') @ asToHeap as @ \<Gamma>)"
     and d5: "distinctVars ((x, body) # \<Gamma>' @ \<Gamma>)"

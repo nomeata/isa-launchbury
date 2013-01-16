@@ -165,12 +165,12 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
   finally
   show ?case.
 next
-case (Let as \<Gamma> body L \<Delta> z \<rho>)
+case (Let as \<Gamma> L body \<Delta> z \<rho>)
   case 1
   { fix a
     assume a: "a \<in> heapVars (asToHeap as)"
     have "atom a \<sharp> L" 
-      by (rule Let(3)[unfolded fresh_star_def set_bn_to_atom_heapVars, rule_format, OF imageI[OF a]])
+      by (rule Let(2)[unfolded fresh_star_def set_bn_to_atom_heapVars, rule_format, OF imageI[OF a]])
     hence "a \<notin> set L"
       by (metis fresh_list_elem not_self_fresh)
     moreover
@@ -194,7 +194,7 @@ case (Let as \<Gamma> body L \<Delta> z \<rho>)
     using 1 by auto
 
   have d1: "distinctVars (\<Gamma> @ asToHeap as)"
-    using Let(1) Let(4) Let(8)
+    using Let(1) Let(3) Let(7)
     apply (simp add: distinctVars_append)
     by (metis fresh_assn_distinct heapVars_asToHeap inf_commute)
   
@@ -207,7 +207,7 @@ case (Let as \<Gamma> body L \<Delta> z \<rho>)
   also have "\<dots> =  \<lbrakk> body \<rbrakk>\<^bsub>\<lbrace>asToHeap as @ \<Gamma>\<rbrace>\<rho>\<^esub>"
     by (rule arg_cong[OF HSem_merge[OF d1 f1]])
   also have "\<dots> =  \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>"
-    by (rule Let.hyps(6)[OF hyp])
+    by (rule Let.hyps(5)[OF hyp])
   finally
   show ?case.
 
@@ -215,7 +215,7 @@ case (Let as \<Gamma> body L \<Delta> z \<rho>)
   have "\<lbrace>\<Gamma>\<rbrace>\<rho> \<le> \<lbrace>asToHeap as @ \<Gamma>\<rbrace>\<rho>"
     by (rule HSem_less[OF d1 f1])
   also have "\<dots> \<le> \<lbrace>\<Delta>\<rbrace>\<rho>"
-    by (rule Let.hyps(7)[OF hyp])
+    by (rule Let.hyps(6)[OF hyp])
   finally
   show ?case.
 qed

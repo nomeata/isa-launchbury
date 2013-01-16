@@ -51,21 +51,21 @@ case (Variable y e \<Gamma> x \<Gamma>' \<Delta> z \<Delta>' S)
   show ?case
     by (simp, rule Launchbury.Variable[OF `_ \<in> set _` hyp])   
 next
-case (Let as \<Gamma> x body \<Gamma>' \<Delta> \<Delta>' S)
+case (Let as \<Gamma> x  \<Gamma>' body \<Delta> \<Delta>' S)
   have "supp S \<subseteq> supp \<Gamma>'"
     using Let.prems[simplified].
   hence hyp: "asToHeap as @ \<Gamma> : body \<Down>\<^bsub>S\<^esub> \<Delta> : snd (hd \<Delta>')"
-    by (rule Let.hyps(7)[simplified])
+    by (rule Let.hyps(6)[simplified])
 
   have "set (bn as) \<sharp>* S"
-    using Let(4) using `supp S \<subseteq> supp \<Gamma>'`
+    using Let(3) using `supp S \<subseteq> supp \<Gamma>'`
     by (auto simp add: fresh_star_def fresh_def)
 
-  hence fresh: "set (bn as) \<sharp>* (\<Gamma>, Terms.Let as body, S)"
+  hence fresh: "set (bn as) \<sharp>* (\<Gamma>, S)"
     using Let by (auto simp add: fresh_star_Pair)
 
   show ?case
-    by (simp, rule Launchbury.Let[OF fresh Let.hyps(5) hyp])
+    by (simp, rule Launchbury.Let[OF fresh Let.hyps(4) hyp])
 qed
 
 lemma forget_stack_nice:
@@ -122,7 +122,7 @@ case (Variable x e \<Gamma> L \<Delta> z \<Gamma>' xa)
   show ?case
     by (rule LaunchburyStacked.reds.Variable[OF `(x,e) \<in> set _` hyp])
 next
-case (Let as \<Gamma> body L \<Delta> z \<Gamma>' x)
+case (Let as \<Gamma> L body \<Delta> z \<Gamma>' x)
   from `x \<in> set L` and `_ \<sharp>* L`
   have [simp]:"set (bn as) \<sharp>* x"
     by (metis fresh_star_Cons fresh_star_list(1) in_set_conv_decomp)
@@ -131,12 +131,12 @@ case (Let as \<Gamma> body L \<Delta> z \<Gamma>' x)
   have [simp]:"set (bn as) \<sharp>* \<Gamma>'"
     by (auto simp add: fresh_star_def fresh_def)
 
-  have fresh: "set (bn as) \<sharp>* (\<Gamma>, x, Terms.Let as body, \<Gamma>')"
+  have fresh: "set (bn as) \<sharp>* (\<Gamma>, x, \<Gamma>')"
     using Let(1-3)
     by (simp add: fresh_star_Pair)
  
   have hyp: "asToHeap as @ \<Gamma> : (x, body) # \<Gamma>' \<Down> \<Delta> : (x, z) # \<Gamma>'"
-    apply (rule Let.hyps(6)[OF Let.prems])
+    apply (rule Let.hyps(5)[OF Let.prems])
     done
 
   show ?case

@@ -23,7 +23,7 @@ where
     \<Gamma> : App e x \<Down>\<^bsub>L\<^esub> \<Theta> : z" 
  | Variable: "\<lbrakk>
     (x,e) \<in> set \<Gamma>; delete x \<Gamma> : e \<Down>\<^bsub>x#L\<^esub> \<Delta> : z \<rbrakk> \<Longrightarrow> \<Gamma> : Var x \<Down>\<^bsub>L\<^esub> (x, z) # \<Delta> : z"
- | Let: "set (bn as) \<sharp>* (\<Gamma>, Let as body, L) \<Longrightarrow> distinctVars (asToHeap as) \<Longrightarrow> asToHeap as @ \<Gamma> : body \<Down>\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> \<Gamma> : Let as body \<Down>\<^bsub>L\<^esub> \<Delta> : z"
+ | Let: "set (bn as) \<sharp>* (\<Gamma>, L) \<Longrightarrow> distinctVars (asToHeap as) \<Longrightarrow> asToHeap as @ \<Gamma> : body \<Down>\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> \<Gamma> : Let as body \<Down>\<^bsub>L\<^esub> \<Delta> : z"
 
 equivariance reds
 
@@ -89,9 +89,9 @@ next
 case (Variable  x e \<Gamma> L \<Delta> z) thus ?case
    using heapVars_from_set[OF Variable(1)] by auto
 next
-case (Let as \<Gamma> body L \<Delta> z)
+case (Let as \<Gamma> L body \<Delta> z)
   have "x \<notin> heapVars \<Gamma>" by fact moreover
-  have "set (bn as) \<sharp>* L" using `set (bn as) \<sharp>* (\<Gamma>, Let as body, L)` by (simp add: fresh_star_Pair)
+  have "set (bn as) \<sharp>* L" using `set (bn as) \<sharp>* (\<Gamma>, L)` by (simp add: fresh_star_Pair)
   hence "x \<notin> heapVars (asToHeap as)"
     using `x \<in> set L`
     apply -
@@ -126,7 +126,7 @@ where
     distinctVars ((x,z) # \<Delta>)
   \<rbrakk> \<Longrightarrow> \<Gamma> : Var x \<Down>d\<^bsub>L\<^esub> (x, z) # \<Delta> : z"
  | DLet: "\<lbrakk>
-    set (bn as) \<sharp>* (\<Gamma>, Let as body, L);
+    set (bn as) \<sharp>* (\<Gamma>, L);
     distinctVars (asToHeap as);
     asToHeap as @ \<Gamma> : body \<Down>d\<^bsub>L\<^esub> \<Delta> : z;
     distinctVars \<Gamma>;
@@ -231,7 +231,7 @@ case(Variable v e \<Gamma> L \<Delta> z)
   thus ?case using `atom x \<sharp> v` by (auto simp add: fresh_Pair fresh_Cons fresh_at_base)
 next
 
-case (Let as \<Gamma> body L \<Delta> z)
+case (Let as \<Gamma> L body \<Delta> z)
   show ?case
     proof (cases "atom x \<in> set(bn as)")
     case False
@@ -290,14 +290,12 @@ case (Variable xa e \<Gamma> L \<Delta> z L')
   thus ?case
     by (rule reds.Variable[OF Variable(1) Variable.hyps(3)])
 next
-case (Let as \<Gamma> body L \<Delta> z L')
-  have "set (bn as) \<sharp>* (\<Gamma>, Terms.Let as body, L')"
+case (Let as \<Gamma>  L body \<Delta> z L')
+  have "set (bn as) \<sharp>* (\<Gamma>, L')"
     using Let(1-3) Let.prems
     by (auto simp add: fresh_star_Pair  fresh_star_set_subset)
   thus ?case
-    by (rule reds.Let[OF _ Let.hyps(4) Let.hyps(6)[OF Let.prems]])
+    by (rule reds.Let[OF _ Let.hyps(3) Let.hyps(5)[OF Let.prems]])
 qed
-
-
 end
 

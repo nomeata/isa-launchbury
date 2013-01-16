@@ -29,7 +29,7 @@ where
    \<rbrakk> \<Longrightarrow>
       \<Gamma> : (x, Var y) # \<Gamma>' \<Down> (y, z) # \<Delta> : (x, z) # \<Delta>'"
  | Let: "\<lbrakk>
-      set (bn as) \<sharp>* (\<Gamma>, x, Let as body, \<Gamma>');
+      set (bn as) \<sharp>* (\<Gamma>, x, \<Gamma>');
       distinctVars (asToHeap as);
       asToHeap as @ \<Gamma> : (x, body) # \<Gamma>' \<Down> \<Delta> : \<Delta>'
    \<rbrakk> \<Longrightarrow>
@@ -101,7 +101,7 @@ where
    \<rbrakk> \<Longrightarrow>
       \<Gamma> : (x, Var y) # \<Gamma>' \<Down>d (y, z) # \<Delta> : (x, z) # \<Delta>'"
  | DLet: "\<lbrakk>
-      set (bn as) \<sharp>* (\<Gamma>, x, Let as body, \<Gamma>');
+      set (bn as) \<sharp>* (\<Gamma>, x, \<Gamma>');
       distinctVars (asToHeap as);
       distinctVars (((x, Let as body) # \<Gamma>') @ \<Gamma>);
       distinctVars (((x, body) # \<Gamma>') @ asToHeap as @ \<Gamma>);
@@ -196,13 +196,13 @@ case (Variable y e \<Gamma> x \<Gamma>' \<Delta> z \<Delta>')
   show ?case
     by (rule DVariable)
 next
-case (Let as \<Gamma> x body \<Gamma>' \<Delta> \<Delta>')
-  hence "set (bn as) \<sharp>* (((x, Terms.Let as body) # \<Gamma>') @ \<Gamma>)"
+case (Let as \<Gamma> x \<Gamma>' body \<Delta> \<Delta>')
+  hence "set (bn as) \<sharp>* (((x, Let as body) # \<Gamma>') @ \<Gamma>)"
     by (auto simp add: fresh_star_Pair fresh_star_list)
   hence "heapVars (asToHeap as) \<inter> heapVars (((x, Terms.Let as body) # \<Gamma>') @ \<Gamma>) = {}"
     by (rule fresh_assn_distinct)
   
-  have "set (bn as) \<sharp>* (\<Gamma>, x, Terms.Let as body, \<Gamma>')"
+  have "set (bn as) \<sharp>* (\<Gamma>, x, \<Gamma>')"
     using Let by (simp add: fresh_star_Pair fresh_star_list)
   moreover
   assume "distinctVars (asToHeap as)"
@@ -213,7 +213,7 @@ case (Let as \<Gamma> x body \<Gamma>' \<Delta> \<Delta>')
     using `distinctVars (asToHeap as)` `_ = {}`
     by (auto simp add: distinctVars_append distinctVars_Cons)
   moreover
-  note hyp = Let.hyps(7)[OF this]
+  note hyp = Let.hyps(6)[OF this]
   note distinct_redsD3[OF hyp]
   moreover  
   note hyp
@@ -380,14 +380,14 @@ case (DLet as \<Gamma> xa body \<Gamma>' \<Delta>' \<Delta> x)
       hence "atom x \<sharp> asToHeap as"
         by(induct as rule:asToHeap_induct)(auto simp add: fresh_Nil fresh_Cons fresh_Pair exp_assn.fresh)
       show ?thesis
-        apply(rule DLet.hyps(10))
+        apply(rule DLet.hyps(9))
         using DLet.prems `atom x \<sharp> asToHeap as` False
         by (auto simp add: fresh_Pair exp_assn.fresh fresh_append)
     next
     case True
       hence "x \<in> heapVars (asToHeap as)" 
         by(induct as rule:asToHeap_induct)(auto simp add: exp_assn.bn_defs)      
-      thus ?thesis using reds_doesnt_forget'[OF DLet.hyps(9)] by auto
+      thus ?thesis using reds_doesnt_forget'[OF DLet.hyps(8)] by auto
     qed
 qed
 

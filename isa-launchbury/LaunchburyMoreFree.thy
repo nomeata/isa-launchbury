@@ -20,7 +20,7 @@ where
     \<Gamma> : App e x \<Down>*\<^bsub>L\<^esub> \<Theta> : z" 
  | Variable: "\<lbrakk>
     (x,e) \<in> set \<Gamma>; delete x \<Gamma> : e \<Down>*\<^bsub>x#L\<^esub> \<Delta> : z \<rbrakk> \<Longrightarrow> \<Gamma> : Var x \<Down>*\<^bsub>L\<^esub> (x, z) # \<Delta> : z"
- | Let: "set (bn as) \<sharp>* (\<Gamma>, Let as body, L) \<Longrightarrow> distinctVars (asToHeap as) \<Longrightarrow> asToHeap as @ \<Gamma> : body \<Down>*\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> \<Gamma> : Let as body \<Down>*\<^bsub>L\<^esub> \<Delta> : z"
+ | Let: "set (bn as) \<sharp>* (\<Gamma>, L) \<Longrightarrow> distinctVars (asToHeap as) \<Longrightarrow> asToHeap as @ \<Gamma> : body \<Down>*\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> \<Gamma> : Let as body \<Down>*\<^bsub>L\<^esub> \<Delta> : z"
 
 equivariance reds
 
@@ -126,22 +126,22 @@ case (Variable xa e \<Gamma> L \<Delta> z L')
   show ?case
     by (rule reds.Variable[OF Variable(1) Variable.hyps(3)])
 next
-case (Let as \<Gamma> body L \<Delta> z L')
+case (Let as \<Gamma> L body \<Delta> z L')
   have "x \<notin> heapVars \<Delta>"
     using Let.prems(1)
     apply (auto simp add: fresh_Pair)
     by (metis heapVars_not_fresh)
   hence "x \<notin> heapVars (asToHeap as @ \<Gamma>)"
-      by (metis set_mp reds_with_n_doesnt_forget[OF Let.hyps(5)])
+      by (metis set_mp reds_with_n_doesnt_forget[OF Let.hyps(4)])
   hence "atom x \<notin> set (bn as)"
     by (auto simp add: set_bn_to_atom_heapVars)
   hence "set (bn as) \<sharp>* x"
     by (auto simp add: fresh_star_def fresh_at_base)
     
   hence "set (bn as) \<sharp>* set L'"
-    using Let(3) Let.prems(2)
+    using Let(2) Let.prems(2)
     by (auto simp add: fresh_star_def fresh_finite_insert fresh_set)
-  hence "set (bn as) \<sharp>* (\<Gamma>, Terms.Let as body, L')" 
+  hence "set (bn as) \<sharp>* (\<Gamma>, L')" 
     using Let(1-4)
     by (simp add: fresh_star_Pair fresh_star_set )
   moreover
@@ -150,7 +150,7 @@ case (Let as \<Gamma> body L \<Delta> z L')
     by (auto simp add: fresh_Pair fresh_append exp_assn.fresh fresh_fun_eqvt_app[OF asToHeap_eqvt])
   ultimately
   show ?case
-    by (rule reds.Let[OF _ Let.hyps(4) Let.hyps(6)[OF _ Let.prems(2)]])
+    by (rule reds.Let[OF _ Let.hyps(3) Let.hyps(5)[OF _ Let.prems(2)]])
 qed
 
 lemma reds_more_free:
