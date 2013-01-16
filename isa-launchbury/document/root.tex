@@ -34,6 +34,7 @@
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage{mathpartir}
+\usepackage{calc}
 
 % this should be the last package used
 \usepackage{pdfsetup}
@@ -118,7 +119,7 @@ The same group extended Launchbury’s semantic for distributed lazy evaluation 
 
 \subsection{Theory overview}
 
-The following chapter contains the complete Isabelle theories, with one section per theory. Their interdependencies are visualized in Figure \ref{theory-deps}.
+The following chapters contains the complete Isabelle theories, with one section per theory. Their interdependencies are visualized in Figure \ref{theory-deps}.
 
 Chapter \ref{ch_aux} contains auxiliary theories, not necessarily tied to Launchbury's semantics. The base theories are kept independent of Nominal and HOLCF where possible, the lemmas combining them are in theories of their own, creatively named by appending \isa{-Nominal}, \isa{-HOLCF} or both.  You will find these theories:
 \begin{itemize}
@@ -138,7 +139,7 @@ Chapter \ref{ch_dendom} sets the stage for the denotational semantics by definin
 
 Chapter \ref{ch_denjoin} defines the denotational semantics where $\sqcup$ means the least upper bound. We show that Launchbury's Theorem 2 as stated is false for this semantics, and provide an alternative proof, that avoids the problematic generalization, via the stacked semantics. The semantics for heaps given in \isa{HSem} is abstract in the concrete type and denotation of expressions.
 
-Chapter \ref{ch_denupd} defines the denotational semantics where $\sqcup$ means right-sided update, and proves Launchbury's semantics correct using the proof from his paper. Again, the heap semantics in \isa{HSemUpd} is abstract in the concrete type and denotation of expressions.
+Chapter \ref{ch_denupd} defines the denotational semantics where $\sqcup$ means right-sided update, and proves Launchbury's semantics correct using the proof from his paper. The semantics can differ only for heaps; for expressions are assigned the same denotation. Again, the heap semantics in \isa{HSemUpd} is abstract in the concrete type and denotation of expressions.
 
 \input{Everything.tex}
 

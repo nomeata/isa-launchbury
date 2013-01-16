@@ -21,34 +21,39 @@ subsection {* Main definitions and theorems *}
 
 text {*
 For your convenience, the main definitions and theorems of this theory are collected. The following 
-formulas are mechanically pretty-printed versions of the statements as defined resp. proven by Isabelle.
+formulas are mechanically pretty-printed versions of the statements as defined resp. proven in Isabelle.
 *}
 
 subsubsection {* The natural semantics *}
 
+text_raw {*
+\newlength{\rulelen}
+\setlength{\rulelen}{\linewidth}
+\newlength{\rulenamelen}
+\settowidth{\rulenamelen}{~{\sc Application}}
+\addtolength{\rulelen}{-\rulenamelen}
+*}
+
 text {*
 Launchbury's original semantics, extended with some technical overhead related to name binding,
-is defined as follows:
-\begin{center}
-@{thm[mode=Axiom] LaunchburyStacked.reds.Lambda[no_vars]} {\sc Lambda}\\[2ex]
-@{thm[mode=Rule] LaunchburyStacked.reds.Application[no_vars]} {\sc Application} \\[2ex]
-@{thm[mode=Rule] LaunchburyStacked.reds.Variable[no_vars]} {\sc Variable}\\[2ex]
-@{thm[mode=Rule] LaunchburyStacked.reds.Let[no_vars]} {\sc Let}
-\end{center}
+is defined as follows:\\
+%\begin{center}
+\parbox[t]{\rulelen}{\centering@{thm[mode=Axiom] Launchbury.reds.Lambda[no_vars]}}~{\sc Lambda}\\[2ex]
+\parbox[t]{\rulelen}{\centering@{thm[mode=Rule] Launchbury.reds.Application[no_vars]}}~{\sc Application}\\[2ex]
+\parbox[t]{\rulelen}{\centering@{thm[mode=Rule] Launchbury.reds.Variable[no_vars]}}~{\sc Variable}\\[2ex]
+\parbox[t]{\rulelen}{\centering@{thm[mode=Rule] Launchbury.reds.Let[no_vars]}}~{\sc Let}
+%\end{center}
 *}
 
 subsubsection {* The stacked semantics *}
 
 text {*
-This is our modified semantics that allows the correctness theorem to go through without generalisation:
-\begin{center}
-@{thm[mode=Axiom] Launchbury.reds.Lambda[no_vars]} {\sc Lambda}\\[2ex]
-@{thm[mode=Rule] Launchbury.reds.Application[no_vars]} {\sc Application} \\[2ex]
-@{thm[mode=Rule] Launchbury.reds.Variable[no_vars]} {\sc Variable}\\[2ex]
-@{thm[mode=Rule] Launchbury.reds.Let[no_vars]} {\sc Let}
-\end{center}
+This is our modified semantics that allows the correctness theorem to go through without generalisation:\\
+\parbox[t]{\rulelen}{\centering@{thm[mode=Axiom] LaunchburyStacked.reds.Lambda[no_vars]}}~{\sc Lambda}\\[2ex]
+\parbox[t]{\rulelen}{\centering@{thm[mode=Rule] LaunchburyStacked.reds.Application[no_vars]}}~{\sc Application}\\[2ex]
+\parbox[t]{\rulelen}{\centering@{thm[mode=Rule] LaunchburyStacked.reds.Variable[no_vars]}}~{\sc Variable}\\[2ex]
+\parbox[t]{\rulelen}{\centering@{thm[mode=Rule] LaunchburyStacked.reds.Let[no_vars]}}~{\sc Let}
 *}
-
 subsubsection {* The denotational semantics *}
 
 text {*
@@ -70,15 +75,13 @@ The first involves a least upper bound ($\sqcup$) and is defined by the recursiv
 where the set in the index position indicates the expansion of the map to the given domain and @{term heapToEnv}
 maps the given expression semantics over the heap, producing a semantic environment.
 
-The other uses the right-sided update operator @{text "f++"}, defined by the recursive equation
+The other uses the right-sided update operator @{text "f++"} and is defined by the recursive equation
 \[ @{thm "Denotational-PropsUpd.HSem_eq"[no_vars]}. \]
 
 The expression @{text "\<lbrace>\<Gamma>\<rbrace>"} abbreviates @{text "\<lbrace>\<Gamma>\<rbrace>\<bottom>\<^bsub>{}\<^esub>"}, i.e. the semantics of the heap in the empty environment.
 
-The two semantics agree on expressions (but obviously not on heaps that bind variables that also occur in the environment):
-\[
-@{thm HSem_join_update(1)[no_vars] }
-\]
+It is worth noting that the two semantics agree on expressions, i.e. @{thm HSem_join_update(1)[no_vars] },
+but obviously not on heaps that bind variables that also occur in the environment.
 *}
 
 subsubsection {* Equivalences *}
