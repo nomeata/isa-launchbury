@@ -90,10 +90,9 @@ Another approach to avoid the problem is to understand $\sqcup$, which operates 
 \rho(x), &\text{otherwise.}
 \end{cases}
 \]
-With this definition, the original proof goes through as written in \cite{launchbury}. We doubt that this is reading is obvious or intended, especially as the statement $\forall x. \rho(x) \sqsubseteq (\{\!\!\{\Gamma\}\!\!\})(x)$, given in \cite{launchbury} before the proof is only true when $\sqcup$ is understood to be the least upper bound. This definition is used in other works, e.g. in \cite{parallel} and \cite{nakata_blackhole}, without further explanation of this choice.
+With this definition, the original proof goes through as written in \cite{launchbury}. We doubt that this is reading is obvious or even intended, especially as the statement $\forall x. \rho(x) \sqsubseteq (\{\!\!\{\Gamma\}\!\!\})(x)$, given in \cite{launchbury} before the proof, is only true when $\sqcup$ is understood to be the least upper bound. This definition has been used in other works that derive from Launchbury, e.g. in \cite{parallel} and \cite{nakata_blackhole}, but without further explanation of this choice.
 
 Our contributions are:
- 
 \begin{itemize}
 \item We define the natural and denotational semantics given by Launchbury in the theorem prover Isabelle.
 \item In doing so we are the first to use both the Nominal package (to handle name binding) \cite{nominal} and the HOLCF \cite{holcf} package (for the domain-theoretic aspects) in the same development.
@@ -103,6 +102,8 @@ Our contributions are:
 \item We show that the original proof goes through with a slight modification to the definition of the $\sqcup$-operator in the denotational semantics.
 \end{enumerate}
 \end{itemize}
+
+\input{Everything.tex}
 
 \subsection{Related work}
 
@@ -140,8 +141,6 @@ Chapter \ref{ch_dendom} sets the stage for the denotational semantics by definin
 Chapter \ref{ch_denjoin} defines the denotational semantics where $\sqcup$ means the least upper bound. We show that Launchbury's Theorem 2 as stated is false for this semantics, and provide an alternative proof, that avoids the problematic generalization, via the stacked semantics. The semantics for heaps given in \isa{HSem} is abstract in the concrete type and denotation of expressions.
 
 Chapter \ref{ch_denupd} defines the denotational semantics where $\sqcup$ means right-sided update, and proves Launchbury's semantics correct using the proof from his paper. The semantics can differ only for heaps; for expressions are assigned the same denotation. Again, the heap semantics in \isa{HSemUpd} is abstract in the concrete type and denotation of expressions.
-
-\input{Everything.tex}
 
 \subsection{Reusable components}
 

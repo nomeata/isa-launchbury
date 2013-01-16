@@ -13,8 +13,14 @@ translations
   "xs" <= "CONST set xs"
 translations
   "xs" <= "CONST asToHeap xs"
+translations
+  "a" <= "CONST atom a"
 
-declare [[names_short]] [[no_vars]]
+declare [[names_short]]
+
+lemma Terms:
+  "\<exists> x assn e'. (e = (Lam [x]. e') \<or> (e = Var x) \<or> (e = App e' x) \<or> (e = Let assn e'))"
+  by (metis Terms.exp_assn.exhaust(1))
 
 (*>*)
 subsection {* Main definitions and theorems *}
@@ -22,6 +28,22 @@ subsection {* Main definitions and theorems *}
 text {*
 For your convenience, the main definitions and theorems of this theory are collected. The following 
 formulas are mechanically pretty-printed versions of the statements as defined resp. proven in Isabelle.
+Free variables are all-quantified. Some type conversion functions (like @{term set}) are omitted from the
+display. The relations @{text \<sharp>} and @{text "\<sharp>*"} express freshness of the variables on the left with regard
+to the expressions on the right.
+*}
+
+subsubsection {* Expressions *}
+
+text {*
+The type @{typ var} of variables is abstract and provided by the Nominal package. All we know about
+it is that it is countably infinite.
+Expressions of type @{typ exp} are either lambda abstractions, variables, applications or recursive let bindings, as
+demonstrated by the following lemma:
+\[
+@{thm Terms[no_vars]}
+\]
+Heaps are of type @{typ "(var \<times> exp) list"}.
 *}
 
 subsubsection {* The natural semantics *}
@@ -57,8 +79,7 @@ This is our modified semantics that allows the correctness theorem to go through
 subsubsection {* The denotational semantics *}
 
 text {*
-The semantics of an expression, in either variant, is given by the following equations, where @{text "\<sharp>"}
-and @{text "\<sharp>*"} express freshness of the variables on the left with regard to the expression on the right:
+The semantics of an expression, in either variant, is given by the following equations:
 \begin{alignstar}
 @{thm (lhs) Denotational.ESem.simps(1)[no_vars]} & = @{thm (rhs) Denotational.ESem.simps(1)[no_vars]} && \text{if } @{thm (prem 1) Denotational.ESem.simps(1)[no_vars]} \\
 @{thm (lhs) Denotational.ESem.simps(2)[no_vars]} & = @{thm (rhs) Denotational.ESem.simps(2)[no_vars]} \\
@@ -78,7 +99,7 @@ maps the given expression semantics over the heap, producing a semantic environm
 The other uses the right-sided update operator @{text "f++"} and is defined by the recursive equation
 \[ @{thm "Denotational-PropsUpd.HSem_eq"[no_vars]}. \]
 
-The expression @{text "\<lbrace>\<Gamma>\<rbrace>"} abbreviates @{text "\<lbrace>\<Gamma>\<rbrace>\<bottom>\<^bsub>{}\<^esub>"}, i.e. the semantics of the heap in the empty environment.
+The semantics of the heap in the empty environment is abbreviated as @{abbrev "HSem_fempty \<Gamma>"}.
 
 It is worth noting that the two semantics agree on expressions, i.e. @{thm HSem_join_update(1)[no_vars] },
 but obviously not on heaps that bind variables that also occur in the environment.
