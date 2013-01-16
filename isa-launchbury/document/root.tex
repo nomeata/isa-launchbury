@@ -107,9 +107,9 @@ Our contributions are:
 
 \subsection{Related work}
 
-Lidia Sánchez-Gil, Mercedes Hidalgo-Herrero and Yolanda Ortega-Mallén have worked on formal aspects of Launchbury’s semantics as well. On the one hand, they identified a step in his adequacy proof relating the standard and the resourced denotational semantics that is not as trivial as it seems at first and worked out the proof as a detailed pen-and-paper proof \cite{functionspaces}. They also plan to prove the equivalency between Launchbury’s natural semantics and a variant thereof which was used by Launchbury in the adequacy proof in the theorem prover Coq. As one step in that direction, they address the naming issues and suggest a mixed representation, using de Bruijn indices for locally bound variables and names for free variables \cite{nameless}. This corresponds to our treatment of names, using the Nominal logic machinery locally but not for names bound in heaps.
+Lidia Sánchez-Gil, Mercedes Hidalgo-Herrero and Yolanda Ortega-Mallén have worked on formal aspects of Launchbury’s semantics as well. On the one hand, they identified a step in his adequacy proof relating the standard and the resourced denotational semantics that is not as trivial as it seems at first and worked out a detailed pen-and-paper proof \cite{functionspaces}. They also plan to prove the equivalency between Launchbury’s natural semantics and a variant thereof, which was used by Launchbury in his adequacy proof, in the theorem prover Coq. As one step in that direction, they address the naming issues and suggest a mixed representation, using de Bruijn indices for locally bound variables and names for free variables \cite{nameless}. This corresponds to our treatment of names, using the Nominal logic machinery locally but not for names bound in heaps.
 
-The same group extended Launchbury’s semantic for distributed lazy evaluation \cite{distributed}. In their modified natural semantics the heap retains the expression under evaluation with a special flag, marking them as blocked. Furthermore, the expression under evaluation has a name. Therefore the non-distributed part of their semantics is very similar to our stacked semantics. This supports our claim that the stacked semantics is well suited for further proofs and extensions.
+The same group extended Launchbury’s semantic for distributed lazy evaluation \cite{distributed}. In their modified natural semantics the heap retains the expression under evaluation with a special flag, marking them as blocked. Furthermore, the expression under evaluation has a name. Therefore the non-distributed subset of their semantics is very similar to our stacked semantics. This supports our claim that the stacked semantics is well suited for further proofs and extensions.
 
 \begin{figure}
 \begin{center}
@@ -146,6 +146,8 @@ Chapter \ref{ch_denupd} defines the denotational semantics where $\sqcup$ means 
 
 Parts of this theory are independent of the actual semantics and may be of use to other users of Isabelle:
 
+\subsubsection{Finite maps}
+
 The theory \isa{FMap} defines maps with an explicit and finite domain. The need for this arises due to the combination of Nominal and HOLCF:
 
 To effectively use the Nominal package data types need to be in the \isa{fs} type class, indicating that they have finite support. Only then can the \isa{nominal-induct} method avoid the variables occurring in the support of a value when choosing bound names in the inductive step -- a crucial feature. Therefore, the usual data type for maps, \isa{var \isasymrightharpoonup{} value}, is insufficient. The obvious fix is to introduce a new type, \isa{var f\isasymrightharpoonup{} value} that contains only those maps with finite support.
@@ -154,11 +156,13 @@ But this causes issues with HOLCF: In order to work effectively with fixed point
 
 Hence the partial order is changed so that only maps with the same domain are comparable. Assuming the values form a chain-complete partial order, we now have a chain-complete partial order on finite maps. Unfortunately, we now no longer have a bottom element for the whole type. In fact, the type is now the disjoint union of many pointed chain-complete partial orders, one for each domain. This makes proofs with fixed points relatively unwieldy, as we have to handle the domains of the maps explicitly. The theory \isa{HOLCF-Set} defines the notion of a set forming a pcpo and provides variants of some HOLCF functions to work with an explicit carrier set instead of the whole universe of the type. It also introduces the type class \isa{subpcpo-partition} for types that are disjoint unions of pcpos.
 
+\subsubsection{Binary Joins in HOLCF}
+
 The theory \isa{HOLCF-Join} defines the binary join operator $\sqcup$ in a partial order as defined by HOLCF, together with the \isa{compatible} predicate, expressing that the least upper bound exists for its arguments. It also contains type classes for the existence of meets (greatest lower bounds) in various settings and a proof that bifinite domains with meets for all finite nonempty sets have meets for arbitrary nonempty sets.
 
 \subsection{Acknowledgement}
 
-I’d like to thank Andreas Lochbihler for his gladly given and usually very effective help during the development of this theory. I’d also like to thank Brian Huffmann and Christian Urban for their help on HOLCF and Nominal, respectively. This work was supported by the Deutsche Telekom Stiftung.
+I’d like to thank Andreas Lochbihler for his gladly given and very effective help during the development of this theory. I’d also like to thank Brian Huffmann and Christian Urban for their help on HOLCF and Nominal, respectively. This work was supported by the Deutsche Telekom Stiftung.
 
 \clearpage
 \newcommand{\theory}[1]{\subsection{#1}\label{sec_#1}\input{#1.tex}}

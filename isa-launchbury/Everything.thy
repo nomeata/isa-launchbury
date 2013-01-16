@@ -26,11 +26,11 @@ lemma Terms:
 subsection {* Main definitions and theorems *}
 
 text {*
-For your convenience, the main definitions and theorems of this theory are collected. The following 
+For your convenience, the main definitions and theorems of this theory are assembled in this section. The following 
 formulas are mechanically pretty-printed versions of the statements as defined resp. proven in Isabelle.
-Free variables are all-quantified. Some type conversion functions (like @{term set}) are omitted from the
-display. The relations @{text \<sharp>} and @{text "\<sharp>*"} express freshness of the variables on the left with regard
-to the expressions on the right.
+Free variables are all-quantified. Some type conversion functions (like @{term set}) are omitted.
+The relations @{text \<sharp>} and @{text "\<sharp>*"} come from the Nominal package and express freshness of the
+variables on the left with regard to the expressions on the right.
 *}
 
 subsubsection {* Expressions *}
