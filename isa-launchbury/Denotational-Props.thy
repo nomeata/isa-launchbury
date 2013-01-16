@@ -108,28 +108,28 @@ case (App exp var \<rho> x y) thus ?case by auto
 next
 case (Let as exp \<rho> x y)
   from `set (bn as) \<sharp>* x` `set (bn as) \<sharp>* y` 
-  have "x \<notin> assn_vars as " "y \<notin> assn_vars as "
-    by (induct as rule: assn_vars.induct, auto simp add: exp_assn.bn_defs fresh_star_insert)
-  hence [simp]:"assn_vars (as[x::a=y]) = assn_vars as" 
-     by (induct as rule: assn_vars.induct, auto)
+  have "x \<notin> heapVars (asToHeap as)" "y \<notin> heapVars (asToHeap as) "
+    by (induct as rule: exp_assn.bn_inducts, auto simp add: exp_assn.bn_defs fresh_star_insert)
+  hence [simp]:"heapVars (asToHeap (as[x::a=y])) = heapVars (asToHeap as)" 
+     by (induct as rule: exp_assn.bn_inducts, auto)
 
   have cond1: "HSem_cond' (asToHeap as) (\<rho>(x f\<mapsto> \<rho> f! y))"
       (is "fix_join_cond ?\<rho>1 ?F1")
     apply (rule disjoint_is_HSem_cond)
-    apply (auto simp add:  `x \<notin> assn_vars as`)
-    by (metis Let(1) heapVars_asToHeap sharp_star_Env)
+    apply (auto simp add:  `x \<notin> heapVars (asToHeap as)`)
+    by (metis Let(1) sharp_star_Env)
   have cond2: "HSem_cond' (asToHeap as[x::a=y]) \<rho>"
       (is "fix_join_cond ?\<rho>2 ?F2")
     apply (rule disjoint_is_HSem_cond)
-    apply (auto simp add:  `x \<notin> assn_vars as`)
-    by (metis Let(1) heapVars_asToHeap sharp_star_Env)
+    apply (auto simp add:  `x \<notin> heapVars (asToHeap as)`)
+    by (metis Let(1) sharp_star_Env)
 
   have lookup_other: "\<And> \<rho> . \<lbrace>asToHeap as[x::a=y]\<rbrace>\<rho> f! y = \<rho> f! y"
-    using `y \<notin> assn_vars as`
+    using `y \<notin> heapVars (asToHeap as)`
     by (auto simp add: the_lookup_HSem_other)
 
-  have [simp]:"fdom \<rho> \<union> assn_vars as - {x} = fdom \<rho> \<union> assn_vars as"
-    using `x \<notin> assn_vars as` `atom x \<sharp> \<rho>` by (auto simp add: sharp_Env)
+  have [simp]:"fdom \<rho> \<union> heapVars (asToHeap as) - {x} = fdom \<rho> \<union> heapVars (asToHeap as)"
+    using `x \<notin> heapVars (asToHeap as)` `atom x \<sharp> \<rho>` by (auto simp add: sharp_Env)
 
   have *: "fmap_expand (\<rho>(x f\<mapsto> \<rho> f! y)) (fdom (\<rho>(x f\<mapsto> \<rho> f! y)) \<union> heapVars (asToHeap as))
         = (fmap_expand \<rho> (fdom \<rho> \<union> heapVars (asToHeap as)))(x f\<mapsto> \<rho> f! y)" (is "_ = ?\<rho>1'(x f\<mapsto> _)")
@@ -159,7 +159,7 @@ case (Let as exp \<rho> x y)
     also
     have "\<dots> = (?\<rho>1' \<squnion> ?F1' \<rho>')(x f\<mapsto> \<rho> f! y)"
       apply (subst fmap_upd_join)
-      using `atom x \<sharp> \<rho>` `x \<notin> assn_vars as` apply (auto simp add: sharp_Env)[3]
+      using `atom x \<sharp> \<rho>` `x \<notin> heapVars (asToHeap as)` apply (auto simp add: sharp_Env)[3]
       using rho_F_compat_fjc[OF cond1 goal3(1)] apply (metis *)
       by auto
     also
@@ -168,7 +168,7 @@ case (Let as exp \<rho> x y)
       also
       have "... = ?F2 ?R"
         apply (subst `_ \<Longrightarrow> _ \<Longrightarrow> heapToEnv _ _ = _`[OF `x \<noteq> y` ])
-          using `atom x \<sharp> \<rho>` `x \<notin> assn_vars as` fdom_fix_on[OF fix_on_cond_fjc[OF cond2]]
+          using `atom x \<sharp> \<rho>` `x \<notin> heapVars (asToHeap as)` fdom_fix_on[OF fix_on_cond_fjc[OF cond2]]
           apply (simp add: sharp_Env bottom_of_fjc)
         by simp
       also note calculation     
@@ -206,11 +206,11 @@ case (Let as exp \<rho> x y)
       apply (subst the_lookup_join[OF rho_F_compat_fjc[OF cond1 fix_on_there[OF fix_on_cond_fjc[OF cond1]]]])
       apply (rule rev_below_trans[OF join_above1[OF the_lookup_compatible[OF rho_F_compat_fjc[OF cond1 fix_on_there[OF fix_on_cond_fjc[OF cond1]]]]]])
       apply (cases "y \<in> fdom \<rho>")
-      using  `y \<notin> assn_vars as` apply (auto simp add: bottom_of_fjc to_bot_fmap_def lookup_not_fdom)
+      using  `y \<notin> heapVars (asToHeap as)` apply (auto simp add: bottom_of_fjc to_bot_fmap_def lookup_not_fdom)
       done
   case (goal3 \<rho>')
     let "?F1' \<rho>'" = "fmap_expand (heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)) (fdom \<rho> \<union> heapVars (asToHeap as))"
-    let "?F2' \<rho>'" = "fmap_expand (heapToEnv (asToHeap as[x::a=y]) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)) (insert x (fdom \<rho> \<union> assn_vars as))"
+    let "?F2' \<rho>'" = "fmap_expand (heapToEnv (asToHeap as[x::a=y]) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)) (insert x (fdom \<rho> \<union> heapVars (asToHeap as)))"
     have "fdom \<rho>' = fdom \<rho> \<union> heapVars (asToHeap as)"
       using fdom_fix_join_compat[OF fix_on_cond_fjc[OF cond2] goal3(1)] by simp
 
@@ -218,14 +218,14 @@ case (Let as exp \<rho> x y)
       apply (rule arg_cong) back
       apply (subst the_lookup_join[OF rho_F_compat_fjc[OF cond2 goal3(1)]])
       apply (case_tac "y \<in> fdom \<rho>")
-      using `y \<notin> assn_vars as`
+      using `y \<notin> heapVars (asToHeap as)`
       by (auto simp add: sharp_Env lookup_not_fdom)
     also
     have "... = (?\<rho>1'(x f\<mapsto> \<rho> f! y) \<squnion> ?F2' \<rho>')"
       apply (subst fmap_upd_join)
-      using `atom x \<sharp> \<rho>` `x \<notin> assn_vars as` apply (auto simp add: sharp_Env)[3]
+      using `atom x \<sharp> \<rho>` `x \<notin> heapVars (asToHeap as)` apply (auto simp add: sharp_Env)[3]
       apply (rule compatible_insert)
-        using `atom x \<sharp> \<rho>` `x \<notin> assn_vars as` apply (auto simp add: sharp_Env)[3]
+        using `atom x \<sharp> \<rho>` `x \<notin> heapVars (asToHeap as)` apply (auto simp add: sharp_Env)[3]
       apply simp
       apply (rule rho_F_compat_fjc[OF cond2 goal3(1), simplified])
       apply simp
@@ -236,7 +236,7 @@ case (Let as exp \<rho> x y)
     also
     have "... = ?\<rho>1 \<squnion> ?F1 (\<rho>'(x f\<mapsto> \<rho>' f! y))"
       apply (subst `_ \<Longrightarrow> _ \<Longrightarrow> heapToEnv _ _ = _`[OF `x \<noteq> y` ])
-        using `atom x \<sharp> \<rho>` `fdom \<rho>' = _` `x \<notin> assn_vars as` fdom_fix_on[OF fix_on_cond_fjc[OF cond2]]
+        using `atom x \<sharp> \<rho>` `fdom \<rho>' = _` `x \<notin> heapVars (asToHeap as)` fdom_fix_on[OF fix_on_cond_fjc[OF cond2]]
         apply (simp add: sharp_Env bottom_of_fjc)
       by simp
     also
@@ -848,7 +848,7 @@ proof (rule iffD2[OF fmap_less_restrict])
 
     have simp2: "fdom (\<lbrace>(x, body) # asToHeap as @ \<Gamma>\<rbrace>\<rho>) - insert x (fdom \<rho> \<union> heapVars \<Gamma>) = heapVars (asToHeap as)"
       using disjoint
-      by (auto simp del: heapVars_asToHeap)
+      by auto
 
     have fresh_e: "atom ` heapVars (asToHeap as) \<sharp>* e"
       by (rule fresh_star_heap_expr'[OF fresh_Gamma `_ \<in> snd\` set \<Gamma>`])

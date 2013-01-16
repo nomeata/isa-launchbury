@@ -98,7 +98,7 @@ case (Let as \<Gamma> L body \<Delta> z)
     apply (induct as rule: asToHeap.induct)
     apply (auto simp add: exp_assn.bn_defs fresh_star_insert fresh_star_Pair)
     by (metis finite_set fresh_finite_set_at_base fresh_set)  ultimately
-  have "x \<notin> heapVars (asToHeap as @ \<Gamma>)" by (auto simp del:heapVars_asToHeap)  
+  have "x \<notin> heapVars (asToHeap as @ \<Gamma>)" by auto  
   thus ?case
     by (rule Let.hyps(4)[OF `x \<in> set L`])
 qed

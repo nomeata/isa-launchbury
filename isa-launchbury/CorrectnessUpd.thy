@@ -196,7 +196,7 @@ case (Let as \<Gamma> L body \<Delta> z \<rho>)
   have d1: "distinctVars (\<Gamma> @ asToHeap as)"
     using Let(1) Let(3) Let(7)
     apply (simp add: distinctVars_append)
-    by (metis fresh_assn_distinct heapVars_asToHeap inf_commute)
+    by (metis fresh_assn_distinct inf_commute)
   
   have f1: "atom ` heapVars (asToHeap as) \<sharp>* (\<Gamma>, \<rho>)"
     using Let(1) `_ \<sharp>* \<rho>`

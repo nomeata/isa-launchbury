@@ -31,9 +31,6 @@ lemma asToHeap_eqvt: "eqvt asToHeap"
   unfolding eqvt_def
   by (auto simp add: permute_fun_def asToHeap.eqvt)
 
-lemma heapVars_asToHeap[simp]: "heapVars (asToHeap as) = assn_vars as"
-  by (induct as rule:asToHeap.induct, auto)
-
 lemma set_bn_to_atom_heapVars:
   "set (bn as) = atom ` heapVars (asToHeap as)"
    apply (induct as rule: asToHeap.induct)

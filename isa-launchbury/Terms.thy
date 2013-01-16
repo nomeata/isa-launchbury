@@ -52,27 +52,6 @@ lemma alpha_test3:
   apply (simp add: Abs_swap2[of "atom x" "(?lb,?la)" "[atom x, atom y]" "atom y"])
 done
 
-subsubsection {* Variables bound by an assignment *}
-
-nominal_primrec  
-  assn_vars :: "assn \<Rightarrow> var set"
-where
-  "assn_vars ANil = {}"
-| " assn_vars (ACons x _ as) = insert x (assn_vars as)"
-unfolding eqvt_def assn_vars_graph_def
- apply rule
- apply perm_simp
- apply (rule refl)
- apply rule
- apply(case_tac x rule: exp_assn.exhaust(2))
- apply auto
- done
-
-termination (eqvt) by lexicographic_order
-
-lemma assn_vars_finite[simp]: "finite (assn_vars as)"
- by(induct as rule: assn_vars.induct, auto)
-
 subsubsection {* Substitution *}
 
 fun subst_var :: "var \<Rightarrow> var \<Rightarrow> var \<Rightarrow> var" ("_[_::v=_]" [1000,100,100] 1000)

@@ -83,17 +83,17 @@ case (App exp var \<rho> x y) thus ?case by auto
 next
 case (Let as exp \<rho> x y)
   from `set (bn as) \<sharp>* x` `set (bn as) \<sharp>* y` 
-  have "x \<notin> assn_vars as " "y \<notin> assn_vars as "
-    by (induct as rule: assn_vars.induct, auto simp add: exp_assn.bn_defs fresh_star_insert)
-  hence [simp]:"assn_vars (as[x::a=y]) = assn_vars as" 
-     by (induct as rule: assn_vars.induct, auto)
+  have "x \<notin> heapVars (asToHeap as) " "y \<notin> heapVars (asToHeap as)"
+    by (induct as rule: exp_assn.bn_inducts, auto simp add: exp_assn.bn_defs fresh_star_insert)
+  hence [simp]:"heapVars (asToHeap (as[x::a=y])) = heapVars (asToHeap as)" 
+     by (induct as rule: exp_assn.bn_inducts, auto)
 
   have lookup_other: "\<And> \<rho> . (\<lbrace>asToHeap as[x::a=y]\<rbrace>\<rho>) f! y = \<rho> f! y"
-    using `y \<notin> assn_vars as`
+    using `y \<notin> heapVars (asToHeap as)`
     by (auto simp add: the_lookup_HSem_other)
 
-  have [simp]:"fdom \<rho> \<union> assn_vars as - {x} = fdom \<rho> \<union> assn_vars as"
-    using `x \<notin> assn_vars as` `atom x \<sharp> \<rho>` by (auto simp add: sharp_Env)
+  have [simp]:"fdom \<rho> \<union> heapVars (asToHeap as) - {x} = fdom \<rho> \<union> heapVars (asToHeap as)"
+    using `x \<notin> heapVars (asToHeap as)` `atom x \<sharp> \<rho>` by (auto simp add: sharp_Env)
 
   have *: "fmap_expand (\<rho>(x f\<mapsto> \<rho> f! y)) (fdom (\<rho>(x f\<mapsto> \<rho> f! y)) \<union> heapVars (asToHeap as))
         = (fmap_expand \<rho> (fdom \<rho> \<union> heapVars (asToHeap as)))(x f\<mapsto> \<rho> f! y)" (is "_ = ?\<rho>1'(x f\<mapsto> _)")
@@ -118,7 +118,7 @@ case (Let as exp \<rho> x y)
   case (goal3 \<rho>')
     have "?\<rho>1 f++ ?F1 \<rho>' = (\<rho> f++ ?F1 \<rho>')(x f\<mapsto> \<rho> f! y)"
       apply (rule fmap_add_upd_swap)
-      using `x \<notin> assn_vars as` by simp
+      using `x \<notin> heapVars (asToHeap as)` by simp
     also
     have  "... \<sqsubseteq> (\<rho> f++ ?F2 ?R)( x f\<mapsto> \<rho> f! y)"
     proof (rule cont2monofunE[OF fmap_upd_cont[OF fmap_add_cont2 cont_const]])
@@ -127,7 +127,7 @@ case (Let as exp \<rho> x y)
       also
       have "... = ?F2 ?R"
         apply (subst `_ \<Longrightarrow> _ \<Longrightarrow> heapToEnv _ _ = _`[OF `x \<noteq> y` ])
-        using `x \<notin> assn_vars as`  `atom x \<sharp> \<rho>` apply (simp add: sharp_Env)
+        using `x \<notin> heapVars (asToHeap as)`  `atom x \<sharp> \<rho>` apply (simp add: sharp_Env)
         by rule
       finally
       show "?F1 \<rho>' \<sqsubseteq> ?F2 ?R".
@@ -135,7 +135,7 @@ case (Let as exp \<rho> x y)
     also have "... = ?R( x f\<mapsto> \<rho> f! y)"
       by (rule arg_cong[OF HSem_eq[symmetric]])
     also have "... = ?R( x f\<mapsto> ?R f! y)"
-      using `y \<notin> assn_vars as` by (simp add: the_lookup_HSem_other)
+      using `y \<notin> heapVars (asToHeap as)` by (simp add: the_lookup_HSem_other)
     finally
     show "?\<rho>1 f++ ?F1 \<rho>' \<sqsubseteq> ?R( x f\<mapsto> ?R f! y)".
   qed
@@ -144,7 +144,7 @@ case (Let as exp \<rho> x y)
   proof (rule HSem_ind) back 
   case goal1 show ?case by auto
   case goal2 show ?case
-    using `y \<notin> assn_vars as` `x \<notin> assn_vars as`
+    using `y \<notin> heapVars (asToHeap as)` `x \<notin> heapVars (asToHeap as)`
     apply (auto intro!: fmap_upd_belowI simp  add: the_lookup_HSem_other)
     apply (cases "y \<in> fdom \<rho>")
     apply simp
@@ -152,15 +152,15 @@ case (Let as exp \<rho> x y)
     done
   case (goal3 \<rho>')
     have "(?\<rho>2 f++ ?F2 \<rho>') (x f\<mapsto> (?\<rho>2 f++ ?F2 \<rho>') f! y) = (?\<rho>2 f++ ?F2 \<rho>')(x f\<mapsto> \<rho> f! y)"
-      using `y \<notin> assn_vars as` by simp
+      using `y \<notin> heapVars (asToHeap as)` by simp
     also
     have "... = (?\<rho>1 f++ ?F2 \<rho>')"
       apply (rule fmap_add_upd_swap[symmetric])
-      using `x \<notin> assn_vars as` by simp
+      using `x \<notin> heapVars (asToHeap as)` by simp
     also
     have "... = ?\<rho>1 f++ ?F1 (\<rho>'(x f\<mapsto> \<rho>' f! y))"
       apply (subst `_ \<Longrightarrow> _ \<Longrightarrow> heapToEnv _ _ = _`[OF `x \<noteq> y` ])
-      using `atom x \<sharp> \<rho>` `x \<notin> assn_vars as` goal3(1) apply (simp add: sharp_Env)
+      using `atom x \<sharp> \<rho>` `x \<notin> heapVars (asToHeap as)` goal3(1) apply (simp add: sharp_Env)
       by rule
     also
     have  "... \<sqsubseteq> ?\<rho>1 f++ ?F1 ?L"
