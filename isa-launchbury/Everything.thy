@@ -16,80 +16,46 @@ translations
 translations
   "a" <= "CONST atom a"
 
-(*
-abbreviation (Grammar output)
-  "imp"  ("_ foo _")
-where
-  "imp \<equiv> op \<longrightarrow>"
-
-syntax (Grammar output)
-  "_morepats" :: "term \<Rightarrow> patterns \<Rightarrow> patterns" ("_ TODO _")
-  "_grapats" :: "term \<Rightarrow> patterns \<Rightarrow> patterns" ("_ | _")
-  "_grafirst" :: "term \<Rightarrow> patterns \<Rightarrow> patterns" ("_ ::= _")
-  "_grapat" :: "term \<Rightarrow> patterns" ("_")
-
-translations
-  "pat" <= "_morepats (CONST imp pat (Free P))"
-  "_grapats pat (_grapats pats)" <= "_morepats (CONST imp pat pats)"
-  "_grafirst pat (_morepats pats)" <= "Trueprop (CONST imp pat pats)"
-
-lemma tmp:
+lemma Terms:
+  "\<exists> x assn e'. (e = (Lam [x]. e') \<or> (e = Var x) \<or> (e = App e' x) \<or> (e = Let assn e'))"
+  by (metis Terms.exp_assn.exhaust(1))
+lemma expressions_grammar:
 "(\<forall> var. y = Var var \<longrightarrow> P) \<longrightarrow>
 (\<forall> exp var. y = App exp var \<longrightarrow> P) \<longrightarrow>
 (\<forall> assn exp. y = Terms.Let assn exp \<longrightarrow> P) \<longrightarrow> (\<forall> var exp. y = Lam [var]. exp \<longrightarrow> P) \<longrightarrow> P"
   by (metis exp_assn.exhaust(1)) 
 
-thm tmp[no_vars]
-thm (Grammar) tmp[no_vars]
-thm (latex) exp_assn.exhaust(1)[no_vars]
-thm (latex Rule) exp_assn.exhaust(1)[no_vars]
-thm (latex Grammar) exp_assn.exhaust(1)[no_vars]
-*)
+abbreviation (Grammar output)
+  "grammar_imp"
+where
+  "grammar_imp \<equiv> op \<longrightarrow>"
+
+syntax (Grammar output)
+  "_grapats" :: "term \<Rightarrow> term \<Rightarrow> term" ("_ | _")
+  "_grafirst" :: "term \<Rightarrow> term \<Rightarrow> term" ("_ ::= _")
+  "_grarest" :: "term \<Rightarrow> term \<Rightarrow> term"
+  "_firsteq" :: "term \<Rightarrow> term \<Rightarrow> term"
+  "_resteq" :: "term \<Rightarrow> term \<Rightarrow> term"
+
+translations
+  "_grapats (_firsteq all) (_grarest (CONST grammar_imp rest1 rest2))" <= "CONST grammar_imp all (CONST grammar_imp rest1 rest2)"
+  "_grapats (_resteq all) (_grarest (CONST grammar_imp rest1 rest2))" <= "_grarest (CONST grammar_imp all (CONST grammar_imp rest1 rest2))"
+  "_resteq all" <= "_grarest (CONST grammar_imp all rest)"
+  "_resteq all" <= "_resteq (CONST grammar_imp all rest)"
+  "_firsteq all" <= "_firsteq (CONST grammar_imp all rest)"
+  "_firsteq imp" <= "_firsteq (ALL x. imp)"
+  "_resteq imp" <= "_resteq (ALL x. imp)"
+  "_grafirst x t" <= "_firsteq (x = t)"
+  "t" <= "_resteq (x = t)"
 
 (*
-And also not this.
-ML{*
-fun subts (Const (@{const_name dummy_pattern}, _), t) = [t]
-  | subts (Const _, Const _) = []
-  | subts (Var _, Var _) = []
-  | subts (Free _, Free _) = []
-  | subts (Bound _, Bound _) = []
-  | subts (t1 $ s1, t2 $ s2) = subts (t1, t2) @ subts (s1, s2)
-  | subts (Abs (_, _, t), Abs (_, _, s)) = subts (t, s)
-  | subts _ = error "smth went wrong"
-*}
-
-setup {*
-Thy_Output.antiquotation @{binding "grammar"}
-  (Attrib.thm -- Scan.lift Args.name -- Scan.lift Args.name) 
-  (fn {context = ctxt,...} => fn ((thm, pat_str), txt_str) =>
-  let
-    val pat = Syntax.parse_prop ctxt pat_str
-    val trms = subts (pat, prop_of thm)
-      |> map (Syntax.pretty_term ctxt)
-    val front::txts = space_explode "_" txt_str
-      |> map Pretty.str 
-    val all = 
-      fold (fn (x, y) => fn xs => x::y::xs) (txts ~~ trms) [front]
-    in
-      Thy_Output.output ctxt [Pretty.block (rev all)]
-  end)
-*}
-thm allI
-
-print_antiquotations
-text  {* Blubb @{grammar allI "_ \<Longrightarrow> _" "_ shows _"} *}
-
-
-
+thm expressions_grammar[no_vars]
+thm (Grammar) expressions_grammar[no_vars]
+thm (latex) expressions_grammar[no_vars]
+thm (latex Grammar) expressions_grammar[no_vars]
 *)
 
-
 declare [[names_short]]
-
-lemma Terms:
-  "\<exists> x assn e'. (e = (Lam [x]. e') \<or> (e = Var x) \<or> (e = App e' x) \<or> (e = Let assn e'))"
-  by (metis Terms.exp_assn.exhaust(1))
 
 (*>*)
 subsection {* Main definitions and theorems *}
