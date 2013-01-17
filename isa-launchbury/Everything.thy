@@ -16,6 +16,75 @@ translations
 translations
   "a" <= "CONST atom a"
 
+(*
+abbreviation (Grammar output)
+  "imp"  ("_ foo _")
+where
+  "imp \<equiv> op \<longrightarrow>"
+
+syntax (Grammar output)
+  "_morepats" :: "term \<Rightarrow> patterns \<Rightarrow> patterns" ("_ TODO _")
+  "_grapats" :: "term \<Rightarrow> patterns \<Rightarrow> patterns" ("_ | _")
+  "_grafirst" :: "term \<Rightarrow> patterns \<Rightarrow> patterns" ("_ ::= _")
+  "_grapat" :: "term \<Rightarrow> patterns" ("_")
+
+translations
+  "pat" <= "_morepats (CONST imp pat (Free P))"
+  "_grapats pat (_grapats pats)" <= "_morepats (CONST imp pat pats)"
+  "_grafirst pat (_morepats pats)" <= "Trueprop (CONST imp pat pats)"
+
+lemma tmp:
+"(\<forall> var. y = Var var \<longrightarrow> P) \<longrightarrow>
+(\<forall> exp var. y = App exp var \<longrightarrow> P) \<longrightarrow>
+(\<forall> assn exp. y = Terms.Let assn exp \<longrightarrow> P) \<longrightarrow> (\<forall> var exp. y = Lam [var]. exp \<longrightarrow> P) \<longrightarrow> P"
+  by (metis exp_assn.exhaust(1)) 
+
+thm tmp[no_vars]
+thm (Grammar) tmp[no_vars]
+thm (latex) exp_assn.exhaust(1)[no_vars]
+thm (latex Rule) exp_assn.exhaust(1)[no_vars]
+thm (latex Grammar) exp_assn.exhaust(1)[no_vars]
+*)
+
+(*
+And also not this.
+ML{*
+fun subts (Const (@{const_name dummy_pattern}, _), t) = [t]
+  | subts (Const _, Const _) = []
+  | subts (Var _, Var _) = []
+  | subts (Free _, Free _) = []
+  | subts (Bound _, Bound _) = []
+  | subts (t1 $ s1, t2 $ s2) = subts (t1, t2) @ subts (s1, s2)
+  | subts (Abs (_, _, t), Abs (_, _, s)) = subts (t, s)
+  | subts _ = error "smth went wrong"
+*}
+
+setup {*
+Thy_Output.antiquotation @{binding "grammar"}
+  (Attrib.thm -- Scan.lift Args.name -- Scan.lift Args.name) 
+  (fn {context = ctxt,...} => fn ((thm, pat_str), txt_str) =>
+  let
+    val pat = Syntax.parse_prop ctxt pat_str
+    val trms = subts (pat, prop_of thm)
+      |> map (Syntax.pretty_term ctxt)
+    val front::txts = space_explode "_" txt_str
+      |> map Pretty.str 
+    val all = 
+      fold (fn (x, y) => fn xs => x::y::xs) (txts ~~ trms) [front]
+    in
+      Thy_Output.output ctxt [Pretty.block (rev all)]
+  end)
+*}
+thm allI
+
+print_antiquotations
+text  {* Blubb @{grammar allI "_ \<Longrightarrow> _" "_ shows _"} *}
+
+
+
+*)
+
+
 declare [[names_short]]
 
 lemma Terms:
@@ -31,6 +100,8 @@ formulas are mechanically pretty-printed versions of the statements as defined r
 Free variables are all-quantified. Some type conversion functions (like @{term set}) are omitted.
 The relations @{text \<sharp>} and @{text "\<sharp>*"} come from the Nominal package and express freshness of the
 variables on the left with regard to the expressions on the right.
+
+\input{map.tex}
 *}
 
 subsubsection {* Expressions *}
@@ -38,13 +109,17 @@ subsubsection {* Expressions *}
 text {*
 The type @{typ var} of variables is abstract and provided by the Nominal package. All we know about
 it is that it is countably infinite.
-Expressions of type @{typ exp} are either lambda abstractions, variables, applications or recursive let bindings, as
-demonstrated by the following lemma:
-\[
-@{thm Terms[no_vars]}
-\]
-These expressions are, due to the machinery of the Nominal package, actually alpha-equivalency-classes 
-so the identity @{thm alpha_test[no_vars]} is a theorem.
+Expressions of type @{typ exp} are given by the following grammar:
+\begin{alignatstar}{2}
+@{term e} \Coloneqq {}& @{term "Lam [x]. e"} &\quad& \text{lambda abstraction}\\
+\mid {} & @{term "App e x"} && \text{application}\\
+\mid {} & @{term "Var x"} && \text{variable} \\
+\mid {} & @{term "Let as e"} && \text{recursive let}
+\end{alignatstar}
+In the introduction we pretty-print expressions to match the notation in \cite{launchbury} and omit
+the constructor names @{term Var}, @{term App}, @{text Lam} and @{term Let}. In the actual theories, these are visible.
+These expressions are, due to the machinery of the Nominal package, actually alpha-equivalency classes.
+E.g.\ the identity @{thm alpha_test[no_vars]} is a theorem.
 
 The type @{type heap} is an abbreviation for @{typ "(var \<times> exp) list"}.
 *}
@@ -155,10 +230,6 @@ then @{thm [mode=IfThen] (concl) CorrectnessUpd.correctness(1)[no_vars]} and  @{
 
 
 (*<*)
-
-(*
-unused_thms HOLCF AList DAList Nominal2 FuncSet - Correctness CorrectnessUpd "Correctness-Counterexample"
-*)
 
 end
 (*>*)

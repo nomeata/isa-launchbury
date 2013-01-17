@@ -30,7 +30,9 @@
 \newcommand{\isasymnotsqsubseteq}{\isamath{\not\sqsubseteq}}
 
 \usepackage{amsmath}
+\usepackage{mathtools}
 \usepackage{graphicx}
+\usepackage{tikz}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage{mathpartir}
@@ -46,6 +48,12 @@
 % Isabelle does not like *} in a text {* ... *} block
 % Concrete implemenation thanks to http://www.mrunix.de/forums/showpost.php?p=235085&postcount=5
 \newenvironment{alignstar}{\csname align*\endcsname}{\csname endalign*\endcsname}
+\newenvironment{alignatstar}{\csname alignat*\endcsname}{\csname endalignat*\endcsname}
+
+% For compiling root.tex in the document/ directory
+\renewcommand\input[1]{%
+    \InputIfFileExists{#1}{}{\typeout{No file #1.}}%
+}
 
 \begin{document}
 
@@ -70,9 +78,9 @@ understood to be a right-sided update.
 
 \section{Introduction}
 
-The Natural Semantics for Lazy Evaluation \cite{launchbury} created by John Launchbury in 1992 is often taken as the base for formal treatments of call-by-need evaluation, either to prove properties of lazy evaluation or as a base to describe extensions of the language or the implementation of the language. Therefore, assurance about the correctness and adequacy of the semantics is important in this field of research. Launchbury himself supports his semantics by defining a standard denotational semantics to proof both correctness and adequacy.
+The Natural Semantics for Lazy Evaluation \cite{launchbury} created by John Launchbury in 1992 is often taken as the base for formal treatments of call-by-need evaluation, either to prove properties of lazy evaluation or as a base to describe extensions of the language or the implementation of the language. Therefore, assurance about the correctness and adequacy of the semantics is important in this field of research. Launchbury himself supports his semantics by defining a standard denotational semantics to prove both correctness and adequacy.
 
-Although his proofs are already on the more rigorous side for pen-and-paper-proofs, they have not yet been verified by transforming them to machine-checked proofs. This work is a first step, formalizing both semantics in the proof assistant Isabelle and attempting to proving correctness. In the process we found a flaw in the original proof: Launchbury uses the operator $\sqcup$ in the natural semantics without giving a precise definition. If $\sqcup$ is understood to be the least upper bounds, then Theorem 2 in \cite{launchbury}, which is the generalization of the correctness statement used for Launchbury's inductive proof, is wrong. See Section \ref{sec_Correctness-Counterexample} for the counter example. Later publications based on Launchbury’s semantics reproduce the same flaw, often without the benefit of doubt that $\sqcup$ is supposed to be the least upper bound. Examples include \cite{nakata_extended}%
+Although his proofs are already on the more rigorous side for pen-and-paper proofs, they have not yet been verified by transforming them to machine-checked proofs. This work is a first step, formalizing both semantics in the proof assistant Isabelle and attempting to proving correctness. In the process we found a flaw in the original proof: Launchbury uses the operator $\sqcup$ in the natural semantics without giving a precise definition. If $\sqcup$ is understood to be the least upper bounds, then Theorem 2 in \cite{launchbury}, which is the generalization of the correctness statement used for Launchbury's inductive proof, is wrong. See Section \ref{sec_Correctness-Counterexample} for the counter example. Later publications based on Launchbury’s semantics reproduce the same flaw, often without the benefit of doubt that $\sqcup$ is supposed to be the least upper bound. Examples include \cite{nakata_extended}%
 % (which is an extended version of \cite{nakata})
 , \cite{mixed} and \cite{distributed}. 
 
@@ -90,7 +98,7 @@ Another approach to avoid the problem is to understand $\sqcup$, which operates 
 \rho(x), &\text{otherwise.}
 \end{cases}
 \]
-With this definition, the original proof goes through as written in \cite{launchbury}. We doubt that this is reading is obvious or even intended, especially as the statement $\forall x. \rho(x) \sqsubseteq (\{\!\!\{\Gamma\}\!\!\})(x)$, given in \cite{launchbury} before the proof, is only true when $\sqcup$ is understood to be the least upper bound. This definition has been used in other works that derive from Launchbury, e.g. in \cite{parallel} and \cite{nakata_blackhole}, but without further explanation of this choice.
+With this definition, the original proof goes through as written in \cite{launchbury}. We doubt that this reading is obvious or even intended, especially as the statement $\forall x. \rho(x) \sqsubseteq (\{\!\!\{\Gamma\}\!\!\})(x)$, given in \cite{launchbury} before the proof, is only true when $\sqcup$ is understood to be the least upper bound. This definition has been used in other works that derive from Launchbury, e.g. in \cite{parallel} and \cite{nakata_blackhole}, but without further explanation of this choice.
 
 Our contributions are:
 \begin{itemize}
@@ -103,6 +111,8 @@ Our contributions are:
 \end{enumerate}
 \end{itemize}
 
+%\input{map.tex}
+
 \input{Everything.tex}
 
 \subsection{Related work}
@@ -113,7 +123,9 @@ The same group extended Launchbury’s semantic for distributed lazy evaluation 
 
 \begin{figure}
 \begin{center}
+\IfFileExists{session_graph.pdf}{
   \includegraphics[width=\textwidth]{session_graph}
+}{Here, \texttt{session\_graph.pdf} would be shown.}
 \end{center}
 \caption{Theory Dependency Graph\label{theory-deps}}
 \end{figure}
