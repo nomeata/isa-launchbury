@@ -4,9 +4,9 @@ imports DenotationalEquivalences Correctness CorrectnessUpd "Correctness-Counter
 begin
 
 notation (latex output) fmap_expand ("_\<^bsub>'(_')\<^esub>" [50, 60] 90)
-notation (latex output) fempty ("\<emptyset>\<^bsub>f\<^esub>")
+notation (latex output) fempty ("f\<emptyset>")
 
-notation (latex output) DenotationalUpd.ESem ("\<lbrakk> _ \<rbrakk>\<^bsup>u\<^esup>\<^bsub>_\<^esub>"  [60,60] 60)
+notation (latex output) DenotationalUpd.ESem ("\<lbrakk>_\<rbrakk>\<^bsup>u\<^esup>\<^bsub>_\<^esub>"  [60,60] 60)
 notation (latex output) "Denotational-PropsUpd.HSem_syn" ("\<lbrace>_\<rbrace>\<^bsup>u\<^esup>_"  [60,60] 60)
 
 translations
@@ -46,7 +46,7 @@ demonstrated by the following lemma:
 These expressions are, due to the machinery of the Nominal package, actually alpha-equivalency-classes 
 so the identity @{thm alpha_test[no_vars]} is a theorem.
 
-Heaps are of type @{typ "(var \<times> exp) list"}.
+The type @{type heap} is an abbreviation for @{typ "(var \<times> exp) list"}.
 *}
 
 subsubsection {* The natural semantics *}
@@ -82,27 +82,42 @@ This is our modified semantics that allows the correctness theorem to go through
 subsubsection {* The denotational semantics *}
 
 text {*
-The semantics of an expression, in either variant, is given by the following equations:
+The value domain of the denotational semantics is the initial solution to
+\[
+D = [D \to D]_\bot
+\]
+as introduced in \cite{abramsky}. The type @{typ Value}, together with the bottom value @{term_type "\<bottom>::Value"}, the
+injection @{term_type "Fn"} and the projection @{term "DUMMY \<down>Fn DUMMY"}@{text "::"}@{typeof "Fn_project"},
+is constructed as a pointed chain-complete partial order from this equation by the HOLCF package.
+The type of semantic environments, @{typ Env}, is an abbreviation for @{typ "var f\<rightharpoonup> Value"}.
+
+The semantics of an expression @{term_type "e :: exp"} in an environment @{term "\<rho>"}@{text "::"}@{typ Env} is 
+written \mbox{@{term_type "Denotational.ESem e \<rho>"}} and defined by the following equations:
 \begin{alignstar}
 @{thm (lhs) Denotational.ESem.simps(1)[no_vars]} & = @{thm (rhs) Denotational.ESem.simps(1)[no_vars]} && \text{if } @{thm (prem 1) Denotational.ESem.simps(1)[no_vars]} \\
 @{thm (lhs) Denotational.ESem.simps(2)[no_vars]} & = @{thm (rhs) Denotational.ESem.simps(2)[no_vars]} \\
 @{thm (lhs) Denotational.ESem.simps(3)[no_vars]} & = @{thm (rhs) Denotational.ESem.simps(3)[no_vars]} \\
-@{thm (lhs) Denotational.ESem.simps(4)[no_vars]} & = @{thm (rhs) Denotational.ESem.simps(4)[no_vars]} && \text{if } @{thm (prem 1) Denotational.ESem.simps(4)[no_vars]}
+@{thm (lhs) Denotational.ESem.simps(4)[no_vars]} & = @{thm (rhs) Denotational.ESem.simps(4)[no_vars]} && \text{if } @{thm (prem 1) Denotational.ESem.simps(4)[no_vars]}.
 \end{alignstar}
 *}
 
 text {*
-We study two alternative semantics for the heap:
+We study two alternatives for the semantics @{term "Denotational.HSem \<Gamma> \<rho>"}@{text "::"}@{typ Env} of a
+heap @{term "\<Gamma> :: heap"}@{text "::"}@{typ heap}
+in an environment @{term "\<rho>"}@{text "::"}@{typ Env}. As this is used in denotations of a Let expression,
+we have also two expression semantics. Their definitions are, besides the choice of heap semantics, identical.
 
 The first involves a least upper bound ($\sqcup$) and is defined by the recursive equation
 \[ @{thm (concl) Denotational.HSem_eq[no_vars]}, \]
-where the set in the index position indicates the expansion of the map to the given domain and @{term heapToEnv}
+where the set in the index position indicates the expansion of the map to the given domain and
+@{term "heapToEnv:: heap \<Rightarrow> (exp \<Rightarrow> Value) \<Rightarrow> Env"}@{text "::"}@{typ "heap \<Rightarrow> (exp \<Rightarrow> Value) \<Rightarrow> Env"}
 maps the given expression semantics over the heap, producing a semantic environment.
 
-The other uses the right-sided update operator @{text "f++"} and is defined by the recursive equation
+The other, here shown with a superscript @{text "u"}, uses the right-sided update operator @{text "f++"}
+and is defined by the recursive equation
 \[ @{thm "Denotational-PropsUpd.HSem_eq"[no_vars]}. \]
 
-The semantics of the heap in the empty environment is abbreviated as @{abbrev "HSem_fempty \<Gamma>"}.
+The semantics of the heap in the empty environment @{term "fempty"} is abbreviated as @{abbrev "HSem_fempty \<Gamma>"}.
 
 It is worth noting that the two semantics agree on expressions, i.e. @{thm HSem_join_update(1)[no_vars] },
 but obviously not on heaps that bind variables that also occur in the environment.
@@ -137,6 +152,7 @@ If @{thm [mode=IfThen] (prem 1) CorrectnessUpd.correctness(1)[no_vars]} and, as 
 @{thm [mode=IfThen] (prem 2) CorrectnessUpd.correctness(1)[no_vars]} and
 \mbox{@{thm [mode=IfThen] (prem 3) CorrectnessUpd.correctness(1)[no_vars]}} holds,
 then @{thm [mode=IfThen] (concl) CorrectnessUpd.correctness(1)[no_vars]} and  @{thm [mode=IfThen] (concl) CorrectnessUpd.correctness(2)[no_vars]} *}
+
 
 (*<*)
 

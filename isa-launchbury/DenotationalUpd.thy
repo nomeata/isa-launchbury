@@ -5,7 +5,7 @@ begin
 subsubsection {* The denotational semantics *}
 
 nominal_primrec
-  ESem :: "exp \<Rightarrow> Env \<Rightarrow> Value" ("\<lbrakk> _ \<rbrakk>\<^bsub>_\<^esub>"  [60,60] 60)
+  ESem :: "exp \<Rightarrow> Env \<Rightarrow> Value" ("\<lbrakk>_\<rbrakk>\<^bsub>_\<^esub>"  [60,60] 60)
 where
   "atom x \<sharp> \<rho> \<Longrightarrow> \<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub> = Fn \<cdot> (\<Lambda> v. (\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>))"
 | "\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> \<down>Fn \<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub> "
