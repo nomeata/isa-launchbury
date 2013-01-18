@@ -17,18 +17,18 @@ definition HSem :: "('var \<times> 'exp) list \<Rightarrow> 'var f\<rightharpoon
   where
   "\<lbrace>h\<rbrace>\<rho> = 
     (if (\<forall> e \<in> snd `set h. cont (ESem e))
-     then  fix_on' (fmap_bottom (fdom \<rho> \<union> heapVars h)) (\<lambda> \<rho>'. \<rho> f++ heapToEnv h (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))
-     else (fmap_bottom (fdom \<rho> \<union> heapVars h)))"
+     then  fix_on' (f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>) (\<lambda> \<rho>'. \<rho> f++ heapToEnv h (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))
+     else (f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>))"
 
 lemma HSem_def'':
   assumes "\<And> e. e \<in> snd ` set h \<Longrightarrow> cont (ESem e)"
-  shows "\<lbrace>h\<rbrace>\<rho> = fix_on' (fmap_bottom (fdom \<rho> \<union> heapVars h)) (\<lambda> \<rho>'. \<rho> f++ heapToEnv h (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
+  shows "\<lbrace>h\<rbrace>\<rho> = fix_on' (f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>) (\<lambda> \<rho>'. \<rho> f++ heapToEnv h (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
   unfolding HSem_def using assms by metis
 
 lemma fix_on_cond_HSem':
   assumes cont: "\<And> e. e \<in> snd ` set h \<Longrightarrow> cont (ESem e)"
-  shows "fix_on_cond {x. fmap_bottom (fdom \<rho> \<union> heapVars h) \<sqsubseteq> x}
-          (fmap_bottom (fdom \<rho> \<union> heapVars h)) (\<lambda>\<rho>'. \<rho> f++ heapToEnv h (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
+  shows "fix_on_cond {x. f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub> \<sqsubseteq> x}
+          (f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>) (\<lambda>\<rho>'. \<rho> f++ heapToEnv h (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
   apply (rule fix_on_condI)
   apply (rule subpcpo_cone_above)
   apply (rule bottom_of_cone_above)
@@ -62,13 +62,13 @@ proof-
     apply (subst (1 2) HSem_def'')
     apply (erule cont)+
     unfolding fdoms
-    proof (rule fix_on_cont[OF `chain Y`, where S = "{x . fmap_bottom (fdom (\<Squnion> i. Y i) \<union> heapVars h) \<sqsubseteq> x}"])
+    proof (rule fix_on_cont[OF `chain Y`, where S = "{x . f\<emptyset>\<^bsub>[fdom (\<Squnion> i. Y i) \<union> heapVars h]\<^esub> \<sqsubseteq> x}"])
       show "cont (\<lambda>a b. a f++ heapToEnv h (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>b\<^esub>))"
         by (rule cont2cont_lambda[OF fmap_add_cont1])
       fix i
         from fix_on_cond_HSem'[OF cont, where \<rho> = "Y i", unfolded fdoms]
-        show "fix_on_cond {x. fmap_bottom (fdom (\<Squnion> i. Y i) \<union> heapVars h) \<sqsubseteq> x}
-               (fmap_bottom (fdom (Lub Y) \<union> heapVars h)) (\<lambda>a. Y i f++ heapToEnv h (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>a\<^esub>))"
+        show "fix_on_cond {x. f\<emptyset>\<^bsub>[fdom (\<Squnion> i. Y i) \<union> heapVars h]\<^esub> \<sqsubseteq> x}
+               (f\<emptyset>\<^bsub>[fdom (Lub Y) \<union> heapVars h]\<^esub>) (\<lambda>a. Y i f++ heapToEnv h (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>a\<^esub>))"
            by metis
     qed
 qed
@@ -79,12 +79,12 @@ locale has_cont_ESem = has_ESem +
 begin
 
   lemma HSem_def':
-    shows "\<lbrace>h\<rbrace>\<rho> = fix_on' (fmap_bottom (fdom \<rho> \<union> heapVars h)) (\<lambda> \<rho>'. \<rho> f++ heapToEnv h (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
+    shows "\<lbrace>h\<rbrace>\<rho> = fix_on' (f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>) (\<lambda> \<rho>'. \<rho> f++ heapToEnv h (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
     unfolding HSem_def using ESem_cont by metis
 
   lemma fix_on_cond_HSem:
-    shows "fix_on_cond {x. fmap_bottom (fdom \<rho> \<union> heapVars h) \<sqsubseteq> x}
-            (fmap_bottom (fdom \<rho> \<union> heapVars h)) (\<lambda>\<rho>'. \<rho> f++ heapToEnv h (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
+    shows "fix_on_cond {x. f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub> \<sqsubseteq> x}
+            (f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>) (\<lambda>\<rho>'. \<rho> f++ heapToEnv h (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
     apply (rule fix_on_cond_HSem') using ESem_cont by metis
 
 
@@ -92,7 +92,7 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
 
   lemma HSem_ind:
     assumes "adm P"
-    assumes "P (fmap_bottom (fdom \<rho> \<union> heapVars h))"
+    assumes "P (f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>)"
     assumes step: "\<And> y. fdom y = fdom \<rho> \<union> heapVars h \<Longrightarrow>
           P y \<Longrightarrow>  P (\<rho> f++ (heapToEnv h (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>y\<^esub>)))"
     shows "P (\<lbrace>h\<rbrace>\<rho>)"
@@ -107,7 +107,7 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
   
   lemma parallel_HSem_ind:
     assumes "adm (\<lambda>\<rho>'. P (fst \<rho>') (snd \<rho>'))"
-    assumes "P (fmap_bottom (fdom \<rho> \<union> heapVars h)) (fmap_bottom (fdom \<rho>2 \<union> heapVars h2))"
+    assumes "P (f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>) (f\<emptyset>\<^bsub>[fdom \<rho>2 \<union> heapVars h2]\<^esub>)"
     assumes step: "\<And>y z. fdom y = fdom \<rho> \<union> heapVars h \<Longrightarrow>
             fdom z = fdom \<rho>2 \<union> heapVars h2 \<Longrightarrow>
             P y z \<Longrightarrow>
@@ -209,7 +209,7 @@ subsubsection {* Iterative definition of the heap semantics *}
   lemma iterative_HSem:
     assumes "x \<notin> heapVars \<Gamma>"
     shows "\<lbrace>(x,e) # \<Gamma>\<rbrace>\<rho> =
-         fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> heapVars \<Gamma>)))
+         fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars \<Gamma>)]\<^esub>)
             (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
   proof-
     interpret iterative
@@ -227,7 +227,7 @@ subsubsection {* Iterative definition of the heap semantics *}
       by (simp add: HSem_def' fmap_add_upd)
     also have "\<dots> = fix_on' b R"
       by (rule iterative_fmap_add)
-    also have "\<dots> = fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> heapVars \<Gamma>)))
+    also have "\<dots> = fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars \<Gamma>)]\<^esub>)
             (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
       apply (rule fix_on_cong[OF condR])
       apply (simp add: HSem_def')
@@ -239,8 +239,8 @@ subsubsection {* Iterative definition of the heap semantics *}
 
   lemma iterative_HSem'_cond:
     assumes "x \<notin> heapVars \<Gamma>"
-    shows "fix_on_cond {\<rho>'. fmap_bottom (insert x (fdom \<rho> \<union> heapVars \<Gamma>)) \<sqsubseteq> \<rho>'}
-             (fmap_bottom (insert x (fdom \<rho> \<union> heapVars \<Gamma>)))
+    shows "fix_on_cond {\<rho>'. f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars \<Gamma>)]\<^esub> \<sqsubseteq> \<rho>'}
+             (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars \<Gamma>)]\<^esub>)
              (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>'\<^esub>))"
   proof-
     interpret iterative
@@ -264,9 +264,9 @@ subsubsection {* Iterative definition of the heap semantics *}
 
   lemma iterative_HSem':
     assumes "x \<notin> heapVars \<Gamma>"
-    shows "fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> heapVars \<Gamma>)))
+    shows "fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars \<Gamma>)]\<^esub>)
             (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)) 
-       = fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> heapVars \<Gamma>)))
+       = fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars \<Gamma>)]\<^esub>)
             (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>'\<^esub>))"
   proof-
     interpret iterative
@@ -280,7 +280,7 @@ subsubsection {* Iterative definition of the heap semantics *}
       using assms
       by (simp_all add: ESem_cont)
 
-    have "fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> heapVars \<Gamma>)))
+    have "fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars \<Gamma>)]\<^esub>)
             (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)) =
           fix_on' b R"
       apply (rule fix_on_cong[symmetric, OF condR])
@@ -292,7 +292,7 @@ subsubsection {* Iterative definition of the heap semantics *}
       by (rule iterative_fmap_add[symmetric])
     also have "\<dots> = fix_on' b R'"
       by (rule iterative_fmap_add')
-    also have "\<dots> = fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> heapVars \<Gamma>)))
+    also have "\<dots> = fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars \<Gamma>)]\<^esub>)
             (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>'\<^esub>))"
       apply (rule fix_on_cong[OF condR'])
       apply (simp add: HSem_def')
@@ -325,7 +325,6 @@ case True
    unfolding has_ESem.HSem_def if_P[OF True]  if_P[OF True_permuted] 
    apply (subst fix_on_eqvt[OF has_ESem.fix_on_cond_HSem'])
    apply (metis True)
-   apply (subst fmap_bottom_eqvt, simp)
    apply perm_simp
    apply rule
    done
@@ -336,7 +335,6 @@ case False
     by perm_simp
   show ?thesis
    unfolding has_ESem.HSem_def if_not_P[OF False]  if_not_P[OF False_permuted] 
-   apply (subst fmap_bottom_eqvt, simp)
    apply perm_simp
    apply rule
    done

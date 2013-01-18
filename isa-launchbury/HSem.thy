@@ -151,7 +151,7 @@ lemma parallel_HSem_ind:
   assumes "adm_on (fix_join_compat (\<rho>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>) (\<lambda>\<rho>'. heapToEnv h (\<lambda>e. ESem e \<rho>')\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>)
                   \<times> fix_join_compat (\<rho>2\<^bsub>[fdom \<rho>2 \<union> heapVars h2]\<^esub>) (\<lambda>\<rho>'. heapToEnv h2 (\<lambda>e. ESem e \<rho>')\<^bsub>[fdom \<rho>2 \<union> heapVars h2]\<^esub>))
                  (\<lambda>\<rho>'. P (fst \<rho>') (snd \<rho>'))"
-  assumes "P (fmap_bottom (fdom \<rho> \<union> heapVars h)) (fmap_bottom (fdom \<rho>2 \<union> heapVars h2))"
+  assumes "P (f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>) (f\<emptyset>\<^bsub>[fdom \<rho>2 \<union> heapVars h2]\<^esub>)"
   assumes "\<And>y z. y \<in> fix_join_compat (\<rho>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>)
                (\<lambda>\<rho>'. heapToEnv h (\<lambda>e. ESem e \<rho>')\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>) \<Longrightarrow>
           z \<in> fix_join_compat (\<rho>2\<^bsub>[fdom \<rho>2 \<union> heapVars h2]\<^esub>)
@@ -599,7 +599,7 @@ subsubsection {* The heap semantics can also be define inductively over the heap
     shows "HSem ((x,e) # \<Gamma>) \<rho> =
         fix_on (fix_join_compat (\<rho>\<^bsub>[fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>)]\<^esub>) (\<lambda> \<rho>'. heapToEnv ((x, e) # \<Gamma>) (\<lambda>e. ESem e \<rho>')\<^bsub>[fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>)]\<^esub>))
                 (\<lambda> \<rho>'. (HSem \<Gamma> \<rho>')
-                        \<squnion> (fmap_bottom (fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>))(x f\<mapsto> ESem e \<rho>') 
+                        \<squnion> ((f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>)]\<^esub>)(x f\<mapsto> ESem e \<rho>') 
                         \<squnion> (\<rho>\<^bsub>[fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>)]\<^esub>)))" (is "_ = fix_on ?S ?R")
   apply (subst HSem_def'[OF assms(1)])
   proof(rule below_antisym)

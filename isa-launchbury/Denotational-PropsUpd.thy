@@ -101,8 +101,8 @@ case (Let as exp \<rho> x y)
     apply auto[3]
     done
 
-  let ?b1 = "fmap_bottom (fdom (\<rho>(x f\<mapsto> \<rho> f! y)) \<union> heapVars (asToHeap as))"
-  let ?b2 = "fmap_bottom (fdom \<rho> \<union> heapVars (asToHeap as[x::a=y]))"
+  let ?b1 = "f\<emptyset>\<^bsub>[fdom (\<rho>(x f\<mapsto> \<rho> f! y)) \<union> heapVars (asToHeap as)]\<^esub>"
+  let ?b2 = "f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars (asToHeap as[x::a=y])]\<^esub>"
   let ?\<rho>1 = "\<rho>(x f\<mapsto> \<rho> f! y)"
   let ?\<rho>2 = \<rho>
   let ?F1 = "\<lambda>\<rho>' . heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)"

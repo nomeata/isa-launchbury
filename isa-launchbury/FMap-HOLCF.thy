@@ -627,56 +627,34 @@ lemma less_fmap_expand:
 
 subsubsection {* Bottoms *}
 
-lift_definition fmap_bottom :: "'a set  \<Rightarrow> 'a f\<rightharpoonup> 'b::pcpo"
-  is "\<lambda> S. (if finite S then (\<lambda> x. if x \<in> S then Some \<bottom> else None) else empty)"
-  apply (case_tac "finite set")
-  apply (rule_tac B = "set" in  finite_subset)
-  apply (auto simp add: dom_def)
-  done
-
-lemma fdom_fmap_bottom[simp]: "finite S \<Longrightarrow> fdom (fmap_bottom S) = S"
-  by (transfer, auto simp add: dom_def)
-
-lemma fmap_bottom_lookup[simp]: "\<lbrakk> x \<in> S ; finite S \<rbrakk> \<Longrightarrow> lookup (fmap_bottom S) x = Some \<bottom>"
-  by (transfer, auto)
-
-lemma[simp]: "fmap_bottom {} = f\<emptyset>"
-  by (rule, auto)
-
 lemma fmap_bottom_below[simp]:
-  "S = fdom \<rho> \<Longrightarrow> fmap_bottom S \<sqsubseteq> \<rho>"
+  "S = fdom \<rho> \<Longrightarrow> f\<emptyset>\<^bsub>[S]\<^esub> \<sqsubseteq> \<rho>"
  by(rule fmap_belowI, auto)
 
 lemma fmap_bottom_below_iff[iff]:
-  "finite S \<Longrightarrow> fmap_bottom S \<sqsubseteq> \<rho> \<longleftrightarrow> S = fdom \<rho>"
-  by (metis fdom_fmap_bottom fmap_below_dom fmap_bottom_below)
+  "finite S \<Longrightarrow> f\<emptyset>\<^bsub>[S]\<^esub> \<sqsubseteq> \<rho> \<longleftrightarrow> S = fdom \<rho>"
+  by (metis fdom_fmap_expand fmap_below_dom fmap_bottom_below)
 
-lemma fmap_bottom_inj[iff]: "finite x \<Longrightarrow> finite y \<Longrightarrow> fmap_bottom x = fmap_bottom y \<longleftrightarrow> x = y"
-  apply transfer
-  apply (auto simp add: option.split option.split_asm)
-  apply (metis option.simps(3))+
-  done
+lemma fmap_bottom_inj[iff]: "finite x \<Longrightarrow> finite y \<Longrightarrow> f\<emptyset>\<^bsub>[x]\<^esub> = f\<emptyset>\<^bsub>[y]\<^esub> \<longleftrightarrow> x = y"
+  by (metis below.r_refl fmap_bottom_below_iff)
 
-lemma fmap_expand_fempty[simp]: "f\<emptyset>\<^bsub>[S]\<^esub> = fmap_bottom S"
-  by (transfer, auto)
-
-lemma fmap_expand_fmap_bottom[simp]: "(fmap_bottom S')\<^bsub>[S]\<^esub> = fmap_bottom S"
+lemma fmap_expand_fmap_bottom[simp]: "f\<emptyset>\<^bsub>[S']\<^esub>\<^bsub>[S]\<^esub> = f\<emptyset>\<^bsub>[S]\<^esub>"
   by (transfer, auto)
 
 lemma fmap_restr_fmap_bottom[simp]:
-  "finite S \<Longrightarrow> finite S2 \<Longrightarrow> fmap_restr S (fmap_bottom S2) = fmap_bottom (S \<inter> S2)"
-  by (transfer, auto simp add: restrict_map_def)
+  "finite S \<Longrightarrow> finite S2 \<Longrightarrow> fmap_restr S (f\<emptyset>\<^bsub>[S2]\<^esub>) = f\<emptyset>\<^bsub>[S \<inter> S2]\<^esub>"
+  by auto
 
 lemma fmap_bottom_insert:
   "finite S \<Longrightarrow>
-  fmap_bottom (insert x S) = (fmap_bottom S)(x f\<mapsto> \<bottom>)"
+  f\<emptyset>\<^bsub>[insert x S]\<^esub> = (f\<emptyset>\<^bsub>[S]\<^esub>)(x f\<mapsto> \<bottom>)"
   apply (rule fmap_eqI)
   apply auto[1]
   apply (case_tac "xa = x", auto)
   done
 
 lemma fmap_bottom_less[simp]:
-  "finite S2 \<Longrightarrow> S1 \<subseteq> S2 \<Longrightarrow> fmap_bottom S1 \<le> fmap_bottom S2"
+  "finite S2 \<Longrightarrow> S1 \<subseteq> S2 \<Longrightarrow> f\<emptyset>\<^bsub>[S1]\<^esub> \<le> f\<emptyset>\<^bsub>[S2]\<^esub>"
   apply (subgoal_tac "finite S1")
   apply (rule fmap_less_eqI)
   apply simp
@@ -709,7 +687,7 @@ locale iterative =
   assumes dom[simp]: "\<And> \<rho>. fdom (e1 \<rho>) = S"
   assumes ne:"x \<notin> S"
 
-sublocale iterative < subpcpo "{x. fmap_bottom D \<sqsubseteq> x}" by (rule subpcpo_cone_above)
+sublocale iterative < subpcpo "{x. f\<emptyset>\<^bsub>[D]\<^esub> \<sqsubseteq> x}" by (rule subpcpo_cone_above)
 
 context iterative
 begin
@@ -718,8 +696,8 @@ begin
   lemma [simp]: "finite D" by (simp add: D_def)
  
 
-  abbreviation "cpo == {x. fmap_bottom D \<sqsubseteq> x}"
-  abbreviation "b == fmap_bottom D"
+  abbreviation "cpo == {x. f\<emptyset>\<^bsub>[D]\<^esub> \<sqsubseteq> x}"
+  abbreviation "b == f\<emptyset>\<^bsub>[D]\<^esub>"
 
   abbreviation "L == (\<lambda> \<rho>'. (\<rho> f++ e1 \<rho>')(x f\<mapsto> e2 \<rho>'))"
   abbreviation "H == (\<lambda> \<rho>' \<rho>''. \<rho>' f++ e1 \<rho>'')"
@@ -1089,11 +1067,11 @@ subsubsection {* Finite maps can be partitioned in pcpo's *}
 
 instantiation fmap :: (type, pcpo) subpcpo_partition
 begin
-  definition "to_bot x = fmap_bottom (fdom x)"
+  definition "to_bot x = f\<emptyset>\<^bsub>[fdom x]\<^esub>"
   lemma [simp]:"fdom (to_bot x) = fdom x"
     unfolding to_bot_fmap_def by auto
 
-  lemma to_bot_vimage_cone:"to_bot -` {to_bot x} = {z. fmap_bottom (fdom x) \<sqsubseteq> z}"
+  lemma to_bot_vimage_cone:"to_bot -` {to_bot x} = {z. f\<emptyset>\<^bsub>[fdom x]\<^esub> \<sqsubseteq> z}"
     by (auto simp add:to_bot_fmap_def)
 
   instance  

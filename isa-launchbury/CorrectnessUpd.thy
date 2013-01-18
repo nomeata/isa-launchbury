@@ -97,8 +97,8 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
   have [simp]: "(fdom \<rho> - heapVars \<Gamma>) \<inter> (fdom \<rho> \<union> (heapVars \<Gamma> - {x})) = (fdom \<rho> - heapVars \<Gamma>)"
     by auto
 
-  have condGamma: "fix_on_cond {\<rho>' . fmap_bottom (insert x (fdom \<rho> \<union> heapVars (delete x \<Gamma>))) \<sqsubseteq> \<rho>'}
-                               (fmap_bottom (insert x (fdom \<rho> \<union> heapVars (delete x \<Gamma>))))
+  have condGamma: "fix_on_cond {\<rho>' . f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars (delete x \<Gamma>))]\<^esub> \<sqsubseteq> \<rho>'}
+                               (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars (delete x \<Gamma>))]\<^esub>)
                                (\<lambda>\<rho>'a. (\<rho> f++ fmap_restr (heapVars (delete x \<Gamma>)) (\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'a))(x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>'a\<^esub>))"
     apply (rule fix_on_cond_cong[OF iterative_HSem'_cond])
       apply simp
@@ -110,18 +110,18 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
     apply (simp_all add: Variable(5) distinctVars_Cons distinctVars_delete)[2]
     apply (rule distinctVars_set_delete_insert[symmetric, OF Variable(5) Variable(1)])
     done
-  also have "\<dots> = fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> heapVars (delete x \<Gamma>))))
+  also have "\<dots> = fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars (delete x \<Gamma>))]\<^esub>)
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars (delete x \<Gamma>)) (\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>))"
     by (rule iterative_HSem, simp)
-  also have "\<dots> = fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> heapVars (delete x \<Gamma>))))
+  also have "\<dots> = fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars (delete x \<Gamma>))]\<^esub>)
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars (delete x \<Gamma>)) (\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'\<^esub>))"
     by (rule iterative_HSem', simp)
-  also have "\<dots> = fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> heapVars (delete x \<Gamma>))))
+  also have "\<dots> = fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars (delete x \<Gamma>))]\<^esub>)
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars (delete x \<Gamma>)) (\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>'\<^esub>))"
     apply (rule fix_on_cong[OF _ arg_cong[OF  Variable.hyps(3)]])
     apply (rule iterative_HSem'_cond)
     using 2 by auto
-  also have "\<dots> \<le> fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> heapVars \<Delta>)))
+  also have "\<dots> \<le> fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars \<Delta>)]\<^esub>)
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars \<Delta>) (\<lbrace>\<Delta>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>'\<^esub>))"
     apply (subst fmap_less_restrict)
     apply (rule parallel_fix_on_ind[OF condGamma iterative_HSem'_cond[OF `x \<notin> heapVars \<Delta>`]])
@@ -149,7 +149,7 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
     apply (subst (1 2) HSem_restr[symmetric])
     apply simp
     done
-  also have "\<dots> = fix_on' (fmap_bottom (insert x (fdom \<rho> \<union> heapVars \<Delta>)))
+  also have "\<dots> = fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars \<Delta>)]\<^esub>)
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars \<Delta>) (\<lbrace>\<Delta>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<rho>'\<^esub>))"
     by (rule iterative_HSem'[symmetric, OF reds_avoids_live[OF distinct_redsD1[OF Variable(2)]]], simp_all)
   also have "\<dots> = \<lbrace>(x,z) # \<Delta>\<rbrace>\<rho>"

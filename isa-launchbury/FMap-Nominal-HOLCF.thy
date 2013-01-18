@@ -73,10 +73,6 @@ qed
 
 subsubsection {* Equivariance lemmas *}
 
-lemma fmap_bottom_eqvt:
-  "finite S \<Longrightarrow> \<pi> \<bullet> (fmap_bottom S :: 'a::pt f\<rightharpoonup> 'b::{cont_pt,pcpo}) = fmap_bottom (\<pi> \<bullet> S)"
-  by (transfer,perm_simp, rule refl)
-
 lemma fmap_expand_eqvt[eqvt]:
   "\<pi> \<bullet> fmap_expand (m :: 'a::{pt} f\<rightharpoonup> 'b::{cont_pt,pcpo}) S = fmap_expand (\<pi> \<bullet> m) (\<pi> \<bullet> S)"
   by (transfer, perm_simp, rule refl)
