@@ -3,9 +3,6 @@ theory Everything
 imports DenotationalEquivalences Correctness CorrectnessUpd "Correctness-Counterexample" "~~/src/HOL/Library/LaTeXsugar" 
 begin
 
-notation (latex output) fmap_expand ("_\<^bsub>'(_')\<^esub>" [50, 60] 90)
-notation (latex output) fempty ("f\<emptyset>")
-
 notation (latex output) DenotationalUpd.ESem ("\<lbrakk>_\<rbrakk>\<^bsup>u\<^esup>\<^bsub>_\<^esub>"  [60,60] 60)
 notation (latex output) "Denotational-PropsUpd.HSem_syn" ("\<lbrace>_\<rbrace>\<^bsup>u\<^esup>_"  [60,60] 60)
 

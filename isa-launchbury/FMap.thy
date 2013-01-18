@@ -18,9 +18,9 @@ lift_definition lookup :: "'key f\<rightharpoonup> 'value \<Rightarrow> 'key \<R
 abbreviation the_lookup (infix "f!" 55)
   where "m f! x \<equiv> the (lookup m x)"
 
-lift_definition fempty :: "'key f\<rightharpoonup> 'value" is Map.empty by simp
+lift_definition fempty :: "'key f\<rightharpoonup> 'value" ("f\<emptyset>") is Map.empty by simp
 
-lemma fempty_fdom[simp]: "fdom fempty = {}"
+lemma fempty_fdom[simp]: "fdom f\<emptyset> = {}"
   by (transfer, auto)
 
 lemma fdomIff: "(a : fdom m) = (lookup m a \<noteq> None)"
@@ -121,7 +121,7 @@ lemma fmap_restr_useless: "finite S \<Longrightarrow> fdom m \<subseteq> S \<Lon
   by (rule fmap_eqI, auto)
 
 lemma fmap_restr_not_finite:
-  "\<not> finite S \<Longrightarrow> fmap_restr S \<rho> = fempty"
+  "\<not> finite S \<Longrightarrow> fmap_restr S \<rho> = f\<emptyset>"
   by (transfer, simp)
 
 lemma fmap_restr_fmap_upd: "x \<in> S \<Longrightarrow> finite S \<Longrightarrow> fmap_restr S (m1(x f\<mapsto> v)) = (fmap_restr S m1)(x f\<mapsto> v)"
@@ -170,7 +170,7 @@ lemma lookup_fmap_add2[simp]:  "x \<notin> fdom m2 \<Longrightarrow> lookup (m1 
   apply transfer
   by (metis map_add_dom_app_simps(3))
 
-lemma [simp]: "\<rho> f++ fempty = \<rho>"
+lemma [simp]: "\<rho> f++ f\<emptyset> = \<rho>"
   by (transfer, auto)
 
 lemma fmap_add_overwrite: "fdom m1 \<subseteq> fdom m2 \<Longrightarrow> m1 f++ m2 = m2"
@@ -204,7 +204,7 @@ subsubsection {* Conversion from associative lists *}
 lift_definition fmap_of :: "('a \<times> 'b) list \<Rightarrow> 'a f\<rightharpoonup> 'b"
   is map_of by (rule finite_dom_map_of)
 
-lemma fmap_of_Nil[simp]: "fmap_of [] = fempty"
+lemma fmap_of_Nil[simp]: "fmap_of [] = f\<emptyset>"
  by (transfer, simp)
 
 lemma fmap_of_Cons[simp]: "fmap_of (p # l) = (fmap_of l)(fst p f\<mapsto> snd p)" 

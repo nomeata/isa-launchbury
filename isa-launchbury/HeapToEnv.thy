@@ -45,7 +45,7 @@ lemma lookupHeapToEnvNotAppend[simp]:
   using assms by (induct \<Gamma>, auto)
 
 lemma heapToEnv_remove_Cons_fmap_expand:
-  "finite S \<Longrightarrow> x \<notin> S \<Longrightarrow> fmap_expand (heapToEnv ((x, e) # \<Gamma>) eval) S = fmap_expand (heapToEnv \<Gamma> eval) S"
+  "finite S \<Longrightarrow> x \<notin> S \<Longrightarrow> heapToEnv ((x, e) # \<Gamma>) eval\<^bsub>[S]\<^esub> = heapToEnv \<Gamma> eval\<^bsub>[S]\<^esub>"
   apply (rule fmap_eqI)
   apply simp
   apply (subgoal_tac "xa \<noteq> x")
@@ -59,7 +59,7 @@ lemma heapToEnv_mono:
   "finite d1 \<Longrightarrow>
    d1 = d2 \<Longrightarrow>
    x \<notin> heapVars \<Gamma> \<Longrightarrow>
-  fmap_expand (heapToEnv \<Gamma> eval) d1 \<sqsubseteq> fmap_expand (heapToEnv ((x,e) # \<Gamma>) eval) d2"
+  heapToEnv \<Gamma> eval\<^bsub>[d1]\<^esub> \<sqsubseteq> heapToEnv ((x, e) # \<Gamma>) eval\<^bsub>[d2]\<^esub>"
    apply (erule subst)
    apply (rule fmap_expand_belowI)
    apply simp

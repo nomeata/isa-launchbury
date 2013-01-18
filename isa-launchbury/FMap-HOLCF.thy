@@ -492,7 +492,7 @@ lemma adm_less_fmap [simp]:
 
 subsubsection {* Expanding the domain of finite maps *}
 
-lift_definition fmap_expand :: "'a f\<rightharpoonup> 'b::pcpo \<Rightarrow> 'a set  \<Rightarrow> 'a f\<rightharpoonup> 'b"
+lift_definition fmap_expand :: "'a f\<rightharpoonup> 'b::pcpo \<Rightarrow> 'a set  \<Rightarrow> 'a f\<rightharpoonup> 'b" ("_\<^bsub>[_]\<^esub>" [90, 60] 90)
   is "\<lambda> m1 S. (if finite S then (\<lambda> x. if x \<in> S then Some (case m1 x of (Some x) => x | None => \<bottom>) else None) else empty)"
   apply (case_tac "finite set")
   apply (rule_tac B = "dom fun \<union> set" in   finite_subset)
@@ -500,11 +500,11 @@ lift_definition fmap_expand :: "'a f\<rightharpoonup> 'b::pcpo \<Rightarrow> 'a 
   done
 
 lemma fmap_expand_nonfinite:
-  "\<not> finite S \<Longrightarrow> fmap_expand m S = fempty"
+  "\<not> finite S \<Longrightarrow> m\<^bsub>[S]\<^esub> = f\<emptyset>"
   by (transfer, simp)
 
 lemma fmap_restr_fmap_expand:
-  "finite d2 \<Longrightarrow> fmap_restr d1 (fmap_expand m d2) = fmap_restr d1 (fmap_expand m (d1 \<inter> d2))"
+  "finite d2 \<Longrightarrow> fmap_restr d1 (m\<^bsub>[d2]\<^esub>) = fmap_restr d1 (m\<^bsub>[d1 \<inter> d2]\<^esub>)"
   apply(cases "finite d1")
   apply transfer
   apply (auto simp add: restrict_map_def)
@@ -512,7 +512,7 @@ lemma fmap_restr_fmap_expand:
   by auto
 
 lemma fmap_restr_fmap_expand2:
-  "finite d2 \<Longrightarrow> d1 \<subseteq> d2 \<Longrightarrow> fmap_restr d1 (fmap_expand m d2) = fmap_expand m d1"
+  "finite d2 \<Longrightarrow> d1 \<subseteq> d2 \<Longrightarrow> fmap_restr d1 (m\<^bsub>[d2]\<^esub>) = m\<^bsub>[d1]\<^esub>"
   apply(cases "finite d1")
   apply transfer
   apply (auto simp add: restrict_map_def split:option.split)
@@ -520,15 +520,15 @@ lemma fmap_restr_fmap_expand2:
   by (metis rev_finite_subset)
 
 lemma fdom_fmap_expand[simp]:
-  "finite S \<Longrightarrow> fdom (fmap_expand m S) = S"
+  "finite S \<Longrightarrow> fdom (m\<^bsub>[S]\<^esub>) = S"
   by (transfer, auto split:if_splits) 
 
 lemma fmap_expand_noop[simp]:
-  "S = fdom \<rho> \<Longrightarrow> fmap_expand \<rho> S = \<rho>"
+  "S = fdom \<rho> \<Longrightarrow> \<rho>\<^bsub>[S]\<^esub> = \<rho>"
   by (transfer, auto split: option.split)
 
 lemma fmap_expand_idem:
-  "finite S2 \<Longrightarrow> fdom \<rho> \<subseteq> S1 \<Longrightarrow> S1 \<subseteq> S2 \<Longrightarrow> fmap_expand (fmap_expand \<rho> S1) S2 = fmap_expand \<rho> S2"
+  "finite S2 \<Longrightarrow> fdom \<rho> \<subseteq> S1 \<Longrightarrow> S1 \<subseteq> S2 \<Longrightarrow> (\<rho>\<^bsub>[S1]\<^esub>)\<^bsub>[S2]\<^esub> = \<rho>\<^bsub>[S2]\<^esub>"
   apply (transfer)
   apply (auto split:option.split simp add: split_if_eq1 split_if_eq2)
   apply (rule ext)
@@ -536,24 +536,24 @@ lemma fmap_expand_idem:
   by (metis finite_subset)
 
 lemma lookup_fmap_expand1[simp]:
-  "finite S \<Longrightarrow> x \<in> S \<Longrightarrow> x \<in> fdom m \<Longrightarrow> lookup (fmap_expand m S) x = lookup m x"
+  "finite S \<Longrightarrow> x \<in> S \<Longrightarrow> x \<in> fdom m \<Longrightarrow> lookup (m\<^bsub>[S]\<^esub>) x = lookup m x"
   by (transfer, auto)
 
 lemma lookup_fmap_expand2[simp]:
-  "finite S \<Longrightarrow> x \<in> S \<Longrightarrow> x \<notin> fdom m \<Longrightarrow> lookup (fmap_expand m S) x = Some \<bottom>"
+  "finite S \<Longrightarrow> x \<in> S \<Longrightarrow> x \<notin> fdom m \<Longrightarrow> lookup (m\<^bsub>[S]\<^esub>) x = Some \<bottom>"
   by (transfer, auto split:option.split)
 
 lemma lookup_fmap_expand3[simp]:
-  "finite S \<Longrightarrow> x \<notin> S \<Longrightarrow> lookup (fmap_expand m S) x = None"
+  "finite S \<Longrightarrow> x \<notin> S \<Longrightarrow> lookup (m\<^bsub>[S]\<^esub>) x = None"
   by (transfer, auto split:option.split)
 
-lemma fmap_expand_fdom[simp]: "fmap_expand \<rho> (fdom \<rho>) = \<rho>"
+lemma fmap_expand_fdom[simp]: "\<rho>\<^bsub>[fdom \<rho>]\<^esub> = \<rho>"
   by (transfer, auto split:option.split)
 
 lemma fmap_expand_belowI:
   assumes "fdom \<rho>' = S"
   assumes "\<And> x. x \<in> fdom \<rho> \<Longrightarrow> x \<in> S \<Longrightarrow> \<rho> f! x \<sqsubseteq> \<rho>' f! x"
-  shows "fmap_expand \<rho> S \<sqsubseteq> \<rho>'"
+  shows "\<rho>\<^bsub>[S]\<^esub> \<sqsubseteq> \<rho>'"
   apply (rule fmap_belowI)
   apply (metis assms(1) fdom_fmap_expand finite_fdom)
   apply (case_tac "x \<in> fdom \<rho>")
@@ -563,12 +563,12 @@ lemma fmap_expand_belowI:
 
 lemma fmap_expand_fmap_restr_below:
   assumes [simp]:"fdom x = S2"
-  shows "fmap_expand (fmap_restr S1 x) S2 \<sqsubseteq> x"
+  shows "(fmap_restr S1 x)\<^bsub>[S2]\<^esub> \<sqsubseteq> x"
   apply (rule fmap_expand_belowI[OF assms(1)])
   by (metis Int_iff below.r_refl empty_iff fdom_fmap_restr fempty_fdom fmap_restr_not_finite lookup_fmap_restr)
 
 lemma fmap_expand_monofun:
-  "monofun (\<lambda> m. fmap_expand m S)"
+  "monofun (\<lambda> m. m\<^bsub>[S]\<^esub>)"
 proof(cases "finite S")
 case True
   show ?thesis
@@ -588,7 +588,7 @@ case False
 qed
 
 lemma fmap_expand_cont:
-  "cont (\<lambda> m. fmap_expand m S)"
+  "cont (\<lambda> m. m\<^bsub>[S]\<^esub>)"
 proof(cases "finite S")
 case True[simp]
   show ?thesis
@@ -614,14 +614,14 @@ qed
 lemma fmap_upd_expand:
   "finite S \<Longrightarrow>
    x \<in> S \<Longrightarrow>
-   fmap_expand (\<rho>(x f\<mapsto> y)) S = (fmap_expand \<rho> (S - {x}))(x f\<mapsto> y)"
+   \<rho>(x f\<mapsto> y)\<^bsub>[S]\<^esub> = (\<rho>\<^bsub>[S - {x}]\<^esub>)(x f\<mapsto> y)"
    apply (rule fmap_eqI, auto)
    apply (case_tac "xa \<in> fdom (\<rho>(x f\<mapsto> y))", auto)
    apply (case_tac "xa = x", auto)
    done
 
 lemma less_fmap_expand:
-  "finite S \<Longrightarrow> fdom \<rho> \<subseteq> S \<Longrightarrow> \<rho> \<le> fmap_expand \<rho> S"
+  "finite S \<Longrightarrow> fdom \<rho> \<subseteq> S \<Longrightarrow> \<rho> \<le> \<rho>\<^bsub>[S]\<^esub>"
   unfolding less_eq_fmap_def
   by (transfer, auto)
 
@@ -640,7 +640,7 @@ lemma fdom_fmap_bottom[simp]: "finite S \<Longrightarrow> fdom (fmap_bottom S) =
 lemma fmap_bottom_lookup[simp]: "\<lbrakk> x \<in> S ; finite S \<rbrakk> \<Longrightarrow> lookup (fmap_bottom S) x = Some \<bottom>"
   by (transfer, auto)
 
-lemma[simp]: "fmap_bottom {} = fempty"
+lemma[simp]: "fmap_bottom {} = f\<emptyset>"
   by (rule, auto)
 
 lemma fmap_bottom_below[simp]:
@@ -657,10 +657,10 @@ lemma fmap_bottom_inj[iff]: "finite x \<Longrightarrow> finite y \<Longrightarro
   apply (metis option.simps(3))+
   done
 
-lemma fmap_expand_fempty[simp]: "fmap_expand fempty S = fmap_bottom S"
+lemma fmap_expand_fempty[simp]: "f\<emptyset>\<^bsub>[S]\<^esub> = fmap_bottom S"
   by (transfer, auto)
 
-lemma fmap_expand_fmap_bottom[simp]: "fmap_expand (fmap_bottom S') S = fmap_bottom S"
+lemma fmap_expand_fmap_bottom[simp]: "(fmap_bottom S')\<^bsub>[S]\<^esub> = fmap_bottom S"
   by (transfer, auto)
 
 lemma fmap_restr_fmap_bottom[simp]:
@@ -1223,15 +1223,15 @@ lemma fmap_upd_join:
   assumes "S = insert x (fdom \<rho>1)"
   and "x \<notin> fdom \<rho>1"
   and "x \<notin> fdom \<rho>2"
-  and compat1: "compatible (\<rho>1(x f\<mapsto> y)) (fmap_expand \<rho>2 S)"
-  shows "(\<rho>1(x f\<mapsto> y)) \<squnion> (fmap_expand \<rho>2 S) = (\<rho>1 \<squnion> (fmap_expand \<rho>2 (S - {x})))(x f\<mapsto> y)" (is "?L = ?R")
+  and compat1: "compatible (\<rho>1(x f\<mapsto> y)) (\<rho>2\<^bsub>[S]\<^esub>)"
+  shows "(\<rho>1(x f\<mapsto> y)) \<squnion> (\<rho>2\<^bsub>[S]\<^esub>) = (\<rho>1 \<squnion> (\<rho>2\<^bsub>[S - {x}]\<^esub>))(x f\<mapsto> y)" (is "?L = ?R")
 proof(rule fmap_eqI)
   have "finite S" using assms(1) by auto
 
-  have *: "\<And> xa . xa \<in> S \<Longrightarrow> xa \<noteq> x \<Longrightarrow> fmap_expand \<rho>2 (S - {x}) f! xa = fmap_expand \<rho>2 S f! xa"
+  have *: "\<And> xa . xa \<in> S \<Longrightarrow> xa \<noteq> x \<Longrightarrow> \<rho>2\<^bsub>[S - {x}]\<^esub> f! xa = \<rho>2\<^bsub>[S]\<^esub> f! xa"
     using `finite S` by (case_tac "xa \<in> fdom \<rho>2", auto)
 
-  have compat2: "compatible \<rho>1 (fmap_expand \<rho>2 (S - {x}))"
+  have compat2: "compatible \<rho>1 (\<rho>2\<^bsub>[S - {x}]\<^esub>)"
     apply (rule compatible_fmapI)
     using compat1
     apply -

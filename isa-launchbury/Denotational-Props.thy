@@ -81,8 +81,8 @@ lemma compatible_insert:
   assumes [simp]: "S = insert x (fdom \<rho>1)"
   and "x \<notin> fdom \<rho>1"
   and "x \<notin> fdom \<rho>2"
-  and compat: "compatible \<rho>1 (fmap_expand \<rho>2 (fdom \<rho>1))"  
-  shows "compatible (\<rho>1(x f\<mapsto> y)) (fmap_expand \<rho>2 S)"
+  and compat: "compatible \<rho>1 (\<rho>2\<^bsub>[fdom \<rho>1]\<^esub>)"  
+  shows "compatible (\<rho>1(x f\<mapsto> y)) (\<rho>2\<^bsub>[S]\<^esub>)"
 proof(rule compatible_fmapI)
 case (goal1 z)
   show ?case
@@ -131,8 +131,8 @@ case (Let as exp \<rho> x y)
   have [simp]:"fdom \<rho> \<union> heapVars (asToHeap as) - {x} = fdom \<rho> \<union> heapVars (asToHeap as)"
     using `x \<notin> heapVars (asToHeap as)` `atom x \<sharp> \<rho>` by (auto simp add: sharp_Env)
 
-  have *: "fmap_expand (\<rho>(x f\<mapsto> \<rho> f! y)) (fdom (\<rho>(x f\<mapsto> \<rho> f! y)) \<union> heapVars (asToHeap as))
-        = (fmap_expand \<rho> (fdom \<rho> \<union> heapVars (asToHeap as)))(x f\<mapsto> \<rho> f! y)" (is "_ = ?\<rho>1'(x f\<mapsto> _)")
+  have *: "\<rho>(x f\<mapsto> \<rho> f! y)\<^bsub>[fdom (\<rho>(x f\<mapsto> \<rho> f! y)) \<union> heapVars (asToHeap as)]\<^esub>
+        = (\<rho>\<^bsub>[fdom \<rho> \<union> heapVars (asToHeap as)]\<^esub>)(x f\<mapsto> \<rho> f! y)" (is "_ = ?\<rho>1'(x f\<mapsto> _)")
     apply (subst fmap_upd_expand)
     apply auto[3]
     done
@@ -152,7 +152,7 @@ case (Let as exp \<rho> x y)
       apply (simp add: bottom_of_fjc to_bot_fmap_def)
       done
   case (goal3 \<rho>')
-    let "?F1' \<rho>'" = "fmap_expand (heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)) (fdom \<rho> \<union> heapVars (asToHeap as))"
+    let "?F1' \<rho>'" = "heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)\<^bsub>[fdom \<rho> \<union> heapVars (asToHeap as)]\<^esub>"
 
     have "?\<rho>1 \<squnion> ?F1 \<rho>' = ?\<rho>1'(x f\<mapsto> \<rho> f! y) \<squnion> ?F1 \<rho>'"
       by (subst *, rule)
@@ -209,8 +209,8 @@ case (Let as exp \<rho> x y)
       using  `y \<notin> heapVars (asToHeap as)` apply (auto simp add: bottom_of_fjc to_bot_fmap_def lookup_not_fdom)
       done
   case (goal3 \<rho>')
-    let "?F1' \<rho>'" = "fmap_expand (heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)) (fdom \<rho> \<union> heapVars (asToHeap as))"
-    let "?F2' \<rho>'" = "fmap_expand (heapToEnv (asToHeap as[x::a=y]) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)) (insert x (fdom \<rho> \<union> heapVars (asToHeap as)))"
+    let "?F1' \<rho>'" = "heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)\<^bsub>[fdom \<rho> \<union> heapVars (asToHeap as)]\<^esub>"
+    let "?F2' \<rho>'" = "heapToEnv (asToHeap as[x::a=y]) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)\<^bsub>[insert x (fdom \<rho> \<union> heapVars (asToHeap as))]\<^esub>"
     have "fdom \<rho>' = fdom \<rho> \<union> heapVars (asToHeap as)"
       using fdom_fix_join_compat[OF fix_on_cond_fjc[OF cond2] goal3(1)] by simp
 
@@ -275,7 +275,7 @@ qed
 lemma fmap_expand_compatible:
   assumes [simp]: "finite S"
   assumes compat:"compatible \<rho>1 \<rho>2"
-  shows "compatible (fmap_expand \<rho>1 S) (fmap_expand \<rho>2 S)"
+  shows "compatible (\<rho>1\<^bsub>[S]\<^esub>) (\<rho>2\<^bsub>[S]\<^esub>)"
   apply (rule compatible_fmapI)
   apply (case_tac "x \<in> fdom \<rho>1")
   apply (auto simp add: fdom_compatible[OF compat] intro: the_lookup_compatible[OF compat])
@@ -285,11 +285,11 @@ lemma fmap_expand_compatible:
 lemma fmap_expand_join:
   assumes [simp]: "finite S"
   assumes compat:"compatible \<rho>1 \<rho>2"
-  shows "fmap_expand (\<rho>1 \<squnion> \<rho>2) S = fmap_expand \<rho>1 S \<squnion> fmap_expand \<rho>2 S"
+  shows "(\<rho>1 \<squnion> \<rho>2)\<^bsub>[S]\<^esub> = \<rho>1\<^bsub>[S]\<^esub> \<squnion> \<rho>2\<^bsub>[S]\<^esub>"
 proof-
   have [simp]: "fdom \<rho>2 = fdom \<rho>1" by (metis fdom_compatible[OF compat])
   have [simp]: "fdom (\<rho>1 \<squnion> \<rho>2) = fdom \<rho>1" by (rule fdom_join[OF compat])
-  have compat2: "compatible (fmap_expand \<rho>1 S) (fmap_expand \<rho>2 S)"
+  have compat2: "compatible (\<rho>1\<^bsub>[S]\<^esub>) (\<rho>2\<^bsub>[S]\<^esub>)"
     by (rule fmap_expand_compatible[OF assms])
   show ?thesis
     apply (rule fmap_eqI)
@@ -594,13 +594,13 @@ subsubsection {* Binding more variables increases knowledge *}
 lemma HSem_subset_below:
   assumes cond2: "HSem_cond' (\<Delta>@\<Gamma>) \<rho>"
   assumes fresh: "atom ` heapVars \<Gamma> \<sharp>* (\<Delta>, \<rho>)" 
-  shows "fmap_expand (\<lbrace>\<Delta>\<rbrace>\<rho>) (fdom \<rho> \<union> heapVars \<Delta> \<union> heapVars \<Gamma>) \<sqsubseteq> \<lbrace>\<Delta>@\<Gamma>\<rbrace>\<rho>"
+  shows "(\<lbrace>\<Delta>\<rbrace>\<rho>)\<^bsub>[fdom \<rho> \<union> heapVars \<Delta> \<union> heapVars \<Gamma>]\<^esub> \<sqsubseteq> \<lbrace>\<Delta>@\<Gamma>\<rbrace>\<rho>"
 proof (rule HSem_ind) back
 case goal1 show ?case by (auto intro!: adm_is_adm_on adm_subst[OF fmap_expand_cont])
 next
 case goal2 show ?case by (auto simp add: to_bot_fmap_def)
 next
-show rho: "fmap_expand (fmap_expand \<rho> (fdom \<rho> \<union> heapVars \<Delta>)) (fdom \<rho> \<union> heapVars \<Delta> \<union> heapVars \<Gamma>) \<sqsubseteq> \<lbrace>\<Delta> @ \<Gamma>\<rbrace>\<rho> "
+show rho: "(\<rho>\<^bsub>[fdom \<rho> \<union> heapVars \<Delta>]\<^esub>)\<^bsub>[fdom \<rho> \<union> heapVars \<Delta> \<union> heapVars \<Gamma>]\<^esub> \<sqsubseteq> \<lbrace>\<Delta> @ \<Gamma>\<rbrace>\<rho> "
   apply (subst fmap_expand_idem)
   apply auto[3]
   using HSem_refines[OF cond2]
@@ -624,7 +624,7 @@ case (goal3 x)
     from fresh_star_heap_expr'[OF _ this]
     have fresh_e: "atom ` heapVars \<Gamma> \<sharp>* e"
       by (metis fresh fresh_star_Pair)
-    have "\<lbrakk> e \<rbrakk>\<^bsub>x\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>fmap_expand x (fdom \<rho> \<union> heapVars \<Delta> \<union> heapVars \<Gamma>)\<^esub>"
+    have "\<lbrakk> e \<rbrakk>\<^bsub>x\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>x\<^bsub>[fdom \<rho> \<union> heapVars \<Delta> \<union> heapVars \<Gamma>]\<^esub>\<^esub>"
       apply (rule ESem_ignores_fresh)
       apply (rule less_fmap_expand)
         using `fdom x = _` apply auto[2]
@@ -696,19 +696,19 @@ proof(rule below_antisym)
   next
   case goal2 show ?case by (auto simp add: to_bot_fmap_def)
   next
-  have "fmap_expand (\<lbrace>\<Delta>\<rbrace>\<rho>) (fdom \<rho> \<union> heapVars \<Delta> \<union> heapVars \<Gamma>) \<sqsubseteq> \<lbrace>\<Delta> @ \<Gamma>\<rbrace>\<rho>"
+  have "(\<lbrace>\<Delta>\<rbrace>\<rho>)\<^bsub>[fdom \<rho> \<union> heapVars \<Delta> \<union> heapVars \<Gamma>]\<^esub> \<sqsubseteq> \<lbrace>\<Delta> @ \<Gamma>\<rbrace>\<rho>"
     by (rule HSem_subset_below[OF cond2' fresh])
   also have "\<lbrace>\<Delta> @ \<Gamma>\<rbrace>\<rho> = \<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>"
     by (rule HSem_reorder[OF distinct1 distinct2], auto)
   finally
-  show Delta_rho: "fmap_expand (\<lbrace>\<Delta>\<rbrace>\<rho>) (fdom (\<lbrace>\<Delta>\<rbrace>\<rho>) \<union> heapVars \<Gamma>) \<sqsubseteq> \<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>"
+  show Delta_rho: "(\<lbrace>\<Delta>\<rbrace>\<rho>)\<^bsub>[fdom (\<lbrace>\<Delta>\<rbrace>\<rho>) \<union> heapVars \<Gamma>]\<^esub> \<sqsubseteq> \<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>"
     by simp
 
   case (goal3 \<rho>')
     note compat = rho_F_compat_fjc[OF cond1 goal3(2)]
     note compat2 = rho_F_compat_fjc[OF cond2 HSem_there[OF cond2]]
 
-    have "fmap_expand (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>\<^esub>)) (fdom (\<lbrace>\<Delta>\<rbrace>\<rho>) \<union> heapVars \<Gamma>) \<sqsubseteq> \<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho> "
+    have "heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>\<^esub>)\<^bsub>[fdom (\<lbrace>\<Delta>\<rbrace>\<rho>) \<union> heapVars \<Gamma>]\<^esub> \<sqsubseteq> \<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho> "
     proof (rule fmap_expand_belowI)
     case goal1 thus ?case by auto
     case (goal2 x)
@@ -736,24 +736,24 @@ proof(rule below_antisym)
   next
   case goal2 show ?case by (auto simp add: to_bot_fmap_def)
   next
-  have "fmap_expand \<rho> (fdom \<rho> \<union> heapVars (\<Gamma> @ \<Delta>)) = fmap_expand (fmap_expand \<rho> (fdom \<rho> \<union> heapVars \<Delta>)) (fdom \<rho> \<union> heapVars (\<Gamma> @ \<Delta>))"
+  have "\<rho>\<^bsub>[fdom \<rho> \<union> heapVars (\<Gamma> @ \<Delta>)]\<^esub> = (\<rho>\<^bsub>[fdom \<rho> \<union> heapVars \<Delta>]\<^esub>)\<^bsub>[fdom \<rho> \<union> heapVars (\<Gamma> @ \<Delta>)]\<^esub>"
     by (rule fmap_expand_idem[symmetric], auto)
-  also have "... \<sqsubseteq> fmap_expand (\<lbrace>\<Delta>\<rbrace>\<rho>) (fdom \<rho> \<union> heapVars (\<Gamma> @ \<Delta>))"
+  also have "... \<sqsubseteq> (\<lbrace>\<Delta>\<rbrace>\<rho>)\<^bsub>[fdom \<rho> \<union> heapVars (\<Gamma> @ \<Delta>)]\<^esub>"
     by (rule cont2monofunE[OF fmap_expand_cont HSem_refines[OF cond3]])
-  also have "... = fmap_expand (\<lbrace>\<Delta>\<rbrace>\<rho>) (fdom (\<lbrace>\<Delta>\<rbrace>\<rho>) \<union> heapVars (\<Gamma>))"
+  also have "... = (\<lbrace>\<Delta>\<rbrace>\<rho>)\<^bsub>[fdom (\<lbrace>\<Delta>\<rbrace>\<rho>) \<union> heapVars (\<Gamma>)]\<^esub>"
     apply (rule arg_cong) back
     by auto
   also have "... \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>"
     by (rule HSem_refines[OF cond1])
   finally
-  show rho: "fmap_expand \<rho> (fdom \<rho> \<union> heapVars (\<Gamma> @ \<Delta>)) \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho> ".
+  show rho: "\<rho>\<^bsub>[fdom \<rho> \<union> heapVars (\<Gamma> @ \<Delta>)]\<^esub> \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho> ".
 
   case (goal3 \<rho>')
     note compat = rho_F_compat_fjc[OF cond2 goal3(2)]
     note compat2 = rho_F_compat_fjc[OF cond1 HSem_there[OF cond1]]
     note compat3 = rho_F_compat_fjc[OF cond3 HSem_there[OF cond3]]
 
-    have "fmap_expand (heapToEnv (\<Gamma> @ \<Delta>) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>)) (fdom \<rho> \<union> heapVars (\<Gamma> @ \<Delta>)) \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>"
+    have "heapToEnv (\<Gamma> @ \<Delta>) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>)\<^bsub>[fdom \<rho> \<union> heapVars (\<Gamma> @ \<Delta>)]\<^esub> \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>"
     proof (rule fmap_expand_belowI)
     case goal1 thus ?case by auto
     case (goal2 x)

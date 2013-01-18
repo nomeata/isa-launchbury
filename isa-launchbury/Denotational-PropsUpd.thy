@@ -95,8 +95,8 @@ case (Let as exp \<rho> x y)
   have [simp]:"fdom \<rho> \<union> heapVars (asToHeap as) - {x} = fdom \<rho> \<union> heapVars (asToHeap as)"
     using `x \<notin> heapVars (asToHeap as)` `atom x \<sharp> \<rho>` by (auto simp add: sharp_Env)
 
-  have *: "fmap_expand (\<rho>(x f\<mapsto> \<rho> f! y)) (fdom (\<rho>(x f\<mapsto> \<rho> f! y)) \<union> heapVars (asToHeap as))
-        = (fmap_expand \<rho> (fdom \<rho> \<union> heapVars (asToHeap as)))(x f\<mapsto> \<rho> f! y)" (is "_ = ?\<rho>1'(x f\<mapsto> _)")
+  have *: "\<rho>(x f\<mapsto> \<rho> f! y)\<^bsub>[fdom (\<rho>(x f\<mapsto> \<rho> f! y)) \<union> heapVars (asToHeap as)]\<^esub>
+        = (\<rho>\<^bsub>[fdom \<rho> \<union> heapVars (asToHeap as)]\<^esub>)(x f\<mapsto> \<rho> f! y)" (is "_ = ?\<rho>1'(x f\<mapsto> _)")
     apply (subst fmap_upd_expand)
     apply auto[3]
     done
@@ -326,7 +326,7 @@ subsubsection {* Binding more variables increases knowledge *}
 
 lemma HSem_subset_below:
   assumes fresh: "atom ` heapVars \<Gamma> \<sharp>* (\<Delta>, \<rho>)" 
-  shows "fmap_expand (\<lbrace>\<Delta>\<rbrace>\<rho>) (fdom \<rho> \<union> heapVars \<Delta> \<union> heapVars \<Gamma>) \<sqsubseteq> \<lbrace>\<Delta>@\<Gamma>\<rbrace>\<rho>"
+  shows "(\<lbrace>\<Delta>\<rbrace>\<rho>)\<^bsub>[fdom \<rho> \<union> heapVars \<Delta> \<union> heapVars \<Gamma>]\<^esub> \<sqsubseteq> \<lbrace>\<Delta>@\<Gamma>\<rbrace>\<rho>"
 proof (rule HSem_ind) back
 case goal1 show ?case by (auto intro!: adm_is_adm_on adm_subst[OF fmap_expand_cont])
 next
@@ -344,7 +344,7 @@ case (goal3 x)
     from fresh_star_heap_expr'[OF _ this]
     have fresh_e: "atom ` heapVars \<Gamma> \<sharp>* e"
       by (metis fresh fresh_star_Pair)
-    have "\<lbrakk> e \<rbrakk>\<^bsub>x\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>fmap_expand x (fdom \<rho> \<union> heapVars \<Delta> \<union> heapVars \<Gamma>)\<^esub>"
+    have "\<lbrakk> e \<rbrakk>\<^bsub>x\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>x\<^bsub>[fdom \<rho> \<union> heapVars \<Delta> \<union> heapVars \<Gamma>]\<^esub>\<^esub>"
       apply (rule ESem_ignores_fresh)
       apply (rule less_fmap_expand)
         using `fdom x = _` apply auto[2]
