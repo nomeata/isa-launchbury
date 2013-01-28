@@ -80,13 +80,13 @@ understood to be a right-sided update.
 
 The Natural Semantics for Lazy Evaluation \cite{launchbury} created by John Launchbury in 1992 is often taken as the base for formal treatments of call-by-need evaluation, either to prove properties of lazy evaluation or as a base to describe extensions of the language or the implementation of the language. Therefore, assurance about the correctness and adequacy of the semantics is important in this field of research. Launchbury himself supports his semantics by defining a standard denotational semantics to prove both correctness and adequacy.
 
-Although his proofs are already on the more rigorous side for pen-and-paper proofs, they have not yet been verified by transforming them to machine-checked proofs. This work is a first step, formalizing both semantics in the proof assistant Isabelle and attempting to proving correctness. In the process we found a flaw in the original proof: Launchbury uses the operator $\sqcup$ in the natural semantics without giving a precise definition. If $\sqcup$ is understood to be the least upper bounds, then Theorem 2 in \cite{launchbury}, which is the generalization of the correctness statement used for Launchbury's inductive proof, is wrong. See Section \ref{sec_Correctness-Counterexample} for the counter example. Later publications based on Launchbury’s semantics reproduce the same flaw, often without the benefit of doubt that $\sqcup$ is supposed to be the least upper bound. Examples include \cite{nakata_extended}%
+Although his proofs are already on the more rigorous side for pen-and-paper proofs, they have not yet been verified by transforming them to machine-checked proofs. The present work is a first step, formalizing both semantics in the proof assistant Isabelle and attempting to proving correctness. In the process we found a flaw in the original proof: Launchbury uses the operator $\sqcup$ in the natural semantics without giving a precise definition. If $\sqcup$ is understood to be the least upper bounds, then Theorem 2 in \cite{launchbury}, which is the generalization of the correctness statement used for Launchbury's inductive proof, is wrong. See Section \ref{sec_Correctness-Counterexample} for the counter example. Later publications based on Launchbury’s semantics reproduce the same flaw, often without the benefit of doubt that $\sqcup$ is supposed to be the least upper bound. Examples include \cite{nakata_extended}%
 % (which is an extended version of \cite{nakata})
 , \cite{mixed} and \cite{distributed}. 
 
-To avoid the problem, we define an alternative natural semantics in Section \ref{sec_LaunchburyStacked} that carries more contextual information in the individual judgments. The added fields can be understood as the evaluation stack, carrying update frames and suspended application, hence the name. This semantics is equivalent to the original one (\ref{sec_Launchbury-Unstack}) and provably correct (\ref{sec_CorrectnessStacked}). Two observations indicate that this semantics might be more suited for formal proofs than the original one:
+To avoid the problem, we define an alternative natural semantics in Section \ref{sec_LaunchburyStacked} that carries more contextual information in the individual judgements. The added fields can be understood as the evaluation stack, carrying update frames and suspended application, hence the name “stacked semantics”. This semantics is equivalent to the original one (\ref{sec_Launchbury-Unstack}) and provably correct (\ref{sec_CorrectnessStacked}). Two observations indicate that this semantics might be more suited for formal proofs than the original one:
 \begin{itemize}
-\item In the original semantics an explicit set of live variables has to be added to the judgment to be able to pick suitable fresh variables. This has been noted and fixed this way before, e.g. in \cite{sestoft}. In our new semantics, the additional fields contain all live variables and hence no special treatment is required.
+\item In the original semantics an explicit set of live variables has to be added to the judgements to be able to pick suitable fresh variables. This has been noted and fixed this way before, e.g. in \cite{sestoft}. In our new semantics, the additional fields contain all live variables and hence no special treatment is required.
 \item To prove the correctness of the semantics inductively, the statement does not have to be generalized, but can be proved as-is.
 \end{itemize}
 
@@ -98,7 +98,7 @@ Another approach to avoid the problem is to understand $\sqcup$, which operates 
 \rho(x), &\text{otherwise.}
 \end{cases}
 \]
-With this definition, the original proof goes through as written in \cite{launchbury}. We doubt that this reading is obvious or even intended, especially as the statement $\forall x. \rho(x) \sqsubseteq (\{\!\!\{\Gamma\}\!\!\})(x)$, given in \cite{launchbury} before the proof, is only true when $\sqcup$ is understood to be the least upper bound. This definition has been used in other works that derive from Launchbury, e.g. in \cite{parallel} and \cite{nakata_blackhole}, but without further explanation of this choice.
+With this definition, the original proof goes through as written in \cite{launchbury}. We doubt that this reading is obvious or even intended, especially as the statement $\forall x. \rho(x) \sqsubseteq (\{\!\!\{\Gamma\}\!\!\})(x)$, given in \cite{launchbury} before the proof, is only true when $\sqcup$ is understood to be the least upper bound. The update-based definition has been used in other works that derive from Launchbury, e.g. in \cite{parallel} and \cite{nakata_blackhole}, but without further explanation of this choice.
 
 Our contributions are:
 \begin{itemize}
@@ -143,7 +143,7 @@ Chapter \ref{ch_aux} contains auxiliary theories, not necessarily tied to Launch
 \item Binary joins in the context of HOLCF (\isa{HOLCF-Join}).
 \item A theory of fixed points of binary joins (\isa{HOLCF-Fix-Join}, \isa{HOLCF-Fix-Join-Nominal}).
 \item A type for finite maps with a chain-complete partial order (\isa{FMap}, \isa{FMap-Nominal}, \isa{FMap-HOLCF}, \isa{FMap-Nominal-HOLCF}).
-\item The theory \isa{Fmap-Utils} adds lemmas that combine finite maps with the various other non-standard auxiliary theories.
+\item The theory \isa{FMap-Utils} adds lemmas that combine finite maps with the various other non-standard auxiliary theories.
 \end{itemize}
 
 Chapter \ref{ch_natsem} defines Launchbury's natural semantics, while Chapter \ref{ch_natsemstack} provides a variant with an explicit stack and proves them equivalent.

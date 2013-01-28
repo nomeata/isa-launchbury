@@ -59,8 +59,8 @@ subsection {* Main definitions and theorems *}
 
 text {*
 For your convenience, the main definitions and theorems of this theory are assembled in this section. The following 
-formulas are mechanically pretty-printed versions of the statements as defined resp. proven in Isabelle.
-Free variables are all-quantified. Some type conversion functions (like @{term set}) are omitted.
+formulas are mechanically pretty-printed versions of the statements as defined resp.\ proven in Isabelle.
+Free variables are all-quantified. Some type conversion functions (like @{term_type set}) are omitted.
 The relations @{text \<sharp>} and @{text "\<sharp>*"} come from the Nominal package and express freshness of the
 variables on the left with regard to the expressions on the right.
 
@@ -143,7 +143,7 @@ text {*
 We study two alternatives for the semantics @{term "Denotational.HSem \<Gamma> \<rho>"}@{text "::"}@{typ Env} of a
 heap @{term "\<Gamma> :: heap"}@{text "::"}@{typ heap}
 in an environment @{term "\<rho>"}@{text "::"}@{typ Env}. As this is used in denotations of a Let expression,
-we have also two expression semantics. Their definitions are, besides the choice of heap semantics, identical.
+we have also two expression semantics. Their defining equations are, besides the choice of heap semantics, identical.
 
 The first involves a least upper bound ($\sqcup$) and is defined by the recursive equation
 \[ @{thm (concl) Denotational.HSem_eq[no_vars]}, \]
@@ -166,10 +166,10 @@ text {*
 The stacked semantics is equivalent to the original semantics in the following sense:
 \begin{itemize}
 \item If @{thm[mode=IfThen] (prem 1) forget_stack_nice[no_vars] } is derivable in the stacked semantics,
-and @{term S} is chosen such that @{thm[mode=IfThen] (prem 2) forget_stack_nice[no_vars]} holds, then
+and @{term L} is chosen such that @{thm[mode=IfThen] (prem 2) forget_stack_nice[no_vars]} holds, then
  @{thm[mode=IfThen] (concl) forget_stack_nice[no_vars]} is derivable in the original semantics.
 \item If @{thm[mode=IfThen] (prem 1) add_stack[no_vars]} is derivable in the original semantics and
-@{term "x"} and @{term "\<Gamma>'"} is chosen such that @{thm[mode=IfThen] (prem 2) add_stack[no_vars]} and
+@{term "x"} and @{term "\<Gamma>'"} are chosen such that @{thm[mode=IfThen] (prem 2) add_stack[no_vars]} and
 @{thm[mode=IfThen] (prem 3) add_stack[no_vars]} holds, then  @{thm[mode=IfThen] (concl) add_stack[no_vars]}
 is derivable in the stacked semantics.
 \end{itemize}
@@ -188,8 +188,8 @@ If \mbox{@{thm [mode=IfThen] (prem 1) Correctness.correctness(1)[no_vars]}} and,
 text {* The generalization introduced by Launchbury is true if the update-based semantics is chosen:
 If @{thm [mode=IfThen] (prem 1) CorrectnessUpd.correctness(1)[no_vars]} and, as a side condition,
 @{thm [mode=IfThen] (prem 2) CorrectnessUpd.correctness(1)[no_vars]} and
-\mbox{@{thm [mode=IfThen] (prem 3) CorrectnessUpd.correctness(1)[no_vars]}} holds,
-then @{thm [mode=IfThen] (concl) CorrectnessUpd.correctness(1)[no_vars]} and  @{thm [mode=IfThen] (concl) CorrectnessUpd.correctness(2)[no_vars]} *}
+\mbox{@{thm [mode=IfThen] (prem 3) CorrectnessUpd.correctness(1)[no_vars]}} hold,
+then @{thm [mode=IfThen] (concl) CorrectnessUpd.correctness(1)[no_vars]} and  @{thm [mode=IfThen] (concl) CorrectnessUpd.correctness(2)[no_vars]}. *}
 
 
 (*<*)
