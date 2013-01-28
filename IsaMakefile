@@ -2,7 +2,7 @@
 ## targets
 
 default: isa-launchbury
-images: 
+images:
 test: isa-launchbury
 
 all: images test
@@ -14,18 +14,21 @@ SRC = $(ISABELLE_HOME)/src
 OUT = $(ISABELLE_OUTPUT)
 LOG = $(OUT)/log
 
-USEDIR = $(ISABELLE_TOOL) usedir -v true -i true -g true -d pdf -D generated
+USEDIR = $(ISABELLE_TOOL) usedir -v true
 
+## HOLCF-Nominal2
+$(LOG)/HOLCF-Nominal2.gz: Nominal2/ROOT.ML Nominal2/*.thy
+	@cd Nominal2; $(USEDIR) -b -f ROOT-NO-EXAMPLES.ML HOLCF HOLCF-Nominal2
 
 ## isa-launchbury
 
 isa-launchbury: $(LOG)/HOLCF-Nominal2-isa-launchbury.gz
 
-$(LOG)/HOLCF-Nominal2-isa-launchbury.gz: isa-launchbury/ROOT.ML isa-launchbury/document/root.tex isa-launchbury/document/map.tex isa-launchbury/*.thy
-	@$(USEDIR) HOLCF-Nominal2 isa-launchbury
+$(LOG)/HOLCF-Nominal2-isa-launchbury.gz: isa-launchbury/ROOT.ML isa-launchbury/document/root.tex isa-launchbury/document/map.tex isa-launchbury/*.thy  $(LOG)/HOLCF-Nominal2.gz
+	@$(USEDIR) -i true -g true -d pdf HOLCF-Nominal2 isa-launchbury
 
 
 ## clean
 
 clean:
-	@rm -f $(LOG)/HOLCF-Nominal2-isa-launchbury.gz
+	@rm -f $(LOG)/HOLCF-Nominal2.gz $(LOG)/HOLCF-Nominal2-isa-launchbury.gz

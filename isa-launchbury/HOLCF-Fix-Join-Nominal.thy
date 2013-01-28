@@ -2,7 +2,6 @@ theory "HOLCF-Fix-Join-Nominal"
 imports "HOLCF-Fix-Join" "HOLCF-Set-Nominal" "FMap-Nominal-HOLCF"
 begin
 
-
 lemma fix_join_cond_eqvt[eqvt]:
   shows "fix_join_cond \<rho> (F::'a::{subpcpo_partition,cont_pt} \<Rightarrow> 'a) \<Longrightarrow> fix_join_cond (\<pi> \<bullet> \<rho>) (\<pi> \<bullet> F)"
   apply (erule fix_join_cond.induct)
