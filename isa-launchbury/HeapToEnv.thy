@@ -154,5 +154,4 @@ lemma heapToEnv_subst_exp:
   assumes "eval e = eval e'"
   shows "heapToEnv ((x,e)#\<Gamma>) eval = heapToEnv ((x,e')#\<Gamma>) eval"
   by (simp add: assms)
-
 end

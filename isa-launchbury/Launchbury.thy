@@ -6,15 +6,18 @@ subsubsection {* The natural semantics *}
 
 text {* This is the semantics as in \cite{launchbury} with two exceptions:
 \begin{itemize}
-\item Explicit freshness equirements for bound variables in the application and the let rule.
+\item Explicit freshness requirements for bound variables in the application and the Let rule.
 \item An additional parameter that stores variables that have to be avoided, but do not occur
-in the judgment otherwise.
+in the judgement otherwise.
 \end{itemize}
 *}
 
-inductive reds :: "heap \<Rightarrow> exp \<Rightarrow> var list \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool" ("_ : _ \<Down>\<^bsub>_\<^esub> _ : _" [50,50,50,50] 50)
+inductive
+  reds :: "heap \<Rightarrow> exp \<Rightarrow> var list \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool"
+  ("_ : _ \<Down>\<^bsub>_\<^esub> _ : _" [50,50,50,50] 50)
 where
-  Lambda: "\<Gamma> : (Lam [x]. e) \<Down>\<^bsub>L\<^esub> \<Gamma> : (Lam [x]. e)" 
+  Lambda:
+    "\<Gamma> : (Lam [x]. e) \<Down>\<^bsub>L\<^esub> \<Gamma> : (Lam [x]. e)" 
  | Application: "\<lbrakk>
     atom y \<sharp> (\<Gamma>,e,x,L,\<Delta>,\<Theta>,z) ;
     \<Gamma> : e \<Down>\<^bsub>x#L\<^esub> \<Delta> : (Lam [y]. e');
@@ -22,8 +25,15 @@ where
   \<rbrakk>  \<Longrightarrow>
     \<Gamma> : App e x \<Down>\<^bsub>L\<^esub> \<Theta> : z" 
  | Variable: "\<lbrakk>
-    (x,e) \<in> set \<Gamma>; delete x \<Gamma> : e \<Down>\<^bsub>x#L\<^esub> \<Delta> : z \<rbrakk> \<Longrightarrow> \<Gamma> : Var x \<Down>\<^bsub>L\<^esub> (x, z) # \<Delta> : z"
- | Let: "set (bn as) \<sharp>* (\<Gamma>, L) \<Longrightarrow> distinctVars (asToHeap as) \<Longrightarrow> asToHeap as @ \<Gamma> : body \<Down>\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> \<Gamma> : Let as body \<Down>\<^bsub>L\<^esub> \<Delta> : z"
+    (x,e) \<in> set \<Gamma>; delete x \<Gamma> : e \<Down>\<^bsub>x#L\<^esub> \<Delta> : z
+  \<rbrakk> \<Longrightarrow>
+    \<Gamma> : Var x \<Down>\<^bsub>L\<^esub> (x, z) # \<Delta> : z"
+ | Let: "\<lbrakk>
+    set (bn as) \<sharp>* (\<Gamma>, L);
+    distinctVars (asToHeap as);
+    asToHeap as @ \<Gamma> : body \<Down>\<^bsub>L\<^esub> \<Delta> : z
+  \<rbrakk> \<Longrightarrow>
+    \<Gamma> : Let as body \<Down>\<^bsub>L\<^esub> \<Delta> : z"
 
 equivariance reds
 
@@ -104,13 +114,16 @@ case (Let as \<Gamma> L body \<Delta> z)
 qed
 
 text {*
-This is the same semantics with additional distinctiveness requirements. This is defined in order to
-obtain a more convenient induction rule.
+This is the same semantics with additional distinctiveness requirements. This
+is defined in order to obtain a more convenient induction rule.
 *}
 
-inductive distinct_reds :: "heap \<Rightarrow> exp \<Rightarrow> var list \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool" ("_ : _ \<Down>d\<^bsub>_\<^esub> _ : _" [50,50,50,50] 50)
+inductive
+  distinct_reds :: "heap \<Rightarrow> exp \<Rightarrow> var list \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool"
+  ("_ : _ \<Down>d\<^bsub>_\<^esub> _ : _" [50,50,50,50] 50)
 where
-  DLambda: "distinctVars \<Gamma> \<Longrightarrow> \<Gamma> : (Lam [x]. e) \<Down>d\<^bsub>L\<^esub> \<Gamma> : (Lam [x]. e)" 
+  DLambda:
+    "distinctVars \<Gamma> \<Longrightarrow> \<Gamma> : (Lam [x]. e) \<Down>d\<^bsub>L\<^esub> \<Gamma> : (Lam [x]. e)" 
  | DApplication: "\<lbrakk>
     atom y \<sharp> (\<Gamma>,e,x,L,\<Delta>,\<Theta>,z) ;
     \<Gamma> : e \<Down>d\<^bsub>x#L\<^esub> \<Delta> : (Lam [y]. e');
@@ -124,14 +137,16 @@ where
     delete x \<Gamma> : e \<Down>d\<^bsub>x#L\<^esub> \<Delta> : z;
     distinctVars \<Gamma>;
     distinctVars ((x,z) # \<Delta>)
-  \<rbrakk> \<Longrightarrow> \<Gamma> : Var x \<Down>d\<^bsub>L\<^esub> (x, z) # \<Delta> : z"
+  \<rbrakk> \<Longrightarrow>
+    \<Gamma> : Var x \<Down>d\<^bsub>L\<^esub> (x, z) # \<Delta> : z"
  | DLet: "\<lbrakk>
     set (bn as) \<sharp>* (\<Gamma>, L);
     distinctVars (asToHeap as);
     asToHeap as @ \<Gamma> : body \<Down>d\<^bsub>L\<^esub> \<Delta> : z;
     distinctVars \<Gamma>;
     distinctVars \<Delta>
-  \<rbrakk> \<Longrightarrow>  \<Gamma> : Let as body \<Down>d\<^bsub>L\<^esub> \<Delta> : z"
+  \<rbrakk> \<Longrightarrow>
+    \<Gamma> : Let as body \<Down>d\<^bsub>L\<^esub> \<Delta> : z"
 
 equivariance distinct_reds
 

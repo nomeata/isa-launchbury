@@ -6,16 +6,17 @@ subsubsection {* The stackful natural semantics *}
 
 text {* This semantics is a slight modification of the original semantics:
 \begin{itemize}
-\item The expression to be evaluated is the first element in the second associative list (the "`stack"').
-\item To evaluating a variable its binding is moved on top of the stack.
+\item The expression to be evaluated is the first element in the second associative list (the ``stack'').
+\item To evaluate a variable its binding is moved on top of the stack.
 \item When an application @{term "f x"} is evaluated, a new name @{term n} is created, the expression to be 
-evaluated is remembered as @{term "f x"} and @{term "(n, f)"} is put on top of the stack.
+evaluated is remembered as @{term "n x"} and @{term "(n, f)"} is put on top of the stack.
 \end{itemize}
 *}
 
 inductive reds :: "heap \<Rightarrow> heap \<Rightarrow> heap \<Rightarrow> heap \<Rightarrow> bool" ("_ : _ \<Down> _ : _" [50,50,50,50] 50)
 where
-  Lambda: "\<Gamma> : (x, (Lam [y]. e)) # \<Gamma>' \<Down> \<Gamma> : (x, (Lam [y]. e)) # \<Gamma>'" 
+  Lambda:
+    "\<Gamma> : (x, (Lam [y]. e)) # \<Gamma>' \<Down> \<Gamma> : (x, (Lam [y]. e)) # \<Gamma>'" 
  | Application: "\<lbrakk>
       atom n \<sharp> (\<Gamma>,\<Gamma>',\<Delta>,\<Delta>',x,e,y,\<Theta>,\<Theta>',z);
       atom z \<sharp> (\<Gamma>,\<Gamma>',\<Delta>,\<Delta>',x,e,y,\<Theta>,\<Theta>');

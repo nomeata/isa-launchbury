@@ -7,9 +7,12 @@ This variant of the original semantics allocates an additional free variable in 
 This is a prelimary step towards the equivalence of the original and the stacked semantics.
 *}
 
-inductive reds :: "heap \<Rightarrow> exp \<Rightarrow> var list \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool" ("_ : _ \<Down>*\<^bsub>_\<^esub> _ : _" [50,50,50,50] 50)
+inductive
+  reds :: "heap \<Rightarrow> exp \<Rightarrow> var list \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool"
+  ("_ : _ \<Down>*\<^bsub>_\<^esub> _ : _" [50,50,50,50] 50)
 where
-  Lambda: "\<Gamma> : (Lam [x]. e) \<Down>*\<^bsub>L\<^esub> \<Gamma> : (Lam [x]. e)" 
+  Lambda:
+    "\<Gamma> : (Lam [x]. e) \<Down>*\<^bsub>L\<^esub> \<Gamma> : (Lam [x]. e)" 
  | Application: "\<lbrakk>
     atom y \<sharp> (\<Gamma>,e,x,L,\<Delta>,\<Theta>,z) ;
     atom (n::var) \<sharp> (\<Gamma>,e,x,L,\<Delta>,\<Theta>,z) ;
@@ -20,7 +23,12 @@ where
     \<Gamma> : App e x \<Down>*\<^bsub>L\<^esub> \<Theta> : z" 
  | Variable: "\<lbrakk>
     (x,e) \<in> set \<Gamma>; delete x \<Gamma> : e \<Down>*\<^bsub>x#L\<^esub> \<Delta> : z \<rbrakk> \<Longrightarrow> \<Gamma> : Var x \<Down>*\<^bsub>L\<^esub> (x, z) # \<Delta> : z"
- | Let: "set (bn as) \<sharp>* (\<Gamma>, L) \<Longrightarrow> distinctVars (asToHeap as) \<Longrightarrow> asToHeap as @ \<Gamma> : body \<Down>*\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> \<Gamma> : Let as body \<Down>*\<^bsub>L\<^esub> \<Delta> : z"
+ | Let: "\<lbrakk>
+    set (bn as) \<sharp>* (\<Gamma>, L);
+    distinctVars (asToHeap as);
+    asToHeap as @ \<Gamma> : body \<Down>*\<^bsub>L\<^esub> \<Delta> : z
+  \<rbrakk> \<Longrightarrow>
+    \<Gamma> : Let as body \<Down>*\<^bsub>L\<^esub> \<Delta> : z"
 
 equivariance reds
 

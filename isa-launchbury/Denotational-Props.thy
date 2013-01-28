@@ -807,7 +807,7 @@ subsubsection {* The semantics of let only adds new bindings *}
 
 text {*
 The following lemma is not as general as possible and specialized to @{text "\<rho> = fempty"}, as that is
-the only case required later on, and easier to proof.
+the only case required later on, and easier to prove.
 *}
 
 lemma HSem_unfold_let:

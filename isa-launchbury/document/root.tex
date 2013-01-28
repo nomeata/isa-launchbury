@@ -41,7 +41,7 @@
 % this should be the last package used
 \usepackage{pdfsetup}
 
-% urls in roman style, theoryt in math-similar italics
+% urls in roman style, theorys in math-similar italics
 \urlstyle{rm}
 \isabellestyle{it}
 
@@ -60,7 +60,8 @@
 \title{The Correctness of Launchbury's Natural Semantics for Lazy Evaluation}
 \author{Joachim Breitner\\
 Programming Paradigms Group\\
-Karlsruhe Institute for Technology}
+Karlsruhe Institute for Technology\\
+\url{breitner@kit.edu}}
 \maketitle
 
 \begin{abstract}
@@ -143,6 +144,7 @@ Chapter \ref{ch_aux} contains auxiliary theories, not necessarily tied to Launch
 \item Binary joins in the context of HOLCF (\isa{HOLCF-Join}).
 \item A theory of fixed points of binary joins (\isa{HOLCF-Fix-Join}, \isa{HOLCF-Fix-Join-Nominal}).
 \item A type for finite maps with a chain-complete partial order (\isa{FMap}, \isa{FMap-Nominal}, \isa{FMap-HOLCF}, \isa{FMap-Nominal-HOLCF}).
+\item A function \isa{heapToEnv} that converts between associative lists and finite maps. (\isa{HeapToEnv})
 \item The theory \isa{FMap-Utils} adds lemmas that combine finite maps with the various other non-standard auxiliary theories.
 \end{itemize}
 
@@ -213,6 +215,8 @@ I’d like to thank Andreas Lochbihler for his gladly given and very effective h
 
 \theory{FMap-Utils}
 
+\theory{HeapToEnv}
+
 \clearpage
 \section{Launchbury's natural semantics}
 \label{ch_natsem}
@@ -238,8 +242,6 @@ I’d like to thank Andreas Lochbihler for his gladly given and very effective h
 \theory{Denotational-Common}
 
 \theory{Value-Meet}
-
-\theory{HeapToEnv}
 
 \clearpage
 \section{Denotational semantics with join}

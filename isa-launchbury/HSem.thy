@@ -5,9 +5,11 @@ begin
 subsubsection {* A locale for heap semantics, abstract in the expression semantics *}
 
 text {*
-The following theory about semantics of heap is abstract in the type and semantics of expressions.
-Also, care is taken that lemmas required to prove continuity of the heap semantics are provideded
-before requiring continuity of the expression semantics.
+The following theory about the semantics of a heap is abstract in the type and
+semantics of expressions. Also, care is taken that lemmas required to prove
+continuity of the heap semantics are provideded before requiring full
+continuity of the expression semantics, to allow for a mutually recursive
+proof.
 *}
 
 locale has_ESem =
@@ -15,7 +17,7 @@ locale has_ESem =
 begin
 
 text {*
-This definition captures the notion of compatible heaps and envirnoments, i.e. those heaps where,
+This definition captures the notion of compatible heaps and environments, i.e.\ those heaps where,
 in the course of calculating the semantics, all joins exist.
 *}
 
@@ -96,7 +98,7 @@ proof-
     by (simp add: cont2contlubE[OF fmap_expand_cont `chain Y`])
 qed
 
-subsubsection {* Disjoint heaps and environments are compatible and derived lemmas *}
+subsubsection {* Disjoint heaps and environments are compatible *}
 
 lemma disjoint_is_HSem_cond':
   "fdom \<rho> \<inter> heapVars h = {} \<Longrightarrow> (\<forall> e \<in> snd`set h. cont (ESem e)) \<Longrightarrow> HSem_cond' h \<rho>"
@@ -591,7 +593,7 @@ subsubsection {* Re-calculating the semantics of the heap is idempotent *}
     qed
   qed
 
-subsubsection {* The heap semantics can also be define inductively over the heap *}  
+subsubsection {* The heap semantics can also be defined inductively over the heap *}  
 
   lemma iterative_HSem:
     assumes "HSem_cond' ((x, e) # \<Gamma>) \<rho>"
