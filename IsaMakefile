@@ -1,9 +1,9 @@
 
 ## targets
 
-default: isa-launchbury
+default: Launchbury
 images:
-test: isa-launchbury
+test: Launchbury
 
 all: images test
 
@@ -20,15 +20,15 @@ USEDIR = $(ISABELLE_TOOL) usedir -v true
 $(LOG)/HOLCF-Nominal2.gz: Nominal2/ROOT.ML Nominal2/*.thy
 	@cd Nominal2; $(USEDIR) -b -f ROOT-NO-EXAMPLES.ML HOLCF HOLCF-Nominal2
 
-## isa-launchbury
+## Launchbury
 
-isa-launchbury: $(LOG)/HOLCF-Nominal2-isa-launchbury.gz
+Launchbury: $(LOG)/HOLCF-Nominal2-Launchbury.gz
 
-$(LOG)/HOLCF-Nominal2-isa-launchbury.gz: isa-launchbury/ROOT.ML isa-launchbury/document/root.tex isa-launchbury/document/map.tex isa-launchbury/*.thy  $(LOG)/HOLCF-Nominal2.gz
-	@$(USEDIR) -i true -g true -d pdf HOLCF-Nominal2 isa-launchbury
+$(LOG)/HOLCF-Nominal2-Launchbury.gz: Launchbury/ROOT.ML Launchbury/document/root.tex Launchbury/document/root.bib Launchbury/document/map.tex Launchbury/*.thy  $(LOG)/HOLCF-Nominal2.gz
+	@$(USEDIR) -i true -g true -d pdf HOLCF-Nominal2 Launchbury
 
 
 ## clean
 
 clean:
-	@rm -f $(LOG)/HOLCF-Nominal2.gz $(LOG)/HOLCF-Nominal2-isa-launchbury.gz
+	@rm -f $(LOG)/HOLCF-Nominal2.gz $(LOG)/HOLCF-Nominal2-Launchbury.gz
