@@ -4,15 +4,13 @@ begin
 
 subsubsection {* Conversion from assignments to heaps *}
 
-text {* assn is the data type required by Nominal, while the associative list heap is what we
-want to work with. Once Nominal supports nested data types, this could be merged. *}
+text {* The type @{typ assn} is the data type used in the let expression. It 
+is isomorphic to @{typ "(var \<times> exp) list"}, but since Nominal does not
+support nested data type, this redundancy was introduced. The following
+function converts between them. Once Nominal supports nested data types, this
+could be simplified. *}
 
-function asToHeap_raw :: "assn_raw \<Rightarrow> (var \<times> exp_raw) list"
-where ANilToHeap_raw: "asToHeap_raw ANil_raw = []"
- | AConsToHeap_raw: "asToHeap_raw (ACons_raw v e as) = (v, e) # asToHeap_raw as"
- by (pat_completeness, auto)
-
-nominal_primrec  asToHeap :: "assn \<Rightarrow> heap" 
+nominal_primrec asToHeap :: "assn \<Rightarrow> heap" 
  where ANilToHeap: "asToHeap ANil = []"
  | AConsToHeap: "asToHeap (ACons v e as) = (v, e) # asToHeap as"
 unfolding eqvt_def asToHeap_graph_def
@@ -24,8 +22,6 @@ apply(case_tac x rule: exp_assn.exhaust(2))
 apply auto
 done
 termination(eqvt) by lexicographic_order
-
-lemmas asToHeap_induct = asToHeap.induct[case_names ANilToHeap AConsToHeap]
 
 lemma asToHeap_eqvt: "eqvt asToHeap"
   unfolding eqvt_def
@@ -49,6 +45,5 @@ lemma distinctVars_append_asToHeap:
   assumes "set (bn as) \<sharp>* \<Gamma>"
   shows "distinctVars (asToHeap as @ \<Gamma>)" 
 by(rule distinctVars_appendI[OF assms(1,2) fresh_assn_distinct[OF assms(3)]])
-
 
 end

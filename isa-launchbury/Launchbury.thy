@@ -237,7 +237,7 @@ case (Let as \<Gamma> L body \<Delta> z)
     case False
       hence "atom x \<sharp> as" using Let.prems by(auto simp add: fresh_Pair exp_assn.fresh)      
       hence "atom x \<sharp> asToHeap as"
-        by(induct as rule:asToHeap_induct)(auto simp add: fresh_Nil fresh_Cons fresh_Pair exp_assn.fresh)
+        by(induct as rule:asToHeap.induct)(auto simp add: fresh_Nil fresh_Cons fresh_Pair exp_assn.fresh)
       show ?thesis
         apply(rule Let.hyps(4))
         using Let.prems `atom x \<sharp> asToHeap as` False
@@ -245,7 +245,7 @@ case (Let as \<Gamma> L body \<Delta> z)
     next
     case True
       hence "x \<in> heapVars (asToHeap as)" 
-        by(induct as rule:asToHeap_induct)(auto simp add: exp_assn.bn_defs)      
+        by(induct as rule:asToHeap.induct)(auto simp add: exp_assn.bn_defs)      
       moreover
       have "x \<notin> set L"
         using Let(1)

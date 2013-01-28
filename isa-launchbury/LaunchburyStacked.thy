@@ -378,7 +378,7 @@ case (DLet as \<Gamma> xa body \<Gamma>' \<Delta>' \<Delta> x)
     case False
       hence "atom x \<sharp> as" using DLet.prems by(auto simp add: fresh_Pair exp_assn.fresh)      
       hence "atom x \<sharp> asToHeap as"
-        by(induct as rule:asToHeap_induct)(auto simp add: fresh_Nil fresh_Cons fresh_Pair exp_assn.fresh)
+        by(induct as rule:asToHeap.induct)(auto simp add: fresh_Nil fresh_Cons fresh_Pair exp_assn.fresh)
       show ?thesis
         apply(rule DLet.hyps(9))
         using DLet.prems `atom x \<sharp> asToHeap as` False
@@ -386,7 +386,7 @@ case (DLet as \<Gamma> xa body \<Gamma>' \<Delta>' \<Delta> x)
     next
     case True
       hence "x \<in> heapVars (asToHeap as)" 
-        by(induct as rule:asToHeap_induct)(auto simp add: exp_assn.bn_defs)      
+        by(induct as rule:asToHeap.induct)(auto simp add: exp_assn.bn_defs)      
       thus ?thesis using reds_doesnt_forget'[OF DLet.hyps(8)] by auto
     qed
 qed
