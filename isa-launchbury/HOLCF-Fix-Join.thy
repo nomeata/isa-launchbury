@@ -83,7 +83,7 @@ lemma cont_on_join_fjc:
    finally show ?case by (rule eq_imp_below)
 qed
 
-subsubsection {* Conditions for the existance of the fixed point of binary joins *}
+subsubsection {* Conditions for the existence of the fixed point of binary joins *}
 
 inductive fix_join_cond
   where fix_join_condI:
