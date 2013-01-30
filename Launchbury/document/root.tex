@@ -85,7 +85,9 @@ Although his proofs are already on the more rigorous side for pen-and-paper proo
 % (which is an extended version of \cite{nakata})
 , \cite{mixed} and \cite{distributed}. 
 
-To avoid the problem, we define an alternative natural semantics in Section \ref{sec_LaunchburyStacked} that carries more contextual information in the individual judgements. The added fields can be understood as the evaluation stack, carrying update frames and suspended application, hence the name “stacked semantics”. This semantics is equivalent to the original one (\ref{sec_Launchbury-Unstack}) and provably correct (\ref{sec_CorrectnessStacked}). Two observations indicate that this semantics might be more suited for formal proofs than the original one:
+To avoid the problem, we define an alternative natural semantics in Section \ref{sec_LaunchburyStacked} that carries more contextual information in the individual judgements. The added fields can be understood as the evaluation stack, carrying update frames and suspended application, hence the name “stacked semantics”.
+This semantics is equivalent to the original one (\ref{sec_Launchbury-Unstack}) and provably correct (\ref{sec_CorrectnessStacked}).
+While adding the stack does not affect the evaluation of expressions at all, e.g.\ is irrelevant for the semantics of the program, it does make the semantics more suited for formal proofs, as indicated by two observations:
 \begin{itemize}
 \item In the original semantics an explicit set of live variables has to be added to the judgements to be able to pick suitable fresh variables. This has been noted and fixed this way before, e.g. in \cite{sestoft}. In our new semantics, the additional fields contain all live variables and hence no special treatment is required.
 \item To prove the correctness of the semantics inductively, the statement does not have to be generalized, but can be proved as-is.

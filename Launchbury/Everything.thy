@@ -82,9 +82,9 @@ Expressions of type @{typ exp} are given by the following grammar:
 In the introduction we pretty-print expressions to match the notation in \cite{launchbury} and omit
 the constructor names @{term Var}, @{term App}, @{text Lam} and @{term Let}. In the actual theories, these are visible.
 These expressions are, due to the machinery of the Nominal package, actually alpha-equivalency classes.
-E.g.\ the identity @{thm alpha_test[no_vars]} is a theorem.
+E.g.\ the identity @{thm alpha_test[no_vars]} is a theorem. This differs from Launchbury's original definition, which expect distinctly-named expressoins and performs explicit alpha-renaming in the semantics.
 
-The type @{type heap} is an abbreviation for @{typ "(var \<times> exp) list"}.
+The type @{type heap} is an abbreviation for @{typ "(var \<times> exp) list"}. These are \emph{not} alpha-equivalency classes, i.e.\ we manage bindings of heaps explicitly.
 *}
 
 subsubsection {* The natural semantics *}
