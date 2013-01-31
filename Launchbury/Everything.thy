@@ -58,7 +58,7 @@ declare [[names_short]]
 subsection {* Main definitions and theorems *}
 
 text {*
-For your convenience, the main definitions and theorems of this theory are assembled in this section. The following 
+For your convenience, the main definitions and theorems of the present work are assembled in this section. The following 
 formulas are mechanically pretty-printed versions of the statements as defined resp.\ proven in Isabelle.
 Free variables are all-quantified. Some type conversion functions (like @{term_type set}) are omitted.
 The relations @{text \<sharp>} and @{text "\<sharp>*"} come from the Nominal package and express freshness of the
@@ -81,10 +81,9 @@ Expressions of type @{typ exp} are given by the following grammar:
 \end{alignatstar}
 In the introduction we pretty-print expressions to match the notation in \cite{launchbury} and omit
 the constructor names @{term Var}, @{term App}, @{text Lam} and @{term Let}. In the actual theories, these are visible.
-These expressions are, due to the machinery of the Nominal package, actually alpha-equivalency classes.
-E.g.\ the identity @{thm alpha_test[no_vars]} is a theorem. This differs from Launchbury's original definition, which expect distinctly-named expressoins and performs explicit alpha-renaming in the semantics.
+These expressions are, due to the machinery of the Nominal package, actually alpha-equivalency classes, so @{thm alpha_test[no_vars]} holds provably. This differs from Launchbury's original definition, which expects distinctly-named expressions and performs explicit alpha-renaming in the semantics.
 
-The type @{type heap} is an abbreviation for @{typ "(var \<times> exp) list"}. These are \emph{not} alpha-equivalency classes, i.e.\ we manage bindings of heaps explicitly.
+The type @{type heap} is an abbreviation for @{typ "(var \<times> exp) list"}. These are \emph{not} alpha-equivalency classes, i.e.\ we manage the bindings in heaps explicitly.
 *}
 
 subsubsection {* The natural semantics *}
