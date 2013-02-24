@@ -13,10 +13,9 @@ could be simplified. *}
 nominal_primrec asToHeap :: "assn \<Rightarrow> heap" 
  where ANilToHeap: "asToHeap ANil = []"
  | AConsToHeap: "asToHeap (ACons v e as) = (v, e) # asToHeap as"
-unfolding eqvt_def asToHeap_graph_def
+unfolding eqvt_def asToHeap_graph_aux_def
 apply rule
-apply perm_simp
-apply rule
+apply simp
 apply rule
 apply(case_tac x rule: exp_assn.exhaust(2))
 apply auto

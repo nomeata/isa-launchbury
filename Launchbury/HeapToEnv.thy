@@ -19,7 +19,7 @@ lemma cont2cont_heapToEnv[simp, cont2cont]:
 
 lemma heapToEnv_eqvt[eqvt]:
   "\<pi> \<bullet> heapToEnv h eval = heapToEnv (\<pi> \<bullet> h) (\<pi> \<bullet> eval)"
-  by (induct h eval rule:heapToEnv.induct, auto simp add: fmap_upd_eqvt  permute_fun_def)
+  by (induct h eval rule:heapToEnv.induct, auto simp add: fmap_upd_eqvt)
 
 lemma heapToEnv_fdom[simp]:"fdom (heapToEnv h eval) = heapVars h"
   by (induct h eval rule:heapToEnv.induct, auto)
@@ -140,7 +140,7 @@ case (goal2 x \<Gamma> e \<Delta>)
   moreover
   from `set ((x, e) # \<Gamma>) = set \<Delta>`
   have "set (delete x ((x, e) # \<Gamma>)) = set (delete x \<Delta>)"
-    by (metis project_set delete_eq)
+    by (metis filter_set delete_eq)
   hence "set \<Gamma> = set (delete x \<Delta>)"
     by (simp add: delete_no_there[OF `x \<notin> heapVars \<Gamma>`])
   ultimately

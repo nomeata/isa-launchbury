@@ -232,8 +232,7 @@ subsubsection {* Iterative definition of the heap semantics *}
       apply (rule fix_on_cong[OF condR])
       apply (simp add: HSem_def')
       apply (drule sym)
-      apply simp
-      by (metis Un_commute Un_left_absorb)
+      by simp
     finally show ?thesis.
   qed
 
@@ -258,8 +257,7 @@ subsubsection {* Iterative definition of the heap semantics *}
       apply (rule fix_on_cond_cong[OF condR'])
       apply (simp add: HSem_def')
       apply (drule sym)
-      apply simp
-      by (metis Un_commute Un_left_absorb)
+      by simp
   qed
 
   lemma iterative_HSem':
@@ -286,8 +284,7 @@ subsubsection {* Iterative definition of the heap semantics *}
       apply (rule fix_on_cong[symmetric, OF condR])
       apply (simp add: HSem_def')
       apply (drule sym)
-      apply simp
-      by (metis Un_commute Un_left_absorb)
+      by simp
     also have "\<dots> = fix_on' b L"
       by (rule iterative_fmap_add[symmetric])
     also have "\<dots> = fix_on' b R'"
@@ -297,8 +294,7 @@ subsubsection {* Iterative definition of the heap semantics *}
       apply (rule fix_on_cong[OF condR'])
       apply (simp add: HSem_def')
       apply (drule sym)
-      apply simp
-      by (metis Un_commute Un_left_absorb)
+      by simp
     finally
     show ?thesis.
   qed

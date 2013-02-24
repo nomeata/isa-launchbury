@@ -40,16 +40,14 @@ subsubsection {* Equivariance lemmas *}
 
 lemma heapVars[eqvt]:
   "\<pi> \<bullet> heapVars \<Gamma> = heapVars (\<pi> \<bullet> \<Gamma>)"
-  apply (simp add: heapVars_def)
-  apply perm_simp
-  apply rule
-  done
+  by (simp add: heapVars_def)
 
 lemma distinctVars_eqvt[eqvt]:
   "distinctVars \<Gamma> \<Longrightarrow> distinctVars (\<pi> \<bullet> \<Gamma>)"
   apply (induct \<Gamma> rule:distinctVars.induct)
-  apply (auto simp add: heapVars[symmetric] mem_permute_iff)
-  done
+  apply simp
+  apply (simp add: distinctVars_Cons)
+  by (metis (full_types) heapVars mem_permute_iff)
 
 subsubsection {* Freshness and distinctness *}
 

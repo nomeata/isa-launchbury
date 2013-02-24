@@ -39,7 +39,7 @@ equivariance reds
 
 nominal_inductive reds
   avoids Application: "y"
-apply (auto simp add: fresh_star_def fresh_Pair exp_assn.fresh)
+apply (auto simp add: fresh_star_def fresh_Pair)
 done
 
 subsubsection {* Example evaluations *}
@@ -47,12 +47,12 @@ subsubsection {* Example evaluations *}
 lemma eval_test:
   "[] : (Let (ACons x (Lam [y]. Var y) ANil) (Var x)) \<Down>\<^bsub>[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y)"
 apply(auto intro!: Lambda Application Variable Let
- simp add: fresh_Pair fresh_Cons fresh_Nil exp_assn.fresh fresh_star_def)
+ simp add: fresh_Pair fresh_Cons fresh_Nil fresh_star_def)
 done
 
 lemma eval_test2:
   "y \<noteq> x \<Longrightarrow> n \<noteq> y \<Longrightarrow> n \<noteq> x \<Longrightarrow>[] : (Let (ACons x (Lam [y]. Var y) ANil) (App (Var x) x)) \<Down>\<^bsub>[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y)"
-  by (auto intro!: Lambda Application Variable Let simp add: fresh_Pair fresh_at_base fresh_Cons fresh_Nil exp_assn.fresh fresh_star_def)
+  by (auto intro!: Lambda Application Variable Let simp add: fresh_Pair fresh_at_base fresh_Cons fresh_Nil fresh_star_def)
 
 subsubsection {* Properties of the semantics *}
 
@@ -152,7 +152,7 @@ equivariance distinct_reds
 
 nominal_inductive distinct_reds
   avoids DApplication: "y"
-  apply (auto simp add: fresh_star_def fresh_Cons fresh_Pair exp_assn.fresh)
+  apply (auto simp add: fresh_star_def fresh_Cons fresh_Pair)
   done
 
 lemma distinct_redsD1:
@@ -214,7 +214,7 @@ proof(induct rule: reds.induct)
 case (Lambda \<Gamma> x e) thus ?case by auto
 next
 case (Application y \<Gamma> e x' L \<Delta> \<Theta> z e')
-  hence "atom x \<sharp> (\<Delta>, Lam [y]. e') \<or> x \<in> heapVars \<Delta> - set (x' # L)" by (auto simp add: exp_assn.fresh fresh_Pair)
+  hence "atom x \<sharp> (\<Delta>, Lam [y]. e') \<or> x \<in> heapVars \<Delta> - set (x' # L)" by (auto simp add: fresh_Pair)
 
   thus ?case
   proof
@@ -223,14 +223,14 @@ case (Application y \<Gamma> e x' L \<Delta> \<Theta> z e')
     proof(cases "x = y")
     case False
       hence "atom x \<sharp> e'" using `atom x \<sharp> (\<Delta>, Lam [y]. e')`
-        by (auto simp add:fresh_Pair exp_assn.fresh)
+        by (auto simp add:fresh_Pair)
       hence "atom x \<sharp> e'[y ::= x']" using Application.prems
-        by (auto intro: subst_pres_fresh[rule_format] simp add: fresh_Pair exp_assn.fresh)
+        by (auto intro: subst_pres_fresh[rule_format] simp add: fresh_Pair)
       thus ?thesis using Application.hyps(5) `atom x \<sharp> (\<Delta>, Lam [y]. e')` by auto
     next
     case True
       hence "atom x \<sharp> e'[y ::= x']" using `atom x \<sharp> (\<Delta>, Lam [y]. e')` Application.prems
-        by (auto intro:subst_is_fresh simp add: fresh_Pair exp_assn.fresh)
+        by (auto intro:subst_is_fresh simp add: fresh_Pair)
       thus ?thesis using Application.hyps(5) `atom x \<sharp> (\<Delta>, Lam [y]. e')` by auto
     qed
   next
@@ -240,7 +240,7 @@ case (Application y \<Gamma> e x' L \<Delta> \<Theta> z e')
 next
 
 case(Variable v e \<Gamma> L \<Delta> z)
-  have "atom x \<sharp> \<Gamma>" and "atom x \<sharp> v" using Variable.prems(1) by (auto simp add: fresh_Pair exp_assn.fresh)
+  have "atom x \<sharp> \<Gamma>" and "atom x \<sharp> v" using Variable.prems(1) by (auto simp add: fresh_Pair)
   hence "atom x \<sharp> delete v \<Gamma>" and "atom x \<sharp> e" using `(v,e) \<in> set \<Gamma>` by(auto intro: fresh_delete dest:fresh_list_elem)
   hence "atom x \<sharp> (\<Delta>, z) \<or> x \<in> heapVars \<Delta> - set (v # L)"  using Variable.hyps(3) by (auto simp add: fresh_Pair)
   thus ?case using `atom x \<sharp> v` by (auto simp add: fresh_Pair fresh_Cons fresh_at_base)
@@ -250,13 +250,13 @@ case (Let as \<Gamma> L body \<Delta> z)
   show ?case
     proof (cases "atom x \<in> set(bn as)")
     case False
-      hence "atom x \<sharp> as" using Let.prems by(auto simp add: fresh_Pair exp_assn.fresh)      
+      hence "atom x \<sharp> as" using Let.prems by(auto simp add: fresh_Pair)      
       hence "atom x \<sharp> asToHeap as"
-        by(induct as rule:asToHeap.induct)(auto simp add: fresh_Nil fresh_Cons fresh_Pair exp_assn.fresh)
+        by(induct as rule:asToHeap.induct)(auto simp add: fresh_Nil fresh_Cons fresh_Pair)
       show ?thesis
         apply(rule Let.hyps(4))
         using Let.prems `atom x \<sharp> asToHeap as` False
-        by (auto simp add: fresh_Pair exp_assn.fresh fresh_append)
+        by (auto simp add: fresh_Pair fresh_append)
     next
     case True
       hence "x \<in> heapVars (asToHeap as)" 

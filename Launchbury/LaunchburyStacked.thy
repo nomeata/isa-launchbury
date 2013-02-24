@@ -40,20 +40,19 @@ equivariance reds
 
 nominal_inductive reds
   avoids Application: "n" and "z"
-  by (auto simp add: fresh_star_def fresh_Cons fresh_Pair exp_assn.fresh)
+  by (auto simp add: fresh_star_def fresh_Cons fresh_Pair)
 
 subsubsection {* Example evaluations *}
 
 lemma eval_test:
   "y \<noteq> x \<Longrightarrow> [] : [(x, Let (ACons y (Lam [z]. Var z) ANil) (Var y))] \<Down> [(y, Lam [z]. Var z)] : [(x, (Lam [z]. Var z))]"
-apply(auto intro!: Lambda Application Variable Let
- simp add: fresh_Pair fresh_Cons fresh_Nil exp_assn.fresh fresh_star_def exp_assn.bn_defs fresh_at_base)
-done
+by (auto intro!: Lambda Application Variable Let
+ simp add: fresh_Pair fresh_Cons fresh_Nil fresh_star_def exp_assn.bn_defs fresh_at_base)
 
 lemma eval_test2:
   "y \<noteq> x \<Longrightarrow> z \<noteq> y \<Longrightarrow> z \<noteq> x \<Longrightarrow> [] : [(x,  Let (ACons y (Lam [z]. Var z) ANil) (App (Var y) y))] \<Down> [(y, Lam [z]. Var z)] : [(x, (Lam [z]. Var z))]"
   apply (rule Let)
-  apply (simp add: fresh_Pair fresh_Cons fresh_at_base  fresh_Nil exp_assn.fresh fresh_star_def exp_assn.bn_defs)
+  apply (simp add: fresh_Pair fresh_Cons fresh_at_base  fresh_Nil fresh_star_def exp_assn.bn_defs)
   apply simp
   apply (rule obtain_fresh)
   apply (erule Application[where z = z])
@@ -64,7 +63,7 @@ lemma eval_test2:
     apply (rule Variable, simp)
     apply simp
     apply (rule Lambda)
-  apply (simp add: fresh_Pair fresh_Cons fresh_at_base fresh_Nil exp_assn.fresh fresh_star_def)
+  apply (simp add: fresh_Pair fresh_Cons fresh_at_base fresh_Nil fresh_star_def)
   done
 
 subsubsection {* Properties of the semantics *}
@@ -115,7 +114,7 @@ equivariance distinct_reds
 
 nominal_inductive distinct_reds
   avoids DApplication: "n" and "z"
-  apply (auto simp add: fresh_star_def fresh_Cons fresh_Pair exp_assn.fresh)
+  apply (auto simp add: fresh_star_def fresh_Cons fresh_Pair)
   done
 
 lemma distinct_redsD1:
@@ -153,7 +152,7 @@ case (Application n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<Theta
   moreover
   have "atom n \<sharp> (((x, App e y) # \<Gamma>') @ \<Gamma>)"
     using Application
-    by (simp add: fresh_Cons fresh_Pair fresh_append exp_assn.fresh)
+    by (simp add: fresh_Cons fresh_Pair fresh_append)
   hence "n \<notin> heapVars (((x, App e y) # \<Gamma>') @ \<Gamma>)" 
     by (metis heapVars_not_fresh)
   with `distinctVars (((x, App e y) # \<Gamma>') @ \<Gamma>)`
@@ -329,7 +328,7 @@ proof(nominal_induct avoiding: x rule: distinct_reds.strong_induct)
 case (DLambda \<Gamma> x e) thus ?case by auto
 next
 case (DApplication n \<Gamma> \<Gamma>' \<Delta> \<Delta>' xa e y \<Theta> \<Theta>' z e' x)
-  from DApplication have [simp]:"atom x \<sharp> \<Gamma>" "atom x \<sharp> e" "atom x \<sharp> y" by (simp add: fresh_Pair exp_assn.fresh)+
+  from DApplication have [simp]:"atom x \<sharp> \<Gamma>" "atom x \<sharp> e" "atom x \<sharp> y" by (simp add: fresh_Pair)+
   from `atom n \<sharp> x` have [simp]:"atom x \<sharp> n" by (metis fresh_at_base(2)) 
   have [simp]:"atom z \<sharp> y" by fact
 
@@ -343,7 +342,7 @@ case (DApplication n \<Gamma> \<Gamma>' \<Delta> \<Delta>' xa e y \<Theta> \<The
     hence [simp]:"atom x \<sharp> \<Delta>" by simp
     assume "atom x \<sharp> (\<Delta>, Lam [z]. e')"
     hence "atom x \<sharp> e' \<or> x = z"
-      by (simp add: exp_assn.fresh fresh_Pair)+
+      by (simp add: fresh_Pair)+
     hence "atom x \<sharp> (\<Delta>, snd (hd ((xa, e'[z::=y]) # \<Delta>')))"
     proof
       assume "atom x \<sharp> e'"
@@ -367,7 +366,7 @@ next
 case(DVariable y e \<Gamma> xa \<Gamma>' z \<Delta>' \<Delta> x)
   from `atom x \<sharp> _` ` (y, e) \<in> set \<Gamma>`
   have "atom x \<sharp> delete y \<Gamma>" and "atom x \<sharp> e"
-    by (auto intro: fresh_delete dest:fresh_list_elem simp add: exp_assn.fresh fresh_Pair)
+    by (auto intro: fresh_delete dest:fresh_list_elem simp add: fresh_Pair)
   hence "atom x \<sharp> (\<Delta>, snd (hd ((y, z) # (xa, Var y) # \<Delta>'))) \<or> x \<in> heapVars \<Delta>"
     by -(rule DVariable, simp add: fresh_Pair)
   thus ?case
@@ -377,9 +376,9 @@ case (DLet as \<Gamma> xa body \<Gamma>' \<Delta>' \<Delta> x)
   show ?case
     proof (cases "atom x \<in> set (bn as)")
     case False
-      hence "atom x \<sharp> as" using DLet.prems by(auto simp add: fresh_Pair exp_assn.fresh)      
+      hence "atom x \<sharp> as" using DLet.prems by(auto simp add: fresh_Pair)      
       hence "atom x \<sharp> asToHeap as"
-        by(induct as rule:asToHeap.induct)(auto simp add: fresh_Nil fresh_Cons fresh_Pair exp_assn.fresh)
+        by(induct as rule:asToHeap.induct)(auto simp add: fresh_Nil fresh_Cons fresh_Pair)
       show ?thesis
         apply(rule DLet.hyps(9))
         using DLet.prems `atom x \<sharp> asToHeap as` False

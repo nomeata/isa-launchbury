@@ -14,7 +14,7 @@ proof(intro contI2 monofunI fmap_belowI)
 
   show "fdom (\<pi> \<bullet> m1) = fdom (\<pi> \<bullet> m2)"
     using `fdom m1 = fdom m2`
-    by (simp add: fdom_perm del: fdom_perm_rev)
+    by (metis fdom_perm_rev)
 
   fix x
   assume "x \<in> fdom (\<pi> \<bullet> m1)" and "x \<in> fdom (\<pi> \<bullet> m2)"
@@ -23,7 +23,7 @@ proof(intro contI2 monofunI fmap_belowI)
   ultimately
   have "x2 \<in> fdom m1" "x2 \<in> fdom m2"
     using `x \<in> fdom (\<pi> \<bullet> m1)` `x \<in> fdom (\<pi> \<bullet> m2)`
-    by (simp add: fdom_perm mem_permute_iff del: fdom_perm_rev)+
+    by (metis (full_types) fdom_perm_rev mem_permute_iff)+
 
   have "(\<pi> \<bullet> m1) f! x = \<pi> \<bullet> (m1 f! x2)"
     by (simp add: the_lookup_eqvt[OF `x2 \<in> fdom m1`]  `x = _`)
@@ -36,11 +36,10 @@ proof(intro contI2 monofunI fmap_belowI)
 
 next
   fix \<pi> Y
-  assume "chain (Y\<Colon>nat \<Rightarrow> 'a f\<rightharpoonup> 'b)"
-  assume "chain (\<lambda>i. \<pi> \<bullet> Y i)"
+  assume "chain (Y\<Colon>nat \<Rightarrow> 'a f\<rightharpoonup> 'b)" and  "chain (\<lambda>i. \<pi> \<bullet> Y i)"
   
-  show "fdom (\<pi> \<bullet> (\<Squnion> i. Y i)) = fdom (\<Squnion> i. \<pi> \<bullet> Y i)"
-      by (simp add: chain_fdom(2)[OF `chain (\<lambda>i. \<pi> \<bullet> Y i)`] chain_fdom(2)[OF `chain Y`] fdom_perm del: fdom_perm_rev)
+  thus "fdom (\<pi> \<bullet> (\<Squnion> i. Y i)) = fdom (\<Squnion> i. \<pi> \<bullet> Y i)"
+    by (metis chain_fdom(2) fdom_perm_rev)
 
   fix x
   assume "x \<in> fdom (\<pi> \<bullet> (\<Squnion> i. Y i))"

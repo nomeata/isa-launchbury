@@ -78,10 +78,8 @@ proof-
       by (auto simp add: fresh_Pair fresh_at_base sharp_Env)
 
     have "Lam [a]. let b be Var b in Var b = Lam [a']. let b be Var b in Var b"
-      apply simp
-      apply (subst Abs_swap2[where a = "atom a" and b = "atom a'"])
-      apply (auto simp add: exp_assn.bn_defs exp_assn.supp supp_Pair supp_at_base)
-      done
+      apply (simp add: fresh_Pair)
+      by (metis `b \<noteq> a'` `b \<noteq> a` flip_at_base_simps(3) not_self_fresh)
     hence "\<lbrakk>z\<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk>Lam [a']. let b be Var b in Var b\<rbrakk>\<^bsub>\<rho>\<^esub>" unfolding z_def by metis
     also have "\<dots> = const \<bottom>"
       by (simp add: const_def)

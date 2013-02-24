@@ -207,15 +207,8 @@ case (Var x \<rho>1 \<rho>2)
       by (simp add: fmap_less_eqD[OF `\<rho>1 \<le> \<rho>2` True])
   next
   case False
-    have "x \<notin> fdom \<rho>2"
-    proof
-      assume "x \<in> fdom \<rho>2"
-      hence "x \<in> fdom \<rho>2 - fdom \<rho>1" using False by simp
-      hence "atom x \<sharp> Var x"
-        using Var(2) by (simp add: fresh_star_def)
-      thus False
-        by (auto simp add: exp_assn.fresh)
-    qed
+    with Var(2)
+    have "x \<notin> fdom \<rho>2" by (metis Diff_iff exp_assn.fresh(1) fresh_star_def imageI not_self_fresh)
     with False
     show ?thesis
       by (auto simp add: lookup_not_fdom)
@@ -224,7 +217,7 @@ next
 case (App e x \<rho>1 \<rho>2)
   from App(3)
   have "atom ` (fdom \<rho>2 - fdom \<rho>1) \<sharp>* e"
-    by (auto simp add: fresh_star_def exp_assn.fresh)
+    by (auto simp add: fresh_star_def)
   note hyps = App.hyps[OF App.prems(1) this]
   moreover
   have "\<rho>1 f! x = \<rho>2 f! x"
@@ -234,15 +227,9 @@ case (App e x \<rho>1 \<rho>2)
       by (simp add: fmap_less_eqD[OF `\<rho>1 \<le> \<rho>2` True])
   next
   case False
+    with App(3)
     have "x \<notin> fdom \<rho>2"
-    proof
-      assume "x \<in> fdom \<rho>2"
-      hence "x \<in> fdom \<rho>2 - fdom \<rho>1" using False by simp
-      hence "atom x \<sharp> App e x"
-        using App(3) by (simp add: fresh_star_def)
-      thus False
-        by (auto simp add: exp_assn.fresh)
-    qed
+      by (metis Diff_iff exp_assn.fresh(2) fresh_star_def imageI not_self_fresh)
     with False
     show ?thesis
       by (auto simp add: lookup_not_fdom)
@@ -264,7 +251,7 @@ case (Let as e \<rho>1 \<rho>2)
   case (goal3 \<rho>1' \<rho>2')[simp]
     have prem: "atom ` (fdom \<rho>2' - fdom \<rho>1') \<sharp>* as"
       using Let(6) Let(1) Let(2)
-      apply (auto simp add: sharp_star_Env fresh_star_def exp_assn.fresh)
+      apply (auto simp add: sharp_star_Env fresh_star_def)
       by (metis Diff_iff sharp_Env)
 
     show "\<rho>1 f++ heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>1'\<^esub>) \<le> \<rho>2 f++ heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>2'\<^esub>) "
@@ -283,7 +270,7 @@ case (Let as e \<rho>1 \<rho>2)
   moreover
   have "atom ` (fdom (\<lbrace>asToHeap as\<rbrace>\<rho>2) - fdom (\<lbrace>asToHeap as\<rbrace>\<rho>1)) \<sharp>* e "
     using Let(6) Let(1) Let(2)
-    apply (auto simp add: sharp_star_Env fresh_star_def exp_assn.fresh)
+    apply (auto simp add: sharp_star_Env fresh_star_def)
     by (metis Diff_iff sharp_Env)
   ultimately
   have "\<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>1\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>2\<^esub>"
@@ -302,7 +289,7 @@ case (Lam x e \<rho>1 \<rho>2)
     moreover
     have "atom ` (fdom (\<rho>2(x f\<mapsto> v)) - fdom (\<rho>1(x f\<mapsto> v))) \<sharp>* e"
       using Lam(5)
-      by (auto simp add: fresh_star_def exp_assn.fresh)
+      by (auto simp add: fresh_star_def)
     ultimately
     have "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>1(x f\<mapsto> v)\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho>2(x f\<mapsto> v)\<^esub>"
       by (rule Lam(3))
@@ -317,7 +304,7 @@ next
 case (ACons x e as \<rho>1 \<rho>2)
   from ACons(4)
   have prem1: "atom ` (fdom \<rho>2 - fdom \<rho>1) \<sharp>* e" and  prem2: "atom ` (fdom \<rho>2 - fdom \<rho>1) \<sharp>* as"
-    by (auto simp add: fresh_star_def exp_assn.fresh)
+    by (auto simp add: fresh_star_def)
   from ACons.hyps(1)[OF `\<rho>1 \<le> \<rho>2` prem1] ACons.hyps(2)[OF `\<rho>1 \<le> \<rho>2` prem2]
   show ?case by simp
 qed

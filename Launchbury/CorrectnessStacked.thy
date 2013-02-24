@@ -33,7 +33,7 @@ case (Application n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<Theta
     by (metis (hide_lams, no_types) Application(1) fresh_Pair heapVars_not_fresh)
   with `n \<noteq> z`
   have [simp]: "atom n \<sharp> \<Delta>" "atom n \<sharp> e'"
-    by (auto simp add: exp_assn.fresh fresh_Pair)
+    by (auto simp add: fresh_Pair)
 
   note subset1 = reds_doesnt_forget'(1)[OF Application.hyps(8), unfolded append_Cons]
   from reds_doesnt_forget'(2)[OF Application.hyps(8), unfolded append_Cons]
@@ -54,7 +54,7 @@ case (Application n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<Theta
     apply (subst HSem_add_fresh[of fempty "(x, App e y) # \<Gamma>' @ \<Gamma>" n e, symmetric])
     apply (rule fempty_is_HSem_cond)
     apply (rule fempty_is_HSem_cond)
-    using Application(1) apply (simp add: fresh_Pair fresh_Cons fresh_append exp_assn.fresh)
+    using Application(1) apply (simp add: fresh_Pair fresh_Cons fresh_append)
     apply simp
     done
   also have  "... = ?restr (\<lbrace>(x, App e y) # (n, e) # \<Gamma>' @ \<Gamma>\<rbrace>)"
@@ -95,7 +95,7 @@ case (Application n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<Theta
     apply (subst HSem_add_fresh[of fempty "(x, App (Lam [z]. e') y) # \<Delta>' @ \<Delta>" n "Lam [z]. e'", symmetric])
     apply (rule fempty_is_HSem_cond)
     apply (rule fempty_is_HSem_cond)
-    using Application(1) apply (simp add: fresh_Pair fresh_Cons fresh_append exp_assn.fresh)
+    using Application(1) apply (simp add: fresh_Pair fresh_Cons fresh_append)
     apply simp
     done
   also
@@ -107,15 +107,8 @@ case (Application n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<Theta
     apply (subst ESem.simps, assumption)
     apply simp
     apply (rule ESem_subst[simplified])
-      using Application(2) apply (auto simp add: fresh_Pair)[1]
-      apply assumption
-      
       using Application(2)
-      apply (subst sharp_Env)
-      apply auto[1]
-      apply (metis fresh_Pair not_self_fresh)
-      apply (metis (hide_lams, mono_tags) fresh_Pair heapVars_not_fresh)
-      apply (metis (hide_lams, mono_tags) fresh_Pair heapVars_not_fresh)
+      apply (auto simp add: sharp_Env fresh_Pair heapVars_not_fresh)
     done
   also
   have "... \<le> \<lbrace>\<Theta>' @ \<Theta>\<rbrace>"

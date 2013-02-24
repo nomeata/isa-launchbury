@@ -37,18 +37,18 @@ subsubsection {* Testing alpha equivalence *}
               
 lemma alpha_test:
   shows "Lam [x]. (Var x) = Lam [y]. (Var y)"
-  by (simp add: Abs1_eq_iff exp_assn.fresh fresh_at_base)
+  by (simp add: Abs1_eq_iff fresh_at_base)
 
 lemma alpha_test2:
   shows "let x be (Var x) in (Var x) = let y be (Var y) in (Var y)"
-  by (simp add: exp_assn.bn_defs Abs1_eq_iff fresh_Pair add:exp_assn.fresh fresh_at_base)
+  by (simp add: exp_assn.bn_defs Abs1_eq_iff fresh_Pair add: fresh_at_base)
 
 lemma alpha_test3:
   shows "
     Let (ACons x (Var y) (ACons y (Var x) ANil)) (Var x)
     =
     Let (ACons y (Var x) (ACons x (Var y) ANil)) (Var y)" (is "Let ?la ?lb = _")
-  apply (simp add: exp_assn.bn_defs Abs1_eq_iff fresh_Pair add:exp_assn.fresh fresh_at_base)
+  apply (simp add: exp_assn.bn_defs Abs1_eq_iff fresh_Pair add:fresh_at_base)
   apply (simp add: Abs_swap2[of "atom x" "(?lb,?la)" "[atom x, atom y]" "atom y"])
 done
 
@@ -61,183 +61,6 @@ lemma subst_var_eqvts[eqvt]:
  fixes \<pi>::perm
  shows "\<pi> \<bullet> (subst_var x y z) = subst_var (\<pi> \<bullet> x) (\<pi> \<bullet> y) (\<pi> \<bullet> z)"
 by auto
-
-type_synonym sum_type = "exp \<times> var \<times> var + assn \<times> var \<times> var \<Rightarrow> exp + assn"
-
-text {* The Nominal has some issues with mutually recursive definitions and equivariance that we
-work around here in a very ugly way, hoping that in later versions of Nominal, this works automatically. *}
-
-definition f1 ::
-    "(exp \<times> var \<times> var + assn \<times> var \<times> var \<Rightarrow> exp + assn \<Rightarrow> bool)
- \<Rightarrow> (exp \<times> var \<times> var + assn \<times> var \<times> var \<Rightarrow> exp + assn \<Rightarrow> bool)"
- where "f1 \<equiv>
- (\<lambda>p x1 x2.
-                (\<exists> (subst_subst_assn_sum :: sum_type)  x y z. x1 = Inl (Var x, y, z) \<and> x2 = Inl (Var x[y::v=z])) \<or>
-                (\<exists>(subst_subst_assn_sum :: sum_type) e v y z.
-                    x1 = Inl (App e v, y, z) \<and>
-                    x2 = Inl (App (Sum_Type.Projl (subst_subst_assn_sum (Inl (e, y, z)))) (v[y::v=z])) \<and>
-                    p (Inl (e, y, z)) (subst_subst_assn_sum (Inl (e, y, z)))) \<or>
-                (\<exists> (subst_subst_assn_sum :: sum_type)  as y z body.
-                    x1 = Inl (Let as body, y, z) \<and>
-                    x2 = Inl (Let (Sum_Type.Projr (subst_subst_assn_sum (Inr (as, y, z))))
-                               (Sum_Type.Projl (subst_subst_assn_sum (Inl (body, y, z))))) \<and>
-                    set (bn as) \<sharp>* (y, z) \<and>
-                    p (Inr (as, y, z)) (subst_subst_assn_sum (Inr (as, y, z))) \<and>
-                    p (Inl (body, y, z)) (subst_subst_assn_sum (Inl (body, y, z)))) \<or>
-                (\<exists>(subst_subst_assn_sum :: sum_type) x y z e.
-                    x1 = Inl (Lam [x]. e, y, z) \<and>
-                    x2 = Inl (Lam [x]. Sum_Type.Projl (subst_subst_assn_sum (Inl (e, y, z)))) \<and>
-                    atom x \<sharp> (y, z) \<and> p (Inl (e, y, z)) (subst_subst_assn_sum (Inl (e, y, z)))) \<or>
-                (\<exists>(subst_subst_assn_sum :: sum_type) y z. x1 = Inr (ANil, y, z) \<and> x2 = Inr ANil) \<or>
-                (\<exists>(subst_subst_assn_sum :: sum_type) v e as y z.
-                    x1 = Inr (ACons v e as, y, z) \<and>
-                    x2 = Inr (ACons v (Sum_Type.Projl (subst_subst_assn_sum (Inl (e, y, z))))
-                               (Sum_Type.Projr (subst_subst_assn_sum (Inr (as, y, z))))) \<and>
-                    p (Inl (e, y, z)) (subst_subst_assn_sum (Inl (e, y, z))) \<and> p (Inr (as, y, z)) (subst_subst_assn_sum (Inr (as, y, z)))))"
-
-definition f2 ::
-  "(exp \<times> var \<times> var + assn \<times> var \<times> var \<Rightarrow> exp + assn \<Rightarrow> bool)
- \<Rightarrow> (exp \<times> var \<times> var + assn \<times> var \<times> var \<Rightarrow> exp + assn \<Rightarrow> bool)"
-where "f2 \<equiv>
-(\<lambda>p x1 x2.
-                    (\<exists> x y z.
-                        x1 = Inl (Var x, y, z) \<and> x2 = Inl (Var (x[y::v=z]))) \<or>
-                    (\<exists>subst e v y z.
-                        x1 = Inl (App e v, y, z) \<and>
-                        x2 = Inl (App (subst (e, y, z)) (v[y::v=z])) \<and>
-                        p (Inl (e, y, z)) (Inl (subst (e, y, z)))) \<or>
-                    (\<exists>subst subst_assn as y z body.
-                        x1 = Inl (Let as body, y, z) \<and>
-                        x2 =
-                        Inl (Let
-                              (subst_assn (as, y, z))
-                              (subst (body, y, z))) \<and>
-                        set (bn as) \<sharp>* (y, z) \<and>
-                        p (Inr (as, y, z)) (Inr (subst_assn (as, y, z))) \<and>
-                        p (Inl (body, y, z)) (Inl (subst (body, y, z)))) \<or>
-                    (\<exists>subst x y z e.
-                        x1 = Inl (Lam [x]. e, y, z) \<and>
-                        x2 = Inl (Lam [x]. (subst (e, y, z))) \<and>
-                        atom x \<sharp> (y, z) \<and>
-                        p (Inl (e, y, z)) (Inl (subst (e, y, z)))) \<or>
-                    (\<exists> y z. x1 = Inr (ANil, y, z) \<and> x2 = Inr ANil) \<or>
-                    (\<exists>subst subst_assn as y z v e.
-                        x1 = Inr (ACons v e as, y, z) \<and>
-                        x2 =
-                        Inr (ACons v (subst (e, y, z))
-                              (subst_assn (as, y, z))) \<and>
-                        p (Inl (e, y, z)) (Inl (subst (e, y, z))) \<and>
-                        p (Inr (as, y, z)) (Inr (subst_assn (as, y, z)))))"
-
-
-ML {*
-fun mono_tac ctxt n =
- EVERY [rtac @{thm monoI} n,
-        REPEAT (resolve_tac [@{thm le_funI}, @{thm le_boolI'}] n),
-        REPEAT (FIRST
-         [atac n,
-          resolve_tac (Inductive.get_monos ctxt) n,
-          etac @{thm le_funE} n, 
-          dtac @{thm le_boolD} n])]
-*}
-
-lemma substAltDef:
-shows "lfp f1 = lfp f2"
-proof-
-
-have "mono f1" unfolding f1_def by (tactic {* mono_tac @{context} 1 *})
-have "mono f2" unfolding f2_def by (tactic {* mono_tac @{context} 1 *})
-
-show "lfp f1 = lfp f2"
-proof(rule antisym)
-  show "lfp f1 \<le> lfp f2"
-   apply(rule lfp_induct[OF `mono f1`])
-   apply(subst f1_def)
-   apply safe
-   apply (subst lfp_unfold[OF `mono f2`])
-   apply (subst f2_def)
-   apply auto[1]
-
-   apply (subst lfp_unfold[OF `mono f2`])
-   apply (subst (asm) lfp_unfold[OF `mono f1`])
-   apply (subst f2_def)
-   apply (subst (asm) f1_def)
-   apply auto[1]
-
-   apply (subst lfp_unfold[OF `mono f2`])
-   apply (subst f2_def)
-   apply auto[1]
-   apply (rule_tac x = "\<lambda>x . Sum_Type.Projl (subst_subst_assn_sum (Inl x))" in exI)
-   apply (rule_tac x = "\<lambda>x . Sum_Type.Projr (subst_subst_assn_sum (Inr x))" in exI)
-   apply (rule_tac x = "as" in exI)
-   apply (rule_tac x = "body" in exI)
-   apply auto[1]
-   apply (subst (asm) lfp_unfold[OF `mono f2`])
-   apply (subst (asm) f2_def)
-   apply auto[1]
-   apply (subst lfp_unfold[OF `mono f2`])
-   apply (subst f2_def)
-   apply auto[1]
-   apply (subst lfp_unfold[OF `mono f2`])
-   apply (subst f2_def)
-   apply auto[1]
-   apply (subst (asm) (2) lfp_unfold[OF `mono f1`])
-   apply (subst (asm) (2) f1_def)
-   apply auto[1]
-
-   apply (subst lfp_unfold[OF `mono f2`])
-   apply (subst f2_def)
-   apply auto[1]
-   apply (rule_tac x = "\<lambda>x . Sum_Type.Projl (subst_subst_assn_sum (Inl x))" in exI)
-   apply (rule_tac x = "xa" in exI)
-   apply (rule_tac x = "e" in exI)
-   apply auto[1]
-   apply (subst (asm) lfp_unfold[OF `mono f1`])
-   apply (subst (asm) f1_def)
-   apply auto[1]
-
-   
-   apply (subst lfp_unfold[OF `mono f2`])
-   apply (subst f2_def)
-   apply auto[1]
-
-   apply (subst lfp_unfold[OF `mono f2`])
-   apply (subst f2_def)
-   apply auto[1]
-   apply (rule_tac x = "\<lambda>x . Sum_Type.Projl (subst_subst_assn_sum (Inl x))" in exI)
-   apply auto[1]
-   apply (rule_tac x = "\<lambda>x . Sum_Type.Projr (subst_subst_assn_sum (Inr x))" in exI)
-   apply auto[1]
-   apply (subst (asm) lfp_unfold[OF `mono f1`])
-   apply (subst (asm) f1_def)
-   apply auto[1]
-   apply (subst (asm) (2) lfp_unfold[OF `mono f1`])
-   apply (subst (asm) (2) f1_def)
-   apply auto[1]
-   done
-next
-  show "lfp f2 \<le> lfp f1"
-  proof(rule lfp_mono)
-    fix p
-    show "f2 p \<le> f1 p"
-      unfolding f2_def f1_def
-      apply auto
-      apply (erule_tac x = "Inl \<circ> subst \<circ> Sum_Type.Projl" in allE, auto)
-      apply (erule_tac x = "Inl \<circ> subst \<circ> Sum_Type.Projl" in allE, auto)
-      apply (erule_tac x = "Inl \<circ> subst \<circ> Sum_Type.Projl" in allE, auto)
-      apply (erule_tac x = "Inl \<circ> subst \<circ> Sum_Type.Projl" in allE, auto)
-      apply (erule_tac x = "Inl \<circ> subst \<circ> Sum_Type.Projl" in allE, auto)
-      apply (erule_tac x = "Inl \<circ> subst \<circ> Sum_Type.Projl" in allE, auto)
-      apply (erule_tac x = "sum_case (Inl \<circ> subst) (Inr \<circ> subst_assn)" in allE, auto)
-      apply (erule_tac x = "sum_case (Inl \<circ> subst) (Inr \<circ> subst_assn)" in allE, auto)
-      apply (erule_tac x = "Inl \<circ> subst \<circ> Sum_Type.Projl" in allE, auto)
-      apply (erule_tac x = "Inl \<circ> subst \<circ> Sum_Type.Projl" in allE, auto)
-      apply (erule_tac x = "sum_case (Inl \<circ> subst) (Inr \<circ> subst_assn)" in allE, auto)
-      apply (erule_tac x = "sum_case (Inl \<circ> subst) (Inr \<circ> subst_assn)" in allE, auto)
-      done
-  qed
-qed
-qed
 
 (* Helper lemmas provided by Christian Urban *)
 
@@ -320,7 +143,7 @@ have eqvt_at_subst_assn: "\<And> as y z . eqvt_at subst_subst_assn_sumC (Inr (as
   apply simp
   apply(cases rule: subst_subst_assn_graph.cases)
   apply(assumption)
-  apply (metis Inr_not_Inl)+
+  apply (metis (mono_tags) Inr_not_Inl)+
   apply(rule_tac x="Sum_Type.Projr x" in exI)
   apply(clarify)
   apply (rule the1_equality)
@@ -341,12 +164,8 @@ done
 {
 (* Equivariance of the graph *)
 case goal1 thus ?case
-  unfolding eqvt_def subst_subst_assn_graph_def
-  apply(subst (1 2) substAltDef[unfolded f1_def f2_def]) 
-  apply(rule)
-  apply perm_simp
-  apply rule
-done
+  unfolding eqvt_def subst_subst_assn_graph_aux_def
+  by simp
 
 (* The invariant *)
 next case goal2 thus ?case
@@ -361,6 +180,7 @@ next case (goal3 P x) show ?case
     thus P using Inl goal3
       apply (rule_tac y ="a1" and c ="(a2, a3)" in exp_assn.strong_exhaust(1))
       apply (auto simp add: fresh_star_def)
+      apply metis
     done
   qed
   next
@@ -388,7 +208,12 @@ next case (goal15 e y2 z2 as e2 y z as2) thus ?case
     as = "(bn e)" and
     bs = "(bn e2)" and
     f = "\<lambda> a b c . [a]lst. (subst (fst b) y z, subst_assn (snd b) y z )" in Abs_lst_fcb2)
-  apply (auto simp add: perm_supp_eq fresh_Pair fresh_star_def Abs_fresh_iff eqvt_at_def)
+  apply (simp add: perm_supp_eq fresh_Pair fresh_star_def Abs_fresh_iff)
+  apply (simp)
+  apply (simp)
+  apply (simp add: eqvt_at_def, simp add: fresh_star_Pair perm_supp_eq)
+  apply (simp add: eqvt_at_def, simp add: fresh_star_Pair perm_supp_eq)
+  apply (simp add: eqvt_at_def)
   done
 
 next case (goal19 x2 y2 z2 e2 x y z e) thus ?case
@@ -396,9 +221,11 @@ next case (goal19 x2 y2 z2 e2 x y z e) thus ?case
   apply (drule eqvt_at_subst)+
   apply (simp only: Abs_fresh_iff meta_eq_to_obj_eq[OF subst_def, symmetric, unfolded fun_eq_iff])
   (* No _sum any more at this point! *)
-  apply (auto)
-  apply (erule_tac c = "(y, z)" in Abs_lst_fcb2)
-  apply (auto simp add: perm_supp_eq fresh_Pair fresh_star_def Abs_fresh_iff eqvt_at_def)
+  apply (simp add: eqvt_at_def)
+  apply rule
+  apply (erule_tac x = "(x2 \<leftrightarrow> c)" in allE)
+  apply (erule_tac x = "(x \<leftrightarrow> c)" in allE)
+  apply auto
   done
 }
 qed(auto)
@@ -419,14 +246,14 @@ and
  "set (bn as) \<sharp>* (y, z) \<Longrightarrow> atom y \<sharp> (subst_assn as y z)"
 using assms
 by(induct e y z and as y z rule:subst_subst_assn.induct)
-  (auto simp add:exp_assn.fresh fresh_at_base fresh_star_Pair exp_assn.bn_defs fresh_star_insert)
+  (auto simp add:fresh_at_base fresh_star_Pair exp_assn.bn_defs fresh_star_insert)
 
 lemma
  subst_pres_fresh: "(atom x \<sharp> e \<and> atom x \<sharp> z) --> atom x \<sharp> e[y ::= z]"
 and
  "(atom x \<sharp> as \<and> atom x \<sharp> z \<and> atom x \<notin> set (bn as)) --> (atom x \<sharp> (subst_assn as y z))"
 by(induct e y z and as y z rule:subst_subst_assn.induct)
-  (auto simp add:exp_assn.fresh fresh_at_base fresh_star_Pair exp_assn.bn_defs fresh_star_insert)
+  (auto simp add:fresh_at_base fresh_star_Pair exp_assn.bn_defs fresh_star_insert)
 
 lemma let_binders_fresh[simp]: "set (bn as) \<sharp>* Terms.Let as body"
   by (metis Diff_iff exp_assn.supp(3) finite_supp fresh_finite_atom_set fresh_star_def fresh_star_set fresh_star_supp_conv supp_of_atom_list)

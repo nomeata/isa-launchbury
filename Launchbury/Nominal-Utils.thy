@@ -15,11 +15,20 @@ next
   thus "?l" by (rule assms)
 qed
 
+lemma eqvt_at_apply:
+  assumes "eqvt_at f x"
+  shows "(p \<bullet> f) x = f x"
+by (metis (hide_lams, no_types) assms eqvt_at_def permute_fun_def permute_minus_cancel(1))
+
 subsubsection {* Freshness via equivariance *}
 
 lemma eqvt_fresh_cong1: "(\<And>p x. p \<bullet> (f x) = f (p \<bullet> x)) \<Longrightarrow> a \<sharp> x \<Longrightarrow> a \<sharp> f x "
   apply (rule fresh_fun_eqvt_app[of f])
-  apply (auto simp add: eqvt_def permute_fun_def)
+  apply (rule eqvtI)
+  apply (rule eq_reflection)
+  apply (rule ext)
+  apply (metis permute_fun_def permute_minus_cancel(1))
+  apply assumption
   done
 
 lemma eqvt_fresh_cong2:
@@ -29,7 +38,11 @@ lemma eqvt_fresh_cong2:
 proof-
   have "eqvt (\<lambda> (x,y). f x y)"
     using eqvt
-    by (auto simp add: eqvt_def permute_fun_def)
+    apply -
+    apply (auto simp add: eqvt_def)
+    apply (rule ext)
+    apply auto
+    by (metis permute_minus_cancel(1))
   moreover
   have "a \<sharp> (x, y)" using fresh1 fresh2 by auto
   ultimately
@@ -50,7 +63,11 @@ lemma eqvt_fresh_cong3:
 proof-
   have "eqvt (\<lambda> (x,y,z). f x y z)"
     using eqvt
-    by (auto simp add: eqvt_def permute_fun_def)
+    apply -
+    apply (auto simp add: eqvt_def)
+    apply (rule ext)
+    apply auto
+    by (metis permute_minus_cancel(1))
   moreover
   have "a \<sharp> (x, y, z)" using fresh1 fresh2 fresh3 by auto
   ultimately
@@ -74,23 +91,22 @@ lemma fresh_star_singleton: "{ x } \<sharp>* e \<longleftrightarrow> x \<sharp> 
 
 subsubsection {* Additional equivariance lemmas *}
 
-lemma image_eqvt[eqvt]: "\<pi> \<bullet> (f ` S) = (\<pi> \<bullet> f) ` (\<pi> \<bullet> S)"
-  unfolding permute_set_def permute_fun_def
-  by (auto simp add: image_def)
-
 lemma range_eqvt: "\<pi> \<bullet> range Y = range (\<pi> \<bullet> Y)"
   unfolding image_eqvt UNIV_eqvt ..
 
 lemma option_case_eqvt[eqvt]:
   "\<pi> \<bullet> option_case d f x = option_case (\<pi> \<bullet> d) (\<pi> \<bullet> f) (\<pi> \<bullet> x)"
-  by(cases x, auto simp add: permute_fun_def)
+  by(cases x)(simp_all)
 
 lemma funpow_eqvt[simp,eqvt]:
   "\<pi> \<bullet> ((f :: 'a \<Rightarrow> 'a::pt) ^^ n) = (\<pi> \<bullet> f) ^^ (\<pi> \<bullet> n)"
  apply (induct n)
- apply (auto simp add: permute_fun_def permute_pure)[1]
- apply (auto simp add: permute_pure)
- by (metis (no_types) eqvt_lambda permute_fun_app_eq)
+ apply simp
+ apply (rule ext)
+ apply simp
+ apply perm_simp
+ apply simp
+ done
 
 lemma delete_eqvt[eqvt]:
   "\<pi> \<bullet> AList.delete x \<Gamma> = AList.delete (\<pi> \<bullet> x) (\<pi> \<bullet> \<Gamma>)"

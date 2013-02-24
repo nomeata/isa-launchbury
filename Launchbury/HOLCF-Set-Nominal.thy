@@ -109,12 +109,13 @@ lemma fix_on_eqvt:
   assumes "fix_on_cond S (b::'a::cont_pt) F"
   shows "\<pi> \<bullet> (fix_on' b F) = fix_on' (\<pi> \<bullet> b) (\<pi> \<bullet> F)"
 proof-
-  have permuted: "fix_on_cond (\<pi> \<bullet> S) (\<pi> \<bullet> b) (\<pi> \<bullet> F)"
+  have permuted: "fix_on_cond (\<pi> \<bullet> S) (\<pi> \<bullet> b :: 'a ::cont_pt) (\<pi> \<bullet> F)"
     by (rule fix_on_cond_eqvt[OF assms])
   show ?thesis
-    apply (rule parallel_fix_on_ind[OF assms permuted])
-    apply (rule adm_is_adm_on, auto)[1]
-    by (auto simp add: eqvt_apply)
+    apply (rule parallel_fix_on_ind[OF assms permuted _ refl])
+    apply (rule adm_is_adm_on)
+    apply (rule adm_eq[OF cont_compose[OF perm_cont cont_fst] cont_snd])
+    by auto
 qed
 
 lemma to_bot_eqvt[eqvt,simp]: "\<pi> \<bullet> to_bot (\<rho>::'a::{subpcpo_partition,cont_pt}) = to_bot (\<pi> \<bullet> \<rho>)"

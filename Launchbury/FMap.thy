@@ -4,7 +4,7 @@ begin
 
 subsubsection {* The type of finite maps *}
 
-typedef (open) ('a, 'b) fmap  (infixr "f\<rightharpoonup>" 1) = "{x :: 'a \<rightharpoonup> 'b. finite (dom x) }"
+typedef ('a, 'b) fmap  (infixr "f\<rightharpoonup>" 1) = "{x :: 'a \<rightharpoonup> 'b. finite (dom x) }"
   proof show "empty \<in> {x. finite (dom x)}" by simp qed
 
 setup_lifting type_definition_fmap

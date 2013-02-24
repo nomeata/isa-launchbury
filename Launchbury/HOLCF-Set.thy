@@ -332,7 +332,7 @@ next
 case goal2
   have "(\<Squnion> i. f (Y i)) = (\<Squnion> i. g (Y i)) "
     using goal2(1) chain_on_is_on[OF goal2(3)]
-    by (metis (lifting) lub_eq)
+    by simp
   moreover
   have "f (\<Squnion> i. Y i) = g  (\<Squnion> i. Y i)"
     apply (rule goal2(1))

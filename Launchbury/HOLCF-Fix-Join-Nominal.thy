@@ -21,14 +21,10 @@ proof-
     apply (subst (asm) perm_cont_simp[symmetric, of _ _ \<pi>])
     apply (subst (asm) fix_on_eqvt[OF fix_on_cond_fjc[OF assms(1), unfolded bottom_of_fjc]])
     apply simp
-    apply perm_simp
-    apply assumption
     
     apply (subst  perm_cont_simp[symmetric, of _ _ "\<pi>"])
     apply (subst  fix_on_eqvt[OF fix_on_cond_fjc[OF assms(1), unfolded bottom_of_fjc]])
     apply simp
-    apply perm_simp
-    apply assumption
     done
 qed
 end

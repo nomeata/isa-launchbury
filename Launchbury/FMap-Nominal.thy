@@ -7,7 +7,7 @@ subsubsection {* Permtuations on finite maps *}
 instantiation "fmap" :: (pt,pt) pt
 begin
   lift_definition permute_fmap :: "perm \<Rightarrow> 'a::pt f\<rightharpoonup> 'b::pt \<Rightarrow> 'a f\<rightharpoonup> 'b"
-    is "\<lambda> p f . p \<bullet> f" by (simp del: dom_perm_rev add:dom_perm)
+    is "\<lambda> p f . p \<bullet> f" by (metis (full_types) dom_perm_rev permute_finite)
   
   instance
   apply(default)
@@ -27,7 +27,7 @@ proof (rule finite_imageD[OF finite_subset])
   show "f ` {m. dom m = A \<and> ran m = B} \<subseteq> extensional_funcset A B"
     by (auto simp add: extensional_funcset_def ran_def f_def)
   show "finite (extensional_funcset A B)"
-    by (rule finite_extensional_funcset[OF assms])
+    by (rule finite_PiE[OF assms])
   show "inj_on f {m. dom m = A \<and> ran m = B}"
     apply(rule inj_on_inverseI[of _ g])
     unfolding f_def g_def
@@ -68,10 +68,14 @@ have "finite (ran m)" using assms by (rule finite_range)
       by (metis supp_set_elem_finite)
       
     have "{b. ?f b d = m' d} = {b. (x \<rightleftharpoons> b) \<bullet> m ( (x \<rightleftharpoons> b) \<bullet> d) = m' d}"
-      by (simp add: permute_fun_def)
+      by (metis (hide_lams, no_types) Nominal2_Base.swap_commute eqvt_bound eqvt_lambda permute_swap_cancel2)
     also have "... =  (\<Union> d' \<in> dom m . {b . (x \<rightleftharpoons> b) \<bullet> d = d' \<and> (x \<rightleftharpoons> b) \<bullet> m d' = m' d})"
-      using `d \<in> dom m'` `dom m = dom m'`  apply auto
-      by (metis Some_eqvt  domD domI permute_swap_cancel2)
+      using `d \<in> dom m'` `dom m = dom m'`
+      apply auto
+      apply (metis Some_eqvt domD domI permute_fun_app_eq permute_self permute_swap_cancel swap_eqvt)
+      apply (metis permute_self permute_swap_cancel swap_eqvt)
+      apply (metis permute_self permute_swap_cancel swap_eqvt)
+      done
     finally
     have "finite ({b. ?f b d = m' d})" 
       apply (rule ssubst)  
@@ -115,7 +119,8 @@ have "finite (ran m)" using assms by (rule finite_range)
   have "finite (\<Union> {{b. (x \<rightleftharpoons> b) \<bullet> m = m'} | m'. dom m' = dom m \<and> ran m' = ran m \<and> m' \<noteq> m})"
     by auto
   hence "finite {b. dom (?f b) = dom m \<and> ran (?f b) = ran m \<and> ?f b \<noteq> m}"
-    by (auto elim!: finite_subset[rotated])
+    apply (auto elim!: finite_subset[rotated])
+    by (metis (lifting, full_types) mem_Collect_eq)
  
   with `x \<notin> supp (ran m)` and `x \<notin> supp (dom m)`
   have "x \<notin> supp m" 
@@ -146,9 +151,7 @@ lemma supp_fmap_transfer[transfer_rule]:
 
 lemma supp_fmap:
   "supp (m:: 'a::fs f\<rightharpoonup> 'b::fs) = (supp (fdom m) \<union> supp (fran m))"
-apply transfer
-apply (erule supp_map_union)
-by (metis Rel_eq_refl fun_rel_eq set_rel_eq)
+by transfer(erule supp_map_union)
 
 instance "fmap" :: (fs,fs) fs
   by (default, auto intro: finite_sets_supp simp add: supp_fmap)
@@ -157,11 +160,13 @@ subsubsection {* Equivariance lemmas related to finite maps *}
 
 lemma lookup_eqvt[eqvt]:
   "\<pi> \<bullet> lookup m x = lookup (\<pi> \<bullet> m) (\<pi> \<bullet> x)"
-  by (transfer, auto simp add: permute_fun_def)
+  by transfer simp
 
 lemma the_lookup_eqvt:
   "x \<in> fdom m \<Longrightarrow> \<pi> \<bullet> (m f! x) = (\<pi> \<bullet> m) f! (\<pi> \<bullet> x)"
-  by (transfer fixing: x, auto simp add: dom_def permute_fun_def)
+  apply (transfer fixing: x) 
+  apply auto
+  by (metis Some_eqvt permute_fun_app_eq the.simps)
 
 lemma fempty_eqvt[eqvt, simp]:
   "\<pi> \<bullet> fempty = fempty"
@@ -181,12 +186,12 @@ lemma fdom_perm: "fdom (\<pi> \<bullet> f) = \<pi> \<bullet> (fdom f)"
 lemmas fdom_perm_rev[simp,eqvt] = fdom_perm[symmetric]
 
 lemma fmap_upd_eqvt[eqvt]: "p \<bullet> (fmap_upd f x y) = fmap_upd (p \<bullet> f) (p \<bullet> x) (p \<bullet> y)"
-  by (transfer, auto simp add:permute_fun_def fun_eq_iff)
+  by transfer (metis Some_eqvt fun_upd_eqvt)
 
 lemma fmap_restr_eqvt:
   "finite d \<Longrightarrow> \<pi> \<bullet> (fmap_restr d m) = fmap_restr (\<pi> \<bullet> d) (\<pi> \<bullet> m)"
 proof
-case goal1 thus ?case by (simp add:fdom_perm inter_eqvt  del:fdom_perm_rev)
+case goal1 thus ?case by (metis fdom_fmap_restr fdom_perm_rev inter_eqvt permute_finite)
 case goal2
   hence "finite (\<pi> \<bullet> d)" by simp
 
@@ -203,11 +208,11 @@ qed
 
 lemma fmap_delete_eqvt[eqvt]:
   "\<pi> \<bullet> fmap_delete x m = fmap_delete (\<pi> \<bullet> x) (\<pi> \<bullet> m)"
-  by (transfer, auto simp add: permute_fun_def fun_eq_iff)
+  by transfer simp
 
 lemma fmap_add_eqvt[eqvt]:
   "\<pi> \<bullet> m1 f++ m2 = (\<pi> \<bullet> m1) f++ (\<pi> \<bullet> m2)"
-  by (transfer, perm_simp, rule)
+  by transfer simp
 
 lemma fmap_of_eqvt[eqvt]:
   "\<pi> \<bullet> fmap_of l = fmap_of (\<pi> \<bullet> l)"

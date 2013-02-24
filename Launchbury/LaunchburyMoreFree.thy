@@ -34,7 +34,7 @@ equivariance reds
 
 nominal_inductive reds
   avoids Application: "y" and "n"
-    by(auto simp add: fresh_star_def fresh_Pair exp_assn.fresh)
+    by(auto simp add: fresh_star_def fresh_Pair)
 
 lemma reds_less_free:
   "\<Gamma> : e \<Down>*\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> \<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
@@ -93,13 +93,13 @@ case (Application y \<Gamma> e xa L \<Delta> \<Theta> z n e' L')
 
     have "atom x \<sharp> (\<Gamma>, e)"
       using `atom x \<sharp> (\<Gamma>, App e xa, \<Theta>, z)`
-      by (simp add: fresh_Pair exp_assn.fresh)
+      by (simp add: fresh_Pair)
     from reds_with_n_fresh[OF Application.hyps(18) this] `x \<notin> heapVars \<Delta>`
     have "atom x \<sharp> (\<Delta>, Lam [y]. e')"
       by auto
     hence "atom x \<sharp> (\<Gamma>, e, \<Delta>, Lam [y]. e')"
       using `atom x \<sharp> (\<Gamma>, App e xa, \<Theta>, z)`
-      by (simp add: fresh_Pair exp_assn.fresh)
+      by (simp add: fresh_Pair)
     moreover
     have "set (n # xa # L') = insert x (set (n # xa # L))"
       using `set L' = _` by auto
@@ -109,7 +109,7 @@ case (Application y \<Gamma> e xa L \<Delta> \<Theta> z n e' L')
 
     have "atom x \<sharp> (\<Delta>, e'[y::=xa])"
       using `atom x \<sharp> (\<Delta>, Lam [y]. e')` `atom x \<sharp> (\<Gamma>, App e xa, \<Theta>, z)` `atom y \<sharp> xa`
-      apply (auto simp add: fresh_Pair exp_assn.fresh)
+      apply (auto simp add: fresh_Pair)
       apply (rule subst_pres_fresh[rule_format])
       apply simp
       done
@@ -138,7 +138,7 @@ case (Let as \<Gamma> L body \<Delta> z L')
   have "x \<notin> heapVars \<Delta>"
     using Let.prems(1)
     apply (auto simp add: fresh_Pair)
-    by (metis heapVars_not_fresh)
+    by (metis heapVars_not_fresh)+
   hence "x \<notin> heapVars (asToHeap as @ \<Gamma>)"
       by (metis set_mp reds_with_n_doesnt_forget[OF Let.hyps(4)])
   hence "atom x \<notin> set (bn as)"
@@ -155,7 +155,7 @@ case (Let as \<Gamma> L body \<Delta> z L')
   moreover
   have "atom x \<sharp> (asToHeap as @ \<Gamma>, body, \<Delta>, z)"
     using Let.prems(1) `atom x \<notin> set (bn as)`
-    by (auto simp add: fresh_Pair fresh_append exp_assn.fresh fresh_fun_eqvt_app[OF asToHeap_eqvt])
+    by (auto simp add: fresh_Pair fresh_append fresh_fun_eqvt_app[OF asToHeap_eqvt])
   ultimately
   show ?case
     by (rule reds.Let[OF _ Let.hyps(3) Let.hyps(5)[OF _ Let.prems(2)]])
