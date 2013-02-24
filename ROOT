@@ -6,6 +6,6 @@ session "HOLCF-Nominal2" in "Nominal2" = HOLCF +
     "Eqvt"
 
 session Launchbury (AFP) in "Launchbury" = "HOLCF-Nominal2" +
-  options [document = pdf]
+  options [document = pdf, document_graph]
   theories
     "Everything"
