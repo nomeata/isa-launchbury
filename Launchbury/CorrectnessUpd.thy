@@ -129,9 +129,6 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
     (* bottom *)
     using subset apply auto[1]
     (* step *)
-    apply simp
-      apply (drule sym)
-      apply (drule sym)
     apply (simp add: fmap_restr_fmap_upd fmap_restr_add)
     apply (rule arg_cong2[where f = "\<lambda> \<rho>. fmap_upd \<rho> x", OF arg_cong2[where f = "op f++"]])
 

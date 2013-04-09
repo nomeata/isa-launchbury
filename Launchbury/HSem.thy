@@ -853,6 +853,53 @@ subsubsection {* The heap semantics can also be defined inductively over the hea
     assumes below2: "ESem e2 (HSem ((x, e1) # \<Gamma>) \<rho>) \<sqsubseteq> ESem e1 (HSem ((x, e1) # \<Gamma>) \<rho>)"
     shows "HSem ((x, e1) # \<Gamma>) \<rho> = HSem ((x, e2) # \<Gamma>) \<rho>"
     by (metis assms HSem_subst_expr_below below_antisym)
+
+  subsubsection {* Lemmas specialized to @{text "\<rho> = f\<emptyset>"} *}
+  
+  lemma HSemb_def: "HSem h f\<emptyset> = fix_on {y. fdom y = heapVars h} (\<lambda> \<rho>'. heapToEnv h (\<lambda>e. ESem e \<rho>'))"
+    by (simp add: HSem_def'[OF fempty_is_HSem_cond] bottom_of_fjc to_bot_fmap_def)
+
+  lemma fix_on_cond_fempty:
+    "fix_on_cond {y. fdom y = heapVars h}
+       (subpcpo_syn.bottom_of {y. fdom y = heapVars h})
+       (\<lambda>\<rho>'. heapToEnv h (\<lambda>e. ESem e \<rho>'))"
+    apply (rule fix_on_condI)
+    apply (rule subpcpo_cone_above[where x = "f\<emptyset>\<^bsub>[heapVars h]\<^esub>", simplified])
+    apply (rule refl)
+    apply auto[1]
+    apply (intro cont_is_cont_on cont2cont ESem_cont)
+    done
+  
+  lemma HSemb_ind':
+    assumes "adm_on ({y . fdom y = heapVars h}) P"
+    assumes "P (f\<emptyset>\<^bsub>[heapVars h]\<^esub>)"
+    assumes "\<And> y. fdom y = heapVars h \<Longrightarrow> P y \<Longrightarrow> P (heapToEnv h (\<lambda>e. ESem e y))"
+    shows "P (HSem h f\<emptyset>)"
+    apply (subst HSemb_def)
+    apply (rule fix_on_ind[OF fix_on_cond_fempty assms(1)])
+    using assms apply auto
+    done
+
+  lemma HSemb_redo:
+    assumes "HSem_cond' \<Gamma> (fmap_restr (heapVars \<Delta>) (HSem (\<Gamma> @ \<Delta>) f\<emptyset>))"
+    shows "HSem \<Gamma> (fmap_restr (heapVars \<Delta>) (HSem (\<Gamma>@\<Delta>) f\<emptyset>)) = HSem (\<Gamma> @ \<Delta>) f\<emptyset>"
+    apply (rule HSem_redo[OF fempty_is_HSem_cond, simplified (no_asm)])
+    using assms by simp
+
+  lemma HSemb_eq:
+    shows "HSem h f\<emptyset> = heapToEnv h (\<lambda>e. ESem e (HSem h f\<emptyset>))"
+    by (subst HSem_eq[OF fempty_is_HSem_cond], simp)
+
+  lemma HSemb_heap_below: "x \<in> heapVars \<Gamma> \<Longrightarrow> ESem (the (map_of \<Gamma> x)) (HSem \<Gamma> f\<emptyset>) \<sqsubseteq> (HSem \<Gamma> f\<emptyset>) f! x"
+    by (erule HSem_heap_below[OF fempty_is_HSem_cond])
+
+  lemma HSemb_below:
+    assumes "heapToEnv h (\<lambda>e. ESem e r) \<sqsubseteq> r"
+    shows "HSem h f\<emptyset> \<sqsubseteq> r"
+    apply (subst HSemb_def)
+    apply (rule fix_on_least_below[OF fix_on_cond_fempty _ assms])
+    using assms by (metis (full_types) fmap_below_dom heapToEnv_fdom mem_Collect_eq)
+
 end
 
 subsubsection {* Equivariance of @{term HSem} *}
@@ -895,4 +942,5 @@ case False
    apply rule
    done
 qed
+
 end

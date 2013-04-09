@@ -229,10 +229,7 @@ subsubsection {* Iterative definition of the heap semantics *}
       by (rule iterative_fmap_add)
     also have "\<dots> = fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars \<Gamma>)]\<^esub>)
             (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
-      apply (rule fix_on_cong[OF condR])
-      apply (simp add: HSem_def')
-      apply (drule sym)
-      by simp
+      by (rule fix_on_cong[OF condR], simp add: HSem_def')
     finally show ?thesis.
   qed
 
@@ -254,10 +251,7 @@ subsubsection {* Iterative definition of the heap semantics *}
       by (simp_all add: ESem_cont)
 
     show ?thesis
-      apply (rule fix_on_cond_cong[OF condR'])
-      apply (simp add: HSem_def')
-      apply (drule sym)
-      by simp
+      by (rule fix_on_cond_cong[OF condR'], simp add: HSem_def')
   qed
 
   lemma iterative_HSem':
@@ -281,20 +275,14 @@ subsubsection {* Iterative definition of the heap semantics *}
     have "fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars \<Gamma>)]\<^esub>)
             (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)) =
           fix_on' b R"
-      apply (rule fix_on_cong[symmetric, OF condR])
-      apply (simp add: HSem_def')
-      apply (drule sym)
-      by simp
+      by (rule fix_on_cong[symmetric, OF condR], simp add: HSem_def')
     also have "\<dots> = fix_on' b L"
       by (rule iterative_fmap_add[symmetric])
     also have "\<dots> = fix_on' b R'"
       by (rule iterative_fmap_add')
     also have "\<dots> = fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars \<Gamma>)]\<^esub>)
             (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>'\<^esub>))"
-      apply (rule fix_on_cong[OF condR'])
-      apply (simp add: HSem_def')
-      apply (drule sym)
-      by simp
+      by (rule fix_on_cong[OF condR'], simp add: HSem_def')
     finally
     show ?thesis.
   qed

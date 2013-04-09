@@ -632,7 +632,7 @@ lemma fmap_bottom_below[simp]:
  by(rule fmap_belowI, auto)
 
 lemma fmap_bottom_below_iff[iff]:
-  "finite S \<Longrightarrow> f\<emptyset>\<^bsub>[S]\<^esub> \<sqsubseteq> \<rho> \<longleftrightarrow> S = fdom \<rho>"
+  "finite S \<Longrightarrow> f\<emptyset>\<^bsub>[S]\<^esub> \<sqsubseteq> \<rho> \<longleftrightarrow> fdom \<rho> = S"
   by (metis fdom_fmap_expand fmap_below_dom fmap_bottom_below)
 
 lemma fmap_bottom_inj[iff]: "finite x \<Longrightarrow> finite y \<Longrightarrow> f\<emptyset>\<^bsub>[x]\<^esub> = f\<emptyset>\<^bsub>[y]\<^esub> \<longleftrightarrow> x = y"

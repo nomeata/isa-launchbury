@@ -175,7 +175,7 @@ case (Let as \<Gamma> x \<Gamma>' body \<Delta>' \<Delta>)
   also
   have "... \<le> \<lbrace>(x, body) # asToHeap as @ \<Gamma>' @ \<Gamma>\<rbrace>"
     -- "Semantics of let"
-    apply (rule HSem_unfold_let[OF fempty_is_HSem_cond fempty_is_HSem_cond fempty_is_HSem_cond Let(2) d5 _ refl])
+    apply (rule HSem_unfold_let[OF Let(2) d5])
     using Let(1) by (auto simp add: fresh_star_Pair fresh_star_append)[1]
   also
   have "... = \<lbrace>((x, body) # \<Gamma>') @ asToHeap as @ \<Gamma>\<rbrace>"

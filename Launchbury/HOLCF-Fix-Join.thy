@@ -90,7 +90,6 @@ inductive fix_join_cond
   "cont F \<Longrightarrow>
    (\<And> i. compatible \<rho> (F (((\<lambda>\<rho>'. \<rho> \<squnion> F \<rho>')^^i) (to_bot \<rho>)))) \<Longrightarrow> fix_join_cond \<rho> F "
 
-
 context
   fixes \<rho> :: "'a::{Bounded_Nonempty_Meet_cpo,subpcpo_partition}" and S and F
   assumes "fix_join_cond \<rho> F"
