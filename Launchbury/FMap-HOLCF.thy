@@ -622,8 +622,11 @@ lemma fmap_upd_expand:
 
 lemma less_fmap_expand:
   "finite S \<Longrightarrow> fdom \<rho> \<subseteq> S \<Longrightarrow> \<rho> \<le> \<rho>\<^bsub>[S]\<^esub>"
-  unfolding less_eq_fmap_def
-  by (transfer, auto)
+  unfolding less_eq_fmap_def by auto
+
+lemma fmap_expand_less:
+  "finite S \<Longrightarrow> S \<subseteq> fdom \<rho> \<Longrightarrow> \<rho>\<^bsub>[S]\<^esub> \<le> \<rho>"
+  unfolding less_eq_fmap_def by auto
 
 subsubsection {* Bottoms *}
 
