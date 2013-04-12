@@ -909,11 +909,6 @@ begin
     apply fact
     done
   qed
-
-
-  lemma HLL_below_L: "H (fix_on' b L) (fix_on' b L) \<sqsubseteq> (fix_on' b L)"
-    by (rule H_noop, simp_all)
-
   
   lemma iterative_fmap_add:
     shows "fix_on' b L = fix_on' b R"
@@ -928,21 +923,8 @@ begin
         show "e2 (fix_on' b L) \<sqsubseteq> (fix_on' b L) f! x"
           by simp
         case (goal2 y)
-          hence [simp]:"y \<noteq> x" by metis
-        show "\<rho> f++ fmap_restr S (fix_on' b (H (fix_on' b L))) f! y \<sqsubseteq> (fix_on' b L) f! y"
-        proof(cases "y \<in> S")
-        case True[simp]
-          from HLL_below_L
-          have "(fix_on' b (H (fix_on' b L))) \<sqsubseteq> (fix_on' b L)"
-            by (rule fix_on_least_below[OF condH[OF fix_on_there[OF condL]] fix_on_there[OF condL]])
-          hence "fix_on' b (H (fix_on' b L)) f! y \<sqsubseteq> fix_on' b L f! y"
-            by (rule fmap_belowE)
-          thus ?thesis
-            by (subst lookup_fmap_add1, simp_all)
-        next
-        case False
-          thus ?thesis by simp
-        qed
+        thus "\<rho> f++ fmap_restr S (fix_on' b (H (fix_on' b L))) f! y \<sqsubseteq> (fix_on' b L) f! y"
+          by(cases "y \<in> S", simp_all)
       qed
     qed
   
@@ -972,21 +954,8 @@ begin
         show "e2 (fix_on' b (H (fix_on' b L))) \<sqsubseteq> (fix_on' b L) f! x"
           by simp
         case (goal2 y)
-          hence [simp]:"y \<noteq> x" by metis
-        show "\<rho> f++ fmap_restr S (fix_on' b (H (fix_on' b L))) f! y \<sqsubseteq> fix_on' b L f! y"
-        proof(cases "y \<in> S")
-        case True[simp]
-          from HLL_below_L
-          have "(fix_on' b (H (fix_on' b L))) \<sqsubseteq> (fix_on' b L)"
-            by (rule fix_on_least_below[OF condH[OF fix_on_there[OF condL]] fix_on_there[OF condL]])
-          hence "fix_on' b (H (fix_on' b L)) f! y \<sqsubseteq> fix_on' b L f! y"
-            by (rule fmap_belowE)
-          thus ?thesis
-            by (subst lookup_fmap_add1, simp_all)
-        next
-        case False
-          thus ?thesis by simp
-        qed
+          thus "\<rho> f++ fmap_restr S (fix_on' b (H (fix_on' b L))) f! y \<sqsubseteq> fix_on' b L f! y"
+            by (cases "y \<in> S", simp_all)
       qed
     qed
   

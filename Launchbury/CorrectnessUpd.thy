@@ -14,8 +14,8 @@ theorem correctness:
   using assms
 proof(nominal_induct avoiding: \<rho> rule:reds_distinct_strong_ind)
 case (Lambda \<Gamma> x e L \<rho>)
-  case 1 show ?case by rule
-  case 2 show ?case by rule
+  case 1 show ?case..
+  case 2 show ?case..
 next
 case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' \<rho>)
   hence [simp]:"atom y \<sharp> \<lbrace>\<Delta>\<rbrace>\<rho>" and "y \<noteq> x"
