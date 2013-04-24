@@ -91,6 +91,9 @@ lemma the_lookup_fmap_upd_other[simp]: "x' \<noteq> x \<Longrightarrow> lookup (
 lemma fmap_upd_overwrite[simp]: "f (x f\<mapsto> y) (x f\<mapsto> z) = f (x f\<mapsto> z)"
   by (transfer, auto) 
 
+lemma fmap_upd_self[simp]: "x \<in> fdom f \<Longrightarrow> f (x f\<mapsto> f f! x) = f"
+  by (transfer, auto)
+
 lemma fmap_upd_twist: "a \<noteq> c \<Longrightarrow> (m(a f\<mapsto> b))(c f\<mapsto> d) = (m(c f\<mapsto> d))(a f\<mapsto> b)"
   apply (rule fmap_eqI)
   apply auto[1]

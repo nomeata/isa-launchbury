@@ -72,9 +72,9 @@ abbreviation HSem_fempty  ("\<lbrace>_\<rbrace>"  [60] 60) where "\<lbrace>\<Gam
 
 subsubsection {* Denotation of Substitution *}
 
-lemma ESem_subst: "x \<noteq> y \<Longrightarrow> atom x \<sharp> \<rho> \<Longrightarrow>  \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> \<lbrakk>Var y\<rbrakk>\<^bsub>\<rho>\<^esub>)\<^esub> = \<lbrakk> e[x::= y] \<rbrakk>\<^bsub>\<rho>\<^esub>"
+lemma ESem_subst: "atom x \<sharp> \<rho> \<Longrightarrow>  \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> \<lbrakk>Var y\<rbrakk>\<^bsub>\<rho>\<^esub>)\<^esub> = \<lbrakk> e[x::= y] \<rbrakk>\<^bsub>\<rho>\<^esub>"
   and 
-  "x \<noteq> y \<Longrightarrow> atom x \<sharp> \<rho> \<Longrightarrow>  heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> \<rho> f! y)\<^esub>)
+  "atom x \<sharp> \<rho> \<Longrightarrow>  heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> \<rho> f! y)\<^esub>)
                     = heapToEnv (asToHeap as[x::a=y]) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>) "
 proof (nominal_induct e and as  avoiding: \<rho> x y rule:exp_assn.strong_induct)
 case (Var var \<rho> x y) thus ?case by auto
@@ -87,6 +87,11 @@ case (Let as exp \<rho> x y)
     by (induct as rule: exp_assn.bn_inducts, auto simp add: exp_assn.bn_defs fresh_star_insert)
   hence [simp]:"heapVars (asToHeap (as[x::a=y])) = heapVars (asToHeap as)" 
      by (induct as rule: exp_assn.bn_inducts, auto)
+  
+  have "atom x \<sharp> \<lbrace>asToHeap as[x::a=y]\<rbrace>\<rho>"
+    using Let(6)  `x \<notin> heapVars (asToHeap as)`
+    by (simp add: sharp_Env)
+  note hyp = Let(5)[OF this, simplified]
 
   have lookup_other: "\<And> \<rho> . (\<lbrace>asToHeap as[x::a=y]\<rbrace>\<rho>) f! y = \<rho> f! y"
     using `y \<notin> heapVars (asToHeap as)`
@@ -126,7 +131,7 @@ case (Let as exp \<rho> x y)
         by (rule cont2monofunE[OF cont2cont_heapToEnv[OF ESem_cont] goal3(2)])
       also
       have "... = ?F2 ?R"
-        apply (subst `_ \<Longrightarrow> _ \<Longrightarrow> heapToEnv _ _ = _`[OF `x \<noteq> y` ])
+        apply (subst `_ \<Longrightarrow> heapToEnv _ _ = _`)
         using `x \<notin> heapVars (asToHeap as)`  `atom x \<sharp> \<rho>` apply (simp add: sharp_Env)
         by rule
       finally
@@ -159,7 +164,7 @@ case (Let as exp \<rho> x y)
       using `x \<notin> heapVars (asToHeap as)` by simp
     also
     have "... = ?\<rho>1 f++ ?F1 (\<rho>'(x f\<mapsto> \<rho>' f! y))"
-      apply (subst `_ \<Longrightarrow> _ \<Longrightarrow> heapToEnv _ _ = _`[OF `x \<noteq> y` ])
+      apply (subst ` _ \<Longrightarrow> heapToEnv _ _ = _`)
       using `atom x \<sharp> \<rho>` `x \<notin> heapVars (asToHeap as)` goal3(1) apply (simp add: sharp_Env)
       by rule
     also
@@ -173,17 +178,16 @@ case (Let as exp \<rho> x y)
   qed
   finally
   show ?case
-    using Let
-    by (auto simp add: fresh_star_Pair fresh_at_base)[1]
+    using Let(1-3)
+    by (auto simp add: fresh_star_Pair fresh_at_base sharp_Env hyp)
 next
 case (Lam var exp \<rho> x' y) thus ?case
   apply (auto simp add: fresh_star_Pair pure_fresh)
-  apply (subst fmap_upd_twist)
-  apply (auto)[1]
+  apply (subst fmap_upd_twist, (auto)[1])
   apply (rule cfun_eqI) 
   apply (erule_tac x = "x'" in meta_allE)
-  apply (erule_tac x = "y" in meta_allE)
   apply (erule_tac x = "\<rho>(var f\<mapsto> x)" in meta_allE)
+  apply (erule_tac x = "y" in meta_allE)
   apply (auto simp add: pure_fresh fresh_at_base)[1]
   done
 next

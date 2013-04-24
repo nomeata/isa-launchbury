@@ -237,13 +237,17 @@ lemma shows
 by(induct rule:subst_subst_assn.induct)
   (auto simp add: exp_assn.bn_defs fresh_star_insert)
 
+lemma subst_noop[simp]:
+shows "e[y ::= y] = e" and "as[y::a=y]= as"
+by(induct e y y and as y y rule:subst_subst_assn.induct)
+  (auto simp add:fresh_star_Pair exp_assn.bn_defs)
 
 lemma subst_is_fresh[simp]:
 assumes "atom y \<sharp> z"
 shows
   "atom y \<sharp> e[y ::= z]"
 and
- "set (bn as) \<sharp>* (y, z) \<Longrightarrow> atom y \<sharp> (subst_assn as y z)"
+ "set (bn as) \<sharp>* y \<Longrightarrow> atom y \<sharp> as[y::a=z]"
 using assms
 by(induct e y z and as y z rule:subst_subst_assn.induct)
   (auto simp add:fresh_at_base fresh_star_Pair exp_assn.bn_defs fresh_star_insert)
