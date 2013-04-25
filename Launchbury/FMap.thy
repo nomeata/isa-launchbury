@@ -91,7 +91,7 @@ lemma the_lookup_fmap_upd_other[simp]: "x' \<noteq> x \<Longrightarrow> lookup (
 lemma fmap_upd_overwrite[simp]: "f (x f\<mapsto> y) (x f\<mapsto> z) = f (x f\<mapsto> z)"
   by (transfer, auto) 
 
-lemma fmap_upd_self[simp]: "x \<in> fdom f \<Longrightarrow> f (x f\<mapsto> f f! x) = f"
+lemma fmap_upd_noop[simp]: "x \<in> fdom f \<Longrightarrow> y = f f! x \<Longrightarrow> f (x f\<mapsto> y) = f"
   by (transfer, auto)
 
 lemma fmap_upd_twist: "a \<noteq> c \<Longrightarrow> (m(a f\<mapsto> b))(c f\<mapsto> d) = (m(c f\<mapsto> d))(a f\<mapsto> b)"
@@ -139,12 +139,24 @@ subsubsection {* Deleting *}
 lift_definition fmap_delete :: "'a \<Rightarrow> 'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b"
   is "\<lambda> x m. m(x := None)" by auto
 
+lemma lookup_fmap_delete[simp]:
+  "x' \<noteq> x \<Longrightarrow> fmap_delete x m f! x' = m f! x'"
+  by (transfer, simp)
+
+lemma lookup_fmap_delete_None[simp]:
+  "fmap_delete x m f! x = the None"
+  by (transfer, simp)
+
 lemma fdom_fmap_delete[simp]:
   "fdom (fmap_delete x m) = fdom m - {x}"
   by (transfer, auto)
 
 lemma fmap_delete_fmap_upd[simp]:
   "fmap_delete x (m(x f\<mapsto> v)) = fmap_delete x m"
+  by (transfer, simp)
+
+lemma fmap_delete_fmap_upd2[simp]:
+  "(fmap_delete x m)(x f\<mapsto> v) = m(x f\<mapsto> v)"
   by (transfer, simp)
 
 lemma fmap_delete_noop:

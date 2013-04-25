@@ -104,6 +104,24 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
     apply simp
     apply assumption
     done
+
+  lemma HSem_below:
+    assumes [simp]:"fdom r = fdom \<rho> \<union> heapVars h" 
+    assumes rho: "\<And>x. x \<in> fdom \<rho> \<Longrightarrow> x \<notin> heapVars h \<Longrightarrow> \<rho> f! x \<sqsubseteq> r f! x"
+    assumes h: "\<And>x. x \<in> heapVars h \<Longrightarrow> \<lbrakk>the (map_of h x)\<rbrakk>\<^bsub>r\<^esub> \<sqsubseteq> r f! x"
+    shows "HSem h \<rho> \<sqsubseteq> r"
+  proof (rule HSem_ind)
+    case goal1 show ?case by (auto intro: adm_is_adm_on)
+    case goal2 show ?case by (simp add: to_bot_fmap_def)
+    case (goal3 \<rho>')
+      show ?case
+      apply (rule fmap_add_belowI)
+      apply simp
+      apply (auto intro: below_trans[OF cont2monofunE[OF ESem_cont goal3(2)] h]
+                  simp add: lookupHeapToEnv)[1]
+      apply (auto intro: rho)
+      done
+  qed  
   
   lemma parallel_HSem_ind:
     assumes "adm (\<lambda>\<rho>'. P (fst \<rho>') (snd \<rho>'))"

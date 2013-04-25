@@ -74,8 +74,7 @@ subsubsection {* Denotation of Substitution *}
 
 lemma ESem_subst: "atom x \<sharp> \<rho> \<Longrightarrow>  \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> \<lbrakk>Var y\<rbrakk>\<^bsub>\<rho>\<^esub>)\<^esub> = \<lbrakk> e[x::= y] \<rbrakk>\<^bsub>\<rho>\<^esub>"
   and 
-  "atom x \<sharp> \<rho> \<Longrightarrow>  heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> \<rho> f! y)\<^esub>)
-                    = heapToEnv (asToHeap as[x::a=y]) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>) "
+  "\<And> x'. x' \<in> heapVars (asToHeap as) \<Longrightarrow> atom x \<sharp> \<rho> \<Longrightarrow>  \<lbrakk> the (map_of (asToHeap as) x') \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> \<rho> f! y)\<^esub> = \<lbrakk> (the (map_of (asToHeap as) x'))[x::= y] \<rbrakk>\<^bsub>\<rho>\<^esub>"
 proof (nominal_induct e and as  avoiding: \<rho> x y rule:exp_assn.strong_induct)
 case (Var var \<rho> x y) thus ?case by auto
 next
@@ -83,103 +82,61 @@ case (App exp var \<rho> x y) thus ?case by auto
 next
 case (Let as exp \<rho> x y)
   from `set (bn as) \<sharp>* x` `set (bn as) \<sharp>* y` 
-  have "x \<notin> heapVars (asToHeap as) " "y \<notin> heapVars (asToHeap as)"
+  have xNotAs[simp]: "x \<notin> heapVars (asToHeap as) " and yNotAs[simp]: "y \<notin> heapVars (asToHeap as)"
     by (induct as rule: exp_assn.bn_inducts, auto simp add: exp_assn.bn_defs fresh_star_insert)
   hence [simp]:"heapVars (asToHeap (as[x::a=y])) = heapVars (asToHeap as)" 
      by (induct as rule: exp_assn.bn_inducts, auto)
+  note the_lookup_HSem_other[simp]
+
+  have [simp]: "x \<notin> fdom \<rho>" using Let.prems by (simp add: sharp_Env)
   
-  have "atom x \<sharp> \<lbrace>asToHeap as[x::a=y]\<rbrace>\<rho>"
-    using Let(6)  `x \<notin> heapVars (asToHeap as)`
-    by (simp add: sharp_Env)
-  note hyp = Let(5)[OF this, simplified]
-
-  have lookup_other: "\<And> \<rho> . (\<lbrace>asToHeap as[x::a=y]\<rbrace>\<rho>) f! y = \<rho> f! y"
-    using `y \<notin> heapVars (asToHeap as)`
-    by (auto simp add: the_lookup_HSem_other)
-
-  have [simp]:"fdom \<rho> \<union> heapVars (asToHeap as) - {x} = fdom \<rho> \<union> heapVars (asToHeap as)"
-    using `x \<notin> heapVars (asToHeap as)` `atom x \<sharp> \<rho>` by (auto simp add: sharp_Env)
-
-  have *: "\<rho>(x f\<mapsto> \<rho> f! y)\<^bsub>[fdom (\<rho>(x f\<mapsto> \<rho> f! y)) \<union> heapVars (asToHeap as)]\<^esub>
-        = (\<rho>\<^bsub>[fdom \<rho> \<union> heapVars (asToHeap as)]\<^esub>)(x f\<mapsto> \<rho> f! y)" (is "_ = ?\<rho>1'(x f\<mapsto> _)")
-    apply (subst fmap_upd_expand)
-    apply auto[3]
-    done
-
-  let ?b1 = "f\<emptyset>\<^bsub>[fdom (\<rho>(x f\<mapsto> \<rho> f! y)) \<union> heapVars (asToHeap as)]\<^esub>"
-  let ?b2 = "f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars (asToHeap as[x::a=y])]\<^esub>"
-  let ?\<rho>1 = "\<rho>(x f\<mapsto> \<rho> f! y)"
-  let ?\<rho>2 = \<rho>
-  let ?F1 = "\<lambda>\<rho>' . heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)"
-  let ?F2 = "\<lambda>\<rho>' . heapToEnv (asToHeap as[x::a=y]) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)"
-  let ?L = "fix_on' ?b1 (\<lambda> \<rho>'. ?\<rho>1 f++ ?F1 \<rho>')"
-  let ?R = "fix_on' ?b2 (\<lambda> \<rho>'. ?\<rho>2 f++ ?F2 \<rho>')"
-
+  have prem: "atom x \<sharp> \<lbrace>asToHeap as[x::a=y]\<rbrace>\<rho>" by (simp add: sharp_Env)
+   
   have "\<lbrace>asToHeap as\<rbrace>(\<rho>(x f\<mapsto> \<rho> f! y)) \<sqsubseteq> (\<lbrace>asToHeap (as[x ::a= y])\<rbrace>\<rho>)(x f\<mapsto> \<lbrace>asToHeap (as[x ::a= y])\<rbrace>\<rho> f! y)"
-    (is "?L \<sqsubseteq> ?R( x f\<mapsto> ?R f! y)")
-  proof (rule HSem_ind) back back back
+    (is "?L \<sqsubseteq> ?R(x f\<mapsto> ?R f! y)")
+  proof (rule HSem_below)
   case goal1 show ?case by simp
-  case goal2 show ?case by simp
-  case (goal3 \<rho>')
-    have "?\<rho>1 f++ ?F1 \<rho>' = (\<rho> f++ ?F1 \<rho>')(x f\<mapsto> \<rho> f! y)"
-      apply (rule fmap_add_upd_swap)
-      using `x \<notin> heapVars (asToHeap as)` by simp
-    also
-    have  "... \<sqsubseteq> (\<rho> f++ ?F2 ?R)( x f\<mapsto> \<rho> f! y)"
-    proof (rule cont2monofunE[OF fmap_upd_cont[OF fmap_add_cont2 cont_const]])
-      have "?F1 \<rho>' \<sqsubseteq> ?F1 (?R( x f\<mapsto> ?R f! y))"
-        by (rule cont2monofunE[OF cont2cont_heapToEnv[OF ESem_cont] goal3(2)])
-      also
-      have "... = ?F2 ?R"
-        apply (subst `_ \<Longrightarrow> heapToEnv _ _ = _`)
-        using `x \<notin> heapVars (asToHeap as)`  `atom x \<sharp> \<rho>` apply (simp add: sharp_Env)
-        by rule
-      finally
-      show "?F1 \<rho>' \<sqsubseteq> ?F2 ?R".
-    qed
-    also have "... = ?R( x f\<mapsto> \<rho> f! y)"
-      by (rule arg_cong[OF HSem_eq[symmetric]])
-    also have "... = ?R( x f\<mapsto> ?R f! y)"
-      using `y \<notin> heapVars (asToHeap as)` by (simp add: the_lookup_HSem_other)
-    finally
-    show "?\<rho>1 f++ ?F1 \<rho>' \<sqsubseteq> ?R( x f\<mapsto> ?R f! y)".
+  case (goal2 x')
+    thus ?case by (cases "x' = x", simp_all)
+  next
+  case (goal3 x')
+    hence "x' \<noteq> x" by (metis `x \<notin> heapVars (asToHeap as)`)
+    with goal3  Let(4)[OF goal3 prem, where bb = y] 
+    show ?case by (auto simp add:the_lookup_HSem_heap map_of_subst )
   qed
   also
   have "?R (x f\<mapsto> ?R f! y) \<sqsubseteq> ?L"
-  proof (rule HSem_ind) back 
-  case goal1 show ?case by auto
-  case goal2 show ?case
-    using `y \<notin> heapVars (asToHeap as)` `x \<notin> heapVars (asToHeap as)`
-    apply (auto intro!: fmap_upd_belowI simp  add: the_lookup_HSem_other)
-    apply (cases "y \<in> fdom \<rho>")
-    apply simp
-    apply (simp add: lookup_not_fdom)
-    done
-  case (goal3 \<rho>')
-    have "(?\<rho>2 f++ ?F2 \<rho>') (x f\<mapsto> (?\<rho>2 f++ ?F2 \<rho>') f! y) = (?\<rho>2 f++ ?F2 \<rho>')(x f\<mapsto> \<rho> f! y)"
-      using `y \<notin> heapVars (asToHeap as)` by simp
-    also
-    have "... = (?\<rho>1 f++ ?F2 \<rho>')"
-      apply (rule fmap_add_upd_swap[symmetric])
-      using `x \<notin> heapVars (asToHeap as)` by simp
-    also
-    have "... = ?\<rho>1 f++ ?F1 (\<rho>'(x f\<mapsto> \<rho>' f! y))"
-      apply (subst ` _ \<Longrightarrow> heapToEnv _ _ = _`)
-      using `atom x \<sharp> \<rho>` `x \<notin> heapVars (asToHeap as)` goal3(1) apply (simp add: sharp_Env)
-      by rule
-    also
-    have  "... \<sqsubseteq> ?\<rho>1 f++ ?F1 ?L"
-      by (rule cont2monofunE[OF fmap_add_cont2cont[OF cont_const cont2cont_heapToEnv[OF ESem_cont]]  `\<rho>'(x f\<mapsto> \<rho>' f! y) \<sqsubseteq> ?L`])
-    also
-    have  "... = ?L"
-      by (rule HSem_eq[symmetric])
-    finally
-    show "(?\<rho>2 f++ ?F2 \<rho>') (x f\<mapsto> (?\<rho>2 f++ ?F2 \<rho>') f! y) \<sqsubseteq> ?L".
-  qed
+  proof(rule fmap_upd_below_fmap_deleteI)
+    show "?R \<sqsubseteq> fmap_delete x ?L"
+    proof(rule HSem_below)
+    case goal1 show ?case by simp
+    case (goal2 x')
+      hence "x' \<noteq> x" by (metis Let.prems sharp_Env)
+      with goal2
+      show ?case by simp
+    next
+    case (goal3 x')
+      hence [simp]:"x' \<noteq> x" "x' \<in> heapVars (asToHeap as)" by auto
+      
+      have "the (map_of (asToHeap as[x::a=y]) x') = (the (map_of (asToHeap as) x'))[x::=y]"
+        by (rule map_of_subst[symmetric, OF `x' \<in> heapVars (asToHeap as)` `x' \<noteq> x`])
+      also
+      have "\<lbrakk>\<dots>\<rbrakk>\<^bsub>fmap_delete x ?L\<^esub> = \<lbrakk>the (map_of (asToHeap as) x')\<rbrakk>\<^bsub>(fmap_delete x ?L)(x f\<mapsto> (fmap_delete x ?L) f! y)\<^esub>"
+        by (rule Let(4)[symmetric, OF `x' \<in> heapVars (asToHeap as)`])(simp add: sharp_Env)
+      also have "(fmap_delete x ?L)(x f\<mapsto> (fmap_delete x ?L) f! y) = (?L)(x f\<mapsto> (fmap_delete x ?L) f! y)"
+        by (rule fmap_delete_fmap_upd2)
+      also have "(?L)(x f\<mapsto> (fmap_delete x ?L) f! y) = ?L"
+        by (cases "y = x", simp_all add: lookup_not_fdom)
+      also have "\<lbrakk>the (map_of (asToHeap as) x')\<rbrakk>\<^bsub>?L\<^esub> =  fmap_delete x ?L f! x'"
+        using `x' \<in> heapVars (asToHeap as)` by (simp add: the_lookup_HSem_heap)
+      finally
+      show ?case by (rule eq_imp_below)
+    qed
+  qed simp_all
   finally
   show ?case
-    using Let(1-3)
-    by (auto simp add: fresh_star_Pair fresh_at_base sharp_Env hyp)
+    using Let(1-3) Let(5)[OF prem, where bb = y]
+    by (auto simp add: fresh_star_Pair fresh_at_base sharp_Env)
 next
 case (Lam var exp \<rho> x' y) thus ?case
   apply (auto simp add: fresh_star_Pair pure_fresh)

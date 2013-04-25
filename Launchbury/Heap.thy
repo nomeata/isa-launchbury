@@ -45,4 +45,7 @@ lemma distinctVars_append_asToHeap:
   shows "distinctVars (asToHeap as @ \<Gamma>)" 
 by(rule distinctVars_appendI[OF assms(1,2) fresh_assn_distinct[OF assms(3)]])
 
+lemma True and map_of_subst: "x' \<in> heapVars (asToHeap as) \<Longrightarrow> x' \<noteq> x \<Longrightarrow> (the (map_of (asToHeap as) x'))[x::=y] = the (map_of (asToHeap as[x::a=y]) x')"
+  by (induct and as rule: exp_assn.inducts) auto
+
 end

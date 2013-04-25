@@ -405,6 +405,13 @@ lemma fmap_upd_belowI:
   apply auto
   done
 
+lemma fmap_upd_below_fmap_deleteI:
+  assumes "fdom \<rho>' = insert x (fdom \<rho>)"
+  assumes "\<rho> \<sqsubseteq> fmap_delete x \<rho>'" 
+  assumes "y \<sqsubseteq> \<rho>' f! x"
+  shows  "\<rho>(x f\<mapsto> y) \<sqsubseteq> \<rho>'"
+  by (rule fmap_upd_belowI[OF assms(1) below_trans[OF fmap_belowE[OF assms(2)] eq_imp_below] assms(3)], simp)
+
 lemma fmap_upd_belowI2:
   assumes "fdom \<rho> = insert x (fdom \<rho>')"
   assumes "\<And> z . z \<in> fdom \<rho> \<Longrightarrow> z \<noteq> x \<Longrightarrow> \<rho> f! z \<sqsubseteq> \<rho>' f! z" 
