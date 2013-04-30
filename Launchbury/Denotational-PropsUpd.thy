@@ -343,85 +343,54 @@ proof(rule below_antisym)
     by auto
 
   show "\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho> \<sqsubseteq> \<lbrace>\<Gamma>@\<Delta>\<rbrace>\<rho>"
-  proof (rule HSem_ind) back
+  proof(rule HSem_below)
   case goal1 show ?case by (auto simp add: adm_is_adm_on)
   next
-  case goal2 show ?case by (auto simp add: to_bot_fmap_def)
+  case (goal2 x)
+    with fmap_belowE[OF HSem_subset_below[OF fresh], where x = x]
+    have "\<lbrace>\<Delta>\<rbrace>\<rho> f! x \<sqsubseteq> \<lbrace>\<Delta> @ \<Gamma>\<rbrace>\<rho> f! x" by auto
+    also have "\<lbrace>\<Delta> @ \<Gamma>\<rbrace>\<rho> = \<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>"
+      by (rule HSem_reorder[OF distinct1 distinct2], auto)
+    finally show ?case.
   next
-  case (goal3 \<rho>')
-    show ?case
-    proof (rule fmap_add_belowI)
-    case goal1 show ?case by auto
-    case (goal2 x)
-      moreover
-      have "\<lbrakk> the (map_of \<Gamma> x) \<rbrakk>\<^bsub>\<rho>'\<^esub> \<sqsubseteq> \<lbrakk> the (map_of \<Gamma> x) \<rbrakk>\<^bsub>\<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>\<^esub>"
-        by (rule cont2monofunE[OF ESem_cont `\<rho>' \<sqsubseteq> \<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>`])
-      ultimately
-      show ?case
-        by (subst HSem_eq, simp add: lookupHeapToEnv map_add_dom_app_simps dom_map_of_conv_image_fst)
-      next
-    case (goal3 x)
-      moreover
-      have "\<lbrace>\<Delta> @ \<Gamma>\<rbrace>\<rho> = \<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>"
-        by (rule HSem_reorder[OF distinct1 distinct2], auto)
-      ultimately
-      show ?case
-        using fmap_belowE[OF HSem_subset_below[OF fresh], of x]
-        by simp
-    qed
+  case (goal3 x)
+    thus ?case
+      by (auto simp add: the_lookup_HSem_heap map_add_dom_app_simps)
   qed
   
   show "\<lbrace>\<Gamma>@\<Delta>\<rbrace>\<rho> \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>"
-  proof (rule HSem_ind[where h = "\<Gamma>@\<Delta>"])
+  proof(rule HSem_below)
   case goal1 show ?case by (auto simp add: adm_is_adm_on)
   next
-  case goal2 show ?case by (auto simp add: to_bot_fmap_def)
+  case (goal2 x)
+    thus ?case by (simp add: the_lookup_HSem_other)
   next
-  case (goal3 \<rho>')
-    note `\<rho>' \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>`
-    show ?case
-    proof (rule fmap_add_belowI)
-    case goal1 show ?case by auto
-    case (goal2 x)
-      hence "x \<in> heapVars \<Gamma> \<or> (x \<notin> heapVars \<Gamma> \<and> x \<in> heapVars \<Delta>)" by auto      
-      thus ?case
-      proof
-        assume "x \<in> heapVars \<Gamma> "
-        moreover
-        have "\<lbrakk> the (map_of \<Gamma> x) \<rbrakk>\<^bsub>\<rho>'\<^esub> \<sqsubseteq> \<lbrakk> the (map_of \<Gamma> x) \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>"
-          by (rule cont2monofunE[OF ESem_cont `\<rho>' \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>`])
-        ultimately
-        show ?thesis
-          by (subst HSem_eq, simp add: lookupHeapToEnv map_add_dom_app_simps dom_map_of_conv_image_fst)
-      next
-        assume "x \<notin> heapVars \<Gamma> \<and> x \<in> heapVars \<Delta>"
-        moreover
-        have "\<lbrakk> the (map_of \<Delta> x) \<rbrakk>\<^bsub>\<rho>'\<^esub> \<sqsubseteq> \<lbrakk> the (map_of \<Delta> x) \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>"
-          by (rule cont2monofunE[OF ESem_cont `\<rho>' \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>`])
-        moreover
-        have "\<lbrakk> the (map_of \<Delta> x) \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub> = \<lbrakk> the (map_of \<Delta> x) \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>"
-          apply (rule ESem_ignores_fresh[symmetric])
-          apply (rule HSem_disjoint_less)
-            using Gamma_fresh apply auto[1]
-          apply (simp add: fdoms)
-          by (metis calculation(1) fresh fresh_star_Pair fresh_star_heap_expr' the_map_of_snd)
-        ultimately
-        show ?thesis
-          apply (subst HSem_eq[where h = \<Gamma>])
-          apply (subst HSem_eq[where h = \<Delta>])
-          apply (simp add: lookupHeapToEnv map_add_dom_app_simps dom_map_of_conv_image_fst)
-          done
-      qed  
-    next
-    case (goal3 y)
-      moreover
-        hence [simp]: "y \<notin> heapVars \<Gamma>" "y \<notin> heapVars \<Delta>" by auto
-      ultimately
-      show ?case
-        apply (subst HSem_eq[where h = \<Gamma>])
-        apply (subst HSem_eq[where h = \<Delta>])
-        by simp
-    qed
+  case (goal3 x)
+    {
+      assume x: "x \<in> heapVars \<Gamma> "
+      hence "the (map_of (\<Gamma>@\<Delta>) x) = the (map_of \<Gamma> x)" by (simp add: map_add_dom_app_simps dom_map_of_conv_image_fst)
+      also
+      have "\<lbrakk> the (map_of \<Gamma> x) \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub> = \<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho> f! x"
+        by (rule the_lookup_HSem_heap[OF x, symmetric])
+      finally have ?case by (rule eq_imp_below)
+    } moreover {
+      assume "x \<notin> heapVars \<Gamma>"
+      hence "\<lbrakk>  the (map_of (\<Gamma>@\<Delta>) x) \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub> = \<lbrakk> the (map_of \<Delta> x)  \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>" by (simp add: map_add_dom_app_simps dom_map_of_conv_image_fst)
+      also
+      assume x: "x \<in> heapVars \<Delta>"
+      hence "\<lbrakk> the (map_of \<Delta> x) \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub> = \<lbrakk> the (map_of \<Delta> x) \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>"
+        apply -
+        apply (rule ESem_ignores_fresh[symmetric])
+        apply (rule HSem_disjoint_less)
+          using Gamma_fresh apply auto[1]
+        using assms(2) apply (simp add: fdoms fresh_star_map_of fresh_star_Pair)
+        done
+      also have "\<dots> = \<lbrace>\<Delta>\<rbrace>\<rho> f! x"
+        by (rule the_lookup_HSem_heap[OF  `x \<in> heapVars \<Delta>`, symmetric])
+      also have "\<dots> = \<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho> f! x"
+        by (rule the_lookup_HSem_other[OF `x \<notin> heapVars \<Gamma>`, symmetric])
+      finally have ?case by (rule eq_imp_below)
+  } ultimately show ?case using goal3 by auto
   qed
 qed
 

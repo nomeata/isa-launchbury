@@ -35,6 +35,19 @@ lemma fresh_star_heap_expr':
   using assms
   by (metis fresh_star_def fresh_heap_expr')
 
+lemma fresh_map_of:
+  assumes "x \<in> heapVars \<Gamma>"
+  assumes "a \<sharp> \<Gamma>"
+  shows "a \<sharp> the (map_of \<Gamma> x)"
+  using assms
+  by (induct \<Gamma>)(auto simp add: fresh_Cons fresh_Pair)
+
+lemma fresh_star_map_of:
+  assumes "x \<in> heapVars \<Gamma>"
+  assumes "a \<sharp>* \<Gamma>"
+  shows "a \<sharp>* the (map_of \<Gamma> x)"
+  using assms by (simp add: fresh_star_def fresh_map_of)
+
 
 subsubsection {* Equivariance lemmas *}
 
