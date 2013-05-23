@@ -183,7 +183,7 @@ A heap is a partial function from variables to expressions. The domain of an hea
 A value is an expression in weak head normal form. A judgment of the form $\sred \Gamma e \Delta v$ means that the expression $e$ with the heap $\Gamma$ reduces to $v$, while modifying the heap to $\Delta$.
 
 
-In this work we treat naming and binding naively, as these issue are not essential for our results. For example, it is understood that the variables in the premise of the rule \sRule{Let} are actually fresh and distinct from the variables bound in the let expression. Likewise the substitution $e'[x/y]$ replaces all free occurrences of $y$ in $e'$ with $x$  and a “fresh variable” is fresh with regard to the derivation tree and not just the elements of the current judgment. To express the the latter issue rigorously, we would have to add to the judgment a set of variables to avoid, following Sestoft \shortcite{sestoft}.
+In this work we treat naming and binding naively, as these issue are not essential for our results. For example, it is understood that the variables in the premise of the rule \sRule{Let} are actually fresh and distinct from the variables bound in the let expression. Likewise the substitution $e'[x/y]$ replaces all free occurrences of $y$ in $e'$ with $x$  and a “fresh variable” is fresh with regard to the derivation tree and not just the elements of the current judgment. To express the latter issue rigorously, we would have to add to the judgment a set of variables to avoid, following Sestoft \shortcite{sestoft}.
 
 We can take these shortcuts here with good conscience, as all proofs also exist in machine-checked form and there, naming has been handled rigorously.
 
@@ -341,7 +341,7 @@ If $\rho \sqsubseteq \rho^*$ and $\dsem{\Gamma}{\rho^*} \sqsubseteq \rho^*$, the
 \end{lemma}
 
 \begin{proof}
-By definition, $\esem{\Gamma}\rho$ is the least fixed point of the functorial $\lambda \rho'. \rho \sqcup \dsem{\Gamma}{\rho'}$, and hence the least prefix point. By assumption, $\rho^*$ is a prefix point, so $\esem{\Gamma}\rho \sqsubseteq \rho^*$ holds.
+By definition, $\esem{\Gamma}\rho$ is the least fixed point of the functorial $\lambda \rho'. \rho \sqcup \dsem{\Gamma}{\rho'}$, and hence the least pre-fixed point. By assumption, $\rho^*$ is a pre-fixed point, so $\esem{\Gamma}\rho \sqsubseteq \rho^*$ holds.
 \end{proof}
 
 The following two lemmas provide a way to replace a binding in a heap.
@@ -813,7 +813,7 @@ from comparing (4)--(6) with (7) and (8). We can also show
 \begin{compactenum}[(1)]
 \item[(10)] $\esemu{\Gamma}{(\mu L)} = (\mu L)$,
 \end{compactenum}
-by antisymmetry and use that least fixed points are least prefix points:
+by antisymmetry and use that least fixed points are least pre-fixed points:
 \begin{compactitem}[$\sqsubseteq$:]
 \item[$\sqsubseteq$:] We need to show that $(\mu L) + \dsem{\Gamma}{(\mu L)} \sqsubseteq (\mu L)$, which follows from (1). 
 \item[$\sqsupseteq$:] We need to show that $\esemu{\Gamma}{(\mu L)} + \dsem{x\mapsto e, \Gamma}{\esemu{\Gamma}{(\mu L)}} \sqsubseteq \esemu{\Gamma}{(\mu L)}$. For $\dom\Gamma$, this follows from (7), so we show $\dsem{e}{\esemu{\Gamma}{(\mu L)}} \sqsubseteq (\mu L)\, x = \dsem{e}{(\mu L)}$, which follows from the monotonicity of $\dsem{e}{\_}$ and case $\sqsubseteq$.
@@ -944,7 +944,7 @@ If $\sred \Gamma e \Delta v$ holds, then for all environments $\rho \in \sEnv$, 
 \label{thm:thm2}
 \end{theorem}
 
-Our proof follows Launchbury's steps quite closely. Nevertheless we reproduce it here for completeness and clarifying details.
+Our proof follows Launchbury's steps quite closely, the only differences are the use of $\preceq$ instead of $\le$ and the slightly different iterative fixed-point expression in case \sRule{Var}. Nevertheless we reproduce it here for completeness and clarifying details.
 
 \begin{proof}
 This is essentially the proof in \cite{launchbury}, which proceeds by induction on the derivation of $\sred \Gamma e \Delta v$.
@@ -980,7 +980,8 @@ We begin with the second part:
 \esemu{x \mapsto e,\Gamma}{\rho} &= \mu \rho'.\,\rho + (\esemu{\Gamma}{\rho'})|_{\dom\Gamma} + (x \mapsto \dsem{e}{\esemu{\Gamma}\rho'}) \\
 \aexpl{by Lemma \ref{lem:iter}} \\
 &= \mu \rho'.\, \rho + (\esemu{\Gamma}{\rho'})|_{\dom\Gamma} + (x \mapsto \dsem{z}{\esemu{\Delta}\rho'}) \\
-\aexpl{\parbox{\widthof{by the induction hypothesis. Note that}}{\raggedright by the induction hypothesis. Note that we invoke it for a different $\rho$!}} \\
+%\aexpl{by the induction hypothesis, invoked for $\rho'$!} \\
+\aexpl{\parbox{\widthof{by the induction hypothesis. Note that}}{\raggedright by the induction hypothesis. Note that we invoke it for $\rho'$ with $\rho' \ne \rho$!}} \\
 &\preceq \mu \rho'.\, \rho + (\esemu{\Delta}{\rho'})|_{\dom\Delta} + (x \mapsto \dsem{z}{\esemu{\Delta}\rho'}) \\
 \aexpl{by induction and the monotonicity of $\mu$ with regard to $\preceq$} \\
 &= \esemu{x \mapsto v, \Delta}{\rho}\\
