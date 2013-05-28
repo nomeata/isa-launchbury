@@ -14,7 +14,7 @@
 \usepackage[amsmath,thmmarks]{ntheorem}
 \usepackage{stmaryrd}
 \usepackage{paralist}
-\usepackage[pdfborder={0 0 0}]{hyperref}
+\usepackage[pdfborder={0 0 0},naturalnames]{hyperref}
 \usepackage{microtype}
 
 \allowdisplaybreaks[1]
@@ -294,12 +294,328 @@ One approach to fix this would be to model environments as partial maps from $\s
 
 Similarly, one could define a relation $\rho \req{S} \rho'$ which is defined as $\forall x \in S. \rho\,x = \rho'\,x$, and always state the set of variables to be compared. But again the notational overhead is considerable.
 
-Therefore, in this work, we simply $\esem{\Gamma}\rho \preceq \esem{\Delta}{\rho'}$ to express that $\dom\Gamma \subseteq \dom\Delta$ and $\forall x\in \dom\Gamma. (\esem{\Gamma}\rho)\,x = (\esem{\Delta}{\rho'})\,x$.
+Therefore, in this work, we simply use $\esem{\Gamma}\rho \preceq \esem{\Delta}{\rho'}$ to express that $\dom\Gamma \subseteq \dom\Delta$ and $\forall x\in \dom\Gamma. (\esem{\Gamma}\rho)\,x = (\esem{\Delta}{\rho'})\,x$.
 
+\section{The stacked semantics}
+\label{stackedsemantics}
+
+In order to prove Theorem \ref{thm:main}, we take a detour via a different semantics that allows to perform the induction without the problematic generalization. The judgments of this semantics are of the form $\ssred \Gamma {\Gamma'} \Delta {\Delta'}$ and have new fields (storing a list of variable-expression pairs) that not only contain the expression currently under evaluation, but also the expressions whose evaluation has caused the current evaluation, together with their respective names. Such expressions are always either variables or applications, so the resulting data structures strongly resembles an evaluation stack, consisting of update frames and function parameters. We re-use the syntax of heaps (which are unordered) here, but keep in mind that $\Gamma'$ and $\Delta'$ are ordered, so that we can talk about the topmost expression.
+
+The rules are given in Figure \ref{fig:stacksem}. When compared to Figure \ref{fig:natsem} one will find that $\sred{\Gamma}e{\Delta}v$ has become $\ssred{\Gamma}{z \mapsto e, \Gamma'}{\Delta}{z \mapsto v, \Delta'}$, i.e. the expression under evaluation is the topmost expression in the stack. The variables bound in the heap and stack on either side of the rule are always distinct -- another detail that is not further discussed here, but handled in the formal development.
+
+The rules \sRule{Lam} and \sRule{Let} correspond directly to their counterpart in the original semantics.
+
+The rule \sRule{App} takes the application $\sApp e x$ apart. First, the expression $e$ is bound to a new name $w$ and put on top of the stack, where $\sApp e x$ is replaced by $\sApp w x$, in order to evaluate $e$. This evaluation provides a lambda abstraction $\sLam y {e'}$ The body thereof is then, with $x$ substituted for $y$, continued to be evaluated.
+
+The rule \sRule{Var} just shuffles between the heap and the stack: In order to evaluate a variable, its binding is removed from the heap and put on top of the stack. After evaluation, the binding is updated with the value and moved back to the heap.
+
+Note that it follows from the rules that if we have $\ssred \Gamma {z \mapsto e, \Gamma'} {\Delta} {w \mapsto v, \Delta'}$, then $w = z$ and $\Delta' = \Gamma'$, i.e.~during one step of evaluation, only the topmost expression on the stack can change. We deliberately keep this redundancy in the semantics for a more natural presentation of, for example, the correctness statement and to allow for later extensions that might want to modify the stack, e.g.~garbage collection.
+
+%A simple induction shows
+%\begin{lemma}
+%\label{heapdomsubset}
+%$\ssred \Gamma {\Gamma'} {\Delta} {\Delta'} \implies \dom{(\Gamma,\Gamma')} \subseteq \dom{(\Delta,\Delta')}$
+%\end{lemma}
+
+
+\begin{figure}
+\begin{mathpar}
+\inferrule
+{ }
+{\ssred{\Gamma}{z \mapsto \sLam xe, \Gamma'}{\Gamma}{z \mapsto \sLam xe, \Gamma'}}
+\sRule{Lam}
+\and
+\inferrule
+{\ssred{\Gamma}{w \mapsto e, z \mapsto \sApp w x, \Gamma'}{\Delta}{w \mapsto \sLam y e', z \mapsto \sApp w x, \Gamma'}\\ \ssred{\Delta}{z \mapsto e'[x/y], \Delta'}{\Theta}{\Theta'}}
+{\ssred\Gamma{z \mapsto \sApp e x}\Theta{\Theta'}}
+\sRule{App}
+\and
+\inferrule
+{\ssred\Gamma {x \mapsto e, z\mapsto x, \Gamma'} \Delta {x \mapsto v, z\mapsto x, \Gamma'}}
+{\ssred{\Gamma, x\mapsto e}{z \mapsto x, \Gamma'}{\Delta, x \mapsto v}{z \mapsto v, \Gamma'}}
+\sRule{Var}
+\and
+\inferrule
+{\ssred{\Gamma,\xen} {z \mapsto e, \Gamma'}\Delta {\Delta'}}
+{\ssred{\Gamma}{z \mapsto \sLet{\xeng}e, \Gamma'} \Delta{\Delta'}}
+\sRule{Let}
+\end{mathpar}
+\caption{The stacked semantics}
+\label{fig:stacksem}
+\end{figure}
+
+\subsection{Equivalency with the natural semantics}
+
+The stacked semantics is equivalent to the original semantics in the following sense:
+
+\begin{theorem}
+For all $\Gamma, \Gamma', \Delta, e, v$ we have
+\label{thm:equiv}
+\[
+(\exists\,z~\Delta'.~ \ssred \Gamma {z \mapsto e, \Gamma'} {\Delta} {z \mapsto v, \Delta'})
+\iff
+\sred{\Gamma}e\Delta v.
+\]
+\end{theorem}
+
+\begin{proof}
+Both directions are proved by induction.
+\end{proof}
+
+\subsection{Correctness}
+
+For the stacked semantics, we prove correctness with respect to the denotational semantics, in the sense that reduction of a heap and stack preserves their denotation:
+
+\begin{theorem}
+For all $\Gamma, \Gamma', \Delta, \Delta'$ we have 
+\label{thm:stackedcorrectness}
+\[
+\ssred \Gamma {\Gamma'} {\Delta} {\Delta'} \implies \esem{\Gamma, \Gamma'} \preceq \esem{\Delta, \Delta'}.
+\]
+\end{theorem}
+
+As this proof is one of the main contributions of this paper, we spell it out in greater detail, and use the technical lemmas found in appendix \ref{sec:denprops}.
+
+\begin{proof}
+by induction on the derivation of $\ssred \Gamma {\Gamma'} {\Delta} {\Delta'}$.
+
+\case{\sRule{Lam}}
+We need to show $\esem{\Gamma, \Gamma'} \preceq \esem{\Gamma, \Gamma'}$, which holds trivially.
+
+\case{\sRule{App}}
+We have
+\[
+\ssred{\Gamma}{w \mapsto e, z \mapsto \sApp w x, \Gamma'}{\Delta}{w \mapsto \sLam y e', z \mapsto \sApp w x, \Delta'}
+\text{ and }
+\ssred{\Delta}{z \mapsto e'[x/y], \Delta'}{\Theta}{\Theta'},
+\]
+so by the induction hypothesis,
+\[
+\esem{\Gamma, w \mapsto e, z \mapsto \sApp w x, \Gamma'} \preceq \esem{\Delta, w \mapsto \sLam y e', z \mapsto \sApp w x, \Delta'}
+\]
+and
+\[
+\esem{\Delta,z \mapsto e'[x/y], \Delta'} \preceq \esem{\Theta,\Theta'}.
+\]
+We need to show $\esem{\Gamma, z \mapsto \sApp e x, \Gamma'} \preceq \esem{\Theta,\Theta'}$:
+\begin{align*}
+\esem{\Gamma, z \mapsto \sApp e x, \Gamma'} &= \esem{\Gamma, w \mapsto e, z\mapsto \sApp e x, \Gamma'} \setminus \{w\} \\
+\aexpl{adding a fresh variable, Lemma \ref{lem:addvar}} \\
+&= \esem{\Gamma, w \mapsto e, z \mapsto \sApp w x, \Gamma'} \setminus \{w\} \\
+\aexpl{substituting the indirection, Lemma \ref{lem:exp_var_subst}} \\
+&\preceq \esem{\Delta, w \mapsto \sLam y e', z \mapsto \sApp w x, \Delta'} \setminus \{w\}\\
+\aexpl{by the induction hypothesis} \\
+&= \esem{\Delta, w \mapsto \sLam y e', z \mapsto \sApp (\sLam y e') x, \Delta'} \setminus \{w\} \\
+\aexpl{substituting the indirection again, Lemma \ref{lem:exp_var_subst}} \\
+&= \esem{\Delta, z \mapsto \sApp (\sLam y e') x, \Delta'}\\
+\aexpl{removing the fresh variable again, Lemma \ref{lem:addvar}} \\
+&= \esem{\Delta, z \mapsto e'[x/y], \Delta'} \\
+\aexpl{semantics of application} \\
+&\preceq \esem{\Theta,\Theta'}\\
+\aexpl{by the induction hypothesis.}
+\end{align*}
+
+\case{\sRule{Var}}
+We have 
+\[
+\esem{\Gamma, x \mapsto e, z\mapsto x, \Gamma'} \preceq \esem{\Delta, x \mapsto v, z\mapsto x, \Gamma'}
+\]
+by the induction hypothesis. Using Lemma \ref{lem:var_var_subst} on the right hand side, we obtain
+\[
+\esem{\Gamma, x\mapsto e,z \mapsto x, \Gamma'} \preceq \esem{\Delta, x \mapsto v, z \mapsto v, \Gamma'}.
+\]
+
+\case{\sRule{Let}}
+We have
+\begin{align*}
+\beginright
+\esem{\Gamma,z \mapsto \sLet{\xeng}e, \Gamma'}\\
+&\preceq \esem{\Gamma,\xen, z \mapsto e, \Gamma'} \\
+\aexpl{by unfolding the let-expression, Lemma \ref{lem:let_unfold}} \\
+&\preceq \esem{\Delta,\Delta'}\\
+\aexpl{by the induction hypothesis}
+\end{align*}
+\end{proof}
+
+From the correctness of the stacked semantics we can easily obtain the correctness of the original semantics:
+
+\begin{proof}[of Theroem \ref{thm:main}]
+From $\sred \Gamma e \Delta v$, we have $\ssred{\Gamma}{z \mapsto e}{\Delta}{z\mapsto v}$ for a fresh $z$ by Theorem \ref{thm:equiv}. By the theorem just shown, we have $\esem{\Gamma, z \mapsto e} \preceq \esem{\Delta, z\mapsto v}$. This implies $\dsem{e}{\esem{\Gamma, z \mapsto e}} = \dsem{v}{\esem{\Delta, z\mapsto v}}$ by Lemma \ref{lem:esem_this}. As $z$ is fresh, by Lemma \ref{lem:see_through_fresh} we have $\dsem{e}{\esem{\Gamma}} = \dsem{e}{\esem{\Delta}}$.
+\end{proof}
+
+\section{The update-based semantics}
+\label{updsemantics}
+
+We have found another way to fix Launchbury's correctness proof: We modify the denotational semantics of heaps to be
+\begin{align*}
+\esemu{ \Gamma }\rho &= \mu \rho'. \rho + \dsemu{\Gamma}{\rho'},
+\end{align*}
+where
+\[
+(\rho + \dsemu{\Gamma}{\rho'})\, x = 
+\begin{cases}
+(\dsemu{\Gamma}{\rho'})\, x, &\text{if } x \in \dom \Gamma\\
+\rho\, x &\text{otherwise},
+\end{cases}
+\]
+i.e. we replace the least upper bound operator by a right-sided update, and otherwise let $\dsemu{\_}\_$ be defined by the same equations as $\dsem{\_}\_$.
+
+Interestingly, the denotational semantics of expressions are the same under both definitions:
+\begin{lemma}
+For all $e$ and $\rho$, $\dsem{e}{\rho} = \dsemu{e}{\rho}$.
+\label{lem:deneq}
+\end{lemma}
+
+\begin{proof}
+by induction on $e$. The interesting case is \sRule{Let}, where we use that $\esem{\Gamma}{\rho} = \esemu{\Gamma}{\rho}$ if the domains of $\Gamma$ and $\rho$ are distinct, which is the case as the variables introduced on the heap in rule \sRule{Let} are fresh.
+\end{proof}
+
+In the following we will only mention $\dsem{\_}\_$.
+
+\subsection{Correctness}
+
+Using the modified denotational semantics we can state `Theorem' \ref{thm:false} as a theorem and prove it:
+\begin{theorem}
+If $\sred \Gamma e \Delta v$ holds, then for all environments $\rho \in \sEnv$, $\dsem{e}{\esemu{\Gamma}{\rho}} = \dsem{v}{\esemu{\Delta}{\rho}}$ and $\esemu\Gamma\rho \preceq \esemu\Delta\rho$.%
+\label{thm:thm2}
+\end{theorem}
+
+Our proof follows Launchbury's steps quite closely, the only differences are the use of $\preceq$ instead of $\le$ and the slightly different iterative fixed-point expression in case \sRule{Var}. Nevertheless we reproduce it here for completeness and clarifying details. The required technical lemmas about the denotational semantics are compiled in appendix \ref{updsemanticsprops}.
+
+\begin{proof}
+This is essentially the proof in \cite{launchbury}, which proceeds by induction on the derivation of $\sred \Gamma e \Delta v$.
+
+\case{\sRule{Lam}}
+This case is trivial.
+
+\case{\sRule{App}}
+By the induction hypothesis we know
+$\dsem{e}{\esemu{\Gamma}\rho} = \dsem{\sLam y {e'}}{\esemu{\Delta}\rho}$ and $\esemu{\Gamma}\rho \preceq \esemu{\Delta}\rho$ as well as $\dsem{e'[x/y]}{\esemu{\Delta}\rho} = \dsem{v}{\esemu{\Theta}\rho}$ and $\esemu{\Delta}\rho \preceq \esemu{\Theta}\rho$.
+
+While the second part follows from the transitivity of $\preceq$, the first part is a simple calculations:
+\begin{align*}
+\dsem{\sApp{e}{x}}{\esemu{\Gamma}\rho} &= \sFnProj{\dsem{e}{\esemu{\Gamma}\rho}}{\dsem{x}{\esemu{\Gamma}{\rho}}}\\
+\aexpl{by the denotation of application} \\
+&= \sFnProj{\dsem{\sLam y {e'}}{\esemu{\Delta}\rho}}{\dsem{x}{\esemu{\Gamma}{\rho}}}\\ 
+\aexpl{by the induction hypothesis} \\
+&= \sFnProj{\dsem{\sLam y {e'}}{\esemu{\Delta}\rho}}{\dsem{x}{\esemu{\Delta}{\rho}}}\\ 
+\aexpl{by the induction hypothesis and the definition of $\preceq$} \\
+&= \dsem{e'}{(\esemu{\Delta}\rho)(y \mapsto \dsem{x}{\esemu{\Gamma}{\rho}})}\\ 
+\aexpl{by the denotation of lambda abstraction} \\
+&= \dsem{e'[x/y]}{\esemu{\Delta}\rho}\\ 
+\aexpl{by substitution Lemma \ref{lem:subst}} \\
+&= \dsem{v}{\esemu{\Theta}\rho}\\
+\aexpl{by the induction hypothesis}
+\end{align*}
+
+\case{\sRule{Var}}
+We know that $\dsem{e}{\esem{\Gamma}\rho'}=\dsem{v}{\esem{\Delta}\rho'}$ and $\esem{\Gamma}\rho' \preceq \esem{\Delta}\rho'$ for all $\rho'\in\sEnv$.
+
+We begin with the second part:
+\begin{align*}
+\esemu{x \mapsto e,\Gamma}{\rho} &= \mu \rho'.\,\rho + (\esemu{\Gamma}{\rho'})|_{\dom\Gamma} + (x \mapsto \dsem{e}{\esemu{\Gamma}\rho'}) \\
+\aexpl{by Lemma \ref{lem:iter}} \\
+&= \mu \rho'.\, \rho + (\esemu{\Gamma}{\rho'})|_{\dom\Gamma} + (x \mapsto \dsem{z}{\esemu{\Delta}\rho'}) \\
+%\aexpl{by the induction hypothesis, invoked for $\rho'$!} \\
+\aexpl{\parbox{\widthof{by the induction hypothesis. Note that}}{\raggedright by the induction hypothesis. Note that we invoke it for $\rho'$ with $\rho' \ne \rho$!}} \\
+&\preceq \mu \rho'.\, \rho + (\esemu{\Delta}{\rho'})|_{\dom\Delta} + (x \mapsto \dsem{z}{\esemu{\Delta}\rho'}) \\
+\aexpl{by induction and the monotonicity of $\mu$ with regard to $\preceq$} \\
+&= \esemu{x \mapsto v, \Delta}{\rho}\\
+\aexpl{by Lemma \ref{lem:iter}}
+\end{align*}
+
+The first part now follows from the second part:
+\begin{align*}
+\dsem{x}{\esemu{x \mapsto e, \Gamma}\rho} &=
+(\esemu{x \mapsto e, \Gamma}\rho)\,x &
+\aexpl{by the denotation of variables}\\
+&= (\esemu{x \mapsto v, \Delta}\rho)\,x &
+\aexpl{by the first part and $x\in\dom(x\mapsto e, \Gamma)$}\\
+&=\dsem{x}{\esemu{x \mapsto v, \Delta}\rho}&
+\aexpl{by the denotation of variables}\\
+&= \dsem{v}{\esemu{x \mapsto v, \Delta}\rho}.
+\end{align*}
+
+\case{\sRule{Let}}
+We know that $\dsem{e}{\esem{\Gamma, \xen}\rho} = \dsem{v}{\esem{\Delta}{\rho}}$ and $\esem{\Gamma, \xen}\rho \preceq \esem{\Delta}{\rho}$.
+For the first part we have
+\begin{align*}
+\beginright
+\dsem{\sLet{\xeng}e}{\esem{\Gamma}\rho} \\
+&= \dsem{e}{\esem{\xen}{\esem{\Gamma}\rho}} &
+\aexpl{by the denotation of let-expressions} \\
+&= \dsem{e}{\esem{\Gamma, \xen}{\rho}} &
+\aexpl{by Lemma \ref{lem:esem-merge}} \\
+&= \dsem{v}{\esem{\Delta}{\rho}} &
+\aexpl{by the induction hypothesis}
+\intertext{and for the second part we have}
+\esem{\Gamma}{\rho} 
+&\preceq \esem{\xen}{\esem{\Gamma}\rho} &
+\aexpl{because the $x_1,\ldots,x_n$ are fresh} \\
+&\preceq \esem{\Gamma, \xen}\rho &
+\aexpl{by Lemma \ref{lem:esem-merge}} \\
+&\preceq \esem{\Delta}\rho. &
+\aexpl{by the induction hypothesis}
+\end{align*}
+\end{proof}
+
+\section{Related work}
+
+A large number of developments on formal semantics of functional programming languages in the last two decades build on Launchbury’s work. Many of them implicitly or explicitly rely on the correctness proof as spelled out by Launchbury:
+
+Van Eekelen \& de~Mol \shortcite{mixed} add strictness annotations to the syntax and semantics of Launchbury’s work. They state the correctness as in `Theorem' \ref{thm:false}, without spotting the issue.
+
+
+Nakata \& Hasegawa \shortcite{nakata} define a small-step semantics for call-by-need and relate it to a Launchbury-derived big-step semantics. They state the correctness with respect to the denotational semantics and reproduce the `Theorem' \ref{thm:false} in the flawed form, in their extended version.
+
+S{\'a}nchez-Gil {\em et~al.} \shortcite{distributed} extend Launchbury's semantics with distributed evaluation.  In their modified natural semantics the heap retains the expression under evaluation with a special flag, marking them as blocked. Furthermore, the expression under evaluation has a name. Thus the non-distributed subset of their semantics is very similar to our stacked semantics and their correctness statement corresponds to Theorem \ref{thm:thm2}.
+
+An interesting case is the work by Baker-Finch {\em et~al.} on parallel call-by-need: While an earlier report \shortcite{parallel-tr} uses Launchbury’s definitions unmodified and states the flawed `Theorem' \ref{thm:false}, the following publication at ICFP \shortcite{parallel} uses an update-based denotational semantics, unfortunately without motivating that change.
+
+Similarly, Nakata  \shortcite{nakata_blackhole}, who modifies the denotational semantics to distinguish direct cycles from looping recursion, uses update-based semantics without further explanation. 
+
+This list is just a small collection of many more Launchbury-like semantics. Often the relation to a denotational semantics is not stated, but nevertheless they are standing on the foundations laid by Launchbury. Therefore it is not surprising that others have worked on formally fortifying these foundations as well:
+
+S{\'a}nchez-Gil {\em et~al.} identified a step in his adequacy proof relating the standard and the resourced denotational semantics that is not as trivial as it seemed at first and worked out a detailed pen-and-paper proof \shortcite{functionspaces}. They also plan to prove the equivalency between Launchbury’s natural semantics and a variant thereof, which was used by Launchbury in his adequacy proof, in the theorem prover Coq. As one step in that direction, they address the naming issues and suggest a mixed representation, using de Bruijn indices for locally bound variables and names for free variables \shortcite{nameless}. This corresponds to our treatment of names in the formal development, using the Nominal logic machinery \cite{nominal} locally but not for names bound in heaps.
+
+\section{Discussion}
+
+Although we have found a flaw in the proof and the formulation of the correctness theorem in Launchbury’s semantics, the essential correctness result (as formulated in Theorem~\ref{thm:main}) stills holds. In that sense our work, especially with the computer-verified proofs in \cite{afp}, actually strengthens the foundations of formal work in that field.
+
+We have provided two ways to fix the problem: One by adding a stack to the operational semantics, and one by changing the denotation of heaps. Both variants have precursors in the literature: The extended heaps of \cite{distributed} resemble the heap-stack-pairs of our semantics, while Baker-Finch {\em et~al.} \shortcite{parallel} and Nakata \shortcite{nakata_blackhole} use right-sided updates in their denotational heap semantics.
+
+Adding the stack to the judgments of the natural semantics, although it does not affect the evaluation of expressions at all, seems to make the semantics more suitable for formal proofs than the original semantics:
+\begin{compactitem}
+\item Launchbury’s global notion of “fresh variable” is hard to work with, as noted and fixed before by adding to the judgments an explicit list of variable names to avoid \cite{sestoft}. As the stack in our semantics already contains these names, this additional step is not required.
+\item While proving Theorem \ref{thm:stackedcorrectness}, the environment $\rho$ does not have to be all-quantified in the inductive step. This simplified the proof a bit and avoids the pitfall that the original proof fell into.
+\end{compactitem}
+The similarity with the extended heaps in \cite{distributed} further supports the usefulness of the stacked semantics.
+
+We had to spend slightly more pages on the properties of the original denotational semantics (Appendix~\ref{sec:denprops}) than of the update-based denotational semantics (Appendix~\ref{updsemanticsprops}). This is partly due to more details in the proofs in the former section, partly because $+$ behaves nicer than $\sqcup$ (e.g.\ it is defined everywhere). This is orthogonal to the usefulness of the stack-based natural semantics, which could be proven correct with regard to the updates-based denotational semantics as well.
+
+Unless one has to stick with $\sqcup$, e.g. to stay compatible with previous work using this definition, little stands in the way of using the update-based denotational semantics to model the denotation of heaps.
+
+\section{Future work}
+
+Proving correctness is of course only half the battle: The adequacy of Launchbury’s semantics is not yet formally proven. The original paper itself outlines the steps of a proof, and some of these steps have since then been spelled out in greater detail \cite{functionspaces}, and the same authors are currently working on the equivalency of Launchbury’s original and modified natural semantics. We plan to build on these results to eventually have a machine-checked proof of the adequacy of Launchbury’s semantics.
+
+We hope that by proving the correctness and adequacy in a theorem prover, we not “just” reinforce our theoretical foundations but also create a practical (for a theoretician’s understanding of practical) tool that can be used to experiment with the many various ways that this semantics can be extended and modified.
+
+\section*{Acknowledgments}
+
+I would like to thank Andreas Lochbihler for careful proof-reading and his very constructive comments.
+
+\bibliographystyle{jfp}
+\bibliography{\jobname}
+
+\appendix
+
+
+\section{Appendix}
 \subsection{Properties of the denotational semantics}
 \label{sec:denprops}
 
-In preparation of the correctness proof we need to establish some properties of the denotational semantics. This section is rather technical and mostly contains fixed-point calculations, so we recommend to skip this section at first and follow the references to its lemmas when needed.
+This section collects the various technical lemmas about the denotational semantics that we need in the proof for the correctness of the stacked semantics (Theorem~\ref{thm:stackedcorrectness}).
 
 The following two lemmas give the result of looking up a variable $x$ in the denotation of a heap $\esem\Gamma\rho$, depending on whether $x$ is bound in the heap or not. 
 
@@ -568,186 +884,11 @@ Now we can show
 
 \end{proof}
 
-
-\section{The stacked semantics}
-\label{stackedsemantics}
-
-In order to prove Theorem \ref{thm:main}, we take a detour via a different semantics that allows to perform the induction without the problematic generalization. The judgments of this semantics are of the form $\ssred \Gamma {\Gamma'} \Delta {\Delta'}$ and have new fields (storing a list of variable-expression pairs) that not only contain the expression currently under evaluation, but also the expressions whose evaluation has caused the current evaluation, together with their respective names. Such expressions are always either variables or applications, so the resulting data structures strongly resembles an evaluation stack, consisting of update frames and function parameters. We re-use the syntax of heaps (which are unordered) here, but keep in mind that $\Gamma'$ and $\Delta'$ are ordered, so that we can talk about the topmost expression.
-
-The rules are given in Figure \ref{fig:stacksem}. When compared to Figure \ref{fig:natsem} one will find that $\sred{\Gamma}e{\Delta}v$ has become $\ssred{\Gamma}{z \mapsto e, \Gamma'}{\Delta}{z \mapsto v, \Delta'}$, i.e. the expression under evaluation is the topmost expression in the stack. The variables bound in the heap and stack on either side of the rule are always distinct -- another detail that is not further discussed here, but handled in the formal development.
-
-The rules \sRule{Lam} and \sRule{Let} correspond directly to their counterpart in the original semantics.
-
-The rule \sRule{App} takes the application $\sApp e x$ apart. First, the expression $e$ is bound to a new name $w$ and put on top of the stack, where $\sApp e x$ is replaced by $\sApp w x$, in order to evaluate $e$. This evaluation provides a lambda abstraction $\sLam y {e'}$ The body thereof is then, with $x$ substituted for $y$, continued to be evaluated.
-
-The rule \sRule{Var} just shuffles between the heap and the stack: In order to evaluate a variable, its binding is removed from the heap and put on top of the stack. After evaluation, the binding is updated with the value and moved back to the heap.
-
-%A simple induction shows
-%\begin{lemma}
-%\label{heapdomsubset}
-%$\ssred \Gamma {\Gamma'} {\Delta} {\Delta'} \implies \dom{(\Gamma,\Gamma')} \subseteq \dom{(\Delta,\Delta')}$
-%\end{lemma}
-
-
-\begin{figure}
-\begin{mathpar}
-\inferrule
-{ }
-{\ssred{\Gamma}{z \mapsto \sLam xe, \Gamma'}{\Gamma}{z \mapsto \sLam xe, \Gamma'}}
-\sRule{Lam}
-\and
-\inferrule
-{\ssred{\Gamma}{w \mapsto e, z \mapsto \sApp w x, \Gamma'}{\Delta}{w \mapsto \sLam y e', z \mapsto \sApp w x, \Gamma'}\\ \ssred{\Delta}{z \mapsto e'[x/y], \Delta'}{\Theta}{\Theta'}}
-{\ssred\Gamma{z \mapsto \sApp e x}\Theta{\Theta'}}
-\sRule{App}
-\and
-\inferrule
-{\ssred\Gamma {x \mapsto e, z\mapsto x, \Gamma'} \Delta {x \mapsto v, z\mapsto x, \Gamma'}}
-{\ssred{\Gamma, x\mapsto e}{z \mapsto x, \Gamma'}{\Delta, x \mapsto v}{z \mapsto v, \Gamma'}}
-\sRule{Var}
-\and
-\inferrule
-{\ssred{\Gamma,\xen} {z \mapsto e, \Gamma'}\Delta {\Delta'}}
-{\ssred{\Gamma}{z \mapsto \sLet{\xeng}e, \Gamma'} \Delta{\Delta'}}
-\sRule{Let}
-\end{mathpar}
-\caption{The stacked semantics}
-\label{fig:stacksem}
-\end{figure}
-
-\subsection{Equivalency with the natural semantics}
-
-The stacked semantics is equivalent to the original semantics in the following sense:
-
-\begin{theorem}
-For all $\Gamma, \Gamma', \Delta, \Delta', e, z, v$ we have
-\[
-\ssred \Gamma {z \mapsto e, \Gamma'} {\Delta} {z \mapsto v, \Delta'} \implies \sred{\Gamma}e\Delta v.
-\]
-\label{thm:equiv}
-For all $\Gamma, \Delta, e, v$ and $\Gamma'$ there exist $v$ such that
-\[
-\ssred \Gamma {z \mapsto e, \Gamma'} {\Delta} {z \mapsto v, \Gamma'} \impliedby \sred{\Gamma}e\Delta v.
-\]
-\end{theorem}
-
-\begin{proof}
-Both directions are proved by induction.
-\end{proof}
-
-\subsection{Correctness}
-
-For the alternative semantics, we prove correctness with respect to the denotational semantics, in the sense that reduction of a heap and stack preserves their denotation:
-
-\begin{theorem}
-For all $\Gamma, \Gamma', \Delta, \Delta'$ we have 
-\label{thm:stackedcorrectness}
-\[
-\ssred \Gamma {\Gamma'} {\Delta} {\Delta'} \implies \esem{\Gamma, \Gamma'} \preceq \esem{\Delta, \Delta'}.
-\]
-\end{theorem}
-
-As this proof is one of the main contributions of this paper, we spell it out in greater detail, and use the technical lemmas from Section \ref{sec:denprops}.
-
-\begin{proof}
-by induction on the derivation of $\ssred \Gamma {\Gamma'} {\Delta} {\Delta'}$.
-
-\case{\sRule{Lam}}
-We need to show $\esem{\Gamma, \Gamma'} \preceq \esem{\Gamma, \Gamma'}$, which holds trivially.
-
-\case{\sRule{App}}
-We have
-\[
-\ssred{\Gamma}{w \mapsto e, z \mapsto \sApp w x, \Gamma'}{\Delta}{w \mapsto \sLam y e', z \mapsto \sApp w x, \Delta'}
-\text{ and }
-\ssred{\Delta}{z \mapsto e'[x/y], \Delta'}{\Theta}{\Theta'},
-\]
-so by the induction hypothesis,
-\[
-\esem{\Gamma, w \mapsto e, z \mapsto \sApp w x, \Gamma'} \preceq \esem{\Delta, w \mapsto \sLam y e', z \mapsto \sApp w x, \Delta'}
-\]
-and
-\[
-\esem{\Delta,z \mapsto e'[x/y], \Delta'} \preceq \esem{\Theta,\Theta'}.
-\]
-We need to show $\esem{\Gamma, z \mapsto \sApp e x, \Gamma'} \preceq \esem{\Theta,\Theta'}$:
-\begin{align*}
-\esem{\Gamma, z \mapsto \sApp e x, \Gamma'} &= \esem{\Gamma, w \mapsto e, z\mapsto \sApp e x, \Gamma'} \setminus \{w\} \\
-\aexpl{adding a fresh variable, Lemma \ref{lem:addvar}} \\
-&= \esem{\Gamma, w \mapsto e, z \mapsto \sApp w x, \Gamma'} \setminus \{w\} \\
-\aexpl{substituting the indirection, Lemma \ref{lem:exp_var_subst}} \\
-&\preceq \esem{\Delta, w \mapsto \sLam y e', z \mapsto \sApp w x, \Delta'} \setminus \{w\}\\
-\aexpl{by the induction hypothesis} \\
-&= \esem{\Delta, w \mapsto \sLam y e', z \mapsto \sApp (\sLam y e') x, \Delta'} \setminus \{w\} \\
-\aexpl{substituting the indirection again, Lemma \ref{lem:exp_var_subst}} \\
-&= \esem{\Delta, z \mapsto \sApp (\sLam y e') x, \Delta'}\\
-\aexpl{removing the fresh variable again, Lemma \ref{lem:addvar}} \\
-&= \esem{\Delta, z \mapsto e'[x/y], \Delta'} \\
-\aexpl{semantics of application} \\
-&\preceq \esem{\Theta,\Theta'}\\
-\aexpl{by the induction hypothesis.}
-\end{align*}
-
-\case{\sRule{Var}}
-We have 
-\[
-\esem{\Gamma, x \mapsto e, z\mapsto x, \Gamma'} \preceq \esem{\Delta, x \mapsto v, z\mapsto x, \Gamma'}
-\]
-by the induction hypothesis. Using Lemma \ref{lem:var_var_subst} on the right hand side, we obtain
-\[
-\esem{\Gamma, x\mapsto e,z \mapsto x, \Gamma'} \preceq \esem{\Delta, x \mapsto v, z \mapsto v, \Gamma'}.
-\]
-
-\case{\sRule{Let}}
-We have
-\begin{align*}
-\beginright
-\esem{\Gamma,z \mapsto \sLet{\xeng}e, \Gamma'}\\
-&\preceq \esem{\Gamma,\xen, z \mapsto e, \Gamma'} \\
-\aexpl{by unfolding the let-expression, Lemma \ref{lem:let_unfold}} \\
-&\preceq \esem{\Delta,\Delta'}\\
-\aexpl{by the induction hypothesis}
-\end{align*}
-\end{proof}
-
-From the correctness of the stacked semantics we can easily obtain the correctness of the original semantics:
-
-\begin{proof}[of Theroem \ref{thm:main}]
-From $\sred \Gamma e \Delta v$, we have $\ssred{\Gamma}{z \mapsto e}{\Delta}{z\mapsto v}$ for a fresh $z$ by Theorem \ref{thm:equiv}. By the theorem just shown, we have $\esem{\Gamma, z \mapsto e} \preceq \esem{\Delta, z\mapsto v}$. This implies $\dsem{e}{\esem{\Gamma, z \mapsto e}} = \dsem{v}{\esem{\Delta, z\mapsto v}}$ by Lemma \ref{lem:esem_this}. As $z$ is fresh, by Lemma \ref{lem:see_through_fresh} we have $\dsem{e}{\esem{\Gamma}} = \dsem{e}{\esem{\Delta}}$.
-\end{proof}
-
-\section{The update-based semantics}
-\label{updsemantics}
-
-We have found another way to fix Launchbury's correctness proof: We modify the denotational semantics of heaps to be
-\begin{align*}
-\esemu{ \Gamma }\rho &= \mu \rho'. \rho + \dsemu{\Gamma}{\rho'},
-\end{align*}
-where
-\[
-(\rho + \dsemu{\Gamma}{\rho'})\, x = 
-\begin{cases}
-(\dsemu{\Gamma}{\rho'})\, x, &\text{if } x \in \dom \Gamma\\
-\rho\, x &\text{otherwise},
-\end{cases}
-\]
-i.e. we replace the least upper bound operator by a right-sided update, and otherwise let $\dsemu{\_}\_$ be defined by the same equations as $\dsem{\_}\_$.
-
-Interestingly, the denotational semantics of expressions are the same under both definitions:
-\begin{lemma}
-For all $e$ and $\rho$, $\dsem{e}{\rho} = \dsemu{e}{\rho}$.
-\label{lem:deneq}
-\end{lemma}
-
-\begin{proof}
-by induction on $e$. The interesting case is \sRule{Let}, where we use that $\esem{\Gamma}{\rho} = \esemu{\Gamma}{\rho}$ if the domains of $\Gamma$ and $\rho$ are distinct, which is the case as the variables introduced on the heap in rule \sRule{Let} are fresh.
-\end{proof}
-
-In the following we will only mention $\dsem{\_}\_$.
-
 \subsection{Properties of the update-based denotational semantics}
 \label{updsemanticsprops}
 
+To reproduce Launchbury's correctness proof (Theorem~\ref{thm:thm2}) with regard to the update-based semantics we first show some lemmas about the denotational semantics.
+to 
 In order to prove correctness of Launchbury's natural semantics with regard to this denotational semantics, using the prove as given in \cite{launchbury}, we need to state some lemmas about the denotational semantics. Again we recommend to skip this section at first and follow the references as needed.
 
 The lemma that justifies the introduction of the update-based semantics is the following, which is the equality that was used in the original proof but does not hold for the standard denotational semantics (see Section~\ref{counterexample}).
@@ -761,7 +902,7 @@ For $(x\mapsto e)\in \Gamma$ we have $(\esemu{\Gamma}\rho)\,x = \dsem{e}{\esemu{
 by unrolling the fixed point once.
 \end{proof}
 
-The other case when looking up a variable in the denotaion of a heap is
+The other case when looking up a variable in the denotation of a heap is
 
 \begin{lemma}
 \label{lem:esemu_other}
@@ -936,140 +1077,5 @@ We use the antisymmetry of $\sqsubseteq$, and the leastness of least fixed point
 \end{compactitem}
 \end{proof}
 
-\subsection{Correctness}
-
-Using the modified semantics we can state `Theorem' \ref{thm:false} as a theorem and prove it:
-\begin{theorem}
-If $\sred \Gamma e \Delta v$ holds, then for all environments $\rho \in \sEnv$, $\dsem{e}{\esemu{\Gamma}{\rho}} = \dsem{v}{\esemu{\Delta}{\rho}}$ and $\esemu\Gamma\rho \preceq \esemu\Delta\rho$.%
-\label{thm:thm2}
-\end{theorem}
-
-Our proof follows Launchbury's steps quite closely, the only differences are the use of $\preceq$ instead of $\le$ and the slightly different iterative fixed-point expression in case \sRule{Var}. Nevertheless we reproduce it here for completeness and clarifying details.
-
-\begin{proof}
-This is essentially the proof in \cite{launchbury}, which proceeds by induction on the derivation of $\sred \Gamma e \Delta v$.
-
-\case{\sRule{Lam}}
-This case is trivial.
-
-\case{\sRule{App}}
-By the induction hypothesis we know
-$\dsem{e}{\esemu{\Gamma}\rho} = \dsem{\sLam y {e'}}{\esemu{\Delta}\rho}$ and $\esemu{\Gamma}\rho \preceq \esemu{\Delta}\rho$ as well as $\dsem{e'[x/y]}{\esemu{\Delta}\rho} = \dsem{v}{\esemu{\Theta}\rho}$ and $\esemu{\Delta}\rho \preceq \esemu{\Theta}\rho$.
-
-While the second part follows from the transitivity of $\preceq$, the first part is a simple calculations:
-\begin{align*}
-\dsem{\sApp{e}{x}}{\esemu{\Gamma}\rho} &= \sFnProj{\dsem{e}{\esemu{\Gamma}\rho}}{\dsem{x}{\esemu{\Gamma}{\rho}}}\\
-\aexpl{by the denotation of application} \\
-&= \sFnProj{\dsem{\sLam y {e'}}{\esemu{\Delta}\rho}}{\dsem{x}{\esemu{\Gamma}{\rho}}}\\ 
-\aexpl{by the induction hypothesis} \\
-&= \sFnProj{\dsem{\sLam y {e'}}{\esemu{\Delta}\rho}}{\dsem{x}{\esemu{\Delta}{\rho}}}\\ 
-\aexpl{by the induction hypothesis and the definition of $\preceq$} \\
-&= \dsem{e'}{(\esemu{\Delta}\rho)(y \mapsto \dsem{x}{\esemu{\Gamma}{\rho}})}\\ 
-\aexpl{by the denotation of lambda abstraction} \\
-&= \dsem{e'[x/y]}{\esemu{\Delta}\rho}\\ 
-\aexpl{by substitution Lemma \ref{lem:subst}} \\
-&= \dsem{v}{\esemu{\Theta}\rho}\\
-\aexpl{by the induction hypothesis}
-\end{align*}
-
-\case{\sRule{Var}}
-We know that $\dsem{e}{\esem{\Gamma}\rho'}=\dsem{v}{\esem{\Delta}\rho'}$ and $\esem{\Gamma}\rho' \preceq \esem{\Delta}\rho'$ for all $\rho'\in\sEnv$.
-
-We begin with the second part:
-\begin{align*}
-\esemu{x \mapsto e,\Gamma}{\rho} &= \mu \rho'.\,\rho + (\esemu{\Gamma}{\rho'})|_{\dom\Gamma} + (x \mapsto \dsem{e}{\esemu{\Gamma}\rho'}) \\
-\aexpl{by Lemma \ref{lem:iter}} \\
-&= \mu \rho'.\, \rho + (\esemu{\Gamma}{\rho'})|_{\dom\Gamma} + (x \mapsto \dsem{z}{\esemu{\Delta}\rho'}) \\
-%\aexpl{by the induction hypothesis, invoked for $\rho'$!} \\
-\aexpl{\parbox{\widthof{by the induction hypothesis. Note that}}{\raggedright by the induction hypothesis. Note that we invoke it for $\rho'$ with $\rho' \ne \rho$!}} \\
-&\preceq \mu \rho'.\, \rho + (\esemu{\Delta}{\rho'})|_{\dom\Delta} + (x \mapsto \dsem{z}{\esemu{\Delta}\rho'}) \\
-\aexpl{by induction and the monotonicity of $\mu$ with regard to $\preceq$} \\
-&= \esemu{x \mapsto v, \Delta}{\rho}\\
-\aexpl{by Lemma \ref{lem:iter}}
-\end{align*}
-
-The first part now follows from the second part:
-\begin{align*}
-\dsem{x}{\esemu{x \mapsto e, \Gamma}\rho} &=
-(\esemu{x \mapsto e, \Gamma}\rho)\,x &
-\aexpl{by the denotation of variables}\\
-&= (\esemu{x \mapsto v, \Delta}\rho)\,x &
-\aexpl{by the first part and $x\in\dom(x\mapsto e, \Gamma)$}\\
-&=\dsem{x}{\esemu{x \mapsto v, \Delta}\rho}&
-\aexpl{by the denotation of variables}\\
-&= \dsem{v}{\esemu{x \mapsto v, \Delta}\rho}.
-\end{align*}
-
-\case{\sRule{Let}}
-We know that $\dsem{e}{\esem{\Gamma, \xen}\rho} = \dsem{v}{\esem{\Delta}{\rho}}$ and $\esem{\Gamma, \xen}\rho \preceq \esem{\Delta}{\rho}$.
-For the first part we have
-\begin{align*}
-\beginright
-\dsem{\sLet{\xeng}e}{\esem{\Gamma}\rho} \\
-&= \dsem{e}{\esem{\xen}{\esem{\Gamma}\rho}} &
-\aexpl{by the denotation of let-expressions} \\
-&= \dsem{e}{\esem{\Gamma, \xen}{\rho}} &
-\aexpl{by Lemma \ref{lem:esem-merge}} \\
-&= \dsem{v}{\esem{\Delta}{\rho}} &
-\aexpl{by the induction hypothesis}
-\intertext{and for the second part we have}
-\esem{\Gamma}{\rho} 
-&\preceq \esem{\xen}{\esem{\Gamma}\rho} &
-\aexpl{because the $x_1,\ldots,x_n$ are fresh} \\
-&\preceq \esem{\Gamma, \xen}\rho &
-\aexpl{by Lemma \ref{lem:esem-merge}} \\
-&\preceq \esem{\Delta}\rho. &
-\aexpl{by the induction hypothesis}
-\end{align*}
-\end{proof}
-
-\section{Related work}
-
-A large number of developments on formal semantics of functional programming languages in the last two decades build on Launchbury’s work. Many of them implicitly or explicitly rely on the correctness proof as spelled out by Launchbury:
-
-Van Eekelen \& de~Mol \shortcite{mixed} add strictness annotations to the syntax and semantics of Launchbury’s work. They state the correctness as in `Theorem' \ref{thm:false}, without spotting the issue.
-
-
-Nakata \& Hasegawa \shortcite{nakata} define a small-step semantics for call-by-need and relate it to a Launchbury-derived big-step semantics. They state the correctness with respect to the denotational semantics and reproduce the `Theorem' \ref{thm:false} in the flawed form, in their extended version.
-
-S{\'a}nchez-Gil {\em et~al.} \shortcite{distributed} extend Launchbury's semantics with distributed evaluation.  In their modified natural semantics the heap retains the expression under evaluation with a special flag, marking them as blocked. Furthermore, the expression under evaluation has a name. Thus the non-distributed subset of their semantics is very similar to our stacked semantics and their correctness statement corresponds to Theorem \ref{thm:thm2}.
-
-An interesting case is the the work by Baker-Finch {\em et~al.} on parallel call-by-need: While an earlier report \shortcite{parallel-tr} uses Launchbury’s definitions unmodified and states the flawed `Theorem' \ref{thm:false}, the following publication at ICFP \shortcite{parallel} uses an update-based denotational semantics, unfortunately without motivating that change.
-
-Similarly, Nakata  \shortcite{nakata_blackhole}, who modifies the denotational semantics to distinguish direct cycles from looping recursion, uses update-based semantics without further explanation. 
-
-This list is just a small collection of many more Launchbury-like semantics. Often the relation to a denotational semantics is not stated, but nevertheless they are standing on the foundations laid by Launchbury. Therefore it is not surprising that others have worked on formally fortifying these foundations as well:
-
-S{\'a}nchez-Gil {\em et~al.} identified a step in his adequacy proof relating the standard and the resourced denotational semantics that is not as trivial as it seemed at first and worked out a detailed pen-and-paper proof \shortcite{functionspaces}. They also plan to prove the equivalency between Launchbury’s natural semantics and a variant thereof, which was used by Launchbury in his adequacy proof, in the theorem prover Coq. As one step in that direction, they address the naming issues and suggest a mixed representation, using de Bruijn indices for locally bound variables and names for free variables \shortcite{nameless}. This corresponds to our treatment of names in the formal development, using the Nominal logic machinery \cite{nominal} locally but not for names bound in heaps.
-
-\section{Discussion}
-
-Although we have found a flaw in the proof and the formulation of the correctness theorem in Launchbury’s semantics, the essential correctness result (as formulated in Theorem~\ref{thm:main}) stills holds. In that sense our work, especially with the computer-verified proofs in \cite{afp}, actually strengthens the foundations of formal work in that field.
-
-We have provided two ways to fix the problem: One by adding a stack to the operational semantics, and one by changing the denotation of heaps. Both variants have precursors in the literature: The extended heaps of \cite{distributed} resemble the heap-stack-pairs of our semantics, while Baker-Finch {\em et~al.} \shortcite{parallel} and Nakata \shortcite{nakata_blackhole} use right-sided updates in their denotational heap semantics.
-
-Adding the stack to the judgments of the natural semantics, although it does not affect the evaluation of expressions at all, seems to make the semantics more suitable for formal proofs than the original semantics:
-\begin{compactitem}
-\item Launchbury’s global notion of “fresh variable” is hard to work with, as noted and fixed before by adding to the judgments an explicit list of variable names to avoid \cite{sestoft}. As the stack in our semantics already contains these names, this additional step is not required.
-\item While proving Theorem \ref{thm:stackedcorrectness}, the environment $\rho$ does not have be all-quantified in the inductive step This simplified the proof a bit and avoids the pitfall that the original proof fell into.
-\end{compactitem}
-The similarity with the extended heaps in \cite{distributed} further supports the usefulness of the stacked semantics.
-
-We had to spend slightly more pages on the the properties of the original denotational semantics (Section~\ref{sec:denprops}) than of the update-based denotational semantics (Section~\ref{updsemanticsprops}). This is partly due to more details in the proofs in the former section, partly because $+$ behaves nicer than $\sqcup$ (e.g.\ it is defined everywhere). This is orthogonal to the usefulness of the stack-based natural semantics, which could be proven correct with regard to the updates-based denotational semantics as well.
-
-Unless one has to stick with $\sqcup$, e.g. to stay compatible with previous work using this definition, little stands in the way of using the update-based denotational semantics to model the denotation of heaps.
-
-\section{Future work}
-
-Proving correctness is of course only half the battle: The adequacy of Launchbury’s semantics is not yet formally proven. The original paper itself outlines the steps of a proof, and some of these steps have since then been spelled out in greater detail \cite{functionspaces}, and the same authors are currently working on the equivalency of Launchbury’s original and modified natural semantics. We plan to build on these results to eventually have a machine-checked proof of the adequacy of Launchbury’s semantics.
-
-We hope that by proving the correctness and adequacy in a theorem prover, we not “just” reinforce our theoretical foundations but also create a practical (for a theoretician’s understanding of practical) tool that can be used to experiment with the many various ways that this semantics can be extended and modified.
-
-\section*{Acknowledgments}
-
-I would like to thank Andreas Lochbihler for careful proof-reading and his very constructive comments.
-
-\bibliographystyle{jfp}
-\bibliography{\jobname}
 
 \end{document}
