@@ -65,7 +65,8 @@
 \newcommand{\sLam}[2]{\text{\textlambda} #1.\, #2}
 \newcommand{\sLet}[2]{\text{\textsf{let}}\ #1\ \text{\textsf{in}}\ #2}
 \newcommand{\sred}[4]{#1 : #2 \Downarrow #3 : #4}
-\newcommand{\ssred}[4]{#1 : #2 \Downarrow^{\textrm{S}} #3 : #4}
+% 'DOWNWARDS TRIPLE ARROW' (U+290B)
+\newcommand{\ssred}[4]{#1 : #2 \mathrel{\rotatebox[origin=c]{90}{$\Lleftarrow$}} #3 : #4}
 \newcommand{\sRule}[1]{\text{{\textsc{#1}}}}
 
 % Other functions and styles
