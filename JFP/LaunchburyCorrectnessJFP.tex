@@ -194,7 +194,7 @@ In order to show that the natural semantics behaves as expected, Launchbury defi
 \[
 \sValue = (\sValue \to \sValue)_\bot,
 \]
-which allows to distinguish $\bot$ from $\lambda x. \bot$. Lifting between $\sValue \to \sValue$ and $\sValue$ is performed using the injection $\sFn \_$ and projection $\sFnProj{\_}{\_}$. Values are partially ordered by $\sqsubseteq$.
+which allows to distinguish $\bot$ from $\lambda x. \bot$. Lifting between $\sValue \to \sValue$ and $\sValue$ is performed using the injection $\sFn \_$ and projection $\sFnProj{\_}{\_}$. Values are partially ordered by~$\sqsubseteq$.
 
 A semantic environment maps variables to values
 \begin{alignat*}{2}
@@ -211,7 +211,7 @@ The environment $\rho|_S$, where $S$ is a set of variables, is the domain-restri
 \bot& \text{if } x \not\in S.
 \end{cases}
 \]
-The environment $\rho\setminus S$ is the domain-restriction of $\rho$ to the complement of $S$, i.e.\ \mbox{$\rho\setminus S \coloneqq \rho|_{\sVar \setminus S}$}.
+The environment $\rho\setminus S$ is defined as the the domain-restriction of $\rho$ to the complement of $S$, i.e.\ \mbox{$\rho\setminus S \coloneqq \rho|_{\sVar \setminus S}$}.
 
 The semantics of expressions and heaps are mutually recursive. The meaning of a expression $e \in \sExp$ in an environment $\rho \in \sEnv$ is written as $\dsem e \rho \in \sValue$ and is defined as
 \begin{align*}
@@ -234,7 +234,7 @@ The relation $\sqsubseteq$ on environments is $\sqsubseteq$ on $\sValue$, lifted
 
 Launchbury additionally introduces the partial order $\le$ on environments, where $\rho \le \rho'$ is defined as $\forall x. \rho\, x \ne \bot \implies \rho\,x =\rho'\,x$. While this captures, as intended the concept of $\rho'$ adding bindings to $\rho$, the use of this definition in the proofs is problematic, as discussed in the following section.
 
-The notation $\esem{\Gamma}\rho \preceq \esem{\Delta}{\rho'}$ is an abbreviation for $\dom\Gamma \subseteq \dom\Delta \wedge \forall x\in \dom\Gamma. (\esem{\Gamma}\rho)\,x = (\esem{\Delta}{\rho'})\,x$, and $\preceq$ is transitive.
+The notation $\esem{\Gamma}\rho \preceq \esem{\Delta}{\rho'}$ is an abbreviation for the expression $\dom\Gamma \subseteq \dom\Delta \wedge \forall x\in \dom\Gamma. (\esem{\Gamma}\rho)\,x = (\esem{\Delta}{\rho'})\,x$, and $\preceq$ is transitive.
 
 
 \subsection{The correctness theorem and the counter example}
