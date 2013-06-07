@@ -10,6 +10,7 @@ inductive IndirectionList :: "indirections \<Rightarrow> bool" where
 
 class resolvable =
   fixes resolve :: "'a \<Rightarrow> indirections \<Rightarrow> 'a" (infixl "\<ominus>" 60)
+  assumes resolve_append[simp]: "x \<ominus> (is'@is) = x \<ominus> is' \<ominus> is"
 
 class resolvable_eqvt = resolvable + pt + 
   assumes resolve_eqvt: "p \<bullet> (x \<ominus> is) = (p \<bullet> x) \<ominus> (p \<bullet> is)"
@@ -20,39 +21,51 @@ instantiation list :: (resolvable) resolvable
 begin
   definition resolve_list :: "'a list \<Rightarrow> indirections \<Rightarrow> 'a list"
   where "m \<ominus> is = map (\<lambda>x. x \<ominus> is) m"
-instance ..
+
+  lemma resolve_list_Nil[simp]: "[] \<ominus> is = []"
+    unfolding resolve_list_def by simp
+  
+  lemma resolve_list_Cons[simp]: "(x # xs) \<ominus> is = (x \<ominus> is) # (xs \<ominus> is)"
+    unfolding resolve_list_def by simp
+instance
+  apply default
+  by (induct_tac "x")auto
 end
 
 instance list :: (resolvable_eqvt) resolvable_eqvt
   by default (simp_all add: resolve_list_def)
 
-lemma resolve_list_Nil[simp]: "[] \<ominus> is = []"
-  unfolding resolve_list_def by simp
-
-lemma resolve_list_Cons[simp]: "(x # xs) \<ominus> is = (x \<ominus> is) # (xs \<ominus> is)"
-  unfolding resolve_list_def by simp
-
-instantiation var :: resolvable 
+instantiation var :: resolvable_eqvt
 begin
   fun resolve_var :: "var \<Rightarrow> indirections \<Rightarrow> var"  where
     "v \<ominus> [] = (v::var)"
     | "v \<ominus> ((x,y)#is) = v[x ::v= y] \<ominus> is"
-instance ..
+
+  lemma resolve_var_append: "(v::var) \<ominus> (is'@is) = v \<ominus> is' \<ominus> is"
+    by (induct "is'" arbitrary: v) auto
+instance
+  apply default
+  apply (rule resolve_var_append)
+  apply (induct_tac x "is" rule:resolve_var.induct, simp+)
+  done
 end
 
-instance var ::  resolvable_eqvt
-  apply default
-  apply (induct_tac x "is" rule:resolve_var.induct)
-  apply (simp+)
-  done
-
-
-instantiation exp :: resolvable 
+instantiation exp :: resolvable_eqvt
 begin
   fun resolve_exp :: "exp \<Rightarrow> indirections \<Rightarrow> exp" where
     "e \<ominus> [] = (e::exp)"
     | "e \<ominus> ((x,y)#is) = (e[x ::= y]) \<ominus> is"
-instance ..
+
+  lemma resolve_exp_append: "(e::exp) \<ominus> (is'@is) = e \<ominus> is' \<ominus> is"
+    by (induct "is'" arbitrary: e) auto
+
+  lemma resolve_exp_eqvt[eqvt]: "p \<bullet> ((e::exp) \<ominus> is) = (p \<bullet> e) \<ominus> (p \<bullet> is)"
+    by (induction e "is" rule:resolve_exp.induct) simp+
+instance 
+  apply default
+  apply (rule resolve_exp_append)
+  apply (rule resolve_exp_eqvt)
+  done
 end
 
 lemma resolve_var_fresh: "atom ` fst ` set is \<sharp>* v \<Longrightarrow> (v::var) \<ominus> is = v"
@@ -61,17 +74,6 @@ lemma resolve_var_fresh: "atom ` fst ` set is \<sharp>* v \<Longrightarrow> (v::
 lemma resolve_var_list_fresh: "atom ` fst ` set is \<sharp>* L \<Longrightarrow> (L::var list) \<ominus> is = L"
   by (induct L) (auto simp add: fresh_star_Cons resolve_var_fresh)
 
-lemma resolve_var_append: "(v::var) \<ominus> (is'@is) = v \<ominus> is' \<ominus> is"
-  by (induct "is'" arbitrary: v) auto
-
-lemma resolve_var_list_append: "(v::var list) \<ominus> (is'@is) = v \<ominus> is' \<ominus> is"
- by (simp add: resolve_list_def resolve_var_append)
-
-lemma resolve_exp_append: "(e::exp) \<ominus> (is'@is) = e \<ominus> is' \<ominus> is"
-  by (induct "is'" arbitrary: e) auto
-
-lemma resolve_exp_eqvt[eqvt]: "p \<bullet> ((e::exp) \<ominus> is) = (p \<bullet> e) \<ominus> (p \<bullet> is)"
-  by (induction e "is" rule:resolve_exp.induct) simp+
 
 lemma resolveExp_Lam: "atom x \<sharp> is \<Longrightarrow> (Lam [x]. e) \<ominus> is = Lam [x]. (e \<ominus> is)"
   apply (induction "is" arbitrary: e)
@@ -193,7 +195,7 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z u e' "is")
     from Application(12)
     obtain "is''"
     where is'':"\<Delta> \<ominus>\<^sub>h is'@is : (e'[y::=x]) \<ominus> is'@is \<Down>\<^sup>False\<^sup>u\<^bsub>L \<ominus> is'@is \<^esub> \<Theta> \<ominus>\<^sub>h (is''@is'@is) : z \<ominus> (is''@is'@is)"
-            and "atom ` (fst ` set is'') \<sharp>* L" by auto
+            and "atom ` (fst ` set is'') \<sharp>* L" by blast
 
     from `atom \` fst \` set is' \<sharp>* x`
     have [simp]: "x \<ominus> is' = x"
@@ -228,8 +230,7 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z u e' "is")
     have "\<dots> \<ominus> is' @ is = (((y \<leftrightarrow> y') \<bullet> e') \<ominus> (is'@is))[y' ::= (x \<ominus> (is'@is))]" 
        by (simp add: resolve_subst fresh_Pair fresh_append)
     also
-    have "L \<ominus> is' @ is = L \<ominus> is"
-      by (simp add: resolve_var_list_append)
+    have "L \<ominus> is' @ is = L \<ominus> is" by simp
     finally      
     have "\<Delta> \<ominus>\<^sub>h is'@is : (((y \<leftrightarrow> y') \<bullet> e') \<ominus> (is'@is))[y' ::= (x \<ominus> (is'@is))] \<Down>\<^sup>False\<^sup>u\<^bsub>L \<ominus> is \<^esub> \<Theta> \<ominus>\<^sub>h (is''@is'@is) : z \<ominus> (is''@is'@is)".
   }
