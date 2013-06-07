@@ -20,6 +20,11 @@ lemma eqvt_at_apply:
   shows "(p \<bullet> f) x = f x"
 by (metis (hide_lams, no_types) assms eqvt_at_def permute_fun_def permute_minus_cancel(1))
 
+lemma eqvt_at_apply':
+  assumes "eqvt_at f x"
+  shows "p \<bullet> f x = f (p \<bullet> x)"
+by (metis (hide_lams, no_types) assms eqvt_at_def)
+
 subsubsection {* Freshness via equivariance *}
 
 lemma eqvt_fresh_cong1: "(\<And>p x. p \<bullet> (f x) = f (p \<bullet> x)) \<Longrightarrow> a \<sharp> x \<Longrightarrow> a \<sharp> f x "

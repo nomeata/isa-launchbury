@@ -7,9 +7,10 @@ subsubsection {* The natural semantics, all variants at once*}
 
 inductive
   reds :: "heap \<Rightarrow> exp \<Rightarrow> bool \<Rightarrow> bool \<Rightarrow> var list \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool"
-  ("_ : _ \<Down>\<^sup>_\<^sup>_\<^bsub>_\<^esub> _ : _" [50,50,50,50,50,50] 50)
+  ("(4_ : _/ \<Down>\<^sup>_\<^sup>_\<^bsub>_\<^esub>/ _ : _)" [50,50,50,50,50,50] 50)
 where
-  Lambda: "\<Gamma> : Lam [x]. e \<Down>\<^sup>i\<^sup>u\<^bsub>L\<^esub> \<Gamma> : Lam [x]. e"
+  Lambda: "atom x \<sharp> (\<Gamma>, L)
+    \<Longrightarrow> \<Gamma> : Lam [x]. e \<Down>\<^sup>i\<^sup>u\<^bsub>L\<^esub> \<Gamma> : Lam [x]. e"
  | Application: "\<lbrakk>
     atom y \<sharp> (\<Gamma>,e,x,L,\<Delta>,\<Theta>,z) ;
     \<Gamma> : e \<Down>\<^sup>False\<^sup>u\<^bsub>x#L\<^esub> \<Delta> : (Lam [y]. e');
@@ -40,9 +41,27 @@ where
 equivariance reds
 
 nominal_inductive reds
-avoids Application: "y"
+avoids Lambda: "x" | Application: "y"
 apply (auto simp add: fresh_star_def fresh_Pair pure_fresh)
 done
+
+lemma LambdaI: "\<Gamma> : Lam [x]. e \<Down>\<^sup>i\<^sup>u\<^bsub>L\<^esub> \<Gamma> : Lam [x]. e"
+proof-
+  obtain x' :: var where "atom x' \<sharp> (\<Gamma>, L, e)"  by (rule obtain_fresh)
+  hence "atom x' \<sharp> (\<Gamma>, L)" and [simp]:"atom x' \<sharp> e" by (simp_all add: fresh_Pair)
+
+  
+  have "(x \<leftrightarrow> x') \<bullet> Lam [x]. e = Lam [x]. e"
+    by (rule flip_fresh_fresh) simp+
+  moreover
+  have "(x \<leftrightarrow> x') \<bullet> Lam [x]. e = Lam [x']. ((x \<leftrightarrow> x') \<bullet> e)" by simp
+  moreover
+  from `atom x' \<sharp> (\<Gamma>, L)`
+  have "\<Gamma> : Lam [x']. ((x \<leftrightarrow> x') \<bullet> e) \<Down>\<^sup>i\<^sup>u\<^bsub>L\<^esub> \<Gamma> : Lam [x']. ((x \<leftrightarrow> x') \<bullet> e)"
+    by (rule Lambda)
+  ultimately
+  show ?thesis by metis
+qed
 
 subsubsection {* Specializations*}
 
@@ -53,12 +72,12 @@ where
 
 lemma eval_test_NS:
   "[] : (Let (ACons x (Lam [y]. Var y) ANil) (Var x)) \<Down>\<^bsub>[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y)"
-  by(auto intro!: Lambda Variable Let simp add: fresh_Pair fresh_Cons fresh_Nil fresh_star_def)
+  by(auto intro!: LambdaI Variable Let simp add: fresh_Pair fresh_Cons fresh_Nil fresh_star_def)
 
 schematic_lemma eval_test2_NS:
   "y \<noteq> x \<Longrightarrow> n \<noteq> y \<Longrightarrow> n \<noteq> x \<Longrightarrow>
   [] : (Let (ACons x (Lam [y]. Var y) ANil) (App (Var x) x)) \<Down>\<^bsub>[]\<^esub> [(x, Lam [y]. Var y)] : Lam [y]. Var y"
-  by (auto intro!: Lambda Application Variable Let simp add: fresh_Pair fresh_at_base fresh_Cons fresh_Nil fresh_star_def pure_fresh)
+  by (auto intro!: LambdaI Application Variable Let simp add: fresh_Pair fresh_at_base fresh_Cons fresh_Nil fresh_star_def pure_fresh)
 
 abbreviation
   reds_INS :: "heap \<Rightarrow> exp \<Rightarrow> var list \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool" ("_ : _ \<Down>\<^sup>I\<^bsub>_\<^esub> _ : _" [50,50,50,50] 50)
@@ -67,12 +86,12 @@ where
 
 lemma eval_test_INS:
   "[] : (Let (ACons x (Lam [y]. Var y) ANil) (Var x)) \<Down>\<^sup>I\<^bsub>[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y)"
-  by(auto intro!: Lambda Variable Let simp add: fresh_Pair fresh_Cons fresh_Nil fresh_star_def)
+  by(auto intro!: LambdaI Variable Let simp add: fresh_Pair fresh_Cons fresh_Nil fresh_star_def)
 
 schematic_lemma eval_test2_INS:
   "y \<noteq> x \<Longrightarrow> n \<noteq> y \<Longrightarrow> n \<noteq> x \<Longrightarrow>
   [] : (Let (ACons x (Lam [y]. Var y) ANil) (App (Var x) x)) \<Down>\<^sup>I\<^bsub>[]\<^esub> [(y, Lam [y]. Var y), (x, Lam [y]. Var y)] : Lam [y]. Var y"
-  by (auto intro!: Lambda ApplicationInd Variable Let simp add: fresh_Pair fresh_at_base fresh_Cons fresh_Nil fresh_star_def pure_fresh)
+  by (auto intro!: LambdaI ApplicationInd Variable Let simp add: fresh_Pair fresh_at_base fresh_Cons fresh_Nil fresh_star_def pure_fresh)
 
 abbreviation
   reds_NNS :: "heap \<Rightarrow> exp \<Rightarrow> var list \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool" ("_ : _ \<Down>\<^sup>N\<^bsub>_\<^esub> _ : _" [50,50,50,50] 50)
@@ -81,12 +100,12 @@ where
 
 lemma eval_test_NNS:
   "[] : (Let (ACons x (Lam [y]. Var y) ANil) (Var x)) \<Down>\<^sup>N\<^bsub>[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y)"
-  by(auto intro!: Lambda VariableNoUpd Let simp add: fresh_Pair fresh_Cons fresh_Nil fresh_star_def)
+  by(auto intro!: LambdaI VariableNoUpd Let simp add: fresh_Pair fresh_Cons fresh_Nil fresh_star_def)
 
 schematic_lemma eval_test2_NNS:
   "y \<noteq> x \<Longrightarrow> n \<noteq> y \<Longrightarrow> n \<noteq> x \<Longrightarrow>
   [] : (Let (ACons x (Lam [y]. Var y) ANil) (App (Var x) x)) \<Down>\<^sup>N\<^bsub>[]\<^esub> [ (x, Lam [y]. Var y)] : Lam [y]. Var y"
-  by (auto intro!: Lambda Application VariableNoUpd Let simp add: fresh_Pair fresh_at_base fresh_Cons fresh_Nil fresh_star_def pure_fresh)
+  by (auto intro!: LambdaI Application VariableNoUpd Let simp add: fresh_Pair fresh_at_base fresh_Cons fresh_Nil fresh_star_def pure_fresh)
 
 abbreviation
   reds_ANS :: "heap \<Rightarrow> exp \<Rightarrow> var list \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool" ("_ : _ \<Down>\<^sup>A\<^bsub>_\<^esub> _ : _" [50,50,50,50] 50)
@@ -95,12 +114,12 @@ where
 
 lemma eval_test_A:
   "[] : (Let (ACons x (Lam [y]. Var y) ANil) (Var x)) \<Down>\<^sup>A\<^bsub>[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y)"
-  by(auto intro!: Lambda  VariableNoUpd Let simp add: fresh_Pair fresh_Cons fresh_Nil fresh_star_def)
+  by(auto intro!: LambdaI  VariableNoUpd Let simp add: fresh_Pair fresh_Cons fresh_Nil fresh_star_def)
 
 schematic_lemma eval_test2_A:
   "y \<noteq> x \<Longrightarrow> n \<noteq> y \<Longrightarrow> n \<noteq> x \<Longrightarrow>
   [] : (Let (ACons x (Lam [y]. Var y) ANil) (App (Var x) x)) \<Down>\<^sup>A\<^bsub>[]\<^esub> [(y, Var x), (x, Lam [y]. Var y)] : Lam [y]. Var y"
-  by (auto intro!: Lambda ApplicationInd VariableNoUpd Let simp add: fresh_Pair fresh_at_base fresh_Cons fresh_Nil fresh_star_def pure_fresh)
+  by (auto intro!: LambdaI ApplicationInd VariableNoUpd Let simp add: fresh_Pair fresh_at_base fresh_Cons fresh_Nil fresh_star_def pure_fresh)
 
 subsubsection {* Properties of the semantics *}
 
@@ -159,8 +178,11 @@ inductive
   distinct_reds :: "heap \<Rightarrow> exp \<Rightarrow> bool \<Rightarrow> bool \<Rightarrow> var list \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool"
   ("_ : _ \<Down>\<^sup>_\<^sup>_\<^sup>d\<^bsub>_\<^esub> _ : _" [50,50,50,50,50,50] 50)
 where
-  DLambda:
-    "distinctVars \<Gamma> \<Longrightarrow> \<Gamma> : (Lam [x]. e) \<Down>\<^sup>i\<^sup>u\<^sup>d\<^bsub>L\<^esub> \<Gamma> : (Lam [x]. e)" 
+  DLambda: "\<lbrakk>
+    atom x \<sharp> (\<Gamma>, L);
+    distinctVars \<Gamma>
+  \<rbrakk> \<Longrightarrow>
+    \<Gamma> : (Lam [x]. e) \<Down>\<^sup>i\<^sup>u\<^sup>d\<^bsub>L\<^esub> \<Gamma> : (Lam [x]. e)" 
  | DApplication: "\<lbrakk>
     atom y \<sharp> (\<Gamma>,e,x,L,\<Delta>,\<Theta>,z) ;
     \<Gamma> : e \<Down>\<^sup>False\<^sup>u\<^sup>d\<^bsub>x#L\<^esub> \<Delta> : (Lam [y]. e');
@@ -203,7 +225,7 @@ where
 equivariance distinct_reds
 
 nominal_inductive distinct_reds
-  avoids DApplication: "y"
+  avoids DLambda: "x" | DApplication: "y"
   apply (auto simp add: fresh_star_def fresh_Cons fresh_Pair pure_fresh)
   done
 
@@ -397,7 +419,7 @@ lemma reds_smaller_L: "\<lbrakk> \<Gamma> : e \<Down>\<^sup>i\<^sup>u\<^bsub>L\<
 proof(nominal_induct avoiding : L' rule: reds.strong_induct)
 case (Lambda \<Gamma> x e L L')
   show ?case
-    by (rule reds.Lambda)
+    by (rule LambdaI)
 next
 case (Application y \<Gamma> e xa L \<Delta> \<Theta> z u e' L')
   show ?case
