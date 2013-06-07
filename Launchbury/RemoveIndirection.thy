@@ -252,7 +252,17 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z u e' "is")
   show ?case
     by -(rule exI[where x = "is''@is'"], simp add: resolveExp_App resolve_var_append)
 next
-
+case (ApplicationInd y \<Gamma> e x L \<Delta> z u e' \<Theta>  "is")
+  show ?case sorry
+next
+case (Variable x e \<Gamma> i L \<Delta> z "is")
+  show ?case sorry
+next
+case (VariableNoUpd x e \<Gamma> i L \<Delta> z "is")
+  show ?case sorry
+next
+case (Let as \<Gamma> L body i u \<Delta> z "is")
+  show ?case sorry
 qed
 
 end
