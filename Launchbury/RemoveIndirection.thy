@@ -26,6 +26,9 @@ end
 instance list :: (resolvable_eqvt) resolvable_eqvt
   by default (simp_all add: resolve_list_def)
 
+lemma resolve_list_Nil[simp]: "[] \<ominus> is = []"
+  unfolding resolve_list_def by simp
+
 lemma resolve_list_Cons[simp]: "(x # xs) \<ominus> is = (x \<ominus> is) # (xs \<ominus> is)"
   unfolding resolve_list_def by simp
 
@@ -51,6 +54,21 @@ begin
     | "e \<ominus> ((x,y)#is) = (e[x ::= y]) \<ominus> is"
 instance ..
 end
+
+lemma resolve_var_fresh: "atom ` fst ` set is \<sharp>* v \<Longrightarrow> (v::var) \<ominus> is = v"
+  by (induct "is" rule:resolve_var.induct)(auto simp add: fresh_star_def fresh_def )
+
+lemma resolve_var_list_fresh: "atom ` fst ` set is \<sharp>* L \<Longrightarrow> (L::var list) \<ominus> is = L"
+  by (induct L) (auto simp add: fresh_star_Cons resolve_var_fresh)
+
+lemma resolve_var_append: "(v::var) \<ominus> (is'@is) = v \<ominus> is' \<ominus> is"
+  by (induct "is'" arbitrary: v) auto
+
+lemma resolve_var_list_append: "(v::var list) \<ominus> (is'@is) = v \<ominus> is' \<ominus> is"
+ by (simp add: resolve_list_def resolve_var_append)
+
+lemma resolve_exp_append: "(e::exp) \<ominus> (is'@is) = e \<ominus> is' \<ominus> is"
+  by (induct "is'" arbitrary: e) auto
 
 lemma resolve_exp_eqvt[eqvt]: "p \<bullet> ((e::exp) \<ominus> is) = (p \<bullet> e) \<ominus> (p \<bullet> is)"
   by (induction e "is" rule:resolve_exp.induct) simp+
@@ -148,9 +166,9 @@ next
 qed (auto simp add: fresh_Pair fresh_star_Pair exp_assn.bn_defs  flip_fresh_fresh simp del: exp_assn.eq_iff)
 
 theorem
-  "\<Gamma> : e \<Down>\<^sup>i\<^sup>u\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> supp is \<subseteq> supp \<Gamma> \<union> supp L \<Longrightarrow>
+  "\<Gamma> : e \<Down>\<^sup>i\<^sup>u\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> (* supp is \<subseteq> supp \<Gamma> \<union> supp L \<Longrightarrow> *)
   \<exists> is'. (\<Gamma> \<ominus>\<^sub>h is : e \<ominus> is \<Down>\<^sup>False\<^sup>u\<^bsub>L \<ominus> is\<^esub> \<Delta> \<ominus>\<^sub>h (is'@is) : z \<ominus> (is'@is))
-       \<and> supp (fst ` set is') \<sharp>* supp (\<Gamma>, L)" 
+       \<and> atom ` (fst ` set is') \<sharp>* L" 
 proof (nominal_induct \<Gamma> e i u L \<Delta> z avoiding: "is"  rule:reds.strong_induct )
 case (Lambda x \<Gamma> L e i u "is")[simp]
   have "resolveHeap \<Gamma> is : Lam [x]. (e \<ominus> is) \<Down>\<^sup>False\<^sup>u \<^bsub>L \<ominus> is\<^esub>  \<Gamma> \<ominus>\<^sub>h is : Lam [x]. (e \<ominus> is)"
@@ -163,21 +181,26 @@ case (Lambda x \<Gamma> L e i u "is")[simp]
     done
 next
 case (Application y \<Gamma> e x L \<Delta> \<Theta> z u e' "is")
-    from Application(13)
-    have "supp is \<subseteq> supp \<Gamma> \<union> supp (x # L)" by (auto simp add: supp_Cons)
-    from Application(10)[OF this]
+    from Application(10)
     obtain "is'"
     where is': "\<Gamma> \<ominus>\<^sub>h is : e \<ominus> is \<Down>\<^sup>False\<^sup>u\<^bsub>(x # L) \<ominus> is\<^esub> \<Delta> \<ominus>\<^sub>h (is'@is) : (Lam [y]. e') \<ominus> (is'@is)"
-        and "supp (fst ` set is') \<sharp>* supp (\<Gamma>, x # L)" by auto
+        and "atom ` (fst ` set is') \<sharp>* (x # L)" by auto
 
-    have "supp (is'@is) \<subseteq> supp \<Delta> \<union> supp L" sorry
-    from Application(12)[OF this]
+    from this(2)
+    have "atom ` fst ` set is' \<sharp>* x" and "atom ` fst ` set is' \<sharp>*  L"
+      by (simp_all add: fresh_star_Pair fresh_star_Cons)
+
+    from Application(12)
     obtain "is''"
     where is'':"\<Delta> \<ominus>\<^sub>h is'@is : (e'[y::=x]) \<ominus> is'@is \<Down>\<^sup>False\<^sup>u\<^bsub>L \<ominus> is'@is \<^esub> \<Theta> \<ominus>\<^sub>h (is''@is'@is) : z \<ominus> (is''@is'@is)"
-            and "supp (fst ` set is'') \<sharp>* supp (\<Delta>, L)" by auto
+            and "atom ` (fst ` set is'') \<sharp>* L" by auto
 
-    have [simp]: "x \<ominus> is' @ is = x \<ominus> is" sorry
-    have [simp]: "L \<ominus> is' @ is = L \<ominus> is" sorry
+    from `atom \` fst \` set is' \<sharp>* x`
+    have [simp]: "x \<ominus> is' = x"
+      by (rule resolve_var_fresh)
+    from `atom \` fst \` set is' \<sharp>* L`
+    have [simp]: "L \<ominus> is' = L"
+      by (rule resolve_var_list_fresh)
 
     (* Because is' is introduced later the strong induction does not provide us
        with @{term "atom y \<sharp> is'"}, so we need to shuffle variables around. *)
@@ -191,7 +214,7 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z u e' "is")
     have "Lam [y]. e' =  Lam [y']. ((y \<leftrightarrow> y') \<bullet> e')" by simp
     with is' `atom y' \<sharp> _` `atom y \<sharp> e` 
     have "\<Gamma> \<ominus>\<^sub>h is : e \<ominus> is \<Down>\<^sup>False\<^sup>u\<^bsub>(x \<ominus> is'@is)# (L \<ominus> is)\<^esub> \<Delta> \<ominus>\<^sub>h (is'@is) : Lam [y']. (((y \<leftrightarrow> y') \<bullet> e') \<ominus> (is'@is))"
-      by (simp add: fresh_Pair flip_fresh_fresh resolveExp_Lam fresh_append del: exp_assn.eq_iff)
+      by (simp add: fresh_Pair flip_fresh_fresh resolveExp_Lam fresh_append resolve_var_append del: exp_assn.eq_iff)
   moreover
   { note is''
     also
@@ -204,7 +227,9 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z u e' "is")
     from `atom y' \<sharp> _`
     have "\<dots> \<ominus> is' @ is = (((y \<leftrightarrow> y') \<bullet> e') \<ominus> (is'@is))[y' ::= (x \<ominus> (is'@is))]" 
        by (simp add: resolve_subst fresh_Pair fresh_append)
-    also note `L \<ominus> is' @ is = L \<ominus> is`
+    also
+    have "L \<ominus> is' @ is = L \<ominus> is"
+      by (simp add: resolve_var_list_append)
     finally      
     have "\<Delta> \<ominus>\<^sub>h is'@is : (((y \<leftrightarrow> y') \<bullet> e') \<ominus> (is'@is))[y' ::= (x \<ominus> (is'@is))] \<Down>\<^sup>False\<^sup>u\<^bsub>L \<ominus> is \<^esub> \<Theta> \<ominus>\<^sub>h (is''@is'@is) : z \<ominus> (is''@is'@is)".
   }
@@ -219,13 +244,14 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z u e' "is")
           eqvt_fresh_cong2[where f = resolveHeap, OF resolveHeap_eqvt])
     done
   moreover
-  have "supp (fst ` (set is'' \<union> set is')) \<sharp>* supp (\<Gamma>, L)"
-    sorry
+  from `atom \` fst \` set is' \<sharp>* L` `atom \` fst \` set is'' \<sharp>* L`
+  have "atom ` (fst ` (set (is'' @ is'))) \<sharp>* L"
+    by (auto simp add: fresh_star_def)
   ultimately
   show ?case
-    by -(rule exI[where x = "is''@is'"], simp add: resolveExp_App)
+    by -(rule exI[where x = "is''@is'"], simp add: resolveExp_App resolve_var_append)
 next
 
-qed  
+qed
 
 end
