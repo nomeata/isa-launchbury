@@ -169,11 +169,11 @@ qed (auto simp add: fresh_Pair fresh_star_Pair exp_assn.bn_defs  flip_fresh_fres
 
 theorem
   "\<Gamma> : e \<Down>\<^sup>i\<^sup>u\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> (* supp is \<subseteq> supp \<Gamma> \<union> supp L \<Longrightarrow> *)
-  \<exists> is'. (\<Gamma> \<ominus>\<^sub>h is : e \<ominus> is \<Down>\<^sup>False\<^sup>u\<^bsub>L \<ominus> is\<^esub> \<Delta> \<ominus>\<^sub>h (is'@is) : z \<ominus> (is'@is))
+  \<exists> is'. (\<Gamma> \<ominus>\<^sub>h is : e \<ominus> is \<Down>\<^sup>\<times>\<^sup>u\<^bsub>L \<ominus> is\<^esub> \<Delta> \<ominus>\<^sub>h (is'@is) : z \<ominus> (is'@is))
        \<and> atom ` (fst ` set is') \<sharp>* L" 
 proof (nominal_induct \<Gamma> e i u L \<Delta> z avoiding: "is"  rule:reds.strong_induct )
 case (Lambda x \<Gamma> L e i u "is")[simp]
-  have "resolveHeap \<Gamma> is : Lam [x]. (e \<ominus> is) \<Down>\<^sup>False\<^sup>u \<^bsub>L \<ominus> is\<^esub>  \<Gamma> \<ominus>\<^sub>h is : Lam [x]. (e \<ominus> is)"
+  have "resolveHeap \<Gamma> is : Lam [x]. (e \<ominus> is) \<Down>\<^sup>\<times>\<^sup>u \<^bsub>L \<ominus> is\<^esub>  \<Gamma> \<ominus>\<^sub>h is : Lam [x]. (e \<ominus> is)"
     by (rule LambdaI)
   then
   show ?case
@@ -185,7 +185,7 @@ next
 case (Application y \<Gamma> e x L \<Delta> \<Theta> z u e' "is")
     from Application(10)
     obtain "is'"
-    where is': "\<Gamma> \<ominus>\<^sub>h is : e \<ominus> is \<Down>\<^sup>False\<^sup>u\<^bsub>(x # L) \<ominus> is\<^esub> \<Delta> \<ominus>\<^sub>h (is'@is) : (Lam [y]. e') \<ominus> (is'@is)"
+    where is': "\<Gamma> \<ominus>\<^sub>h is : e \<ominus> is \<Down>\<^sup>\<times>\<^sup>u\<^bsub>(x # L) \<ominus> is\<^esub> \<Delta> \<ominus>\<^sub>h (is'@is) : (Lam [y]. e') \<ominus> (is'@is)"
         and "atom ` (fst ` set is') \<sharp>* (x # L)" by auto
 
     from this(2)
@@ -194,7 +194,7 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z u e' "is")
 
     from Application(12)
     obtain "is''"
-    where is'':"\<Delta> \<ominus>\<^sub>h is'@is : (e'[y::=x]) \<ominus> is'@is \<Down>\<^sup>False\<^sup>u\<^bsub>L \<ominus> is'@is \<^esub> \<Theta> \<ominus>\<^sub>h (is''@is'@is) : z \<ominus> (is''@is'@is)"
+    where is'':"\<Delta> \<ominus>\<^sub>h is'@is : (e'[y::=x]) \<ominus> is'@is \<Down>\<^sup>\<times>\<^sup>u\<^bsub>L \<ominus> is'@is \<^esub> \<Theta> \<ominus>\<^sub>h (is''@is'@is) : z \<ominus> (is''@is'@is)"
             and "atom ` (fst ` set is'') \<sharp>* L" by blast
 
     from `atom \` fst \` set is' \<sharp>* x`
@@ -215,7 +215,7 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z u e' "is")
     ultimately
     have "Lam [y]. e' =  Lam [y']. ((y \<leftrightarrow> y') \<bullet> e')" by simp
     with is' `atom y' \<sharp> _` `atom y \<sharp> e` 
-    have "\<Gamma> \<ominus>\<^sub>h is : e \<ominus> is \<Down>\<^sup>False\<^sup>u\<^bsub>(x \<ominus> is'@is)# (L \<ominus> is)\<^esub> \<Delta> \<ominus>\<^sub>h (is'@is) : Lam [y']. (((y \<leftrightarrow> y') \<bullet> e') \<ominus> (is'@is))"
+    have "\<Gamma> \<ominus>\<^sub>h is : e \<ominus> is \<Down>\<^sup>\<times>\<^sup>u\<^bsub>(x \<ominus> is'@is)# (L \<ominus> is)\<^esub> \<Delta> \<ominus>\<^sub>h (is'@is) : Lam [y']. (((y \<leftrightarrow> y') \<bullet> e') \<ominus> (is'@is))"
       by (simp add: fresh_Pair flip_fresh_fresh resolveExp_Lam fresh_append resolve_var_append del: exp_assn.eq_iff)
   moreover
   { note is''
@@ -232,11 +232,11 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z u e' "is")
     also
     have "L \<ominus> is' @ is = L \<ominus> is" by simp
     finally      
-    have "\<Delta> \<ominus>\<^sub>h is'@is : (((y \<leftrightarrow> y') \<bullet> e') \<ominus> (is'@is))[y' ::= (x \<ominus> (is'@is))] \<Down>\<^sup>False\<^sup>u\<^bsub>L \<ominus> is \<^esub> \<Theta> \<ominus>\<^sub>h (is''@is'@is) : z \<ominus> (is''@is'@is)".
+    have "\<Delta> \<ominus>\<^sub>h is'@is : (((y \<leftrightarrow> y') \<bullet> e') \<ominus> (is'@is))[y' ::= (x \<ominus> (is'@is))] \<Down>\<^sup>\<times>\<^sup>u\<^bsub>L \<ominus> is \<^esub> \<Theta> \<ominus>\<^sub>h (is''@is'@is) : z \<ominus> (is''@is'@is)".
   }
   ultimately
   thm reds.Application[rotated, OF this(1), OF this(2)]
-  have "\<Gamma> \<ominus>\<^sub>h is : App (e \<ominus> is) (x \<ominus> is' @ is) \<Down>\<^sup>False\<^sup>u\<^bsub>L \<ominus> is\<^esub> \<Theta> \<ominus>\<^sub>h is'' @ is' @ is : z \<ominus> is'' @ is' @ is"
+  have "\<Gamma> \<ominus>\<^sub>h is : App (e \<ominus> is) (x \<ominus> is' @ is) \<Down>\<^sup>\<times>\<^sup>u\<^bsub>L \<ominus> is\<^esub> \<Theta> \<ominus>\<^sub>h is'' @ is' @ is : z \<ominus> is'' @ is' @ is"
     apply (rule reds.Application[rotated])
     using Application(1-8) `atom y' \<sharp> _`
     apply (auto simp add: fresh_Pair fresh_append

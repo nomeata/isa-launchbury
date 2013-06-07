@@ -4,33 +4,43 @@ begin
 
 subsubsection {* The natural semantics, all variants at once*}
 
+datatype Flag = FlagSet ("\<surd>") | FlagNotSet ("\<times>")
+
+instantiation  Flag :: pure
+begin
+  definition "p \<bullet> (v::Flag) = v"
+instance
+  apply default
+  apply (auto simp add: permute_Flag_def)
+  done
+end
 
 inductive
-  reds :: "heap \<Rightarrow> exp \<Rightarrow> bool \<Rightarrow> bool \<Rightarrow> var list \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool"
+  reds :: "heap \<Rightarrow> exp \<Rightarrow> Flag \<Rightarrow> Flag \<Rightarrow> var list \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool"
   ("(4_ : _/ \<Down>\<^sup>_\<^sup>_\<^bsub>_\<^esub>/ _ : _)" [50,50,50,50,50,50] 50)
 where
   Lambda: "atom x \<sharp> (\<Gamma>, L)
     \<Longrightarrow> \<Gamma> : Lam [x]. e \<Down>\<^sup>i\<^sup>u\<^bsub>L\<^esub> \<Gamma> : Lam [x]. e"
  | Application: "\<lbrakk>
     atom y \<sharp> (\<Gamma>,e,x,L,\<Delta>,\<Theta>,z) ;
-    \<Gamma> : e \<Down>\<^sup>False\<^sup>u\<^bsub>x#L\<^esub> \<Delta> : (Lam [y]. e');
-    \<Delta> : e'[y ::= x] \<Down>\<^sup>False\<^sup>u\<^bsub>L\<^esub> \<Theta> : z
+    \<Gamma> : e \<Down>\<^sup>\<times>\<^sup>u\<^bsub>x#L\<^esub> \<Delta> : (Lam [y]. e');
+    \<Delta> : e'[y ::= x] \<Down>\<^sup>\<times>\<^sup>u\<^bsub>L\<^esub> \<Theta> : z
   \<rbrakk>  \<Longrightarrow>
-    \<Gamma> : App e x \<Down>\<^sup>False\<^sup>u\<^bsub>L\<^esub> \<Theta> : z" 
+    \<Gamma> : App e x \<Down>\<^sup>\<times>\<^sup>u\<^bsub>L\<^esub> \<Theta> : z" 
  | ApplicationInd: "\<lbrakk>
     atom y \<sharp> (\<Gamma>,e,x,L,\<Delta>,z) ;
-    \<Gamma> : e \<Down>\<^sup>True\<^sup>u\<^bsub>x#L\<^esub> \<Delta> : (Lam [y]. e');
-    (y, Var x) # \<Delta> : e' \<Down>\<^sup>True\<^sup>u \<^bsub>L\<^esub> \<Theta> : z
+    \<Gamma> : e \<Down>\<^sup>\<surd>\<^sup>u\<^bsub>x#L\<^esub> \<Delta> : (Lam [y]. e');
+    (y, Var x) # \<Delta> : e' \<Down>\<^sup>\<surd>\<^sup>u \<^bsub>L\<^esub> \<Theta> : z
   \<rbrakk>  \<Longrightarrow>
-    \<Gamma> : App e x \<Down>\<^sup>True\<^sup>u\<^bsub>L\<^esub> \<Theta> : z" 
+    \<Gamma> : App e x \<Down>\<^sup>\<surd>\<^sup>u\<^bsub>L\<^esub> \<Theta> : z" 
  | Variable: "\<lbrakk>
-    (x,e) \<in> set \<Gamma>; delete x \<Gamma> : e \<Down>\<^sup>i\<^sup>True\<^bsub>x#L\<^esub> \<Delta> : z
+    (x,e) \<in> set \<Gamma>; delete x \<Gamma> : e \<Down>\<^sup>i\<^sup>\<surd>\<^bsub>x#L\<^esub> \<Delta> : z
   \<rbrakk> \<Longrightarrow>
-    \<Gamma> : Var x \<Down>\<^sup>i\<^sup>True\<^bsub>L\<^esub> (x, z) # \<Delta> : z"
+    \<Gamma> : Var x \<Down>\<^sup>i\<^sup>\<surd>\<^bsub>L\<^esub> (x, z) # \<Delta> : z"
  | VariableNoUpd: "\<lbrakk>
-    (x,e) \<in> set \<Gamma>; delete x \<Gamma> : e \<Down>\<^sup>i\<^sup>False\<^bsub>x#L\<^esub> \<Delta> : z
+    (x,e) \<in> set \<Gamma>; delete x \<Gamma> : e \<Down>\<^sup>i\<^sup>\<times>\<^bsub>x#L\<^esub> \<Delta> : z
   \<rbrakk> \<Longrightarrow>
-    \<Gamma> : Var x \<Down>\<^sup>i\<^sup>False\<^bsub>L\<^esub> (x, e) # \<Delta> : z"
+    \<Gamma> : Var x \<Down>\<^sup>i\<^sup>\<times>\<^bsub>L\<^esub> (x, e) # \<Delta> : z"
  | Let: "\<lbrakk>
     set (bn as) \<sharp>* (\<Gamma>, L);
     distinctVars (asToHeap as);
@@ -68,7 +78,7 @@ subsubsection {* Specializations*}
 abbreviation
   reds_NS :: "heap \<Rightarrow> exp \<Rightarrow> var list \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool" ("_ : _ \<Down>\<^bsub>_\<^esub> _ : _" [50,50,50,50] 50)
 where
-  "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z \<equiv> \<Gamma> : e \<Down>\<^sup>False\<^sup>True\<^bsub>L\<^esub> \<Delta> : z"
+  "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z \<equiv> \<Gamma> : e \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>L\<^esub> \<Delta> : z"
 
 lemma eval_test_NS:
   "[] : (Let (ACons x (Lam [y]. Var y) ANil) (Var x)) \<Down>\<^bsub>[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y)"
@@ -82,7 +92,7 @@ schematic_lemma eval_test2_NS:
 abbreviation
   reds_INS :: "heap \<Rightarrow> exp \<Rightarrow> var list \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool" ("_ : _ \<Down>\<^sup>I\<^bsub>_\<^esub> _ : _" [50,50,50,50] 50)
 where
-  "\<Gamma> : e \<Down>\<^sup>I\<^bsub>L\<^esub> \<Delta> : z \<equiv> \<Gamma> : e \<Down>\<^sup>True\<^sup>True\<^bsub>L\<^esub> \<Delta> : z"
+  "\<Gamma> : e \<Down>\<^sup>I\<^bsub>L\<^esub> \<Delta> : z \<equiv> \<Gamma> : e \<Down>\<^sup>\<surd>\<^sup>\<surd>\<^bsub>L\<^esub> \<Delta> : z"
 
 lemma eval_test_INS:
   "[] : (Let (ACons x (Lam [y]. Var y) ANil) (Var x)) \<Down>\<^sup>I\<^bsub>[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y)"
@@ -96,7 +106,7 @@ schematic_lemma eval_test2_INS:
 abbreviation
   reds_NNS :: "heap \<Rightarrow> exp \<Rightarrow> var list \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool" ("_ : _ \<Down>\<^sup>N\<^bsub>_\<^esub> _ : _" [50,50,50,50] 50)
 where
-  "\<Gamma> : e \<Down>\<^sup>N\<^bsub>L\<^esub> \<Delta> : z \<equiv> \<Gamma> : e \<Down>\<^sup>False\<^sup>False\<^bsub>L\<^esub> \<Delta> : z"
+  "\<Gamma> : e \<Down>\<^sup>N\<^bsub>L\<^esub> \<Delta> : z \<equiv> \<Gamma> : e \<Down>\<^sup>\<times>\<^sup>\<times>\<^bsub>L\<^esub> \<Delta> : z"
 
 lemma eval_test_NNS:
   "[] : (Let (ACons x (Lam [y]. Var y) ANil) (Var x)) \<Down>\<^sup>N\<^bsub>[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y)"
@@ -110,7 +120,7 @@ schematic_lemma eval_test2_NNS:
 abbreviation
   reds_ANS :: "heap \<Rightarrow> exp \<Rightarrow> var list \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool" ("_ : _ \<Down>\<^sup>A\<^bsub>_\<^esub> _ : _" [50,50,50,50] 50)
 where
-  "\<Gamma> : e \<Down>\<^sup>A\<^bsub>L\<^esub> \<Delta> : z \<equiv> \<Gamma> : e \<Down>\<^sup>True\<^sup>False\<^bsub>L\<^esub> \<Delta> : z"
+  "\<Gamma> : e \<Down>\<^sup>A\<^bsub>L\<^esub> \<Delta> : z \<equiv> \<Gamma> : e \<Down>\<^sup>\<surd>\<^sup>\<times>\<^bsub>L\<^esub> \<Delta> : z"
 
 lemma eval_test_A:
   "[] : (Let (ACons x (Lam [y]. Var y) ANil) (Var x)) \<Down>\<^sup>A\<^bsub>[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y)"
@@ -175,7 +185,7 @@ is defined in order to obtain a more convenient induction rule.
 *}
 
 inductive
-  distinct_reds :: "heap \<Rightarrow> exp \<Rightarrow> bool \<Rightarrow> bool \<Rightarrow> var list \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool"
+  distinct_reds :: "heap \<Rightarrow> exp \<Rightarrow> Flag \<Rightarrow> Flag \<Rightarrow> var list \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool"
   ("_ : _ \<Down>\<^sup>_\<^sup>_\<^sup>d\<^bsub>_\<^esub> _ : _" [50,50,50,50,50,50] 50)
 where
   DLambda: "\<lbrakk>
@@ -185,34 +195,34 @@ where
     \<Gamma> : (Lam [x]. e) \<Down>\<^sup>i\<^sup>u\<^sup>d\<^bsub>L\<^esub> \<Gamma> : (Lam [x]. e)" 
  | DApplication: "\<lbrakk>
     atom y \<sharp> (\<Gamma>,e,x,L,\<Delta>,\<Theta>,z) ;
-    \<Gamma> : e \<Down>\<^sup>False\<^sup>u\<^sup>d\<^bsub>x#L\<^esub> \<Delta> : (Lam [y]. e');
-    \<Delta> : e'[y ::= x] \<Down>\<^sup>False\<^sup>u\<^sup>d\<^bsub>L\<^esub> \<Theta> : z;
+    \<Gamma> : e \<Down>\<^sup>\<times>\<^sup>u\<^sup>d\<^bsub>x#L\<^esub> \<Delta> : (Lam [y]. e');
+    \<Delta> : e'[y ::= x] \<Down>\<^sup>\<times>\<^sup>u\<^sup>d\<^bsub>L\<^esub> \<Theta> : z;
     distinctVars \<Gamma>;
     distinctVars \<Theta>
   \<rbrakk>  \<Longrightarrow>
-    \<Gamma> : App e x \<Down>\<^sup>False\<^sup>u\<^sup>d\<^bsub>L\<^esub> \<Theta> : z" 
+    \<Gamma> : App e x \<Down>\<^sup>\<times>\<^sup>u\<^sup>d\<^bsub>L\<^esub> \<Theta> : z" 
  | DApplicationInd: "\<lbrakk>
     atom y \<sharp> (\<Gamma>,e,x,L,\<Delta>,z) ;
-    \<Gamma> : e \<Down>\<^sup>True\<^sup>u\<^sup>d\<^bsub>x#L\<^esub> \<Delta> : (Lam [y]. e');
-    (y, Var x) # \<Delta> : e' \<Down>\<^sup>True\<^sup>u\<^sup>d\<^bsub>L\<^esub> \<Theta> : z;
+    \<Gamma> : e \<Down>\<^sup>\<surd>\<^sup>u\<^sup>d\<^bsub>x#L\<^esub> \<Delta> : (Lam [y]. e');
+    (y, Var x) # \<Delta> : e' \<Down>\<^sup>\<surd>\<^sup>u\<^sup>d\<^bsub>L\<^esub> \<Theta> : z;
     distinctVars \<Gamma>;
     distinctVars \<Theta>
   \<rbrakk>  \<Longrightarrow>
-    \<Gamma> : App e x \<Down>\<^sup>True\<^sup>u\<^sup>d\<^bsub>L\<^esub> \<Theta> : z" 
+    \<Gamma> : App e x \<Down>\<^sup>\<surd>\<^sup>u\<^sup>d\<^bsub>L\<^esub> \<Theta> : z" 
  | DVariable: "\<lbrakk>
     (x,e) \<in> set \<Gamma>;
-    delete x \<Gamma> : e \<Down>\<^sup>i\<^sup>True\<^sup>d\<^bsub>x#L\<^esub> \<Delta> : z;
+    delete x \<Gamma> : e \<Down>\<^sup>i\<^sup>\<surd>\<^sup>d\<^bsub>x#L\<^esub> \<Delta> : z;
     distinctVars \<Gamma>;
     distinctVars ((x,z) # \<Delta>)
   \<rbrakk> \<Longrightarrow>
-    \<Gamma> : Var x \<Down>\<^sup>i\<^sup>True\<^sup>d\<^bsub>L\<^esub> (x, z) # \<Delta> : z"
+    \<Gamma> : Var x \<Down>\<^sup>i\<^sup>\<surd>\<^sup>d\<^bsub>L\<^esub> (x, z) # \<Delta> : z"
  | DVariableNoUpd: "\<lbrakk>
     (x,e) \<in> set \<Gamma>;
-    delete x \<Gamma> : e \<Down>\<^sup>i\<^sup>False\<^sup>d\<^bsub>x#L\<^esub> \<Delta> : z;
+    delete x \<Gamma> : e \<Down>\<^sup>i\<^sup>\<times>\<^sup>d\<^bsub>x#L\<^esub> \<Delta> : z;
     distinctVars \<Gamma>;
     distinctVars ((x,e) # \<Delta>)
   \<rbrakk> \<Longrightarrow>
-    \<Gamma> : Var x \<Down>\<^sup>i\<^sup>False\<^sup>d\<^bsub>L\<^esub> (x, e) # \<Delta> : z"
+    \<Gamma> : Var x \<Down>\<^sup>i\<^sup>\<times>\<^sup>d\<^bsub>L\<^esub> (x, e) # \<Delta> : z"
  | DLet: "\<lbrakk>
     set (bn as) \<sharp>* (\<Gamma>, L);
     distinctVars (asToHeap as);
@@ -259,7 +269,7 @@ proof (nominal_induct rule: reds.strong_induct)
     moreover
     have "distinctVars (delete x \<Gamma>)"
       by (rule distinctVars_delete[OF Variable(4)])
-    hence "delete x \<Gamma> : e \<Down>\<^sup>i\<^sup>True\<^sup>d\<^bsub>x # L\<^esub> \<Delta> : z" by (rule Variable.hyps)
+    hence "delete x \<Gamma> : e \<Down>\<^sup>i\<^sup>\<surd>\<^sup>d\<^bsub>x # L\<^esub> \<Delta> : z" by (rule Variable.hyps)
     moreover
     hence "distinctVars \<Delta>" by (rule distinct_redsD3)
     hence "distinctVars ((x, z) # \<Delta>)"
@@ -277,7 +287,7 @@ next
     moreover
     have "distinctVars (delete x \<Gamma>)"
       by (rule distinctVars_delete[OF VariableNoUpd(4)])
-    hence "delete x \<Gamma> : e \<Down>\<^sup>i\<^sup>False\<^sup>d\<^bsub>x # L\<^esub> \<Delta> : z" by (rule VariableNoUpd.hyps)
+    hence "delete x \<Gamma> : e \<Down>\<^sup>i\<^sup>\<times>\<^sup>d\<^bsub>x # L\<^esub> \<Delta> : z" by (rule VariableNoUpd.hyps)
     moreover
     hence "distinctVars \<Delta>" by (rule distinct_redsD3)
     hence "distinctVars ((x, e) # \<Delta>)"
@@ -430,10 +440,10 @@ case (Application y \<Gamma> e xa L \<Delta> \<Theta> z u e' L')
   
     have "set (xa # L') \<subseteq> set (xa # L)"
       using `set L' \<subseteq> set L` by auto
-    thus "\<Gamma> : e \<Down>\<^sup>False\<^sup>u\<^bsub>xa # L'\<^esub> \<Delta> : Lam [y]. e'"
+    thus "\<Gamma> : e \<Down>\<^sup>\<times>\<^sup>u\<^bsub>xa # L'\<^esub> \<Delta> : Lam [y]. e'"
       by (rule Application.hyps(10))
 
-    show "\<Delta> : e'[y ::= xa] \<Down>\<^sup>False\<^sup>u\<^bsub>L'\<^esub> \<Theta> : z "
+    show "\<Delta> : e'[y ::= xa] \<Down>\<^sup>\<times>\<^sup>u\<^bsub>L'\<^esub> \<Theta> : z "
       by (rule Application.hyps(12)[OF Application.prems])
   qed
 next 
@@ -446,10 +456,10 @@ case (ApplicationInd y \<Gamma> e xa L \<Delta> z u e' \<Theta> L')
   
     have "set (xa # L') \<subseteq> set (xa # L)"
       using `set L' \<subseteq> set L` by auto
-    thus "\<Gamma> : e \<Down>\<^sup>True\<^sup>u\<^bsub>xa # L'\<^esub> \<Delta> : Lam [y]. e'"
+    thus "\<Gamma> : e \<Down>\<^sup>\<surd>\<^sup>u\<^bsub>xa # L'\<^esub> \<Delta> : Lam [y]. e'"
       by (rule ApplicationInd.hyps(8))
 
-    show "(y, Var xa) # \<Delta> : e' \<Down>\<^sup>True\<^sup>u\<^bsub>L'\<^esub> \<Theta> : z "
+    show "(y, Var xa) # \<Delta> : e' \<Down>\<^sup>\<surd>\<^sup>u\<^bsub>L'\<^esub> \<Theta> : z "
       by (rule ApplicationInd.hyps(10)[OF ApplicationInd.prems])
   qed
 next 
