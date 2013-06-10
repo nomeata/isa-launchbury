@@ -264,6 +264,13 @@ lemma subst_fresh_noop: "atom x \<sharp> e \<Longrightarrow> e[x ::= y] = e"
 by (nominal_induct  e and as avoiding: x y rule:exp_assn.strong_induct)
   (auto simp add: fresh_star_def fresh_Pair fresh_at_base simp del: exp_assn.eq_iff)
 
+lemma supp_subst: "supp (e[y::=x]) \<subseteq> (supp e - {atom y}) \<union> supp x"
+proof-
+  have "\<And> a. (a \<sharp> e \<or> a = atom y) \<Longrightarrow> a \<sharp> x \<Longrightarrow> a \<sharp> e[y::=x]"
+    by (auto intro: subst_pres_fresh)
+  thus ?thesis by (auto simp add: fresh_def)
+qed
+
 lemma let_binders_fresh[simp]: "set (bn as) \<sharp>* Terms.Let as body"
   by (metis Diff_iff exp_assn.supp(3) finite_supp fresh_finite_atom_set fresh_star_def fresh_star_set fresh_star_supp_conv supp_of_atom_list)
 
