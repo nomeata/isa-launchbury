@@ -109,10 +109,7 @@ case (Application y \<Gamma> e xa L \<Delta> \<Theta> z n e' L')
 
     have "atom x \<sharp> (\<Delta>, e'[y::=xa])"
       using `atom x \<sharp> (\<Delta>, Lam [y]. e')` `atom x \<sharp> (\<Gamma>, App e xa, \<Theta>, z)` `atom y \<sharp> xa`
-      apply (auto simp add: fresh_Pair)
-      apply (rule subst_pres_fresh[rule_format])
-      apply simp
-      done
+      by (auto simp add: fresh_Pair  subst_pres_fresh)
     from reds_with_n_fresh[OF Application.hyps(20) this] `x \<notin> heapVars \<Theta>`
     have "atom x \<sharp> (\<Theta>, z)" by auto
     hence "atom x \<sharp> (\<Delta>, e'[y::=xa], \<Theta>, z)"

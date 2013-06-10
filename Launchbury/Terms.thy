@@ -253,11 +253,11 @@ by(induct e y z and as y z rule:subst_subst_assn.induct)
   (auto simp add:fresh_at_base fresh_star_Pair exp_assn.bn_defs fresh_star_insert)
 
 lemma
- subst_pres_fresh: "(atom x \<sharp> e \<and> atom x \<sharp> z) --> atom x \<sharp> e[y ::= z]"
+ subst_pres_fresh: "x \<sharp> e \<Longrightarrow> x \<sharp> z \<Longrightarrow> x \<sharp> e[y ::= z]"
 and
- "(atom x \<sharp> as \<and> atom x \<sharp> z \<and> atom x \<notin> set (bn as)) --> (atom x \<sharp> (subst_assn as y z))"
+ "x \<sharp> as \<Longrightarrow> x \<sharp> z \<Longrightarrow> x \<notin> set (bn as) \<Longrightarrow> x \<sharp> (subst_assn as y z)"
 by(induct e y z and as y z rule:subst_subst_assn.induct)
-  (auto simp add:fresh_at_base fresh_star_Pair exp_assn.bn_defs fresh_star_insert)
+  (auto simp add:fresh_star_Pair exp_assn.bn_defs)
 
 lemma let_binders_fresh[simp]: "set (bn as) \<sharp>* Terms.Let as body"
   by (metis Diff_iff exp_assn.supp(3) finite_supp fresh_finite_atom_set fresh_star_def fresh_star_set fresh_star_supp_conv supp_of_atom_list)
