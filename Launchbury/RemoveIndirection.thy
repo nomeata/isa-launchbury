@@ -195,6 +195,12 @@ case (Let as exp y y' x)
 next
 qed (auto simp add: fresh_Pair fresh_star_Pair exp_assn.bn_defs  flip_fresh_fresh simp del: exp_assn.eq_iff)
 
+lemma supp_atom_set: "supp L = atom ` set L"
+  apply (induct L)
+  apply (simp add: supp_Nil)
+  apply (clarsimp simp add: supp_Nil supp_Cons supp_at_base)
+  done
+
 theorem
   "\<Gamma> : e \<Down>\<^sup>i\<^sup>u\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> (* supp is \<subseteq> supp \<Gamma> \<union> supp L \<Longrightarrow> *)
   \<exists> is'. (\<Gamma> \<ominus>\<^sub>h is : e \<ominus> is \<Down>\<^sup>\<times>\<^sup>u\<^bsub>L \<ominus> is\<^esub> \<Delta> \<ominus>\<^sub>h (is'@is) : z \<ominus> (is'@is))
