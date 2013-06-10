@@ -68,12 +68,6 @@ instance
   done
 end
 
-lemma subst_fresh_noop: "atom x \<sharp> e \<Longrightarrow> e[x ::= y] = e"
-  and "atom x \<sharp> as \<Longrightarrow> as[x ::a= y] = as"
-apply (nominal_induct  e and as avoiding: x y rule:exp_assn.strong_induct)
-apply (auto simp add: fresh_Pair fresh_star_Pair simp del: exp_assn.eq_iff)
-by (metis fresh_star_def not_self_fresh)
-
 lemma resolve_var_fresh: "atom ` fst ` set is \<sharp>* v \<Longrightarrow> (v::var) \<ominus> is = v"
   by (induct "is" rule:resolve_var.induct)(auto simp add: fresh_star_def fresh_def )
 

@@ -84,10 +84,26 @@ lemma eval_test_NS:
   "[] : (Let (ACons x (Lam [y]. Var y) ANil) (Var x)) \<Down>\<^bsub>[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y)"
   by(auto intro!: LambdaI Variable Let simp add: fresh_Pair fresh_Cons fresh_Nil fresh_star_def)
 
-schematic_lemma eval_test2_NS:
+lemma eval_test2_NS:
   "y \<noteq> x \<Longrightarrow> n \<noteq> y \<Longrightarrow> n \<noteq> x \<Longrightarrow>
   [] : (Let (ACons x (Lam [y]. Var y) ANil) (App (Var x) x)) \<Down>\<^bsub>[]\<^esub> [(x, Lam [y]. Var y)] : Lam [y]. Var y"
   by (auto intro!: LambdaI Application Variable Let simp add: fresh_Pair fresh_at_base fresh_Cons fresh_Nil fresh_star_def pure_fresh)
+
+text {* This lemma shows that variables not free in the initial expression can still become 
+new names on the heap. *}
+lemma eval_test3_NS:
+  "y \<noteq> x \<Longrightarrow> [] : (App (Lam [y]. let x be Var x in (Lam [z].Var z))) x \<Down>\<^bsub>[]\<^esub> [(x, Var x)] : Lam [z]. Var z"
+apply (rule Application[where y = y, rotated])
+  apply (rule LambdaI)
+ apply (simp add: subst_fresh_noop fresh_at_base)
+ apply (rule Let)
+   apply (simp add: fresh_star_Pair fresh_star_def fresh_Nil)
+  apply simp
+ apply simp
+ apply (rule LambdaI)
+ apply (simp add: fresh_Pair fresh_Nil fresh_Cons fresh_at_base)
+done
+
 
 abbreviation
   reds_INS :: "heap \<Rightarrow> exp \<Rightarrow> var list \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool" ("_ : _ \<Down>\<^sup>I\<^bsub>_\<^esub> _ : _" [50,50,50,50] 50)

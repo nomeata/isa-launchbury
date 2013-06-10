@@ -259,6 +259,11 @@ and
 by(induct e y z and as y z rule:subst_subst_assn.induct)
   (auto simp add:fresh_star_Pair exp_assn.bn_defs)
 
+lemma subst_fresh_noop: "atom x \<sharp> e \<Longrightarrow> e[x ::= y] = e"
+  and "atom x \<sharp> as \<Longrightarrow> as[x ::a= y] = as"
+by (nominal_induct  e and as avoiding: x y rule:exp_assn.strong_induct)
+  (auto simp add: fresh_star_def fresh_Pair fresh_at_base simp del: exp_assn.eq_iff)
+
 lemma let_binders_fresh[simp]: "set (bn as) \<sharp>* Terms.Let as body"
   by (metis Diff_iff exp_assn.supp(3) finite_supp fresh_finite_atom_set fresh_star_def fresh_star_set fresh_star_supp_conv supp_of_atom_list)
 
