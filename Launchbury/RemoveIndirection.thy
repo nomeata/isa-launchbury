@@ -243,9 +243,17 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z u e' "is" vars)
   have [simp]: "L \<ominus> is' = L"
     by (rule resolve_var_list_fresh)
 
-  from is' `atom y \<sharp> is` `atom y \<sharp> is'` 
-  have "\<Gamma> \<ominus>\<^sub>h is : e \<ominus> is \<Down>\<^sup>\<times>\<^sup>u\<^bsub>(x \<ominus> is'@is)# (L \<ominus> is)\<^esub> \<Delta> \<ominus>\<^sub>h (is'@is) : Lam [y]. (e' \<ominus> (is'@is))"
-    by (simp add: resolveExp_Lam)
+  {
+    note is'
+    also
+    from `atom y \<sharp> is` `atom y \<sharp> is'` 
+    have "(Lam [y]. e' \<ominus> (is'@is)) =  Lam [y]. (e' \<ominus> (is'@is))"
+      by (simp add: resolveExp_Lam)
+    also
+    have "x # L \<ominus> is = (x \<ominus> is) # (L \<ominus> is)" by simp
+    finally
+    have "\<Gamma> \<ominus>\<^sub>h is : e \<ominus> is \<Down>\<^sup>\<times>\<^sup>u\<^bsub>(x \<ominus> is) # (L \<ominus> is)\<^esub> \<Delta> \<ominus>\<^sub>h is' @ is : Lam [y]. (e' \<ominus> is' @ is)".
+  }
   moreover
   { note is''
     also
@@ -254,11 +262,13 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z u e' "is" vars)
        by (simp add: resolve_subst)
     also
     have "L \<ominus> is' @ is = L \<ominus> is" by simp
+    also
+    have "x \<ominus> is' @ is = x \<ominus> is" by simp
     finally      
-    have "\<Delta> \<ominus>\<^sub>h is'@is : (e' \<ominus> (is'@is))[y ::= (x \<ominus> (is'@is))] \<Down>\<^sup>\<times>\<^sup>u\<^bsub>L \<ominus> is \<^esub> \<Theta> \<ominus>\<^sub>h (is''@is'@is) : z \<ominus> (is''@is'@is)".
+    have "\<Delta> \<ominus>\<^sub>h is'@is : (e' \<ominus> (is'@is))[y ::= (x \<ominus> is)] \<Down>\<^sup>\<times>\<^sup>u\<^bsub>L \<ominus> is \<^esub> \<Theta> \<ominus>\<^sub>h (is''@is'@is) : z \<ominus> (is''@is'@is)".
   }
   ultimately
-  have "\<Gamma> \<ominus>\<^sub>h is : App (e \<ominus> is) (x \<ominus> is' @ is) \<Down>\<^sup>\<times>\<^sup>u\<^bsub>L \<ominus> is\<^esub> \<Theta> \<ominus>\<^sub>h is'' @ is' @ is : z \<ominus> is'' @ is' @ is"
+  have "\<Gamma> \<ominus>\<^sub>h is : App (e \<ominus> is) (x \<ominus> is) \<Down>\<^sup>\<times>\<^sup>u\<^bsub>L \<ominus> is\<^esub> \<Theta> \<ominus>\<^sub>h is'' @ is' @ is : z \<ominus> is'' @ is' @ is"
     apply (rule reds.Application[rotated])
     using Application(1-9) `atom y \<sharp> is'`  `atom y \<sharp> is''`
     apply (auto simp add: fresh_Pair fresh_append
@@ -314,28 +324,45 @@ case (ApplicationInd y \<Gamma> e x L \<Delta> z u e' \<Theta> "is" vars)
     apply (auto simp add: fresh_Cons fresh_Pair subst_fresh_noop)
     done
 
+  (*
   presume "set vars \<sharp>* (\<Gamma>, App e x, \<Theta>, z)"
   hence "set vars \<sharp>* x" and "set vars \<sharp>* \<Theta>" by (auto simp add: fresh_star_def fresh_Pair)
+  *)
+  have "set vars \<sharp>* x" sorry
 
+  (*
   from reds_doesnt_forget[OF ApplicationInd(9)]
   have "y \<in> heapVars \<Theta>" by simp
   with `set vars \<sharp>* \<Theta>`
   have "set vars \<sharp>* y" by (metis fresh_ineq_at_base fresh_star_def heapVars_not_fresh)
+  *)
+  have "set vars \<sharp>* y" sorry
 
+  (*
   presume "supp is \<subseteq> supp \<Gamma> \<union> supp e \<union> supp L"
   with `atom y \<sharp> \<Gamma>`  `atom y \<sharp> e` `atom y \<sharp> L`
   have "atom y \<sharp> is" by (auto simp add: fresh_def)
+  *)
+  have "atom y \<sharp> is" sorry
 
-  from is' `atom y \<sharp> is` `atom y \<sharp> is'`
-  have "\<Gamma> \<ominus>\<^sub>h is : e \<ominus> is \<Down>\<^sup>\<times>\<^sup>u\<^bsub>(x \<ominus> is)# (L \<ominus> is)\<^esub> \<Delta> \<ominus>\<^sub>h (is'@is) : Lam [y]. (e' \<ominus> (is'@is))"   
-    by (simp add: resolveExp_Lam)
-  hence "\<Gamma> \<ominus>\<^sub>h is : e \<ominus> is \<Down>\<^sup>\<times>\<^sup>u\<^bsub>(x \<ominus> is) # (L \<ominus> is)\<^esub> \<Delta> \<ominus>\<^sub>h (is'@is) : Lam [y]. (e' \<ominus> is'@is)"
-    by simp
+  {
+    note is'
+    also have "(Lam [y]. e' \<ominus> (is'@is)) = Lam [y]. (e' \<ominus> (is'@is))"
+      using `atom y \<sharp> is` `atom y \<sharp> is'` by (simp add: resolveExp_Lam)
+    also have "x # L \<ominus> is = (x \<ominus> is) # (L \<ominus> is)" by simp
+    finally
+    have "\<Gamma> \<ominus>\<^sub>h is : e \<ominus> is \<Down>\<^sup>\<times>\<^sup>u\<^bsub>(x \<ominus> is) # (L \<ominus> is)\<^esub> \<Delta> \<ominus>\<^sub>h (is'@is) : Lam [y]. (e' \<ominus> is'@is)".
+  }
   moreover
-  thm is''
-  from is''  `atom y \<sharp> is`  `atom y \<sharp> is'`
-  have "\<Delta> \<ominus>\<^sub>h is' @ is : (e' \<ominus> is'@is)[y::=(x \<ominus> is)] \<Down>\<^sup>\<times>\<^sup>u\<^bsub>L \<ominus> is\<^esub> \<Theta> \<ominus>\<^sub>h is'' @ (y,x)# is' @ is : z \<ominus> is'' @ (y,x)# is' @ is"
-    by (simp add: resolve_subst)
+  {
+    note is''
+    also have "(y, Var x) # \<Delta> \<ominus>\<^sub>h (y, x) # is' @ is  = \<Delta> \<ominus>\<^sub>h is'@is" by simp
+    also have "e' \<ominus> (y, x) # is' @ is =  (e' \<ominus> is'@is)[y::=(x \<ominus> is)]"
+      using `atom y \<sharp> is`  `atom y \<sharp> is'` by (simp add: resolve_subst)
+    also have "L \<ominus> (y, x) # is' @ is = L \<ominus> is" by simp
+    finally
+    have "\<Delta> \<ominus>\<^sub>h is' @ is : (e' \<ominus> is'@is)[y::=(x \<ominus> is)] \<Down>\<^sup>\<times>\<^sup>u\<^bsub>L \<ominus> is\<^esub> \<Theta> \<ominus>\<^sub>h is'' @ (y,x)# is' @ is : z \<ominus> is'' @ (y,x)# is' @ is".
+  }
   ultimately
   have "\<Gamma> \<ominus>\<^sub>h is : App (e \<ominus> is) (x \<ominus> is) \<Down>\<^sup>\<times>\<^sup>u\<^bsub>L \<ominus> is\<^esub> \<Theta> \<ominus>\<^sub>h is'' @ (y,x) # is' @ is : z \<ominus> is'' @ (y,x)# is' @ is"
     apply (rule reds.Application[rotated])
