@@ -13,7 +13,7 @@ instance
   done
 end
 
-inductive reds :: "heap \<Rightarrow> heap \<Rightarrow> Flag \<Rightarrow> Flag \<Rightarrow> heap \<Rightarrow> heap \<Rightarrow> bool" ("_ : _ \<Down>\<^sup>_\<^sup>_ _ : _" [50,50,50,50,50,50] 50)
+inductive reds :: "heap \<Rightarrow> heap \<Rightarrow> Flag \<Rightarrow> Flag \<Rightarrow> heap \<Rightarrow> heap \<Rightarrow> bool" ("_ : _/ \<Down>\<^sup>_\<^sup>_/ _ : _" [50,50,50,50,50,50] 50)
 where
   Lambda:
     "\<Gamma> : (x, (Lam [y]. e)) # \<Gamma>' \<Down>\<^sup>i\<^sup>u \<Gamma> : (x, (Lam [y]. e)) # \<Gamma>'" 
@@ -85,7 +85,7 @@ This is the same semantics with additional distinctiveness requirements. This is
 obtain a more convenient induction rule.
 *}
 
-inductive distinct_reds :: "heap \<Rightarrow> heap \<Rightarrow> Flag \<Rightarrow> Flag \<Rightarrow> heap \<Rightarrow> heap \<Rightarrow> bool" ("_ : _ \<Down>\<^sup>_\<^sup>_\<^sup>d _ : _" [50,50,50,50] 50)
+inductive distinct_reds :: "heap \<Rightarrow> heap \<Rightarrow> Flag \<Rightarrow> Flag \<Rightarrow> heap \<Rightarrow> heap \<Rightarrow> bool" ("_ : _/ \<Down>\<^sup>_\<^sup>_\<^sup>d/ _ : _" [50,50,50,50] 50)
 where
   DLambda: "\<lbrakk>
       distinctVars ((x, (Lam [y]. e)) # \<Gamma>' @ \<Gamma>)

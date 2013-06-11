@@ -41,6 +41,9 @@ inductive distinctVars  where
 lemma [simp]: "distinctVars [x]"
   by (cases x, auto)
 
+lemma distinctVarsE: "distinctVars \<Gamma> \<Longrightarrow> (x,a) \<in> set \<Gamma> \<Longrightarrow> (x,b) \<in> set \<Gamma> \<Longrightarrow> a = b"
+  by (induct rule: distinctVars.induct)(auto dest: heapVars_from_set)
+
 lemma distinctVars_appendI:
   "distinctVars \<Gamma> \<Longrightarrow> distinctVars \<Delta> \<Longrightarrow> heapVars \<Gamma> \<inter> heapVars \<Delta> = {} \<Longrightarrow> distinctVars (\<Gamma> @ \<Delta>)"
   by (induct \<Gamma> rule:distinctVars.induct, auto)

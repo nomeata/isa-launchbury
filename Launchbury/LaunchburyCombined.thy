@@ -28,8 +28,8 @@ where
   \<rbrakk>  \<Longrightarrow>
     \<Gamma> : App e x \<Down>\<^sup>\<times>\<^sup>u\<^bsub>L\<^esub> \<Theta> : z" 
  | ApplicationInd: "\<lbrakk>
-    atom y \<sharp> (\<Gamma>,e,x,L,\<Delta>,z) ;
-    \<Gamma> : e \<Down>\<^sup>\<surd>\<^sup>u\<^bsub>x#L\<^esub> \<Delta> : (Lam [y]. e');
+    atom y \<sharp> (\<Gamma>,e,x,L);
+    \<Gamma> : e \<Down>\<^sup>\<surd>\<^sup>u\<^bsub>y#x#L\<^esub> \<Delta> : (Lam [y]. e');
     (y, Var x) # \<Delta> : e' \<Down>\<^sup>\<surd>\<^sup>u \<^bsub>L\<^esub> \<Theta> : z
   \<rbrakk>  \<Longrightarrow>
     \<Gamma> : App e x \<Down>\<^sup>\<surd>\<^sup>u\<^bsub>L\<^esub> \<Theta> : z" 
@@ -218,8 +218,8 @@ where
   \<rbrakk>  \<Longrightarrow>
     \<Gamma> : App e x \<Down>\<^sup>\<times>\<^sup>u\<^sup>d\<^bsub>L\<^esub> \<Theta> : z" 
  | DApplicationInd: "\<lbrakk>
-    atom y \<sharp> (\<Gamma>,e,x,L,\<Delta>,z) ;
-    \<Gamma> : e \<Down>\<^sup>\<surd>\<^sup>u\<^sup>d\<^bsub>x#L\<^esub> \<Delta> : (Lam [y]. e');
+    atom y \<sharp> (\<Gamma>,e,x,L) ;
+    \<Gamma> : e \<Down>\<^sup>\<surd>\<^sup>u\<^sup>d\<^bsub>y#x#L\<^esub> \<Delta> : (Lam [y]. e');
     (y, Var x) # \<Delta> : e' \<Down>\<^sup>\<surd>\<^sup>u\<^sup>d\<^bsub>L\<^esub> \<Theta> : z;
     distinctVars \<Gamma>;
     distinctVars \<Theta>
@@ -273,10 +273,20 @@ lemma distinct_redsD3:
   apply (auto simp add: distinctVars_Cons)
   done
 
-
 lemma distinct_redsI:
   "\<Gamma> : e \<Down>\<^sup>i\<^sup>u\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> distinctVars \<Gamma> \<Longrightarrow> \<Gamma> : e \<Down>\<^sup>i\<^sup>u\<^sup>d\<^bsub>L\<^esub> \<Delta> : z"
 proof (nominal_induct rule: reds.strong_induct)
+next
+  case (ApplicationInd y \<Gamma> e x L u \<Delta> e' \<Theta> z)
+    from `atom y \<sharp> \<Gamma>`
+    have "y \<notin> heapVars \<Gamma>"
+      by (metis heapVars_not_fresh)
+    hence "y \<notin> heapVars \<Delta>"
+      by -(rule reds_avoids_live[OF ApplicationInd(5)], auto)
+    with ApplicationInd
+    show ?case
+      by (auto intro!: distinct_reds.DApplicationInd simp add: distinctVars_Cons dest: distinct_redsD3)
+next
   case (Variable x e \<Gamma> i L \<Delta> z)
     have "x \<notin> heapVars \<Delta>"
       apply (rule reds_avoids_live[OF Variable(2)])
@@ -316,6 +326,7 @@ qed (auto intro: distinctVars_append_asToHeap
           dest: distinct_redsD3 heapVars_not_fresh
           intro!: distinct_reds.intros
           simp add: fresh_star_Pair distinctVars_Cons)
+
 
 lemma reds_pres_distinctVars:
   "\<Gamma> : \<Gamma>' \<Down>\<^sup>i\<^sup>u\<^bsub>L\<^esub> \<Delta> : \<Delta>' \<Longrightarrow> distinctVars \<Gamma> \<Longrightarrow> distinctVars \<Delta>"
@@ -361,9 +372,9 @@ case (Application y \<Gamma> e x' L \<Delta> \<Theta> z u e')
     thus ?thesis using reds_doesnt_forget[OF Application.hyps(3)] by auto
   qed
 next
-case (ApplicationInd y \<Gamma> e x' L \<Delta> z u e' \<Theta>)
+case (ApplicationInd y \<Gamma> e x' L u \<Delta> e' \<Theta> z)
   hence "atom x \<sharp> (\<Gamma>, e)" by (simp add: fresh_Pair)
-  hence "atom x \<sharp> (\<Delta>, Lam [y]. e') \<or> x \<in> heapVars \<Delta> - set (x' # L)" 
+  hence "atom x \<sharp> (\<Delta>, Lam [y]. e') \<or> x \<in> heapVars \<Delta> - set (y # x' # L)" 
     by (rule ApplicationInd.IH(1))
   thus ?case
   proof
@@ -385,7 +396,7 @@ case (ApplicationInd y \<Gamma> e x' L \<Delta> z u e' \<Theta>)
       show ?thesis by simp
     qed
   next
-    assume "x \<in> heapVars \<Delta>  - set (x' # L)"
+    assume "x \<in> heapVars \<Delta>  - set (y # x' # L)"
     thus ?thesis using reds_doesnt_forget[OF ApplicationInd.hyps(3)] by auto
   qed
 next
@@ -431,6 +442,12 @@ case (Let as \<Gamma> L body \<Delta> z)
     qed
 qed
 
+lemma reds_fresh_L:" \<lbrakk> \<Gamma> : e \<Down>\<^sup>i\<^sup>u\<^bsub>L\<^esub> \<Delta> : z;
+   atom (x::var) \<sharp> (\<Gamma>, e) ; x \<in> set L
+  \<rbrakk> \<Longrightarrow> atom x \<sharp> (\<Delta>, z)"
+  by (metis reds_fresh Diff_iff)
+
+
 text {*
 Reducing the set of variables to avoid is always possible.
 *} 
@@ -463,20 +480,20 @@ case (Application y \<Gamma> e xa L \<Delta> \<Theta> z u e' L')
       by (rule Application.hyps(12)[OF Application.prems])
   qed
 next 
-case (ApplicationInd y \<Gamma> e xa L \<Delta> z u e' \<Theta> L')
+case (ApplicationInd y \<Gamma> e x L u \<Delta> e' \<Theta> z L')
   show ?case
   proof(rule reds.ApplicationInd)
-    show "atom y \<sharp> (\<Gamma>, e, xa, L', \<Delta>, z)"
+    show "atom y \<sharp> (\<Gamma>, e, x, L')"
       using ApplicationInd
       by (auto simp add: fresh_Pair dest: fresh_set_subset)
   
-    have "set (xa # L') \<subseteq> set (xa # L)"
+    have "set (y # x # L') \<subseteq> set (y # x # L)"
       using `set L' \<subseteq> set L` by auto
-    thus "\<Gamma> : e \<Down>\<^sup>\<surd>\<^sup>u\<^bsub>xa # L'\<^esub> \<Delta> : Lam [y]. e'"
-      by (rule ApplicationInd.hyps(8))
+    thus "\<Gamma> : e \<Down>\<^sup>\<surd>\<^sup>u\<^bsub>y # x # L'\<^esub> \<Delta> : Lam [y]. e'"
+      by (rule ApplicationInd.hyps(6))
 
-    show "(y, Var xa) # \<Delta> : e' \<Down>\<^sup>\<surd>\<^sup>u\<^bsub>L'\<^esub> \<Theta> : z "
-      by (rule ApplicationInd.hyps(10)[OF ApplicationInd.prems])
+    show "(y, Var x) # \<Delta> : e' \<Down>\<^sup>\<surd>\<^sup>u\<^bsub>L'\<^esub> \<Theta> : z "
+      by (rule ApplicationInd.hyps(8)[OF ApplicationInd.prems])
   qed
 next 
 case (Variable xa e \<Gamma> i L \<Delta> z L')
