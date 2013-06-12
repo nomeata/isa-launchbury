@@ -83,18 +83,38 @@ lemma ind_for_subset:  "ind_for is \<Gamma> \<Longrightarrow> heapVars is \<subs
   apply (auto dest: imageE dest!: bspec)
   by (metis heapVars_def heapVars_from_set)
 
+lemma ind_for_supp_subset:
+  assumes "ind_for is \<Gamma>"
+  shows "supp is \<subseteq> supp \<Gamma>"
+proof
+  fix x 
+  assume "x \<in> supp is"
+  hence "x \<in> (\<Union>i \<in> set is . supp i)" by (metis supp_set supp_of_finite_sets finite_set)
+  then obtain a b  where "(a,b) \<in> set is" and "x \<in> supp (a,b)" by (metis PairE UN_E)
+  with assms[unfolded ind_for_def]
+  have "(a,Var b) \<in> set \<Gamma>" and "x \<in> supp (a, Var b)"
+    by (auto simp add: supp_Pair exp_assn.supp)
+  thus "x \<in> supp \<Gamma>" by (metis (full_types) set_mp supp_set_mem)
+qed
+
+lemma ind_for_fresh: "ind_for is \<Gamma> \<Longrightarrow> a \<sharp> \<Gamma> \<Longrightarrow> a \<sharp> is"
+  by (auto dest: ind_for_supp_subset simp add: fresh_def)
+
 lemma ind_for_permutation: "ind_for is \<Gamma> \<Longrightarrow> \<Gamma> <~~> \<Gamma>' \<Longrightarrow> ind_for is \<Gamma>'"
   unfolding ind_for_def by (auto dest!: perm_set_eq)
 
 theorem
-  "\<Gamma> : \<Gamma>' \<Down>\<^sup>\<surd>\<^sup>u\<^sup>d \<Delta> : \<Delta>' \<Longrightarrow> ind_for is (\<Gamma>'@\<Gamma>) \<Longrightarrow>
+  "\<Gamma> : \<Gamma>' \<Down>\<^sup>\<surd>\<^sup>u\<^sup>d \<Delta> : \<Delta>' \<Longrightarrow> ind_for is (\<Gamma>'@\<Gamma>) \<Longrightarrow> valid_ind is \<Longrightarrow>
   \<exists> is'. (\<Gamma> \<ominus>\<^sub>h is : \<Gamma>' \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>u \<Delta> \<ominus>\<^sub>h is' : \<Delta>' \<ominus>\<^sub>h is')
-       \<and> ind_for is' (\<Delta>'@\<Delta>)"
+       \<and> ind_for is' (\<Delta>'@\<Delta>)
+       \<and> heapVars is \<subseteq> heapVars is'
+       \<and> valid_ind is'"
 proof (nominal_induct \<Gamma> \<Gamma>' "\<surd>" u \<Delta> \<Delta>' avoiding: "is" rule:distinct_reds.strong_induct )
 case (DLambda x y e \<Gamma>' \<Gamma> u "is")
   from DLambda have "x \<notin> heapVars is"
     by (auto simp add: distinctVars_Cons dest: set_mp[OF ind_for_subset])
   moreover
+  (* We need to rename y to avoid is *)
   obtain y' :: var where "atom y' \<sharp> (y, e, is)" by (rule obtain_fresh)
   {
     hence "atom y' \<sharp> e" and "atom y' \<sharp> y" and "atom y' \<sharp> is" by (simp_all add: fresh_Pair)
@@ -112,131 +132,110 @@ case (DLambda x y e \<Gamma>' \<Gamma> u "is")
   show ?case using DLambda
     by -(rule exI[where x = "is"], auto intro: reds.Lambda)
 next
-(*
-case (Application y \<Gamma> e x L \<Delta> \<Theta> z u e' "is" vars)
-  from Application(11)
-  obtain "is'"
-  where is': "\<Gamma> \<ominus>\<^sub>h is : e \<ominus> is \<Down>\<^sup>\<times>\<^sup>u\<^bsub>(x # L) \<ominus> is\<^esub> \<Delta> \<ominus>\<^sub>h (is'@is) : (Lam [y]. e') \<ominus> (is'@is)"
-      and "atom ` fst ` set is' \<sharp>* (x # L)" and "set (atom y#vars) \<sharp>* is'" by blast
-
-  from this(2)
-  have "atom ` fst ` set is' \<sharp>* x" and "atom ` fst ` set is' \<sharp>*  L"
-    by (simp_all add: fresh_star_Pair fresh_star_Cons)
-
-  from `_ \<sharp>* is'`
-  have "atom y \<sharp> is'" and  "set vars \<sharp>* is'"
-    by (auto simp add: fresh_star_def)
-
-  from Application(13)
-  obtain "is''"
-  where is'':"\<Delta> \<ominus>\<^sub>h is'@is : (e'[y::=x]) \<ominus> is'@is \<Down>\<^sup>\<times>\<^sup>u\<^bsub>L \<ominus> is'@is \<^esub> \<Theta> \<ominus>\<^sub>h (is''@is'@is) : z \<ominus> (is''@is'@is)"
-          and "atom ` fst ` set is'' \<sharp>* L"  and "set (atom y#vars) \<sharp>* is''" by blast
-  hence "atom y \<sharp> is''" and "set vars \<sharp>* is''" by (simp_all add: fresh_star_def)
-
-  from `atom \` fst \` set is' \<sharp>* x`
-  have [simp]: "x \<ominus> is' = x"
-    by (rule resolve_var_fresh)
-  from `atom \` fst \` set is' \<sharp>* L`
-  have [simp]: "L \<ominus> is' = L"
-    by (rule resolve_var_list_fresh)
-
-  {
-    note is'
-    also
-    from `atom y \<sharp> is` `atom y \<sharp> is'` 
-    have "(Lam [y]. e' \<ominus> (is'@is)) =  Lam [y]. (e' \<ominus> (is'@is))"
-      by (simp add: resolveExp_Lam)
-    also
-    have "x # L \<ominus> is = (x \<ominus> is) # (L \<ominus> is)" by simp
-    finally
-    have "\<Gamma> \<ominus>\<^sub>h is : e \<ominus> is \<Down>\<^sup>\<times>\<^sup>u\<^bsub>(x \<ominus> is) # (L \<ominus> is)\<^esub> \<Delta> \<ominus>\<^sub>h is' @ is : Lam [y]. (e' \<ominus> is' @ is)".
-  }
-  moreover
-  { note is''
-    also
-    from `atom y \<sharp> is` `atom y \<sharp> is'`
-    have "(e'[y ::= x]) \<ominus> (is'@is) = (e' \<ominus> (is'@is))[y ::= (x \<ominus> (is'@is))]" 
-       by (simp add: resolve_subst)
-    also
-    have "L \<ominus> is' @ is = L \<ominus> is" by simp
-    also
-    have "x \<ominus> is' @ is = x \<ominus> is" by simp
-    finally      
-    have "\<Delta> \<ominus>\<^sub>h is'@is : (e' \<ominus> (is'@is))[y ::= (x \<ominus> is)] \<Down>\<^sup>\<times>\<^sup>u\<^bsub>L \<ominus> is \<^esub> \<Theta> \<ominus>\<^sub>h (is''@is'@is) : z \<ominus> (is''@is'@is)".
-  }
-  ultimately
-  have "\<Gamma> \<ominus>\<^sub>h is : App (e \<ominus> is) (x \<ominus> is) \<Down>\<^sup>\<times>\<^sup>u\<^bsub>L \<ominus> is\<^esub> \<Theta> \<ominus>\<^sub>h is'' @ is' @ is : z \<ominus> is'' @ is' @ is"
-    apply (rule reds.Application[rotated])
-    using Application(1-9) `atom y \<sharp> is'`  `atom y \<sharp> is''`
-    apply (auto simp add: fresh_Pair fresh_append
-          intro!: eqvt_fresh_cong2[where f = "resolve :: exp \<Rightarrow> indirections \<Rightarrow> exp", OF resolve_exp_eqvt] 
-           eqvt_fresh_cong2[where f = "resolve :: 'a::resolvable_eqvt \<Rightarrow> indirections \<Rightarrow> 'a", OF resolve_eqvt] 
-          eqvt_fresh_cong2[where f = resolveHeap, OF resolveHeap_eqvt])
-    done
-  moreover
-  from `atom \` fst \` set is' \<sharp>* L` `atom \` fst \` set is'' \<sharp>* L`
-  have "atom ` (fst ` (set (is'' @ is'))) \<sharp>* L"
-    by (auto simp add: fresh_star_def)
-  moreover
-  from `set vars \<sharp>* is'` and  `set vars \<sharp>* is''`
-  have "set vars \<sharp>* (is''@is')"
-    by (simp add: fresh_star_append)
-  ultimately
-  show ?case
-    by -(rule exI[where x = "is''@is'"], simp add: resolveExp_App resolve_var_append)
-next
-*)
 case (DApplicationInd n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<Theta>' z e' u "is")
   from `ind_for is (((x, App e y) # \<Gamma>') @ \<Gamma>)`
-  have "ind_for is (((n, e) # (x, App (Var n) y) # \<Gamma>') @ \<Gamma>)" by simp
-  from DApplicationInd(24)[OF this]
+  have "ind_for is (\<Gamma>'@\<Gamma>)" by simp
+  hence "ind_for is (((n, e) # (x, App (Var n) y) # \<Gamma>') @ \<Gamma>)" by simp
+  from DApplicationInd(24)[OF this `valid_ind is`]
   obtain "is'"
   where is': "\<Gamma> \<ominus>\<^sub>h is : ((n, e) # (x, App (Var n) y) # \<Gamma>') \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>u \<Delta> \<ominus>\<^sub>h is' : (n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>' \<ominus>\<^sub>h is'"
       and "ind_for is' (((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>') @ \<Delta>)"
+      and "valid_ind is'"
+      and "heapVars is \<subseteq> heapVars is'"
       by blast
 
-  from this(2)
-  have "ind_for ((z,y)#is') ((z, Var y) # (x, e') # \<Delta>' @ \<Delta>)" by simp
+  from `ind_for is (\<Gamma>'@ \<Gamma>)` `atom n \<sharp> \<Gamma>` `atom n \<sharp> \<Gamma>'`  `atom z \<sharp> \<Gamma>` `atom z \<sharp> \<Gamma>'`
+  have "atom n \<sharp> is" and "atom z \<sharp> is" by (auto intro: ind_for_fresh simp add: fresh_append)
+  hence "n \<notin> heapVars is" by (metis heapVars_not_fresh)
+
+  from `ind_for is' _`
+  have "ind_for is' (\<Delta>'@\<Delta>)" by simp
+  hence "ind_for ((z,y)#is') ((z, Var y) # (x, e') # \<Delta>' @ \<Delta>)" by simp
   hence "ind_for ((z,y)#is') (((x, e') # \<Delta>') @ (z, Var y) # \<Delta>)"
     apply (rule ind_for_permutation)
     by (metis append_Cons perm_append_Cons)
-  from DApplicationInd(26)[OF this]
+  moreover
+
+  from `ind_for is' (\<Delta>' @ \<Delta>)` `atom n \<sharp> \<Delta>` `atom n \<sharp> \<Delta>'` `atom z \<sharp> \<Delta>` `atom z \<sharp> \<Delta>'`
+  have "atom n \<sharp> is'" and "atom z \<sharp> is'" by (auto intro: ind_for_fresh simp add: fresh_append)
+  hence "n \<notin> heapVars is'" by (metis heapVars_not_fresh)
+
+  from `valid_ind is'` `atom z \<sharp> is'` `atom z \<sharp> y`
+  have "valid_ind ((z, y) # is')"
+    by (auto intro!: ValidIndCons simp add: fresh_Pair)
+  moreover
+  note DApplicationInd(26)
+  ultimately
   obtain "is''"
   where is'':"(z, Var y) # \<Delta> \<ominus>\<^sub>h (z,y) # is' : (x, e') # \<Delta>' \<ominus>\<^sub>h (z,y)# is' \<Down>\<^sup>\<times>\<^sup>u \<Theta> \<ominus>\<^sub>h is'' : \<Theta>' \<ominus>\<^sub>h is''"
           and "ind_for is'' (\<Theta>' @ \<Theta>)"
+          and "valid_ind is''"
+          and "heapVars ((z, y) # is') \<subseteq> heapVars is''"
           by blast
 
-  have [simp]:"e' \<ominus> is' = e' \<ominus> is" sorry
-  have [simp]:"y \<ominus> is' = y \<ominus> is" sorry
+  have "x \<notin> heapVars is" by (metis (full_types) DApplicationInd.hyps(18) DApplicationInd.prems(1) append_Cons distinctVars_ConsD(1) ind_for_Cons ind_for_heapVars_subset isVar.simps(3) set_mp)
+  have "x \<notin> heapVars is'" by (metis (full_types) DApplicationInd.hyps(20) `ind_for is' (((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>') @ \<Delta>)` append_Cons distinctVars_ConsD(1) distinctVars_ConsD(2) ind_for_Cons ind_for_heapVars_subset isVar.simps(2) isVar.simps(3) set_mp)
+  
 
+  from `ind_for is'' (\<Theta>' @ \<Theta>)` `atom n \<sharp> \<Theta>` `atom n \<sharp> \<Theta>'`
+  have "atom n \<sharp> is''" by (auto intro: ind_for_fresh simp add: fresh_append)
+
+  from is'  `x \<notin> heapVars is` `x \<notin> heapVars is'` `n \<notin> heapVars is` `n \<notin> heapVars is'`
+  have [simp]:"y \<ominus> is' = y \<ominus> is"
+    by (auto simp add: resolveExp_App dest: stack_unchanged)
+
+  from `heapVars ((z, y) # is') \<subseteq> heapVars is''` 
+  have "z \<in> heapVars is''" by auto
+  with `valid_ind is''`
+  have "atom z \<sharp> \<Theta> \<ominus>\<^sub>h is''" and "atom z \<sharp> \<Theta>' \<ominus>\<^sub>h is''"
+    by (auto intro!: resolveHeap_fresh)
+ 
   {
-    have "x \<notin> heapVars is" and "n \<notin> heapVars is" and "atom z \<sharp> is"
-    and  "x \<notin> heapVars is'" and "n \<notin> heapVars is'" and "atom z \<sharp> is'" sorry
-    with is'
+    from is' `x \<notin> heapVars is` `x \<notin> heapVars is'` `n \<notin> heapVars is` `n \<notin> heapVars is'` `atom z \<sharp> is` `atom z \<sharp> is'`
     have "\<Gamma> \<ominus>\<^sub>h is : (n, e \<ominus> is) # (x, App (Var n) (y \<ominus> is)) # (\<Gamma>' \<ominus>\<^sub>h is)
-      \<Down>\<^sup>\<times>\<^sup>u \<Delta> \<ominus>\<^sub>h is' : (n, Lam [z]. (e' \<ominus> is)) # (x, App (Var n) (y \<ominus> is)) # (\<Delta>' \<ominus>\<^sub>h is')"
+      \<Down>\<^sup>\<times>\<^sup>u \<Delta> \<ominus>\<^sub>h is' : (n, Lam [z]. (e' \<ominus> is')) # (x, App (Var n) (y \<ominus> is)) # (\<Delta>' \<ominus>\<^sub>h is')"
       by (simp add: resolveExp_App resolveExp_Var resolveExp_Lam)
   } moreover {
-    from is''
-    have "\<Delta> \<ominus>\<^sub>h is' : (x, (e' \<ominus> is)[z::=(y \<ominus> is)]) # (\<Delta>' \<ominus>\<^sub>h is') \<Down>\<^sup>\<times>\<^sup>u \<Theta> \<ominus>\<^sub>h is'' : \<Theta>' \<ominus>\<^sub>h is''"
-      sorry
+    from is'' `atom z \<sharp> \<Delta>` `atom z \<sharp> \<Delta>'` `atom z \<sharp> x`  `atom z \<sharp> is'` `x \<notin> heapVars is'`
+    have "\<Delta> \<ominus>\<^sub>h is' : (x, (e' \<ominus> is')[z::=(y \<ominus> is)]) # (\<Delta>' \<ominus>\<^sub>h is') \<Down>\<^sup>\<times>\<^sup>u \<Theta> \<ominus>\<^sub>h is'' : \<Theta>' \<ominus>\<^sub>h is''"
+      by (simp add: resolve_subst)
   }
   ultimately
   have "\<Gamma> \<ominus>\<^sub>h is : (x, App (e \<ominus> is) (y \<ominus> is)) # (\<Gamma>' \<ominus>\<^sub>h is) \<Down>\<^sup>\<times>\<^sup>u \<Theta> \<ominus>\<^sub>h is'' : \<Theta>' \<ominus>\<^sub>h is''"
     apply(rule Application[rotated 2])
-    sorry
-  hence "\<Gamma> \<ominus>\<^sub>h is : (x, App e y) # \<Gamma>' \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>u \<Theta> \<ominus>\<^sub>h is'' : \<Theta>' \<ominus>\<^sub>h is''" sorry
-  with `ind_for is'' _`
+    using  `atom n \<sharp> x`  `atom n \<sharp> z`  `atom n \<sharp> is`  `atom n \<sharp> is'`  `atom n \<sharp> is''` `atom n \<sharp> \<Gamma>`  `atom n \<sharp> \<Gamma>'`
+          `atom n \<sharp> \<Delta>` `atom n \<sharp> \<Delta>'` `atom n \<sharp> e` `atom n \<sharp> y`  `atom n \<sharp> \<Theta>`  `atom n \<sharp> \<Theta>'`
+    using  `atom z \<sharp> x` `atom z \<sharp> is`  `atom z \<sharp> is'`  `atom z \<sharp> \<Gamma>`  `atom z \<sharp> \<Gamma>'`
+          `atom z \<sharp> \<Delta>` `atom z \<sharp> \<Delta>'` `atom z \<sharp> e` `atom z \<sharp> y`
+    using `atom z \<sharp> \<Theta> \<ominus>\<^sub>h is''` `atom z \<sharp> \<Theta>' \<ominus>\<^sub>h is''`
+      apply (auto simp add: fresh_Pair fresh_append 
+        intro: eqvt_fresh_cong2[where f = "resolve :: exp \<Rightarrow> indirections \<Rightarrow> exp", OF resolve_exp_eqvt] 
+         eqvt_fresh_cong2[where f = "resolve :: 'a::resolvable_eqvt \<Rightarrow> indirections \<Rightarrow> 'a", OF resolve_eqvt] 
+        eqvt_fresh_cong2[where f = resolveHeap, OF resolveHeap_eqvt]
+        resolveHeapOneFresh subst_is_fresh(1))
+      done
+
+  with `x \<notin> heapVars is`
+  have "\<Gamma> \<ominus>\<^sub>h is : (x, App e y) # \<Gamma>' \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>u \<Theta> \<ominus>\<^sub>h is'' : \<Theta>' \<ominus>\<^sub>h is''"
+    by (simp add: resolveExp_App)
+  moreover
+  note `ind_for is'' _`
+  moreover
+  note `valid_ind is''`
+  moreover
+  from `heapVars is \<subseteq> heapVars is'` and `_ \<subseteq> heapVars is''`
+  have "heapVars is \<subseteq> heapVars is''" by auto
+  ultimately 
   show ?case
     by -(rule exI, auto)
 next
-case (Variable x e \<Gamma> i L \<Delta> z "is")
+case (DVariable y e \<Gamma> x \<Gamma>' z \<Delta>' \<Delta> "is")
   show ?case sorry
 next
-case (VariableNoUpd x e \<Gamma> i L \<Delta> z "is")
+case (DVariableNoUpd y e \<Gamma> x \<Gamma>' z \<Delta>' \<Delta> "is")
   show ?case sorry
 next
-case (Let as \<Gamma> L body i u \<Delta> z "is")
+case (DLet as \<Gamma> x \<Gamma>' body \<Delta>' \<Delta> u "is")
   show ?case sorry
 qed
 

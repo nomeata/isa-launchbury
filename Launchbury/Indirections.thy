@@ -201,14 +201,12 @@ lemma supp_atom_set: "supp L = atom ` set L"
   done
 
 inductive valid_ind :: "indirections \<Rightarrow> bool" where
-  "valid_ind []" |
-  "valid_ind is \<Longrightarrow> atom x \<sharp> (is,y) \<Longrightarrow> valid_ind ((x,y) # is)"
+  ValidIndNil: "valid_ind []" |
+  ValidIndCons: "valid_ind is \<Longrightarrow> atom x \<sharp> (is,y) \<Longrightarrow> valid_ind ((x,y) # is)"
 
 lemma heapVarFresh: "x \<in> heapVars is \<Longrightarrow> atom x \<sharp> ((v::var) \<ominus> is)" oops
 
 lemma resolveHeap_fresh:  "valid_ind is \<Longrightarrow> x \<in> heapVars is \<Longrightarrow> atom x \<sharp> (\<Gamma> \<ominus>\<^sub>h is)"
-apply (induct rule:valid_ind.induct)
-apply simp
-sorry
-
+  by (induct arbitrary: \<Gamma> rule:valid_ind.induct)
+     (auto simp add: fresh_Pair resolveHeapOneFresh eqvt_fresh_cong2[where f = resolveHeap, OF resolveHeap_eqvt])
 end
