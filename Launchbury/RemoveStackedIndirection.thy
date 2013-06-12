@@ -102,13 +102,14 @@ lemma ind_for_fresh: "ind_for is \<Gamma> \<Longrightarrow> a \<sharp> \<Gamma> 
 
 lemma ind_for_permutation: "ind_for is \<Gamma> \<Longrightarrow> \<Gamma> <~~> \<Gamma>' \<Longrightarrow> ind_for is \<Gamma>'"
   unfolding ind_for_def by (auto dest!: perm_set_eq)
-
 theorem
-  "\<Gamma> : \<Gamma>' \<Down>\<^sup>\<surd>\<^sup>u\<^sup>d \<Delta> : \<Delta>' \<Longrightarrow> ind_for is (\<Gamma>'@\<Gamma>) \<Longrightarrow> valid_ind is \<Longrightarrow>
+  "\<Gamma> : \<Gamma>' \<Down>\<^sup>\<surd>\<^sup>u\<^sup>d \<Delta> : \<Delta>' \<Longrightarrow> ind_for is (\<Gamma>'@\<Gamma>) \<Longrightarrow> valid_ind is \<Longrightarrow> fst (hd \<Gamma>') \<notin> heapVars is \<Longrightarrow>
   \<exists> is'. (\<Gamma> \<ominus>\<^sub>h is : \<Gamma>' \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>u \<Delta> \<ominus>\<^sub>h is' : \<Delta>' \<ominus>\<^sub>h is')
        \<and> ind_for is' (\<Delta>'@\<Delta>)
        \<and> heapVars is \<subseteq> heapVars is'
-       \<and> valid_ind is'"
+       \<and> (heapVars is' \<inter> heapVars (\<Gamma>'@\<Gamma>)) \<subseteq> heapVars is
+       \<and> valid_ind is'
+       \<and> fst (hd \<Delta>') \<notin> heapVars is'" (* \<leftarrow> can probably be derived from the other results *)
 proof (nominal_induct \<Gamma> \<Gamma>' "\<surd>" u \<Delta> \<Delta>' avoiding: "is" rule:distinct_reds.strong_induct )
 case (DLambda x y e \<Gamma>' \<Gamma> u "is")
   from DLambda have "x \<notin> heapVars is"
@@ -133,20 +134,32 @@ case (DLambda x y e \<Gamma>' \<Gamma> u "is")
     by -(rule exI[where x = "is"], auto intro: reds.Lambda)
 next
 case (DApplicationInd n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<Theta>' z e' u "is")
+  hence "x \<notin> heapVars is" by simp
+
   from `ind_for is (((x, App e y) # \<Gamma>') @ \<Gamma>)`
   have "ind_for is (\<Gamma>'@\<Gamma>)" by simp
-  hence "ind_for is (((n, e) # (x, App (Var n) y) # \<Gamma>') @ \<Gamma>)" by simp
-  from DApplicationInd(24)[OF this `valid_ind is`]
-  obtain "is'"
-  where is': "\<Gamma> \<ominus>\<^sub>h is : ((n, e) # (x, App (Var n) y) # \<Gamma>') \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>u \<Delta> \<ominus>\<^sub>h is' : (n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>' \<ominus>\<^sub>h is'"
-      and "ind_for is' (((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>') @ \<Delta>)"
-      and "valid_ind is'"
-      and "heapVars is \<subseteq> heapVars is'"
-      by blast
 
   from `ind_for is (\<Gamma>'@ \<Gamma>)` `atom n \<sharp> \<Gamma>` `atom n \<sharp> \<Gamma>'`  `atom z \<sharp> \<Gamma>` `atom z \<sharp> \<Gamma>'`
   have "atom n \<sharp> is" and "atom z \<sharp> is" by (auto intro: ind_for_fresh simp add: fresh_append)
-  hence "n \<notin> heapVars is" by (metis heapVars_not_fresh)
+  hence "n \<notin> heapVars is" and "z \<notin> heapVars is" by (metis heapVars_not_fresh)+
+ 
+  from `ind_for is (\<Gamma>'@\<Gamma>)`
+  have "ind_for is (((n, e) # (x, App (Var n) y) # \<Gamma>') @ \<Gamma>)" by simp
+  moreover
+  note `valid_ind is`
+  moreover
+  from `n \<notin> heapVars is`
+  have "fst (hd ((n, e) # (x, App (Var n) y) # \<Gamma>')) \<notin> heapVars is" by (simp)
+  moreover
+  note DApplicationInd(24)[OF calculation]
+  ultimately
+  obtain "is'"
+  where is': "\<Gamma> \<ominus>\<^sub>h is : ((n, e) # (x, App (Var n) y) # \<Gamma>') \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>u \<Delta> \<ominus>\<^sub>h is' : (n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>' \<ominus>\<^sub>h is'"
+      and "ind_for is' (((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>') @ \<Delta>)"
+      and hV: "heapVars is' \<inter> heapVars (((n, e) # (x, App (Var n) y) # \<Gamma>') @ \<Gamma>) \<subseteq> heapVars is"
+      and "valid_ind is'"
+      and "heapVars is \<subseteq> heapVars is'"
+      by blast
 
   from `ind_for is' _`
   have "ind_for is' (\<Delta>'@\<Delta>)" by simp
@@ -164,18 +177,25 @@ case (DApplicationInd n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<T
   have "valid_ind ((z, y) # is')"
     by (auto intro!: ValidIndCons simp add: fresh_Pair)
   moreover
-  note DApplicationInd(26)
+  from `x \<notin> heapVars is` hV
+  have "x \<notin> heapVars is'" by auto
+  with  `atom z \<sharp> x`
+  have "fst (hd ((x, e') # \<Delta>')) \<notin> heapVars ((z, y) # is')"
+    by simp
+  moreover
+  note DApplicationInd(26)[OF calculation]
   ultimately
   obtain "is''"
   where is'':"(z, Var y) # \<Delta> \<ominus>\<^sub>h (z,y) # is' : (x, e') # \<Delta>' \<ominus>\<^sub>h (z,y)# is' \<Down>\<^sup>\<times>\<^sup>u \<Theta> \<ominus>\<^sub>h is'' : \<Theta>' \<ominus>\<^sub>h is''"
           and "ind_for is'' (\<Theta>' @ \<Theta>)"
           and "valid_ind is''"
           and "heapVars ((z, y) # is') \<subseteq> heapVars is''"
+          and hV': "heapVars is'' \<inter> heapVars (((x, e') # \<Delta>') @ (z, Var y) # \<Delta>) \<subseteq> heapVars ((z, y) # is')"
+          and "fst (hd \<Theta>') \<notin> heapVars is''"
           by blast
 
   have "x \<notin> heapVars is" by (metis (full_types) DApplicationInd.hyps(18) DApplicationInd.prems(1) append_Cons distinctVars_ConsD(1) ind_for_Cons ind_for_heapVars_subset isVar.simps(3) set_mp)
   have "x \<notin> heapVars is'" by (metis (full_types) DApplicationInd.hyps(20) `ind_for is' (((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>') @ \<Delta>)` append_Cons distinctVars_ConsD(1) distinctVars_ConsD(2) ind_for_Cons ind_for_heapVars_subset isVar.simps(2) isVar.simps(3) set_mp)
-  
 
   from `ind_for is'' (\<Theta>' @ \<Theta>)` `atom n \<sharp> \<Theta>` `atom n \<sharp> \<Theta>'`
   have "atom n \<sharp> is''" by (auto intro: ind_for_fresh simp add: fresh_append)
@@ -225,12 +245,83 @@ case (DApplicationInd n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<T
   moreover
   from `heapVars is \<subseteq> heapVars is'` and `_ \<subseteq> heapVars is''`
   have "heapVars is \<subseteq> heapVars is''" by auto
+  moreover
+  (*
+    from hV hV'
+         reds_doesnt_forget'[OF DApplicationInd(23)] reds_doesnt_forget'[OF DApplicationInd(25)]
+          `z \<notin> heapVars is` `z \<in> heapVars is''` `atom z \<sharp> x` `atom n \<sharp> z` `atom n \<sharp> \<Gamma>` `atom n \<sharp> \<Gamma>'`
+          `n \<notin> heapVars is` `n \<notin> heapVars is'`
+  *)
+
+  { { have "x \<notin> heapVars is''"
+      by (metis DApplicationInd.hyps(25) `fst (hd \<Theta>') \<notin> heapVars is''` distinct_redsD1 fst_conv hd.simps stack_same_head)
+    }
+    moreover
+    { fix x'
+      assume "x' \<in> heapVars is''"
+      hence "x' \<noteq> x" and "x' \<noteq> n" 
+        using `x \<notin> heapVars is''` `atom n \<sharp> is''` by (auto dest: heapVars_not_fresh)
+
+      assume "x' \<in> heapVars (\<Gamma>'@\<Gamma>)"
+      with reds_doesnt_forget'[OF DApplicationInd.hyps(23), simplified] `x' \<noteq> x` `x' \<noteq> n`
+      have "x' \<in> heapVars (\<Delta>'@\<Delta>)" by auto
+      moreover
+      have "x' \<noteq> z" by (metis DApplicationInd.hyps(11) DApplicationInd.hyps(12) `x' \<in> heapVars (\<Gamma>' @ \<Gamma>)` fresh_append heapVars_not_fresh)
+      moreover
+      note `x' \<in> heapVars is''` hV'
+      ultimately
+      have "x' \<in> heapVars is'" by auto
+      with hV `x' \<in> heapVars (\<Gamma>'@\<Gamma>)`
+      have "x' \<in> heapVars is" by auto
+    }
+    ultimately
+    have "heapVars is'' \<inter> heapVars (((x, App e y) # \<Gamma>') @ \<Gamma>) \<subseteq> heapVars is"
+      by auto
+  }
+  moreover
+  note `fst (hd \<Theta>') \<notin> heapVars is''`
   ultimately 
-  show ?case
-    by -(rule exI, auto)
+  show ?case by auto
 next
 case (DVariable y e \<Gamma> x \<Gamma>' z \<Delta>' \<Delta> "is")
-  show ?case sorry
+  show ?case
+  proof(cases "y \<in> heapVars is")
+  case True
+    show ?thesis sorry
+  next
+  case False
+    from `ind_for is _`
+    have "ind_for is (((y, e) # (x, Var y) # \<Gamma>') @ delete y \<Gamma>)"
+      apply (rule ind_for_permutation)
+      sorry
+    moreover
+    note `valid_ind is`
+    moreover
+    note DVariable(7)
+    ultimately
+    obtain is' where is': "delete y \<Gamma> \<ominus>\<^sub>h is : (y, e) # (x, Var y) # \<Gamma>' \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>\<surd> \<Delta> \<ominus>\<^sub>h is' : (y, z) # (x, Var y) # \<Delta>' \<ominus>\<^sub>h is'"
+      and "ind_for is' (((y, z) # (x, Var y) # \<Delta>') @ \<Delta>)"
+      and "heapVars is \<subseteq> heapVars is'"
+      and "valid_ind is'"
+      by blast
+
+    from `(y, e) \<in> set \<Gamma>`
+    have "(y, e \<ominus> is) \<in> set (\<Gamma> \<ominus>\<^sub>h is)" sorry
+    moreover
+    from is'
+    have "delete y (\<Gamma> \<ominus>\<^sub>h is) : (y, e \<ominus> is) # (x, Var y) # (\<Gamma>' \<ominus>\<^sub>h is) \<Down>\<^sup>\<times>\<^sup>\<surd> \<Delta> \<ominus>\<^sub>h is' : (y, z \<ominus> is') # (x, Var y) # (\<Delta>' \<ominus>\<^sub>h is')"
+      sorry
+    ultimately
+    have "\<Gamma> \<ominus>\<^sub>h is : (x, Var y) # (\<Gamma>' \<ominus>\<^sub>h is) \<Down>\<^sup>\<times>\<^sup>\<surd> (y, z \<ominus> is') # (\<Delta> \<ominus>\<^sub>h is') : (x, z \<ominus> is') # (\<Delta>' \<ominus>\<^sub>h is')"
+      by (rule Variable)
+    hence "\<Gamma> \<ominus>\<^sub>h is : (x, Var y) # \<Gamma>' \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>\<surd> (y, z) # \<Delta> \<ominus>\<^sub>h is' : (x, z) # \<Delta>' \<ominus>\<^sub>h is'" sorry
+    moreover
+    from `ind_for is' _`
+    have "ind_for is' (((x, z) # \<Delta>') @ (y, z) # \<Delta>)" sorry
+    moreover
+    note `heapVars is \<subseteq> heapVars is'` `valid_ind is'`
+    ultimately
+    show ?thesis by (auto)
 next
 case (DVariableNoUpd y e \<Gamma> x \<Gamma>' z \<Delta>' \<Delta> "is")
   show ?case sorry
