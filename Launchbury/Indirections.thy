@@ -126,6 +126,21 @@ lemma resolveHeapOneDelete[simp]: "resolveHeapOne (delete x \<Gamma>) a b = dele
 lemma resolveHeapDelete[simp]: "delete x \<Gamma> \<ominus>\<^sub>h is = delete x (\<Gamma> \<ominus>\<^sub>h is)"
   by (induct \<Gamma> "is" arbitrary: x rule:resolveHeap.induct) simp_all
 
+lemma resolveHeapOneHeapVars[simp]:
+  "heapVars (resolveHeapOne \<Gamma> a b) = heapVars \<Gamma> - {a}"
+  by (induct \<Gamma> a b rule:resolveHeapOne.induct) auto
+
+lemma resolveHeapHeapVars[simp]:
+  "heapVars (\<Gamma> \<ominus>\<^sub>h is) = heapVars \<Gamma> - heapVars is"
+  by (induct \<Gamma> "is" rule:resolveHeap.induct) auto
+
+lemma resolveHeapOneDeleted[simp]:
+  "delete a (resolveHeapOne \<Gamma> a b \<ominus>\<^sub>h is) = resolveHeapOne \<Gamma> a b \<ominus>\<^sub>h is"
+  by (rule delete_no_there, simp)
+
+lemma resolveHeapDeleted[simp]: "x \<in> heapVars is \<Longrightarrow> delete x (\<Gamma> \<ominus>\<^sub>h is) = \<Gamma> \<ominus>\<^sub>h is"
+  by (rule delete_no_there, simp)
+
 lemma resolveHeap_eqvt[eqvt]: "p \<bullet> resolveHeap \<Gamma> is = resolveHeap (p \<bullet> \<Gamma>) (p \<bullet> is)"
   by(induction \<Gamma> "is" rule:resolveHeap.induct) simp_all
 
