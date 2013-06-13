@@ -120,6 +120,12 @@ lemma resolveHeapCons[simp]: "x \<notin> heapVars is \<Longrightarrow> (x,e)#\<G
   apply simp_all
   done
 
+lemma resolveHeapOneDelete[simp]: "resolveHeapOne (delete x \<Gamma>) a b = delete x (resolveHeapOne \<Gamma> a b)"
+  by (induct \<Gamma> a b rule:resolveHeapOne.induct) auto
+
+lemma resolveHeapDelete[simp]: "delete x \<Gamma> \<ominus>\<^sub>h is = delete x (\<Gamma> \<ominus>\<^sub>h is)"
+  by (induct \<Gamma> "is" arbitrary: x rule:resolveHeap.induct) simp_all
+
 lemma resolveHeap_eqvt[eqvt]: "p \<bullet> resolveHeap \<Gamma> is = resolveHeap (p \<bullet> \<Gamma>) (p \<bullet> is)"
   by(induction \<Gamma> "is" rule:resolveHeap.induct) simp_all
 
@@ -127,6 +133,12 @@ lemma resolveHeap_append[simp]: "\<Gamma> \<ominus>\<^sub>h (is'@is) = \<Gamma> 
   apply (induct \<Gamma> "is'" rule:resolveHeap.induct)
   apply (auto)
   done
+
+lemma resolveHeapOne_set: "(y, e) \<in> set \<Gamma> \<Longrightarrow> y \<noteq> a \<Longrightarrow> (y, e[a ::= b]) \<in> set (resolveHeapOne \<Gamma> a b)"
+  by (induct \<Gamma> a b rule:resolveHeapOne.induct) auto
+
+lemma resolveHeap_set: "(y, e) \<in> set \<Gamma> \<Longrightarrow> y \<notin> heapVars is \<Longrightarrow> (y, e \<ominus> is) \<in> set (\<Gamma> \<ominus>\<^sub>h is)"
+  by (induct \<Gamma> "is" arbitrary: e rule:resolveHeap.induct) (auto dest: resolveHeapOne_set)
 
 definition indirection_related :: "heap \<Rightarrow> exp \<Rightarrow> indirections \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool" where
   "indirection_related \<Gamma> e is \<Gamma>' e' = (resolveHeap \<Gamma> is = \<Gamma>' \<and>  e \<ominus> is = e')"
