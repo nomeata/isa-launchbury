@@ -162,8 +162,10 @@ case (DApplicationInd n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<T
           and hV': "heapVars is'' \<inter> heapVars (((x, e') # \<Delta>') @ (z, Var y) # \<Delta>) \<subseteq> heapVars ((z, y) # is')"
           by blast
 
-  have "x \<notin> heapVars is" by (metis (full_types) DApplicationInd.hyps(18) DApplicationInd.prems(1) append_Cons distinctVars_ConsD(1) ind_for_Cons ind_for_heapVars_subset isVar.simps(3) set_mp)
-  have "x \<notin> heapVars is'" by (metis (full_types) DApplicationInd.hyps(20) `ind_for is' (((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>') @ \<Delta>)` append_Cons distinctVars_ConsD(1) distinctVars_ConsD(2) ind_for_Cons ind_for_heapVars_subset isVar.simps(2) isVar.simps(3) set_mp)
+  from `x \<notin> heapVars is` hV
+  have "x \<notin> heapVars is'" by auto
+  with hV' `atom z \<sharp> x`
+  have "x \<notin> heapVars is''" by (auto simp add: fresh_at_base)
 
   from `ind_for is'' (\<Theta>' @ \<Theta>)` `atom n \<sharp> \<Theta>` `atom n \<sharp> \<Theta>'`
   have "atom n \<sharp> is''" by (auto intro: ind_for_fresh simp add: fresh_append)
@@ -215,30 +217,26 @@ case (DApplicationInd n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<T
   have "heapVars is \<subseteq> heapVars is''" by auto
   moreover
 
-  { from `x \<notin> heapVars is` hV hV' `atom z \<sharp> x`
-    have "x \<notin> heapVars is''" by (auto simp add: fresh_at_base)
-    moreover
-    { fix x'
-      assume "x' \<in> heapVars is''"
-      hence "x' \<noteq> x" and "x' \<noteq> n" 
-        using `x \<notin> heapVars is''` `atom n \<sharp> is''` by (auto dest: heapVars_not_fresh)
+  { fix x'
+    assume "x' \<in> heapVars is''"
+    hence "x' \<noteq> x" and "x' \<noteq> n" 
+      using `x \<notin> heapVars is''` `atom n \<sharp> is''` by (auto dest: heapVars_not_fresh)
 
-      assume "x' \<in> heapVars (\<Gamma>'@\<Gamma>)"
-      with reds_doesnt_forget'[OF DApplicationInd.hyps(23), simplified] `x' \<noteq> x` `x' \<noteq> n`
-      have "x' \<in> heapVars (\<Delta>'@\<Delta>)" by auto
-      moreover
-      have "x' \<noteq> z" by (metis DApplicationInd.hyps(11) DApplicationInd.hyps(12) `x' \<in> heapVars (\<Gamma>' @ \<Gamma>)` fresh_append heapVars_not_fresh)
-      moreover
-      note `x' \<in> heapVars is''` hV'
-      ultimately
-      have "x' \<in> heapVars is'" by auto
-      with hV `x' \<in> heapVars (\<Gamma>'@\<Gamma>)`
-      have "x' \<in> heapVars is" by auto
-    }
+    assume "x' \<in> heapVars (\<Gamma>'@\<Gamma>)"
+    with reds_doesnt_forget'[OF DApplicationInd.hyps(23), simplified] `x' \<noteq> x` `x' \<noteq> n`
+    have "x' \<in> heapVars (\<Delta>'@\<Delta>)" by auto
+    moreover
+    have "x' \<noteq> z" by (metis DApplicationInd.hyps(11) DApplicationInd.hyps(12) `x' \<in> heapVars (\<Gamma>' @ \<Gamma>)` fresh_append heapVars_not_fresh)
+    moreover
+    note `x' \<in> heapVars is''` hV'
     ultimately
-    have "heapVars is'' \<inter> heapVars (((x, App e y) # \<Gamma>') @ \<Gamma>) \<subseteq> heapVars is"
-      by auto
+    have "x' \<in> heapVars is'" by auto
+    with hV `x' \<in> heapVars (\<Gamma>'@\<Gamma>)`
+    have "x' \<in> heapVars is" by auto
   }
+  with `x \<notin> heapVars is''`
+  have "heapVars is'' \<inter> heapVars (((x, App e y) # \<Gamma>') @ \<Gamma>) \<subseteq> heapVars is"
+    by auto
   ultimately 
   show ?case by auto
 next
