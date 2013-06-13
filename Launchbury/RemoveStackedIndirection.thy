@@ -72,6 +72,81 @@ lemma ind_for_fresh: "ind_for is \<Gamma> \<Longrightarrow> a \<sharp> \<Gamma> 
 lemma delete_Cons_permutation: "distinctVars \<Gamma> \<Longrightarrow> (y, e) \<in> set \<Gamma> \<Longrightarrow> \<Gamma> <~~> (y, e) # delete y \<Gamma>"
   by (induction \<Gamma> rule:distinctVars.induct) (auto simp add: delete_no_there heapVars_from_set)
 
+lemma ind_for_smaller_index:
+  assumes "valid_ind is"
+  assumes "i < length is"
+  assumes "j < length is"
+  assumes "is ! i = (x,y)"
+  assumes "is ! j = (y,y')"
+  shows "j > i"
+using assms
+proof (induct arbitrary: i j rule:valid_ind.induct)
+case ValidIndNil thus ?case by simp
+next
+case (ValidIndCons "is" a b i j)
+  show ?case
+  proof(cases i)
+    case 0
+    with ValidIndCons
+    show ?thesis
+      by (cases j) (auto simp add: fresh_Pair fresh_at_base)
+  next
+    case (Suc i')
+    with ValidIndCons have "i' < length is" by auto
+
+    show ?thesis
+    proof (cases j)
+    case 0
+      with ValidIndCons  `i = Suc i'`
+      have "atom y \<sharp> is" and "is ! i' = (x, y)" by (simp_all add: fresh_Pair)
+      hence "(x,y) \<in> set is" using `i' < length is`
+      by (metis nth_mem)
+      with `atom y \<sharp> is` have "atom y \<sharp> (x,y)" by (metis fresh_list_elem)
+      hence False by (simp add: fresh_Pair fresh_at_base)
+      thus ?thesis by simp
+    next
+    case Suc with `i = Suc i'` ValidIndCons
+      show ?thesis by (auto simp add: fresh_Pair fresh_at_base)
+    qed
+  qed
+qed
+
+lemma ind_for_induct[consumes 1, case_names NoInd Ind]:
+  assumes "valid_ind is"
+  assumes NoInd: "\<And> x. x \<notin> heapVars is \<Longrightarrow> P x"
+  assumes Ind: "\<And> x y. P y \<Longrightarrow> (x,y) \<in> set is \<Longrightarrow> P x"
+  shows "P x"
+proof(cases "x \<in> heapVars is")
+case True
+  then obtain y i where "i < length is" and "is ! i = (x,y)" unfolding heapVars_def 
+    by (auto simp add: in_set_conv_nth)
+  thus ?thesis
+  proof (induction i arbitrary: x y rule:measure_induct_rule[where f = "\<lambda>x . length is - x"])
+  case (less i x y)
+    have "P y"
+    proof(cases "y \<in> heapVars is")
+    case True
+      then obtain y' j where "j < length is" and "is ! j = (y,y')" unfolding heapVars_def 
+        by (auto simp add: in_set_conv_nth)
+      from `valid_ind is` `i < length is` `j < length is` `is ! i = _` `is ! j = _`
+      have "i < j" by (rule ind_for_smaller_index)
+      hence "length is - j < length is - i" by (metis diff_less_mono2 less.prems(1))
+      from less.IH[OF this `j < length is` `is ! j = (y,y')`]
+      show ?thesis.
+    next
+    case False
+      thus ?thesis by (rule NoInd)
+    qed
+    moreover
+    from less have "(x,y) \<in> set is" by (metis nth_mem)
+    ultimately
+    show ?case by (rule Ind)
+  qed
+next
+case False
+  thus ?thesis by (rule NoInd)
+qed
+
 theorem
   "\<Gamma> : \<Gamma>' \<Down>\<^sup>\<surd>\<^sup>u\<^sup>d \<Delta> : \<Delta>' \<Longrightarrow> ind_for is (\<Gamma>'@\<Gamma>) \<Longrightarrow> valid_ind is \<Longrightarrow> fst (hd \<Gamma>') \<notin> heapVars is \<Longrightarrow>
   \<exists> is'. (\<Gamma> \<ominus>\<^sub>h is : \<Gamma>' \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>u \<Delta> \<ominus>\<^sub>h is' : \<Delta>' \<ominus>\<^sub>h is')
@@ -243,6 +318,9 @@ next
 case (DVariable y e \<Gamma> x \<Gamma>' z \<Delta>' \<Delta> "is")
   hence "x \<notin> heapVars is" by simp
 
+  from `distinctVars (((y, z) # (x, Var y) # \<Delta>') @ \<Delta>)`
+  have "x \<noteq> y" by (auto simp add: distinctVars_Cons distinctVars_append)
+
   from `distinctVars (((x, Var y) # \<Gamma>') @ \<Gamma>)`
   have "distinctVars \<Gamma>" by (simp add: distinctVars_Cons distinctVars_append)
   from delete_Cons_permutation[OF this `(y,e) \<in> set \<Gamma>`]
@@ -253,15 +331,27 @@ case (DVariable y e \<Gamma> x \<Gamma>' z \<Delta>' \<Delta> "is")
   hence perm: "((x, Var y) # \<Gamma>') @ \<Gamma> <~~> ((y, e) # (x, Var y) # \<Gamma>') @ delete y \<Gamma>"
     by (metis (hide_lams, no_types) append_Cons perm.trans perm_append_Cons perm_append_swap)
 
+  from `ind_for is _` perm
+  have "ind_for is (((y, e) # (x, Var y) # \<Gamma>') @ delete y \<Gamma>)"
+    by (rule ind_for_permutation)
+
+
   show ?case
   proof(cases "y \<in> heapVars is")
   case True
+    then obtain x' where "(y,x') \<in> set is" by (auto simp add: heapVars_def)
+    hence "(y, Var x') \<in> set ((((y, e) # (x, Var y) # \<Gamma>') @ delete y \<Gamma>))"
+    using `ind_for is (((y, e) # (x, Var y) # \<Gamma>') @ delete y \<Gamma>)`
+      by (auto simp add: ind_for_def dest: bspec)
+    with `distinctVars (((y, e) # (x, Var y) # \<Gamma>') @ delete y \<Gamma>)`
+    have "e = Var x'" by (metis Cons_eq_appendI append_Nil distinctVarsE in_set_conv_decomp)
+
+    thm DVariable
+    
     show ?thesis sorry
   next
   case False
-    from `ind_for is _` perm
-    have "ind_for is (((y, e) # (x, Var y) # \<Gamma>') @ delete y \<Gamma>)"
-      by (rule ind_for_permutation)
+    note `ind_for is (((y, e) # (x, Var y) # \<Gamma>') @ delete y \<Gamma>)`
     moreover
     note `valid_ind is`
     moreover
