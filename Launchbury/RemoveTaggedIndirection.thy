@@ -406,6 +406,7 @@ case (DVariable y x S \<Gamma> z \<Delta> "is")
     have "(x, Var y) # \<Gamma> \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>x # S \<ominus>\<^sub>S is\<^esub> (y, z) # (x, z) # \<Delta> \<ominus>\<^sub>h is'" by simp
     moreover
   
+    from `ind_for is' _`
     have "ind_for is' ((y, z) # (x, z) # \<Delta>)"
       sorry
     moreover
