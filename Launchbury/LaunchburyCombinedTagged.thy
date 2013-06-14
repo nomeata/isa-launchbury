@@ -50,9 +50,9 @@ where
       (x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^bsub>x#S\<^esub> \<Delta>"
  | VariableNoUpd: "\<lbrakk>
       y \<notin> set (x#S);
-      (x, Var y) # (y,e) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^bsub>y#x#S\<^esub> (y,z) # \<Delta>
+      (x, e) # (y,e) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^bsub>x#y#S\<^esub> \<Delta>
    \<rbrakk> \<Longrightarrow>
-      (x, Var y) # (y,e) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^bsub>x#S\<^esub> (y,e) # \<Delta>"
+      (x, Var y) # (y,e) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^bsub>x#S\<^esub> \<Delta>"
  | Let: "\<lbrakk>
       set (bn as) \<sharp>* (\<Gamma>, x);
       distinctVars (asToHeap as);
@@ -153,13 +153,12 @@ where
  | DVariableNoUpd: "\<lbrakk>
       y \<notin> set (x#S);
       distinctVars ((x, Var y) # (y,e) # \<Gamma>);
-      distinctVars ((y,z) # \<Delta>);
-      distinctVars ((y,e) # \<Delta>);
+      distinctVars \<Delta>;
       distinct (x#S);
       distinct (y#x#S);
-      (x, Var y) # (y,e) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^sup>d\<^bsub>y#x#S\<^esub> (y,z) # \<Delta>
+      (x, e) # (y,e) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^sup>d\<^bsub>x#y#S\<^esub> \<Delta>
    \<rbrakk> \<Longrightarrow>
-      (x, Var y) # (y,e) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^sup>d\<^bsub>x#S\<^esub> (y,e) # \<Delta>"
+      (x, Var y) # (y,e) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^sup>d\<^bsub>x#S\<^esub> \<Delta>"
  | DLet: "\<lbrakk>
       set (bn as) \<sharp>* (\<Gamma>, x);
       distinctVars (asToHeap as);
@@ -252,13 +251,8 @@ next
 case Variable
   thus ?case by (auto intro: DVariable elim: distinct_redsD3)
 next
-case (VariableNoUpd y x S e \<Gamma> i z \<Delta>)
-  hence "distinct (y # x # S)" by simp
-  from VariableNoUpd(3)[OF `distinctVars ((x, Var y) # (y, e) # \<Gamma>)` this]
-        `distinctVars ((x, Var y) # (y, e) # \<Gamma>)`
-        `distinct (x#S)` `y \<notin> set (x # S)`
-  show ?case
-    by (auto intro!: DVariableNoUpd dest: distinct_redsD3 simp add: distinctVars_Cons)
+case (VariableNoUpd y x S e \<Gamma> i \<Delta>)
+  thus ?case by (auto intro: DVariableNoUpd elim: distinct_redsD3 simp add: distinctVars_Cons)
 next
 case (Let as \<Gamma> x body i u S \<Delta>)
   moreover
@@ -387,7 +381,7 @@ next
 case (DVariable y x S \<Gamma> \<Delta> i x')
   thus ?case by auto
 next 
-case (DVariableNoUpd y x S e \<Gamma> z \<Delta> i x')
+case (DVariableNoUpd y x S e \<Gamma> \<Delta> i x')
   thus ?case by (auto simp add: fresh_Cons)
 next
 case (DLet as \<Gamma> x body \<Delta> S i u x')
@@ -398,7 +392,7 @@ case (DLet as \<Gamma> x body \<Delta> S i u x')
     show ?thesis by auto
   next
     case False
-    hence "atom x' \<notin> set (bn as)" sorry
+    hence "atom x' \<notin> set (bn as)" by (auto simp add: set_bn_to_atom_heapVars)
     with `atom x' \<sharp> (x, Let as body) # \<Gamma>`
     have "atom x' \<sharp> (x, body) # asToHeap as @ \<Gamma>"
       by (auto simp add: fresh_Cons fresh_Pair fresh_append fresh_fun_eqvt_app asToHeap_eqvt)
