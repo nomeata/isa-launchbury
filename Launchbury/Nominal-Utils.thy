@@ -7,13 +7,13 @@ subsubsection {* Lemmas helping with equivariance proofs *}
 lemma perm_rel_lemma:
   assumes "\<And> \<pi> x y. r (\<pi> \<bullet> x) (\<pi> \<bullet> y) \<Longrightarrow> r x y"
   shows "r (\<pi> \<bullet> x) (\<pi> \<bullet> y) \<longleftrightarrow> r x y" (is "?l \<longleftrightarrow> ?r")
-proof
-  show "?l \<Longrightarrow> ?r" by fact
-next
-  assume "r x y"
-  hence "r (- \<pi> \<bullet> \<pi> \<bullet> x) (- \<pi> \<bullet> \<pi> \<bullet> y)" by simp
-  thus "?l" by (rule assms)
-qed
+by (metis (full_types) assms permute_minus_cancel(2))
+
+lemma perm_rel_lemma2:
+  assumes "\<And> \<pi> x y. r x y \<Longrightarrow> r (\<pi> \<bullet> x) (\<pi> \<bullet> y)"
+  shows "r x y \<longleftrightarrow> r (\<pi> \<bullet> x) (\<pi> \<bullet> y)" (is "?l \<longleftrightarrow> ?r")
+by (metis (full_types) assms permute_minus_cancel(2))
+
 
 lemma eqvt_at_apply:
   assumes "eqvt_at f x"
@@ -157,6 +157,10 @@ lemma fresh_list_elem:
   shows "a \<sharp> e"
 using assms
 by(induct \<Gamma>)(auto simp add: fresh_Cons)
+
+lemma set_not_fresh:
+  "x \<in> set L \<Longrightarrow> \<not>(atom x \<sharp> L)"
+  by (metis fresh_list_elem not_self_fresh)
 
 lemma pure_fresh_star[simp]: "a \<sharp>* (x :: 'a :: pure)"
   by (simp add: fresh_star_def pure_fresh)
