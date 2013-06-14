@@ -481,123 +481,123 @@ case (DVariable y x S \<Gamma> z \<Delta> "is")
     show ?thesis by blast
   qed
 next
-(*
-case (DVariableNoUpd y e \<Gamma> x \<Gamma>' z \<Delta>' \<Delta> "is")
-  from `distinctVars (((y, z) # (x, Var y) # \<Delta>') @ \<Delta>)`
+case (DVariableNoUpd y x S e \<Gamma> z \<Delta> "is")
+  from `distinctVars ((y, z) # (x, Var y) # \<Delta>)`
   have "x \<noteq> y" by (auto simp add: distinctVars_Cons distinctVars_append)
 
-  from `distinctVars (((x, Var y) # \<Gamma>') @ \<Gamma>)`
-  have "distinctVars \<Gamma>" by (simp add: distinctVars_Cons distinctVars_append)
-  from delete_Cons_permutation[OF this `(y,e) \<in> set \<Gamma>`]
-  have "\<Gamma> <~~> (y,e) # (delete y \<Gamma>)".
-  hence "\<Gamma>' @ \<Gamma> <~~> \<Gamma>' @ (y,e) # (delete y \<Gamma>)" by (metis perm_append1_eq)
-  hence "((x, Var y) # \<Gamma>') @ \<Gamma> <~~> (x, Var y) # (\<Gamma>' @ (y,e) # (delete y \<Gamma>))"
-    by (metis append_Cons cons_perm_eq)
-  hence perm: "((x, Var y) # \<Gamma>') @ \<Gamma> <~~> ((y, e) # (x, Var y) # \<Gamma>') @ delete y \<Gamma>"
-    by (metis (hide_lams, no_types) append_Cons perm.trans perm_append_Cons perm_append_swap)
-
-  from `ind_for is _` perm
-  have "ind_for is (((y, e) # (x, Var y) # \<Gamma>') @ delete y \<Gamma>)"
-    by (rule ind_for_permutation)
-
-  note `ind_for is (((y, e) # (x, Var y) # \<Gamma>') @ delete y \<Gamma>)`
-  moreover
-  note `valid_ind is`
-  moreover
-  have "y \<notin> heapVars is" sorry (* Needed? *)
-  hence "fst (hd ((y, e) # (x, Var y) # \<Gamma>')) \<notin> heapVars is"  by simp
-  moreover
-  note DVariableNoUpd(7)[OF calculation]
-  ultimately
-  obtain is' where is': "delete y \<Gamma> \<ominus>\<^sub>h is : (y, e) # (x, Var y) # \<Gamma>' \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>\<times> \<Delta> \<ominus>\<^sub>h is' : (y, z) # (x, Var y) # \<Delta>' \<ominus>\<^sub>h is'"
-    and "ind_for is' (((y, z) # (x, Var y) # \<Delta>') @ \<Delta>)"
+  from DVariableNoUpd(10)[OF  `ind_for is _` `valid_ind is`]
+  obtain is' where is': "(x, Var y) # (y, e) # \<Gamma> \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>\<times>\<^bsub>y # x # S \<ominus>\<^sub>S is\<^esub> (y, z) # (x, Var y) # \<Delta> \<ominus>\<^sub>h is'"
+    and "ind_for is' ((y, z) # (x, Var y) # \<Delta>)"
     and "heapVars is \<subseteq> heapVars is'"
     and "valid_ind is'"
-    and hV: "heapVars is' \<inter> heapVars (((y, e) # (x, Var y) # \<Gamma>') @ delete y \<Gamma>) \<subseteq> heapVars is"
+    and hV: " heapVars is' \<inter> heapVars ((x, Var y) # (y, e) # \<Gamma>) \<subseteq> heapVars is"
+    and "y # x # S \<ominus>\<^sub>S is' = y # x # S \<ominus>\<^sub>S is"
     by blast
-    
-  have "\<Gamma> \<ominus>\<^sub>h is : (x, Var y) # \<Gamma>' \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>\<times> (y, e) # \<Delta> \<ominus>\<^sub>h is' : (x, z) # \<Delta>' \<ominus>\<^sub>h is'"
+
+  show ?case
   proof(cases "x \<in> heapVars is")
   case True
-    then obtain y' where "(x,y') \<in> set is" by (auto simp add: heapVars_def)
-    hence "(x, Var y') \<in> set ((((y, e) # (x, Var y) # \<Gamma>') @ delete y \<Gamma>))"
-    using `ind_for is (((y, e) # (x, Var y) # \<Gamma>') @ delete y \<Gamma>)`
-      by (auto simp add: ind_for_def dest: bspec)
-    with `distinctVars (((y, e) # (x, Var y) # \<Gamma>') @ delete y \<Gamma>)`
-    have "y' = y" sorry
+    have "(x,y) \<in> set is"
+    proof-
+      from True obtain y' where "(x,y') \<in> set is" by (auto simp add: heapVars_def)
+      hence "(x, Var y') \<in> set  ((x, Var y) # (y, e) # \<Gamma>)"
+        using `ind_for is _`  by (auto simp add: ind_for_def dest:bspec)
+      with `distinctVars ((x, Var y) # (y, e) # \<Gamma>)`
+      have "y' = y" by (metis Pair_inject distinctVars_ConsD(1) exp_assn.eq_iff(1) heapVars_from_set set_ConsD)
+      with `_ \<in> set is` show ?thesis by simp
+    qed
+
     have [simp]: "x \<ominus> is = y \<ominus> is" sorry
 
-    show ?thesis
-    proof (cases "y \<in> heapVars is")
-    case True
-      have "x \<in> heapVars is'" and "y \<in> heapVars is'" sorry
-      from is' `x \<in> heapVars is` `y \<in> heapVars is` `x \<in> heapVars is'` `y \<in> heapVars is'`
-      show ?thesis by simp
-    next
-    case False
-      have "x \<in> heapVars is'" and "y \<notin> heapVars is'" sorry
-      from is' `x \<in> heapVars is`  `y \<notin> heapVars is`  `x \<in> heapVars is'` `y \<notin> heapVars is'`
-      show ?thesis
-        apply simp
-        sorry
-    qed
+    from `(x,y) \<in> set is`
+    have [simp]: "y # x # S \<ominus>\<^sub>S is = x # S \<ominus>\<^sub>S is" by simp
+
+    from `x \<in> heapVars is` `heapVars is \<subseteq> heapVars is'`
+    have "x \<in> heapVars is'" by auto
+
+    (* Here the variable is set back. How to show this? *)
+    have "(y, z) # \<Delta> \<ominus>\<^sub>h is' = (y, e) # \<Delta> \<ominus>\<^sub>h is'" sorry
+    with is' `x \<in> heapVars is` `x \<in> heapVars is'`
+    have "(x, Var y) # (y, e) # \<Gamma> \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>\<times>\<^bsub>x # S \<ominus>\<^sub>S is\<^esub> (y, e) # (x, z) # \<Delta> \<ominus>\<^sub>h is'" by simp
+    moreover
+  
+    from `ind_for is' _`
+    have "ind_for is' ((y, e) # (x, z) # \<Delta>)"
+      sorry
+    moreover
+    note `heapVars is \<subseteq> heapVars is'` `valid_ind is'`
+    moreover
+    from hV
+    have "heapVars is' \<inter> heapVars ((x, Var y) # (y, e) # \<Gamma>) \<subseteq> heapVars is" by auto
+    moreover
+    from `y # x # S \<ominus>\<^sub>S is' = y # x # S \<ominus>\<^sub>S is`
+    have "x # S \<ominus>\<^sub>S is' = x # S \<ominus>\<^sub>S is"
+      sorry
+    (*
+    moreover
+    from `x \<notin> heapVars is'`
+    have "fst (hd ((x, z) # \<Delta>')) \<notin> heapVars is'" by simp
+    *)
+    ultimately
+    show ?thesis by blast
   next
   case False
-    show ?thesis
-    proof(cases "y \<in> heapVars is")
-    case True
-      then obtain x' where "(y,x') \<in> set is" by (auto simp add: heapVars_def)
-      hence "(y, Var x') \<in> set ((((y, e) # (x, Var y) # \<Gamma>') @ delete y \<Gamma>))"
-      using `ind_for is (((y, e) # (x, Var y) # \<Gamma>') @ delete y \<Gamma>)`
-        by (auto simp add: ind_for_def dest: bspec)
-      with `distinctVars (((y, e) # (x, Var y) # \<Gamma>') @ delete y \<Gamma>)`
-      have "e = Var x'" by (metis Cons_eq_appendI append_Nil distinctVarsE in_set_conv_decomp)
-  
-      have "x \<notin> heapVars is'" and "y \<in> heapVars is'" sorry
-      from is' `x \<notin> heapVars is`  `y \<in> heapVars is`  `x \<notin> heapVars is'` `y \<in> heapVars is'`
-      show ?thesis
-        apply simp
-        sorry
-    next
-    case False
-      from `y \<notin> heapVars is` `x \<notin> heapVars is` hV
-      have "y \<notin> heapVars is'" "x \<notin> heapVars is'" by auto
+    from `x \<notin> heapVars is` hV
+    have "x \<notin> heapVars is'" by auto
 
-      have [simp]: "e \<ominus> is' = e \<ominus> is" sorry
-      
-      from `(y, e) \<in> set \<Gamma>` `y \<notin> heapVars is`
-      have "(y, e \<ominus> is) \<in> set (\<Gamma> \<ominus>\<^sub>h is)" by (rule resolveHeap_set)
-      moreover
-      from is' `y \<notin> heapVars is` `x \<notin> heapVars is` `y \<notin> heapVars is'` `x \<notin> heapVars is'`
-      have "delete y (\<Gamma> \<ominus>\<^sub>h is) : (y, e \<ominus> is) # (x, Var y) # (\<Gamma>' \<ominus>\<^sub>h is) \<Down>\<^sup>\<times>\<^sup>\<times> \<Delta> \<ominus>\<^sub>h is' : (y, z \<ominus> is') # (x, Var y) # (\<Delta>' \<ominus>\<^sub>h is')"
-        by (simp add: resolveExp_Var)
-      ultimately
-      have "\<Gamma> \<ominus>\<^sub>h is : (x, Var y) # (\<Gamma>' \<ominus>\<^sub>h is) \<Down>\<^sup>\<times>\<^sup>\<times> (y, e \<ominus> is) # (\<Delta> \<ominus>\<^sub>h is') : (x, z \<ominus> is') # (\<Delta>' \<ominus>\<^sub>h is')"
-        by (rule VariableNoUpd)
-      hence "\<Gamma> \<ominus>\<^sub>h is : (x, Var y) # \<Gamma>' \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>\<times> (y, e) # \<Delta> \<ominus>\<^sub>h is' : (x, z) # \<Delta>' \<ominus>\<^sub>h is'"
-        using  `y \<notin> heapVars is` `x \<notin> heapVars is` `y \<notin> heapVars is'` `x \<notin> heapVars is'`
-        by (simp add: resolveExp_Var)
-      moreover
-      from `ind_for is' _`  `y \<notin> heapVars is'` `x \<notin> heapVars is'`
-      have "ind_for is' (((x, z) # \<Delta>') @ (y, z) # \<Delta>)"
-        by (auto elim: ind_for_larger_set)
-      moreover
-      note `heapVars is \<subseteq> heapVars is'` `valid_ind is'`
-      moreover
-      from hV
-      have "heapVars is' \<inter> heapVars (((x, Var y) # \<Gamma>') @ \<Gamma>) \<subseteq> heapVars is" by auto
-      moreover
-      from `x \<notin> heapVars is'`
-      have "fst (hd ((x, z) # \<Delta>')) \<notin> heapVars is'" by simp
-      ultimately
-      show ?thesis by blast
-    qed
+    from value_not_var[OF DVariableNoUpd(9), simplified] `ind_for is' _` `valid_ind is'`
+    have "y \<notin> heapVars is'"
+      by (metis DVariableNoUpd.hyps(3) distinctVars_ConsD(1) ind_for_Cons ind_for_heapVars_subset set_mp)
+    with `heapVars is \<subseteq> heapVars is'`
+    have "y \<notin> heapVars is" by auto
+
+    from `x \<notin> heapVars is` hV
+    have "x \<notin> heapVars is'" by auto
+
+    have [simp]: "e \<ominus> is' = e \<ominus> is" sorry
+
+    from `y \<notin> set (x # S)` `x \<noteq> y` `y \<notin> heapVars is`
+    have "y \<notin> set (x # (S \<ominus>\<^sub>S is))" by simp
+    moreover
+    from is' `y \<notin> heapVars is` `x \<notin> heapVars is` `y \<notin> heapVars is'` `x \<notin> heapVars is'`
+    have "(x, Var y) # (y, e \<ominus> is) # (\<Gamma> \<ominus>\<^sub>h is) \<Down>\<^sup>\<times>\<^sup>\<times>\<^bsub>y # x # (S \<ominus>\<^sub>S is)\<^esub> (y, z \<ominus> is') # (x, Var y) # (\<Delta> \<ominus>\<^sub>h is')"
+      by (simp add: resolveExp_Var)
+    ultimately
+    have "(x, Var y) # (y, e \<ominus> is) # (\<Gamma> \<ominus>\<^sub>h is) \<Down>\<^sup>\<times>\<^sup>\<times>\<^bsub>x # (S \<ominus>\<^sub>S is)\<^esub> (y, e \<ominus> is) # (x, z \<ominus> is') # (\<Delta> \<ominus>\<^sub>h is')"
+      by (rule VariableNoUpd)
+    hence "(x, Var y) # (y, e) # \<Gamma> \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>\<times>\<^bsub>x # S \<ominus>\<^sub>S is\<^esub> (y, e) # (x, z) # \<Delta> \<ominus>\<^sub>h is'"
+      using  `y \<notin> heapVars is` `x \<notin> heapVars is` `y \<notin> heapVars is'` `x \<notin> heapVars is'`
+      by (simp add: resolveExp_Var)
+    moreover
+  
+    from `ind_for is' _` (* `y \<notin> heapVars is'` `x \<notin> heapVars is'` *)
+    have "ind_for is' ((x, Var y) # (y, z) # \<Delta>)"
+      apply (rule ind_for_permutation)
+      by (metis perm.swap)
+    with `x \<notin> heapVars is'`
+    have "ind_for is' ((x, z) # (y, z) # \<Delta>)"
+      by auto
+    hence "ind_for is' ((y, z) # (x, z) # \<Delta>)"
+      apply (rule ind_for_permutation)
+      by (metis perm.swap)
+    hence "ind_for is' ((y, e) # (x, z) # \<Delta>)"
+      sorry
+    moreover
+    note `heapVars is \<subseteq> heapVars is'` `valid_ind is'`
+    moreover
+    note hV
+    moreover
+    from `y # x # S \<ominus>\<^sub>S is' = y # x # S \<ominus>\<^sub>S is`
+    have "x # S \<ominus>\<^sub>S is' = x # S \<ominus>\<^sub>S is"
+      sorry
+    (*
+    moreover
+    from `x \<notin> heapVars is'`
+    have "fst (hd ((x, z) # \<Delta>')) \<notin> heapVars is'" by simp
+    *)
+    ultimately
+    show ?thesis by blast
   qed
-next
-*)
-next
-case (DVariableNoUpd y x S e \<Gamma> \<Delta> "is")
-  show ?case sorry
 next
 case (DLet as \<Gamma> x body \<Delta> S u "is")
   show ?case sorry
