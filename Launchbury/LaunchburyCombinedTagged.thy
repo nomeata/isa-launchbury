@@ -5,6 +5,9 @@ begin
 lemma perm_eqvt[eqvt]: "\<pi> \<bullet> (G <~~> G') \<longleftrightarrow> (\<pi> \<bullet> G) <~~> (\<pi> \<bullet> G')"
   by (auto intro!: perm_rel_lemma2 elim: perm.induct simp add: permute_pure)
 
+lemma perm_supp: "\<Gamma> <~~> \<Gamma>' \<Longrightarrow> supp \<Gamma> = supp \<Gamma>'"
+  by (induction rule: perm.induct) (auto simp add: supp_Cons)
+
 lemma perm_heapVars: "\<Gamma> <~~> \<Gamma>' \<Longrightarrow> heapVars \<Gamma> = heapVars \<Gamma>'"
   by (induction rule: perm.induct) auto
 
@@ -66,8 +69,9 @@ where
 equivariance reds
 
 nominal_inductive reds
-  avoids Application: "n" and "z"
+  avoids Application: "n" and "z" | ApplicationInd: "n"
   by (auto simp add: fresh_star_def fresh_Cons fresh_Pair pure_fresh)
+
 
 (*
 subsubsection {* Example evaluations *}
@@ -181,9 +185,8 @@ where
 equivariance distinct_reds
 
 nominal_inductive distinct_reds
-  avoids DApplication: "n" and "z"
-  apply (auto simp add: fresh_star_def fresh_Cons fresh_Pair pure_fresh)
-  done
+  avoids DApplication: "n" and "z" | DApplicationInd: "n"
+  by (auto simp add: fresh_star_def fresh_Cons fresh_Pair pure_fresh)
 
 lemma distinct_redsD1:
   "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>d\<^bsub>S\<^esub> \<Delta> \<Longrightarrow> \<Gamma> \<Down>\<^sup>i\<^sup>u\<^bsub>S\<^esub> \<Delta>"
@@ -323,9 +326,7 @@ text {*
 Fresh variables either stay fresh or are added to the heap.
 *}
 
-(* Not correct, we need to remove the values on the stack *)
-(*
-lemma reds_fresh':" \<lbrakk> \<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>d\<^bsub>S\<^esub> \<Delta>;
+lemma reds_fresh:" \<lbrakk> \<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>d\<^bsub>S\<^esub> \<Delta>;
    atom (x::var) \<sharp> \<Gamma>
   \<rbrakk> \<Longrightarrow> atom x \<sharp> \<Delta> \<or> x \<in> heapVars \<Delta>"
 proof(nominal_induct avoiding: x rule: distinct_reds.strong_induct)
@@ -357,41 +358,57 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u x')
   show ?case
   proof(cases "x' = z")
   case True
-    with  reds_doesnt_forget'[OF DApplicationInd(24)]
+    with  reds_doesnt_forget'[OF DApplicationInd(25)]
     have "x' \<in> heapVars \<Theta>" by auto
     thus ?thesis..
   next
   case False
-    have "x' \<noteq> n" sorry
     hence "atom x' \<sharp> (n, e) # (x, App (Var n) y) # \<Gamma>"
       using DApplicationInd by (auto simp add: fresh_Pair fresh_Cons)
-    from DApplicationInd.hyps(23)[OF this]
+    from DApplicationInd.hyps(24)[OF this]
     show ?thesis
     proof
       assume "atom x' \<sharp> (n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>"
-      with `x' \<noteq> n` `x' \<noteq> z`
+      with `atom n \<sharp> x'` `x' \<noteq> z`
       have "atom x' \<sharp> (z, Var y) # (x, e') # \<Delta>"
         by (simp add: fresh_Cons fresh_Pair subst_pres_fresh fresh_at_base)
-      from DApplicationInd.hyps(25)[OF this]
+      from DApplicationInd.hyps(26)[OF this]
       show ?thesis.
     next
       assume "x' \<in> heapVars ((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>)"
-      with `x' \<noteq> n`
+      with `atom n \<sharp> x'`
       have "x' \<in> heapVars ((z,Var y) # (x, e') # \<Delta>)" by (simp add: fresh_at_base)
-      with reds_doesnt_forget'[OF DApplicationInd(24)]
+      with reds_doesnt_forget'[OF DApplicationInd(25)]
       have "x' \<in> heapVars \<Theta>" by auto
       thus ?thesis..
     qed
   qed
 next
-*)
-
-(*
-lemma reds_fresh: " \<lbrakk> \<Gamma> : (y, e) # \<Gamma>' \<Down>\<^sup>i\<^sup>u\<^sup>d \<Delta> : (y, z) # \<Delta>';
-   atom (x::var) \<sharp> (\<Gamma> , e)
-  \<rbrakk> \<Longrightarrow> atom x \<sharp> (\<Delta>, z) \<or> x \<in> heapVars \<Delta>"
-by (metis (hide_lams, no_types) hd.simps reds_fresh' snd_conv)
-*)
+case (DVariable y x S \<Gamma> \<Delta> i x')
+  thus ?case by auto
+next 
+case (DVariableNoUpd y x S e \<Gamma> z \<Delta> i x')
+  thus ?case by (auto simp add: fresh_Cons)
+next
+case (DLet as \<Gamma> x body \<Delta> S i u x')
+  show ?case
+  proof(cases "x' \<in> heapVars (asToHeap as)")
+    case True
+    with reds_doesnt_forget'[OF DLet(8)]
+    show ?thesis by auto
+  next
+    case False
+    hence "atom x' \<notin> set (bn as)" sorry
+    with `atom x' \<sharp> (x, Let as body) # \<Gamma>`
+    have "atom x' \<sharp> (x, body) # asToHeap as @ \<Gamma>"
+      by (auto simp add: fresh_Cons fresh_Pair fresh_append fresh_fun_eqvt_app asToHeap_eqvt)
+    from DLet(9)[OF this]
+    show ?thesis.
+  qed
+next 
+case (DPermute \<Gamma> \<Gamma>' \<Delta> \<Delta>' S i u x)
+  thus ?case by (auto simp add: fresh_def perm_supp perm_heapVars)
+qed
 
 end
 
