@@ -10,6 +10,7 @@ class resolvable =
 
 class resolvable_eqvt = resolvable + pt + 
   assumes resolve_eqvt: "p \<bullet> (x \<ominus> is) = (p \<bullet> x) \<ominus> (p \<bullet> is)"
+  assumes resolve_fresh_noop[simp]: "atom a \<sharp> x \<Longrightarrow> x \<ominus> ((a, b) # is) = x \<ominus> is"
 
 declare resolve_eqvt[eqvt]
 
@@ -29,7 +30,10 @@ instance
 end
 
 instance list :: (resolvable_eqvt) resolvable_eqvt
-  by default (simp_all add: resolve_list_def)
+  apply default
+  apply (simp add: resolve_list_def)
+  apply (simp add: resolve_list_def fresh_list_elem)
+  done
 
 instantiation var :: resolvable_eqvt
 begin
@@ -60,10 +64,12 @@ begin
 
   lemma resolve_exp_eqvt[eqvt]: "p \<bullet> ((e::exp) \<ominus> is) = (p \<bullet> e) \<ominus> (p \<bullet> is)"
     by (induction e "is" rule:resolve_exp.induct) simp+
+
 instance 
   apply default
   apply (rule resolve_exp_append)
   apply (rule resolve_exp_eqvt)
+  apply (simp add: subst_fresh_noop)
   done
 end
 
@@ -117,6 +123,11 @@ lemma resolveHeapConsRemoved[simp]: "x \<in> heapVars is \<Longrightarrow> (x,e)
 
 lemma resolveHeapCons[simp]: "x \<notin> heapVars is \<Longrightarrow> (x,e)#\<Gamma> \<ominus>\<^sub>h is = (x, e \<ominus> is) # (\<Gamma> \<ominus>\<^sub>h is)"
   apply (induct "(x,e)#\<Gamma>" "is" arbitrary: x e \<Gamma> rule:resolveHeap.induct)
+  apply simp_all
+  done
+
+lemma resolveHeapConsRemoved'[simp]: "x \<in> heapVars is \<Longrightarrow> (y,z)#(x,e)#\<Gamma> \<ominus>\<^sub>h is = ((y,z)#\<Gamma>) \<ominus>\<^sub>h is"
+  apply (cases "y \<in> heapVars is")
   apply simp_all
   done
 
@@ -236,4 +247,11 @@ lemma heapVarFresh: "x \<in> heapVars is \<Longrightarrow> atom x \<sharp> ((v::
 lemma resolveHeap_fresh:  "valid_ind is \<Longrightarrow> x \<in> heapVars is \<Longrightarrow> atom x \<sharp> (\<Gamma> \<ominus>\<^sub>h is)"
   by (induct arbitrary: \<Gamma> rule:valid_ind.induct)
      (auto simp add: fresh_Pair resolveHeapOneFresh eqvt_fresh_cong2[where f = resolveHeap, OF resolveHeap_eqvt])
+
+lemma resolveHeapOne_distinctVars: "distinctVars \<Gamma> \<Longrightarrow> distinctVars (resolveHeapOne \<Gamma> a b)"
+  by (induct \<Gamma> a b rule:resolveHeapOne.induct) (auto simp add: distinctVars_Cons)
+
+lemma resolveHeap_distinctVars[simp]: "distinctVars \<Gamma> \<Longrightarrow> distinctVars (\<Gamma> \<ominus>\<^sub>h is)"
+  by (induct \<Gamma> "is" rule:resolveHeap.induct) (auto simp add: resolveHeapOne_distinctVars)
+
 end
