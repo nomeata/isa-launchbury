@@ -45,14 +45,14 @@ where
       (x, App e y) # \<Gamma> \<Down>\<^sup>\<surd>\<^sup>u\<^bsub>x#S\<^esub> \<Theta>" 
  | Variable: "\<lbrakk>
       y \<notin> set (x#S);
-      (x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^bsub>y#x#S\<^esub> \<Delta>
+      (x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^bsub>y#x#S\<^esub> (y,z) # (x, Var y) # \<Delta>
    \<rbrakk> \<Longrightarrow>
-      (x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^bsub>x#S\<^esub> \<Delta>"
+      (x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^bsub>x#S\<^esub> (y,z) # (x,z) # \<Delta>"
  | VariableNoUpd: "\<lbrakk>
       y \<notin> set (x#S);
-      (x, e) # (y,e) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^bsub>x#y#S\<^esub> \<Delta>
+      (x, e) # (y,e) # \<Gamma> \<Down>\<^sup>i\<^sup>\<times>\<^bsub>x#y#S\<^esub> \<Delta>
    \<rbrakk> \<Longrightarrow>
-      (x, Var y) # (y,e) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^bsub>x#S\<^esub> \<Delta>"
+      (x, Var y) # (y,e) # \<Gamma> \<Down>\<^sup>i\<^sup>\<times>\<^bsub>x#S\<^esub> \<Delta>"
  | Let: "\<lbrakk>
       set (bn as) \<sharp>* (\<Gamma>, x);
       distinctVars (asToHeap as);
@@ -144,21 +144,22 @@ where
  | DVariable: "\<lbrakk>
       y \<notin> set (x#S);
       distinctVars ((x, Var y) # \<Gamma>);
-      distinctVars \<Delta>;
+      distinctVars ((y,z) # (x, Var y) # \<Delta>);
+      distinctVars ((y,z) # (x, z) # \<Delta>);
       distinct (x#S);
       distinct (y#x#S);
-      (x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^sup>d\<^bsub>y#x#S\<^esub> \<Delta>
+      (x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^sup>d\<^bsub>y#x#S\<^esub> (y,z) # (x, Var y) # \<Delta>
    \<rbrakk> \<Longrightarrow>
-      (x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^sup>d\<^bsub>x#S\<^esub> \<Delta>"
+      (x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^sup>d\<^bsub>x#S\<^esub> (y,z) # (x,z) # \<Delta>"
  | DVariableNoUpd: "\<lbrakk>
       y \<notin> set (x#S);
       distinctVars ((x, Var y) # (y,e) # \<Gamma>);
       distinctVars \<Delta>;
       distinct (x#S);
       distinct (y#x#S);
-      (x, e) # (y,e) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^sup>d\<^bsub>x#y#S\<^esub> \<Delta>
+      (x, e) # (y,e) # \<Gamma> \<Down>\<^sup>i\<^sup>\<times>\<^sup>d\<^bsub>x#y#S\<^esub> \<Delta>
    \<rbrakk> \<Longrightarrow>
-      (x, Var y) # (y,e) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^sup>d\<^bsub>x#S\<^esub> \<Delta>"
+      (x, Var y) # (y,e) # \<Gamma> \<Down>\<^sup>i\<^sup>\<times>\<^sup>d\<^bsub>x#S\<^esub> \<Delta>"
  | DLet: "\<lbrakk>
       set (bn as) \<sharp>* (\<Gamma>, x);
       distinctVars (asToHeap as);
@@ -248,8 +249,13 @@ case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u e')
   show ?case
     by (auto intro: DApplicationInd elim:  distinct_redsD2 distinct_redsD3)
 next
-case Variable
-  thus ?case by (auto intro: DVariable elim: distinct_redsD3)
+case (Variable y x S \<Gamma> i z \<Delta>)
+  hence "distinct (y # x # S)" by auto
+  from Variable(3)[OF `distinctVars ((x, Var y) # \<Gamma>)` this]
+        `distinctVars ((x, Var y) # \<Gamma>)`
+        `distinct (x#S)` `y \<notin> set (x # S)`
+  show ?case
+    by (auto intro!: DVariable dest: distinct_redsD3 simp add: distinctVars_Cons)
 next
 case (VariableNoUpd y x S e \<Gamma> i \<Delta>)
   thus ?case by (auto intro: DVariableNoUpd elim: distinct_redsD3 simp add: distinctVars_Cons)
@@ -379,7 +385,7 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u x')
   qed
 next
 case (DVariable y x S \<Gamma> \<Delta> i x')
-  thus ?case by auto
+  thus ?case by (auto simp add: fresh_Cons fresh_Pair)
 next 
 case (DVariableNoUpd y x S e \<Gamma> \<Delta> i x')
   thus ?case by (auto simp add: fresh_Cons)
