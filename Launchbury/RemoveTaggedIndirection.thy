@@ -20,12 +20,13 @@ lemma resolveStack_ConsCons[simp]:
   "(x, y) \<in> set is \<Longrightarrow> y # x # S \<ominus>\<^sub>S is = x # S \<ominus>\<^sub>S is" sorry
 
 definition ind_for :: "indirections \<Rightarrow> heap \<Rightarrow> bool" where
-  "ind_for is \<Gamma> = (\<forall> (x,y) \<in> set is. (x, Var y) \<in> set \<Gamma> \<or> (\<exists> z. (x, z) \<in> set \<Gamma> \<and> (y,z) \<in> set \<Gamma>))"
+  "ind_for is \<Gamma> = (\<forall> (x,y) \<in> set is. (x, Var y) \<in> set \<Gamma>)"
 
 lemma ind_for_heapVars_subset:
   "ind_for is \<Gamma> \<Longrightarrow> heapVars is \<subseteq> heapVars \<Gamma>"
   unfolding ind_for_def
-  by (auto simp add: heapVars_def  heapVars_from_set[unfolded heapVars_def])
+  apply (auto simp add: heapVars_def)
+  by (metis (lifting) fst_conv imageI splitD)
 
 nominal_primrec isVar :: "exp \<Rightarrow> bool" where
   "isVar (Var x) = True" |
@@ -40,30 +41,16 @@ nominal_primrec isVar :: "exp \<Rightarrow> bool" where
   done
 termination (eqvt) by lexicographic_order
 
-(*
 lemma non_var_not_ind:
   "distinctVars \<Gamma> \<Longrightarrow> ind_for is \<Gamma> \<Longrightarrow> (x,e) \<in> set \<Gamma> \<Longrightarrow> x \<in> heapVars is \<Longrightarrow> isVar e"
   unfolding heapVars_def ind_for_def
   by (auto dest: distinctVarsE)
-*)
 
-(*
 lemma ind_for_Cons[simp]: "\<not> isVar e \<Longrightarrow> ind_for is ((x,e)#\<Gamma>) \<longleftrightarrow> ind_for is \<Gamma>"
   unfolding ind_for_def by auto
-*)
 
-lemma ind_for_Cons_notHeapVar[simp]: "atom x \<sharp> is \<Longrightarrow> ind_for is ((x,e)#\<Gamma>) \<longleftrightarrow> ind_for is \<Gamma>"
-  unfolding ind_for_def heapVars_def
-  apply (auto dest!: bspec)
-  apply (metis heapVars_from_set heapVars_not_fresh)
-  apply (metis heapVars_from_set heapVars_not_fresh)
-  apply (metis heapVars_from_set heapVars_not_fresh)
-  by (metis fresh_heap_expr not_self_fresh)
-
-(*
 lemma ind_for_Cons_notHeapVar[simp]: "x \<notin> heapVars is \<Longrightarrow> ind_for is ((x,e)#\<Gamma>) \<longleftrightarrow> ind_for is \<Gamma>"
   unfolding ind_for_def heapVars_def by fastforce
-*)
 
 lemma ind_for_larger_set: "ind_for is \<Gamma> \<Longrightarrow> set \<Gamma>  \<subseteq> set \<Gamma>' \<Longrightarrow> ind_for is \<Gamma>'"
   unfolding ind_for_def by fastforce
@@ -77,6 +64,11 @@ lemma ind_for_permutation: "ind_for is \<Gamma> \<Longrightarrow> \<Gamma> <~~> 
 lemma ind_for_ConsCons[simp]: "ind_for is (\<Gamma>) \<Longrightarrow> ind_for ((x,y)#is) ((x,Var y)#\<Gamma>)"
   unfolding ind_for_def by auto
 
+lemma ind_for_subset:  "ind_for is \<Gamma> \<Longrightarrow> heapVars is \<subseteq> heapVars \<Gamma>"
+  unfolding ind_for_def heapVars_def 
+  apply (auto dest: imageE dest!: bspec)
+  by (metis heapVars_def heapVars_from_set)
+
 lemma ind_for_supp_subset:
   assumes "ind_for is \<Gamma>"
   shows "supp is \<subseteq> supp \<Gamma>"
@@ -85,19 +77,10 @@ proof
   assume "x \<in> supp is"
   hence "x \<in> (\<Union>i \<in> set is . supp i)" by (metis supp_set supp_of_finite_sets finite_set)
   then obtain a b  where "(a,b) \<in> set is" and "x \<in> supp (a,b)" by (metis PairE UN_E)
-  from bspec[OF assms[unfolded ind_for_def] this(1), simplified]
-  show "x \<in> supp \<Gamma>" 
-  proof
-    assume "(a,Var b) \<in> set \<Gamma>" with `x \<in> supp (a,b)`
-    have "(a,Var b) \<in> set \<Gamma>" "x \<in> supp (a, Var b)"
-      by (auto simp add: supp_Pair exp_assn.supp)
-    thus ?thesis by (metis (full_types) set_mp supp_set_mem)
-  next
-    assume "\<exists>z. (a, z) \<in> set \<Gamma> \<and> (b, z) \<in> set \<Gamma>"
-    then obtain z where "(a, z) \<in> set \<Gamma>" and "(b, z) \<in> set \<Gamma>" by blast
-    with  `x \<in> supp (a,b)`
-    show ?thesis by (metis Un_iff set_mp supp_Pair supp_set_mem)
-  qed
+  with assms[unfolded ind_for_def]
+  have "(a,Var b) \<in> set \<Gamma>" and "x \<in> supp (a, Var b)"
+    by (auto simp add: supp_Pair exp_assn.supp)
+  thus "x \<in> supp \<Gamma>" by (metis (full_types) set_mp supp_set_mem)
 qed
 
 lemma ind_for_fresh: "ind_for is \<Gamma> \<Longrightarrow> a \<sharp> \<Gamma> \<Longrightarrow> a \<sharp> is"
@@ -200,7 +183,7 @@ theorem
 proof (nominal_induct \<Gamma> "\<surd>" u S \<Delta> avoiding: "is" rule:distinct_reds.strong_induct )
 case (DLambda x y e \<Gamma>' \<Gamma> u "is")
   from DLambda have "x \<notin> heapVars is"
-    by (auto simp add: distinctVars_Cons dest: set_mp[OF ind_for_heapVars_subset])
+    by (auto simp add: distinctVars_Cons dest: set_mp[OF ind_for_subset])
   moreover
   (* We need to rename y to avoid is *)
   obtain y' :: var where "atom y' \<sharp> (y, e, is)" by (rule obtain_fresh)
@@ -225,7 +208,7 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
   from `ind_for is ((x, App e y) # \<Gamma>)`
   have "ind_for is \<Gamma>" by simp
 
-  from ind_for_heapVars_subset[OF this] `distinctVars ((x, App e y) # \<Gamma>)`
+  from ind_for_subset[OF this] `distinctVars ((x, App e y) # \<Gamma>)`
   have "x \<notin> heapVars is"
     by (auto simp add: distinctVars_append distinctVars_Cons)
 
@@ -256,7 +239,7 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
       by blast
 
   from `ind_for is' _`
-  have "ind_for is' \<Delta>" sorry (* by simp *)
+  have "ind_for is' \<Delta>" by simp
   hence "ind_for ((z,y)#is') ((z, Var y) # (x, e') # \<Delta>)" by simp
   moreover
 
