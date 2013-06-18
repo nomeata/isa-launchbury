@@ -49,10 +49,12 @@ where
    \<rbrakk> \<Longrightarrow>
       (x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^bsub>x#S\<^esub> (y,z) # (x,z) # \<Delta>"
  | VariableNoUpd: "\<lbrakk>
+      atom n \<sharp> (\<Gamma>,x,y,e,S,\<Delta>,z);
       y \<notin> set (x#S);
-      (x, Var y) # (y,e) # \<Gamma> \<Down>\<^sup>i\<^sup>\<times>\<^bsub>y#x#S\<^esub> (y,z) # (x, Var y) # \<Delta>
+      (y,e) \<in> set \<Gamma>;
+      (n,e ) # (x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<times>\<^bsub>n#y#x#S\<^esub> (n,z) # (x, Var y) # \<Delta>
    \<rbrakk> \<Longrightarrow>
-      (x, Var y) # (y,e) # \<Gamma> \<Down>\<^sup>i\<^sup>\<times>\<^bsub>x#S\<^esub>  (y,e) # (x,z) # \<Delta>"
+      (x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<times>\<^bsub>x#S\<^esub> (x,z) # \<Delta>"
  | Let: "\<lbrakk>
       set (bn as) \<sharp>* (\<Gamma>, x);
       distinctVars (asToHeap as);
@@ -69,7 +71,7 @@ where
 equivariance reds
 
 nominal_inductive reds
-  avoids Application: "n" and "z" | ApplicationInd: "n"
+  avoids Application: "n" and "z" | ApplicationInd: "n" | VariableNoUpd: "n"
   by (auto simp add: fresh_star_def fresh_Cons fresh_Pair pure_fresh)
 
 
@@ -163,17 +165,20 @@ where
    \<rbrakk> \<Longrightarrow>
       (x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^sup>d\<^bsub>x#S\<^esub> (y,z) # (x,z) # \<Delta>"
  | DVariableNoUpd: "\<lbrakk>
+      atom n \<sharp> (\<Gamma>,x,y,e,S,\<Delta>,z);
       y \<notin> set (x#S);
-      distinctVars ((x, Var y) # (y,e) # \<Gamma>);
-      distinctVars ((y,z) # (x, Var y) # \<Delta>);
-      distinctVars ((y,e) # (x, z) # \<Delta>);
+      distinctVars ((x, Var y) # \<Gamma>);
+      distinctVars ((n, e) # (x, Var y) # \<Gamma>);
+      distinctVars ((n,z) # (x, Var y) # \<Delta>);
+      distinctVars ((x, z) # \<Delta>);
       distinct (x#S);
-      distinct (y#x#S);
+      distinct (n#y#x#S);
       set S \<subseteq> heapVars \<Gamma>;
       set S \<subseteq> heapVars \<Delta>;
-      (x, Var y) # (y, e) # \<Gamma> \<Down>\<^sup>i\<^sup>\<times>\<^sup>d\<^bsub>y#x#S\<^esub> (y,z) # (x, Var y) # \<Delta>
+      (y,e) \<in> set \<Gamma>;
+      (n, e) # (x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<times>\<^sup>d\<^bsub>n#y#x#S\<^esub> (n,z) # (x, Var y) # \<Delta>
    \<rbrakk> \<Longrightarrow>
-      (x, Var y) # (y, e) # \<Gamma> \<Down>\<^sup>i\<^sup>\<times>\<^sup>d\<^bsub>x#S\<^esub> (y,e) # (x,z) # \<Delta>"
+      (x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<times>\<^sup>d\<^bsub>x#S\<^esub> (x,z) # \<Delta>"
  | DLet: "\<lbrakk>
       set (bn as) \<sharp>* (\<Gamma>, x);
       distinctVars (asToHeap as);
@@ -205,7 +210,7 @@ where
 equivariance distinct_reds
 
 nominal_inductive distinct_reds
-  avoids DApplication: "n" and "z" | DApplicationInd: "n"
+  avoids DApplication: "n" and "z" | DApplicationInd: "n" | DVariableNoUpd: "n"
   by (auto simp add: fresh_star_def fresh_Cons fresh_Pair pure_fresh)
 
 lemma distinct_redsD1:
@@ -295,14 +300,16 @@ case (Variable y x S \<Gamma> i z \<Delta>)
   show ?case
     by (auto intro!: DVariable dest: distinct_redsD3 simp add: distinctVars_Cons)
 next
-case (VariableNoUpd y x S e \<Gamma> i z \<Delta>)
-  hence "distinct (y # x # S)" and "set (y # x # S) \<subseteq> heapVars ((x, Var y) # (y, e) # \<Gamma>)" by simp+
-  from VariableNoUpd(3)[OF `distinctVars ((x, Var y) # (y, e) # \<Gamma>)` this]
-        `distinctVars ((x, Var y) # (y, e) # \<Gamma>)`
-        `distinct (x#S)` `y \<notin> set (x # S)`
-        `set (y # x # S) \<subseteq> heapVars ((x, Var y) # (y, e) # \<Gamma>)`
+case (VariableNoUpd n \<Gamma> x y e S \<Delta> z i)
+  hence "distinctVars ((n,e) # (x, Var y) # \<Gamma>)" and "distinct (n # y # x # S)" and "set (n # y # x # S) \<subseteq> heapVars ((n, e) # (x, Var y) # \<Gamma>)"
+    by (auto simp add: set_not_fresh fresh_at_base heapVars_from_set heapVars_not_fresh simp add: distinctVars_Cons)
+  with VariableNoUpd(1-7)
+        VariableNoUpd(11)[OF this]
+        `distinctVars ((x, Var y) # \<Gamma>)`
+        `distinct (x#S)` `y \<notin> set (x # S)` `(y,e) \<in> set \<Gamma>`
+        `set (n # y # x # S) \<subseteq> heapVars ((n, e) # (x, Var y) # \<Gamma>)` `set (x # S) \<subseteq> heapVars ((x, Var y) # \<Gamma>)`
   show ?case
-    by (auto intro!: DVariableNoUpd dest: distinct_redsD3 set_mp[OF distinct_redsD5]  simp add: distinctVars_Cons)
+    by (auto intro!: DVariableNoUpd dest: distinct_redsD3 set_mp[OF distinct_redsD5]  simp add: heapVars_not_fresh set_not_fresh distinctVars_Cons fresh_Pair)
 next
 case (Let as \<Gamma> x body i u S \<Delta>)
   moreover
@@ -434,8 +441,8 @@ next
 case (DVariable y x S \<Gamma> \<Delta> i x')
   thus ?case by (auto simp add: fresh_Cons fresh_Pair)
 next 
-case (DVariableNoUpd y x S e \<Gamma> \<Delta> i x')
-  thus ?case by (auto simp add: fresh_Cons fresh_Pair)
+case (DVariableNoUpd n \<Gamma> x y e S \<Delta> z i x')
+  thus ?case sorry (* by (auto simp add: fresh_Cons fresh_Pair) *)
 next
 case (DLet as \<Gamma> x body \<Delta> S i u x')
   show ?case
