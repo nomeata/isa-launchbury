@@ -96,6 +96,21 @@ lemma ind_for_Cons[simp]: "distinctVars ((x,e)#\<Gamma>) \<Longrightarrow> \<not
   unfolding ind_for_def
   by (auto simp add: distinctVars_Cons)
 
+lemma fresh_not_setE[dest]: "atom x \<sharp> is \<Longrightarrow> (x,a) \<in> set is \<Longrightarrow> False" by (metis heapVars_from_set heapVars_not_fresh)
+
+lemma ind_for_Cons_fresh[simp]: "distinctVars ((x,e)#\<Gamma>) \<Longrightarrow> atom x \<sharp> is \<Longrightarrow> ind_for is ((x,e)#\<Gamma>) \<longleftrightarrow> ind_for is \<Gamma>"
+  unfolding ind_for_def
+  apply rule
+   apply clarsimp
+   apply (drule (1) bspec)
+   apply clarsimp
+   apply (erule disjE)
+    apply auto[1]
+   apply (metis (mono_tags) fresh_heap_expr heapVars_from_set heapVars_not_fresh not_self_fresh)
+  apply auto[1]
+  apply (metis fresh_heap_expr not_self_fresh)
+  done
+
 (*
 lemma ind_for_Cons_notHeapVar[simp]: "x \<notin> heapVars is \<Longrightarrow> ind_for is ((x,e)#\<Gamma>) \<longleftrightarrow> ind_for is \<Gamma>"
   unfolding ind_for_def heapVars_def by fastforce
@@ -215,10 +230,25 @@ case False
   thus ?thesis by (rule NoInd[OF assms(1)])
 qed
 
-thm ind_for_induct
-
 lemma ind_for_isLam: "ind_for is \<Gamma> \<Longrightarrow> (x,y) \<in> set is \<Longrightarrow> isLam (the (map_of \<Gamma> x)) \<Longrightarrow> isLam (the (map_of \<Gamma> y))"
   unfolding ind_for_def by auto
+
+lemma resolve_resolved: "valid_ind is \<Longrightarrow> (x \<ominus> is) \<notin> heapVars is"
+  by (induct x rule:ind_for_induct) (simp_all add: resolve_var_same_image)
+
+lemma map_of_resolveHeapOne: "x \<noteq> a \<Longrightarrow> x \<in> heapVars \<Gamma> \<Longrightarrow> the (map_of (resolveHeapOne \<Gamma> a b) x) = (the (map_of \<Gamma> x))[a ::= b]"
+  by (induct \<Gamma> a b rule: resolveHeapOne.induct) auto
+
+lemma map_of_resolveHeap: "x \<notin> heapVars is \<Longrightarrow> x \<in> heapVars \<Gamma> \<Longrightarrow> the (map_of (\<Gamma> \<ominus>\<^sub>h is) x) = (the (map_of \<Gamma> x)) \<ominus> is"
+  by (induct \<Gamma> "is" rule: resolveHeap.induct) (auto simp add: map_of_resolveHeapOne)
+
+lemma isLam_resolve_exp[simp]: "isLam (e \<ominus> is) \<longleftrightarrow> isLam e"
+  by (nominal_induct e avoiding: "is" rule: exp_assn.strong_induct(1))
+     (simp_all add: resolveExp_Var resolveExp_App resolveExp_Lam resolveExp_Let)
+
+lemma isVar_resolve_exp[simp]: "isVar (e \<ominus> is) \<longleftrightarrow> isVar e"
+  by (nominal_induct e avoiding: "is" rule: exp_assn.strong_induct(1))
+     (simp_all add: resolveExp_Var resolveExp_App resolveExp_Lam resolveExp_Let)
 
 lemma resolve_isLam_there: "valid_ind is \<Longrightarrow> ind_for is \<Gamma> \<Longrightarrow> x \<in> heapVars is \<Longrightarrow> (x \<ominus> is) \<in> heapVars \<Gamma>" 
   apply (induct x rule:ind_for_induct)
@@ -280,11 +310,15 @@ case (DLambda x y e \<Gamma> S u "is")
   case True
     hence [simp]: "x \<ominus> is \<noteq> x" by (rule resolve_var_modifies[OF `valid_ind _`, symmetric])
 
-    have "x \<ominus> is \<in> heapVars (\<Gamma> \<ominus>\<^sub>h is)" sorry
+    from resolve_isLam_there[OF `valid_ind is` `ind_for _ _` `x \<in> heapVars is`]
+    have "x \<ominus> is \<in> heapVars \<Gamma>" by simp
+    with resolve_resolved[OF `valid_ind is`]
+    have "x \<ominus> is \<in> heapVars (\<Gamma> \<ominus>\<^sub>h is)" by simp
     moreover
     from resolve_isLam_isLam[OF  `valid_ind is` `ind_for is _` True]
     have "isLam (the (map_of \<Gamma> (x \<ominus> is)))" by simp
-    hence "isLam (the (map_of (\<Gamma> \<ominus>\<^sub>h is) (x \<ominus> is)))" sorry
+    hence "isLam (the (map_of (\<Gamma> \<ominus>\<^sub>h is) (x \<ominus> is)))"
+      by (simp add: map_of_resolveHeap[OF  resolve_resolved[OF `valid_ind is`] `x \<ominus> is \<in> heapVars \<Gamma>`])
     ultimately
     have "\<Gamma> \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>u\<^bsub>(x \<ominus> is) # removeAll (x \<ominus> is) (S \<ominus>\<^sub>S is)\<^esub> \<Gamma> \<ominus>\<^sub>h is" by (rule Lambda_AnywhereI)
     with `x \<in> heapVars is`
@@ -316,10 +350,10 @@ case (DLambda x y e \<Gamma> S u "is")
 next
 case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
 
-  from `ind_for is ((x, App e y) # \<Gamma>)`
-  have "ind_for is \<Gamma>" by simp
+  from `ind_for is ((x, App e y) # \<Gamma>)` `distinctVars ((x, App e y) # \<Gamma>)`
+  have "ind_for is \<Gamma>" by (metis ind_for_Cons isLam.simps(3) isVar.simps(3))
 
-  from ind_for_subset[OF this] `distinctVars ((x, App e y) # \<Gamma>)`
+  from ind_for_heapVars_subset[OF this] `distinctVars ((x, App e y) # \<Gamma>)`
   have "x \<notin> heapVars is"
     by (auto simp add: distinctVars_append distinctVars_Cons)
 
@@ -327,8 +361,8 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
   have "atom n \<sharp> is" and "atom z \<sharp> is" by (auto intro: ind_for_fresh simp add: fresh_append)
   hence "n \<notin> heapVars is" and "z \<notin> heapVars is" by (metis heapVars_not_fresh)+
  
-  from `ind_for is \<Gamma>`
-  have "ind_for is ((n, e) # (x, App (Var n) y) # \<Gamma>)" by simp
+  from `ind_for is \<Gamma>` `distinctVars ((n, e) # (x, App (Var n) y) # \<Gamma>)` 
+  have "ind_for is ((n, e) # (x, App (Var n) y) # \<Gamma>)" by (metis distinctVars_ConsD ind_for_larger)
   moreover
   note `valid_ind is`
   moreover
@@ -348,10 +382,18 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
       and "heapVars is \<subseteq> heapVars is'"
       and "n # x # S \<ominus>\<^sub>S is' = n # x # S \<ominus>\<^sub>S is"
       by blast
+   
+  have "(supp is' - supp is) \<inter> supp ((n, e) # (x, App (Var n) y) # \<Gamma>)  \<subseteq> supp (map_of ((n, e) # (x, App (Var n) y) # \<Gamma>) |` (- set (n # x # S)))"
+    sorry
+  have "atom n \<sharp> is'" sorry
 
-  from `ind_for is' _`
-  have "ind_for is' \<Delta>" by simp
-  hence "ind_for ((z,y)#is') ((z, Var y) # (x, e') # \<Delta>)" by simp
+  from `ind_for is' _` `atom n \<sharp> is'` `distinctVars ((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>)`
+  have "ind_for is' ((x, App (Var n) y) # \<Delta>)" by simp
+  hence "ind_for is' \<Delta>"
+    by (metis  `distinctVars ((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>)` distinctVars_ConsD(2) ind_for_Cons isLam.simps(3) isVar.simps(3))
+  with `distinctVars ((z, Var y) # (x, e') # \<Delta>)`
+  have "ind_for ((z,y)#is') ((z, Var y) # (x, e') # \<Delta>)"
+    by (auto intro: ind_for_ConsCons ind_for_larger simp add: distinctVars_Cons)
   moreover
 
   from `ind_for is' \<Delta>` `atom n \<sharp> \<Delta>` `atom z \<sharp> \<Delta>`
@@ -391,7 +433,9 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
 
   from is'  `x \<notin> heapVars is` `x \<notin> heapVars is'` `n \<notin> heapVars is` `n \<notin> heapVars is'`
     `distinctVars ((n, e) # (x, App (Var n) y) # \<Gamma>)` `distinct (n # x # S)`
-  have [simp]:"y \<ominus> is' = y \<ominus> is" sorry
+  have [simp]:"y \<ominus> is' = y \<ominus> is"
+    thm stack_unchanged
+    sorry
   (*
     apply (simp add: resolveExp_App)
     apply (drule distinct_redsI)
@@ -403,9 +447,21 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
     apply auto[1]
     sorry
   *)
-  from  `n # x # S \<ominus>\<^sub>S is' = n # x # S \<ominus>\<^sub>S is`
+  from  `atom n \<sharp> x` `atom n \<sharp> S` `atom n \<sharp> is`
+  have "atom n \<sharp> removeAll x (S \<ominus>\<^sub>S is)"
+      by (simp add:
+        eqvt_fresh_cong2[where f = resolveStack, OF resolveStack_eqvt]
+        eqvt_fresh_cong2[where f = removeAll, OF removeAll_eqvt])
+  hence "n \<notin> set (removeAll x (S \<ominus>\<^sub>S is))" by (metis set_not_fresh)
+  hence [simp]: "removeAll n (removeAll x (S \<ominus>\<^sub>S is)) = removeAll x (S \<ominus>\<^sub>S is)"
+    by simp
+
+  have "n \<notin> set (removeAll x (S \<ominus>\<^sub>S is'))" sorry
+  with  `n # x # S \<ominus>\<^sub>S is' = n # x # S \<ominus>\<^sub>S is`
         `n \<notin> heapVars is'` `n \<notin> heapVars is` `x \<notin> heapVars is'` `x \<notin> heapVars is`
-  have [simp]: "S \<ominus>\<^sub>S is' = S \<ominus>\<^sub>S is" by simp
+        `atom n \<sharp> x`
+  have [simp]: "removeAll x (S \<ominus>\<^sub>S is') = removeAll x (S \<ominus>\<^sub>S is)"
+    by simp
 
   from `heapVars ((z, y) # is') \<subseteq> heapVars is''` 
   have "z \<in> heapVars is''" by auto
@@ -414,17 +470,17 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
     by (auto intro!: resolveHeap_fresh)
  
   {
-    from is' `x \<notin> heapVars is` `x \<notin> heapVars is'` `n \<notin> heapVars is` `n \<notin> heapVars is'` `atom z \<sharp> is` `atom z \<sharp> is'`
+    from is' `x \<notin> heapVars is` `x \<notin> heapVars is'` `n \<notin> heapVars is` `n \<notin> heapVars is'` `atom z \<sharp> is` `atom z \<sharp> is'`  `atom n \<sharp> x`
     have "(n, e \<ominus> is) # (x, App (Var n) (y \<ominus> is)) # (\<Gamma> \<ominus>\<^sub>h is)
-      \<Down>\<^sup>\<times>\<^sup>u\<^bsub>n # x # (S \<ominus>\<^sub>S is)\<^esub> (n, Lam [z]. (e' \<ominus> is')) # (x, App (Var n) (y \<ominus> is)) # (\<Delta> \<ominus>\<^sub>h is')"
+      \<Down>\<^sup>\<times>\<^sup>u\<^bsub>n # x # removeAll x (S \<ominus>\<^sub>S is)\<^esub> (n, Lam [z]. (e' \<ominus> is')) # (x, App (Var n) (y \<ominus> is)) # (\<Delta> \<ominus>\<^sub>h is')"
       by (simp add: resolveExp_App resolveExp_Var resolveExp_Lam)
   } moreover {
     from is'' `atom z \<sharp> \<Delta>` `atom z \<sharp> x`  `atom z \<sharp> is'` `x \<notin> heapVars is'` `atom z \<sharp> S`
-    have "(x, (e' \<ominus> is')[z::=(y \<ominus> is)]) # (\<Delta> \<ominus>\<^sub>h is') \<Down>\<^sup>\<times>\<^sup>u\<^bsub>x # (S \<ominus>\<^sub>S is)\<^esub> \<Theta> \<ominus>\<^sub>h is''"
+    have "(x, (e' \<ominus> is')[z::=(y \<ominus> is)]) # (\<Delta> \<ominus>\<^sub>h is') \<Down>\<^sup>\<times>\<^sup>u\<^bsub>x # removeAll x (S \<ominus>\<^sub>S is)\<^esub> \<Theta> \<ominus>\<^sub>h is''"
       by (simp add: resolve_subst)
   }
   ultimately
-  have "(x, App (e \<ominus> is) (y \<ominus> is)) # (\<Gamma> \<ominus>\<^sub>h is) \<Down>\<^sup>\<times>\<^sup>u\<^bsub>x # (S \<ominus>\<^sub>S is)\<^esub> \<Theta> \<ominus>\<^sub>h is''"
+  have "(x, App (e \<ominus> is) (y \<ominus> is)) # (\<Gamma> \<ominus>\<^sub>h is) \<Down>\<^sup>\<times>\<^sup>u\<^bsub>x # removeAll x (S \<ominus>\<^sub>S is)\<^esub> \<Theta> \<ominus>\<^sub>h is''"
     apply(rule Application[rotated 2])
     using  `atom n \<sharp> x`  `atom n \<sharp> z`  `atom n \<sharp> is`  `atom n \<sharp> is'`  `atom n \<sharp> is''` `atom n \<sharp> \<Gamma>` 
           `atom n \<sharp> \<Delta>`  `atom n \<sharp> e` `atom n \<sharp> y`  `atom n \<sharp> \<Theta>`  `atom n \<sharp> S`
@@ -436,6 +492,7 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
          eqvt_fresh_cong2[where f = "resolve :: 'a::resolvable_eqvt \<Rightarrow> indirections \<Rightarrow> 'a", OF resolve_eqvt] 
         eqvt_fresh_cong2[where f = resolveHeap, OF resolveHeap_eqvt]
         eqvt_fresh_cong2[where f = resolveStack, OF resolveStack_eqvt]
+        eqvt_fresh_cong2[where f = removeAll, OF removeAll_eqvt]
         resolveHeapOneFresh subst_is_fresh(1))
       done
 

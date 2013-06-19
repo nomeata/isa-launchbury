@@ -92,6 +92,9 @@ lemma resolveExp_App: "App e x \<ominus> is = App (e \<ominus> is) (x \<ominus> 
 lemma resolveExp_Var: "Var x \<ominus> is = Var (x \<ominus> is)"
   by (induction "is" arbitrary: x) auto
 
+lemma resolveExp_Let: "(Let as e) \<ominus> is = Let as (e \<ominus> is)"
+  sorry
+
 fun resolveHeapOne :: "heap \<Rightarrow> var \<Rightarrow> var \<Rightarrow> heap"  where
   "resolveHeapOne [] _ _ = []"
  | "resolveHeapOne ((x,e)#\<Gamma>) a b = (if a = x then (resolveHeapOne \<Gamma> a b) else (x, e[a ::= b]) # (resolveHeapOne \<Gamma> a b))"
