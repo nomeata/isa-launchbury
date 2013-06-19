@@ -299,7 +299,7 @@ theorem
     (*  fst (hd \<Gamma>') \<notin> heapVars is \<Longrightarrow> *)
   \<exists> is'. (\<Gamma> \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>u\<^bsub>S \<ominus>\<^sub>S is\<^esub> \<Delta> \<ominus>\<^sub>h is')
        \<and> ind_for is' \<Delta>
-       \<and> heapVars is \<subseteq> heapVars is'
+       \<and> set is \<subseteq> set is'
        \<and> (heapVars is' \<inter> heapVars \<Gamma>) \<subseteq> heapVars is
        \<and> valid_ind is'
        \<and> S \<ominus>\<^sub>S is' = S \<ominus>\<^sub>S is"
@@ -379,7 +379,7 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
       and "ind_for is' ((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>)"
       and hV: "heapVars is' \<inter> heapVars ((n, e) # (x, App (Var n) y) # \<Gamma>)  \<subseteq> heapVars is"
       and "valid_ind is'"
-      and "heapVars is \<subseteq> heapVars is'"
+      and "set is \<subseteq> set is'"
       and "n # x # S \<ominus>\<^sub>S is' = n # x # S \<ominus>\<^sub>S is"
       by blast
    
@@ -418,7 +418,7 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
   where is'':"(z, Var y) # (x, e') # \<Delta> \<ominus>\<^sub>h (z, y) # is' \<Down>\<^sup>\<times>\<^sup>u\<^bsub>x # S \<ominus>\<^sub>S (z, y) # is'\<^esub> \<Theta> \<ominus>\<^sub>h is''"
           and "ind_for is'' \<Theta>"
           and "valid_ind is''"
-          and "heapVars ((z, y) # is') \<subseteq> heapVars is''"
+          and "set ((z, y) # is') \<subseteq> set is''"
           and hV': "heapVars is'' \<inter> heapVars ((z, Var y) # (x, e') # \<Delta>) \<subseteq> heapVars ((z, y) # is')"
           and "x # S \<ominus>\<^sub>S is'' = x # S \<ominus>\<^sub>S (z, y) # is'"
           by blast
@@ -463,8 +463,9 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
   have [simp]: "removeAll x (S \<ominus>\<^sub>S is') = removeAll x (S \<ominus>\<^sub>S is)"
     by simp
 
-  from `heapVars ((z, y) # is') \<subseteq> heapVars is''` 
-  have "z \<in> heapVars is''" by auto
+  from  `set ((z, y) # is') \<subseteq> set is''` 
+  have "heapVars ((z, y) # is') \<subseteq> heapVars is''" unfolding heapVars_def by (metis image_mono)
+  hence "z \<in> heapVars is''" by simp
   with `valid_ind is''`
   have "atom z \<sharp> \<Theta> \<ominus>\<^sub>h is''"
     by (auto intro!: resolveHeap_fresh)
@@ -504,8 +505,8 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
   moreover
   note `valid_ind is''`
   moreover
-  from `heapVars is \<subseteq> heapVars is'` and `_ \<subseteq> heapVars is''`
-  have "heapVars is \<subseteq> heapVars is''" by auto
+  from `set is \<subseteq> set is'` and `_ \<subseteq> set is''`
+  have "set is \<subseteq> set is''" by auto
   moreover
 
   { fix x'
@@ -543,7 +544,7 @@ case (DVariable y x S \<Gamma> z \<Delta> "is")
   from DVariable(10)[OF  `ind_for is _` `valid_ind is`]
   obtain is' where is': "(x, Var y) # \<Gamma> \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>y # x # S \<ominus>\<^sub>S is\<^esub> (y, z) # (x, Var y) # \<Delta> \<ominus>\<^sub>h is'"
     and "ind_for is' ((y, z) # (x, Var y) # \<Delta>)"
-    and "heapVars is \<subseteq> heapVars is'"
+    and "set is \<subseteq> set is'"
     and "valid_ind is'"
     and hV: "heapVars is' \<inter> heapVars ((x, Var y) # \<Gamma>) \<subseteq> heapVars is"
     and "y # x # S \<ominus>\<^sub>S is' = y # x # S \<ominus>\<^sub>S is"
@@ -567,7 +568,9 @@ case (DVariable y x S \<Gamma> z \<Delta> "is")
     from `(x,y) \<in> set is`
     have [simp]: "y # x # S \<ominus>\<^sub>S is = x # S \<ominus>\<^sub>S is" by simp
 
-    from `x \<in> heapVars is` `heapVars is \<subseteq> heapVars is'`
+    from `set is \<subseteq> set is'`
+    have "heapVars is \<subseteq> heapVars is'" by (metis heapVars_def image_mono)
+    with `x \<in> heapVars is`
     have "x \<in> heapVars is'" by auto
 
     from is' `x \<in> heapVars is` `x \<in> heapVars is'`
@@ -578,7 +581,7 @@ case (DVariable y x S \<Gamma> z \<Delta> "is")
     have "ind_for is' ((y, z) # (x, z) # \<Delta>)"
       sorry
     moreover
-    note `heapVars is \<subseteq> heapVars is'` `valid_ind is'`
+    note `set is \<subseteq> set is'` `valid_ind is'`
     moreover
     from hV
     have "heapVars is' \<inter> heapVars ((x, Var y) # \<Gamma>) \<subseteq> heapVars is" by auto
@@ -600,8 +603,10 @@ case (DVariable y x S \<Gamma> z \<Delta> "is")
 
     from value_not_var[OF DVariable(9), simplified] `ind_for is' _` `valid_ind is'`
     have "y \<notin> heapVars is'"
-      by (metis DVariable.hyps(3) distinctVars_ConsD(1) ind_for_Cons ind_for_heapVars_subset set_mp)
-    with `heapVars is \<subseteq> heapVars is'`
+      sorry
+    moreover
+    have "heapVars is \<subseteq> heapVars is'" using `set is \<subseteq> set is'` by (metis heapVars_def image_mono)
+    ultimately
     have "y \<notin> heapVars is" by auto
 
     from `x \<notin> heapVars is` hV
@@ -632,7 +637,7 @@ case (DVariable y x S \<Gamma> z \<Delta> "is")
       apply (rule ind_for_permutation)
       by (metis perm.swap)
     moreover
-    note `heapVars is \<subseteq> heapVars is'` `valid_ind is'`
+    note `set is \<subseteq> set is'` `valid_ind is'`
     moreover
     from hV
     have "heapVars is' \<inter> heapVars ((x, Var y) # \<Gamma>) \<subseteq> heapVars is" by auto
@@ -658,11 +663,14 @@ case (DVariableNoUpd n \<Gamma> x y e S \<Delta> z "is")
   from DVariableNoUpd(20)[OF this `valid_ind is`]
   obtain is' where is': "(n, e) # (x, Var y) # \<Gamma> \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>\<times>\<^bsub>n # y # x # S \<ominus>\<^sub>S is\<^esub> (n, z) # (x, Var y) # \<Delta> \<ominus>\<^sub>h is'"
     and "ind_for is' ((n, z) # (x, Var y) # \<Delta>)"
-    and "heapVars is \<subseteq> heapVars is'"
+    and "set is \<subseteq> set is'"
     and "valid_ind is'"
     and hV: " heapVars is' \<inter> heapVars ((n, e) # (x, Var y) # \<Gamma>) \<subseteq> heapVars is"
     and "n # y # x # S \<ominus>\<^sub>S is' = n # y # x # S \<ominus>\<^sub>S is"
     by blast
+
+  from `set is \<subseteq> set is'`
+  have "heapVars is \<subseteq> heapVars is'" by (metis heapVars_def image_mono)
 
   show ?case
   proof(cases "x \<in> heapVars is")
@@ -699,7 +707,7 @@ case (DVariableNoUpd n \<Gamma> x y e S \<Delta> z "is")
     have "ind_for is' ((y, e) # (x, z) # \<Delta>)"
       sorry
     moreover
-    note `heapVars is \<subseteq> heapVars is'` `valid_ind is'`
+    note `set is \<subseteq> set is'` `valid_ind is'`
     moreover
     from hV
     have "heapVars is' \<inter> heapVars ((x, Var y) # (y, e) # \<Gamma>) \<subseteq> heapVars is" by auto
@@ -753,7 +761,7 @@ case (DVariableNoUpd n \<Gamma> x y e S \<Delta> z "is")
     have "ind_for is' ((x, z) # \<Delta>)"
       sorry
     moreover
-    note `heapVars is \<subseteq> heapVars is'` `valid_ind is'`
+    note `set is \<subseteq> set is'` `valid_ind is'`
     moreover
     from hV
     have "heapVars is' \<inter> heapVars ((x, Var y) # \<Gamma>) \<subseteq> heapVars is"
