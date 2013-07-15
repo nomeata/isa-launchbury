@@ -33,8 +33,14 @@ fun remdups' :: "'a list \<Rightarrow> 'a list" where
   "remdups' [] = []" |
   "remdups' (x#xs) = x # removeAll x (remdups' xs)"
 
+lemma remdups'_noop[simp]: "distinct S \<Longrightarrow> remdups' S = S"
+  by (induction rule:remdups'.induct) simp_all
+
 definition resolveStack :: "var list \<Rightarrow> indirections \<Rightarrow> var list"(infixl "\<ominus>\<^sub>S" 60)
   where "resolveStack xs is = remdups' (xs \<ominus> is)"
+
+lemma resolveStack_Nil[simp]: "S \<ominus>\<^sub>S [] = remdups' S"
+  unfolding resolveStack_def by simp
 
 lemma resolveStack_Cons[simp]: "(x # S) \<ominus>\<^sub>S is = (x \<ominus> is) # (removeAll (x \<ominus> is) (S \<ominus>\<^sub>S is))"
   unfolding resolveStack_def by simp
@@ -447,19 +453,18 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
     apply auto[1]
     sorry
   *)
-  from  `atom n \<sharp> x` `atom n \<sharp> S` `atom n \<sharp> is`
-  have "atom n \<sharp> removeAll x (S \<ominus>\<^sub>S is)"
-      by (simp add:
+  from  `atom n \<sharp> x` `atom n \<sharp> S` `atom n \<sharp> is`  `atom n \<sharp> is'`
+  have "atom n \<sharp> removeAll x (S \<ominus>\<^sub>S is)" "atom n \<sharp> removeAll x (S \<ominus>\<^sub>S is')"
+   by (simp_all add:
         eqvt_fresh_cong2[where f = resolveStack, OF resolveStack_eqvt]
         eqvt_fresh_cong2[where f = removeAll, OF removeAll_eqvt])
-  hence "n \<notin> set (removeAll x (S \<ominus>\<^sub>S is))" by (metis set_not_fresh)
+  hence "n \<notin> set (removeAll x (S \<ominus>\<^sub>S is))" and "n \<notin> set (removeAll x (S \<ominus>\<^sub>S is'))" by (metis set_not_fresh)+
   hence [simp]: "removeAll n (removeAll x (S \<ominus>\<^sub>S is)) = removeAll x (S \<ominus>\<^sub>S is)"
     by simp
 
-  have "n \<notin> set (removeAll x (S \<ominus>\<^sub>S is'))" sorry
-  with  `n # x # S \<ominus>\<^sub>S is' = n # x # S \<ominus>\<^sub>S is`
+  from  `n # x # S \<ominus>\<^sub>S is' = n # x # S \<ominus>\<^sub>S is`
         `n \<notin> heapVars is'` `n \<notin> heapVars is` `x \<notin> heapVars is'` `x \<notin> heapVars is`
-        `atom n \<sharp> x`
+        `atom n \<sharp> x` `n \<notin> set (removeAll x (S \<ominus>\<^sub>S is'))`
   have [simp]: "removeAll x (S \<ominus>\<^sub>S is') = removeAll x (S \<ominus>\<^sub>S is)"
     by simp
 
@@ -563,10 +568,21 @@ case (DVariable y x S \<Gamma> z \<Delta> "is")
       with `_ \<in> set is` show ?thesis by simp
     qed
 
-    have [simp]: "x \<ominus> is = y \<ominus> is" sorry
+    from `valid_ind is` `(x, y) \<in> set is`
+    have [simp]: "x \<ominus> is = y \<ominus> is"
+      by (rule resolve_var_same_image)
+
+    from `(x,y) \<in> set is` `set is \<subseteq> set is'`
+    have "(x,y) \<in> set is'" by auto
+    with `valid_ind is'`
+    have [simp]: "x \<ominus> is' = y \<ominus> is'"
+      by (rule resolve_var_same_image)
 
     from `(x,y) \<in> set is`
     have [simp]: "y # x # S \<ominus>\<^sub>S is = x # S \<ominus>\<^sub>S is" by simp
+
+    from `(x,y) \<in> set is'`
+    have [simp]: "y # x # S \<ominus>\<^sub>S is' = x # S \<ominus>\<^sub>S is'" by simp
 
     from `set is \<subseteq> set is'`
     have "heapVars is \<subseteq> heapVars is'" by (metis heapVars_def image_mono)
@@ -588,7 +604,7 @@ case (DVariable y x S \<Gamma> z \<Delta> "is")
     moreover
     from `y # x # S \<ominus>\<^sub>S is' = y # x # S \<ominus>\<^sub>S is`
     have "x # S \<ominus>\<^sub>S is' = x # S \<ominus>\<^sub>S is"
-      sorry
+      by (simp del: resolveStack_Cons)
     (*
     moreover
     from `x \<notin> heapVars is'`
@@ -612,30 +628,51 @@ case (DVariable y x S \<Gamma> z \<Delta> "is")
     from `x \<notin> heapVars is` hV
     have "x \<notin> heapVars is'" by auto
 
-    from `y \<notin> set (x # S)` `x \<noteq> y` `y \<notin> heapVars is`
-    have "y \<notin> set (x # (S \<ominus>\<^sub>S is))" by simp
+    have "y \<ominus> is \<noteq> x" sorry
+
+    find_theorems "_ \<ominus> ?is \<notin> _"
+
+    from `y \<ominus> is \<noteq> x`
+    have "(y \<ominus> is) \<notin> set (S \<ominus>\<^sub>S is)"
+      apply simp
+      sorry
+    have "(y \<ominus> is) \<notin> set (removeAll x (S \<ominus>\<^sub>S is'))" sorry
+
+
+    note `y \<notin> set (x # S)` `x \<noteq> y` `y \<notin> heapVars is`
+
+    from `y \<ominus> is \<noteq> x` `(y \<ominus> is) \<notin> set (S \<ominus>\<^sub>S is)`
+    have "(y \<ominus> is) \<notin> set (x # removeAll x (S \<ominus>\<^sub>S is))" by simp
     moreover
-    from is' `y \<notin> heapVars is` `x \<notin> heapVars is` `y \<notin> heapVars is'` `x \<notin> heapVars is'`
-    have "(x, Var y) # (\<Gamma> \<ominus>\<^sub>h is) \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>y # x # (S \<ominus>\<^sub>S is)\<^esub> (y, z \<ominus> is') # (x, Var y) # (\<Delta> \<ominus>\<^sub>h is')"
-      by (simp add: resolveExp_Var)
+    from is'  `x \<notin> heapVars is` `x \<notin> heapVars is'` `x \<noteq> y` `y \<ominus> is \<noteq> x`
+    have "(x, Var (y \<ominus> is)) # (\<Gamma> \<ominus>\<^sub>h is) \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>(y \<ominus> is) # x # removeAll x (S \<ominus>\<^sub>S is)\<^esub> ((y \<ominus> is), z \<ominus> is') # (x, Var (y \<ominus> is)) # (\<Delta> \<ominus>\<^sub>h is')"
+      apply (simp add: resolveExp_Var)
+      sorry
     ultimately
-    have "(x, Var y) # (\<Gamma> \<ominus>\<^sub>h is) \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>x # (S \<ominus>\<^sub>S is)\<^esub> (y, z \<ominus> is') # (x, z \<ominus> is') # (\<Delta> \<ominus>\<^sub>h is')"
+    thm Variable[OF this]
+    have "(x, Var (y \<ominus> is)) # (\<Gamma> \<ominus>\<^sub>h is) \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>x # removeAll x (S \<ominus>\<^sub>S is)\<^esub> (y \<ominus> is, z \<ominus> is') # (x, z \<ominus> is') # (\<Delta> \<ominus>\<^sub>h is')"
       by (rule Variable)
     hence "(x, Var y) # \<Gamma> \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>x # S \<ominus>\<^sub>S is\<^esub> (y, z) # (x, z) # \<Delta> \<ominus>\<^sub>h is'"
       using  `y \<notin> heapVars is` `x \<notin> heapVars is` `y \<notin> heapVars is'` `x \<notin> heapVars is'`
       by (simp add: resolveExp_Var)
     moreover
   
-    from `ind_for is' _` (* `y \<notin> heapVars is'` `x \<notin> heapVars is'` *)
+    from `distinctVars ((y, z) # (x, Var y) # \<Delta>)` `ind_for is' _`
     have "ind_for is' ((x, Var y) # (y, z) # \<Delta>)"
       apply (rule ind_for_permutation)
       by (metis perm.swap)
     with `x \<notin> heapVars is'`
-    have "ind_for is' ((x, z) # (y, z) # \<Delta>)"
-      by auto
+    have "ind_for is' ((y, z) # \<Delta>)"
+      sorry
+    hence "ind_for is' ((x, z) # (y, z) # \<Delta>)"
+      apply (rule ind_for_larger[rotated 2])
+      using `distinctVars ((y, z) # (x, z) # \<Delta>)`
+      by (auto simp add: distinctVars_Cons)
     hence "ind_for is' ((y, z) # (x, z) # \<Delta>)"
-      apply (rule ind_for_permutation)
-      by (metis perm.swap)
+      apply (rule ind_for_permutation[rotated])
+      apply (metis perm.swap)
+      using `distinctVars ((y, z) # (x, z) # \<Delta>)`
+      by (auto simp add: distinctVars_Cons)
     moreover
     note `set is \<subseteq> set is'` `valid_ind is'`
     moreover
@@ -643,8 +680,10 @@ case (DVariable y x S \<Gamma> z \<Delta> "is")
     have "heapVars is' \<inter> heapVars ((x, Var y) # \<Gamma>) \<subseteq> heapVars is" by auto
     moreover
     from `y # x # S \<ominus>\<^sub>S is' = y # x # S \<ominus>\<^sub>S is`
+         `x \<notin> heapVars is` `x \<notin> heapVars is'`
+         `y \<ominus> is \<noteq> x` `(y \<ominus> is) \<notin> set (S \<ominus>\<^sub>S is)` `(y \<ominus> is) \<notin> set (removeAll x (S \<ominus>\<^sub>S is'))`
     have "x # S \<ominus>\<^sub>S is' = x # S \<ominus>\<^sub>S is"
-      sorry
+      by auto
     (*
     moreover
     from `x \<notin> heapVars is'`

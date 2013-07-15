@@ -7,6 +7,7 @@ type_synonym indirections = "(var \<times> var) list "
 class resolvable =
   fixes resolve :: "'a \<Rightarrow> indirections \<Rightarrow> 'a" (infixl "\<ominus>" 60)
   assumes resolve_append[simp]: "x \<ominus> (is'@is) = x \<ominus> is' \<ominus> is"
+  assumes resolve_Nil[simp]: "x \<ominus> [] = x"
 
 class resolvable_eqvt = resolvable + pt + 
   assumes resolve_eqvt: "p \<bullet> (x \<ominus> is) = (p \<bullet> x) \<ominus> (p \<bullet> is)"
@@ -26,7 +27,9 @@ begin
     unfolding resolve_list_def by simp
 instance
   apply default
-  by (induct_tac "x")auto
+  apply (induct_tac "x", auto)
+  apply (simp add: resolve_list_def)
+  done
 end
 
 instance list :: (resolvable_eqvt) resolvable_eqvt
@@ -46,6 +49,7 @@ begin
 instance
   apply default
   apply (rule resolve_var_append)
+  apply (simp)
   apply (induct_tac x "is" rule:resolve_var.induct, simp+)
   done
 end
@@ -68,6 +72,7 @@ begin
 instance 
   apply default
   apply (rule resolve_exp_append)
+  apply simp
   apply (rule resolve_exp_eqvt)
   apply (simp add: subst_fresh_noop)
   done
