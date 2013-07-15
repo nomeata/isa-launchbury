@@ -180,7 +180,7 @@ case (ValidIndCons "is" a b i j)
   qed
 qed
 
-lemma ind_for_induct[consumes 1, case_names NoInd Ind]:
+lemma ind_for_induct[consumes 1, case_names NoInd Ind, induct pred: valid_ind]:
   assumes "valid_ind is"
   assumes NoInd: "\<And> x. valid_ind is \<Longrightarrow> x \<notin> heapVars is \<Longrightarrow> P x"
   assumes Ind: "\<And> x y.  valid_ind is \<Longrightarrow> P y \<Longrightarrow> (x,y) \<in> set is \<Longrightarrow> P x"
@@ -215,6 +215,9 @@ next
 case False
   thus ?thesis by (rule NoInd[OF assms(1)])
 qed
+
+lemma ind_for_agrees: "(x, y) \<in> set is \<Longrightarrow> ind_for is ((x, Var y') # e) \<Longrightarrow> y' = y"
+  unfolding ind_for_def by auto
 
 lemma ind_for_isLam: "ind_for is \<Gamma> \<Longrightarrow> (x,y) \<in> set is \<Longrightarrow> isLam (the (map_of \<Gamma> x)) \<Longrightarrow> isLam (the (map_of \<Gamma> y))"
   unfolding ind_for_def by auto
@@ -285,6 +288,53 @@ lemma value_not_var:
   "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>d\<^bsub>x#S\<^esub> \<Delta> \<Longrightarrow> (x,e) \<in> set \<Delta> \<Longrightarrow> \<not>isVar e"
 by (induct \<Gamma> i u "x#S" \<Delta> arbitrary: x S  rule:distinct_reds.induct)
    (auto simp add: distinctVars_Cons heapVars_from_set perm_set_eq)
+
+
+(* Verm. falsch: Auf dem Stack liegt unten beliebiger Müll! *)
+lemma stack_not_used:
+  assumes "valid_ind is"
+  assumes "ind_for is \<Gamma>"
+  assumes "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>d\<^bsub>x # S\<^esub> \<Delta>"
+  shows "x \<ominus> is \<notin> set S"
+using assms
+proof (induction x arbitrary: \<Gamma> i u S \<Delta> rule: ind_for_induct)
+case (NoInd x)
+  hence "x \<ominus> is = x" by simp
+  with distinct_redsD6[OF NoInd.prems(2)]
+  show ?case by simp
+next
+case (Ind x y \<Gamma> i u S \<Delta>)
+  hence "x \<in> heapVars is" by (metis heapVars_from_set)
+  from ind_var_or_lambda[OF `ind_for is \<Gamma>` this]
+  show ?case
+  proof
+    assume "isLam (the (map_of \<Gamma> x))"
+    hence "isLam (the (map_of \<Gamma> (x \<ominus> is)))"
+      by (metis Ind.prems(1) `x \<in> heapVars is` assms(1) resolve_isLam_isLam)
+    thus "x \<ominus> is \<notin> set S"
+      sorry
+  next
+    assume "isVar (the (map_of \<Gamma> x))"
+    with Ind.prems(2)
+    show ?case
+    proof (cases rule:distinct_reds.cases)
+    case (DVariable y' e \<Gamma>')
+      from `(x, y) \<in> set is`  `ind_for is \<Gamma>`[unfolded `\<Gamma> = _`]
+      have "y' = y" by (rule ind_for_agrees)
+
+      from  `(x, y) \<in> set is`
+      have "x \<ominus> is = y \<ominus> is"  by (rule resolve_var_same_image[OF `valid_ind _`])
+      
+      from `ind_for is \<Gamma>`[unfolded `\<Gamma> = _` `y'=_`] DVariable(12)[unfolded `y'=_`]
+      have "y \<ominus> is \<notin> set (x # S)" by (rule Ind.IH)
+      thus ?thesis by (simp add: `x \<ominus> is = y \<ominus> is`)
+    next
+      case DVariableNoUpd thus ?thesis sorry
+    next
+      case DPermute with Ind show ?thesis sorry (* Need to switch to induction or get rid of Pem *)
+    qed auto
+  qed
+qed
 
 theorem
   "\<Gamma> \<Down>\<^sup>\<surd>\<^sup>u\<^sup>d\<^bsub>S\<^esub> \<Delta> \<Longrightarrow>
@@ -616,18 +666,28 @@ case (DVariable y x S \<Gamma> z \<Delta> "is")
     from `x \<notin> heapVars is` hV
     have "x \<notin> heapVars is'" by auto
 
-    from value_not_var[OF DVariable(9), simplified] `ind_for is' _` `valid_ind is'`
+    have" \<not> isVar z" 
+      by (rule value_not_var[OF DVariable(9), where e = z, simplified])
+    with `ind_for is' _` `valid_ind is'`
     have "y \<notin> heapVars is'"
+      (* FIXME? Macht das Sinn? Brauch ich das? *)
+      find_theorems ind_for isVar
       sorry
     moreover
     have "heapVars is \<subseteq> heapVars is'" using `set is \<subseteq> set is'` by (metis heapVars_def image_mono)
     ultimately
     have "y \<notin> heapVars is" by auto
 
-    from `x \<notin> heapVars is` hV
-    have "x \<notin> heapVars is'" by auto
+    (* Hier für brauche ich, dass wenn is zu \<Gamma> passt, und wir gerade y auswerten,
+       und wir eine Auswertung haben, dass dann keine Variable, die man für y braucht (wie y \<ominus> is)
+       auf dem Stack ist. Dazu braucht man dass Variablen auf dem Stack Var oder App sind,
+       also nicht Lam, also ist y einer Variablen gebunden, und so weiter (oder so) *)
+    have "y \<ominus> is \<notin> set (x#S)"
+      by (rule stack_not_used[OF  `valid_ind is` `ind_for is _` DVariable(9)])
+    hence "y \<ominus> is \<noteq> x" by simp
 
-    have "y \<ominus> is \<noteq> x" sorry
+    (* Jetzt braucht man wohl noch irgenwie, dass auch keine Variable auf dem Stack ist, die für
+       (y \<ominus> is) steht.... aber wie? *)
 
     find_theorems "_ \<ominus> ?is \<notin> _"
 
@@ -635,21 +695,22 @@ case (DVariable y x S \<Gamma> z \<Delta> "is")
     have "(y \<ominus> is) \<notin> set (S \<ominus>\<^sub>S is)"
       apply simp
       sorry
-    have "(y \<ominus> is) \<notin> set (removeAll x (S \<ominus>\<^sub>S is'))" sorry
+    have "(y \<ominus> is) \<notin> set (removeAll x (S \<ominus>\<^sub>S is))" sorry
 
 
     note `y \<notin> set (x # S)` `x \<noteq> y` `y \<notin> heapVars is`
 
-    from `y \<ominus> is \<noteq> x` `(y \<ominus> is) \<notin> set (S \<ominus>\<^sub>S is)`
-    have "(y \<ominus> is) \<notin> set (x # removeAll x (S \<ominus>\<^sub>S is))" by simp
+    from `y \<ominus> is \<noteq> x`
+    have "(y \<ominus> is) \<notin> set (x # removeAll (y \<ominus> is) (removeAll x (S \<ominus>\<^sub>S is)))" by simp
     moreover
     from is'  `x \<notin> heapVars is` `x \<notin> heapVars is'` `x \<noteq> y` `y \<ominus> is \<noteq> x`
-    have "(x, Var (y \<ominus> is)) # (\<Gamma> \<ominus>\<^sub>h is) \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>(y \<ominus> is) # x # removeAll x (S \<ominus>\<^sub>S is)\<^esub> ((y \<ominus> is), z \<ominus> is') # (x, Var (y \<ominus> is)) # (\<Delta> \<ominus>\<^sub>h is')"
+    have "(x, Var (y \<ominus> is)) # (\<Gamma> \<ominus>\<^sub>h is) \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>(y \<ominus> is) # x # removeAll (y \<ominus> is) (removeAll x (S \<ominus>\<^sub>S is))\<^esub> ((y \<ominus> is), z \<ominus> is') # (x, Var (y \<ominus> is)) # (\<Delta> \<ominus>\<^sub>h is')"
       apply (simp add: resolveExp_Var)
+      (* Here, I need to shuffle around the \<Delta>, as \<ominus>\<^sub>h may reorder it (or maybe fix the reordering) *)
       sorry
     ultimately
     thm Variable[OF this]
-    have "(x, Var (y \<ominus> is)) # (\<Gamma> \<ominus>\<^sub>h is) \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>x # removeAll x (S \<ominus>\<^sub>S is)\<^esub> (y \<ominus> is, z \<ominus> is') # (x, z \<ominus> is') # (\<Delta> \<ominus>\<^sub>h is')"
+    have "(x, Var (y \<ominus> is)) # (\<Gamma> \<ominus>\<^sub>h is) \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>x # removeAll (y \<ominus> is) (removeAll x (S \<ominus>\<^sub>S is))\<^esub> (y \<ominus> is, z \<ominus> is') # (x, z \<ominus> is') # (\<Delta> \<ominus>\<^sub>h is')"
       by (rule Variable)
     hence "(x, Var y) # \<Gamma> \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>x # S \<ominus>\<^sub>S is\<^esub> (y, z) # (x, z) # \<Delta> \<ominus>\<^sub>h is'"
       using  `y \<notin> heapVars is` `x \<notin> heapVars is` `y \<notin> heapVars is'` `x \<notin> heapVars is'`

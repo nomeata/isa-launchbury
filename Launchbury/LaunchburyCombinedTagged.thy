@@ -233,6 +233,10 @@ lemma distinct_redsD5:
   "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>d\<^bsub>S\<^esub> \<Delta> \<Longrightarrow> set S \<subseteq> heapVars \<Delta>"
   by (induct rule: distinct_reds.induct) auto
 
+lemma distinct_redsD6:
+  "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>d\<^bsub>S\<^esub> \<Delta> \<Longrightarrow> distinct S"
+  by (induct rule: distinct_reds.induct) auto
+
 lemma distinct_redsI:
   "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^bsub>S\<^esub> \<Delta> \<Longrightarrow> distinctVars \<Gamma> \<Longrightarrow> distinct S \<Longrightarrow> set S \<subseteq> heapVars \<Gamma> \<Longrightarrow> \<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>d\<^bsub>S\<^esub> \<Delta>"
 proof (nominal_induct rule: reds.strong_induct)
