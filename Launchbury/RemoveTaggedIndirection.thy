@@ -2,32 +2,6 @@ theory RemoveTaggedIndirection
 imports LaunchburyCombinedTagged Indirections "Nominal-Utils"
 begin
 
-nominal_primrec isVar :: "exp \<Rightarrow> bool" where
-  "isVar (Var x) = True" |
-  "isVar (Lam [x]. e) = False" |
-  "isVar (App e x) = False" |
-  "isVar (Let as e) = False"
-  unfolding isVar_graph_aux_def eqvt_def
-  apply simp
-  apply simp
-  apply (metis exp_assn.exhaust(1))
-  apply auto
-  done
-termination (eqvt) by lexicographic_order
-
-nominal_primrec isLam :: "exp \<Rightarrow> bool" where
-  "isLam (Var x) = False" |
-  "isLam (Lam [x]. e) = True" |
-  "isLam (App e x) = False" |
-  "isLam (Let as e) = False"
-  unfolding isLam_graph_aux_def eqvt_def
-  apply simp
-  apply simp
-  apply (metis exp_assn.exhaust(1))
-  apply auto
-  done
-termination (eqvt) by lexicographic_order
-
 
 fun remdups' :: "'a list \<Rightarrow> 'a list" where
   "remdups' [] = []" |
@@ -245,6 +219,9 @@ qed
 lemma ind_for_isLam: "ind_for is \<Gamma> \<Longrightarrow> (x,y) \<in> set is \<Longrightarrow> isLam (the (map_of \<Gamma> x)) \<Longrightarrow> isLam (the (map_of \<Gamma> y))"
   unfolding ind_for_def by auto
 
+lemma ind_for_update: "isLam e \<Longrightarrow> ind_for is ((x,e)#(y,Var x)#\<Gamma>) \<Longrightarrow>ind_for is ((x,e)#(y,e)#\<Gamma>)"
+  unfolding ind_for_def  by fastforce
+
 lemma resolve_resolved: "valid_ind is \<Longrightarrow> (x \<ominus> is) \<notin> heapVars is"
   by (induct x rule:ind_for_induct) (simp_all add: resolve_var_same_image)
 
@@ -458,9 +435,7 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
     `distinctVars ((n, e) # (x, App (Var n) y) # \<Gamma>)` `distinct (n # x # S)`
   
   have "distinctVars ((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta> \<ominus>\<^sub>h is')"
-  apply (rule resolveHeap_distinctVars)
-  sledgehammer
-    find_theorems distinctVars "_ \<ominus>\<^sub>h _"
+    by (rule resolveHeap_distinctVars[OF DApplicationInd.hyps(18)])
   moreover
   from  `x \<notin> heapVars is'` `n \<notin> heapVars is'` `distinct (n # x # S)`
   have "(x, App (Var n) (y \<ominus> is')) \<in> set ((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta> \<ominus>\<^sub>h is')"
@@ -616,10 +591,10 @@ case (DVariable y x S \<Gamma> z \<Delta> "is")
     from is' `x \<in> heapVars is` `x \<in> heapVars is'`
     have "(x, Var y) # \<Gamma> \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>x # S \<ominus>\<^sub>S is\<^esub> (y, z) # (x, z) # \<Delta> \<ominus>\<^sub>h is'" by simp
     moreover
-  
-    from `ind_for is' _`
+
+    from result_evaluated[OF `_ \<Down>\<^sup>\<surd>\<^sup>\<surd>\<^sup>d\<^bsub>_\<^esub> _`, simplified]  `ind_for is' _`
     have "ind_for is' ((y, z) # (x, z) # \<Delta>)"
-      sorry
+      by (rule ind_for_update) 
     moreover
     note `set is \<subseteq> set is'` `valid_ind is'`
     moreover

@@ -274,4 +274,38 @@ qed
 lemma let_binders_fresh[simp]: "set (bn as) \<sharp>* Terms.Let as body"
   by (metis Diff_iff exp_assn.supp(3) finite_supp fresh_finite_atom_set fresh_star_def fresh_star_set fresh_star_supp_conv supp_of_atom_list)
 
+text {*
+Some predicates
+*}
+
+nominal_primrec isVar :: "exp \<Rightarrow> bool" where
+  "isVar (Var x) = True" |
+  "isVar (Lam [x]. e) = False" |
+  "isVar (App e x) = False" |
+  "isVar (Let as e) = False"
+  unfolding isVar_graph_aux_def eqvt_def
+  apply simp
+  apply simp
+  apply (metis exp_assn.exhaust(1))
+  apply auto
+  done
+termination (eqvt) by lexicographic_order
+
+nominal_primrec isLam :: "exp \<Rightarrow> bool" where
+  "isLam (Var x) = False" |
+  "isLam (Lam [x]. e) = True" |
+  "isLam (App e x) = False" |
+  "isLam (Let as e) = False"
+  unfolding isLam_graph_aux_def eqvt_def
+  apply simp
+  apply simp
+  apply (metis exp_assn.exhaust(1))
+  apply auto
+  done
+termination (eqvt) by lexicographic_order
+
+lemma isLam_subst[simp]: "isLam e[x::=y] = isLam e"
+  by (nominal_induct e avoiding: x y rule:exp_assn.strong_induct(1))
+     (auto simp add: fresh_star_Pair)
+
 end

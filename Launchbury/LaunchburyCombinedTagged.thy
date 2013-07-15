@@ -466,5 +466,19 @@ case (DPermute \<Gamma> \<Gamma>' \<Delta> \<Delta>' S i u x)
   thus ?case by (auto simp add: fresh_def perm_supp perm_heapVars)
 qed
 
+text {* Things are evaluated to a lambda expression. *}
+
+lemma perm_map_of_eq:
+  "\<Delta> <~~> \<Delta>' \<Longrightarrow> distinctVars \<Delta> \<Longrightarrow> map_of \<Delta> = map_of \<Delta>'"
+  by (induction rule:perm.induct)
+     (auto simp add: distinctVars_Cons perm_distinctVars)
+
+lemma result_evaluated:
+  assumes "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>d\<^bsub>S\<^esub> \<Delta>"
+  shows "isLam (the (map_of \<Delta> (hd S)))"
+using assms
+ by (induct \<Gamma> i u S \<Delta> rule:distinct_reds.induct)
+    (auto simp add: perm_map_of_eq)
+
 end
 
