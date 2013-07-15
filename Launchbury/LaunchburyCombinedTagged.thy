@@ -366,16 +366,18 @@ lemma stack_not_empty:
 text {* Evaluation does not touch the tail of the stack. *}
 
 lemma stack_unchanged:
-  assumes "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>d\<^bsub>S\<^esub> \<Delta>"
+  assumes "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^bsub>S\<^esub> \<Delta>"
+  assumes "distinct S"
   assumes "x \<in> set (tl S)"
   assumes "(x,e) \<in> set \<Gamma>"
   shows   "(x,e) \<in> set \<Delta>"
 using assms
- apply (induct \<Gamma> i u S \<Delta> arbitrary: x e rule:distinct_reds.induct)
+ apply (induct \<Gamma> i u S \<Delta> arbitrary: x e rule:reds.induct)
  apply (auto simp add: perm_set_eq)
- apply metis+
- done
-
+  apply (metis fresh_Pair set_not_fresh)
+  apply (metis (mono_tags) fresh_Pair fresh_list_elem not_self_fresh)+
+done
+  
 text {* 
 Fresh variables either stay fresh or are added to the heap.
 *}

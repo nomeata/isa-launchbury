@@ -36,6 +36,9 @@ fun remdups' :: "'a list \<Rightarrow> 'a list" where
 lemma remdups'_noop[simp]: "distinct S \<Longrightarrow> remdups' S = S"
   by (induction rule:remdups'.induct) simp_all
 
+lemma remdumps'_distinct[simp]: "distinct (remdups' xs)"
+  by (induction xs rule:remdups'.induct) (auto intro: distinct_removeAll)
+
 definition resolveStack :: "var list \<Rightarrow> indirections \<Rightarrow> var list"(infixl "\<ominus>\<^sub>S" 60)
   where "resolveStack xs is = remdups' (xs \<ominus> is)"
 
@@ -47,6 +50,9 @@ lemma resolveStack_Cons[simp]: "(x # S) \<ominus>\<^sub>S is = (x \<ominus> is) 
 
 lemma resolveStack_eqvt[eqvt]: "\<pi> \<bullet> (S \<ominus>\<^sub>S is) = (\<pi> \<bullet> S) \<ominus>\<^sub>S (\<pi> \<bullet> is)"
   sorry
+
+lemma resolveStack_distinct[simp]: "distinct (S \<ominus>\<^sub>S is)"
+  unfolding resolveStack_def by simp
 
 (*
 lemma resolveStack_set[simp]: "x \<notin> heapVars is \<Longrightarrow> x \<in> set (S \<ominus>\<^sub>S is) \<longleftrightarrow> x \<in> set S"
@@ -293,6 +299,11 @@ proof-
     by (rule Permute[OF perm perm])
 qed
 
+fun heap_of :: "heap \<Rightarrow> var list \<Rightarrow> atom set"
+  where "heap_of \<Gamma> S = supp (map_of \<Gamma> |` (- set S)) \<union> supp (map_of \<Gamma> (hd S))"
+declare heap_of.simps[simp del]
+
+
 lemma value_not_var:
   "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>d\<^bsub>x#S\<^esub> \<Delta> \<Longrightarrow> (x,e) \<in> set \<Delta> \<Longrightarrow> \<not>isVar e"
 by (induct \<Gamma> i u "x#S" \<Delta> arbitrary: x S  rule:distinct_reds.induct)
@@ -388,10 +399,16 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
       and "set is \<subseteq> set is'"
       and "n # x # S \<ominus>\<^sub>S is' = n # x # S \<ominus>\<^sub>S is"
       by blast
-   
-  have "(supp is' - supp is) \<inter> supp ((n, e) # (x, App (Var n) y) # \<Gamma>)  \<subseteq> supp (map_of ((n, e) # (x, App (Var n) y) # \<Gamma>) |` (- set (n # x # S)))"
+    
+  have "(supp is' - supp is) \<inter> supp ((n, e) # (x, App (Var n) y) # \<Gamma>)  \<subseteq> heap_of ((n, e) # (x, App (Var n) y) # \<Gamma>) (n # x # S)"
     sorry
-  have "atom n \<sharp> is'" sorry
+  moreover
+  have "heap_of ((n, e) # (x, App (Var n) y) # \<Gamma>) (n # x # S) \<subseteq> supp e \<union> supp \<Gamma>"
+    sorry
+  ultimately 
+  have "atom n \<sharp> is'"
+    using `atom n \<sharp> is`  `atom n \<sharp> e`  `atom n \<sharp> \<Gamma>`
+    by (auto simp add: fresh_def supp_Cons supp_Pair supp_at_base)
 
   from `ind_for is' _` `atom n \<sharp> is'` `distinctVars ((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>)`
   have "ind_for is' ((x, App (Var n) y) # \<Delta>)" by simp
@@ -437,22 +454,29 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
   from `ind_for is'' \<Theta>` `atom n \<sharp> \<Theta>`
   have "atom n \<sharp> is''" by (auto intro: ind_for_fresh simp add: fresh_append)
 
-  from is'  `x \<notin> heapVars is` `x \<notin> heapVars is'` `n \<notin> heapVars is` `n \<notin> heapVars is'`
+  note is'  `x \<notin> heapVars is` `x \<notin> heapVars is'` `n \<notin> heapVars is` `n \<notin> heapVars is'`
     `distinctVars ((n, e) # (x, App (Var n) y) # \<Gamma>)` `distinct (n # x # S)`
-  have [simp]:"y \<ominus> is' = y \<ominus> is"
-    thm stack_unchanged
-    sorry
-  (*
-    apply (simp add: resolveExp_App)
-    apply (drule distinct_redsI)
-    apply (auto simp add: distinctVars_Cons)[1]
-    apply auto[1]
-    prefer 5
-    apply (drule stack_unchanged[where x= x])
-    apply auto[1]
-    apply auto[1]
-    sorry
-  *)
+  
+  have "distinctVars ((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta> \<ominus>\<^sub>h is')"
+  apply (rule resolveHeap_distinctVars)
+  sledgehammer
+    find_theorems distinctVars "_ \<ominus>\<^sub>h _"
+  moreover
+  from  `x \<notin> heapVars is'` `n \<notin> heapVars is'` `distinct (n # x # S)`
+  have "(x, App (Var n) (y \<ominus> is')) \<in> set ((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta> \<ominus>\<^sub>h is')"
+    by (auto simp add: resolveExp_App resolveExp_Var)
+  moreover
+  from  `x \<notin> heapVars is` `n \<notin> heapVars is` `distinct (n # x # S)`
+  have "(x, App (Var n) (y \<ominus> is)) \<in> set ((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta> \<ominus>\<^sub>h is')"
+    by (auto
+        intro: stack_unchanged[OF is' resolveStack_distinct]
+        simp add: resolveExp_App resolveExp_Var)
+  ultimately
+  have "App (Var n) (y \<ominus> is') = App (Var n) (y \<ominus> is)"
+    by (rule distinctVarsE)
+  hence [simp]:"y \<ominus> is' = y \<ominus> is"
+    by simp
+
   from  `atom n \<sharp> x` `atom n \<sharp> S` `atom n \<sharp> is`  `atom n \<sharp> is'`
   have "atom n \<sharp> removeAll x (S \<ominus>\<^sub>S is)" "atom n \<sharp> removeAll x (S \<ominus>\<^sub>S is')"
    by (simp_all add:
