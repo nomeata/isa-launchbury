@@ -662,6 +662,9 @@ case (DVariable y x S \<Gamma> z \<Delta> "is")
     and hV: "heapVars is' \<inter> heapVars ((x, Var y) # \<Gamma>) \<subseteq> heapVars is"
     and "y # x # S \<ominus>\<^sub>S is' = y # x # S \<ominus>\<^sub>S is"
     by blast
+ 
+  (* New invariant? *)
+  have "distinct (y # x # S \<ominus>\<^sub>S is)" sorry
 
   show ?case
   proof(cases "x \<in> heapVars is")
@@ -724,43 +727,12 @@ case (DVariable y x S \<Gamma> z \<Delta> "is")
     from `x \<notin> heapVars is` hV
     have "x \<notin> heapVars is'" by auto
 
-    (*
-    have" \<not> isVar z" 
-      by (rule value_not_var[OF DVariable(9), where e = z, simplified])
-    with `ind_for is' _` `valid_ind is'`
-    have "y \<notin> heapVars is'"
-      (* FIXME? Macht das Sinn? Brauch ich das? *)
-      find_theorems ind_for isVar
-      sorry
-    moreover
-    have "heapVars is \<subseteq> heapVars is'" using `set is \<subseteq> set is'` by (metis heapVars_def image_mono)
-    ultimately
-    have "y \<notin> heapVars is" by auto
-    *)
-
-    (* Hier für brauche ich, dass wenn is zu \<Gamma> passt, und wir gerade y auswerten,
-       und wir eine Auswertung haben, dass dann keine Variable, die man für y braucht (wie y \<ominus> is)
-       auf dem Stack ist. Dazu braucht man dass Variablen auf dem Stack Var oder App sind,
-       also nicht Lam, also ist y einer Variablen gebunden, und so weiter (oder so) *)
     have "y \<ominus> is \<notin> set (x#S)"
       by (rule stack_not_used[OF  `valid_ind is` `ind_for is _` DVariable(9)])
     hence "y \<ominus> is \<noteq> x" by simp
 
-    (* Jetzt braucht man wohl noch irgenwie, dass auch keine Variable auf dem Stack ist, die für
-       (y \<ominus> is) steht.... aber wie? *)
-    have "(y \<ominus> is) \<notin> set (S \<ominus>\<^sub>S is)"
-      sorry
-    have "(y \<ominus> is) \<notin> set (dropChain is x S \<ominus>\<^sub>S is)"
-      apply (simp add: resolveStack_set[OF `valid_ind is`])
-      apply auto
-      sorry
-    note `y \<ominus> is \<noteq> x`
-
-
-    note `y \<notin> set (x # S)` `x \<noteq> y` 
-
-    
-    have "(y \<ominus> is) \<notin> set (x # (dropChain is x S \<ominus>\<^sub>S is))" sorry
+    from `distinct (y # x # S \<ominus>\<^sub>S is)` `valid_ind is` `x \<notin> heapVars is`
+    have "(y \<ominus> is) \<notin> set (x # (dropChain is x S \<ominus>\<^sub>S is))" by simp
     moreover
     {
       from is'  `x \<notin> heapVars is` `x \<notin> heapVars is'` `x \<noteq> y` `y \<ominus> is \<noteq> x` `valid_ind is`
