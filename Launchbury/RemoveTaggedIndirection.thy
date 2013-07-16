@@ -13,20 +13,71 @@ lemma remdups'_noop[simp]: "distinct S \<Longrightarrow> remdups' S = S"
 lemma remdumps'_distinct[simp]: "distinct (remdups' xs)"
   by (induction xs rule:remdups'.induct) (auto intro: distinct_removeAll)
 
+(*
 definition resolveStack :: "var list \<Rightarrow> indirections \<Rightarrow> var list"(infixl "\<ominus>\<^sub>S" 60)
   where "resolveStack xs is = remdups' (xs \<ominus> is)"
+*)
 
-lemma resolveStack_Nil[simp]: "S \<ominus>\<^sub>S [] = remdups' S"
-  unfolding resolveStack_def by simp
+function resolveStack :: "var list \<Rightarrow> indirections \<Rightarrow> var list" (infixl "\<ominus>\<^sub>S" 60)
+  where "(x,y) \<in> set is \<Longrightarrow> (y#x#S) \<ominus>\<^sub>S is = (x#S) \<ominus>\<^sub>S is"
+      | "(x,y) \<notin> set is \<Longrightarrow> (y#x#S) \<ominus>\<^sub>S is = (y \<ominus> is) # ((x#S) \<ominus>\<^sub>S is)"
+      | "[x] \<ominus>\<^sub>S is = [x \<ominus> is]"
+      | "[] \<ominus>\<^sub>S is = []"
+by (metis list.exhaust prod.exhaust) auto
+termination  by (relation "measure (\<lambda> (x,y). size x)") auto
 
+fun dropChain :: "indirections \<Rightarrow> var \<Rightarrow> var list \<Rightarrow> var list"
+where "dropChain is y (x#xs) = (if (x,y) \<in> set is then dropChain is x xs else (x#xs))"
+    | "dropChain is y [] = []"
+
+declare dropChain.simps(1)[simp del]
+
+lemma dropChainCons_simps[simp]:
+  "(x,y) \<in> set is \<Longrightarrow> dropChain is y (x#xs) = dropChain is x xs"
+  "(x,y) \<notin> set is \<Longrightarrow> dropChain is y (x#xs) = x#xs"
+  "x \<notin> heapVars is \<Longrightarrow> dropChain is y (x#xs) = x#xs"
+unfolding dropChain.simps(1) by (auto simp add: heapVars_from_set )
+
+lemma dropChainCons_fresh[simp]:
+  "atom y \<sharp> is     \<Longrightarrow> dropChain is y (x#xs) = x#xs"
+  unfolding dropChain.simps(1) by (metis fresh_heap_expr not_self_fresh)
+
+lemma resolveStack_Cons[simp]:
+  "valid_ind is \<Longrightarrow> (x#S) \<ominus>\<^sub>S is = (x \<ominus> is) # ((dropChain is x S) \<ominus>\<^sub>S is)"
+  by (induction "x#S" "is" arbitrary: x S rule: resolveStack.induct) auto
+
+lemma resolveStack_Nil[simp]: "S \<ominus>\<^sub>S [] = S"
+  by (induction S "[]::indirections" rule: resolveStack.induct) auto
+
+lemma dropChain_set: "set (dropChain is x S) \<subseteq> set S"
+  by (induction rule:dropChain.induct) (auto simp add: dropChain.simps(1))
+
+lemma dropChain_supp: "supp (dropChain is x S) \<subseteq> supp S"
+  by (induction rule:dropChain.induct) (auto simp add: dropChain.simps(1) supp_Cons supp_at_base)
+
+lemma dropChain_fresh: "atom x \<sharp> S \<Longrightarrow> atom x \<sharp> dropChain is y S"
+  by (metis fresh_def dropChain_supp set_mp)
+
+lemma dropChain_Cons_fresh[simp]: "atom z \<sharp> S \<Longrightarrow>dropChain ((z,y)#is) x S = dropChain is x S" 
+  by (induction "(z,y)#is" x S rule:dropChain.induct) (auto simp add: dropChain.simps(1) fresh_Cons)
+
+
+(*
 lemma resolveStack_Cons[simp]: "(x # S) \<ominus>\<^sub>S is = (x \<ominus> is) # (removeAll (x \<ominus> is) (S \<ominus>\<^sub>S is))"
   unfolding resolveStack_def by simp
+*)
 
 lemma resolveStack_eqvt[eqvt]: "\<pi> \<bullet> (S \<ominus>\<^sub>S is) = (\<pi> \<bullet> S) \<ominus>\<^sub>S (\<pi> \<bullet> is)"
   sorry
 
+lemma dropChain_eqvt[eqvt]: "\<pi> \<bullet> (dropChain is x S) = dropChain (\<pi> \<bullet> is) (\<pi> \<bullet> x) (\<pi> \<bullet> S)"
+  sorry
+
+
+(*
 lemma resolveStack_distinct[simp]: "distinct (S \<ominus>\<^sub>S is)"
   unfolding resolveStack_def by simp
+*)
 
 (*
 lemma resolveStack_set[simp]: "x \<notin> heapVars is \<Longrightarrow> x \<in> set (S \<ominus>\<^sub>S is) \<longleftrightarrow> x \<in> set S"
@@ -34,7 +85,8 @@ lemma resolveStack_set[simp]: "x \<notin> heapVars is \<Longrightarrow> x \<in> 
 *)
 
 lemma resolveStack_fresh_noop[simp]: "atom z \<sharp> S \<Longrightarrow> (S \<ominus>\<^sub>S (z, y) # is) = (S \<ominus>\<^sub>S is)"
-  unfolding resolveStack_def by (induction "is" arbitrary: S) auto
+  by (induction S "(z, y) # is" arbitrary: "is" rule: resolveStack.induct)
+     (auto simp add: fresh_Cons fresh_Nil)
 
 lemma valid_ind_different: "valid_ind is \<Longrightarrow> (x,y) \<in> set is \<Longrightarrow> x \<noteq> y"
   by (induct  "is" rule: valid_ind.induct) (auto simp add: fresh_Pair)
@@ -42,16 +94,11 @@ lemma valid_ind_different: "valid_ind is \<Longrightarrow> (x,y) \<in> set is \<
 lemma resolve_var_modifies: "valid_ind is \<Longrightarrow> x \<in> heapVars is \<Longrightarrow> x \<noteq> x \<ominus> is" 
   sorry
 
-lemma resolve_var_same_image[dest]: "valid_ind is \<Longrightarrow> (x,y) \<in> set is \<Longrightarrow> x \<ominus> is = y \<ominus> is"
-  apply (induct  "is" rule: valid_ind.induct)
-  apply (auto simp add: fresh_Pair)
-  apply (metis heapVars_from_set heapVars_not_fresh)
-  apply (metis fresh_heap_expr not_self_fresh)
-  done
-
+(*
 lemma resolveStack_ConsCons[simp]:
   "valid_ind is \<Longrightarrow> (x, y) \<in> set is \<Longrightarrow> y # x # S \<ominus>\<^sub>S is = (y \<ominus> is) # (removeAll (y \<ominus> is) (S \<ominus>\<^sub>S is))"
   unfolding resolveStack_def by auto
+*)
 
 definition ind_for :: "indirections \<Rightarrow> heap \<Rightarrow> bool" where
   "ind_for is \<Gamma> = (\<forall> (x,y) \<in> set is. (x \<in> heapVars \<Gamma> \<and> ((map_of \<Gamma> x) = Some (Var y) \<or> (isLam (the (map_of \<Gamma> x)) \<and> map_of \<Gamma> x = map_of \<Gamma> y))))"
@@ -364,8 +411,8 @@ case (DLambda x y e \<Gamma> S u "is")
     hence "isLam (the (map_of (\<Gamma> \<ominus>\<^sub>h is) (x \<ominus> is)))"
       by (simp add: map_of_resolveHeap[OF  resolve_resolved[OF `valid_ind is`] `x \<ominus> is \<in> heapVars \<Gamma>`])
     ultimately
-    have "\<Gamma> \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>u\<^bsub>(x \<ominus> is) # removeAll (x \<ominus> is) (S \<ominus>\<^sub>S is)\<^esub> \<Gamma> \<ominus>\<^sub>h is" by (rule Lambda_AnywhereI)
-    with `x \<in> heapVars is`
+    have "\<Gamma> \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>u\<^bsub>(x \<ominus> is) # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> \<Gamma> \<ominus>\<^sub>h is" by (rule Lambda_AnywhereI)
+    with `x \<in> heapVars is` `valid_ind is`
     have "(x, Lam [y]. e) # \<Gamma> \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>u\<^bsub>x # S \<ominus>\<^sub>S is\<^esub> (x, Lam [y]. e) # \<Gamma> \<ominus>\<^sub>h is" by simp
     with  `ind_for is ((x, Lam [y]. e) # \<Gamma>)`   `valid_ind is`
     show ?thesis
@@ -491,17 +538,18 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
   have "(x, App (Var n) (y \<ominus> is')) \<in> set ((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta> \<ominus>\<^sub>h is')"
     by (auto simp add: resolveExp_App resolveExp_Var)
   moreover
-  from  `x \<notin> heapVars is` `n \<notin> heapVars is` `distinct (n # x # S)`
+  from  `x \<notin> heapVars is` `n \<notin> heapVars is` `distinct (n # x # S)` `valid_ind is`
   have "(x, App (Var n) (y \<ominus> is)) \<in> set ((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta> \<ominus>\<^sub>h is')"
     by (auto
-        intro: stack_unchanged[OF is' resolveStack_distinct]
-        simp add: resolveExp_App resolveExp_Var)
+        intro!: stack_unchanged[OF is']
+        simp add: resolveExp_App resolveExp_Var heapVars_from_set)
   ultimately
   have "App (Var n) (y \<ominus> is') = App (Var n) (y \<ominus> is)"
     by (rule distinctVarsE)
   hence [simp]:"y \<ominus> is' = y \<ominus> is"
     by simp
 
+  (*
   from  `atom n \<sharp> x` `atom n \<sharp> S` `atom n \<sharp> is`  `atom n \<sharp> is'`
   have "atom n \<sharp> removeAll x (S \<ominus>\<^sub>S is)" "atom n \<sharp> removeAll x (S \<ominus>\<^sub>S is')"
    by (simp_all add:
@@ -516,6 +564,13 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
         `atom n \<sharp> x` `n \<notin> set (removeAll x (S \<ominus>\<^sub>S is'))`
   have [simp]: "removeAll x (S \<ominus>\<^sub>S is') = removeAll x (S \<ominus>\<^sub>S is)"
     by simp
+  *)
+  
+  have [simp]: "dropChain is' x S \<ominus>\<^sub>S (z,y) # is' = dropChain is' x S \<ominus>\<^sub>S is'"
+    by (metis resolveStack_fresh_noop[OF dropChain_fresh[OF `atom z \<sharp> S`]])
+
+  from `n # x # S \<ominus>\<^sub>S is' = n # x # S \<ominus>\<^sub>S is` `valid_ind is`  `valid_ind is'`  `atom n \<sharp> is`  `atom n \<sharp> is'`
+  have [simp]: "dropChain is' x S \<ominus>\<^sub>S is' = dropChain is x S \<ominus>\<^sub>S is" by simp
 
   from  `set ((z, y) # is') \<subseteq> set is''` 
   have "heapVars ((z, y) # is') \<subseteq> heapVars is''" unfolding heapVars_def by (metis image_mono)
@@ -525,17 +580,17 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
     by (auto intro!: resolveHeap_fresh)
  
   {
-    from is' `x \<notin> heapVars is` `x \<notin> heapVars is'` `n \<notin> heapVars is` `n \<notin> heapVars is'` `atom z \<sharp> is` `atom z \<sharp> is'`  `atom n \<sharp> x`
+    from is' `x \<notin> heapVars is` `x \<notin> heapVars is'` `n \<notin> heapVars is` `n \<notin> heapVars is'` `atom z \<sharp> is` `atom z \<sharp> is'`  `atom n \<sharp> x` `valid_ind is`
     have "(n, e \<ominus> is) # (x, App (Var n) (y \<ominus> is)) # (\<Gamma> \<ominus>\<^sub>h is)
-      \<Down>\<^sup>\<times>\<^sup>u\<^bsub>n # x # removeAll x (S \<ominus>\<^sub>S is)\<^esub> (n, Lam [z]. (e' \<ominus> is')) # (x, App (Var n) (y \<ominus> is)) # (\<Delta> \<ominus>\<^sub>h is')"
-      by (simp add: resolveExp_App resolveExp_Var resolveExp_Lam)
+      \<Down>\<^sup>\<times>\<^sup>u\<^bsub>n # x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> (n, Lam [z]. (e' \<ominus> is')) # (x, App (Var n) (y \<ominus> is)) # (\<Delta> \<ominus>\<^sub>h is')"
+      by (simp add: resolveExp_App resolveExp_Var resolveExp_Lam heapVars_from_set)
   } moreover {
-    from is'' `atom z \<sharp> \<Delta>` `atom z \<sharp> x`  `atom z \<sharp> is'` `x \<notin> heapVars is'` `atom z \<sharp> S`
-    have "(x, (e' \<ominus> is')[z::=(y \<ominus> is)]) # (\<Delta> \<ominus>\<^sub>h is') \<Down>\<^sup>\<times>\<^sup>u\<^bsub>x # removeAll x (S \<ominus>\<^sub>S is)\<^esub> \<Theta> \<ominus>\<^sub>h is''"
+    from is'' `atom z \<sharp> \<Delta>` `atom z \<sharp> x`  `atom z \<sharp> is'` `x \<notin> heapVars is'` `atom z \<sharp> S` `valid_ind ((z,y)#is')`
+    have "(x, (e' \<ominus> is')[z::=(y \<ominus> is)]) # (\<Delta> \<ominus>\<^sub>h is') \<Down>\<^sup>\<times>\<^sup>u\<^bsub>x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> \<Theta> \<ominus>\<^sub>h is''"
       by (simp add: resolve_subst)
   }
   ultimately
-  have "(x, App (e \<ominus> is) (y \<ominus> is)) # (\<Gamma> \<ominus>\<^sub>h is) \<Down>\<^sup>\<times>\<^sup>u\<^bsub>x # removeAll x (S \<ominus>\<^sub>S is)\<^esub> \<Theta> \<ominus>\<^sub>h is''"
+  have "(x, App (e \<ominus> is) (y \<ominus> is)) # (\<Gamma> \<ominus>\<^sub>h is) \<Down>\<^sup>\<times>\<^sup>u\<^bsub>x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> \<Theta> \<ominus>\<^sub>h is''"
     apply(rule Application[rotated 2])
     using  `atom n \<sharp> x`  `atom n \<sharp> z`  `atom n \<sharp> is`  `atom n \<sharp> is'`  `atom n \<sharp> is''` `atom n \<sharp> \<Gamma>` 
           `atom n \<sharp> \<Delta>`  `atom n \<sharp> e` `atom n \<sharp> y`  `atom n \<sharp> \<Theta>`  `atom n \<sharp> S`
@@ -547,11 +602,12 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
          eqvt_fresh_cong2[where f = "resolve :: 'a::resolvable_eqvt \<Rightarrow> indirections \<Rightarrow> 'a", OF resolve_eqvt] 
         eqvt_fresh_cong2[where f = resolveHeap, OF resolveHeap_eqvt]
         eqvt_fresh_cong2[where f = resolveStack, OF resolveStack_eqvt]
+        eqvt_fresh_cong3[where f = dropChain, OF dropChain_eqvt]
         eqvt_fresh_cong2[where f = removeAll, OF removeAll_eqvt]
         resolveHeapOneFresh subst_is_fresh(1))
       done
 
-  with `x \<notin> heapVars is`
+  with `x \<notin> heapVars is` `valid_ind is`
   have "(x, App e y) # \<Gamma> \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>u\<^bsub> x # S \<ominus>\<^sub>S is\<^esub> \<Theta> \<ominus>\<^sub>h is''"
     by (simp add: resolveExp_App)
   moreover
@@ -584,10 +640,10 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
   have "heapVars is'' \<inter> heapVars ((x, App e y) # \<Gamma>) \<subseteq> heapVars is"
     by auto
   moreover
-  from `x \<notin> heapVars is''`  `x \<notin> heapVars is`  `x \<notin> heapVars is'` `x # S \<ominus>\<^sub>S is'' = x # S \<ominus>\<^sub>S (z, y) # is'`
-        `atom z \<sharp> S` `atom z \<sharp> x`
-  have "x # S \<ominus>\<^sub>S is'' = x # S \<ominus>\<^sub>S is"
-    by simp
+  from `x \<notin> heapVars is''`  `x \<notin> heapVars is`  `x \<notin> heapVars is'`
+        `x # S \<ominus>\<^sub>S is'' = x # S \<ominus>\<^sub>S (z, y) # is'`
+        `atom z \<sharp> S` `atom z \<sharp> x` `valid_ind is` `valid_ind (_#is')`
+  have "x # S \<ominus>\<^sub>S is'' = x # S \<ominus>\<^sub>S is" by simp
   ultimately 
   show ?case by auto
 next

@@ -262,4 +262,10 @@ lemma resolveHeapOne_distinctVars: "distinctVars \<Gamma> \<Longrightarrow> dist
 lemma resolveHeap_distinctVars[simp]: "distinctVars \<Gamma> \<Longrightarrow> distinctVars (\<Gamma> \<ominus>\<^sub>h is)"
   by (induct \<Gamma> "is" rule:resolveHeap.induct) (auto simp add: resolveHeapOne_distinctVars)
 
+lemma resolve_var_same_image[dest]: "valid_ind is \<Longrightarrow> (x,y) \<in> set is \<Longrightarrow> x \<ominus> is = y \<ominus> is"
+  apply (induct  "is" rule: valid_ind.induct)
+  apply (auto simp add: fresh_Pair)
+  apply (metis fresh_Pair fresh_list_elem not_self_fresh)
+  by (metis fresh_Pair fresh_list_elem not_self_fresh)
+
 end
