@@ -26,6 +26,9 @@ function resolveStack :: "var list \<Rightarrow> indirections \<Rightarrow> var 
 by (metis list.exhaust prod.exhaust) auto
 termination  by (relation "measure (\<lambda> (x,y). size x)") auto
 
+lemma resolveStack_set: "valid_ind is \<Longrightarrow> set (S \<ominus>\<^sub>S is) = (\<lambda> x. x \<ominus> is) ` set S"
+  by (induction rule:resolveStack.induct) auto
+
 fun dropChain :: "indirections \<Rightarrow> var \<Rightarrow> var list \<Rightarrow> var list"
 where "dropChain is y (x#xs) = (if (x,y) \<in> set is then dropChain is x xs else (x#xs))"
     | "dropChain is y [] = []"
@@ -708,8 +711,7 @@ case (DVariable y x S \<Gamma> z \<Delta> "is")
     have "heapVars is' \<inter> heapVars ((x, Var y) # \<Gamma>) \<subseteq> heapVars is" by auto
     moreover
     from `y # x # S \<ominus>\<^sub>S is' = y # x # S \<ominus>\<^sub>S is`
-    have "x # S \<ominus>\<^sub>S is' = x # S \<ominus>\<^sub>S is"
-      by (simp del: resolveStack_Cons)
+    have "x # S \<ominus>\<^sub>S is' = x # S \<ominus>\<^sub>S is" by simp
     (*
     moreover
     from `x \<notin> heapVars is'`
@@ -722,6 +724,7 @@ case (DVariable y x S \<Gamma> z \<Delta> "is")
     from `x \<notin> heapVars is` hV
     have "x \<notin> heapVars is'" by auto
 
+    (*
     have" \<not> isVar z" 
       by (rule value_not_var[OF DVariable(9), where e = z, simplified])
     with `ind_for is' _` `valid_ind is'`
@@ -733,6 +736,7 @@ case (DVariable y x S \<Gamma> z \<Delta> "is")
     have "heapVars is \<subseteq> heapVars is'" using `set is \<subseteq> set is'` by (metis heapVars_def image_mono)
     ultimately
     have "y \<notin> heapVars is" by auto
+    *)
 
     (* Hier für brauche ich, dass wenn is zu \<Gamma> passt, und wir gerade y auswerten,
        und wir eine Auswertung haben, dass dann keine Variable, die man für y braucht (wie y \<ominus> is)
@@ -744,33 +748,40 @@ case (DVariable y x S \<Gamma> z \<Delta> "is")
 
     (* Jetzt braucht man wohl noch irgenwie, dass auch keine Variable auf dem Stack ist, die für
        (y \<ominus> is) steht.... aber wie? *)
-
-    find_theorems "_ \<ominus> ?is \<notin> _"
-
-    from `y \<ominus> is \<noteq> x`
     have "(y \<ominus> is) \<notin> set (S \<ominus>\<^sub>S is)"
-      apply simp
       sorry
-    have "(y \<ominus> is) \<notin> set (removeAll x (S \<ominus>\<^sub>S is))" sorry
+    have "(y \<ominus> is) \<notin> set (dropChain is x S \<ominus>\<^sub>S is)"
+      apply (simp add: resolveStack_set[OF `valid_ind is`])
+      apply auto
+      sorry
+    note `y \<ominus> is \<noteq> x`
 
 
-    note `y \<notin> set (x # S)` `x \<noteq> y` `y \<notin> heapVars is`
+    note `y \<notin> set (x # S)` `x \<noteq> y` 
 
-    from `y \<ominus> is \<noteq> x`
-    have "(y \<ominus> is) \<notin> set (x # removeAll (y \<ominus> is) (removeAll x (S \<ominus>\<^sub>S is)))" by simp
+    
+    have "(y \<ominus> is) \<notin> set (x # (dropChain is x S \<ominus>\<^sub>S is))" sorry
     moreover
-    from is'  `x \<notin> heapVars is` `x \<notin> heapVars is'` `x \<noteq> y` `y \<ominus> is \<noteq> x`
-    have "(x, Var (y \<ominus> is)) # (\<Gamma> \<ominus>\<^sub>h is) \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>(y \<ominus> is) # x # removeAll (y \<ominus> is) (removeAll x (S \<ominus>\<^sub>S is))\<^esub> ((y \<ominus> is), z \<ominus> is') # (x, Var (y \<ominus> is)) # (\<Delta> \<ominus>\<^sub>h is')"
-      apply (simp add: resolveExp_Var)
-      (* Here, I need to shuffle around the \<Delta>, as \<ominus>\<^sub>h may reorder it (or maybe fix the reordering) *)
-      sorry
+    {
+      from is'  `x \<notin> heapVars is` `x \<notin> heapVars is'` `x \<noteq> y` `y \<ominus> is \<noteq> x` `valid_ind is`
+      have "(x, Var (y \<ominus> is)) # (\<Gamma> \<ominus>\<^sub>h is) \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>(y \<ominus> is) # x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> (y, z) # (x, Var y) # \<Delta> \<ominus>\<^sub>h is'"
+        by (simp add: resolveExp_Var)
+        (* Here, I need to shuffle around the \<Delta>, as \<ominus>\<^sub>h may reorder it (or maybe fix the reordering) *)
+      moreover have "(y, z) # (x, Var y) # \<Delta> \<ominus>\<^sub>h is' <~~> ((y \<ominus> is), z \<ominus> is') # (x, Var (y \<ominus> is)) # (\<Delta> \<ominus>\<^sub>h is')" 
+        sorry
+      ultimately
+      have "(x, Var (y \<ominus> is)) # (\<Gamma> \<ominus>\<^sub>h is) \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>(y \<ominus> is) # x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> ((y \<ominus> is), z \<ominus> is') # (x, Var (y \<ominus> is)) # (\<Delta> \<ominus>\<^sub>h is')"
+        sorry
+    }
     ultimately
     thm Variable[OF this]
-    have "(x, Var (y \<ominus> is)) # (\<Gamma> \<ominus>\<^sub>h is) \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>x # removeAll (y \<ominus> is) (removeAll x (S \<ominus>\<^sub>S is))\<^esub> (y \<ominus> is, z \<ominus> is') # (x, z \<ominus> is') # (\<Delta> \<ominus>\<^sub>h is')"
+    have "(x, Var (y \<ominus> is)) # (\<Gamma> \<ominus>\<^sub>h is) \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> (y \<ominus> is, z \<ominus> is') # (x, z \<ominus> is') # (\<Delta> \<ominus>\<^sub>h is')"
       by (rule Variable)
-    hence "(x, Var y) # \<Gamma> \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>x # S \<ominus>\<^sub>S is\<^esub> (y, z) # (x, z) # \<Delta> \<ominus>\<^sub>h is'"
-      using  `y \<notin> heapVars is` `x \<notin> heapVars is` `y \<notin> heapVars is'` `x \<notin> heapVars is'`
+    hence "(x, Var y) # \<Gamma> \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>x # S \<ominus>\<^sub>S is\<^esub> (y \<ominus> is, z \<ominus> is') # (x, z \<ominus> is') # (\<Delta> \<ominus>\<^sub>h is')"
+      using  `x \<notin> heapVars is`  `x \<notin> heapVars is'` `valid_ind is`
       by (simp add: resolveExp_Var)
+    moreover have "(y \<ominus> is, z \<ominus> is') # (x, z \<ominus> is') # (\<Delta> \<ominus>\<^sub>h is') <~~> (y, z) # (x, z) # \<Delta> \<ominus>\<^sub>h is'" sorry
+    ultimately have  "(x, Var y) # \<Gamma> \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>x # S \<ominus>\<^sub>S is\<^esub> (y, z) # (x, z) # \<Delta> \<ominus>\<^sub>h is'" sorry
     moreover
   
     from `distinctVars ((y, z) # (x, Var y) # \<Delta>)` `ind_for is' _`
@@ -796,8 +807,8 @@ case (DVariable y x S \<Gamma> z \<Delta> "is")
     have "heapVars is' \<inter> heapVars ((x, Var y) # \<Gamma>) \<subseteq> heapVars is" by auto
     moreover
     from `y # x # S \<ominus>\<^sub>S is' = y # x # S \<ominus>\<^sub>S is`
-         `x \<notin> heapVars is` `x \<notin> heapVars is'`
-         `y \<ominus> is \<noteq> x` `(y \<ominus> is) \<notin> set (S \<ominus>\<^sub>S is)` `(y \<ominus> is) \<notin> set (removeAll x (S \<ominus>\<^sub>S is'))`
+         `valid_ind is` `valid_ind is'`
+         `x \<notin> heapVars is` `x \<notin> heapVars is'`       
     have "x # S \<ominus>\<^sub>S is' = x # S \<ominus>\<^sub>S is"
       by auto
     (*
