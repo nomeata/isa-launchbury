@@ -684,8 +684,12 @@ case (DVariable y x S \<Gamma> z \<Delta> "is")
   from `distinctVars ((y, z) # (x, Var y) # \<Delta>)`
   have "x \<noteq> y" by (auto simp add: distinctVars_Cons distinctVars_append)
 
-  from `distinct (x # S \<ominus>\<^sub>S is)`
-  have "distinct (y # x # S \<ominus>\<^sub>S is)" sorry
+  (* Trivial if `x \<in> heapVars is` *)
+  (* What if not? *)
+  (*
+  from `distinct (x # S \<ominus>\<^sub>S is)` `valid_ind is`
+  have "distinct (y # x # S \<ominus>\<^sub>S is)" apply auto sorry
+  *)
 
   from DVariable(10)[OF  `ind_for is _` `valid_ind is` this]
   obtain is' where is': "(x, Var y) # \<Gamma> \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>y # x # S \<ominus>\<^sub>S is\<^esub> (y, z) # (x, Var y) # \<Delta> \<ominus>\<^sub>h is'"
@@ -757,8 +761,23 @@ case (DVariable y x S \<Gamma> z \<Delta> "is")
     from `x \<notin> heapVars is` hV
     have "x \<notin> heapVars is'" by auto
 
+    (* Möglicher Plan: Anname dass für jedes x\<in>S auch alle per Var erreichbare y \<in> S sind, ode
+      dass hd S von x erreichbar ist. :-( *)
+
+    have "y \<ominus> is \<noteq> x" sorry
+    moreover
+    have "y \<ominus> is \<notin> set (dropChain is x S \<ominus>\<^sub>S is)" sorry
+    ultimately
+    have "distinct (y # x # S \<ominus>\<^sub>S is)"
+      using `valid_ind is` `x \<notin> heapVars is`  `distinct (x # S \<ominus>\<^sub>S is)` by simp
+
+    (*
     have "y \<ominus> is \<notin> set (x#S)"
       by (rule stack_not_used[OF  `valid_ind is` `ind_for is _` DVariable(9)])
+    hence "y \<ominus> is \<noteq> x" by simp
+    *)
+    from `distinct (y # x # S \<ominus>\<^sub>S is)` `valid_ind is` `x \<notin> heapVars is`
+    have "(y \<ominus> is) \<notin> set (x # (dropChain is x S \<ominus>\<^sub>S is))" by simp
     hence "y \<ominus> is \<noteq> x" by simp
 
     from `distinct (y # x # S \<ominus>\<^sub>S is)` `valid_ind is` `x \<notin> heapVars is`
