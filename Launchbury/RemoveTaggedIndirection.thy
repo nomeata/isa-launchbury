@@ -41,9 +41,19 @@ lemma dropChainCons_simps[simp]:
   "x \<notin> heapVars is \<Longrightarrow> dropChain is y (x#xs) = x#xs"
 unfolding dropChain.simps(1) by (auto simp add: heapVars_from_set )
 
-lemma dropChainCons_fresh[simp]:
+lemma dropChainCons_fresh:
   "atom y \<sharp> is     \<Longrightarrow> dropChain is y (x#xs) = x#xs"
   unfolding dropChain.simps(1) by (metis fresh_heap_expr not_self_fresh)
+
+lemma dropChain_fresh_var[simp]:
+  "atom y \<sharp> is     \<Longrightarrow> dropChain is y xs = xs"
+  by (cases xs)(simp_all add: dropChainCons_fresh)
+
+lemma resolveStack_fresh[simp]:
+  "atom x \<sharp> is \<Longrightarrow> (x#S) \<ominus>\<^sub>S is = (x \<ominus> is) # (S \<ominus>\<^sub>S is)"
+  apply (induction "x#S" "is" arbitrary: x S rule: resolveStack.induct)
+  apply auto
+  by (metis fresh_heap_expr not_self_fresh)
 
 lemma resolveStack_Cons[simp]:
   "valid_ind is \<Longrightarrow> (x#S) \<ominus>\<^sub>S is = (x \<ominus> is) # ((dropChain is x S) \<ominus>\<^sub>S is)"
@@ -76,6 +86,12 @@ lemma resolveStack_eqvt[eqvt]: "\<pi> \<bullet> (S \<ominus>\<^sub>S is) = (\<pi
 lemma dropChain_eqvt[eqvt]: "\<pi> \<bullet> (dropChain is x S) = dropChain (\<pi> \<bullet> is) (\<pi> \<bullet> x) (\<pi> \<bullet> S)"
   sorry
 
+lemma resolveStack_distinct_fresh:
+  assumes "distinct (S \<ominus>\<^sub>S is)"
+  assumes "valid_ind is" "atom n \<sharp> is" "atom n \<sharp> S"
+  shows "distinct (n # S \<ominus>\<^sub>S is)" 
+using assms
+by (auto dest:  eqvt_fresh_cong2[where f = resolveStack, OF resolveStack_eqvt] simp add: set_not_fresh)
 
 (*
 lemma resolveStack_distinct[simp]: "distinct (S \<ominus>\<^sub>S is)"
@@ -390,6 +406,7 @@ theorem
   "\<Gamma> \<Down>\<^sup>\<surd>\<^sup>u\<^sup>d\<^bsub>S\<^esub> \<Delta> \<Longrightarrow>
     ind_for is \<Gamma> \<Longrightarrow>
     valid_ind is \<Longrightarrow>
+    distinct (S \<ominus>\<^sub>S is) \<Longrightarrow>
     (*  fst (hd \<Gamma>') \<notin> heapVars is \<Longrightarrow> *)
   \<exists> is'. (\<Gamma> \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>u\<^bsub>S \<ominus>\<^sub>S is\<^esub> \<Delta> \<ominus>\<^sub>h is')
        \<and> ind_for is' \<Delta>
@@ -460,6 +477,11 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
   moreover
   note `valid_ind is`
   moreover
+  from `atom n \<sharp> S``atom n \<sharp> x`
+  have "atom n \<sharp> (x # S)" by (simp add: fresh_Cons)
+  with `distinct (x # S \<ominus>\<^sub>S is)` `valid_ind is` `atom n \<sharp> is` 
+  have "distinct (n # x # S \<ominus>\<^sub>S is)"  by (rule resolveStack_distinct_fresh)
+  moreover
   (*
   from `n \<notin> heapVars is`
   have "fst (hd ((n, e) # (x, App (Var n) y) # \<Gamma>')) \<notin> heapVars is" by (simp)
@@ -477,6 +499,7 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
       and "n # x # S \<ominus>\<^sub>S is' = n # x # S \<ominus>\<^sub>S is"
       by blast
     
+  (* New invariant? *)
   have "(supp is' - supp is) \<inter> supp ((n, e) # (x, App (Var n) y) # \<Gamma>)  \<subseteq> heap_of ((n, e) # (x, App (Var n) y) # \<Gamma>) (n # x # S)"
     sorry
   moreover
@@ -513,6 +536,11 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
   moreover
   *)
   note DApplicationInd(28)[OF calculation]
+  moreover
+  from `distinct (n # x # S \<ominus>\<^sub>S is)`
+  have "distinct (n # x # S \<ominus>\<^sub>S is')" using `_ \<ominus>\<^sub>S is' = _ \<ominus>\<^sub>S is` by simp
+  hence "distinct (x # S \<ominus>\<^sub>S is')" using `atom n \<sharp> is'` by simp
+  hence "distinct (x # S \<ominus>\<^sub>S (z,y) # is')" sorry
   ultimately
   obtain "is''"
   where is'':"(z, Var y) # (x, e') # \<Delta> \<ominus>\<^sub>h (z, y) # is' \<Down>\<^sup>\<times>\<^sup>u\<^bsub>x # S \<ominus>\<^sub>S (z, y) # is'\<^esub> \<Theta> \<ominus>\<^sub>h is''"
@@ -654,7 +682,10 @@ case (DVariable y x S \<Gamma> z \<Delta> "is")
   from `distinctVars ((y, z) # (x, Var y) # \<Delta>)`
   have "x \<noteq> y" by (auto simp add: distinctVars_Cons distinctVars_append)
 
-  from DVariable(10)[OF  `ind_for is _` `valid_ind is`]
+  from `distinct (x # S \<ominus>\<^sub>S is)`
+  have "distinct (y # x # S \<ominus>\<^sub>S is)" sorry
+
+  from DVariable(10)[OF  `ind_for is _` `valid_ind is` this]
   obtain is' where is': "(x, Var y) # \<Gamma> \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>y # x # S \<ominus>\<^sub>S is\<^esub> (y, z) # (x, Var y) # \<Delta> \<ominus>\<^sub>h is'"
     and "ind_for is' ((y, z) # (x, Var y) # \<Delta>)"
     and "set is \<subseteq> set is'"
@@ -663,9 +694,6 @@ case (DVariable y x S \<Gamma> z \<Delta> "is")
     and "y # x # S \<ominus>\<^sub>S is' = y # x # S \<ominus>\<^sub>S is"
     by blast
  
-  (* New invariant? *)
-  have "distinct (y # x # S \<ominus>\<^sub>S is)" sorry
-
   show ?case
   proof(cases "x \<in> heapVars is")
   case True

@@ -81,6 +81,9 @@ end
 lemma resolve_var_fresh: "atom ` heapVars is \<sharp>* v \<Longrightarrow> (v::var) \<ominus> is = v"
   by (induct "is" rule:resolve_var.induct)(auto simp add: fresh_star_def fresh_def )
 
+lemma resolve_var_fresh'[simp]: "atom v \<sharp> is \<Longrightarrow> (v::var) \<ominus> is = v"
+  by (induct "is" rule:resolve_var.induct)(auto simp add: fresh_Cons)
+
 lemma resolve_var_list_fresh: "atom ` heapVars is \<sharp>* L \<Longrightarrow> (L::var list) \<ominus> is = L"
   by (induct L) (auto simp add: fresh_star_Cons resolve_var_fresh)
 
