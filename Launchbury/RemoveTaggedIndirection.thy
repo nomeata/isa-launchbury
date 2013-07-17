@@ -498,7 +498,7 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
       and "set is \<subseteq> set is'"
       and "n # x # S \<ominus>\<^sub>S is' = n # x # S \<ominus>\<^sub>S is"
       by blast
-    
+
   (* New invariant? *)
   have "(supp is' - supp is) \<inter> supp ((n, e) # (x, App (Var n) y) # \<Gamma>)  \<subseteq> heap_of ((n, e) # (x, App (Var n) y) # \<Gamma>) (n # x # S)"
     sorry
@@ -526,6 +526,15 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
   from `valid_ind is'` `atom z \<sharp> is'` `atom z \<sharp> y`
   have "valid_ind ((z, y) # is')"
     by (auto intro!: ValidIndCons simp add: fresh_Pair)
+    
+  from `n # x # S \<ominus>\<^sub>S is' = n # x # S \<ominus>\<^sub>S is` `atom n \<sharp> is'` `atom n \<sharp> is`
+  have [simp]:"x # S \<ominus>\<^sub>S is' = x # S \<ominus>\<^sub>S is" by simp
+
+  from  `atom z \<sharp> S` `atom z \<sharp> x` 
+  have [simp]:"x # S \<ominus>\<^sub>S (z,y) # is' = x # S \<ominus>\<^sub>S is'"
+    by (auto intro: resolveStack_fresh_noop simp add: fresh_Cons)
+  
+  note `valid_ind ((z, y) # is')`
   moreover
   (*
   from `x \<notin> heapVars is` hV
@@ -537,10 +546,8 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
   *)
   note DApplicationInd(28)[OF calculation]
   moreover
-  from `distinct (n # x # S \<ominus>\<^sub>S is)`
-  have "distinct (n # x # S \<ominus>\<^sub>S is')" using `_ \<ominus>\<^sub>S is' = _ \<ominus>\<^sub>S is` by simp
-  hence "distinct (x # S \<ominus>\<^sub>S is')" using `atom n \<sharp> is'` by simp
-  hence "distinct (x # S \<ominus>\<^sub>S (z,y) # is')" sorry
+  from `distinct (n # x # S \<ominus>\<^sub>S is)` `atom n \<sharp> is `
+  have "distinct (x # S \<ominus>\<^sub>S (z,y) # is')" by simp
   ultimately
   obtain "is''"
   where is'':"(z, Var y) # (x, e') # \<Delta> \<ominus>\<^sub>h (z, y) # is' \<Down>\<^sup>\<times>\<^sup>u\<^bsub>x # S \<ominus>\<^sub>S (z, y) # is'\<^esub> \<Theta> \<ominus>\<^sub>h is''"
@@ -600,9 +607,6 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
   have [simp]: "dropChain is' x S \<ominus>\<^sub>S (z,y) # is' = dropChain is' x S \<ominus>\<^sub>S is'"
     by (metis resolveStack_fresh_noop[OF dropChain_fresh[OF `atom z \<sharp> S`]])
 
-  from `n # x # S \<ominus>\<^sub>S is' = n # x # S \<ominus>\<^sub>S is` `valid_ind is`  `valid_ind is'`  `atom n \<sharp> is`  `atom n \<sharp> is'`
-  have [simp]: "dropChain is' x S \<ominus>\<^sub>S is' = dropChain is x S \<ominus>\<^sub>S is" by simp
-
   from  `set ((z, y) # is') \<subseteq> set is''` 
   have "heapVars ((z, y) # is') \<subseteq> heapVars is''" unfolding heapVars_def by (metis image_mono)
   hence "z \<in> heapVars is''" by simp
@@ -616,7 +620,7 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
       \<Down>\<^sup>\<times>\<^sup>u\<^bsub>n # x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> (n, Lam [z]. (e' \<ominus> is')) # (x, App (Var n) (y \<ominus> is)) # (\<Delta> \<ominus>\<^sub>h is')"
       by (simp add: resolveExp_App resolveExp_Var resolveExp_Lam heapVars_from_set)
   } moreover {
-    from is'' `atom z \<sharp> \<Delta>` `atom z \<sharp> x`  `atom z \<sharp> is'` `x \<notin> heapVars is'` `atom z \<sharp> S` `valid_ind ((z,y)#is')`
+    from is'' `atom z \<sharp> \<Delta>` `atom z \<sharp> x`  `atom z \<sharp> is'` `x \<notin> heapVars is'` `x \<notin> heapVars is` `valid_ind is`
     have "(x, (e' \<ominus> is')[z::=(y \<ominus> is)]) # (\<Delta> \<ominus>\<^sub>h is') \<Down>\<^sup>\<times>\<^sup>u\<^bsub>x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> \<Theta> \<ominus>\<^sub>h is''"
       by (simp add: resolve_subst)
   }
@@ -671,9 +675,7 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
   have "heapVars is'' \<inter> heapVars ((x, App e y) # \<Gamma>) \<subseteq> heapVars is"
     by auto
   moreover
-  from `x \<notin> heapVars is''`  `x \<notin> heapVars is`  `x \<notin> heapVars is'`
-        `x # S \<ominus>\<^sub>S is'' = x # S \<ominus>\<^sub>S (z, y) # is'`
-        `atom z \<sharp> S` `atom z \<sharp> x` `valid_ind is` `valid_ind (_#is')`
+  from `x # S \<ominus>\<^sub>S is'' = x # S \<ominus>\<^sub>S (z, y) # is'`
   have "x # S \<ominus>\<^sub>S is'' = x # S \<ominus>\<^sub>S is" by simp
   ultimately 
   show ?case by auto
