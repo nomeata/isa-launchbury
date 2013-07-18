@@ -271,4 +271,105 @@ lemma resolve_var_same_image[dest]: "valid_ind is \<Longrightarrow> (x,y) \<in> 
   apply (metis fresh_Pair fresh_list_elem not_self_fresh)
   by (metis fresh_Pair fresh_list_elem not_self_fresh)
 
+
+lemma valid_ind_smaller_index:
+  assumes "valid_ind is"
+  assumes "i < length is"
+  assumes "j < length is"
+  assumes "is ! i = (x,y)"
+  assumes "is ! j = (y,y')"
+  shows "j > i"
+using assms
+proof (induct arbitrary: i j rule:valid_ind.induct)
+case ValidIndNil thus ?case by simp
+next
+case (ValidIndCons "is" a b i j)
+  show ?case
+  proof(cases i)
+    case 0
+    with ValidIndCons
+    show ?thesis
+      by (cases j) (auto simp add: fresh_Pair fresh_at_base)
+  next
+    case (Suc i')
+    with ValidIndCons have "i' < length is" by auto
+
+    show ?thesis
+    proof (cases j)
+    case 0
+      with ValidIndCons  `i = Suc i'`
+      have "atom y \<sharp> is" and "is ! i' = (x, y)" by (simp_all add: fresh_Pair)
+      hence "(x,y) \<in> set is" using `i' < length is`
+      by (metis nth_mem)
+      with `atom y \<sharp> is` have "atom y \<sharp> (x,y)" by (metis fresh_list_elem)
+      hence False by (simp add: fresh_Pair fresh_at_base)
+      thus ?thesis by simp
+    next
+    case Suc with `i = Suc i'` ValidIndCons
+      show ?thesis by (auto simp add: fresh_Pair fresh_at_base)
+    qed
+  qed
+qed
+
+lemma valid_ind_induct[consumes 1, case_names NoInd Ind, induct pred: valid_ind]:
+  assumes "valid_ind is"
+  assumes NoInd: "\<And> x. valid_ind is \<Longrightarrow> x \<notin> heapVars is \<Longrightarrow> P x"
+  assumes Ind: "\<And> x y.  valid_ind is \<Longrightarrow> P y \<Longrightarrow> (x,y) \<in> set is \<Longrightarrow> P x"
+  shows "P x"
+proof(cases "x \<in> heapVars is")
+case True
+  then obtain y i where "i < length is" and "is ! i = (x,y)" unfolding heapVars_def 
+    by (auto simp add: in_set_conv_nth)
+  thus ?thesis
+  proof (induction i arbitrary: x y rule:measure_induct_rule[where f = "\<lambda>x . length is - x"])
+  case (less i x y)
+    have "P y"
+    proof(cases "y \<in> heapVars is")
+    case True
+      then obtain y' j where "j < length is" and "is ! j = (y,y')" unfolding heapVars_def 
+        by (auto simp add: in_set_conv_nth)
+      from `valid_ind is` `i < length is` `j < length is` `is ! i = _` `is ! j = _`
+      have "i < j" by (rule valid_ind_smaller_index)
+      hence "length is - j < length is - i" by (metis diff_less_mono2 less.prems(1))
+      from less.IH[OF this `j < length is` `is ! j = (y,y')`]
+      show ?thesis.
+    next
+    case False
+      thus ?thesis by (rule NoInd[OF assms(1)])
+    qed
+    moreover
+    from less have "(x,y) \<in> set is" by (metis nth_mem)
+    ultimately
+    show ?case by (rule Ind[OF assms(1)])
+  qed
+next
+case False
+  thus ?thesis by (rule NoInd[OF assms(1)])
+qed
+
+
+lemma valid_ind_different: "valid_ind is \<Longrightarrow> (x,y) \<in> set is \<Longrightarrow> x \<noteq> y"
+  by (induct  "is" rule: valid_ind.induct) (auto simp add: fresh_Pair)
+
+lemma valid_ind_in_is: "valid_ind is \<Longrightarrow> x \<in> heapVars is \<Longrightarrow> x \<ominus> is \<in> snd `set is"
+  apply (induct x rule: valid_ind_induct)
+  apply auto
+  apply (case_tac "y \<in> heapVars is")
+  apply (auto simp add: resolve_var_same_image intro: imageI)
+  by (metis image_iff snd_conv)
+
+lemma resolve_var_fresh_self: "valid_ind is \<Longrightarrow> atom (y \<ominus> is) \<sharp> is \<Longrightarrow> y \<notin> heapVars is"
+  apply (auto dest!: valid_ind_in_is)
+  by (metis fresh_Pair fresh_list_elem not_self_fresh)
+
+lemma resolve_var_modifies: "valid_ind is \<Longrightarrow> x \<in> heapVars is \<Longrightarrow> x \<noteq> x \<ominus> is" 
+  by (induction "is" rule: valid_ind.induct)
+     (auto simp add: fresh_Pair dest: resolve_var_fresh_self)
+
+lemma resolve_resolved: "valid_ind is \<Longrightarrow> x \<ominus> is \<notin> heapVars is"
+  by (induct x rule:valid_ind_induct) (simp_all add: resolve_var_same_image)
+
+lemma valid_ind_idemp[simp]: "valid_ind is \<Longrightarrow> (y::var) \<ominus> is \<ominus> is = y \<ominus> is"
+   by (intro resove_var_noop resolve_resolved)
+
 end

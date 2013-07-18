@@ -107,11 +107,6 @@ lemma resolveStack_fresh_noop[simp]: "atom z \<sharp> S \<Longrightarrow> (S \<o
   by (induction S "(z, y) # is" arbitrary: "is" rule: resolveStack.induct)
      (auto simp add: fresh_Cons fresh_Nil)
 
-lemma valid_ind_different: "valid_ind is \<Longrightarrow> (x,y) \<in> set is \<Longrightarrow> x \<noteq> y"
-  by (induct  "is" rule: valid_ind.induct) (auto simp add: fresh_Pair)
-
-lemma resolve_var_modifies: "valid_ind is \<Longrightarrow> x \<in> heapVars is \<Longrightarrow> x \<noteq> x \<ominus> is" 
-  sorry
 
 (*
 lemma resolveStack_ConsCons[simp]:
@@ -207,80 +202,6 @@ lemma ind_for_fresh: "ind_for is \<Gamma> \<Longrightarrow> a \<sharp> \<Gamma> 
 lemma delete_Cons_permutation: "distinctVars \<Gamma> \<Longrightarrow> (y, e) \<in> set \<Gamma> \<Longrightarrow> \<Gamma> <~~> (y, e) # delete y \<Gamma>"
   by (induction \<Gamma> rule:distinctVars.induct) (auto simp add: delete_no_there heapVars_from_set)
 
-lemma ind_for_smaller_index:
-  assumes "valid_ind is"
-  assumes "i < length is"
-  assumes "j < length is"
-  assumes "is ! i = (x,y)"
-  assumes "is ! j = (y,y')"
-  shows "j > i"
-using assms
-proof (induct arbitrary: i j rule:valid_ind.induct)
-case ValidIndNil thus ?case by simp
-next
-case (ValidIndCons "is" a b i j)
-  show ?case
-  proof(cases i)
-    case 0
-    with ValidIndCons
-    show ?thesis
-      by (cases j) (auto simp add: fresh_Pair fresh_at_base)
-  next
-    case (Suc i')
-    with ValidIndCons have "i' < length is" by auto
-
-    show ?thesis
-    proof (cases j)
-    case 0
-      with ValidIndCons  `i = Suc i'`
-      have "atom y \<sharp> is" and "is ! i' = (x, y)" by (simp_all add: fresh_Pair)
-      hence "(x,y) \<in> set is" using `i' < length is`
-      by (metis nth_mem)
-      with `atom y \<sharp> is` have "atom y \<sharp> (x,y)" by (metis fresh_list_elem)
-      hence False by (simp add: fresh_Pair fresh_at_base)
-      thus ?thesis by simp
-    next
-    case Suc with `i = Suc i'` ValidIndCons
-      show ?thesis by (auto simp add: fresh_Pair fresh_at_base)
-    qed
-  qed
-qed
-
-lemma ind_for_induct[consumes 1, case_names NoInd Ind, induct pred: valid_ind]:
-  assumes "valid_ind is"
-  assumes NoInd: "\<And> x. valid_ind is \<Longrightarrow> x \<notin> heapVars is \<Longrightarrow> P x"
-  assumes Ind: "\<And> x y.  valid_ind is \<Longrightarrow> P y \<Longrightarrow> (x,y) \<in> set is \<Longrightarrow> P x"
-  shows "P x"
-proof(cases "x \<in> heapVars is")
-case True
-  then obtain y i where "i < length is" and "is ! i = (x,y)" unfolding heapVars_def 
-    by (auto simp add: in_set_conv_nth)
-  thus ?thesis
-  proof (induction i arbitrary: x y rule:measure_induct_rule[where f = "\<lambda>x . length is - x"])
-  case (less i x y)
-    have "P y"
-    proof(cases "y \<in> heapVars is")
-    case True
-      then obtain y' j where "j < length is" and "is ! j = (y,y')" unfolding heapVars_def 
-        by (auto simp add: in_set_conv_nth)
-      from `valid_ind is` `i < length is` `j < length is` `is ! i = _` `is ! j = _`
-      have "i < j" by (rule ind_for_smaller_index)
-      hence "length is - j < length is - i" by (metis diff_less_mono2 less.prems(1))
-      from less.IH[OF this `j < length is` `is ! j = (y,y')`]
-      show ?thesis.
-    next
-    case False
-      thus ?thesis by (rule NoInd[OF assms(1)])
-    qed
-    moreover
-    from less have "(x,y) \<in> set is" by (metis nth_mem)
-    ultimately
-    show ?case by (rule Ind[OF assms(1)])
-  qed
-next
-case False
-  thus ?thesis by (rule NoInd[OF assms(1)])
-qed
 
 lemma ind_for_agrees: "(x, y) \<in> set is \<Longrightarrow> ind_for is ((x, Var y') # e) \<Longrightarrow> y' = y"
   unfolding ind_for_def by auto
@@ -290,9 +211,6 @@ lemma ind_for_isLam: "ind_for is \<Gamma> \<Longrightarrow> (x,y) \<in> set is \
 
 lemma ind_for_update: "isLam e \<Longrightarrow> ind_for is ((x,e)#(y,Var x)#\<Gamma>) \<Longrightarrow>ind_for is ((x,e)#(y,e)#\<Gamma>)"
   unfolding ind_for_def  by fastforce
-
-lemma resolve_resolved: "valid_ind is \<Longrightarrow> (x \<ominus> is) \<notin> heapVars is"
-  by (induct x rule:ind_for_induct) (simp_all add: resolve_var_same_image)
 
 lemma map_of_resolveHeapOne: "x \<noteq> a \<Longrightarrow> x \<in> heapVars \<Gamma> \<Longrightarrow> the (map_of (resolveHeapOne \<Gamma> a b) x) = (the (map_of \<Gamma> x))[a ::= b]"
   by (induct \<Gamma> a b rule: resolveHeapOne.induct) auto
@@ -309,7 +227,7 @@ lemma isVar_resolve_exp[simp]: "isVar (e \<ominus> is) \<longleftrightarrow> isV
      (simp_all add: resolveExp_Var resolveExp_App resolveExp_Lam resolveExp_Let)
 
 lemma resolve_isLam_there: "valid_ind is \<Longrightarrow> ind_for is \<Gamma> \<Longrightarrow> x \<in> heapVars is \<Longrightarrow> (x \<ominus> is) \<in> heapVars \<Gamma>" 
-  apply (induct x rule:ind_for_induct)
+  apply (induct x rule:valid_ind_induct)
   apply simp
   apply auto
   apply (simp add: resolve_var_same_image)
@@ -318,7 +236,7 @@ lemma resolve_isLam_there: "valid_ind is \<Longrightarrow> ind_for is \<Gamma> \
   sorry
 
 lemma resolve_isLam_isLam: "valid_ind is \<Longrightarrow> ind_for is \<Gamma> \<Longrightarrow> x \<in> heapVars is \<Longrightarrow> isLam (the (map_of \<Gamma> x)) \<Longrightarrow> isLam (the (map_of \<Gamma> (x \<ominus> is)))"
-  apply (induct x rule:ind_for_induct)
+  apply (induct x rule:valid_ind_induct)
   apply simp
   apply auto
   apply (drule (2) ind_for_isLam)
@@ -363,7 +281,7 @@ lemma stack_not_used:
   assumes "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>d\<^bsub>x # S\<^esub> \<Delta>"
   shows "x \<ominus> is \<notin> set S"
 using assms
-proof (induction x arbitrary: \<Gamma> i u S \<Delta> rule: ind_for_induct)
+proof (induction x arbitrary: \<Gamma> i u S \<Delta> rule: valid_ind_induct)
 case (NoInd x)
   hence "x \<ominus> is = x" by simp
   with distinct_redsD6[OF NoInd.prems(2)]
@@ -406,7 +324,7 @@ theorem
   "\<Gamma> \<Down>\<^sup>\<surd>\<^sup>u\<^sup>d\<^bsub>S\<^esub> \<Delta> \<Longrightarrow>
     ind_for is \<Gamma> \<Longrightarrow>
     valid_ind is \<Longrightarrow>
-    distinct (S \<ominus>\<^sub>S is) \<Longrightarrow>
+    (* distinct (S \<ominus>\<^sub>S is) \<Longrightarrow> *)
     (*  fst (hd \<Gamma>') \<notin> heapVars is \<Longrightarrow> *)
   \<exists> is'. (\<Gamma> \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>u\<^bsub>S \<ominus>\<^sub>S is\<^esub> \<Delta> \<ominus>\<^sub>h is')
        \<and> ind_for is' \<Delta>
@@ -477,11 +395,13 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
   moreover
   note `valid_ind is`
   moreover
+  (*
   from `atom n \<sharp> S``atom n \<sharp> x`
   have "atom n \<sharp> (x # S)" by (simp add: fresh_Cons)
   with `distinct (x # S \<ominus>\<^sub>S is)` `valid_ind is` `atom n \<sharp> is` 
   have "distinct (n # x # S \<ominus>\<^sub>S is)"  by (rule resolveStack_distinct_fresh)
   moreover
+  *)
   (*
   from `n \<notin> heapVars is`
   have "fst (hd ((n, e) # (x, App (Var n) y) # \<Gamma>')) \<notin> heapVars is" by (simp)
@@ -545,10 +465,13 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
   moreover
   *)
   note DApplicationInd(28)[OF calculation]
+  (*
   moreover
   from `distinct (n # x # S \<ominus>\<^sub>S is)` `atom n \<sharp> is `
   have "distinct (x # S \<ominus>\<^sub>S (z,y) # is')" by simp
   ultimately
+  *)
+  then
   obtain "is''"
   where is'':"(z, Var y) # (x, e') # \<Delta> \<ominus>\<^sub>h (z, y) # is' \<Down>\<^sup>\<times>\<^sup>u\<^bsub>x # S \<ominus>\<^sub>S (z, y) # is'\<^esub> \<Theta> \<ominus>\<^sub>h is''"
           and "ind_for is'' \<Theta>"
@@ -557,6 +480,7 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
           and hV': "heapVars is'' \<inter> heapVars ((z, Var y) # (x, e') # \<Delta>) \<subseteq> heapVars ((z, y) # is')"
           and "x # S \<ominus>\<^sub>S is'' = x # S \<ominus>\<^sub>S (z, y) # is'"
           by blast
+  ultimately have True by simp -- "clear calculation"
 
   from `x \<notin> heapVars is` hV
   have "x \<notin> heapVars is'" by auto
@@ -691,7 +615,7 @@ case (DVariable y x S \<Gamma> z \<Delta> "is")
   have "distinct (y # x # S \<ominus>\<^sub>S is)" apply auto sorry
   *)
 
-  from DVariable(10)[OF  `ind_for is _` `valid_ind is` this]
+  from DVariable(10)[OF  `ind_for is _` `valid_ind is`]
   obtain is' where is': "(x, Var y) # \<Gamma> \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>y # x # S \<ominus>\<^sub>S is\<^esub> (y, z) # (x, Var y) # \<Delta> \<ominus>\<^sub>h is'"
     and "ind_for is' ((y, z) # (x, Var y) # \<Delta>)"
     and "set is \<subseteq> set is'"
@@ -761,12 +685,14 @@ case (DVariable y x S \<Gamma> z \<Delta> "is")
     from `x \<notin> heapVars is` hV
     have "x \<notin> heapVars is'" by auto
 
-    (* Möglicher Plan: Anname dass für jedes x\<in>S auch alle per Var erreichbare y \<in> S sind, ode
+    (* distinct-kruscht 
+
+    (* Möglicher Plan: Anname dass für jedes x\<in>S auch alle per Var erreichbare y \<in> S sind, oder
       dass hd S von x erreichbar ist. :-( *)
 
     have "y \<ominus> is \<noteq> x" sorry
     moreover
-    have "y \<ominus> is \<notin> set (dropChain is x S \<ominus>\<^sub>S is)" sorry
+    have "y \<ominus> is \<notin> set (dropChain is x S \<ominus>\<^sub>S is)" sorry (* \<leftarrow> crucial *)
     ultimately
     have "distinct (y # x # S \<ominus>\<^sub>S is)"
       using `valid_ind is` `x \<notin> heapVars is`  `distinct (x # S \<ominus>\<^sub>S is)` by simp
@@ -779,9 +705,23 @@ case (DVariable y x S \<Gamma> z \<Delta> "is")
     from `distinct (y # x # S \<ominus>\<^sub>S is)` `valid_ind is` `x \<notin> heapVars is`
     have "(y \<ominus> is) \<notin> set (x # (dropChain is x S \<ominus>\<^sub>S is))" by simp
     hence "y \<ominus> is \<noteq> x" by simp
+    *)
+    
+    find_theorems y S
+    (* Mit (x, Var y) # \<Gamma> \<Down>\<^sup>\<surd>\<^sup>\<surd>\<^sup>d\<^bsub>y # x # S\<^esub> (y, z) # (x, Var y) # \<Delta>
+       und `ind_for _` sollte ich rausbekommen, dass
+       y \<ominus> is \<notin> set (x # S).
+       Außer y ist schon ein Lambda... :-(
+       Aber selbst dann kann in S Kruscht sein, der in den heapVars von is vorkommt.
+    *)
+    have "y \<ominus> is \<notin> set (x # S \<ominus>\<^sub>S is)" sorry  
 
-    from `distinct (y # x # S \<ominus>\<^sub>S is)` `valid_ind is` `x \<notin> heapVars is`
-    have "(y \<ominus> is) \<notin> set (x # (dropChain is x S \<ominus>\<^sub>S is))" by simp
+    hence "y \<ominus> is \<noteq> x" using `valid_ind is` `x \<notin> heapVars is` by simp
+
+    find_theorems "_ \<ominus> _ \<ominus> _"
+
+    from `y \<ominus> is \<notin> set (x # S \<ominus>\<^sub>S is)` `valid_ind is`
+    have "y \<ominus> is \<notin> set (x # (dropChain is x S \<ominus>\<^sub>S is))" by auto
     moreover
     {
       from is'  `x \<notin> heapVars is` `x \<notin> heapVars is'` `x \<noteq> y` `y \<ominus> is \<noteq> x` `valid_ind is`
