@@ -71,20 +71,114 @@ next
     hence "validStack ((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>) n (x # S)" by (rule Application.hyps)
     hence "validStack ((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>) x S" by (cases)
     hence "validStack ((x, e'[z::=y]) # \<Delta>) x S" sorry
+      (* Ansatz: n kommt nicht in S oder \<Delta> vor. Jede Kette die x enthält endet auch dort.
+         Deswegen darf x entfernt werden. *)
     hence "validStack \<Theta> x S"
       by (rule Application.hyps)
 oops
 
-theorem "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>x#S\<^esub> \<Delta> \<Longrightarrow> validStack \<Gamma> x S \<Longrightarrow> \<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>\<surd>\<^bsub>x#S\<^esub> \<Delta>"
+theorem
+  assumes "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>x#S\<^esub> \<Delta>"
+  assumes "validStack \<Gamma> x S"
+  shows  "validStack \<Delta> x S" and "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>\<surd>\<^bsub>x#S\<^esub> \<Delta>"
+  (* The second conclusion does not need the first, but inductive proofs compose so badly. *)
+using assms
 proof(induction \<Gamma> i u b "x#S" \<Delta> arbitrary: x S rule:reds.induct )
-print_cases
 case (Lambda x y e \<Gamma> i u b S)
-  show ?case by (rule reds.Lambda)
+  case 1 thus ?case .
+  case 2 show ?case by (rule reds.Lambda)
 next
 case (Application n \<Gamma> x e y S \<Delta> \<Theta> z u b e')
-  from Application.IH obtain 
+  case 1
+    have "(depRel ((n, e) # (x, App (Var n) y) # \<Gamma>))\<^sup>+\<^sup>+ x n" by (fastforce intro: DepRelApp)
+    moreover
+    from `validStack ((x, App e y) # \<Gamma>) x S`
+    have "validStack ((n, e) # (x, App (Var n) y) # \<Gamma>) x S" by (rule validStackIndirect)
+    ultimately
+    have "validStack ((n, e) # (x, App (Var n) y) # \<Gamma>) n (x # S)"  by (rule ValidStackCons)
+    hence "validStack ((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>) n (x # S)" by (rule Application.hyps)
+    hence "validStack ((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>) x S" by (cases)
+    hence "validStack ((x, e'[z::=y]) # \<Delta>) x S" sorry
+      (* Ansatz: n kommt nicht in S oder \<Delta> vor. Jede Kette die x enthält endet auch dort.
+         Deswegen darf x entfernt werden. *)
+    thus "validStack \<Theta> x S"
+      by (rule Application.hyps)
+  case 2
+    note Application.hyps(1,2)
+  
+    moreover
+    note `validStack ((n, e) # (x, App (Var n) y) # \<Gamma>) n (x # S)`
+    note Application.hyps(5)[OF this]
+  
+    moreover
+    note `validStack ((x, e'[z::=y]) # \<Delta>) x S`
+    note Application.hyps(8)[OF this]
+  
+    ultimately
+    show ?case by (rule reds.Application)
+next
+print_cases
+case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u b e')
+  case 1
+    have "(depRel ((n, e) # (x, App (Var n) y) # \<Gamma>))\<^sup>+\<^sup>+ x n" by (fastforce intro: DepRelApp)
+    moreover
+    from `validStack ((x, App e y) # \<Gamma>) x S`
+    have "validStack ((n, e) # (x, App (Var n) y) # \<Gamma>) x S" by (rule validStackIndirect)
+    ultimately
+    have "validStack ((n, e) # (x, App (Var n) y) # \<Gamma>) n (x # S)"  by (rule ValidStackCons)
+    hence "validStack ((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>) n (x # S)" by (rule ApplicationInd.hyps)
+    hence "validStack ((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>) x S" by (cases)
+    hence "validStack ((z, Var y)# (x, e') # \<Delta>) x S" sorry
+      (* Ansatz: n kommt nicht in S oder \<Delta> vor. Jede Kette die x enthält endet auch dort.
+         Deswegen darf x entfernt werden. *)
+    thus "validStack \<Theta> x S"
+      by (rule ApplicationInd.hyps)
+  case 2
+    note ApplicationInd.hyps(1,2)
+  
+    moreover
+    note `validStack ((n, e) # (x, App (Var n) y) # \<Gamma>) n (x # S)`
+    note ApplicationInd.hyps(5)[OF this]
+  
+    moreover
+    note `validStack ((z, Var y)# (x, e') # \<Delta>) x S`
+    note ApplicationInd.hyps(8)[OF this]
+  
+    ultimately
+    show ?case by (rule reds.ApplicationInd)
+next
+  fix y x S \<Gamma> i z \<Delta>
+  assume hyp: "validStack ((x, Var y) # \<Gamma>) y (x # S) \<Longrightarrow> validStack ((y, z) # (x, Var y) # \<Delta>) y (x # S)"
 
+  have "(depRel ((x, Var y) # \<Gamma>))\<^sup>+\<^sup>+ x y" by (fastforce intro: DepRelVar) 
+  moreover
+  assume "validStack ((x, Var y) # \<Gamma>) x S"
+  ultimately
+  have IP: "validStack ((x, Var y) # \<Gamma>) y (x # S)"
+    by (rule ValidStackCons)
+  hence "validStack ((y, z) # (x, Var y) # \<Delta>) y (x # S)"
+    by (rule hyp)
+  thus "validStack ((y, z) # (x, z) # \<Delta>) x S" sorry
+    (* y ist Ende einer Kette. Warum ist y \<notin> S? *)
 
+  show "validStack ((y, z) # (x, z) # \<Delta>) x S" by fact
+  {
+    assume "y \<notin> set (x # S)"
+    moreover
+    assume "(x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^sup>\<surd>\<^bsub>y # x # S\<^esub> (y, z) # (x, Var y) # \<Delta>"
+    ultimately
+    show "(x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^sup>\<surd>\<^bsub>x # S\<^esub> (y, z) # (x, z) # \<Delta>"
+      by (rule reds.Variable)
+  next
+    have "y \<notin> set (x # S)" sorry (* Hauptpunkt des Beweises! *)
+    moreover
+    assume "(validStack ((x, Var y) # \<Gamma>) y (x # S) \<Longrightarrow> (x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^sup>\<surd>\<^bsub>y # x # S\<^esub> (y, z) # (x, Var y) # \<Delta>)"
+    note this[OF IP]
+    ultimately
+    show "(x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^sup>\<surd>\<^bsub>x # S\<^esub> (y, z) # (x, z) # \<Delta>" by (rule reds.Variable)
+  }
+next
+oops
 
 
 end
