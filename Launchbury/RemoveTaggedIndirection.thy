@@ -496,11 +496,12 @@ case (DApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z e' u "is")
   have "distinctVars ((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta> \<ominus>\<^sub>h is')"
     by (rule resolveHeap_distinctVars[OF DApplicationInd.hyps(18)])
   moreover
-  from  `x \<notin> heapVars is'` `n \<notin> heapVars is'` `distinct (n # x # S)`
+  from  `x \<notin> heapVars is'` `n \<notin> heapVars is'`
   have "(x, App (Var n) (y \<ominus> is')) \<in> set ((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta> \<ominus>\<^sub>h is')"
     by (auto simp add: resolveExp_App resolveExp_Var)
   moreover
-  from  `x \<notin> heapVars is` `n \<notin> heapVars is` `distinct (n # x # S)` `valid_ind is`
+  have "x \<noteq> n" using `distinctVars ((n, e) # (x, App (Var n) y) # \<Gamma>)` by (auto simp add: distinctVars_Cons)
+  with  `x \<notin> heapVars is` `n \<notin> heapVars is` `valid_ind is`
   have "(x, App (Var n) (y \<ominus> is)) \<in> set ((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta> \<ominus>\<^sub>h is')"
     by (auto
         intro!: stack_unchanged[OF is']
