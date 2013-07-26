@@ -25,48 +25,52 @@ instance
   done
 end
 
-inductive reds :: "heap \<Rightarrow> Flag \<Rightarrow> Flag \<Rightarrow> var list \<Rightarrow> heap \<Rightarrow> bool" ("_/ \<Down>\<^sup>_\<^sup>_\<^bsub>_\<^esub>/ _" [50,50,50,50,50] 50)
+inductive reds :: "heap \<Rightarrow> Flag \<Rightarrow> Flag \<Rightarrow> Flag \<Rightarrow> var list \<Rightarrow> heap \<Rightarrow> bool" ("_/ \<Down>\<^sup>_\<^sup>_\<^sup>_\<^bsub>_\<^esub>/ _" [50,50,50,50,50] 50)
 where
   Lambda:
-    "(x, (Lam [y]. e)) # \<Gamma> \<Down>\<^sup>i\<^sup>u\<^bsub>x#S\<^esub> (x, (Lam [y]. e)) # \<Gamma>" 
+    "(x, (Lam [y]. e)) # \<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>x#S\<^esub> (x, (Lam [y]. e)) # \<Gamma>" 
  | Application: "\<lbrakk>
       atom n \<sharp> (\<Gamma>,x,e,y,S,\<Delta>,\<Theta>,z);
       atom z \<sharp> (\<Gamma>,x,e,y,S,\<Delta>,\<Theta>);
-      (n, e) # (x, App (Var n) y) # \<Gamma> \<Down>\<^sup>\<times>\<^sup>u\<^bsub>n#x#S\<^esub> (n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>;
-      (x, e'[z ::= y]) # \<Delta> \<Down>\<^sup>\<times>\<^sup>u\<^bsub>x#S\<^esub> \<Theta>
+      (n, e) # (x, App (Var n) y) # \<Gamma> \<Down>\<^sup>\<times>\<^sup>u\<^sup>b\<^bsub>n#x#S\<^esub> (n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>;
+      (x, e'[z ::= y]) # \<Delta> \<Down>\<^sup>\<times>\<^sup>u\<^sup>b\<^bsub>x#S\<^esub> \<Theta>
     \<rbrakk> \<Longrightarrow>
-      (x, App e y) # \<Gamma> \<Down>\<^sup>\<times>\<^sup>u\<^bsub>x#S\<^esub> \<Theta>" 
+      (x, App e y) # \<Gamma> \<Down>\<^sup>\<times>\<^sup>u\<^sup>b\<^bsub>x#S\<^esub> \<Theta>" 
  | ApplicationInd: "\<lbrakk>
       atom n \<sharp> (\<Gamma>,x,e,y,S,\<Delta>,\<Theta>,z);
       atom z \<sharp> (\<Gamma>,x,e,y,S,\<Delta>);
-      (n, e) # (x, App (Var n) y) # \<Gamma> \<Down>\<^sup>\<surd>\<^sup>u\<^bsub>n#x#S\<^esub> (n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>;
-      (z,Var y) # (x, e') # \<Delta> \<Down>\<^sup>\<surd>\<^sup>u\<^bsub>x#S\<^esub> \<Theta>
+      (n, e) # (x, App (Var n) y) # \<Gamma> \<Down>\<^sup>\<surd>\<^sup>u\<^sup>b\<^bsub>n#x#S\<^esub> (n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>;
+      (z,Var y) # (x, e') # \<Delta> \<Down>\<^sup>\<surd>\<^sup>u\<^sup>b\<^bsub>x#S\<^esub> \<Theta>
     \<rbrakk> \<Longrightarrow>
-      (x, App e y) # \<Gamma> \<Down>\<^sup>\<surd>\<^sup>u\<^bsub>x#S\<^esub> \<Theta>" 
+      (x, App e y) # \<Gamma> \<Down>\<^sup>\<surd>\<^sup>u\<^sup>b\<^bsub>x#S\<^esub> \<Theta>" 
  | Variable: "\<lbrakk>
       y \<notin> set (x#S);
-      (x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^bsub>y#x#S\<^esub> (y,z) # (x, Var y) # \<Delta>
+      (x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^sup>\<surd>\<^bsub>y#x#S\<^esub> (y,z) # (x, Var y) # \<Delta>
    \<rbrakk> \<Longrightarrow>
-      (x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^bsub>x#S\<^esub> (y,z) # (x,z) # \<Delta>"
+      (x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^sup>\<surd>\<^bsub>x#S\<^esub> (y,z) # (x,z) # \<Delta>"
+ | VariableNoBH: "\<lbrakk>
+      (x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^sup>\<times>\<^bsub>y#x#S\<^esub> (y,z) # (x, Var y) # \<Delta>
+   \<rbrakk> \<Longrightarrow>
+      (x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^sup>\<times>\<^bsub>x#S\<^esub> (y,z) # (x,z) # \<Delta>"
  | VariableNoUpd: "\<lbrakk>
       atom n \<sharp> (\<Gamma>,x,y,e,S,\<Delta>,z);
       y \<notin> set (x#S);
       (y,e) \<in> set \<Gamma>;
-      (n,e ) # (x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<times>\<^bsub>n#y#x#S\<^esub> (n,z) # (x, Var y) # \<Delta>
+      (n,e ) # (x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<times>\<^sup>\<surd>\<^bsub>n#y#x#S\<^esub> (n,z) # (x, Var y) # \<Delta>
    \<rbrakk> \<Longrightarrow>
-      (x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<times>\<^bsub>x#S\<^esub> (x,z) # \<Delta>"
+      (x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<times>\<^sup>\<surd>\<^bsub>x#S\<^esub> (x,z) # \<Delta>"
  | Let: "\<lbrakk>
       set (bn as) \<sharp>* (\<Gamma>, x);
       distinctVars (asToHeap as);
-      (x, body) # asToHeap as @ \<Gamma> \<Down>\<^sup>i\<^sup>u\<^bsub>x#S\<^esub> \<Delta>
+      (x, body) # asToHeap as @ \<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>x#S\<^esub> \<Delta>
    \<rbrakk> \<Longrightarrow>
-      (x, Let as body) # \<Gamma> \<Down>\<^sup>i\<^sup>u\<^bsub>x#S\<^esub> \<Delta>"
+      (x, Let as body) # \<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>x#S\<^esub> \<Delta>"
  | Permute: "\<lbrakk>
       \<Gamma> <~~> \<Gamma>';
       \<Delta> <~~> \<Delta>';
-      \<Gamma> \<Down>\<^sup>i\<^sup>u\<^bsub>S\<^esub> \<Delta>
+      \<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>S\<^esub> \<Delta>
    \<rbrakk> \<Longrightarrow> 
-      \<Gamma>' \<Down>\<^sup>i\<^sup>u\<^bsub>S\<^esub> \<Delta>'"
+      \<Gamma>' \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>S\<^esub> \<Delta>'"
 
 equivariance reds
 
@@ -104,7 +108,7 @@ lemma eval_test2:
 subsubsection {* Properties of the semantics *}
 
 lemma stack_head_there:
-  "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^bsub>S\<^esub> \<Delta> \<Longrightarrow> hd S \<in> heapVars \<Gamma>"
+  "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>S\<^esub> \<Delta> \<Longrightarrow> hd S \<in> heapVars \<Gamma>"
   by (induct rule: reds.induct) (auto simp add: perm_heapVars)
 
 text {*
@@ -214,7 +218,7 @@ nominal_inductive distinct_reds
   by (auto simp add: fresh_star_def fresh_Cons fresh_Pair pure_fresh)
 
 lemma distinct_redsD1:
-  "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>d\<^bsub>S\<^esub> \<Delta> \<Longrightarrow> \<Gamma> \<Down>\<^sup>i\<^sup>u\<^bsub>S\<^esub> \<Delta>"
+  "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>d\<^bsub>S\<^esub> \<Delta> \<Longrightarrow> \<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>\<surd>\<^bsub>S\<^esub> \<Delta>"
   by (induct rule: distinct_reds.induct) (blast intro: reds.intros)+
 
 lemma distinct_redsD2:
@@ -238,8 +242,8 @@ lemma distinct_redsD6:
   by (induct rule: distinct_reds.induct) auto
 
 lemma distinct_redsI:
-  "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^bsub>S\<^esub> \<Delta> \<Longrightarrow> distinctVars \<Gamma> \<Longrightarrow> distinct S \<Longrightarrow> set S \<subseteq> heapVars \<Gamma> \<Longrightarrow> \<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>d\<^bsub>S\<^esub> \<Delta>"
-proof (nominal_induct rule: reds.strong_induct)
+  "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>\<surd>\<^bsub>S\<^esub> \<Delta> \<Longrightarrow> distinctVars \<Gamma> \<Longrightarrow> distinct S \<Longrightarrow> set S \<subseteq> heapVars \<Gamma> \<Longrightarrow> \<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>d\<^bsub>S\<^esub> \<Delta>"
+proof (nominal_induct \<Gamma> i u "\<surd>" S \<Delta> rule: reds.strong_induct)
 case Lambda thus ?case by (auto intro: DLambda)
 next
 case (Application n \<Gamma> x e y S \<Delta> \<Theta> z u e')
@@ -336,7 +340,7 @@ case (Permute \<Gamma> \<Gamma>' \<Delta> \<Delta>' i u S)
 qed
 
 lemma reds_pres_distinctVars:
-  "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^bsub>S\<^esub> \<Delta> \<Longrightarrow> distinctVars \<Gamma> \<Longrightarrow> distinct S \<Longrightarrow> set S \<subseteq> heapVars \<Gamma> \<Longrightarrow> distinctVars \<Delta>"
+  "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>\<surd>\<^bsub>S\<^esub> \<Delta> \<Longrightarrow> distinctVars \<Gamma> \<Longrightarrow> distinct S \<Longrightarrow> set S \<subseteq> heapVars \<Gamma> \<Longrightarrow> distinctVars \<Delta>"
 by (metis distinct_redsD3 distinct_redsI)
 
 lemmas reds_distinct_ind = distinct_reds.induct[OF distinct_redsI, consumes 2, case_names Lambda Application Variable Let]
@@ -352,7 +356,7 @@ using assms
 text {* Heap entries are never removed. *}
 
 lemma reds_doesnt_forget:
- assumes "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^bsub>S\<^esub> \<Delta>"
+ assumes "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>\<surd>\<^bsub>S\<^esub> \<Delta>"
  assumes "distinctVars \<Gamma>"
  assumes "distinct S"
  assumes "set S \<subseteq> heapVars \<Gamma>"
@@ -362,7 +366,7 @@ by (rule reds_doesnt_forget'[OF distinct_redsI[OF assms]])+
 text {* The stack is never empty. *}
 
 lemma stack_not_empty:
-  assumes "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^bsub>S\<^esub> \<Delta>"
+  assumes "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>\<surd>\<^bsub>S\<^esub> \<Delta>"
   shows "S \<noteq> []"
   using assms
   by (induct rule:reds.induct, simp_all)
@@ -370,13 +374,13 @@ lemma stack_not_empty:
 text {* Evaluation does not touch the tail of the stack. *}
 
 lemma stack_unchanged:
-  assumes "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^bsub>S\<^esub> \<Delta>"
+  assumes "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>\<surd>\<^bsub>S\<^esub> \<Delta>"
   assumes "x \<noteq> hd S"
   assumes "x \<in> set (tl S)"
   assumes "(x,e) \<in> set \<Gamma>"
   shows   "(x,e) \<in> set \<Delta>"
 using assms
- apply (induct \<Gamma> i u S \<Delta> arbitrary: x e rule:reds.induct)
+ apply (induct \<Gamma> i u \<surd> S \<Delta> arbitrary: x e rule:reds.induct)
  apply (auto simp add: perm_set_eq)
   apply (metis fresh_Pair set_not_fresh)
   apply (metis fresh_PairD(1) fresh_list_elem not_self_fresh)
