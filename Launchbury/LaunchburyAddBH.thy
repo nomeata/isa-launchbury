@@ -138,40 +138,53 @@ case 2
          ApplicationInd.hyps(10)[OF IH2]
     show ?case by (rule reds.ApplicationInd)
 next
-  fix y x S \<Gamma> i \<Delta>
-  assume hyp: "validStack (\<Gamma>(x f\<mapsto> Var y)) y (x # S) \<Longrightarrow> validStack \<Delta> y (x # S)"
+case (Variable y x S \<Gamma> i \<Delta>)
+  hence "y \<noteq> x" by simp
 
   have "(depRel (\<Gamma>(x f\<mapsto> Var y)))\<^sup>+\<^sup>+ x y" by (fastforce intro: DepRelVar) 
   moreover
   assume "validStack (\<Gamma>(x f\<mapsto> Var y)) x S"
   ultimately
-  have IP: "validStack (\<Gamma>(x f\<mapsto> Var y)) y (x # S)"
+  have "validStack (\<Gamma>(x f\<mapsto> Var y)) y (x # S)"
     by (rule ValidStackCons)
-  hence "validStack \<Delta> y (x # S)"
-    by (rule hyp)
-  thus "validStack (fmap_copy \<Delta> y x) x S" sorry
-    (* Weiß ich, dass x \<mapsto> y immernoch gilt? *)
+  note hyps = Variable(3-5)[OF this]
+
+  from stack_unchanged[OF hyps(3)] `y \<noteq> x`
+  have "lookup \<Delta> x = Some (Var y)" by simp
+
+  from `validStack \<Delta> y (x # S)` `lookup \<Delta> x = Some (Var y)`
+  show "validStack (fmap_copy \<Delta> y x) x S" sorry
     (* y ist Ende einer Kette, weil Lambda.
        Warum ist y \<notin> S?.. muss ich eh unten zeigen oder annehmen. *)
 
-  show "validStack (fmap_copy \<Delta> y x) x S" by fact
+  from Variable(1,2) 
+  show "\<Gamma>(x f\<mapsto> Var y) \<Down>\<^sup>i\<^sup>\<surd>\<^sup>\<surd>\<^bsub>x # S\<^esub> fmap_copy \<Delta> y x"
+    by (rule reds.Variable)
+next
+case (VariableNoBH \<Gamma> x y i S \<Delta>)
+  have "(depRel (\<Gamma>(x f\<mapsto> Var y)))\<^sup>+\<^sup>+ x y" by (fastforce intro: DepRelVar) 
+  moreover
+  assume "validStack (\<Gamma>(x f\<mapsto> Var y)) x S"
+  ultimately
+  have "validStack (\<Gamma>(x f\<mapsto> Var y)) y (x # S)"
+    by (rule ValidStackCons)
+  note hyps = VariableNoBH(2-4)[OF this]
 
+  from hyps(1) `(depRel (\<Gamma>(x f\<mapsto> Var y)))\<^sup>+\<^sup>+ x y`
+  have "y \<noteq> x" by (auto simp add: cycle_def)
 
-  {
-    assume "y \<notin> set (x # S)"
-    moreover
-    assume "\<Gamma>(x f\<mapsto> Var y) \<Down>\<^sup>i\<^sup>\<surd>\<^sup>\<surd>\<^bsub>y # x # S\<^esub> \<Delta>"
-    ultimately
-    show "\<Gamma>(x f\<mapsto> Var y) \<Down>\<^sup>i\<^sup>\<surd>\<^sup>\<surd>\<^bsub>x # S\<^esub> (fmap_copy \<Delta> y x)"
-      by (rule reds.Variable)
-  next
-    have "y \<notin> set (x # S)" sorry (* Hauptpunkt des Beweises! *)
-    moreover
-    assume "validStack (\<Gamma>(x f\<mapsto> Var y)) y (x # S) \<Longrightarrow> \<Gamma>(x f\<mapsto> Var y) \<Down>\<^sup>i\<^sup>\<surd>\<^sup>\<surd>\<^bsub>y # x # S\<^esub> \<Delta>"
-    note this[OF IP]
-    ultimately
-    show "\<Gamma>(x f\<mapsto> Var y) \<Down>\<^sup>i\<^sup>\<surd>\<^sup>\<surd>\<^bsub>x # S\<^esub> (fmap_copy \<Delta> y x)" by (rule reds.Variable)
-  }
+  from stack_unchanged[OF hyps(3)] `y \<noteq> x`
+  have "lookup \<Delta> x = Some (Var y)" by simp
+
+  from `validStack \<Delta> y (x # S)` `lookup \<Delta> x = Some (Var y)`
+  show "validStack (fmap_copy \<Delta> y x) x S" sorry
+    (* y ist Ende einer Kette, weil Lambda.
+       Warum ist y \<notin> S?.. muss ich eh unten zeigen oder annehmen. *)
+
+  have "y \<notin> set (x # S)" sorry (* Hauptpunkt des Beweises! *)
+  from this hyps(3)
+  show "\<Gamma>(x f\<mapsto> Var y) \<Down>\<^sup>i\<^sup>\<surd>\<^sup>\<surd>\<^bsub>x # S\<^esub> fmap_copy \<Delta> y x"
+    by (rule reds.Variable)
 next
 oops
 
