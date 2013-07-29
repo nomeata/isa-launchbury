@@ -23,6 +23,13 @@ lemma depRelTransConsI[intro]: "(depRel \<Gamma>)\<^sup>+\<^sup>+ a b \<Longrigh
 
 definition cycle where "cycle \<Gamma> x \<longleftrightarrow> (depRel \<Gamma>)\<^sup>+\<^sup>+ x x"
 
+lemma depRelE: "depRel \<Gamma> x y \<Longrightarrow> (\<exists> z. lookup \<Gamma> x = Some (Var z)) \<or> (\<exists> z y. lookup \<Gamma> x = Some (App (Var z) y))"
+  by  (auto elim: depRel.cases)
+
+lemma depRelTransE: "(depRel \<Gamma>)\<^sup>+\<^sup>+ x y \<Longrightarrow> (\<exists> z. lookup \<Gamma> x = Some (Var z)) \<or> (\<exists> z y. lookup \<Gamma> x = Some (App (Var z) y))"
+  by (induction x y rule: tranclp_trans_induct[consumes 1, case_names base step])
+     (auto dest: depRelE)
+
 lemma lookup_eq_split: "lookup (f(a f\<mapsto> b)) x = Some r \<longleftrightarrow> ((x = a \<and> r = b) \<or> (x \<noteq> a \<and> lookup f x = Some r))"
   by transfer auto
 
@@ -62,6 +69,11 @@ proof (induction rule:tranclp_trans_induct[consumes 1, case_names base step])
     thus ?case by auto
 qed
 
+lemma cycleIndirect: 
+  assumes "cycle (\<Gamma>(x f\<mapsto> App e y)) z"
+  assumes "atom n \<sharp> \<Gamma>(x f\<mapsto> App e y)"
+  shows "cycle (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)) z"
+by (metis depRelTransIndirect cycle_def assms)
 
 inductive validStack :: "Heap \<Rightarrow> var \<Rightarrow> var list \<Rightarrow> bool"
   for \<Gamma> where
@@ -74,15 +86,41 @@ lemma validStackIndirect:
 by (induction z S rule:validStack.induct)
    (auto intro: ValidStackNil ValidStackCons depRelTransIndirect)
 
+lemma depRel_unique:
+  "depRel \<Gamma> a b \<Longrightarrow> depRel \<Gamma> a c \<Longrightarrow> b = c"
+  by (auto elim!: depRel.cases)
+
+lemma validStack_to_top:
+  "validStack \<Gamma> x S \<Longrightarrow> y \<in> set S \<Longrightarrow> (depRel \<Gamma>)\<^sup>+\<^sup>+ y x"
+by (induction x S rule:validStack.induct) auto
+
+lemma validStack_cycle:
+  "validStack \<Gamma> x S \<Longrightarrow> x \<in> set S \<Longrightarrow> cycle \<Gamma> x"
+by (metis validStack_to_top cycle_def)
+
+lemma depRel_via:
+  assumes "(depRel \<Gamma>)\<^sup>+\<^sup>+ a z"
+  assumes "depRel \<Gamma> a b"
+  shows   "b = z \<or> (depRel \<Gamma>)\<^sup>+\<^sup>+ b z"
+using assms
+by (induction a z rule:tranclp_trans_induct[consumes 1, case_names base step])
+   (auto dest: depRel_unique tranclp_trans)
+
+lemma cycle_depRel:
+  assumes "cycle \<Gamma> x"
+  assumes "depRel \<Gamma> x n"
+  shows "cycle \<Gamma> n"
+by (metis assms depRel_via cycle_def tranclp.simps)
 
 theorem
   assumes "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>x#S\<^esub> \<Delta>"
   assumes "validStack \<Gamma> x S"
   shows "\<not> cycle \<Gamma> x"  "validStack \<Delta> x S" and "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>\<surd>\<^bsub>x#S\<^esub> \<Delta>"
-  (* The second conclusion does not need the first, but inductive proofs compose so badly. *)
+  (* The third conclusion does not need the second, but inductive proofs compose so badly. *)
 using assms
 proof(induction \<Gamma> i u b "x#S" \<Delta> arbitrary: x S rule:reds.induct )
-case (Lambda x y e \<Gamma> i u b S)
+case (Lambda \<Gamma> x y e i u b S)
+  case 1 show ?case by (auto dest: depRelTransE simp add: cycle_def) 
   case 2 thus ?case .
   case 3 show ?case by (rule reds.Lambda)
 next
@@ -104,14 +142,20 @@ case (Application n \<Gamma> x e y S \<Delta> \<Theta> z u b e')
          Deswegen darf x entfernt werden. *)
     thus "validStack \<Theta> x S"
       by (rule Application.hyps)
+  case 1
+    from Application.hyps(4)[OF IH1]
+    show ?case
+    proof(rule contrapos_nn)
+      assume "cycle (\<Gamma>(x f\<mapsto> App e y)) x"
+      hence "cycle (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)) x"
+        by (rule cycleIndirect[OF _ `atom n \<sharp> \<Gamma>(x f\<mapsto> App e y)`])
+      thus "cycle (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)) n" using `n \<noteq> x`
+        by (auto elim!: cycle_depRel intro: DepRelApp)
+    qed
   case 3
-    note Application.hyps(1,2)
-  
-    moreover
-    note Application.hyps(6)[OF IH1]
+    from Application.hyps(1,2)
+         Application.hyps(6)[OF IH1]
          Application.hyps(10)[OF IH2]
-  
-    ultimately
     show ?case by (rule reds.Application)
 next
 case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u b e')
@@ -132,6 +176,16 @@ case 2
          Deswegen darf x entfernt werden. *)
     thus "validStack \<Theta> x S"
       by (rule ApplicationInd.hyps)
+  case 1
+    from ApplicationInd.hyps(4)[OF IH1]
+    show ?case
+    proof(rule contrapos_nn)
+      assume "cycle (\<Gamma>(x f\<mapsto> App e y)) x"
+      hence "cycle (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)) x"
+        by (rule cycleIndirect[OF _ `atom n \<sharp> \<Gamma>(x f\<mapsto> App e y)`])
+      thus "cycle (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)) n" using `n \<noteq> x`
+        by (auto elim!: cycle_depRel intro: DepRelApp)
+    qed
   case 3
     from ApplicationInd.hyps(1,2)
          ApplicationInd.hyps(6)[OF IH1]
@@ -181,7 +235,12 @@ case (VariableNoBH \<Gamma> x y i S \<Delta>)
     (* y ist Ende einer Kette, weil Lambda.
        Warum ist y \<notin> S?.. muss ich eh unten zeigen oder annehmen. *)
 
-  have "y \<notin> set (x # S)" sorry (* Hauptpunkt des Beweises! *)
+  (* Hier muss ich zeigen dass \<Down> die Struktur von DepRel, eingeschränkt auf S, erhält und nur ggf. verfeinert *)
+  have "\<not> cycle \<Delta> y" sorry
+  with hyps(2)
+  have "y \<notin> set (x # S)" (* Hauptpunkt des Beweises! *)
+    by (metis validStack_cycle)
+
   from this hyps(3)
   show "\<Gamma>(x f\<mapsto> Var y) \<Down>\<^sup>i\<^sup>\<surd>\<^sup>\<surd>\<^bsub>x # S\<^esub> fmap_copy \<Delta> y x"
     by (rule reds.Variable)
