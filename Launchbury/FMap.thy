@@ -82,10 +82,10 @@ lift_definition
 lemma fmap_upd_fdom[simp]: "fdom (h (x f\<mapsto> v)) = insert x (fdom h)"
   by (transfer, auto)
 
-lemma the_lookup_fmap_upd[simp]: "lookup (h (x f\<mapsto> v)) x = Some v"
+lemma lookup_fmap_upd[simp]: "lookup (h (x f\<mapsto> v)) x = Some v"
   by (transfer, auto)
 
-lemma the_lookup_fmap_upd_other[simp]: "x' \<noteq> x \<Longrightarrow> lookup (h (x f\<mapsto> v)) x' = lookup h x'"
+lemma lookup_fmap_upd_other[simp]: "x' \<noteq> x \<Longrightarrow> lookup (h (x f\<mapsto> v)) x' = lookup h x'"
   by (transfer, auto)
 
 lemma fmap_upd_overwrite[simp]: "f (x f\<mapsto> y) (x f\<mapsto> z) = f (x f\<mapsto> z)"
@@ -151,6 +151,13 @@ lemma fdom_fmap_delete[simp]:
   "fdom (fmap_delete x m) = fdom m - {x}"
   by (transfer, auto)
 
+lemma fdom_fmap_delete_subset:
+  "fdom (fmap_delete x m) \<subseteq> fdom m" by auto
+
+lemma fran_fmap_delete_subset:
+  "fran (fmap_delete x m) \<subseteq> fran m"
+  by transfer (auto simp add: ran_def) 
+
 lemma fmap_delete_fmap_upd[simp]:
   "fmap_delete x (m(x f\<mapsto> v)) = fmap_delete x m"
   by (transfer, simp)
@@ -159,7 +166,7 @@ lemma fmap_delete_fmap_upd2[simp]:
   "(fmap_delete x m)(x f\<mapsto> v) = m(x f\<mapsto> v)"
   by (transfer, simp)
 
-lemma fmap_delete_noop:
+lemma fmap_delete_noop[simp]:
   "x \<notin> fdom m \<Longrightarrow> fmap_delete x m = m"
   by (transfer, auto)
 
@@ -177,6 +184,9 @@ lift_definition fmap_add :: "'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<righth
 
 lemma fdom_fmap_add[simp]: "fdom (m1 f++ m2) = fdom m1 \<union> fdom m2"
   by (transfer, auto)
+
+lemma fran_fmap_add_subset: "fran (m1 f++ m2) \<subseteq> fran m1 \<union> fran m2"
+  by (transfer, auto simp add: ran_def)
 
 lemma lookup_fmap_add1[simp]: "x \<in> fdom m2 \<Longrightarrow> lookup (m1 f++ m2) x = lookup m2 x"
   by (transfer, auto)
@@ -213,6 +223,28 @@ lemma fmap_restr_add: "fmap_restr S (m1 f++ m2) = fmap_restr S m1 f++ fmap_restr
   apply auto
   apply (simp add: fmap_restr_not_finite)
   done
+
+subsubsection {* Copying *}
+
+lift_definition fmap_copy :: "'a f\<rightharpoonup> 'b \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a f\<rightharpoonup> 'b"
+  is "\<lambda> f x y . f (y := f x)" by auto
+
+lemma fdom_fmap_copy[simp]: "fdom (fmap_copy m x y) = (if x \<in> fdom m then fdom m \<union> {y} else (fdom m - {y}))"
+  by transfer auto
+
+lemma fdom_fmap_copy_subset:
+  "fdom (fmap_copy m x y) \<subseteq> insert y (fdom m)" by auto
+
+lemma fran_fmap_copy_subset:
+  "fran (fmap_copy m x y) \<subseteq> fran m"
+  by transfer (auto simp add: ran_def) 
+
+lemma lookup_fmap_copy[simp]: "lookup (fmap_copy m x y) y = lookup m x"
+  by (transfer, auto)
+
+lemma lookup_fmap_copy_other[simp]: "x' \<noteq> y \<Longrightarrow> lookup (fmap_copy m x y) x' = lookup m x'"
+  by (transfer, auto)
+
 
 subsubsection {* Conversion from associative lists *}
 

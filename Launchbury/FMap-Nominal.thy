@@ -210,6 +210,10 @@ lemma fmap_delete_eqvt[eqvt]:
   "\<pi> \<bullet> fmap_delete x m = fmap_delete (\<pi> \<bullet> x) (\<pi> \<bullet> m)"
   by transfer simp
 
+lemma fmap_copy_eqvt[eqvt]:
+  "\<pi> \<bullet> fmap_copy m a b = fmap_copy (\<pi> \<bullet> m) (\<pi> \<bullet> a) (\<pi> \<bullet> b)"
+  by transfer simp
+
 lemma fmap_add_eqvt[eqvt]:
   "\<pi> \<bullet> m1 f++ m2 = (\<pi> \<bullet> m1) f++ (\<pi> \<bullet> m2)"
   by transfer simp
@@ -219,6 +223,13 @@ lemma fmap_of_eqvt[eqvt]:
 by transfer (rule map_of_eqvt)
 
 subsubsection {* Freshness and support *}
+
+lemma fresh_fdom[simp]: "atom x \<sharp> (f :: 'a::at_base f\<rightharpoonup> 'b::fs) \<Longrightarrow> x \<notin> fdom f"
+  apply (subst (asm) fresh_def)
+  apply (simp  add: supp_fmap)
+  apply (subst (asm) (1 2) fresh_def[symmetric])
+  apply (simp add: fresh_finite_set_at_base[OF finite_fdom] pure_fresh)
+  done
 
 lemma sharp_Env: "atom x \<sharp> (\<rho> :: 'a::at_base f\<rightharpoonup> 'b::pure) \<longleftrightarrow> x \<notin> fdom \<rho>"
   apply (subst fresh_def)
@@ -242,5 +253,22 @@ lemma fresh_fmap_upd_eq:
 lemma fresh_star_fmap_upd_eq:
   "a \<sharp>* m((x::'a::fs) f\<mapsto> v::'b::fs) \<longleftrightarrow> (a \<sharp>* (fmap_delete x m) \<and> a \<sharp>* x \<and> a \<sharp>* v)"
 by (metis fresh_fmap_upd_eq fresh_star_def)
+
+lemma fresh_fmap_delete_subset:
+  "a \<sharp>  (m :: 'a::at_base f\<rightharpoonup> 'b::fs) \<Longrightarrow> a \<sharp> fmap_delete x m"
+  by (auto simp add: fresh_def supp_fmap simp del: fdom_fmap_delete
+        dest: set_mp[OF supp_mono[OF finite_fdom fdom_fmap_delete_subset]]
+        dest: set_mp[OF supp_mono[OF finite_fran fran_fmap_delete_subset]])
+
+lemma fresh_fmap_copy_subset:
+  "a \<sharp> (m :: 'a::at_base f\<rightharpoonup> 'b::fs) \<Longrightarrow> a \<sharp> y \<Longrightarrow> a \<sharp> fmap_copy m x y"
+  by (auto simp add: fresh_def supp_fmap supp_of_finite_insert  simp del: fdom_fmap_copy
+        dest: set_mp[OF supp_mono[OF iffD2[OF finite_insert, OF finite_fdom] fdom_fmap_copy_subset]]
+        dest: set_mp[OF supp_mono[OF finite_fran fran_fmap_copy_subset]])
+
+lemma fresh_fmap_add_subset:
+  "a \<sharp> (m1 :: 'a::at_base f\<rightharpoonup> 'b::fs) \<Longrightarrow> a \<sharp> m2 \<Longrightarrow> a \<sharp> m1 f++ m2"
+  by (auto simp add: fresh_def supp_fmap supp_of_finite_insert supp_of_finite_union 
+      dest: set_mp[OF supp_mono[OF finite_UnI[OF finite_fran finite_fran] fran_fmap_add_subset]])
 
 end

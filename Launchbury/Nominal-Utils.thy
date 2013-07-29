@@ -170,10 +170,8 @@ lemma supp_set_mem: "x \<in> set L \<Longrightarrow> supp x \<subseteq> supp L"
 
 subsubsection {* Freshness and support for subsets of variables *}
 
-lemma supp_mono: "finite (B::'a::at_base set) \<Longrightarrow> A \<subseteq> B \<Longrightarrow> supp A \<subseteq> supp B"
-  apply (subst (1 2) supp_finite_set_at_base)
-  apply (auto dest:infinite_super)
-  done
+lemma supp_mono: "finite (B::'a::fs set) \<Longrightarrow> A \<subseteq> B \<Longrightarrow> supp A \<subseteq> supp B"
+  by (metis infinite_super subset_Un_eq supp_of_finite_union)
 
 lemma fresh_subset:
   "finite B \<Longrightarrow> x \<sharp> (B :: 'a::at_base set) \<Longrightarrow> A \<subseteq> B \<Longrightarrow> x \<sharp> A"
