@@ -211,6 +211,10 @@ case (Variable y x S \<Gamma> i \<Delta>)
     (* y ist Ende einer Kette, weil Lambda.
        Warum ist y \<notin> S?.. muss ich eh unten zeigen oder annehmen. *)
 
+  from hyps(1)
+  show "\<not> cycle (\<Gamma>(x f\<mapsto> Var y)) x"
+    by (auto elim!: contrapos_nn cycle_depRel intro: DepRelVar)
+
   from Variable(1,2) 
   show "\<Gamma>(x f\<mapsto> Var y) \<Down>\<^sup>i\<^sup>\<surd>\<^sup>\<surd>\<^bsub>x # S\<^esub> fmap_copy \<Delta> y x"
     by (rule reds.Variable)
@@ -235,6 +239,10 @@ case (VariableNoBH \<Gamma> x y i S \<Delta>)
     (* y ist Ende einer Kette, weil Lambda.
        Warum ist y \<notin> S?.. muss ich eh unten zeigen oder annehmen. *)
 
+  from hyps(1)
+  show "\<not> cycle (\<Gamma>(x f\<mapsto> Var y)) x"
+    by (auto elim!: contrapos_nn cycle_depRel intro: DepRelVar)
+ 
   (* Hier muss ich zeigen dass \<Down> die Struktur von DepRel, eingeschränkt auf S, erhält und nur ggf. verfeinert *)
   have "\<not> cycle \<Delta> y" sorry
   with hyps(2)
