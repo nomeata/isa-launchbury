@@ -1,181 +1,176 @@
 theory LaunchburyAddBH
-imports LaunchburyCombinedTagged 
+imports LaunchburyCombinedTaggedMap
 begin
 
-inductive depRel :: "heap \<Rightarrow> var \<Rightarrow> var \<Rightarrow> bool"
+inductive depRel :: "Heap \<Rightarrow> var \<Rightarrow> var \<Rightarrow> bool"
   for \<Gamma>
-  where DepRelVar: "(y, Var x) \<in> set \<Gamma> \<Longrightarrow> depRel \<Gamma> y x"
-      | DepRelApp: "(y, App (Var x) z) \<in> set \<Gamma> \<Longrightarrow> depRel \<Gamma> y x"
+  where DepRelVar: "lookup \<Gamma> y = Some (Var x) \<Longrightarrow> depRel \<Gamma> y x"
+      | DepRelApp: "lookup \<Gamma> y = Some (App (Var x) z) \<Longrightarrow> depRel \<Gamma> y x"
 
-lemma depRelCons_Not[simp]: "a \<noteq> x \<Longrightarrow> depRel ((x,e)#\<Gamma>) a b \<longleftrightarrow> depRel \<Gamma> a b"
+lemma depRel_fmap_upd_Not[simp]: "a \<noteq> x \<Longrightarrow> depRel (\<Gamma>(x f\<mapsto> e)) a b \<longleftrightarrow> depRel \<Gamma> a b"
   by (auto elim!: depRel.cases intro:depRel.intros)
 
-lemma depRelConsI[intro]: "depRel \<Gamma> a b \<Longrightarrow> depRel ((x,e)#\<Gamma>) a b"
-  by (auto elim!: depRel.cases intro:depRel.intros)
+lemma depRelConsI[intro]: "a \<noteq> x \<Longrightarrow> depRel \<Gamma> a b \<Longrightarrow> depRel (\<Gamma>(x f\<mapsto> e)) a b"
+  by simp
 
+lemma depRel_dom: "depRel \<Gamma> y x \<Longrightarrow> y \<in> fdom \<Gamma>"
+  by (cases \<Gamma> y x rule: depRel.cases) (auto simp add: fdomIff )
+
+(*
 lemma depRelTransConsI[intro]: "(depRel \<Gamma>)\<^sup>+\<^sup>+ a b \<Longrightarrow> (depRel ((x,e)#\<Gamma>))\<^sup>+\<^sup>+ a b"
   by (induction rule: tranclp_trans_induct[consumes 1]) auto
+*)
 
-inductive validStack :: "heap \<Rightarrow> var \<Rightarrow> var list \<Rightarrow> bool"
-  for \<Gamma> where
-    ValidStackNil: "validStack \<Gamma> x []"
-  | ValidStackCons: "(depRel \<Gamma>)\<^sup>+\<^sup>+ y x \<Longrightarrow> validStack \<Gamma> y S \<Longrightarrow> validStack \<Gamma> x (y#S)"
+definition cycle where "cycle \<Gamma> x \<longleftrightarrow> (depRel \<Gamma>)\<^sup>+\<^sup>+ x x"
 
+lemma lookup_eq_split: "lookup (f(a f\<mapsto> b)) x = Some r \<longleftrightarrow> ((x = a \<and> r = b) \<or> (x \<noteq> a \<and> lookup f x = Some r))"
+  by transfer auto
 
 lemma depRelAppE:
-  "depRel ((x, App e y) # \<Gamma>) a b \<Longrightarrow> (x = a \<and> e = Var b) \<or> depRel \<Gamma> a b"
-  by (induction rule:depRel.cases) (auto intro: depRel.intros)
+  "depRel (\<Gamma>(x f\<mapsto> App e y)) a b \<Longrightarrow> x = a \<and> e = Var b \<or> x \<noteq> a \<and> depRel \<Gamma> a b"
+  by (induction rule:depRel.cases) 
+     (auto simp add: lookup_eq_split intro: depRel.intros)
 
 lemma depRelTransIndirect: 
-  assumes "(depRel ((x, App e y) # \<Gamma>))\<^sup>+\<^sup>+ a b"
-  shows "(depRel ((n, e) # (x, App (Var n) y) # \<Gamma>))\<^sup>+\<^sup>+  a b"
+  assumes "(depRel (\<Gamma>(x f\<mapsto> App e y)))\<^sup>+\<^sup>+ a b"
+  assumes "atom n \<sharp> \<Gamma>(x f\<mapsto> App e y)"
+  shows "(depRel (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)))\<^sup>+\<^sup>+  a b"
 using assms
 proof (induction rule:tranclp_trans_induct[consumes 1, case_names base step])
   case (base a b)
-  from depRelAppE[OF this]
+  note depRel_dom[OF `depRel (\<Gamma>(x f\<mapsto> App e y)) a b`]
+  with `atom n \<sharp> \<Gamma>(x f\<mapsto> App e y)`
+  have "n \<noteq> a"  by (metis fresh_fdom)
+
+  from depRelAppE[OF base(1)]
   show ?case
   proof(elim conjE disjE)
     assume "x = a" and "e = Var b"
 
-    have "(depRel ((n, Var b) # (a, App (Var n) y) # \<Gamma>))\<^sup>+\<^sup>+ a n"
+    have "(depRel (\<Gamma>(a f\<mapsto> App (Var n) y)(n f\<mapsto> Var b)))\<^sup>+\<^sup>+ a n" using `n \<noteq> a`
       by (fastforce intro: DepRelApp)
     also
-    have "(depRel ((n, Var b) # (a, App (Var n) y) # \<Gamma>))\<^sup>+\<^sup>+ n b"
+    have "(depRel (\<Gamma>(a f\<mapsto> App (Var n) y)(n f\<mapsto> Var b)))\<^sup>+\<^sup>+ n b" 
       by (fastforce intro: DepRelVar)
     finally
     show ?thesis unfolding `x = a` `e = Var b`.
   next
-    assume "depRel \<Gamma> a b" thus ?thesis by auto
+    assume "x \<noteq> a " and "depRel \<Gamma> a b"  thus ?thesis using `n \<noteq> a` by auto
   qed
   next
   case (step a b c)
     thus ?case by auto
 qed
 
+
+inductive validStack :: "Heap \<Rightarrow> var \<Rightarrow> var list \<Rightarrow> bool"
+  for \<Gamma> where
+    ValidStackNil: "validStack \<Gamma> x []"
+  | ValidStackCons: "(depRel \<Gamma>)\<^sup>+\<^sup>+ y x \<Longrightarrow> validStack \<Gamma> y S \<Longrightarrow> validStack \<Gamma> x (y#S)"
+
 lemma validStackIndirect:
-  "validStack ((x, App e y) # \<Gamma>) z S \<Longrightarrow> validStack ((n, e) # (x, App (Var n) y) # \<Gamma>) z S"
+  "validStack (\<Gamma>(x f\<mapsto> App e y)) z S \<Longrightarrow> atom n \<sharp> \<Gamma>(x f\<mapsto> App e y) \<Longrightarrow>
+  validStack (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)) z S"
 by (induction z S rule:validStack.induct)
    (auto intro: ValidStackNil ValidStackCons depRelTransIndirect)
 
-lemma validStackPres: "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>x#S\<^esub> \<Delta> \<Longrightarrow> validStack \<Gamma> x S \<Longrightarrow> validStack \<Delta> x S"
-proof(induction \<Gamma> i u b "x#S" \<Delta> arbitrary: x S rule:reds.induct )
-  case Lambda thus ?case .
-next
-  case (Application n \<Gamma> x e y S \<Delta> \<Theta> z u b e')
-    have "(depRel ((n, e) # (x, App (Var n) y) # \<Gamma>))\<^sup>+\<^sup>+ x n" by (fastforce intro: DepRelApp)
-    moreover
-    from `validStack ((x, App e y) # \<Gamma>) x S`
-    have "validStack ((n, e) # (x, App (Var n) y) # \<Gamma>) x S" by (rule validStackIndirect)
-    ultimately
-    have "validStack ((n, e) # (x, App (Var n) y) # \<Gamma>) n (x # S)"  by (rule ValidStackCons)
-    hence "validStack ((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>) n (x # S)" by (rule Application.hyps)
-    hence "validStack ((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>) x S" by (cases)
-    hence "validStack ((x, e'[z::=y]) # \<Delta>) x S" sorry
-      (* Ansatz: n kommt nicht in S oder \<Delta> vor. Jede Kette die x enthält endet auch dort.
-         Deswegen darf x entfernt werden. *)
-    hence "validStack \<Theta> x S"
-      by (rule Application.hyps)
-oops
 
 theorem
   assumes "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>x#S\<^esub> \<Delta>"
   assumes "validStack \<Gamma> x S"
-  shows  "validStack \<Delta> x S" and "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>\<surd>\<^bsub>x#S\<^esub> \<Delta>"
+  shows "\<not> cycle \<Gamma> x"  "validStack \<Delta> x S" and "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>\<surd>\<^bsub>x#S\<^esub> \<Delta>"
   (* The second conclusion does not need the first, but inductive proofs compose so badly. *)
 using assms
 proof(induction \<Gamma> i u b "x#S" \<Delta> arbitrary: x S rule:reds.induct )
 case (Lambda x y e \<Gamma> i u b S)
-  case 1 thus ?case .
-  case 2 show ?case by (rule reds.Lambda)
+  case 2 thus ?case .
+  case 3 show ?case by (rule reds.Lambda)
 next
 case (Application n \<Gamma> x e y S \<Delta> \<Theta> z u b e')
-  case 1
-    have "(depRel ((n, e) # (x, App (Var n) y) # \<Gamma>))\<^sup>+\<^sup>+ x n" by (fastforce intro: DepRelApp)
+  case 2
+    from Application(1) have "n \<noteq> x" by (simp add: fresh_Pair fresh_at_base)
+    hence "(depRel (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)))\<^sup>+\<^sup>+ x n" by (fastforce intro: DepRelApp)
     moreover
-    from `validStack ((x, App e y) # \<Gamma>) x S`
-    have "validStack ((n, e) # (x, App (Var n) y) # \<Gamma>) x S" by (rule validStackIndirect)
+    from Application(1) have "atom n \<sharp> \<Gamma>(x f\<mapsto> App e y)"
+      by (simp add: fresh_Pair fresh_fmap_upd_eq fresh_fmap_delete_subset)
+    with `validStack (\<Gamma>(x f\<mapsto> App e y)) x S`
+    have "validStack (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)) x S" by (rule validStackIndirect)
     ultimately
-    have "validStack ((n, e) # (x, App (Var n) y) # \<Gamma>) n (x # S)"  by (rule ValidStackCons)
-    hence "validStack ((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>) n (x # S)" by (rule Application.hyps)
-    hence "validStack ((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>) x S" by (cases)
-    hence "validStack ((x, e'[z::=y]) # \<Delta>) x S" sorry
+    have IH1: "validStack (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)) n (x # S)"  by (rule ValidStackCons)
+    hence "validStack (\<Delta>(n f\<mapsto> Lam [z]. e')) n (x # S)" by (rule Application.hyps)
+    hence "validStack (\<Delta>(n f\<mapsto> Lam [z]. e')) x S" by (cases)
+    hence IH2: "validStack (\<Delta>(x f\<mapsto> e'[z::=y])) x S" sorry
       (* Ansatz: n kommt nicht in S oder \<Delta> vor. Jede Kette die x enthält endet auch dort.
          Deswegen darf x entfernt werden. *)
     thus "validStack \<Theta> x S"
       by (rule Application.hyps)
-  case 2
+  case 3
     note Application.hyps(1,2)
   
     moreover
-    note `validStack ((n, e) # (x, App (Var n) y) # \<Gamma>) n (x # S)`
-    note Application.hyps(5)[OF this]
-  
-    moreover
-    note `validStack ((x, e'[z::=y]) # \<Delta>) x S`
-    note Application.hyps(8)[OF this]
+    note Application.hyps(6)[OF IH1]
+         Application.hyps(10)[OF IH2]
   
     ultimately
     show ?case by (rule reds.Application)
 next
-print_cases
 case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u b e')
-  case 1
-    have "(depRel ((n, e) # (x, App (Var n) y) # \<Gamma>))\<^sup>+\<^sup>+ x n" by (fastforce intro: DepRelApp)
+case 2
+    from ApplicationInd(1) have "n \<noteq> x" by (simp add: fresh_Pair fresh_at_base)
+    hence "(depRel (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)))\<^sup>+\<^sup>+ x n" by (fastforce intro: DepRelApp)
     moreover
-    from `validStack ((x, App e y) # \<Gamma>) x S`
-    have "validStack ((n, e) # (x, App (Var n) y) # \<Gamma>) x S" by (rule validStackIndirect)
+    from ApplicationInd(1) have "atom n \<sharp> \<Gamma>(x f\<mapsto> App e y)"
+      by (simp add: fresh_Pair fresh_fmap_upd_eq fresh_fmap_delete_subset)
+    with `validStack (\<Gamma>(x f\<mapsto> App e y)) x S`
+    have "validStack (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)) x S" by (rule validStackIndirect)
     ultimately
-    have "validStack ((n, e) # (x, App (Var n) y) # \<Gamma>) n (x # S)"  by (rule ValidStackCons)
-    hence "validStack ((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>) n (x # S)" by (rule ApplicationInd.hyps)
-    hence "validStack ((n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>) x S" by (cases)
-    hence "validStack ((z, Var y)# (x, e') # \<Delta>) x S" sorry
+    have IH1: "validStack (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)) n (x # S)"  by (rule ValidStackCons)
+    hence "validStack (\<Delta>(n f\<mapsto> Lam [z]. e')) n (x # S)" by (rule ApplicationInd.hyps)
+    hence "validStack (\<Delta>(n f\<mapsto> Lam [z]. e')) x S" by (cases)
+    hence IH2: "validStack (\<Delta>(z f\<mapsto> Var y)(x f\<mapsto> e')) x S" sorry
       (* Ansatz: n kommt nicht in S oder \<Delta> vor. Jede Kette die x enthält endet auch dort.
          Deswegen darf x entfernt werden. *)
     thus "validStack \<Theta> x S"
       by (rule ApplicationInd.hyps)
-  case 2
-    note ApplicationInd.hyps(1,2)
-  
-    moreover
-    note `validStack ((n, e) # (x, App (Var n) y) # \<Gamma>) n (x # S)`
-    note ApplicationInd.hyps(5)[OF this]
-  
-    moreover
-    note `validStack ((z, Var y)# (x, e') # \<Delta>) x S`
-    note ApplicationInd.hyps(8)[OF this]
-  
-    ultimately
+  case 3
+    from ApplicationInd.hyps(1,2)
+         ApplicationInd.hyps(6)[OF IH1]
+         ApplicationInd.hyps(10)[OF IH2]
     show ?case by (rule reds.ApplicationInd)
 next
-  fix y x S \<Gamma> i z \<Delta>
-  assume hyp: "validStack ((x, Var y) # \<Gamma>) y (x # S) \<Longrightarrow> validStack ((y, z) # (x, Var y) # \<Delta>) y (x # S)"
+  fix y x S \<Gamma> i \<Delta>
+  assume hyp: "validStack (\<Gamma>(x f\<mapsto> Var y)) y (x # S) \<Longrightarrow> validStack \<Delta> y (x # S)"
 
-  have "(depRel ((x, Var y) # \<Gamma>))\<^sup>+\<^sup>+ x y" by (fastforce intro: DepRelVar) 
+  have "(depRel (\<Gamma>(x f\<mapsto> Var y)))\<^sup>+\<^sup>+ x y" by (fastforce intro: DepRelVar) 
   moreover
-  assume "validStack ((x, Var y) # \<Gamma>) x S"
+  assume "validStack (\<Gamma>(x f\<mapsto> Var y)) x S"
   ultimately
-  have IP: "validStack ((x, Var y) # \<Gamma>) y (x # S)"
+  have IP: "validStack (\<Gamma>(x f\<mapsto> Var y)) y (x # S)"
     by (rule ValidStackCons)
-  hence "validStack ((y, z) # (x, Var y) # \<Delta>) y (x # S)"
+  hence "validStack \<Delta> y (x # S)"
     by (rule hyp)
-  thus "validStack ((y, z) # (x, z) # \<Delta>) x S" sorry
-    (* y ist Ende einer Kette. Warum ist y \<notin> S? *)
+  thus "validStack (fmap_copy \<Delta> y x) x S" sorry
+    (* Weiß ich, dass x \<mapsto> y immernoch gilt? *)
+    (* y ist Ende einer Kette, weil Lambda.
+       Warum ist y \<notin> S?.. muss ich eh unten zeigen oder annehmen. *)
 
-  show "validStack ((y, z) # (x, z) # \<Delta>) x S" by fact
+  show "validStack (fmap_copy \<Delta> y x) x S" by fact
+
+
   {
     assume "y \<notin> set (x # S)"
     moreover
-    assume "(x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^sup>\<surd>\<^bsub>y # x # S\<^esub> (y, z) # (x, Var y) # \<Delta>"
+    assume "\<Gamma>(x f\<mapsto> Var y) \<Down>\<^sup>i\<^sup>\<surd>\<^sup>\<surd>\<^bsub>y # x # S\<^esub> \<Delta>"
     ultimately
-    show "(x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^sup>\<surd>\<^bsub>x # S\<^esub> (y, z) # (x, z) # \<Delta>"
+    show "\<Gamma>(x f\<mapsto> Var y) \<Down>\<^sup>i\<^sup>\<surd>\<^sup>\<surd>\<^bsub>x # S\<^esub> (fmap_copy \<Delta> y x)"
       by (rule reds.Variable)
   next
     have "y \<notin> set (x # S)" sorry (* Hauptpunkt des Beweises! *)
     moreover
-    assume "(validStack ((x, Var y) # \<Gamma>) y (x # S) \<Longrightarrow> (x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^sup>\<surd>\<^bsub>y # x # S\<^esub> (y, z) # (x, Var y) # \<Delta>)"
+    assume "validStack (\<Gamma>(x f\<mapsto> Var y)) y (x # S) \<Longrightarrow> \<Gamma>(x f\<mapsto> Var y) \<Down>\<^sup>i\<^sup>\<surd>\<^sup>\<surd>\<^bsub>y # x # S\<^esub> \<Delta>"
     note this[OF IP]
     ultimately
-    show "(x, Var y) # \<Gamma> \<Down>\<^sup>i\<^sup>\<surd>\<^sup>\<surd>\<^bsub>x # S\<^esub> (y, z) # (x, z) # \<Delta>" by (rule reds.Variable)
+    show "\<Gamma>(x f\<mapsto> Var y) \<Down>\<^sup>i\<^sup>\<surd>\<^sup>\<surd>\<^bsub>x # S\<^esub> (fmap_copy \<Delta> y x)" by (rule reds.Variable)
   }
 next
 oops
