@@ -242,11 +242,9 @@ case (VariableNoBH \<Gamma> x y i S \<Delta>)
   from hyps(1)
   show "\<not> cycle (\<Gamma>(x f\<mapsto> Var y)) x"
     by (auto elim!: contrapos_nn cycle_depRel intro: DepRelVar)
- 
-  (* Hier muss ich zeigen dass \<Down> die Struktur von DepRel, eingeschränkt auf S, erhält und nur ggf. verfeinert *)
-  have "\<not> cycle \<Delta> y" sorry
-  with hyps(2)
-  have "y \<notin> set (x # S)" (* Hauptpunkt des Beweises! *)
+
+  from hyps(1) `validStack (\<Gamma>(x f\<mapsto> Var y)) y (x#S)`
+  have "y \<notin> set (x # S)"
     by (metis validStack_cycle)
 
   from this hyps(3)
