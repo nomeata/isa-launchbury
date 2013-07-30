@@ -323,11 +323,26 @@ case (Variable y x S \<Gamma> i \<Delta>)
 
   from stack_unchanged[OF hyps(3)] `y \<noteq> x`
   have "lookup \<Delta> x = Some (Var y)" by simp
+  hence "depRel \<Delta> x y" by (auto intro: depRel.intros)
 
-  from `validStack \<Delta> y (x # S)` `lookup \<Delta> x = Some (Var y)`
-  show "validStack (fmap_copy \<Delta> y x) x S" sorry
-    (* y ist Ende einer Kette, weil Lambda.
-       Warum ist y \<notin> S?.. muss ich eh unten zeigen oder annehmen. *)
+  from result_evaluated[OF hyps(3)]
+  have "isLam (\<Delta> f! y)" by simp
+  hence "\<not> Domainp (depRel \<Delta>) y" by (auto elim: depRel.cases)
+
+  from `validStack \<Delta> y (x # S)` 
+  have "validStack \<Delta> x S" by cases
+  thus "validStack (fmap_copy \<Delta> y x) x S"
+  proof (rule validStack_cong)
+    fix x'
+    assume "(depRel \<Delta>)\<^sup>+\<^sup>+ x' x"
+    moreover
+    from `\<not> Domainp (depRel \<Delta>) y`
+    have " \<not>(depRel \<Delta>)\<^sup>+\<^sup>+ y x" by (metis Domainp.DomainI converse_tranclpE)
+    hence " \<not>(depRel \<Delta>)\<^sup>+\<^sup>+ x x" using `depRel \<Delta> x y` by (metis depRel_via)
+    ultimately
+    have "x' \<noteq> x" by auto
+    thus "lookup \<Delta> x' = lookup (fmap_copy \<Delta> y x) x'" by simp
+  qed
 
   from hyps(1)
   show "\<not> cycle (\<Gamma>(x f\<mapsto> Var y)) x"
@@ -351,11 +366,26 @@ case (VariableNoBH \<Gamma> x y i S \<Delta>)
 
   from stack_unchanged[OF hyps(3)] `y \<noteq> x`
   have "lookup \<Delta> x = Some (Var y)" by simp
+  hence "depRel \<Delta> x y" by (auto intro: depRel.intros)
 
-  from `validStack \<Delta> y (x # S)` `lookup \<Delta> x = Some (Var y)`
-  show "validStack (fmap_copy \<Delta> y x) x S" sorry
-    (* y ist Ende einer Kette, weil Lambda.
-       Warum ist y \<notin> S?.. muss ich eh unten zeigen oder annehmen. *)
+  from result_evaluated[OF hyps(3)]
+  have "isLam (\<Delta> f! y)" by simp
+  hence "\<not> Domainp (depRel \<Delta>) y" by (auto elim: depRel.cases)
+
+  from `validStack \<Delta> y (x # S)` 
+  have "validStack \<Delta> x S" by cases
+  thus "validStack (fmap_copy \<Delta> y x) x S"
+  proof (rule validStack_cong)
+    fix x'
+    assume "(depRel \<Delta>)\<^sup>+\<^sup>+ x' x"
+    moreover
+    from `\<not> Domainp (depRel \<Delta>) y`
+    have " \<not>(depRel \<Delta>)\<^sup>+\<^sup>+ y x" by (metis Domainp.DomainI converse_tranclpE)
+    hence " \<not>(depRel \<Delta>)\<^sup>+\<^sup>+ x x" using `depRel \<Delta> x y` by (metis depRel_via)
+    ultimately
+    have "x' \<noteq> x" by auto
+    thus "lookup \<Delta> x' = lookup (fmap_copy \<Delta> y x) x'" by simp
+  qed
 
   from hyps(1)
   show "\<not> cycle (\<Gamma>(x f\<mapsto> Var y)) x"
