@@ -2,19 +2,48 @@ theory LaunchburyAddBH
 imports LaunchburyCombinedTaggedMap
 begin
 
+lemma tranclp_mono: "r \<le> s \<Longrightarrow> r\<^sup>+\<^sup>+ \<le> s\<^sup>+\<^sup>+"
+  apply (rule)
+  apply (erule tranclp.induct)
+  apply (auto)
+  done
+
 inductive depRel :: "Heap \<Rightarrow> var \<Rightarrow> var \<Rightarrow> bool"
   for \<Gamma>
   where DepRelVar: "lookup \<Gamma> y = Some (Var x) \<Longrightarrow> depRel \<Gamma> y x"
       | DepRelApp: "lookup \<Gamma> y = Some (App (Var x) z) \<Longrightarrow> depRel \<Gamma> y x"
 
-lemma depRel_fmap_upd_Not[simp]: "a \<noteq> x \<Longrightarrow> depRel (\<Gamma>(x f\<mapsto> e)) a b \<longleftrightarrow> depRel \<Gamma> a b"
+lemma depRel_cong':
+  "lookup \<Delta> a = lookup \<Gamma> a \<Longrightarrow> depRel \<Gamma> a b \<Longrightarrow> depRel \<Delta> a b"
   by (auto elim!: depRel.cases intro:depRel.intros)
+
+lemma depRel_cong:
+  "lookup \<Gamma> a = lookup \<Delta> a \<Longrightarrow> depRel \<Gamma> a b = depRel \<Delta> a b"
+  by (metis depRel_cong')
+
+lemma depRel_fmap_upd_Not[simp]: "a \<noteq> x \<Longrightarrow> depRel (\<Gamma>(x f\<mapsto> e)) a b \<longleftrightarrow> depRel \<Gamma> a b"
+  by (simp cong: depRel_cong)
 
 lemma depRelConsI[intro]: "a \<noteq> x \<Longrightarrow> depRel \<Gamma> a b \<Longrightarrow> depRel (\<Gamma>(x f\<mapsto> e)) a b"
   by simp
 
 lemma depRel_dom: "depRel \<Gamma> y x \<Longrightarrow> y \<in> fdom \<Gamma>"
   by (cases \<Gamma> y x rule: depRel.cases) (auto simp add: fdomIff )
+
+lemma depRel_change_not_Domain:
+  assumes "\<not> Domainp (depRel \<Gamma>) x"
+  assumes "fmap_delete x \<Gamma> = fmap_delete x \<Delta>"
+  shows "depRel \<Gamma> \<le> depRel \<Delta>"
+proof rule
+  fix a b
+  assume "depRel \<Gamma> a b"
+  moreover
+  hence "x \<noteq> a" using assms(1) by auto
+  hence "lookup \<Gamma> a = lookup \<Delta> a" using assms(2) by (metis lookup_fmap_delete)
+  ultimately
+  show "depRel \<Delta> a b" using assms(2)
+    by (simp cong: depRel_cong)
+qed
 
 (*
 lemma depRelTransConsI[intro]: "(depRel \<Gamma>)\<^sup>+\<^sup>+ a b \<Longrightarrow> (depRel ((x,e)#\<Gamma>))\<^sup>+\<^sup>+ a b"
@@ -106,6 +135,58 @@ using assms
 by (induction a z rule:tranclp_trans_induct[consumes 1, case_names base step])
    (auto dest: depRel_unique tranclp_trans)
 
+lemma validStackMono:
+  "validStack \<Gamma> z S \<Longrightarrow> (depRel \<Gamma>)\<^sup>+\<^sup>+ \<le> (depRel \<Delta>)\<^sup>+\<^sup>+ \<Longrightarrow> validStack \<Delta> z S"
+by (induction z S  rule:validStack.induct)(auto intro: validStack.intros)
+
+lemma validStack_cong:
+  assumes "validStack \<Gamma> z S"
+  assumes cong: "\<And> x. (depRel \<Gamma>)\<^sup>+\<^sup>+ x z \<Longrightarrow> lookup \<Gamma> x = lookup \<Delta> x"
+  shows  "validStack \<Delta> z S"
+using assms
+proof(induction z S rule:validStack.induct)
+  case (ValidStackNil y) thus ?case by (intro validStack.intros)
+next
+  case (ValidStackCons y x S)
+  from `(depRel \<Gamma>)\<^sup>+\<^sup>+ y x` ValidStackCons.prems
+  have "(depRel \<Delta>)\<^sup>+\<^sup>+ y x"
+  proof (induction y x rule:tranclp_trans_induct[consumes 1, case_names base step])
+    case (base x' y)
+    hence "lookup \<Gamma> x' = lookup \<Delta> x'" by auto
+    with base(1)
+    have "depRel \<Delta> x' y" by (simp cong: depRel_cong)
+    thus ?case by auto
+  next
+    case step thus ?case by (metis tranclp_trans)
+  qed
+  moreover
+  have "validStack \<Delta> y S"
+  proof(rule ValidStackCons.IH)
+    fix x'
+    assume "(depRel \<Gamma>)\<^sup>+\<^sup>+ x' y" with `(depRel \<Gamma>)\<^sup>+\<^sup>+ y x`
+    have "(depRel \<Gamma>)\<^sup>+\<^sup>+ x' x" by auto
+    thus " lookup \<Gamma> x' = lookup \<Delta> x'"
+      by (rule ValidStackCons)
+  qed
+  ultimately
+  show "validStack \<Delta> x (y # S)"
+    by (rule validStack.intros)
+qed
+
+
+(*
+lemma validStackNextThere:
+  "validStack \<Gamma> z S \<Longrightarrow> x \<in> set S \<Longrightarrow> depRel \<Gamma> x y \<Longrightarrow> y \<in> set (z#S)"
+proof (induction z S arbitrary: y rule:validStack.induct)
+  case ValidStackNil thus ?case by auto
+next
+  case (ValidStackCons y x' S y')
+apply auto[1]
+apply auto
+*)
+
+
+
 lemma cycle_depRel:
   assumes "cycle \<Gamma> x"
   assumes "depRel \<Gamma> x n"
@@ -126,7 +207,8 @@ case (Lambda \<Gamma> x y e i u b S)
 next
 case (Application n \<Gamma> x e y S \<Delta> \<Theta> z u b e')
   case 2
-    from Application(1) have "n \<noteq> x" by (simp add: fresh_Pair fresh_at_base)
+    from Application(1) have "n \<noteq> x"  "n \<notin> set S"
+      by (simp_all add: fresh_Pair fresh_at_base fresh_at_base_list)
     hence "(depRel (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)))\<^sup>+\<^sup>+ x n" by (fastforce intro: DepRelApp)
     moreover
     from Application(1) have "atom n \<sharp> \<Gamma>(x f\<mapsto> App e y)"
@@ -137,9 +219,24 @@ case (Application n \<Gamma> x e y S \<Delta> \<Theta> z u b e')
     have IH1: "validStack (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)) n (x # S)"  by (rule ValidStackCons)
     hence "validStack (\<Delta>(n f\<mapsto> Lam [z]. e')) n (x # S)" by (rule Application.hyps)
     hence "validStack (\<Delta>(n f\<mapsto> Lam [z]. e')) x S" by (cases)
-    hence IH2: "validStack (\<Delta>(x f\<mapsto> e'[z::=y])) x S" sorry
-      (* Ansatz: n kommt nicht in S oder \<Delta> vor. Jede Kette die x enthält endet auch dort.
-         Deswegen darf x entfernt werden. *)
+    hence IH2: "validStack (\<Delta>(x f\<mapsto> e'[z::=y])) x S"
+    proof(rule validStack_cong)
+      from stack_unchanged[OF Application.hyps(6)[OF IH1]] `n \<noteq> x`
+      have "lookup (\<Delta>(n f\<mapsto> Lam [z]. e')) x = Some (App (Var n) y)"  by auto
+      hence "depRel (\<Delta>(n f\<mapsto> Lam [z]. e')) x n" by (rule DepRelApp)
+
+      fix x'
+      assume "(depRel (\<Delta>(n f\<mapsto> Lam [z]. e')))\<^sup>+\<^sup>+ x' x"
+      moreover
+      have "\<not> (depRel (\<Delta>(n f\<mapsto> Lam [z]. e')))\<^sup>+\<^sup>+ n x"
+        by (metis depRelTransE exp_assn.distinct(5) exp_assn.distinct(9) lookup_fmap_upd the.simps)
+      moreover
+      hence "\<not> (depRel (\<Delta>(n f\<mapsto> Lam [z]. e')))\<^sup>+\<^sup>+ x x" using `depRel (\<Delta>(n f\<mapsto> Lam [z]. e')) x n`
+        by (metis depRel_via)
+      ultimately
+      have "x' \<noteq> x" "x' \<noteq> n" by auto
+      thus "lookup (\<Delta>(n f\<mapsto> Lam [z]. e')) x' = lookup (\<Delta>(x f\<mapsto> e'[z::=y])) x'" by simp
+    qed
     thus "validStack \<Theta> x S"
       by (rule Application.hyps)
   case 1
@@ -171,9 +268,30 @@ case 2
     have IH1: "validStack (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)) n (x # S)"  by (rule ValidStackCons)
     hence "validStack (\<Delta>(n f\<mapsto> Lam [z]. e')) n (x # S)" by (rule ApplicationInd.hyps)
     hence "validStack (\<Delta>(n f\<mapsto> Lam [z]. e')) x S" by (cases)
-    hence IH2: "validStack (\<Delta>(z f\<mapsto> Var y)(x f\<mapsto> e')) x S" sorry
-      (* Ansatz: n kommt nicht in S oder \<Delta> vor. Jede Kette die x enthält endet auch dort.
-         Deswegen darf x entfernt werden. *)
+    hence IH2: "validStack (\<Delta>(z f\<mapsto> Var y)(x f\<mapsto> e')) x S"
+    proof(rule validStack_cong)
+      from stack_unchanged[OF ApplicationInd.hyps(6)[OF IH1]] `n \<noteq> x`
+      have "lookup (\<Delta>(n f\<mapsto> Lam [z]. e')) x = Some (App (Var n) y)"  by auto
+      hence "depRel (\<Delta>(n f\<mapsto> Lam [z]. e')) x n" by (rule DepRelApp)
+
+      fix x'
+      assume as: "(depRel (\<Delta>(n f\<mapsto> Lam [z]. e')))\<^sup>+\<^sup>+ x' x"
+      moreover
+      have "\<not> (depRel (\<Delta>(n f\<mapsto> Lam [z]. e')))\<^sup>+\<^sup>+ n x"
+        by (metis depRelTransE exp_assn.distinct(5) exp_assn.distinct(9) lookup_fmap_upd the.simps)
+      moreover
+      hence "\<not> (depRel (\<Delta>(n f\<mapsto> Lam [z]. e')))\<^sup>+\<^sup>+ x x" using `depRel (\<Delta>(n f\<mapsto> Lam [z]. e')) x n`
+        by (metis depRel_via)
+      ultimately
+      have "x' \<noteq> x" "x' \<noteq> n" by auto
+      moreover
+      from as `x' \<noteq> n`
+      have "x' \<in> fdom \<Delta>" by (metis (hide_lams, no_types) converse_tranclpE depRel_dom fmap_upd_fdom insert_iff)
+      with ApplicationInd(2)
+      have "x' \<noteq> z" by (auto simp add: fresh_Pair)
+      ultimately
+      show "lookup (\<Delta>(n f\<mapsto> Lam [z]. e')) x' =  lookup (\<Delta>(z f\<mapsto> Var y)(x f\<mapsto> e')) x'" by simp
+    qed
     thus "validStack \<Theta> x S"
       by (rule ApplicationInd.hyps)
   case 1

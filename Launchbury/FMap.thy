@@ -140,7 +140,7 @@ lift_definition fmap_delete :: "'a \<Rightarrow> 'a f\<rightharpoonup> 'b \<Righ
   is "\<lambda> x m. m(x := None)" by auto
 
 lemma lookup_fmap_delete[simp]:
-  "x' \<noteq> x \<Longrightarrow> fmap_delete x m f! x' = m f! x'"
+  "x' \<noteq> x \<Longrightarrow> lookup (fmap_delete x m) x' = lookup m x'"
   by (transfer, simp)
 
 lemma lookup_fmap_delete_None[simp]:
