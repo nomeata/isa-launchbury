@@ -2,44 +2,85 @@ theory LaunchburyAddBH
 imports LaunchburyCombinedTaggedMap
 begin
 
-inductive depRel :: "Heap \<Rightarrow> var \<Rightarrow> var \<Rightarrow> bool"
-  for \<Gamma>
-  where DepRelVar: "lookup \<Gamma> y = Some (Var x) \<Longrightarrow> depRel \<Gamma> y x"
-      | DepRelApp: "lookup \<Gamma> y = Some (App (Var x) z) \<Longrightarrow> depRel \<Gamma> y x"
+nominal_primrec varOf :: "exp \<Rightarrow> var option" where
+  "varOf (Var x) = Some x" |
+  "varOf (Lam [_]. _) = None" |
+  "varOf (App e x) = None" |
+  "varOf (Let as body) = None"
+  unfolding eqvt_def varOf_graph_aux_def
+  apply (rule)
+  apply simp_all
+  apply (metis exp_assn.exhaust(1))
+  done
+termination (eqvt) by lexicographic_order
+
+nominal_primrec dep :: "exp \<Rightarrow> var option" where
+  "dep (Var x) = Some x" |
+  "dep (App e y) = varOf e" |
+  "dep (Lam [_]. _) = None" |
+  "dep (Let as body) = None"
+  unfolding eqvt_def dep_graph_aux_def
+  apply (rule)
+  apply simp_all
+  apply (metis exp_assn.exhaust(1))
+  done
+termination (eqvt) by lexicographic_order
+
+lemma isLam_dep[simp]: "isLam e \<Longrightarrow> dep e = None"
+  by (cases e rule: exp_assn.exhaust(1)) auto
+
+fun depRel :: "Heap \<Rightarrow> var \<Rightarrow> var \<Rightarrow> bool" where
+  "depRel \<Gamma> x y \<longleftrightarrow> Option.bind (lookup \<Gamma> x) dep = Some y"
 
 lemma depRel_cong':
   "lookup \<Delta> a = lookup \<Gamma> a \<Longrightarrow> depRel \<Gamma> a b \<Longrightarrow> depRel \<Delta> a b"
-  by (auto elim!: depRel.cases intro:depRel.intros)
+  by auto
 
 lemma depRel_cong:
   "lookup \<Gamma> a = lookup \<Delta> a \<Longrightarrow> depRel \<Gamma> a b = depRel \<Delta> a b"
-  by (metis depRel_cong')
+  by auto
 
 lemma depRel_fmap_upd_Not[simp]: "a \<noteq> x \<Longrightarrow> depRel (\<Gamma>(x f\<mapsto> e)) a b \<longleftrightarrow> depRel \<Gamma> a b"
-  by (simp cong: depRel_cong)
+  by simp
 
 lemma depRelConsI[intro]: "a \<noteq> x \<Longrightarrow> depRel \<Gamma> a b \<Longrightarrow> depRel (\<Gamma>(x f\<mapsto> e)) a b"
   by simp
 
 lemma depRel_dom: "depRel \<Gamma> y x \<Longrightarrow> y \<in> fdom \<Gamma>"
-  by (cases \<Gamma> y x rule: depRel.cases) (auto simp add: fdomIff )
+  by (metis depRel.simps bind_lzero fdomIff option.distinct(1))
+
+lemma depRelTransDom:
+  "(depRel \<Gamma>)\<^sup>+\<^sup>+ a b \<Longrightarrow> a \<in> fdom \<Gamma>"
+  by (metis (full_types) depRel_dom tranclpD)
+
+lemma depRel_fmap_upd[simp]: "depRel (\<Gamma>(x f\<mapsto>  e)) x y \<longleftrightarrow> dep e = Some y"
+  by auto
+
+lemma depRel_fmap_upd_trans[simp]: "lookup \<Gamma> x = Some e \<Longrightarrow> dep e = None \<Longrightarrow> (depRel \<Gamma>)\<^sup>+\<^sup>+ x y \<longleftrightarrow> False"
+  by (auto elim: tranclp_induct)
 
 definition cycle where "cycle \<Gamma> x \<longleftrightarrow> (depRel \<Gamma>)\<^sup>+\<^sup>+ x x"
 
+(*
 lemma depRelE: "depRel \<Gamma> x y \<Longrightarrow> (\<exists> z. lookup \<Gamma> x = Some (Var z)) \<or> (\<exists> z y. lookup \<Gamma> x = Some (App (Var z) y))"
   by  (auto elim: depRel.cases)
+*)
 
+(*
 lemma depRelTransE: "(depRel \<Gamma>)\<^sup>+\<^sup>+ x y \<Longrightarrow> (\<exists> z. lookup \<Gamma> x = Some (Var z)) \<or> (\<exists> z y. lookup \<Gamma> x = Some (App (Var z) y))"
   by (induction x y rule: tranclp_trans_induct[consumes 1, case_names base step])
      (auto dest: depRelE)
+*)
 
 lemma lookup_eq_split: "lookup (f(a f\<mapsto> b)) x = Some r \<longleftrightarrow> ((x = a \<and> r = b) \<or> (x \<noteq> a \<and> lookup f x = Some r))"
   by transfer auto
 
+lemma varOf_Some[dest!]: "varOf e = Some b \<Longrightarrow> e = Var b"
+  by (cases e rule:exp_assn.exhaust(1)) auto
+
 lemma depRelAppE:
   "depRel (\<Gamma>(x f\<mapsto> App e y)) a b \<Longrightarrow> x = a \<and> e = Var b \<or> x \<noteq> a \<and> depRel \<Gamma> a b"
-  by (induction rule:depRel.cases) 
-     (auto simp add: lookup_eq_split intro: depRel.intros)
+  by (cases "x=a") auto
 
 lemma depRelTransIndirect: 
   assumes "(depRel (\<Gamma>(x f\<mapsto> App e y)))\<^sup>+\<^sup>+ a b"
@@ -57,11 +98,9 @@ proof (induction rule:tranclp_trans_induct[consumes 1, case_names base step])
   proof(elim conjE disjE)
     assume "x = a" and "e = Var b"
 
-    have "(depRel (\<Gamma>(a f\<mapsto> App (Var n) y)(n f\<mapsto> Var b)))\<^sup>+\<^sup>+ a n" using `n \<noteq> a`
-      by (fastforce intro: DepRelApp)
+    have "(depRel (\<Gamma>(a f\<mapsto> App (Var n) y)(n f\<mapsto> Var b)))\<^sup>+\<^sup>+ a n" using `n \<noteq> a` by auto
     also
-    have "(depRel (\<Gamma>(a f\<mapsto> App (Var n) y)(n f\<mapsto> Var b)))\<^sup>+\<^sup>+ n b" 
-      by (fastforce intro: DepRelVar)
+    have "(depRel (\<Gamma>(a f\<mapsto> App (Var n) y)(n f\<mapsto> Var b)))\<^sup>+\<^sup>+ n b" by auto
     finally
     show ?thesis unfolding `x = a` `e = Var b`.
   next
@@ -158,7 +197,7 @@ theorem
 using assms
 proof(induction \<Gamma> i u b "x#S" \<Delta> arbitrary: x S rule:reds.induct )
 case (Lambda \<Gamma> x y e i u b S)
-  case 1 show ?case by (auto dest: depRelTransE simp add: cycle_def) 
+  case 1 show ?case by (auto simp add: cycle_def)
   case 2 thus ?case .
   case 3 show ?case by (rule reds.Lambda)
 next
@@ -166,7 +205,7 @@ case (Application n \<Gamma> x e y S \<Delta> \<Theta> z u b e')
   case 2
     from Application(1) have "n \<noteq> x"  "n \<notin> set S"
       by (simp_all add: fresh_Pair fresh_at_base fresh_at_base_list)
-    hence "(depRel (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)))\<^sup>+\<^sup>+ x n" by (fastforce intro: DepRelApp)
+    hence "(depRel (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)))\<^sup>+\<^sup>+ x n" by auto
     moreover
     from Application(1) have "atom n \<sharp> \<Gamma>(x f\<mapsto> App e y)"
       by (simp add: fresh_Pair fresh_fmap_upd_eq fresh_fmap_delete_subset)
@@ -180,13 +219,12 @@ case (Application n \<Gamma> x e y S \<Delta> \<Theta> z u b e')
     proof(rule validStack_cong)
       from stack_unchanged[OF Application.hyps(6)[OF IH1]] `n \<noteq> x`
       have "lookup (\<Delta>(n f\<mapsto> Lam [z]. e')) x = Some (App (Var n) y)"  by auto
-      hence "depRel (\<Delta>(n f\<mapsto> Lam [z]. e')) x n" by (rule DepRelApp)
+      hence "depRel (\<Delta>(n f\<mapsto> Lam [z]. e')) x n" by auto
 
       fix x'
       assume "(depRel (\<Delta>(n f\<mapsto> Lam [z]. e')))\<^sup>+\<^sup>+ x' x"
       moreover
-      have "\<not> (depRel (\<Delta>(n f\<mapsto> Lam [z]. e')))\<^sup>+\<^sup>+ n x"
-        by (metis depRelTransE exp_assn.distinct(5) exp_assn.distinct(9) lookup_fmap_upd the.simps)
+      have "\<not> (depRel (\<Delta>(n f\<mapsto> Lam [z]. e')))\<^sup>+\<^sup>+ n x" by auto
       moreover
       hence "\<not> (depRel (\<Delta>(n f\<mapsto> Lam [z]. e')))\<^sup>+\<^sup>+ x x" using `depRel (\<Delta>(n f\<mapsto> Lam [z]. e')) x n`
         by (metis depRel_via)
@@ -203,8 +241,7 @@ case (Application n \<Gamma> x e y S \<Delta> \<Theta> z u b e')
       assume "cycle (\<Gamma>(x f\<mapsto> App e y)) x"
       hence "cycle (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)) x"
         by (rule cycleIndirect[OF _ `atom n \<sharp> \<Gamma>(x f\<mapsto> App e y)`])
-      thus "cycle (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)) n" using `n \<noteq> x`
-        by (auto elim!: cycle_depRel intro: DepRelApp)
+      thus "cycle (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)) n" using `n \<noteq> x`  by (auto elim!: cycle_depRel)
     qed
   case 3
     from Application.hyps(1,2)
@@ -215,7 +252,7 @@ next
 case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u b e')
 case 2
     from ApplicationInd(1) have "n \<noteq> x" by (simp add: fresh_Pair fresh_at_base)
-    hence "(depRel (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)))\<^sup>+\<^sup>+ x n" by (fastforce intro: DepRelApp)
+    hence "(depRel (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)))\<^sup>+\<^sup>+ x n" by auto
     moreover
     from ApplicationInd(1) have "atom n \<sharp> \<Gamma>(x f\<mapsto> App e y)"
       by (simp add: fresh_Pair fresh_fmap_upd_eq fresh_fmap_delete_subset)
@@ -228,14 +265,12 @@ case 2
     hence IH2: "validStack (\<Delta>(z f\<mapsto> Var y)(x f\<mapsto> e')) x S"
     proof(rule validStack_cong)
       from stack_unchanged[OF ApplicationInd.hyps(6)[OF IH1]] `n \<noteq> x`
-      have "lookup (\<Delta>(n f\<mapsto> Lam [z]. e')) x = Some (App (Var n) y)"  by auto
-      hence "depRel (\<Delta>(n f\<mapsto> Lam [z]. e')) x n" by (rule DepRelApp)
+      have "depRel (\<Delta>(n f\<mapsto> Lam [z]. e')) x n" by auto
 
       fix x'
       assume as: "(depRel (\<Delta>(n f\<mapsto> Lam [z]. e')))\<^sup>+\<^sup>+ x' x"
       moreover
-      have "\<not> (depRel (\<Delta>(n f\<mapsto> Lam [z]. e')))\<^sup>+\<^sup>+ n x"
-        by (metis depRelTransE exp_assn.distinct(5) exp_assn.distinct(9) lookup_fmap_upd the.simps)
+      have "\<not> (depRel (\<Delta>(n f\<mapsto> Lam [z]. e')))\<^sup>+\<^sup>+ n x" by auto
       moreover
       hence "\<not> (depRel (\<Delta>(n f\<mapsto> Lam [z]. e')))\<^sup>+\<^sup>+ x x" using `depRel (\<Delta>(n f\<mapsto> Lam [z]. e')) x n`
         by (metis depRel_via)
@@ -259,7 +294,7 @@ case 2
       hence "cycle (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)) x"
         by (rule cycleIndirect[OF _ `atom n \<sharp> \<Gamma>(x f\<mapsto> App e y)`])
       thus "cycle (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)) n" using `n \<noteq> x`
-        by (auto elim!: cycle_depRel intro: DepRelApp)
+        by (auto elim!: cycle_depRel)
     qed
   case 3
     from ApplicationInd.hyps(1,2)
@@ -270,7 +305,7 @@ next
 case (Variable y x S \<Gamma> i \<Delta>)
   hence "y \<noteq> x" by simp
 
-  have "(depRel (\<Gamma>(x f\<mapsto> Var y)))\<^sup>+\<^sup>+ x y" by (fastforce intro: DepRelVar) 
+  have "(depRel (\<Gamma>(x f\<mapsto> Var y)))\<^sup>+\<^sup>+ x y" by auto 
   moreover
   assume "validStack (\<Gamma>(x f\<mapsto> Var y)) x S"
   ultimately
@@ -280,11 +315,11 @@ case (Variable y x S \<Gamma> i \<Delta>)
 
   from stack_unchanged[OF hyps(3)] `y \<noteq> x`
   have "lookup \<Delta> x = Some (Var y)" by simp
-  hence "depRel \<Delta> x y" by (auto intro: depRel.intros)
+  hence "depRel \<Delta> x y" by auto
 
   from result_evaluated[OF hyps(3)]
   have "isLam (\<Delta> f! y)" by simp
-  hence "\<not> Domainp (depRel \<Delta>) y" by (auto elim: depRel.cases)
+  hence "\<not> Domainp (depRel \<Delta>) y" apply auto by (metis bind_lunit bind_lzero isLam_dep not_None_eq the.simps)
 
   from `validStack \<Delta> y (x # S)` 
   have "validStack \<Delta> x S" by cases
@@ -303,14 +338,14 @@ case (Variable y x S \<Gamma> i \<Delta>)
 
   from hyps(1)
   show "\<not> cycle (\<Gamma>(x f\<mapsto> Var y)) x"
-    by (auto elim!: contrapos_nn cycle_depRel intro: DepRelVar)
+    by (auto elim!: contrapos_nn cycle_depRel)
 
   from Variable(1,2) 
   show "\<Gamma>(x f\<mapsto> Var y) \<Down>\<^sup>i\<^sup>\<surd>\<^sup>\<surd>\<^bsub>x # S\<^esub> fmap_copy \<Delta> y x"
     by (rule reds.Variable)
 next
 case (VariableNoBH \<Gamma> x y i S \<Delta>)
-  have "(depRel (\<Gamma>(x f\<mapsto> Var y)))\<^sup>+\<^sup>+ x y" by (fastforce intro: DepRelVar) 
+  have "(depRel (\<Gamma>(x f\<mapsto> Var y)))\<^sup>+\<^sup>+ x y" by auto 
   moreover
   assume "validStack (\<Gamma>(x f\<mapsto> Var y)) x S"
   ultimately
@@ -323,11 +358,11 @@ case (VariableNoBH \<Gamma> x y i S \<Delta>)
 
   from stack_unchanged[OF hyps(3)] `y \<noteq> x`
   have "lookup \<Delta> x = Some (Var y)" by simp
-  hence "depRel \<Delta> x y" by (auto intro: depRel.intros)
+  hence "depRel \<Delta> x y" by auto
 
   from result_evaluated[OF hyps(3)]
   have "isLam (\<Delta> f! y)" by simp
-  hence "\<not> Domainp (depRel \<Delta>) y" by (auto elim: depRel.cases)
+  hence "\<not> Domainp (depRel \<Delta>) y" apply auto by (metis bind_lunit bind_lzero isLam_dep not_None_eq the.simps)
 
   from `validStack \<Delta> y (x # S)` 
   have "validStack \<Delta> x S" by cases
@@ -346,7 +381,7 @@ case (VariableNoBH \<Gamma> x y i S \<Delta>)
 
   from hyps(1)
   show "\<not> cycle (\<Gamma>(x f\<mapsto> Var y)) x"
-    by (auto elim!: contrapos_nn cycle_depRel intro: DepRelVar)
+    by (auto elim!: contrapos_nn cycle_depRel)
 
   from hyps(1) `validStack (\<Gamma>(x f\<mapsto> Var y)) y (x#S)`
   have "y \<notin> set (x # S)"
@@ -363,18 +398,14 @@ case (Let as \<Gamma> x S body i u b \<Delta>)
   proof (rule validStack_cong)
     fix x'
     assume as: "(depRel (\<Gamma>(x f\<mapsto> Terms.Let as body)))\<^sup>+\<^sup>+ x' x"
-    hence x'_dom: "x' \<in> fdom (\<Gamma>(x f\<mapsto> Terms.Let as body))" by (metis (full_types) depRelTransE fdomIff option.distinct(1))
-
-    from as
-    have "x' \<noteq> x" by (metis depRelTransE exp_assn.distinct(3) exp_assn.distinct(7) lookup_fmap_upd the.simps)
-
-    moreover
-    from this x'_dom have "x' \<in> fdom \<Gamma>" by simp
+    hence "x' \<noteq> x" by auto
+    with as have "x' \<in> fdom \<Gamma>"
+      by (auto dest:depRelTransDom)
     with Let(1)
     have "atom x' \<notin> set (bn as)" by (auto simp add: fresh_star_def fresh_Pair)
     hence  "x' \<notin> fdom (fmap_of (asToHeap as))" 
       by (metis (full_types) fdom_fmap_of_conv_heapVars imageI set_bn_to_atom_heapVars)
-    ultimately
+    with `x' \<noteq> x`
     show "lookup (\<Gamma>(x f\<mapsto> Terms.Let as body)) x' =
         lookup (\<Gamma>(x f\<mapsto> body) f++ fmap_of (asToHeap as)) x'"
         by simp
@@ -382,8 +413,7 @@ case (Let as \<Gamma> x S body i u b \<Delta>)
   note hyps = Let(4,5,6)[OF this]
 
   case 1
-  show ?case
-    by (metis cycle_def depRelTransE exp_assn.distinct(3) exp_assn.distinct(7) lookup_fmap_upd the.simps)
+  show ?case by (auto simp add: cycle_def)
 
   case 2
   from hyps(2)
