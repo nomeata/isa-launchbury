@@ -399,8 +399,43 @@ case (VariableNoBH \<Gamma> x y i S \<Delta>)
   show "\<Gamma>(x f\<mapsto> Var y) \<Down>\<^sup>i\<^sup>\<surd>\<^sup>\<surd>\<^bsub>x # S\<^esub> fmap_copy \<Delta> y x"
     by (rule reds.Variable)
 next
-oops
+case (Let as \<Gamma> x S body i u b \<Delta>)
+  assume "validStack (\<Gamma>(x f\<mapsto> Terms.Let as body)) x S"
 
+  hence "validStack (\<Gamma>(x f\<mapsto> body) f++ fmap_of (asToHeap as)) x S"
+  proof (rule validStack_cong)
+    fix x'
+    assume as: "(depRel (\<Gamma>(x f\<mapsto> Terms.Let as body)))\<^sup>+\<^sup>+ x' x"
+    hence x'_dom: "x' \<in> fdom (\<Gamma>(x f\<mapsto> Terms.Let as body))" by (metis (full_types) depRelTransE fdomIff option.distinct(1))
+
+    from as
+    have "x' \<noteq> x" by (metis depRelTransE exp_assn.distinct(3) exp_assn.distinct(7) lookup_fmap_upd the.simps)
+
+    moreover
+    from this x'_dom have "x' \<in> fdom \<Gamma>" by simp
+    with Let(1)
+    have "atom x' \<notin> set (bn as)" by (auto simp add: fresh_star_def fresh_Pair)
+    hence  "x' \<notin> fdom (fmap_of (asToHeap as))" 
+      by (metis (full_types) fdom_fmap_of_conv_heapVars imageI set_bn_to_atom_heapVars)
+    ultimately
+    show "lookup (\<Gamma>(x f\<mapsto> Terms.Let as body)) x' =
+        lookup (\<Gamma>(x f\<mapsto> body) f++ fmap_of (asToHeap as)) x'"
+        by simp
+  qed
+  note hyps = Let(4,5,6)[OF this]
+
+  case 1
+  show ?case
+    by (metis cycle_def depRelTransE exp_assn.distinct(3) exp_assn.distinct(7) lookup_fmap_upd the.simps)
+
+  case 2
+  from hyps(2)
+  show ?case.
+
+  case 3
+  note Let(1,2) hyps(3)
+  thus ?case..
+qed
 
 end
 
