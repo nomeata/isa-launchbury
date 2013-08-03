@@ -2,12 +2,6 @@ theory LaunchburyAddBH
 imports LaunchburyCombinedTaggedMap
 begin
 
-lemma tranclp_mono: "r \<le> s \<Longrightarrow> r\<^sup>+\<^sup>+ \<le> s\<^sup>+\<^sup>+"
-  apply (rule)
-  apply (erule tranclp.induct)
-  apply (auto)
-  done
-
 inductive depRel :: "Heap \<Rightarrow> var \<Rightarrow> var \<Rightarrow> bool"
   for \<Gamma>
   where DepRelVar: "lookup \<Gamma> y = Some (Var x) \<Longrightarrow> depRel \<Gamma> y x"
@@ -29,26 +23,6 @@ lemma depRelConsI[intro]: "a \<noteq> x \<Longrightarrow> depRel \<Gamma> a b \<
 
 lemma depRel_dom: "depRel \<Gamma> y x \<Longrightarrow> y \<in> fdom \<Gamma>"
   by (cases \<Gamma> y x rule: depRel.cases) (auto simp add: fdomIff )
-
-lemma depRel_change_not_Domain:
-  assumes "\<not> Domainp (depRel \<Gamma>) x"
-  assumes "fmap_delete x \<Gamma> = fmap_delete x \<Delta>"
-  shows "depRel \<Gamma> \<le> depRel \<Delta>"
-proof rule
-  fix a b
-  assume "depRel \<Gamma> a b"
-  moreover
-  hence "x \<noteq> a" using assms(1) by auto
-  hence "lookup \<Gamma> a = lookup \<Delta> a" using assms(2) by (metis lookup_fmap_delete)
-  ultimately
-  show "depRel \<Delta> a b" using assms(2)
-    by (simp cong: depRel_cong)
-qed
-
-(*
-lemma depRelTransConsI[intro]: "(depRel \<Gamma>)\<^sup>+\<^sup>+ a b \<Longrightarrow> (depRel ((x,e)#\<Gamma>))\<^sup>+\<^sup>+ a b"
-  by (induction rule: tranclp_trans_induct[consumes 1]) auto
-*)
 
 definition cycle where "cycle \<Gamma> x \<longleftrightarrow> (depRel \<Gamma>)\<^sup>+\<^sup>+ x x"
 
@@ -135,10 +109,6 @@ using assms
 by (induction a z rule:tranclp_trans_induct[consumes 1, case_names base step])
    (auto dest: depRel_unique tranclp_trans)
 
-lemma validStackMono:
-  "validStack \<Gamma> z S \<Longrightarrow> (depRel \<Gamma>)\<^sup>+\<^sup>+ \<le> (depRel \<Delta>)\<^sup>+\<^sup>+ \<Longrightarrow> validStack \<Delta> z S"
-by (induction z S  rule:validStack.induct)(auto intro: validStack.intros)
-
 lemma validStack_cong:
   assumes "validStack \<Gamma> z S"
   assumes cong: "\<And> x. (depRel \<Gamma>)\<^sup>+\<^sup>+ x z \<Longrightarrow> lookup \<Gamma> x = lookup \<Delta> x"
@@ -172,19 +142,6 @@ next
   show "validStack \<Delta> x (y # S)"
     by (rule validStack.intros)
 qed
-
-
-(*
-lemma validStackNextThere:
-  "validStack \<Gamma> z S \<Longrightarrow> x \<in> set S \<Longrightarrow> depRel \<Gamma> x y \<Longrightarrow> y \<in> set (z#S)"
-proof (induction z S arbitrary: y rule:validStack.induct)
-  case ValidStackNil thus ?case by auto
-next
-  case (ValidStackCons y x' S y')
-apply auto[1]
-apply auto
-*)
-
 
 
 lemma cycle_depRel:
@@ -436,6 +393,8 @@ case (Let as \<Gamma> x S body i u b \<Delta>)
   note Let(1,2) hyps(3)
   thus ?case..
 qed
+
+unused_thms
 
 end
 
