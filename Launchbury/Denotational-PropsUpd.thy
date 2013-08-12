@@ -212,8 +212,7 @@ case (Let as e \<rho>1 \<rho>2)
   case (goal3 \<rho>1' \<rho>2')[simp]
     have prem: "atom ` (fdom \<rho>2' - fdom \<rho>1') \<sharp>* as"
       using Let(6) Let(1) Let(2)
-      apply (auto simp add: sharp_star_Env fresh_star_def)
-      by (metis Diff_iff sharp_Env)
+      by (auto simp add: sharp_star_Env fresh_star_def)
 
     show "\<rho>1 f++ heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>1'\<^esub>) \<le> \<rho>2 f++ heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>2'\<^esub>) "
     proof(rule fmap_less_eqI)
@@ -231,8 +230,7 @@ case (Let as e \<rho>1 \<rho>2)
   moreover
   have "atom ` (fdom (\<lbrace>asToHeap as\<rbrace>\<rho>2) - fdom (\<lbrace>asToHeap as\<rbrace>\<rho>1)) \<sharp>* e "
     using Let(6) Let(1) Let(2)
-    apply (auto simp add: sharp_star_Env fresh_star_def)
-    by (metis Diff_iff sharp_Env)
+    by (auto simp add: sharp_star_Env fresh_star_def)
   ultimately
   have "\<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>1\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>2\<^esub>"
     apply (rule Let.hyps(4))

@@ -104,30 +104,26 @@ lemma fmap_upd_twist: "a \<noteq> c \<Longrightarrow> (m(a f\<mapsto> b))(c f\<m
 subsubsection {* Restriction *}
 
 lift_definition fmap_restr :: "'a set \<Rightarrow> 'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b"
-  is "\<lambda> S m. (if finite S then (restrict_map m S) else empty)" by auto
+  is "\<lambda> S m. restrict_map m S" by auto
 
-lemma lookup_fmap_restr[simp]: "finite S \<Longrightarrow> x \<in> S \<Longrightarrow> lookup (fmap_restr S m) x = lookup m x"
+lemma lookup_fmap_restr[simp]: "x \<in> S \<Longrightarrow> lookup (fmap_restr S m) x = lookup m x"
   by (transfer, auto)
 
-lemma fdom_fmap_restr[simp]: "finite S \<Longrightarrow> fdom (fmap_restr S m) = fdom m \<inter> S"
+lemma fdom_fmap_restr[simp]: "fdom (fmap_restr S m) = fdom m \<inter> S"
   by (transfer, simp)
 
 lemma fmap_restr_fmap_restr[simp]:
- "finite d1 \<Longrightarrow> finite d2 \<Longrightarrow> fmap_restr d1 (fmap_restr d2 x) = fmap_restr (d1 \<inter> d2) x"
+ "fmap_restr d1 (fmap_restr d2 x) = fmap_restr (d1 \<inter> d2) x"
  by (transfer, auto simp add: restrict_map_def)
 
 lemma fmap_restr_fmap_restr_subset:
- "finite d2 \<Longrightarrow> d1 \<subseteq> d2 \<Longrightarrow> fmap_restr d1 (fmap_restr d2 x) = fmap_restr d1 x"
- by (metis Int_absorb2 finite_subset fmap_restr_fmap_restr)
+ "d1 \<subseteq> d2 \<Longrightarrow> fmap_restr d1 (fmap_restr d2 x) = fmap_restr d1 x"
+ by (metis Int_absorb2 fmap_restr_fmap_restr)
 
-lemma fmap_restr_useless: "finite S \<Longrightarrow> fdom m \<subseteq> S \<Longrightarrow> fmap_restr S m = m"
+lemma fmap_restr_useless: "fdom m \<subseteq> S \<Longrightarrow> fmap_restr S m = m"
   by (rule fmap_eqI, auto)
 
-lemma fmap_restr_not_finite:
-  "\<not> finite S \<Longrightarrow> fmap_restr S \<rho> = f\<emptyset>"
-  by (transfer, simp)
-
-lemma fmap_restr_fmap_upd: "x \<in> S \<Longrightarrow> finite S \<Longrightarrow> fmap_restr S (m1(x f\<mapsto> v)) = (fmap_restr S m1)(x f\<mapsto> v)"
+lemma fmap_restr_fmap_upd: "x \<in> S \<Longrightarrow> fmap_restr S (m1(x f\<mapsto> v)) = (fmap_restr S m1)(x f\<mapsto> v)"
   apply (rule fmap_eqI)
   apply auto[1]
   apply (case_tac "xa = x")
@@ -216,12 +212,10 @@ lemma fmap_add_upd:
   by (metis map_add_upd)
 
 lemma fmap_restr_add: "fmap_restr S (m1 f++ m2) = fmap_restr S m1 f++ fmap_restr S m2"
-  apply (cases "finite S")
   apply (rule fmap_eqI)
   apply auto[1]
   apply (case_tac "x \<in> fdom m2")
   apply auto
-  apply (simp add: fmap_restr_not_finite)
   done
 
 subsubsection {* Copying *}

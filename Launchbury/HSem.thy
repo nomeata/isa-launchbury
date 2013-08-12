@@ -584,7 +584,7 @@ subsubsection {* Re-calculating the semantics of the heap is idempotent *}
         show ?thesis
           apply (subst the_lookup_HSem_other[OF False])
           apply (subst lookup_fmap_restr)
-            using delta apply auto[2]
+            using delta apply auto[1]
           apply (subst the_lookup_HSem_both[OF assms(1) goal2])
           apply (rule below_trans[OF _ join_above2[OF the_lookup_HSem_both_compatible[OF assms(1) `x \<in> heapVars (\<Gamma>@\<Delta>)`]]])
           apply (rule cont2monofunE[OF ESem_cont `?LHS \<sqsubseteq> ?RHS`])

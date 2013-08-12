@@ -428,44 +428,27 @@ lemma fmap_restr_belowI:
   assumes  "\<And> x. x \<in> S \<Longrightarrow> (fmap_restr S m1) f! x \<sqsubseteq> (fmap_restr S m2) f! x"
   and "fdom m1 = fdom m2"
   shows "fmap_restr S m1 \<sqsubseteq> fmap_restr S m2"
-proof (cases "finite S")
-case True thus ?thesis
-  apply -
   apply (rule fmap_belowI)
   apply (simp add: `fdom m1 = fdom m2`)
   by (metis Int_iff assms(1) fdom_fmap_restr)
-next
-case False thus ?thesis unfolding fmap_restr_def by simp
-qed
 
 lemma fmap_restr_monofun:  "monofun (fmap_restr S)"
-proof (cases "finite S")
-  case True thus ?thesis
-    apply -
-    apply (rule monofunI)
-    apply (rule fmap_restr_belowI)
-    apply (subst lookup_fmap_restr[OF True], assumption)+
-    apply (metis fmap_belowE)
-    by (metis fmap_below_dom)
-next
-case False thus ?thesis  by -(rule monofunI, simp add: fmap_restr_def)
-qed
+  apply (rule monofunI)
+  apply (rule fmap_restr_belowI)
+  apply (subst lookup_fmap_restr, assumption)+
+  apply (metis fmap_belowE)
+  by (metis fmap_below_dom)
 
 lemma fmap_restr_cont:  "cont (fmap_restr S)"
-proof(cases "finite S")
-case True thus ?thesis apply -
   apply (rule contI2[OF fmap_restr_monofun])
   apply (rule fmap_belowI)
   apply (simp add: chain_fdom(2))[1]
   apply auto
   apply (subst lookup_cont, assumption)+
   apply (rule lub_mono[OF lookup_chain lookup_chain], assumption+)
-  apply (subst lookup_fmap_restr[OF True], assumption)
+  apply (subst lookup_fmap_restr, assumption)
   apply (rule below_refl)
   done
-next
-case False thus ?thesis by -(rule contI2[OF fmap_restr_monofun], simp add: fmap_restr_def)
-qed
 
 lemma fmap_restr_fdom_cont'[simp, cont2cont]:
   assumes "cont f"
@@ -512,11 +495,7 @@ lemma fmap_expand_nonfinite:
 
 lemma fmap_restr_fmap_expand:
   "finite d2 \<Longrightarrow> fmap_restr d1 (m\<^bsub>[d2]\<^esub>) = fmap_restr d1 (m\<^bsub>[d1 \<inter> d2]\<^esub>)"
-  apply(cases "finite d1")
-  apply transfer
-  apply (auto simp add: restrict_map_def)
-  unfolding fmap_restr_def
-  by auto
+  by transfer (auto simp add: restrict_map_def)
 
 lemma fmap_restr_fmap_expand2:
   "finite d2 \<Longrightarrow> d1 \<subseteq> d2 \<Longrightarrow> fmap_restr d1 (m\<^bsub>[d2]\<^esub>) = m\<^bsub>[d1]\<^esub>"
@@ -572,7 +551,7 @@ lemma fmap_expand_fmap_restr_below:
   assumes [simp]:"fdom x = S2"
   shows "(fmap_restr S1 x)\<^bsub>[S2]\<^esub> \<sqsubseteq> x"
   apply (rule fmap_expand_belowI[OF assms(1)])
-  by (metis Int_iff below.r_refl empty_iff fdom_fmap_restr fempty_fdom fmap_restr_not_finite lookup_fmap_restr)
+  by (metis Int_iff below.r_refl  fdom_fmap_restr  lookup_fmap_restr)
 
 lemma fmap_expand_monofun:
   "monofun (\<lambda> m. m\<^bsub>[S]\<^esub>)"
@@ -1105,7 +1084,7 @@ proof (rule is_join_and_compatible)
   have "(m1 \<squnion> m2) \<sqsubseteq> (m1 \<squnion> m2)(x f\<mapsto> a)"
     by (rule join_below[OF `compatible m1 m2`])
   thus " m1 \<squnion> m2 f! x \<sqsubseteq> a"
-    by (metis (full_types) fmap_belowE the.simps the_lookup_fmap_upd)
+    by (metis (full_types) fmap_belowE the.simps lookup_fmap_upd)
 qed
 
 lemma the_lookup_join[simp]: 
@@ -1197,7 +1176,7 @@ proof(rule fmap_eqI)
     using assms(1) apply simp
     apply (metis assms(2))
 
-    apply (subst (asm) the_lookup_fmap_upd_other)
+    apply (subst (asm) lookup_fmap_upd_other)
     apply (metis `x \<notin> fdom \<rho>1`)
     apply assumption
     using assms(2) assms(1)

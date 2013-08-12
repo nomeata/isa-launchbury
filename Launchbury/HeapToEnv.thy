@@ -65,7 +65,7 @@ lemma heapToEnv_mono:
    apply simp
    apply (rule eq_imp_below)
    apply simp
-   apply (metis the_lookup_fmap_upd_other[symmetric])
+   apply (metis lookup_fmap_upd_other[symmetric])
    done
 
 subsubsection {* Reordering lemmas *}

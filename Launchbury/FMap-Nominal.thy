@@ -188,21 +188,19 @@ lemmas fdom_perm_rev[simp,eqvt] = fdom_perm[symmetric]
 lemma fmap_upd_eqvt[eqvt]: "p \<bullet> (fmap_upd f x y) = fmap_upd (p \<bullet> f) (p \<bullet> x) (p \<bullet> y)"
   by transfer (metis Some_eqvt fun_upd_eqvt)
 
-lemma fmap_restr_eqvt:
-  "finite d \<Longrightarrow> \<pi> \<bullet> (fmap_restr d m) = fmap_restr (\<pi> \<bullet> d) (\<pi> \<bullet> m)"
+lemma fmap_restr_eqvt[eqvt]:
+  "\<pi> \<bullet> (fmap_restr d m) = fmap_restr (\<pi> \<bullet> d) (\<pi> \<bullet> m)"
 proof
-case goal1 thus ?case by (metis fdom_fmap_restr fdom_perm_rev inter_eqvt permute_finite)
+case goal1 thus ?case by (metis fdom_fmap_restr fdom_perm_rev inter_eqvt)
 case goal2
-  hence "finite (\<pi> \<bullet> d)" by simp
-
-  from goal2(2) have "x \<in> \<pi> \<bullet> fdom m \<inter> \<pi> \<bullet> d" by (metis (full_types) fdom_fmap_restr fdom_perm_rev goal1 inter_eqvt)
+  from goal2 have "x \<in> \<pi> \<bullet> fdom m \<inter> \<pi> \<bullet> d" by (metis (full_types) fdom_fmap_restr fdom_perm_rev inter_eqvt)
   then obtain y where "x = \<pi> \<bullet> y" and "y \<in> fdom m \<inter> d" by (auto simp add: permute_set_def)
 
   have "(\<pi> \<bullet> fmap_restr d m) f! x = (\<pi> \<bullet> fmap_restr d m) f! (\<pi> \<bullet> y)" by (simp add: `x = _`)
-  also have "... = \<pi> \<bullet> ((fmap_restr d m) f! y)" using `finite d` `y \<in> fdom m \<inter> d` by (metis fdom_fmap_restr the_lookup_eqvt)
-  also have "... = \<pi> \<bullet> (m f! y)" using `y \<in> _` by (simp add: lookup_fmap_restr[OF `finite d`])
+  also have "... = \<pi> \<bullet> ((fmap_restr d m) f! y)" using  `y \<in> fdom m \<inter> d` by (metis fdom_fmap_restr the_lookup_eqvt)
+  also have "... = \<pi> \<bullet> (m f! y)" using `y \<in> _` by simp
   also have "... = (\<pi> \<bullet> m) f! x" using `x = _` `y \<in> _` by (simp add: the_lookup_eqvt)
-  also have "... = fmap_restr (\<pi> \<bullet> d) (\<pi> \<bullet> m) f! x" using `x \<in> _ \<inter> _` by (simp add: lookup_fmap_restr[OF `finite (\<pi> \<bullet> d)`])
+  also have "... = fmap_restr (\<pi> \<bullet> d) (\<pi> \<bullet> m) f! x" using `x \<in> _ \<inter> _` by simp
   finally show ?case.
 qed
 

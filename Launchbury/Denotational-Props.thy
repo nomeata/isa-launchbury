@@ -391,8 +391,7 @@ case (Let as e \<rho>1 \<rho>2)
 
     have prem: "atom ` (fdom \<rho>2' - fdom \<rho>1') \<sharp>* as"
       using Let(6) Let(1) Let(2)
-      apply (auto simp add: sharp_star_Env fresh_star_def)
-      by (metis Diff_iff sharp_Env)
+      by (auto simp add: sharp_star_Env fresh_star_def)
 
     show "?\<rho>1 \<squnion> ?F1 \<rho>1' \<le> ?\<rho>2 \<squnion> ?F2 \<rho>2'"
     proof(rule fmap_less_eqI)
@@ -444,8 +443,7 @@ case (Let as e \<rho>1 \<rho>2)
   moreover
   have "atom ` (fdom (\<lbrace>asToHeap as\<rbrace>\<rho>2) - fdom (\<lbrace>asToHeap as\<rbrace>\<rho>1)) \<sharp>* e "
     using Let(6) Let(1) Let(2)
-    apply (auto simp add: sharp_star_Env fresh_star_def)
-    by (metis Diff_iff sharp_Env)
+    by (auto simp add: sharp_star_Env fresh_star_def)
   ultimately
   have "\<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>1\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>2\<^esub>"
     apply (rule Let.hyps(4))
@@ -773,7 +771,6 @@ proof (rule iffD2[OF fmap_less_restrict])
     have "\<lbrakk> e \<rbrakk>\<^bsub>fmap_restr (insert x (heapVars \<Gamma>)) (\<lbrace>(x, body) # asToHeap as @ \<Gamma>\<rbrace>)\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>(x, body) # asToHeap as @ \<Gamma>\<rbrace>\<^esub>"
       apply (rule ESem_ignores_fresh[OF fmap_restr_less])
       apply (subst fdom_fmap_restr)
-        apply simp
       apply (subst simp1)
       apply (subst simp2)
       apply (rule fresh_e)
@@ -852,7 +849,7 @@ case goal1
 
           assume "x' \<noteq> x"
           hence map_of_reorder: "map_of ((x, body) # asToHeap as @ \<Gamma>) x' = map_of (asToHeap as @ ((x, Let as body) # \<Gamma>)) x'"
-            apply simp  thm dom_map_of_conv_heapVars
+            apply simp
             apply (subst map_add_upd_left)
             apply (metis dom_map_of_conv_heapVars x_not_as)
             apply simp
