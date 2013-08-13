@@ -117,6 +117,12 @@ lemma resolveHeap'_fmap_upd[simp]: "x \<in> heapVars is \<Longrightarrow> (\<Gam
 lemma resolveHeap'_fmap_upd_other[simp]: "x \<notin> heapVars is \<Longrightarrow> (\<Gamma>(x f\<mapsto> e)) \<ominus>\<^sub>H is = (\<Gamma> \<ominus>\<^sub>H is)(x f\<mapsto> e \<ominus> is)"
   unfolding resolveHeap'_def by simp
 
+lemma resolveHeap'_fmap_copy[simp]: "x \<in> heapVars is \<Longrightarrow> (fmap_copy \<Gamma> y x) \<ominus>\<^sub>H is = \<Gamma> \<ominus>\<^sub>H is"
+  unfolding resolveHeap'_def by simp
+
+lemma resolveHeap'_fmap_copy_other[simp]: "x \<notin> heapVars is \<Longrightarrow> y \<notin> heapVars is \<Longrightarrow> (fmap_copy \<Gamma> y x) \<ominus>\<^sub>H is = fmap_copy (\<Gamma> \<ominus>\<^sub>H is) y x"
+  unfolding resolveHeap'_def by auto
+
 lemma resolveHeap'_fresh_Cons[simp]: "atom y \<sharp> \<Gamma> \<Longrightarrow> \<Gamma> \<ominus>\<^sub>H (y,x)#is = \<Gamma> \<ominus>\<^sub>H is"
   unfolding resolveHeap'_def
   by (rule fmap_map_cong[OF resolve_fresh_noop])
@@ -398,5 +404,6 @@ lemma resolve_resolved: "valid_ind is \<Longrightarrow> x \<ominus> is \<notin> 
 
 lemma valid_ind_idemp[simp]: "valid_ind is \<Longrightarrow> (y::var) \<ominus> is \<ominus> is = y \<ominus> is"
    by (intro resove_var_noop resolve_resolved)
+
 
 end

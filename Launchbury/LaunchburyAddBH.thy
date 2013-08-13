@@ -437,6 +437,16 @@ proof-
   show ?thesis by auto
 qed
 
+lemma var_not_self:
+  shows  "\<not> (\<Gamma>(x f\<mapsto> Var x) \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>x # S\<^esub> \<Delta>)"
+proof
+  assume "\<Gamma>(x f\<mapsto> Var x) \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>x # S\<^esub> \<Delta>"
+  from shorten_stack[OF this, where n = 0]
+  have "\<Gamma>(x f\<mapsto> Var x) \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>[x]\<^esub> \<Delta>" by simp
+  hence "\<Gamma>(x f\<mapsto> Var x) \<Down>\<^sup>i\<^sup>u\<^sup>\<surd>\<^bsub>[x]\<^esub> \<Delta>" by (rule add_blackholing[OF _ ValidStackNil])
+  thus False  by cases (auto dest: fmap_upd_eqD1)
+qed
+
 
 end
 

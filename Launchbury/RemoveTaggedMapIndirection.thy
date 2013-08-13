@@ -194,6 +194,29 @@ lemma ind_for_isLam: "ind_for is \<Gamma> \<Longrightarrow> (x,y) \<in> set is \
 lemma ind_for_update: "isLam e \<Longrightarrow> ind_for is (\<Gamma>(y f\<mapsto> Var x)(x f\<mapsto> e)) \<Longrightarrow> ind_for is (\<Gamma>(y f\<mapsto> e)(x f\<mapsto> e))"
   unfolding ind_for_def  by (fastforce simp add: lookup_fmap_upd_eq)
 
+lemma ind_for_copy: "lookup \<Gamma> y = Some (Var x) \<Longrightarrow> x \<in> fdom \<Gamma> \<Longrightarrow> isLam (\<Gamma> f! x) \<Longrightarrow> ind_for is \<Gamma> \<Longrightarrow> ind_for is (fmap_copy \<Gamma> x y)"
+  unfolding ind_for_def
+  by (auto simp add: lookup_fmap_copy_eq)
+
+lemma resolveHeap_fmap_copy:
+  assumes "valid_ind is" "isLam (\<Delta> f! y)" "ind_for is \<Delta>" "x \<notin> heapVars is"
+  shows "fmap_copy \<Delta> y x \<ominus>\<^sub>H is = fmap_copy (\<Delta> \<ominus>\<^sub>H is) (y \<ominus> is) x"
+using assms(1-3)
+proof (induction y rule: valid_ind_induct)
+  case NoInd thus ?case using `x \<notin> heapVars is` by simp
+next
+  case (Ind y y')
+    from Ind.hyps(2) Ind.prems 
+    have y': "lookup \<Delta> y = lookup \<Delta> y'" unfolding ind_for_def by auto
+    hence "fmap_copy \<Delta> y x = fmap_copy \<Delta> y' x"  by (rule fmap_copy_cong)
+    moreover
+    have "y \<ominus> is = y' \<ominus> is" by (rule resolve_var_same_image[OF Ind(1-2)])
+    ultimately
+    show ?case using Ind.IH Ind.prems y' by simp
+qed
+
+
+
 lemma lookup_resolveHeap': "x \<notin> heapVars is \<Longrightarrow> lookup (\<Gamma> \<ominus>\<^sub>H is) x = Option.map (\<lambda> x. x \<ominus> is) (lookup \<Gamma> x)"
   unfolding resolveHeap'_def
   by (auto simp add: fdomIff)
@@ -354,7 +377,7 @@ case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u b e' "is")
     using `atom n \<sharp> is`  `atom n \<sharp> e`  `atom n \<sharp> \<Gamma>`
     by (auto simp add: fresh_def supp_Cons supp_Pair supp_at_base)
   *)
-   have "atom n \<sharp> is'" sorry
+  have "atom n \<sharp> is'" sorry
 
   have "z \<notin> fdom \<Delta>"by (metis ApplicationInd.hyps(15) fresh_fdom)
 
@@ -526,38 +549,33 @@ case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u b e' "is")
   ultimately 
   show ?case by auto
 next
-case (DVariable y x S \<Gamma> z \<Delta> "is")
-  from `distinctVars ((y, z) # (x, Var y) # \<Delta>)`
-  have "x \<noteq> y" by (auto simp add: distinctVars_Cons distinctVars_append)
+case (Variable y x S \<Gamma> \<Delta> "is")
+  from `y \<notin> set (x # S)`
+  have "x \<noteq> y" by auto
 
-  (* Trivial if `x \<in> heapVars is` *)
-  (* What if not? *)
-  (*
-  from `distinct (x # S \<ominus>\<^sub>S is)` `valid_ind is`
-  have "distinct (y # x # S \<ominus>\<^sub>S is)" apply auto sorry
-  *)
+  from result_evaluated[OF `_ \<Down>\<^sup>\<surd>\<^sup>\<surd>\<^sup>\<surd>\<^bsub>_\<^esub> _`]
+  have "isLam (\<Delta> f! y)" by simp
 
-  from DVariable(10)[OF  `ind_for is _` `valid_ind is`]
-  obtain is' where is': "(x, Var y) # \<Gamma> \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>y # x # S \<ominus>\<^sub>S is\<^esub> (y, z) # (x, Var y) # \<Delta> \<ominus>\<^sub>h is'"
-    and "ind_for is' ((y, z) # (x, Var y) # \<Delta>)"
+  from second_stack_element_unchanged[OF `_ \<Down>\<^sup>\<surd>\<^sup>\<surd>\<^sup>\<surd>\<^bsub>_\<^esub> _`] `x \<noteq> y`
+  have "lookup \<Delta> x = Some (Var y)" by simp
+
+  from stack_bound[OF `_ \<Down>\<^sup>\<surd>\<^sup>\<surd>\<^sup>\<surd>\<^bsub>_\<^esub> _`]
+  have "y \<in> fdom \<Delta>" by simp
+
+  from Variable(4)[OF  `ind_for is _` `valid_ind is`]
+  obtain is' where is': "\<Gamma>(x f\<mapsto> Var y) \<ominus>\<^sub>H is \<Down>\<^sup>\<times>\<^sup>\<surd>\<^sup>\<surd>\<^bsub>y # x # S \<ominus>\<^sub>S is\<^esub> \<Delta> \<ominus>\<^sub>H is'"
+    and "ind_for is' \<Delta>"
     and "set is \<subseteq> set is'"
     and "valid_ind is'"
-    and hV: "heapVars is' \<inter> heapVars ((x, Var y) # \<Gamma>) \<subseteq> heapVars is"
+    and hV: "heapVars is' \<inter> fdom (\<Gamma>(x f\<mapsto> Var y)) \<subseteq> heapVars is"
     and "y # x # S \<ominus>\<^sub>S is' = y # x # S \<ominus>\<^sub>S is"
     by blast
- 
+
   show ?case
   proof(cases "x \<in> heapVars is")
   case True
-    have "(x,y) \<in> set is"
-    proof-
-      from True obtain y' where "(x,y') \<in> set is" by (auto simp add: heapVars_def)
-      hence "(x, Var y') \<in> set ((x, Var y) # \<Gamma>)"
-      using `ind_for is _`  by (auto simp add: ind_for_def dest: bspec)
-      with `distinctVars ((x, Var y) # \<Gamma>)`
-      have "y' = y" by (metis Pair_inject distinctVars_ConsD(1) exp_assn.eq_iff(1) heapVars_from_set set_ConsD)
-      with `_ \<in> set is` show ?thesis by simp
-    qed
+    from True `ind_for is _`
+    have "(x,y) \<in> set is" by (auto simp add: ind_for_def heapVars_def)
 
     from `valid_ind is` `(x, y) \<in> set is`
     have [simp]: "x \<ominus> is = y \<ominus> is"
@@ -581,17 +599,17 @@ case (DVariable y x S \<Gamma> z \<Delta> "is")
     have "x \<in> heapVars is'" by auto
 
     from is' `x \<in> heapVars is` `x \<in> heapVars is'`
-    have "(x, Var y) # \<Gamma> \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>x # S \<ominus>\<^sub>S is\<^esub> (y, z) # (x, z) # \<Delta> \<ominus>\<^sub>h is'" by simp
+    have "\<Gamma>(x f\<mapsto> Var y) \<ominus>\<^sub>H is \<Down>\<^sup>\<times>\<^sup>\<surd>\<^sup>\<surd>\<^bsub>x # S \<ominus>\<^sub>S is\<^esub> fmap_copy \<Delta> y x \<ominus>\<^sub>H is'" by simp
     moreover
 
-    from result_evaluated[OF `_ \<Down>\<^sup>\<surd>\<^sup>\<surd>\<^sup>d\<^bsub>_\<^esub> _`, simplified]  `ind_for is' _`
-    have "ind_for is' ((y, z) # (x, z) # \<Delta>)"
-      by (rule ind_for_update) 
+    from `lookup \<Delta> x = Some (Var y)` `y \<in> fdom \<Delta>` result_evaluated[OF `_ \<Down>\<^sup>\<surd>\<^sup>\<surd>\<^sup>\<surd>\<^bsub>_\<^esub> _`, simplified]   `ind_for is' _`
+    have "ind_for is' (fmap_copy \<Delta> y x)"
+      by (rule ind_for_copy) 
     moreover
     note `set is \<subseteq> set is'` `valid_ind is'`
     moreover
     from hV
-    have "heapVars is' \<inter> heapVars ((x, Var y) # \<Gamma>) \<subseteq> heapVars is" by auto
+    have "heapVars is' \<inter> fdom (\<Gamma>(x f\<mapsto> Var y)) \<subseteq> heapVars is" by auto
     moreover
     from `y # x # S \<ominus>\<^sub>S is' = y # x # S \<ominus>\<^sub>S is`
     have "x # S \<ominus>\<^sub>S is' = x # S \<ominus>\<^sub>S is" by simp
@@ -607,87 +625,52 @@ case (DVariable y x S \<Gamma> z \<Delta> "is")
     from `x \<notin> heapVars is` hV
     have "x \<notin> heapVars is'" by auto
 
-    (* distinct-kruscht 
-
-    (* Möglicher Plan: Anname dass für jedes x\<in>S auch alle per Var erreichbare y \<in> S sind, oder
-      dass hd S von x erreichbar ist. :-( *)
-
-    have "y \<ominus> is \<noteq> x" sorry
-    moreover
-    have "y \<ominus> is \<notin> set (dropChain is x S \<ominus>\<^sub>S is)" sorry (* \<leftarrow> crucial *)
-    ultimately
-    have "distinct (y # x # S \<ominus>\<^sub>S is)"
-      using `valid_ind is` `x \<notin> heapVars is`  `distinct (x # S \<ominus>\<^sub>S is)` by simp
-
-    (*
-    have "y \<ominus> is \<notin> set (x#S)"
-      by (rule stack_not_used[OF  `valid_ind is` `ind_for is _` DVariable(9)])
-    hence "y \<ominus> is \<noteq> x" by simp
-    *)
-    from `distinct (y # x # S \<ominus>\<^sub>S is)` `valid_ind is` `x \<notin> heapVars is`
-    have "(y \<ominus> is) \<notin> set (x # (dropChain is x S \<ominus>\<^sub>S is))" by simp
-    hence "y \<ominus> is \<noteq> x" by simp
-    *)
-    
-    find_theorems y S
     (* Mit (x, Var y) # \<Gamma> \<Down>\<^sup>\<surd>\<^sup>\<surd>\<^sup>d\<^bsub>y # x # S\<^esub> (y, z) # (x, Var y) # \<Delta>
        und `ind_for _` sollte ich rausbekommen, dass
        y \<ominus> is \<notin> set (x # S).
        Außer y ist schon ein Lambda... :-(
        Aber selbst dann kann in S Kruscht sein, der in den heapVars von is vorkommt.
     *)
-    have "y \<ominus> is \<notin> set (x # S \<ominus>\<^sub>S is)" sorry  
+    have "y \<ominus> is \<notin> set (x # S \<ominus>\<^sub>S is)" sorry
 
     hence "y \<ominus> is \<noteq> x" using `valid_ind is` `x \<notin> heapVars is` by simp
 
-    find_theorems "_ \<ominus> _ \<ominus> _"
+    have [simp]: "fmap_copy \<Delta> y x \<ominus>\<^sub>H is' = fmap_copy (\<Delta> \<ominus>\<^sub>H is') (y \<ominus> is') x"
+      using `valid_ind is'` `isLam (\<Delta> f! y)` `ind_for is' \<Delta>` `x \<notin> heapVars is'`
+      by (rule resolveHeap_fmap_copy)
 
+    from is'  `x \<notin> heapVars is` `x \<notin> heapVars is'` `valid_ind is`
+    have "(\<Gamma> \<ominus>\<^sub>H is)(x f\<mapsto> Var (y \<ominus> is)) \<Down>\<^sup>\<times>\<^sup>\<surd>\<^sup>\<surd>\<^bsub>(y \<ominus> is) # x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> \<Delta> \<ominus>\<^sub>H is'"
+      by (simp add: resolveExp_Var)
+    from second_stack_element_unchanged[OF this] `y \<ominus> is \<noteq> x` `x \<notin> heapVars is'`
+    have "(\<Delta> f! x) \<ominus> is' = Var (y \<ominus> is)" by (auto simp add: lookup_resolveHeap')
+    with  `lookup \<Delta> x = Some (Var y)`
+    have [simp]:"y \<ominus> is' = y \<ominus> is" by (simp add: resolveExp_Var)
+  
     from `y \<ominus> is \<notin> set (x # S \<ominus>\<^sub>S is)` `valid_ind is`
     have "y \<ominus> is \<notin> set (x # (dropChain is x S \<ominus>\<^sub>S is))" by auto
     moreover
-    {
-      from is'  `x \<notin> heapVars is` `x \<notin> heapVars is'` `x \<noteq> y` `y \<ominus> is \<noteq> x` `valid_ind is`
-      have "(x, Var (y \<ominus> is)) # (\<Gamma> \<ominus>\<^sub>h is) \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>(y \<ominus> is) # x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> (y, z) # (x, Var y) # \<Delta> \<ominus>\<^sub>h is'"
-        by (simp add: resolveExp_Var)
-        (* Here, I need to shuffle around the \<Delta>, as \<ominus>\<^sub>h may reorder it (or maybe fix the reordering) *)
-      moreover have "(y, z) # (x, Var y) # \<Delta> \<ominus>\<^sub>h is' <~~> ((y \<ominus> is), z \<ominus> is') # (x, Var (y \<ominus> is)) # (\<Delta> \<ominus>\<^sub>h is')" 
-        sorry
-      ultimately
-      have "(x, Var (y \<ominus> is)) # (\<Gamma> \<ominus>\<^sub>h is) \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>(y \<ominus> is) # x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> ((y \<ominus> is), z \<ominus> is') # (x, Var (y \<ominus> is)) # (\<Delta> \<ominus>\<^sub>h is')"
-        sorry
-    }
-    ultimately
-    thm Variable[OF this]
-    have "(x, Var (y \<ominus> is)) # (\<Gamma> \<ominus>\<^sub>h is) \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> (y \<ominus> is, z \<ominus> is') # (x, z \<ominus> is') # (\<Delta> \<ominus>\<^sub>h is')"
-      by (rule Variable)
-    hence "(x, Var y) # \<Gamma> \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>x # S \<ominus>\<^sub>S is\<^esub> (y \<ominus> is, z \<ominus> is') # (x, z \<ominus> is') # (\<Delta> \<ominus>\<^sub>h is')"
-      using  `x \<notin> heapVars is`  `x \<notin> heapVars is'` `valid_ind is`
-      by (simp add: resolveExp_Var)
-    moreover have "(y \<ominus> is, z \<ominus> is') # (x, z \<ominus> is') # (\<Delta> \<ominus>\<^sub>h is') <~~> (y, z) # (x, z) # \<Delta> \<ominus>\<^sub>h is'" sorry
-    ultimately have  "(x, Var y) # \<Gamma> \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>\<surd>\<^bsub>x # S \<ominus>\<^sub>S is\<^esub> (y, z) # (x, z) # \<Delta> \<ominus>\<^sub>h is'" sorry
+    have "x \<notin> fdom (\<Gamma> \<ominus>\<^sub>H is)" using `x \<notin> fdom \<Gamma>` by simp
     moreover
-  
-    from `distinctVars ((y, z) # (x, Var y) # \<Delta>)` `ind_for is' _`
-    have "ind_for is' ((x, Var y) # (y, z) # \<Delta>)"
-      apply (rule ind_for_permutation)
-      by (metis perm.swap)
-    with `x \<notin> heapVars is'`
-    have "ind_for is' ((y, z) # \<Delta>)"
-      sorry
-    hence "ind_for is' ((x, z) # (y, z) # \<Delta>)"
-      apply (rule ind_for_larger[rotated 2])
-      using `distinctVars ((y, z) # (x, z) # \<Delta>)`
-      by (auto simp add: distinctVars_Cons)
-    hence "ind_for is' ((y, z) # (x, z) # \<Delta>)"
-      apply (rule ind_for_permutation[rotated])
-      apply (metis perm.swap)
-      using `distinctVars ((y, z) # (x, z) # \<Delta>)`
-      by (auto simp add: distinctVars_Cons)
+    from is'  `x \<notin> heapVars is`  `valid_ind is`
+    have "(\<Gamma> \<ominus>\<^sub>H is)(x f\<mapsto> Var (y \<ominus> is)) \<Down>\<^sup>\<times>\<^sup>\<surd>\<^sup>\<surd>\<^bsub>(y \<ominus> is) # x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> \<Delta> \<ominus>\<^sub>H is'"
+      by (simp add: resolveExp_Var)
+    ultimately
+    have "(\<Gamma> \<ominus>\<^sub>H is)(x f\<mapsto> Var (y \<ominus> is)) \<Down>\<^sup>\<times>\<^sup>\<surd>\<^sup>\<surd>\<^bsub>x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> fmap_copy (\<Delta> \<ominus>\<^sub>H is') (y \<ominus> is) x"
+      by (rule reds.Variable)
+    hence "\<Gamma>(x f\<mapsto> Var y) \<ominus>\<^sub>H is \<Down>\<^sup>\<times>\<^sup>\<surd>\<^sup>\<surd>\<^bsub>x # S \<ominus>\<^sub>S is\<^esub> fmap_copy \<Delta> y x \<ominus>\<^sub>H is'"
+      using  `x \<notin> heapVars is`  `valid_ind is`
+      by (simp add: resolveExp_Var)
+    moreover
+
+    from `lookup \<Delta> x = Some (Var y)` `y \<in> fdom \<Delta>` result_evaluated[OF `_ \<Down>\<^sup>\<surd>\<^sup>\<surd>\<^sup>\<surd>\<^bsub>_\<^esub> _`, simplified]   `ind_for is' _`
+    have "ind_for is' (fmap_copy \<Delta> y x)"
+      by (rule ind_for_copy) 
     moreover
     note `set is \<subseteq> set is'` `valid_ind is'`
     moreover
     from hV
-    have "heapVars is' \<inter> heapVars ((x, Var y) # \<Gamma>) \<subseteq> heapVars is" by auto
+    have "heapVars is' \<inter> fdom (\<Gamma>(x f\<mapsto> Var y)) \<subseteq> heapVars is" by auto
     moreover
     from `y # x # S \<ominus>\<^sub>S is' = y # x # S \<ominus>\<^sub>S is`
          `valid_ind is` `valid_ind is'`
@@ -703,67 +686,70 @@ case (DVariable y x S \<Gamma> z \<Delta> "is")
     show ?thesis by blast
   qed
 next
-case (DVariableNoUpd n \<Gamma> x y e S \<Delta> z "is")
-  from `y \<notin> set (x # S)`
-  have "x \<noteq> y" by auto
+case (VariableNoBH x \<Gamma> y S \<Delta> "is")
+  from `\<Gamma>(x f\<mapsto> Var y) \<Down>\<^sup>\<surd>\<^sup>\<surd>\<^sup>\<times>\<^bsub>y # x # S\<^esub> \<Delta>`
+  have "x \<noteq> y" by (metis var_not_self)
 
-  from `ind_for is ((x, Var y) # \<Gamma>)`
-  have "ind_for is ((n, e) # (x, Var y) # \<Gamma>)" by simp
-  from DVariableNoUpd(20)[OF this `valid_ind is`]
-  obtain is' where is': "(n, e) # (x, Var y) # \<Gamma> \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>\<times>\<^bsub>n # y # x # S \<ominus>\<^sub>S is\<^esub> (n, z) # (x, Var y) # \<Delta> \<ominus>\<^sub>h is'"
-    and "ind_for is' ((n, z) # (x, Var y) # \<Delta>)"
+  from result_evaluated[OF `_ \<Down>\<^sup>\<surd>\<^sup>\<surd>\<^sup>\<times>\<^bsub>_\<^esub> _`]
+  have "isLam (\<Delta> f! y)" by simp
+
+  from second_stack_element_unchanged[OF `_ \<Down>\<^sup>\<surd>\<^sup>\<surd>\<^sup>\<times>\<^bsub>_\<^esub> _`] `x \<noteq> y`
+  have "lookup \<Delta> x = Some (Var y)" by simp
+
+  from stack_bound[OF `_ \<Down>\<^sup>\<surd>\<^sup>\<surd>\<^sup>\<times>\<^bsub>_\<^esub> _`]
+  have "y \<in> fdom \<Delta>" by simp
+
+  from VariableNoBH(3)[OF  `ind_for is _` `valid_ind is`]
+  obtain is' where is': "\<Gamma>(x f\<mapsto> Var y) \<ominus>\<^sub>H is \<Down>\<^sup>\<times>\<^sup>\<surd>\<^sup>\<times>\<^bsub>y # x # S \<ominus>\<^sub>S is\<^esub> \<Delta> \<ominus>\<^sub>H is'"
+    and "ind_for is' \<Delta>"
     and "set is \<subseteq> set is'"
     and "valid_ind is'"
-    and hV: " heapVars is' \<inter> heapVars ((n, e) # (x, Var y) # \<Gamma>) \<subseteq> heapVars is"
-    and "n # y # x # S \<ominus>\<^sub>S is' = n # y # x # S \<ominus>\<^sub>S is"
+    and hV: "heapVars is' \<inter> fdom (\<Gamma>(x f\<mapsto> Var y)) \<subseteq> heapVars is"
+    and "y # x # S \<ominus>\<^sub>S is' = y # x # S \<ominus>\<^sub>S is"
     by blast
-
-  from `set is \<subseteq> set is'`
-  have "heapVars is \<subseteq> heapVars is'" by (metis heapVars_def image_mono)
 
   show ?case
   proof(cases "x \<in> heapVars is")
   case True
-    have "(x,y) \<in> set is"
-    proof-
-      from True obtain y' where "(x,y') \<in> set is" by (auto simp add: heapVars_def)
-      hence "(x, Var y') \<in> set  ((x, Var y) # \<Gamma>)"
-        using `ind_for is ((x, Var y) # \<Gamma>)` by (auto simp add: ind_for_def dest:bspec)
-      with `distinctVars ((x, Var y) # \<Gamma>)`
-      have "y' = y" by (metis Pair_inject distinctVars_ConsD(1) exp_assn.eq_iff(1) heapVars_from_set set_ConsD)
-      with `_ \<in> set is` show ?thesis by simp
-    qed
+    from True `ind_for is _`
+    have "(x,y) \<in> set is" by (auto simp add: ind_for_def heapVars_def)
 
-    have [simp]: "x \<ominus> is = y \<ominus> is" sorry
+    from `valid_ind is` `(x, y) \<in> set is`
+    have [simp]: "x \<ominus> is = y \<ominus> is"
+      by (rule resolve_var_same_image)
 
-    (*
+    from `(x,y) \<in> set is` `set is \<subseteq> set is'`
+    have "(x,y) \<in> set is'" by auto
+    with `valid_ind is'`
+    have [simp]: "x \<ominus> is' = y \<ominus> is'"
+      by (rule resolve_var_same_image)
+
     from `(x,y) \<in> set is`
     have [simp]: "y # x # S \<ominus>\<^sub>S is = x # S \<ominus>\<^sub>S is" by simp
-    *)
 
-    from `x \<in> heapVars is` `heapVars is \<subseteq> heapVars is'`
+    from `(x,y) \<in> set is'`
+    have [simp]: "y # x # S \<ominus>\<^sub>S is' = x # S \<ominus>\<^sub>S is'" by simp
+
+    from `set is \<subseteq> set is'`
+    have "heapVars is \<subseteq> heapVars is'" by (metis heapVars_def image_mono)
+    with `x \<in> heapVars is`
     have "x \<in> heapVars is'" by auto
 
-    from `atom n \<sharp> is` have "n \<notin> heapVars is" by (metis heapVars_not_fresh)
-
-    from is' `x \<in> heapVars is` `x \<in> heapVars is'` `n \<notin> heapVars is`
-    have "(x, Var y) # \<Gamma> \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>\<times>\<^bsub>x # S \<ominus>\<^sub>S is\<^esub> (x, z) # \<Delta> \<ominus>\<^sub>h is'"
-      apply simp
-      sorry
+    from is' `x \<in> heapVars is` `x \<in> heapVars is'`
+    have "\<Gamma>(x f\<mapsto> Var y) \<ominus>\<^sub>H is \<Down>\<^sup>\<times>\<^sup>\<surd>\<^sup>\<times>\<^bsub>x # S \<ominus>\<^sub>S is\<^esub> fmap_copy \<Delta> y x \<ominus>\<^sub>H is'" by simp
     moreover
-  
-    from `ind_for is' _`
-    have "ind_for is' ((y, e) # (x, z) # \<Delta>)"
-      sorry
+
+    from `lookup \<Delta> x = Some (Var y)` `y \<in> fdom \<Delta>` result_evaluated[OF `_ \<Down>\<^sup>\<surd>\<^sup>\<surd>\<^sup>\<times>\<^bsub>_\<^esub> _`, simplified]   `ind_for is' _`
+    have "ind_for is' (fmap_copy \<Delta> y x)"
+      by (rule ind_for_copy) 
     moreover
     note `set is \<subseteq> set is'` `valid_ind is'`
     moreover
     from hV
-    have "heapVars is' \<inter> heapVars ((x, Var y) # (y, e) # \<Gamma>) \<subseteq> heapVars is" by auto
+    have "heapVars is' \<inter> fdom (\<Gamma>(x f\<mapsto> Var y)) \<subseteq> heapVars is" by auto
     moreover
     from `y # x # S \<ominus>\<^sub>S is' = y # x # S \<ominus>\<^sub>S is`
-    have "x # S \<ominus>\<^sub>S is' = x # S \<ominus>\<^sub>S is"
-      sorry
+    have "x # S \<ominus>\<^sub>S is' = x # S \<ominus>\<^sub>S is" by simp
     (*
     moreover
     from `x \<notin> heapVars is'`
@@ -776,49 +762,50 @@ case (DVariableNoUpd n \<Gamma> x y e S \<Delta> z "is")
     from `x \<notin> heapVars is` hV
     have "x \<notin> heapVars is'" by auto
 
-    from value_not_var[OF DVariableNoUpd(19), simplified] `ind_for is' _` `valid_ind is'`
-    have "n \<notin> heapVars is'"
-      sorry
-    with `heapVars is \<subseteq> heapVars is'`
-    have "n \<notin> heapVars is" by auto
+    from is'  `x \<notin> heapVars is` `x \<notin> heapVars is'` `valid_ind is`
+    have "(\<Gamma> \<ominus>\<^sub>H is)(x f\<mapsto> Var (y \<ominus> is)) \<Down>\<^sup>\<times>\<^sup>\<surd>\<^sup>\<times>\<^bsub>(y \<ominus> is) # x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> \<Delta> \<ominus>\<^sub>H is'"
+      by (simp add: resolveExp_Var)
+    hence "y \<ominus> is \<noteq> x" by (metis var_not_self)
 
-    from `x \<notin> heapVars is` hV
-    have "x \<notin> heapVars is'" by auto
+    have [simp]: "fmap_copy \<Delta> y x \<ominus>\<^sub>H is' = fmap_copy (\<Delta> \<ominus>\<^sub>H is') (y \<ominus> is') x"
+      using `valid_ind is'` `isLam (\<Delta> f! y)` `ind_for is' \<Delta>` `x \<notin> heapVars is'`
+      by (rule resolveHeap_fmap_copy)
 
-    have [simp]: "e \<ominus> is' = e \<ominus> is" sorry
-    have [simp]: "y \<ominus> is' = y \<ominus> is" sorry
-
-    have "atom n \<sharp> (\<Gamma> \<ominus>\<^sub>h is, x, y \<ominus> is, e \<ominus> is, S \<ominus>\<^sub>S is, \<Delta> \<ominus>\<^sub>h is', z \<ominus> is')" sorry
+    from is' `x \<notin> heapVars is` `x \<notin> heapVars is'` `valid_ind is`
+    have "(\<Gamma> \<ominus>\<^sub>H is)(x f\<mapsto> Var (y \<ominus> is)) \<Down>\<^sup>\<times>\<^sup>\<surd>\<^sup>\<times>\<^bsub>(y \<ominus> is) # x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> \<Delta> \<ominus>\<^sub>H is'"
+      by (simp add: resolveExp_Var)
+    from second_stack_element_unchanged[OF this] `y \<ominus> is \<noteq> x` `x \<notin> heapVars is'`
+    have "(\<Delta> f! x) \<ominus> is' = Var (y \<ominus> is)" by (auto simp add: lookup_resolveHeap')
+    with  `lookup \<Delta> x = Some (Var y)`
+    have [simp]:"y \<ominus> is' = y \<ominus> is" by (simp add: resolveExp_Var)
+  
+    have "x \<notin> fdom (\<Gamma> \<ominus>\<^sub>H is)" using `x \<notin> fdom \<Gamma>` by simp
     moreover
-    from `y \<notin> set (x # S)` `x \<noteq> y` `n \<notin> heapVars is`
-    have "y \<ominus> is \<notin> set (x # (S \<ominus>\<^sub>S is))" sorry
-    moreover
-    have "(y \<ominus> is, e \<ominus> is) \<in> set (\<Gamma> \<ominus>\<^sub>h is)" sorry
-    moreover
-    from is' `n \<notin> heapVars is` `x \<notin> heapVars is` `n \<notin> heapVars is'` `x \<notin> heapVars is'`
-    have "(n, e \<ominus> is) # (x, Var (y \<ominus> is)) # (\<Gamma> \<ominus>\<^sub>h is) \<Down>\<^sup>\<times>\<^sup>\<times>\<^bsub>n # (y \<ominus> is) # x # (S \<ominus>\<^sub>S is)\<^esub> (n, z \<ominus> is') # (x, Var (y \<ominus> is)) # (\<Delta> \<ominus>\<^sub>h is')"
+    from is'  `x \<notin> heapVars is` `x \<notin> heapVars is'` `valid_ind is`
+    have "(\<Gamma> \<ominus>\<^sub>H is)(x f\<mapsto> Var (y \<ominus> is)) \<Down>\<^sup>\<times>\<^sup>\<surd>\<^sup>\<times>\<^bsub>(y \<ominus> is) # x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> \<Delta> \<ominus>\<^sub>H is'"
       by (simp add: resolveExp_Var)
     ultimately
-    have "(x, Var (y \<ominus> is)) # (\<Gamma> \<ominus>\<^sub>h is) \<Down>\<^sup>\<times>\<^sup>\<times>\<^bsub>x # (S \<ominus>\<^sub>S is)\<^esub> (x, z \<ominus> is') # (\<Delta> \<ominus>\<^sub>h is')"
-      by (rule VariableNoUpd)
-    hence "(x, Var y) # \<Gamma> \<ominus>\<^sub>h is \<Down>\<^sup>\<times>\<^sup>\<times>\<^bsub>x # S \<ominus>\<^sub>S is\<^esub> (x, z) # \<Delta> \<ominus>\<^sub>h is'"
-      using  `n \<notin> heapVars is` `x \<notin> heapVars is` `n \<notin> heapVars is'` `x \<notin> heapVars is'`
+    have "(\<Gamma> \<ominus>\<^sub>H is)(x f\<mapsto> Var (y \<ominus> is)) \<Down>\<^sup>\<times>\<^sup>\<surd>\<^sup>\<times>\<^bsub>x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> fmap_copy (\<Delta> \<ominus>\<^sub>H is') (y \<ominus> is) x"
+      by (rule reds.VariableNoBH)
+    hence "\<Gamma>(x f\<mapsto> Var y) \<ominus>\<^sub>H is \<Down>\<^sup>\<times>\<^sup>\<surd>\<^sup>\<times>\<^bsub>x # S \<ominus>\<^sub>S is\<^esub> fmap_copy \<Delta> y x \<ominus>\<^sub>H is'"
+      using  `x \<notin> heapVars is`  `x \<notin> heapVars is'` `valid_ind is`
       by (simp add: resolveExp_Var)
     moreover
-  
-    from `ind_for is' _` (* `y \<notin> heapVars is'` `x \<notin> heapVars is'` *)
-    have "ind_for is' ((x, z) # \<Delta>)"
-      sorry
+
+    from `lookup \<Delta> x = Some (Var y)` `y \<in> fdom \<Delta>` result_evaluated[OF `_ \<Down>\<^sup>\<surd>\<^sup>\<surd>\<^sup>\<times>\<^bsub>_\<^esub> _`, simplified]   `ind_for is' _`
+    have "ind_for is' (fmap_copy \<Delta> y x)"
+      by (rule ind_for_copy) 
     moreover
     note `set is \<subseteq> set is'` `valid_ind is'`
     moreover
     from hV
-    have "heapVars is' \<inter> heapVars ((x, Var y) # \<Gamma>) \<subseteq> heapVars is"
-      sorry
+    have "heapVars is' \<inter> fdom (\<Gamma>(x f\<mapsto> Var y)) \<subseteq> heapVars is" by auto
     moreover
-    from `n # y # x # S \<ominus>\<^sub>S is' = n # y # x # S \<ominus>\<^sub>S is`
+    from `y # x # S \<ominus>\<^sub>S is' = y # x # S \<ominus>\<^sub>S is`
+         `valid_ind is` `valid_ind is'`
+         `x \<notin> heapVars is` `x \<notin> heapVars is'`       
     have "x # S \<ominus>\<^sub>S is' = x # S \<ominus>\<^sub>S is"
-      sorry
+      by auto
     (*
     moreover
     from `x \<notin> heapVars is'`
@@ -828,10 +815,7 @@ case (DVariableNoUpd n \<Gamma> x y e S \<Delta> z "is")
     show ?thesis by blast
   qed
 next
-case (DLet as \<Gamma> x body \<Delta> S u "is")
-  show ?case sorry
-next
-case (DPermute \<Gamma> \<Gamma>' \<Delta> \<Delta>' S u "is")
+case (Let as \<Gamma> x S body u b \<Delta> "is")
   show ?case sorry
 qed
 

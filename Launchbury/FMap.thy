@@ -104,6 +104,9 @@ lemma fmap_upd_twist: "a \<noteq> c \<Longrightarrow> (m(a f\<mapsto> b))(c f\<m
   apply (case_tac "x = c", auto)
   done
 
+lemma fmap_upd_eqD1: "m(a f\<mapsto> x) = n(a f\<mapsto> y) \<Longrightarrow> x = y"
+  by transfer (rule map_upd_eqD1)
+
 subsubsection {* Restriction *}
 
 lift_definition fmap_restr :: "'a set \<Rightarrow> 'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b"
@@ -257,11 +260,23 @@ lemma fran_fmap_copy_subset:
   "fran (fmap_copy m x y) \<subseteq> fran m"
   by transfer (auto simp add: ran_def) 
 
+lemma fmap_copy_cong: "lookup \<Gamma> x = lookup \<Gamma> x' \<Longrightarrow> fmap_copy \<Gamma> x y = fmap_copy \<Gamma> x' y"
+  by transfer simp
+
 lemma lookup_fmap_copy[simp]: "lookup (fmap_copy m x y) y = lookup m x"
-  by (transfer, auto)
+  by transfer auto
 
 lemma lookup_fmap_copy_other[simp]: "x' \<noteq> y \<Longrightarrow> lookup (fmap_copy m x y) x' = lookup m x'"
-  by (transfer, auto)
+  by transfer auto
+
+lemma lookup_fmap_copy_eq: "lookup (fmap_copy h x y) x' = (if y = x' then lookup h x else lookup h x')"
+  by transfer simp
+
+lemma fmap_restrict_fmap_copy[simp]: "x \<notin> S \<Longrightarrow> fmap_restr S (fmap_copy \<Gamma> y x) = fmap_restr S \<Gamma>"
+  by transfer simp
+
+lemma fmap_restrict_fmap_copy'[simp]: "x \<in> S \<Longrightarrow> y \<in> S \<Longrightarrow> fmap_restr S (fmap_copy \<Gamma> y x) = fmap_copy (fmap_restr S \<Gamma>) y x"
+  by transfer simp
 
 subsubsection {* Map *}
 
@@ -277,6 +292,9 @@ lemma fmap_map_fmap_restr[simp]: "fmap_map f (fmap_restr S m) = fmap_restr S (fm
 
 lemma fmap_map_fmap_upd[simp]: "fmap_map f (m(x f\<mapsto> v)) = (fmap_map f m)(x f\<mapsto> f v)"
   by transfer simp
+
+lemma fmap_map_fmap_copy [simp]: "fmap_map f (fmap_copy m x y) = fmap_copy (fmap_map f m) x y"
+  by transfer auto
 
 lemma fmap_map_cong: "(\<And> x. x \<in> fran m \<Longrightarrow> f x = f' x) \<Longrightarrow> m = m' \<Longrightarrow> fmap_map f m = fmap_map f' m'"
   by transfer (fastforce simp add: ran_def Option.map_def split:option.split)
