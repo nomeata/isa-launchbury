@@ -365,6 +365,14 @@ case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u e' "is")
       and "n # x # S \<ominus>\<^sub>S is' = n # x # S \<ominus>\<^sub>S is"
       by blast
 
+  from `x \<notin> heapVars is` hV have "x \<notin> heapVars is'" by auto
+  from `n \<notin> heapVars is` hV have "n \<notin> heapVars is'" by auto
+
+  from second_stack_element_unchanged[OF ApplicationInd.hyps(17)]  `atom n \<sharp> x`
+  have "lookup \<Delta> x = Some (App (Var n) y)" by simp
+
+  have "z \<notin> fdom \<Delta>"by (metis ApplicationInd.hyps(15) fresh_fdom)
+
   (* New invariant? *)
   (* TODO: Migrate to fmap 
   have "(supp is' - supp is) \<inter> supp ((n, e) # (x, App (Var n) y) # \<Gamma>)  \<subseteq> heap_of ((n, e) # (x, App (Var n) y) # \<Gamma>) (n # x # S)"
@@ -379,11 +387,6 @@ case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u e' "is")
   *)
   have "atom n \<sharp> is'" sorry
 
-  have "z \<notin> fdom \<Delta>"by (metis ApplicationInd.hyps(15) fresh_fdom)
-
-  from second_stack_element_unchanged[OF ApplicationInd.hyps(17)]  `atom n \<sharp> x`
-  have "lookup \<Delta> x = Some (App (Var n) y)" by simp
- 
   from `ind_for is' _` `atom n \<sharp> is'` 
   have "ind_for is' \<Delta>" by simp
   with `z \<notin> fdom \<Delta>`
@@ -402,7 +405,7 @@ case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u e' "is")
   have "valid_ind ((z, y) # is')"
     by (auto intro!: ValidIndCons simp add: fresh_Pair)
     
-  from `n # x # S \<ominus>\<^sub>S is' = n # x # S \<ominus>\<^sub>S is` `atom n \<sharp> is'` `atom n \<sharp> is`
+  from `n # x # S \<ominus>\<^sub>S is' = n # x # S \<ominus>\<^sub>S is` `x \<notin> heapVars is'` `x \<notin> heapVars is` `valid_ind is'` `valid_ind is`
   have [simp]:"x # S \<ominus>\<^sub>S is' = x # S \<ominus>\<^sub>S is" by simp
 
   from  `atom z \<sharp> S` `atom z \<sharp> x` 
