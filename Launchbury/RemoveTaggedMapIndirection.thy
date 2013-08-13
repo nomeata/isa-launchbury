@@ -268,19 +268,19 @@ lemma stack_not_used:
 oops
 
 theorem
-  "\<Gamma> \<Down>\<^sup>\<surd>\<^sup>u\<^sup>b\<^bsub>S\<^esub> \<Delta> \<Longrightarrow>
+  "\<Gamma> \<Down>\<^sup>\<surd>\<^sup>u\<^sup>\<times>\<^bsub>S\<^esub> \<Delta> \<Longrightarrow>
     ind_for is \<Gamma> \<Longrightarrow>
     valid_ind is \<Longrightarrow>
     (* distinct (S \<ominus>\<^sub>S is) \<Longrightarrow> *)
     (*  fst (hd \<Gamma>') \<notin> heapVars is \<Longrightarrow> *)
-  \<exists> is'. (\<Gamma> \<ominus>\<^sub>H is \<Down>\<^sup>\<times>\<^sup>u\<^sup>b\<^bsub>S \<ominus>\<^sub>S is\<^esub> \<Delta> \<ominus>\<^sub>H is')
+  \<exists> is'. (\<Gamma> \<ominus>\<^sub>H is \<Down>\<^sup>\<times>\<^sup>u\<^sup>\<times>\<^bsub>S \<ominus>\<^sub>S is\<^esub> \<Delta> \<ominus>\<^sub>H is')
        \<and> ind_for is' \<Delta>
        \<and> set is \<subseteq> set is'
        \<and> (heapVars is' \<inter> fdom \<Gamma>) \<subseteq> heapVars is
        \<and> valid_ind is'
        \<and> S \<ominus>\<^sub>S is' = S \<ominus>\<^sub>S is"
-proof (nominal_induct \<Gamma> "\<surd>" u b S \<Delta> avoiding: "is" rule:reds.strong_induct )
-case (Lambda x \<Gamma> y e u b S "is")
+proof (nominal_induct \<Gamma> "\<surd>" u "\<times>" S \<Delta> avoiding: "is" rule:reds.strong_induct )
+case (Lambda x \<Gamma> y e u S "is")
   show ?case
   proof(cases "x \<in> heapVars is")
   case True
@@ -296,10 +296,10 @@ case (Lambda x \<Gamma> y e u b S "is")
     hence "isLam ((\<Gamma> \<ominus>\<^sub>H is) f! (x \<ominus> is))"
       by (simp add: the_lookup_resolveHeap'[OF  resolve_resolved[OF `valid_ind is`] `x \<ominus> is \<in> fdom \<Gamma>`])
     ultimately
-    have "\<Gamma> \<ominus>\<^sub>H is \<Down>\<^sup>\<times>\<^sup>u\<^sup>b\<^bsub>(x \<ominus> is) # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> \<Gamma> \<ominus>\<^sub>H is"
+    have "\<Gamma> \<ominus>\<^sub>H is \<Down>\<^sup>\<times>\<^sup>u\<^sup>\<times>\<^bsub>(x \<ominus> is) # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> \<Gamma> \<ominus>\<^sub>H is"
       by (rule reds_LambdaI)
     with `x \<in> heapVars is` `valid_ind is`
-    have "\<Gamma> \<ominus>\<^sub>H is \<Down>\<^sup>\<times>\<^sup>u\<^sup>b\<^bsub>x # S \<ominus>\<^sub>S is\<^esub> \<Gamma> \<ominus>\<^sub>H is" by simp
+    have "\<Gamma> \<ominus>\<^sub>H is \<Down>\<^sup>\<times>\<^sup>u\<^sup>\<times>\<^bsub>x # S \<ominus>\<^sub>S is\<^esub> \<Gamma> \<ominus>\<^sub>H is" by simp
     with `ind_for is (\<Gamma>(x f\<mapsto> Lam [y]. e))`  `valid_ind is` True `x \<notin> fdom \<Gamma>`
     show ?thesis
       by -(rule exI[where x = "is"], auto)
@@ -325,7 +325,7 @@ case (Lambda x \<Gamma> y e u b S "is")
       by -(rule exI[where x = "is"],auto intro: reds.Lambda)
   qed
 next
-case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u b e' "is")
+case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u e' "is")
 
   from `x \<notin> fdom \<Gamma>` `ind_for is (\<Gamma>(x f\<mapsto> App e y))`
   have "ind_for is \<Gamma>" by (metis ind_for_Cons isLam.simps(3) isVar.simps(3))
@@ -357,7 +357,7 @@ case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u b e' "is")
   note ApplicationInd(18)[OF calculation]
   ultimately
   obtain "is'"
-  where is': "\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e) \<ominus>\<^sub>H is \<Down>\<^sup>\<times>\<^sup>u\<^sup>b\<^bsub>n # x # S \<ominus>\<^sub>S is\<^esub> \<Delta>(n f\<mapsto> Lam [z]. e') \<ominus>\<^sub>H is'"
+  where is': "\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e) \<ominus>\<^sub>H is \<Down>\<^sup>\<times>\<^sup>u\<^sup>\<times>\<^bsub>n # x # S \<ominus>\<^sub>S is\<^esub> \<Delta>(n f\<mapsto> Lam [z]. e') \<ominus>\<^sub>H is'"
       and "ind_for is' (\<Delta>(n f\<mapsto> Lam [z]. e'))"
       and hV: "heapVars is' \<inter> fdom (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)) \<subseteq> heapVars is"
       and "valid_ind is'"
@@ -381,14 +381,17 @@ case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u b e' "is")
 
   have "z \<notin> fdom \<Delta>"by (metis ApplicationInd.hyps(15) fresh_fdom)
 
+  from second_stack_element_unchanged[OF ApplicationInd.hyps(17)]  `atom n \<sharp> x`
+  have "lookup \<Delta> x = Some (App (Var n) y)" by simp
+ 
   from `ind_for is' _` `atom n \<sharp> is'` 
   have "ind_for is' \<Delta>" by simp
   with `z \<notin> fdom \<Delta>`
   have "ind_for ((z,y)#is') (\<Delta>(z f\<mapsto> Var y))" by (rule ind_for_ConsCons)
-
-  hence "ind_for ((z,y)#is') (\<Delta>(z f\<mapsto> Var y)(x f\<mapsto> e'))"
-    (* Unklar *)
-    sorry
+  with `lookup \<Delta> x = Some (App (Var n) y)` `atom z \<sharp> x`
+  have "ind_for ((z,y)#is') (\<Delta>(z f\<mapsto> Var y)(x f\<mapsto> e'))"
+    unfolding ind_for_def
+    by (auto simp add: lookup_fmap_upd_eq)
   moreover
 
   from `ind_for is' \<Delta>` `atom n \<sharp> \<Delta>` `atom z \<sharp> \<Delta>`
@@ -425,7 +428,7 @@ case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u b e' "is")
   *)
   then
   obtain "is''"
-  where is'':"\<Delta>(z f\<mapsto> Var y)(x f\<mapsto> e') \<ominus>\<^sub>H (z, y) # is' \<Down>\<^sup>\<times>\<^sup>u\<^sup>b\<^bsub>x # S \<ominus>\<^sub>S (z, y) # is'\<^esub> \<Theta> \<ominus>\<^sub>H is''"
+  where is'':"\<Delta>(z f\<mapsto> Var y)(x f\<mapsto> e') \<ominus>\<^sub>H (z, y) # is' \<Down>\<^sup>\<times>\<^sup>u\<^sup>\<times>\<^bsub>x # S \<ominus>\<^sub>S (z, y) # is'\<^esub> \<Theta> \<ominus>\<^sub>H is''"
           and "ind_for is'' \<Theta>"
           and "valid_ind is''"
           and "set ((z, y) # is') \<subseteq> set is''"
@@ -442,18 +445,13 @@ case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u b e' "is")
   from `ind_for is'' \<Theta>` `atom n \<sharp> \<Theta>`
   have "atom n \<sharp> is''" by (auto intro: ind_for_fresh simp add: fresh_append)
 
-  note is'  `x \<notin> heapVars is` `x \<notin> heapVars is'` `n \<notin> heapVars is` `n \<notin> heapVars is'`
-  
-
-  from second_stack_element_unchanged[OF ApplicationInd.hyps(17)]  `atom n \<sharp> x`
-  have "App (Var n) y = \<Delta> f! x" by simp
-  also
-  from is' `x \<notin> fdom \<Gamma>` `x \<notin> heapVars is` `x \<notin> heapVars is'` `n \<notin> heapVars is` `n \<notin> heapVars is'` `atom z \<sharp> is` `atom z \<sharp> is'`  `atom n \<sharp> x` `valid_ind is` `atom n \<sharp> \<Gamma>` `atom n \<sharp> \<Delta>`
-  have "(\<Gamma> \<ominus>\<^sub>H is)(x f\<mapsto> App (Var n) (y \<ominus> is))(n f\<mapsto> e \<ominus> is) \<Down>\<^sup>\<times>\<^sup>u\<^sup>b\<^bsub>n # x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub>  (\<Delta> \<ominus>\<^sub>H is')(n f\<mapsto>Lam [z]. (e' \<ominus> is'))"
+ 
+ from is' `x \<notin> fdom \<Gamma>` `x \<notin> heapVars is` `x \<notin> heapVars is'` `n \<notin> heapVars is` `n \<notin> heapVars is'` `atom z \<sharp> is` `atom z \<sharp> is'`  `atom n \<sharp> x` `valid_ind is` `atom n \<sharp> \<Gamma>` `atom n \<sharp> \<Delta>`
+  have "(\<Gamma> \<ominus>\<^sub>H is)(x f\<mapsto> App (Var n) (y \<ominus> is))(n f\<mapsto> e \<ominus> is) \<Down>\<^sup>\<times>\<^sup>u\<^sup>\<times>\<^bsub>n # x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub>  (\<Delta> \<ominus>\<^sub>H is')(n f\<mapsto>Lam [z]. (e' \<ominus> is'))"
     by (simp add: resolveExp_App resolveExp_Var resolveExp_Lam)
   from second_stack_element_unchanged[OF this] `atom n \<sharp> x` `x \<notin> heapVars is'`
   have "(\<Delta> f! x) \<ominus> is' = App (Var n) (y \<ominus> is)" by (auto simp add: lookup_resolveHeap')
-  finally
+  with `lookup \<Delta> x = Some (App (Var n) y)`
   have [simp]:"y \<ominus> is' = y \<ominus> is" by (simp add: resolveExp_App)
 
   (*
@@ -485,15 +483,15 @@ case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u b e' "is")
  
   {
     from is' `x \<notin> fdom \<Gamma>` `x \<notin> heapVars is` `x \<notin> heapVars is'` `n \<notin> heapVars is` `n \<notin> heapVars is'` `atom z \<sharp> is` `atom z \<sharp> is'`  `atom n \<sharp> x` `valid_ind is` `atom n \<sharp> \<Gamma>` `atom n \<sharp> \<Delta>`
-    have "(\<Gamma> \<ominus>\<^sub>H is)(x f\<mapsto> App (Var n) (y \<ominus> is))(n f\<mapsto> e \<ominus> is) \<Down>\<^sup>\<times>\<^sup>u\<^sup>b\<^bsub>n # x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub>  (\<Delta> \<ominus>\<^sub>H is')(n f\<mapsto>Lam [z]. (e' \<ominus> is'))"
+    have "(\<Gamma> \<ominus>\<^sub>H is)(x f\<mapsto> App (Var n) (y \<ominus> is))(n f\<mapsto> e \<ominus> is) \<Down>\<^sup>\<times>\<^sup>u\<^sup>\<times>\<^bsub>n # x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub>  (\<Delta> \<ominus>\<^sub>H is')(n f\<mapsto>Lam [z]. (e' \<ominus> is'))"
       by (simp add: resolveExp_App resolveExp_Var resolveExp_Lam)
   } moreover {
     from is'' `atom z \<sharp> \<Delta>` `atom z \<sharp> x`  `atom z \<sharp> is'` `x \<notin> heapVars is'` `x \<notin> heapVars is` `valid_ind is`
-    have "(\<Delta> \<ominus>\<^sub>H is')(x f\<mapsto> (e' \<ominus> is')[z::=(y \<ominus> is)]) \<Down>\<^sup>\<times>\<^sup>u\<^sup>b\<^bsub>x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> \<Theta> \<ominus>\<^sub>H is''"
+    have "(\<Delta> \<ominus>\<^sub>H is')(x f\<mapsto> (e' \<ominus> is')[z::=(y \<ominus> is)]) \<Down>\<^sup>\<times>\<^sup>u\<^sup>\<times>\<^bsub>x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> \<Theta> \<ominus>\<^sub>H is''"
       by (simp add: resolve_subst)
   }
   ultimately
-  have "(\<Gamma> \<ominus>\<^sub>H is)(x f\<mapsto> App (e \<ominus> is) (y \<ominus> is)) \<Down>\<^sup>\<times>\<^sup>u\<^sup>b\<^bsub>x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> \<Theta> \<ominus>\<^sub>H is''"
+  have "(\<Gamma> \<ominus>\<^sub>H is)(x f\<mapsto> App (e \<ominus> is) (y \<ominus> is)) \<Down>\<^sup>\<times>\<^sup>u\<^sup>\<times>\<^bsub>x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> \<Theta> \<ominus>\<^sub>H is''"
     apply(rule Application[rotated 3])
     using  `atom n \<sharp> x`  `atom n \<sharp> z`  `atom n \<sharp> is`  `atom n \<sharp> is'`  `atom n \<sharp> is''` `atom n \<sharp> \<Gamma>` 
           `atom n \<sharp> \<Delta>`  `atom n \<sharp> e` `atom n \<sharp> y`  `atom n \<sharp> \<Theta>`  `atom n \<sharp> S`
@@ -512,7 +510,7 @@ case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u b e' "is")
       done
 
   with `x \<notin> heapVars is` `valid_ind is`
-  have "\<Gamma>(x f\<mapsto> App e y) \<ominus>\<^sub>H is \<Down>\<^sup>\<times>\<^sup>u\<^sup>b\<^bsub> (x # S) \<ominus>\<^sub>S is\<^esub> \<Theta> \<ominus>\<^sub>H is''"
+  have "\<Gamma>(x f\<mapsto> App e y) \<ominus>\<^sub>H is \<Down>\<^sup>\<times>\<^sup>u\<^sup>\<times>\<^bsub> (x # S) \<ominus>\<^sub>S is\<^esub> \<Theta> \<ominus>\<^sub>H is''"
     by (simp add: resolveExp_App)
   moreover
   note `ind_for is'' _`
@@ -548,143 +546,6 @@ case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u b e' "is")
   have "x # S \<ominus>\<^sub>S is'' = x # S \<ominus>\<^sub>S is" by simp
   ultimately 
   show ?case by auto
-next
-case (Variable y x S \<Gamma> \<Delta> "is")
-  from `y \<notin> set (x # S)`
-  have "x \<noteq> y" by auto
-
-  from result_evaluated[OF `_ \<Down>\<^sup>\<surd>\<^sup>\<surd>\<^sup>\<surd>\<^bsub>_\<^esub> _`]
-  have "isLam (\<Delta> f! y)" by simp
-
-  from second_stack_element_unchanged[OF `_ \<Down>\<^sup>\<surd>\<^sup>\<surd>\<^sup>\<surd>\<^bsub>_\<^esub> _`] `x \<noteq> y`
-  have "lookup \<Delta> x = Some (Var y)" by simp
-
-  from stack_bound[OF `_ \<Down>\<^sup>\<surd>\<^sup>\<surd>\<^sup>\<surd>\<^bsub>_\<^esub> _`]
-  have "y \<in> fdom \<Delta>" by simp
-
-  from Variable(4)[OF  `ind_for is _` `valid_ind is`]
-  obtain is' where is': "\<Gamma>(x f\<mapsto> Var y) \<ominus>\<^sub>H is \<Down>\<^sup>\<times>\<^sup>\<surd>\<^sup>\<surd>\<^bsub>y # x # S \<ominus>\<^sub>S is\<^esub> \<Delta> \<ominus>\<^sub>H is'"
-    and "ind_for is' \<Delta>"
-    and "set is \<subseteq> set is'"
-    and "valid_ind is'"
-    and hV: "heapVars is' \<inter> fdom (\<Gamma>(x f\<mapsto> Var y)) \<subseteq> heapVars is"
-    and "y # x # S \<ominus>\<^sub>S is' = y # x # S \<ominus>\<^sub>S is"
-    by blast
-
-  show ?case
-  proof(cases "x \<in> heapVars is")
-  case True
-    from True `ind_for is _`
-    have "(x,y) \<in> set is" by (auto simp add: ind_for_def heapVars_def)
-
-    from `valid_ind is` `(x, y) \<in> set is`
-    have [simp]: "x \<ominus> is = y \<ominus> is"
-      by (rule resolve_var_same_image)
-
-    from `(x,y) \<in> set is` `set is \<subseteq> set is'`
-    have "(x,y) \<in> set is'" by auto
-    with `valid_ind is'`
-    have [simp]: "x \<ominus> is' = y \<ominus> is'"
-      by (rule resolve_var_same_image)
-
-    from `(x,y) \<in> set is`
-    have [simp]: "y # x # S \<ominus>\<^sub>S is = x # S \<ominus>\<^sub>S is" by simp
-
-    from `(x,y) \<in> set is'`
-    have [simp]: "y # x # S \<ominus>\<^sub>S is' = x # S \<ominus>\<^sub>S is'" by simp
-
-    from `set is \<subseteq> set is'`
-    have "heapVars is \<subseteq> heapVars is'" by (metis heapVars_def image_mono)
-    with `x \<in> heapVars is`
-    have "x \<in> heapVars is'" by auto
-
-    from is' `x \<in> heapVars is` `x \<in> heapVars is'`
-    have "\<Gamma>(x f\<mapsto> Var y) \<ominus>\<^sub>H is \<Down>\<^sup>\<times>\<^sup>\<surd>\<^sup>\<surd>\<^bsub>x # S \<ominus>\<^sub>S is\<^esub> fmap_copy \<Delta> y x \<ominus>\<^sub>H is'" by simp
-    moreover
-
-    from `lookup \<Delta> x = Some (Var y)` `y \<in> fdom \<Delta>` result_evaluated[OF `_ \<Down>\<^sup>\<surd>\<^sup>\<surd>\<^sup>\<surd>\<^bsub>_\<^esub> _`, simplified]   `ind_for is' _`
-    have "ind_for is' (fmap_copy \<Delta> y x)"
-      by (rule ind_for_copy) 
-    moreover
-    note `set is \<subseteq> set is'` `valid_ind is'`
-    moreover
-    from hV
-    have "heapVars is' \<inter> fdom (\<Gamma>(x f\<mapsto> Var y)) \<subseteq> heapVars is" by auto
-    moreover
-    from `y # x # S \<ominus>\<^sub>S is' = y # x # S \<ominus>\<^sub>S is`
-    have "x # S \<ominus>\<^sub>S is' = x # S \<ominus>\<^sub>S is" by simp
-    (*
-    moreover
-    from `x \<notin> heapVars is'`
-    have "fst (hd ((x, z) # \<Delta>')) \<notin> heapVars is'" by simp
-    *)
-    ultimately
-    show ?thesis by blast
-  next
-  case False
-    from `x \<notin> heapVars is` hV
-    have "x \<notin> heapVars is'" by auto
-
-    (* Mit (x, Var y) # \<Gamma> \<Down>\<^sup>\<surd>\<^sup>\<surd>\<^sup>d\<^bsub>y # x # S\<^esub> (y, z) # (x, Var y) # \<Delta>
-       und `ind_for _` sollte ich rausbekommen, dass
-       y \<ominus> is \<notin> set (x # S).
-       Außer y ist schon ein Lambda... :-(
-       Aber selbst dann kann in S Kruscht sein, der in den heapVars von is vorkommt.
-    *)
-    have "y \<ominus> is \<notin> set (x # S \<ominus>\<^sub>S is)" sorry
-
-    hence "y \<ominus> is \<noteq> x" using `valid_ind is` `x \<notin> heapVars is` by simp
-
-    have [simp]: "fmap_copy \<Delta> y x \<ominus>\<^sub>H is' = fmap_copy (\<Delta> \<ominus>\<^sub>H is') (y \<ominus> is') x"
-      using `valid_ind is'` `isLam (\<Delta> f! y)` `ind_for is' \<Delta>` `x \<notin> heapVars is'`
-      by (rule resolveHeap_fmap_copy)
-
-    from is'  `x \<notin> heapVars is` `x \<notin> heapVars is'` `valid_ind is`
-    have "(\<Gamma> \<ominus>\<^sub>H is)(x f\<mapsto> Var (y \<ominus> is)) \<Down>\<^sup>\<times>\<^sup>\<surd>\<^sup>\<surd>\<^bsub>(y \<ominus> is) # x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> \<Delta> \<ominus>\<^sub>H is'"
-      by (simp add: resolveExp_Var)
-    from second_stack_element_unchanged[OF this] `y \<ominus> is \<noteq> x` `x \<notin> heapVars is'`
-    have "(\<Delta> f! x) \<ominus> is' = Var (y \<ominus> is)" by (auto simp add: lookup_resolveHeap')
-    with  `lookup \<Delta> x = Some (Var y)`
-    have [simp]:"y \<ominus> is' = y \<ominus> is" by (simp add: resolveExp_Var)
-  
-    from `y \<ominus> is \<notin> set (x # S \<ominus>\<^sub>S is)` `valid_ind is`
-    have "y \<ominus> is \<notin> set (x # (dropChain is x S \<ominus>\<^sub>S is))" by auto
-    moreover
-    have "x \<notin> fdom (\<Gamma> \<ominus>\<^sub>H is)" using `x \<notin> fdom \<Gamma>` by simp
-    moreover
-    from is'  `x \<notin> heapVars is`  `valid_ind is`
-    have "(\<Gamma> \<ominus>\<^sub>H is)(x f\<mapsto> Var (y \<ominus> is)) \<Down>\<^sup>\<times>\<^sup>\<surd>\<^sup>\<surd>\<^bsub>(y \<ominus> is) # x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> \<Delta> \<ominus>\<^sub>H is'"
-      by (simp add: resolveExp_Var)
-    ultimately
-    have "(\<Gamma> \<ominus>\<^sub>H is)(x f\<mapsto> Var (y \<ominus> is)) \<Down>\<^sup>\<times>\<^sup>\<surd>\<^sup>\<surd>\<^bsub>x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> fmap_copy (\<Delta> \<ominus>\<^sub>H is') (y \<ominus> is) x"
-      by (rule reds.Variable)
-    hence "\<Gamma>(x f\<mapsto> Var y) \<ominus>\<^sub>H is \<Down>\<^sup>\<times>\<^sup>\<surd>\<^sup>\<surd>\<^bsub>x # S \<ominus>\<^sub>S is\<^esub> fmap_copy \<Delta> y x \<ominus>\<^sub>H is'"
-      using  `x \<notin> heapVars is`  `valid_ind is`
-      by (simp add: resolveExp_Var)
-    moreover
-
-    from `lookup \<Delta> x = Some (Var y)` `y \<in> fdom \<Delta>` result_evaluated[OF `_ \<Down>\<^sup>\<surd>\<^sup>\<surd>\<^sup>\<surd>\<^bsub>_\<^esub> _`, simplified]   `ind_for is' _`
-    have "ind_for is' (fmap_copy \<Delta> y x)"
-      by (rule ind_for_copy) 
-    moreover
-    note `set is \<subseteq> set is'` `valid_ind is'`
-    moreover
-    from hV
-    have "heapVars is' \<inter> fdom (\<Gamma>(x f\<mapsto> Var y)) \<subseteq> heapVars is" by auto
-    moreover
-    from `y # x # S \<ominus>\<^sub>S is' = y # x # S \<ominus>\<^sub>S is`
-         `valid_ind is` `valid_ind is'`
-         `x \<notin> heapVars is` `x \<notin> heapVars is'`       
-    have "x # S \<ominus>\<^sub>S is' = x # S \<ominus>\<^sub>S is"
-      by auto
-    (*
-    moreover
-    from `x \<notin> heapVars is'`
-    have "fst (hd ((x, z) # \<Delta>')) \<notin> heapVars is'" by simp
-    *)
-    ultimately
-    show ?thesis by blast
-  qed
 next
 case (VariableNoBH x \<Gamma> y S \<Delta> "is")
   from `\<Gamma>(x f\<mapsto> Var y) \<Down>\<^sup>\<surd>\<^sup>\<surd>\<^sup>\<times>\<^bsub>y # x # S\<^esub> \<Delta>`
@@ -815,7 +676,7 @@ case (VariableNoBH x \<Gamma> y S \<Delta> "is")
     show ?thesis by blast
   qed
 next
-case (Let as \<Gamma> x S body u b \<Delta> "is")
+case (Let as \<Gamma> x S body u \<Delta> "is")
   show ?case sorry
 qed
 
