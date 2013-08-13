@@ -1,6 +1,6 @@
 theory LaunchburyAddBH
 imports LaunchburyCombinedTaggedMap
-begin
+begin                     
 
 nominal_primrec varOf :: "exp \<Rightarrow> var option" where
   "varOf (Var x) = Some x" |
@@ -40,10 +40,10 @@ lemma depRel_cong:
   "lookup \<Gamma> a = lookup \<Delta> a \<Longrightarrow> depRel \<Gamma> a b = depRel \<Delta> a b"
   by auto
 
-lemma depRel_fmap_upd_Not[simp]: "a \<noteq> x \<Longrightarrow> depRel (\<Gamma>(x f\<mapsto> e)) a b \<longleftrightarrow> depRel \<Gamma> a b"
-  by simp
+lemma depRel_fmap_upd[simp]: "depRel (\<Gamma>(x f\<mapsto>  e)) x y \<longleftrightarrow> dep e = Some y"
+  by auto
 
-lemma depRelConsI[intro]: "a \<noteq> x \<Longrightarrow> depRel \<Gamma> a b \<Longrightarrow> depRel (\<Gamma>(x f\<mapsto> e)) a b"
+lemma depRel_fmap_upd_Not[simp]: "a \<noteq> x \<Longrightarrow> depRel (\<Gamma>(x f\<mapsto> e)) a b \<longleftrightarrow> depRel \<Gamma> a b"
   by simp
 
 lemma depRel_dom: "depRel \<Gamma> y x \<Longrightarrow> y \<in> fdom \<Gamma>"
@@ -53,24 +53,10 @@ lemma depRelTransDom:
   "(depRel \<Gamma>)\<^sup>+\<^sup>+ a b \<Longrightarrow> a \<in> fdom \<Gamma>"
   by (metis (full_types) depRel_dom tranclpD)
 
-lemma depRel_fmap_upd[simp]: "depRel (\<Gamma>(x f\<mapsto>  e)) x y \<longleftrightarrow> dep e = Some y"
-  by auto
-
 lemma depRel_fmap_upd_trans[simp]: "lookup \<Gamma> x = Some e \<Longrightarrow> dep e = None \<Longrightarrow> (depRel \<Gamma>)\<^sup>+\<^sup>+ x y \<longleftrightarrow> False"
   by (auto elim: tranclp_induct)
 
 definition cycle where "cycle \<Gamma> x \<longleftrightarrow> (depRel \<Gamma>)\<^sup>+\<^sup>+ x x"
-
-(*
-lemma depRelE: "depRel \<Gamma> x y \<Longrightarrow> (\<exists> z. lookup \<Gamma> x = Some (Var z)) \<or> (\<exists> z y. lookup \<Gamma> x = Some (App (Var z) y))"
-  by  (auto elim: depRel.cases)
-*)
-
-(*
-lemma depRelTransE: "(depRel \<Gamma>)\<^sup>+\<^sup>+ x y \<Longrightarrow> (\<exists> z. lookup \<Gamma> x = Some (Var z)) \<or> (\<exists> z y. lookup \<Gamma> x = Some (App (Var z) y))"
-  by (induction x y rule: tranclp_trans_induct[consumes 1, case_names base step])
-     (auto dest: depRelE)
-*)
 
 lemma lookup_eq_split: "lookup (f(a f\<mapsto> b)) x = Some r \<longleftrightarrow> ((x = a \<and> r = b) \<or> (x \<noteq> a \<and> lookup f x = Some r))"
   by transfer auto
@@ -192,14 +178,15 @@ by (metis assms depRel_via cycle_def tranclp.simps)
 theorem
   assumes "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>x#S\<^esub> \<Delta>"
   assumes "validStack \<Gamma> x S"
-  shows "\<not> cycle \<Gamma> x"  "validStack \<Delta> x S" and "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>\<surd>\<^bsub>x#S\<^esub> \<Delta>"
-  (* The third conclusion does not need the second, but inductive proofs compose so badly. *)
+  shows "\<not> cycle \<Gamma> x" and  "validStack \<Delta> x S"
+   and add_blackholing: "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>\<surd>\<^bsub>x#S\<^esub> \<Delta>"
+  (* The third conclusion does not need the others, but inductive proofs compose so badly. *)
 using assms
 proof(induction \<Gamma> i u b "x#S" \<Delta> arbitrary: x S rule:reds.induct )
 case (Lambda \<Gamma> x y e i u b S)
   case 1 show ?case by (auto simp add: cycle_def)
   case 2 thus ?case .
-  case 3 show ?case by (rule reds.Lambda)
+  case 3 show ?case using Lambda by (rule reds.Lambda)
 next
 case (Application n \<Gamma> x e y S \<Delta> \<Theta> z u b e')
   case 2
@@ -217,7 +204,7 @@ case (Application n \<Gamma> x e y S \<Delta> \<Theta> z u b e')
     hence "validStack (\<Delta>(n f\<mapsto> Lam [z]. e')) x S" by (cases)
     hence IH2: "validStack (\<Delta>(x f\<mapsto> e'[z::=y])) x S"
     proof(rule validStack_cong)
-      from stack_unchanged[OF Application.hyps(6)[OF IH1]] `n \<noteq> x`
+      from stack_unchanged[OF Application.hyps(7)[OF IH1]] `n \<noteq> x`
       have "lookup (\<Delta>(n f\<mapsto> Lam [z]. e')) x = Some (App (Var n) y)"  by auto
       hence "depRel (\<Delta>(n f\<mapsto> Lam [z]. e')) x n" by auto
 
@@ -235,7 +222,7 @@ case (Application n \<Gamma> x e y S \<Delta> \<Theta> z u b e')
     thus "validStack \<Theta> x S"
       by (rule Application.hyps)
   case 1
-    from Application.hyps(4)[OF IH1]
+    from Application.hyps(5)[OF IH1]
     show ?case
     proof(rule contrapos_nn)
       assume "cycle (\<Gamma>(x f\<mapsto> App e y)) x"
@@ -244,9 +231,9 @@ case (Application n \<Gamma> x e y S \<Delta> \<Theta> z u b e')
       thus "cycle (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)) n" using `n \<noteq> x`  by (auto elim!: cycle_depRel)
     qed
   case 3
-    from Application.hyps(1,2)
-         Application.hyps(6)[OF IH1]
-         Application.hyps(10)[OF IH2]
+    from Application.hyps(1,2,3)
+         Application.hyps(7)[OF IH1]
+         Application.hyps(11)[OF IH2]
     show ?case by (rule reds.Application)
 next
 case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u b e')
@@ -264,7 +251,7 @@ case 2
     hence "validStack (\<Delta>(n f\<mapsto> Lam [z]. e')) x S" by (cases)
     hence IH2: "validStack (\<Delta>(z f\<mapsto> Var y)(x f\<mapsto> e')) x S"
     proof(rule validStack_cong)
-      from stack_unchanged[OF ApplicationInd.hyps(6)[OF IH1]] `n \<noteq> x`
+      from stack_unchanged[OF ApplicationInd.hyps(7)[OF IH1]] `n \<noteq> x`
       have "depRel (\<Delta>(n f\<mapsto> Lam [z]. e')) x n" by auto
 
       fix x'
@@ -287,7 +274,7 @@ case 2
     thus "validStack \<Theta> x S"
       by (rule ApplicationInd.hyps)
   case 1
-    from ApplicationInd.hyps(4)[OF IH1]
+    from ApplicationInd.hyps(5)[OF IH1]
     show ?case
     proof(rule contrapos_nn)
       assume "cycle (\<Gamma>(x f\<mapsto> App e y)) x"
@@ -297,9 +284,9 @@ case 2
         by (auto elim!: cycle_depRel)
     qed
   case 3
-    from ApplicationInd.hyps(1,2)
-         ApplicationInd.hyps(6)[OF IH1]
-         ApplicationInd.hyps(10)[OF IH2]
+    from ApplicationInd.hyps(1-3)
+         ApplicationInd.hyps(7)[OF IH1]
+         ApplicationInd.hyps(11)[OF IH2]
     show ?case by (rule reds.ApplicationInd)
 next
 case (Variable y x S \<Gamma> i \<Delta>)
@@ -311,7 +298,7 @@ case (Variable y x S \<Gamma> i \<Delta>)
   ultimately
   have "validStack (\<Gamma>(x f\<mapsto> Var y)) y (x # S)"
     by (rule ValidStackCons)
-  note hyps = Variable(3-5)[OF this]
+  note hyps = Variable(4-6)[OF this]
 
   from stack_unchanged[OF hyps(3)] `y \<noteq> x`
   have "lookup \<Delta> x = Some (Var y)" by simp
@@ -340,18 +327,18 @@ case (Variable y x S \<Gamma> i \<Delta>)
   show "\<not> cycle (\<Gamma>(x f\<mapsto> Var y)) x"
     by (auto elim!: contrapos_nn cycle_depRel)
 
-  from Variable(1,2) 
+  from Variable(1-3) 
   show "\<Gamma>(x f\<mapsto> Var y) \<Down>\<^sup>i\<^sup>\<surd>\<^sup>\<surd>\<^bsub>x # S\<^esub> fmap_copy \<Delta> y x"
     by (rule reds.Variable)
 next
-case (VariableNoBH \<Gamma> x y i S \<Delta>)
+case (VariableNoBH x \<Gamma> y i S \<Delta>)
   have "(depRel (\<Gamma>(x f\<mapsto> Var y)))\<^sup>+\<^sup>+ x y" by auto 
   moreover
   assume "validStack (\<Gamma>(x f\<mapsto> Var y)) x S"
   ultimately
   have "validStack (\<Gamma>(x f\<mapsto> Var y)) y (x # S)"
     by (rule ValidStackCons)
-  note hyps = VariableNoBH(2-4)[OF this]
+  note hyps = VariableNoBH(3-5)[OF this]
 
   from hyps(1) `(depRel (\<Gamma>(x f\<mapsto> Var y)))\<^sup>+\<^sup>+ x y`
   have "y \<noteq> x" by (auto simp add: cycle_def)
@@ -387,7 +374,7 @@ case (VariableNoBH \<Gamma> x y i S \<Delta>)
   have "y \<notin> set (x # S)"
     by (metis validStack_cycle)
 
-  from this hyps(3)
+  from this VariableNoBH.hyps(1) hyps(3)
   show "\<Gamma>(x f\<mapsto> Var y) \<Down>\<^sup>i\<^sup>\<surd>\<^sup>\<surd>\<^bsub>x # S\<^esub> fmap_copy \<Delta> y x"
     by (rule reds.Variable)
 next
@@ -410,7 +397,7 @@ case (Let as \<Gamma> x S body i u b \<Delta>)
         lookup (\<Gamma>(x f\<mapsto> body) f++ fmap_of (asToHeap as)) x'"
         by simp
   qed
-  note hyps = Let(4,5,6)[OF this]
+  note hyps = Let(5-7)[OF this]
 
   case 1
   show ?case by (auto simp add: cycle_def)
@@ -420,11 +407,36 @@ case (Let as \<Gamma> x S body i u b \<Delta>)
   show ?case.
 
   case 3
-  note Let(1,2) hyps(3)
+  note Let(1-3) hyps(3)
   thus ?case..
 qed
 
-unused_thms
+lemma remove_blackholing:
+  assumes "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>\<surd>\<^bsub>S\<^esub> \<Delta>"
+  shows "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>S\<^esub> \<Delta>"
+using assms
+apply (cases b, simp)
+apply (induction \<Gamma> i u "\<surd>" S \<Delta> rule:reds.induct )
+apply (blast intro:reds.intros)+
+done
+
+lemma second_stack_element_unchanged:
+  assumes "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>x#y#S\<^esub> \<Delta>"
+  assumes "x \<noteq> y"
+  assumes "depRel \<Gamma> y x"
+  shows "lookup \<Delta> y = lookup \<Gamma> y"
+proof-
+  from shorten_stack[OF assms(1), where n = 1]
+  have "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>[x,y]\<^esub> \<Delta>" by simp
+  moreover
+  from assms(3)
+  have "validStack \<Gamma> x [y]" by (fastforce intro: validStack.intros)
+  ultimately
+  have "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>\<surd>\<^bsub>[x,y]\<^esub> \<Delta>" by (rule add_blackholing)
+  from stack_unchanged[OF this, where x = y] assms(2)
+  show ?thesis by auto
+qed
+
 
 end
 

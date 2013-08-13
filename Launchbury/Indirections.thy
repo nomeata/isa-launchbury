@@ -1,5 +1,5 @@
 theory Indirections
-imports Terms "Nominal-Utils" DistinctVars
+imports Terms "Nominal-Utils" DistinctVars "FMap-Heap" "FMap-Nominal"
 begin
 
 type_synonym indirections = "(var \<times> var) list "
@@ -73,7 +73,7 @@ instance
   apply default
   apply (rule resolve_exp_append)
   apply simp
-  apply (rule resolve_exp_eqvt)
+  apply (rule resolve_exp_eqvt);
   apply (simp add: subst_fresh_noop)
   done
 end
@@ -82,7 +82,7 @@ lemma resolve_var_fresh: "atom ` heapVars is \<sharp>* v \<Longrightarrow> (v::v
   by (induct "is" rule:resolve_var.induct)(auto simp add: fresh_star_def fresh_def )
 
 lemma resolve_var_fresh'[simp]: "atom v \<sharp> is \<Longrightarrow> (v::var) \<ominus> is = v"
-  by (induct "is" rule:resolve_var.induct)(auto simp add: fresh_Cons)
+  by (induct "is" rule:resolve_var.induct)(auto simp add: fresh_Cons fresh_Pair)
 
 lemma resolve_var_list_fresh: "atom ` heapVars is \<sharp>* L \<Longrightarrow> (L::var list) \<ominus> is = L"
   by (induct L) (auto simp add: fresh_star_Cons resolve_var_fresh)
@@ -101,6 +101,28 @@ lemma resolveExp_Var: "Var x \<ominus> is = Var (x \<ominus> is)"
   by (induction "is" arbitrary: x) auto
 
 lemma resolveExp_Let: "(Let as e) \<ominus> is = Let as (e \<ominus> is)"
+  sorry
+
+
+definition resolveHeap' :: "Heap \<Rightarrow> indirections \<Rightarrow> Heap"  (infixl "\<ominus>\<^sub>H" 60) where
+  "\<Gamma> \<ominus>\<^sub>H is = fmap_map (\<lambda>e. e \<ominus> is) (\<Gamma> f|` (- heapVars is))"
+
+lemma resolveHeap'fdom[simp]:
+  "fdom (\<Gamma> \<ominus>\<^sub>H is) = fdom \<Gamma> - heapVars is"
+  unfolding resolveHeap'_def by auto
+
+lemma resolveHeap'_fmap_upd[simp]: "x \<in> heapVars is \<Longrightarrow> (\<Gamma>(x f\<mapsto> e)) \<ominus>\<^sub>H is = \<Gamma> \<ominus>\<^sub>H is"
+  unfolding resolveHeap'_def by auto
+
+lemma resolveHeap'_fmap_upd_other[simp]: "x \<notin> heapVars is \<Longrightarrow> (\<Gamma>(x f\<mapsto> e)) \<ominus>\<^sub>H is = (\<Gamma> \<ominus>\<^sub>H is)(x f\<mapsto> e \<ominus> is)"
+  unfolding resolveHeap'_def by simp
+
+lemma resolveHeap'_fresh_Cons[simp]: "atom y \<sharp> \<Gamma> \<Longrightarrow> \<Gamma> \<ominus>\<^sub>H (y,x)#is = \<Gamma> \<ominus>\<^sub>H is"
+  unfolding resolveHeap'_def
+  by (rule fmap_map_cong[OF resolve_fresh_noop])
+     (auto dest: set_mp[OF fran_fmap_restr_subset] intro: fmap_restr_cong simp add: fresh_def supp_fmap supp_set_elem_finite)
+
+lemma resolveHeap'_eqvt[eqvt]: "p \<bullet> resolveHeap' \<Gamma> is = resolveHeap' (p \<bullet> \<Gamma>) (p \<bullet> is)"
   sorry
 
 fun resolveHeapOne :: "heap \<Rightarrow> var \<Rightarrow> var \<Rightarrow> heap"  where
@@ -219,7 +241,7 @@ proof-
   have "(y \<leftrightarrow> y') \<bullet> (Lam [y]. e') = Lam [y']. ((y \<leftrightarrow> y') \<bullet> e')"
     by simp
   ultimately
-  show "Lam [y]. e' =  Lam [y']. ((y \<leftrightarrow> y') \<bullet> e')" by simp
+  show "Lam [y]. e' =  Lam [y']. ((y \<leftrightarrow> y') \<bullet> e')" by (simp add: fresh_Pair)
 qed
 
 lemma
@@ -258,6 +280,11 @@ lemma heapVarFresh: "x \<in> heapVars is \<Longrightarrow> atom x \<sharp> ((v::
 lemma resolveHeap_fresh:  "valid_ind is \<Longrightarrow> x \<in> heapVars is \<Longrightarrow> atom x \<sharp> (\<Gamma> \<ominus>\<^sub>h is)"
   by (induct arbitrary: \<Gamma> rule:valid_ind.induct)
      (auto simp add: fresh_Pair resolveHeapOneFresh eqvt_fresh_cong2[where f = resolveHeap, OF resolveHeap_eqvt])
+
+lemma resolveHeap'_fresh:  "valid_ind is \<Longrightarrow> x \<in> heapVars is \<Longrightarrow> atom x \<sharp> (\<Gamma> \<ominus>\<^sub>H is)"
+  apply (induct arbitrary: \<Gamma> rule:valid_ind.induct)
+  apply (auto simp add: fresh_Pair resolveHeap'_def)
+  sorry
 
 lemma resolveHeapOne_distinctVars: "distinctVars \<Gamma> \<Longrightarrow> distinctVars (resolveHeapOne \<Gamma> a b)"
   by (induct \<Gamma> a b rule:resolveHeapOne.induct) (auto simp add: distinctVars_Cons)
