@@ -220,6 +220,10 @@ lemma fmap_of_eqvt[eqvt]:
   "\<pi> \<bullet> fmap_of l = fmap_of (\<pi> \<bullet> l)"
 by transfer (rule map_of_eqvt)
 
+lemma fmap_map_eqvt[eqvt]:
+  "\<pi> \<bullet> fmap_map f m = fmap_map (\<pi> \<bullet> f) (\<pi> \<bullet> m)"
+by transfer simp
+
 subsubsection {* Freshness and support *}
 
 lemma fresh_fdom[simp]: "atom x \<sharp> (f :: 'a::at_base f\<rightharpoonup> 'b::fs) \<Longrightarrow> x \<notin> fdom f"

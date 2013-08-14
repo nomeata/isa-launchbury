@@ -1,5 +1,5 @@
 theory Indirections
-imports Terms "Nominal-Utils" DistinctVars "FMap-Heap" "FMap-Nominal"
+imports Terms "Nominal-Utils" "DistinctVars-Nominal" "FMap-Heap" "FMap-Nominal"
 begin
 
 type_synonym indirections = "(var \<times> var) list "
@@ -133,6 +133,9 @@ lemma resolve_assn_ACons[simp]: "x \<notin> heapVars is \<Longrightarrow> (ACons
 definition resolveHeap' :: "Heap \<Rightarrow> indirections \<Rightarrow> Heap"  (infixl "\<ominus>\<^sub>H" 60) where
   "\<Gamma> \<ominus>\<^sub>H is = fmap_map (\<lambda>e. e \<ominus> is) (\<Gamma> f|` (- heapVars is))"
 
+lemma resolveHeap'_empty[simp]: "f\<emptyset> \<ominus>\<^sub>H is = f\<emptyset>"
+  unfolding resolveHeap'_def by auto
+
 lemma resolveHeap'fdom[simp]:
   "fdom (\<Gamma> \<ominus>\<^sub>H is) = fdom \<Gamma> - heapVars is"
   unfolding resolveHeap'_def by auto
@@ -158,7 +161,8 @@ lemma resolveHeap'_fresh_Cons[simp]: "atom y \<sharp> \<Gamma> \<Longrightarrow>
      (auto dest: set_mp[OF fran_fmap_restr_subset] intro: fmap_restr_cong simp add: fresh_def supp_fmap supp_set_elem_finite)
 
 lemma resolveHeap'_eqvt[eqvt]: "p \<bullet> resolveHeap' \<Gamma> is = resolveHeap' (p \<bullet> \<Gamma>) (p \<bullet> is)"
-  sorry
+  unfolding resolveHeap'_def
+  by (simp add: fmap_restr_eqvt Compl_eqvt)
 
 fun resolveHeapOne :: "heap \<Rightarrow> var \<Rightarrow> var \<Rightarrow> heap"  where
   "resolveHeapOne [] _ _ = []"
@@ -302,10 +306,36 @@ lemma resolveHeap_fresh:  "valid_ind is \<Longrightarrow> x \<in> heapVars is \<
   by (induct arbitrary: \<Gamma> rule:valid_ind.induct)
      (auto simp add: fresh_Pair resolveHeapOneFresh eqvt_fresh_cong2[where f = resolveHeap, OF resolveHeap_eqvt])
 
-lemma resolveHeap'_fresh:  "valid_ind is \<Longrightarrow> x \<in> heapVars is \<Longrightarrow> atom x \<sharp> (\<Gamma> \<ominus>\<^sub>H is)"
-  apply (induct arbitrary: \<Gamma> rule:valid_ind.induct)
-  apply (auto simp add: fresh_Pair resolveHeap'_def)
-  sorry
+lemma resolve_expr_fresh:
+  assumes "valid_ind is"
+  assumes "x \<in> heapVars is"
+  shows "atom x \<sharp> ((e :: exp) \<ominus> is)"
+using assms
+  by (induct arbitrary: e rule:valid_ind.induct)
+     (auto simp add: fresh_Pair eqvt_fresh_cong2[where f = resolve, OF resolve_eqvt])
+
+lemma resolveHeap'_fresh:
+  assumes "valid_ind is"
+  assumes "x \<in> heapVars is"
+  shows "atom x \<sharp> (\<Gamma> \<ominus>\<^sub>H is)"
+proof (induction \<Gamma> rule:fmap_induct)
+  case empty show ?case by auto
+next
+  case (update \<Gamma> x' v)
+  show ?case
+  proof(cases "x' \<in> heapVars is")
+    case True with update assms
+    show ?thesis by auto
+  next
+    case False
+    moreover
+    hence "x \<noteq> x'" using assms(2) by auto
+    ultimately
+    show ?thesis
+    using update assms
+    by (auto simp add: resolve_expr_fresh eqvt_fresh_cong3[where f = fmap_upd, OF fmap_upd_eqvt])
+  qed
+qed
 
 lemma resolveHeapOne_distinctVars: "distinctVars \<Gamma> \<Longrightarrow> distinctVars (resolveHeapOne \<Gamma> a b)"
   by (induct \<Gamma> a b rule:resolveHeapOne.induct) (auto simp add: distinctVars_Cons)

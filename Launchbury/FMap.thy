@@ -298,6 +298,7 @@ lemma fmap_map_fmap_copy [simp]: "fmap_map f (fmap_copy m x y) = fmap_copy (fmap
 
 lemma fmap_map_cong: "(\<And> x. x \<in> fran m \<Longrightarrow> f x = f' x) \<Longrightarrow> m = m' \<Longrightarrow> fmap_map f m = fmap_map f' m'"
   by transfer (fastforce simp add: ran_def Option.map_def split:option.split)
+
   
 subsubsection {* Conversion from associative lists *}
 
