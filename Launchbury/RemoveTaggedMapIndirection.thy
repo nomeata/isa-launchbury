@@ -13,11 +13,6 @@ lemma remdups'_noop[simp]: "distinct S \<Longrightarrow> remdups' S = S"
 lemma remdumps'_distinct[simp]: "distinct (remdups' xs)"
   by (induction xs rule:remdups'.induct) (auto intro: distinct_removeAll)
 
-(*
-definition resolveStack :: "var list \<Rightarrow> indirections \<Rightarrow> var list"(infixl "\<ominus>\<^sub>S" 60)
-  where "resolveStack xs is = remdups' (xs \<ominus> is)"
-*)
-
 function resolveStack :: "var list \<Rightarrow> indirections \<Rightarrow> var list" (infixl "\<ominus>\<^sub>S" 60)
   where "(x,y) \<in> set is \<Longrightarrow> (y#x#S) \<ominus>\<^sub>S is = (x#S) \<ominus>\<^sub>S is"
       | "(x,y) \<notin> set is \<Longrightarrow> (y#x#S) \<ominus>\<^sub>S is = (y \<ominus> is) # ((x#S) \<ominus>\<^sub>S is)"
@@ -74,17 +69,17 @@ lemma dropChain_fresh: "atom x \<sharp> S \<Longrightarrow> atom x \<sharp> drop
 lemma dropChain_Cons_fresh[simp]: "atom z \<sharp> S \<Longrightarrow>dropChain ((z,y)#is) x S = dropChain is x S" 
   by (induction "(z,y)#is" x S rule:dropChain.induct) (auto simp add: dropChain.simps(1) fresh_Cons)
 
-
-(*
-lemma resolveStack_Cons[simp]: "(x # S) \<ominus>\<^sub>S is = (x \<ominus> is) # (removeAll (x \<ominus> is) (S \<ominus>\<^sub>S is))"
-  unfolding resolveStack_def by simp
-*)
-
 lemma resolveStack_eqvt[eqvt]: "\<pi> \<bullet> (S \<ominus>\<^sub>S is) = (\<pi> \<bullet> S) \<ominus>\<^sub>S (\<pi> \<bullet> is)"
-  sorry
+  apply (induction S "is" rule: resolveStack.induct)
+  apply auto
+  apply (metis resolveStack.simps(1) Pair_eqvt mem_permute_iff set_eqvt)
+  apply (metis resolveStack.simps(2) Pair_eqvt mem_permute_iff set_eqvt)
+  done
 
 lemma dropChain_eqvt[eqvt]: "\<pi> \<bullet> (dropChain is x S) = dropChain (\<pi> \<bullet> is) (\<pi> \<bullet> x) (\<pi> \<bullet> S)"
-  sorry
+  apply (induction "is" x S rule:dropChain.induct)
+  apply auto
+  by (metis Cons_eqvt Pair_eqvt dropChain.simps(1) mem_permute_iff set_eqvt)
 
 lemma resolveStack_distinct_fresh:
   assumes "distinct (S \<ominus>\<^sub>S is)"
@@ -149,11 +144,6 @@ next
     from update.IH[OF this(1)] this(2)
     show ?case by (simp add: fmap_add_upd)
 qed
-
-(*
-lemma ind_for_Cons_notHeapVar[simp]: "x \<notin> heapVars is \<Longrightarrow> ind_for is ((x,e)#\<Gamma>) \<longleftrightarrow> ind_for is \<Gamma>"
-  unfolding ind_for_def heapVars_def by fastforce
-*)
 
 lemma ind_for_larger_set: "ind_for is \<Gamma> \<Longrightarrow> \<Gamma> \<le> \<Gamma>' \<Longrightarrow> ind_for is \<Gamma>'"
   unfolding ind_for_def
