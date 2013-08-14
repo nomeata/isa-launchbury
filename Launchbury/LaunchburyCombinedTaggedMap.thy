@@ -19,6 +19,7 @@ end
 inductive reds :: "Heap \<Rightarrow> Flag \<Rightarrow> Flag \<Rightarrow> Flag \<Rightarrow> var list \<Rightarrow> Heap \<Rightarrow> bool" ("_/ \<Down>\<^sup>_\<^sup>_\<^sup>_\<^bsub>_\<^esub>/ _" [50,50,50,50,50] 50)
 where
   Lambda: "\<lbrakk>
+    atom y \<sharp> (\<Gamma>, x, S);
     x \<notin> fdom \<Gamma>
   \<rbrakk> \<Longrightarrow>
     \<Gamma>(x f\<mapsto> Lam [y]. e) \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>x#S\<^esub> \<Gamma>(x f\<mapsto> Lam [y]. e) " 
@@ -60,7 +61,7 @@ where
 equivariance reds
 
 nominal_inductive reds
-  avoids Application: "n" and "z" | ApplicationInd: "n"
+  avoids Lambda: y | Application: "n" and "z" | ApplicationInd: "n"
   apply (auto simp add: fresh_star_def fresh_Cons fresh_Pair pure_fresh
       eqvt_fresh_cong3[where f = fmap_upd, OF fmap_upd_eqvt])
   done
@@ -70,11 +71,19 @@ lemma reds_LambdaI:
   assumes "isLam (\<Gamma> f! x)"
   shows "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>x#S\<^esub> \<Gamma>" 
 proof-
-  from assms(2) obtain y e where "\<Gamma> f! x = Lam [y]. e" by (cases "\<Gamma> f! x" rule:exp_assn.exhaust(1), auto)
-  with assms(1)
-  have "\<Gamma> = (fmap_delete x \<Gamma>)(x f\<mapsto> Lam [y]. e)" by simp
+  from `isLam (\<Gamma> f! x)`
+  obtain y e where "\<Gamma> f! x = Lam [y]. e" by (cases "\<Gamma> f! x" rule:exp_assn.exhaust(1), auto)
   moreover
-  have "(fmap_delete x \<Gamma>)(x f\<mapsto> Lam [y]. e) \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>x#S\<^esub> (fmap_delete x \<Gamma>)(x f\<mapsto> Lam [y]. e)"
+  obtain y'::var where "atom y' \<sharp> (\<Gamma>, x, y, e, S)" by (rule obtain_fresh)
+  ultimately
+  have "\<Gamma> f! x = Lam [y']. ((y \<leftrightarrow> y') \<bullet> e)"
+    by (simp only: fresh_Pair change_Lam_Variable)
+  with assms(1)
+  have "\<Gamma> = (fmap_delete x \<Gamma>)(x f\<mapsto> Lam [y']. ((y \<leftrightarrow> y') \<bullet> e))" by simp
+  moreover
+  have "atom y' \<sharp> (fmap_delete x \<Gamma>, x, S)" using `atom y' \<sharp> _`
+    by (simp add: fresh_Pair fresh_fmap_delete_subset)
+  hence "(fmap_delete x \<Gamma>)(x f\<mapsto> Lam [y']. ((y \<leftrightarrow> y') \<bullet> e)) \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>x#S\<^esub> (fmap_delete x \<Gamma>)(x f\<mapsto> Lam [y']. ((y \<leftrightarrow> y') \<bullet> e))"
     by (rule Lambda, simp)
   ultimately
   show ?thesis by simp
@@ -152,7 +161,8 @@ lemma shorten_stack:
   shows   "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>take (Suc n) S\<^esub> \<Delta>"
 using assms
 proof (induction \<Gamma> i u b S \<Delta> arbitrary: n rule:reds.induct)
-  case Lambda thus ?case by (auto intro: reds.intros)
+  case Lambda thus ?case
+    by (auto intro!: reds.intros simp add: fresh_Pair fresh_take)
 next
   case (Application n)
     note Application.IH(1)[where n = "Suc n", simplified] Application.IH(2)[where n = n, simplified]

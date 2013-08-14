@@ -261,7 +261,7 @@ by(induct e y z and as y z rule:subst_subst_assn.induct)
   (auto simp add:fresh_star_Pair exp_assn.bn_defs)
 
 lemma subst_fresh_noop: "atom x \<sharp> e \<Longrightarrow> e[x ::= y] = e"
-  and "atom x \<sharp> as \<Longrightarrow> as[x ::a= y] = as"
+  and subst_assn_fresh_noop: "atom x \<sharp> as \<Longrightarrow> as[x ::a= y] = as"
 by (nominal_induct  e and as avoiding: x y rule:exp_assn.strong_induct)
   (auto simp add: fresh_star_def fresh_Pair fresh_at_base simp del: exp_assn.eq_iff)
 
@@ -308,5 +308,19 @@ termination (eqvt) by lexicographic_order
 lemma isLam_subst[simp]: "isLam e[x::=y] = isLam e"
   by (nominal_induct e avoiding: x y rule:exp_assn.strong_induct(1))
      (auto simp add: fresh_star_Pair)
+
+lemma change_Lam_Variable:
+  assumes "atom y' \<sharp> e'" and "atom y' \<sharp> y"
+  shows   "Lam [y]. e' =  Lam [y']. ((y \<leftrightarrow> y') \<bullet> e')"
+proof-
+  from assms
+  have "(y \<leftrightarrow> y') \<bullet> (Lam [y]. e') = Lam [y]. e'"
+    by -(rule flip_fresh_fresh, (simp add: fresh_Pair)+)
+  moreover
+  have "(y \<leftrightarrow> y') \<bullet> (Lam [y]. e') = Lam [y']. ((y \<leftrightarrow> y') \<bullet> e')"
+    by simp
+  ultimately
+  show "Lam [y]. e' =  Lam [y']. ((y \<leftrightarrow> y') \<bullet> e')" by (simp add: fresh_Pair)
+qed
 
 end

@@ -73,8 +73,29 @@ instance
   apply default
   apply (rule resolve_exp_append)
   apply simp
-  apply (rule resolve_exp_eqvt);
+  apply (rule resolve_exp_eqvt)
   apply (simp add: subst_fresh_noop)
+  done
+end
+
+instantiation assn :: resolvable_eqvt
+begin
+  fun resolve_assn :: "assn \<Rightarrow> indirections \<Rightarrow> assn" where
+    "as \<ominus> [] = (as::assn)"
+    | "as \<ominus> ((x,y)#is) = (as[x ::a= y]) \<ominus> is"
+
+  lemma resolve_assn_append: "(as::assn) \<ominus> (is'@is) = as\<ominus> is' \<ominus> is"
+    by (induct "is'" arbitrary: as) auto
+
+  lemma resolve_assn_eqvt[eqvt]: "p \<bullet> ((as::assn) \<ominus> is) = (p \<bullet> as) \<ominus> (p \<bullet> is)"
+    by (induction as "is" rule:resolve_assn.induct) simp+
+
+instance
+  apply default
+  apply (rule resolve_assn_append)
+  apply simp
+  apply (rule resolve_assn_eqvt)
+  apply (simp add: subst_assn_fresh_noop)
   done
 end
 
@@ -100,9 +121,14 @@ lemma resolveExp_App: "App e x \<ominus> is = App (e \<ominus> is) (x \<ominus> 
 lemma resolveExp_Var: "Var x \<ominus> is = Var (x \<ominus> is)"
   by (induction "is" arbitrary: x) auto
 
-lemma resolveExp_Let: "(Let as e) \<ominus> is = Let as (e \<ominus> is)"
-  sorry
+lemma resolveExp_Let: "set (bn as) \<sharp>* is \<Longrightarrow> (Let as e) \<ominus> is = Let (as \<ominus> is) (e \<ominus> is)"
+  by (induction "is" arbitrary: as e) (auto simp add: fresh_star_Cons)
 
+lemma resolve_assn_ANil[simp]: "ANil \<ominus> is = ANil"
+  by (induction "is") auto
+
+lemma resolve_assn_ACons[simp]: "x \<notin> heapVars is \<Longrightarrow> (ACons x e as) \<ominus> is = (ACons (x \<ominus> is) (e \<ominus> is) (as \<ominus> is))"
+  by (induction "is" arbitrary: x e as) auto
 
 definition resolveHeap' :: "Heap \<Rightarrow> indirections \<Rightarrow> Heap"  (infixl "\<ominus>\<^sub>H" 60) where
   "\<Gamma> \<ominus>\<^sub>H is = fmap_map (\<lambda>e. e \<ominus> is) (\<Gamma> f|` (- heapVars is))"
@@ -116,6 +142,9 @@ lemma resolveHeap'_fmap_upd[simp]: "x \<in> heapVars is \<Longrightarrow> (\<Gam
 
 lemma resolveHeap'_fmap_upd_other[simp]: "x \<notin> heapVars is \<Longrightarrow> (\<Gamma>(x f\<mapsto> e)) \<ominus>\<^sub>H is = (\<Gamma> \<ominus>\<^sub>H is)(x f\<mapsto> e \<ominus> is)"
   unfolding resolveHeap'_def by simp
+
+lemma resolveHeap'_fmap_add[simp]: "fdom \<Delta> \<inter> heapVars is = {} \<Longrightarrow> (\<Gamma> f++ \<Delta>) \<ominus>\<^sub>H is = (\<Gamma> \<ominus>\<^sub>H is) f++ (\<Delta> \<ominus>\<^sub>H is)"
+  by (induction \<Delta> rule:fmap_induct) (auto simp add: fmap_add_upd)
 
 lemma resolveHeap'_fmap_copy[simp]: "x \<in> heapVars is \<Longrightarrow> (fmap_copy \<Gamma> y x) \<ominus>\<^sub>H is = \<Gamma> \<ominus>\<^sub>H is"
   unfolding resolveHeap'_def by simp
@@ -234,20 +263,6 @@ case (goal2 e a b "is" x y)
   have "\<dots> = (e \<ominus> (a, b) # is)[y ::= (x \<ominus> (a, b) # is)]"
     by simp
   finally show ?case.
-qed
-
-lemma change_Lam_Variable:
-  assumes "atom y' \<sharp> e'" and "atom y' \<sharp> y"
-  shows   "Lam [y]. e' =  Lam [y']. ((y \<leftrightarrow> y') \<bullet> e')"
-proof-
-  from assms
-  have "(y \<leftrightarrow> y') \<bullet> (Lam [y]. e') = Lam [y]. e'"
-    by -(rule flip_fresh_fresh, (simp add: fresh_Pair)+)
-  moreover
-  have "(y \<leftrightarrow> y') \<bullet> (Lam [y]. e') = Lam [y']. ((y \<leftrightarrow> y') \<bullet> e')"
-    by simp
-  ultimately
-  show "Lam [y]. e' =  Lam [y']. ((y \<leftrightarrow> y') \<bullet> e')" by (simp add: fresh_Pair)
 qed
 
 lemma

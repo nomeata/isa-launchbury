@@ -446,5 +446,44 @@ proof-
   qed
 qed
   
+subsection {* Induction over finite maps *}
+
+lemma fmap_induct[induct type: fmap, case_names empty update]:
+  assumes "P fempty"
+  assumes "\<And> m x v. P m \<Longrightarrow> x \<notin> fdom m \<Longrightarrow> P (m(x f\<mapsto> v))"
+  shows "P m"
+proof-
+  {
+  fix m'
+  have "finite (fdom m)" by simp
+  hence "fdom m' = fdom m \<Longrightarrow> m' \<le> m \<Longrightarrow> P m'"
+  proof(induction arbitrary: m' rule: finite_induct)
+  case (empty m')
+    hence "m' = fempty" by auto
+    with assms(1) show ?case by auto
+  next
+  case (insert x d m')
+    from `fdom m' = insert x d` `x \<notin> d`
+    have "fdom (fmap_delete x m') = d" by auto
+    moreover
+    from `m' \<le> m`
+    have "fmap_delete x m' \<le> m" by (metis (full_types) calculation fmap_delete_fmap_upd2 fmap_less_restrict fmap_restr_fmap_upd_other fmap_restr_less fmap_trans insert.hyps(2) order_refl)
+    ultimately
+    have "P (fmap_delete x m')" by (rule insert.IH)
+    moreover
+    have "x \<notin> fdom (fmap_delete x m')" using `fdom _ = d` `x \<notin> d` by simp
+    ultimately
+    have "P ((fmap_delete x m')(x f\<mapsto> m' f! x))" by (rule assms(2))
+    with `fdom m' = insert x d` 
+    show "P m'" by simp
+  qed
+  }
+  thus "P m" by simp
+qed
+  
+
+  
+
+
 
 end

@@ -93,29 +93,21 @@ lemma resolveStack_distinct_fresh:
 using assms
 by (auto dest:  eqvt_fresh_cong2[where f = resolveStack, OF resolveStack_eqvt] simp add: set_not_fresh)
 
-(*
-lemma resolveStack_distinct[simp]: "distinct (S \<ominus>\<^sub>S is)"
-  unfolding resolveStack_def by simp
-*)
-
-(*
-lemma resolveStack_set[simp]: "x \<notin> heapVars is \<Longrightarrow> x \<in> set (S \<ominus>\<^sub>S is) \<longleftrightarrow> x \<in> set S"
-  sorry
-*)
 
 lemma resolveStack_fresh_noop[simp]: "atom z \<sharp> S \<Longrightarrow> (S \<ominus>\<^sub>S (z, y) # is) = (S \<ominus>\<^sub>S is)"
   by (induction S "(z, y) # is" arbitrary: "is" rule: resolveStack.induct)
      (auto simp add: fresh_Cons fresh_Nil)
 
 
-(*
-lemma resolveStack_ConsCons[simp]:
-  "valid_ind is \<Longrightarrow> (x, y) \<in> set is \<Longrightarrow> y # x # S \<ominus>\<^sub>S is = (y \<ominus> is) # (removeAll (y \<ominus> is) (S \<ominus>\<^sub>S is))"
-  unfolding resolveStack_def by auto
-*)
-
 definition ind_for :: "indirections \<Rightarrow> Heap \<Rightarrow> bool" where
   "ind_for is \<Gamma> = (\<forall> (x,y) \<in> set is. (x \<in> fdom \<Gamma> \<and> (((lookup \<Gamma> x) = Some (Var y) \<or> (isLam (\<Gamma> f! x)) \<and> lookup \<Gamma> x = lookup \<Gamma> y))))"
+
+lemma ind_forE[consumes 2]:
+  assumes "ind_for is \<Gamma>"
+  assumes "(x,y) \<in> set is"
+  obtains "x \<in> fdom \<Gamma>" and "lookup \<Gamma> x = Some (Var y)"
+        | "x \<in> fdom \<Gamma>" and "isLam (\<Gamma> f! x)" and "lookup \<Gamma> x = lookup \<Gamma> y"
+using assms unfolding ind_for_def by blast
 
 lemma ind_for_heapVars_subset:
   "ind_for is \<Gamma> \<Longrightarrow> heapVars is \<subseteq> fdom \<Gamma>"
@@ -147,6 +139,17 @@ lemma ind_for_Cons_fresh[simp]: "atom x \<sharp> is \<Longrightarrow> ind_for is
   apply auto[1]
   by (metis fresh_heap_expr lookup_fmap_upd_other not_self_fresh)
 
+lemma ind_for_fmap_add_fresh[simp]: "atom ` fdom \<Delta> \<sharp>* is \<Longrightarrow> ind_for is (\<Gamma> f++ \<Delta>) \<longleftrightarrow> ind_for is \<Gamma>"
+proof (induction \<Delta> rule: fmap_induct)
+  case empty thus ?case by simp
+next
+  case (update \<Delta> x e)
+    from `atom \` fdom (\<Delta>(x f\<mapsto> e)) \<sharp>* is`  and `x \<notin> fdom \<Delta>`
+    have "atom ` fdom \<Delta> \<sharp>* is" and "atom x \<sharp> is" by (auto simp add: fresh_star_def)
+    from update.IH[OF this(1)] this(2)
+    show ?case by (simp add: fmap_add_upd)
+qed
+
 (*
 lemma ind_for_Cons_notHeapVar[simp]: "x \<notin> heapVars is \<Longrightarrow> ind_for is ((x,e)#\<Gamma>) \<longleftrightarrow> ind_for is \<Gamma>"
   unfolding ind_for_def heapVars_def by fastforce
@@ -167,19 +170,33 @@ lemma ind_for_ConsCons[simp]: "x \<notin> fdom \<Gamma> \<Longrightarrow> ind_fo
 lemma ind_for_supp_subset:
   assumes "ind_for is \<Gamma>"
   shows "supp is \<subseteq> supp \<Gamma>"
-sorry
-(*
 proof
-  fix x 
+  fix x
   assume "x \<in> supp is"
   hence "x \<in> (\<Union>i \<in> set is . supp i)" by (metis supp_set supp_of_finite_sets finite_set)
   then obtain a b  where "(a,b) \<in> set is" and "x \<in> supp (a,b)" by (metis PairE UN_E)
   with assms[unfolded ind_for_def]
-  have "(a,Var b) \<in> set \<Gamma>" and "x \<in> supp (a, Var b)"
-    by (auto simp add: supp_Pair exp_assn.supp)
-  thus "x \<in> supp \<Gamma>" by (metis (full_types) set_mp supp_set_mem)
+  have "a \<in> fdom \<Gamma>" and "lookup \<Gamma> a = Some (Var b) \<or> lookup \<Gamma> a = lookup \<Gamma> b"
+    by auto
+  hence "Var b \<in> fran \<Gamma> \<or> b \<in> fdom \<Gamma>" by (metis fdomIff fmap_upd_fmap_delete fran_fmap_upd insertI1 the.simps)
+  hence "atom b \<in> supp \<Gamma>"
+  proof
+    assume "Var b \<in> fran \<Gamma>"
+    hence "atom b \<in> supp (fran \<Gamma>)" by (metis exp_assn.supp(1) finite_fran insert_iff supp_at_base supp_set_elem_finite)
+    thus ?thesis by (auto simp add: supp_fmap)
+  next
+    assume "b \<in> fdom \<Gamma>"
+    hence "atom b \<in> supp (fdom \<Gamma>)" by (metis finite_fdom fresh_def fresh_finite_set_at_base)
+    thus ?thesis by (metis (full_types) UnCI supp_fmap)
+  qed
+  moreover
+  from `a \<in> fdom \<Gamma>`
+  have "atom a \<in> supp (fdom \<Gamma>)" by (metis finite_fdom fresh_def fresh_finite_set_at_base)
+  hence "atom a \<in> supp \<Gamma>" by (metis (full_types) UnCI supp_fmap)
+  ultimately
+  show "x \<in> supp \<Gamma>" using `x \<in> supp (a,b)`
+    by (auto simp add: supp_Pair supp_at_base)
 qed
-*)
 
 lemma ind_for_fresh: "ind_for is \<Gamma> \<Longrightarrow> a \<sharp> \<Gamma> \<Longrightarrow> a \<sharp> is"
   by (auto dest: ind_for_supp_subset simp add: fresh_def)
@@ -233,15 +250,6 @@ lemma isVar_resolve_exp[simp]: "isVar (e \<ominus> is) \<longleftrightarrow> isV
   by (nominal_induct e avoiding: "is" rule: exp_assn.strong_induct(1))
      (simp_all add: resolveExp_Var resolveExp_App resolveExp_Lam resolveExp_Let)
 
-lemma resolve_isLam_there: "valid_ind is \<Longrightarrow> ind_for is \<Gamma> \<Longrightarrow> x \<in> heapVars is \<Longrightarrow> (x \<ominus> is) \<in> fdom \<Gamma>" 
-  apply (induct x rule:valid_ind_induct)
-  apply simp
-  apply auto
-  apply (simp add: resolve_var_same_image)
-  apply (case_tac "y \<in> heapVars is")
-  apply auto
-  sorry
-
 lemma resolve_isLam_isLam: "valid_ind is \<Longrightarrow> ind_for is \<Gamma> \<Longrightarrow> x \<in> heapVars is \<Longrightarrow> isLam (\<Gamma> f! x) \<Longrightarrow> isLam (\<Gamma> f! (x \<ominus> is))"
   apply (induct x rule:valid_ind_induct)
   apply simp
@@ -252,20 +260,28 @@ lemma resolve_isLam_isLam: "valid_ind is \<Longrightarrow> ind_for is \<Gamma> \
   apply auto
   done
 
+lemma resolve_isLam_there: "valid_ind is \<Longrightarrow> ind_for is \<Gamma> \<Longrightarrow> x \<in> fdom \<Gamma> \<Longrightarrow> isLam (\<Gamma> f! x) \<Longrightarrow> (x \<ominus> is) \<in> fdom \<Gamma>" 
+  by (induct x rule:valid_ind_induct) (auto elim!: ind_forE simp add: fdomIff resolve_var_same_image)
+
+lemma resolveHeap'_asToHeap[simp]:
+  "fdom (fmap_of (asToHeap as)) \<inter> heapVars is = {} \<Longrightarrow>
+    resolveHeap' (fmap_of (asToHeap as)) is = fmap_of (asToHeap (as \<ominus> is))"
+  by (induct as rule:asToHeap.induct) auto
+
+lemma bn_resolve_assn[simp]:
+  "fdom (fmap_of (asToHeap as)) \<inter> heapVars is = {} \<Longrightarrow> bn (as \<ominus> is) = bn as"
+  by (induct as rule:asToHeap.induct) (auto simp add: exp_assn.bn_defs)
+
+lemma heapVars_resolve_assn[simp]:
+  "fdom (fmap_of (asToHeap as)) \<inter> heapVars is = {} \<Longrightarrow>
+    heapVars (asToHeap (as \<ominus> is)) = heapVars (asToHeap as)"
+  by (induct as rule:asToHeap.induct) auto
+
 
 fun heap_of :: "Heap \<Rightarrow> var list \<Rightarrow> atom set"
   where "heap_of \<Gamma> S = supp (\<Gamma> f|` (- set S)) \<union> supp (lookup \<Gamma> (hd S))"
 declare heap_of.simps[simp del]
 
-
-
-(* Verm. falsch: Auf dem Stack liegt unten beliebiger Müll! *)
-lemma stack_not_used:
-  assumes "valid_ind is"
-  assumes "ind_for is \<Gamma>"
-  assumes "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>d\<^bsub>x # S\<^esub> \<Delta>"
-  shows "x \<ominus> is \<notin> set S"
-oops
 
 theorem
   "\<Gamma> \<Down>\<^sup>\<surd>\<^sup>u\<^sup>\<times>\<^bsub>S\<^esub> \<Delta> \<Longrightarrow>
@@ -280,14 +296,14 @@ theorem
        \<and> valid_ind is'
        \<and> S \<ominus>\<^sub>S is' = S \<ominus>\<^sub>S is"
 proof (nominal_induct \<Gamma> "\<surd>" u "\<times>" S \<Delta> avoiding: "is" rule:reds.strong_induct )
-case (Lambda x \<Gamma> y e u S "is")
+case (Lambda y \<Gamma> x S e u "is")
   show ?case
   proof(cases "x \<in> heapVars is")
   case True
     hence [simp]: "x \<ominus> is \<noteq> x" by (rule resolve_var_modifies[OF `valid_ind _`, symmetric])
 
-    from resolve_isLam_there[OF `valid_ind is` `ind_for _ _` `x \<in> heapVars is`]
-    have "x \<ominus> is \<in> fdom \<Gamma>" by simp
+    from resolve_isLam_there[OF `valid_ind is` `ind_for _ _`, where x = x]
+    have "x \<ominus> is \<in> fdom \<Gamma>" by auto
     with resolve_resolved[OF `valid_ind is`]
     have "x \<ominus> is \<in> fdom (\<Gamma> \<ominus>\<^sub>H is)" by simp
     moreover
@@ -305,24 +321,9 @@ case (Lambda x \<Gamma> y e u S "is")
       by -(rule exI[where x = "is"], auto)
   next
   case False
-    moreover
-    (* We need to rename y to avoid is *)
-    obtain y' :: var where "atom y' \<sharp> (y, e, is)" by (rule obtain_fresh)
-    {
-      hence "atom y' \<sharp> e" and "atom y' \<sharp> y" and "atom y' \<sharp> is" by (simp_all add: fresh_Pair)
-      from this(1,2)
-      have "Lam [y]. e = Lam [y']. ((y \<leftrightarrow> y') \<bullet> e)"
-        by (rule change_Lam_Variable)
-      also
-      from `atom y' \<sharp> is`
-      have "(Lam [y']. ((y \<leftrightarrow> y') \<bullet> e)) \<ominus> is = Lam [y']. (((y \<leftrightarrow> y') \<bullet> e) \<ominus> is)"
-      by (rule resolveExp_Lam)
-      finally
-      have "(Lam [y]. e) \<ominus> is = Lam [y']. ((y \<leftrightarrow> y') \<bullet> e \<ominus> is)".
-    }
-    ultimately
+    with Lambda
     show ?thesis using Lambda
-      by -(rule exI[where x = "is"],auto intro: reds.Lambda)
+      by -(rule exI[where x = "is"], auto intro: reds_LambdaI)
   qed
 next
 case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u e' "is")
@@ -680,7 +681,66 @@ case (VariableNoBH x \<Gamma> y S \<Delta> "is")
   qed
 next
 case (Let as \<Gamma> x S body u \<Delta> "is")
-  show ?case sorry
+  from `ind_for is _` `x \<notin> fdom \<Gamma>`
+  have "x \<notin> heapVars is" by (metis (full_types) ind_for_Cons ind_for_heapVars_subset isLam.simps(4) isVar.simps(4) set_rev_mp)
+
+  from `set (bn as) \<sharp>* \<Gamma>` `set (bn as) \<sharp>* x` `x \<notin> fdom \<Gamma>`
+  have "set (bn as) \<sharp>* (\<Gamma>(x f\<mapsto> Terms.Let as body))"
+    by (metis (full_types) fmap_delete_noop fresh_star_fmap_upd_eq let_binders_fresh)
+  hence "set (bn as) \<sharp>* is"
+    using ind_for_fresh[OF `ind_for _ _`]
+    by (auto simp add: fresh_star_def)
+  hence "atom ` fdom (fmap_of (asToHeap as)) \<sharp>* is"
+    by (simp add: fdom_fmap_of_conv_heapVars set_bn_to_atom_heapVars[symmetric])
+  with `ind_for is (\<Gamma>(x f\<mapsto> Terms.Let as body))` `x \<notin> heapVars is` `x \<notin> fdom \<Gamma>`
+  have "ind_for is (\<Gamma>(x f\<mapsto> body) f++ fmap_of (asToHeap as))"  by simp
+
+  from Let.hyps(7)[OF this `valid_ind is`]
+  obtain is' where
+    is': "\<Gamma>(x f\<mapsto> body) f++ fmap_of (asToHeap as) \<ominus>\<^sub>H is \<Down>\<^sup>\<times>\<^sup>u\<^sup>\<times>\<^bsub>x # S \<ominus>\<^sub>S is\<^esub> \<Delta> \<ominus>\<^sub>H is'" and
+    "ind_for is' \<Delta>" and
+    "set is \<subseteq> set is'" and
+    hV: "heapVars is' \<inter> fdom (\<Gamma>(x f\<mapsto> body) f++ fmap_of (asToHeap as)) \<subseteq> heapVars is" and
+    "valid_ind is'"
+    and "x # S \<ominus>\<^sub>S is' = x # S \<ominus>\<^sub>S is" by blast
+
+  from `x \<notin> heapVars is` hV
+  have "x \<notin> heapVars is'" by auto
+
+  from  `set (bn as) \<sharp>* is`
+  have int_empty: "fdom (fmap_of (asToHeap as)) \<inter> heapVars is = {}"
+    by (metis fdom_fmap_of_conv_heapVars fresh_assn_distinct)
+
+  from Let(1-3) `set (bn as) \<sharp>* is` int_empty
+  have "set (bn (as \<ominus> is)) \<sharp>* (\<Gamma> \<ominus>\<^sub>H is, x, (dropChain is x S \<ominus>\<^sub>S is))"
+    by (auto simp add: fresh_star_Pair 
+        eqvt_fresh_star_cong2[where f = resolveHeap', OF resolveHeap'_eqvt]
+        eqvt_fresh_star_cong2[where f = resolveStack, OF resolveStack_eqvt]
+        eqvt_fresh_star_cong3[where f = dropChain, OF dropChain_eqvt]
+        )
+  moreover
+  from int_empty `distinctVars _`
+  have "distinctVars (asToHeap (as \<ominus> is))" 
+    by (induct as rule:asToHeap.induct) (auto simp add: distinctVars_Cons )
+  moreover
+  have "x \<notin> fdom (\<Gamma> \<ominus>\<^sub>H is)" using `x \<notin> fdom \<Gamma>` by simp
+  moreover
+  from is' `x \<notin> heapVars is` `valid_ind is` int_empty
+  have "(\<Gamma> \<ominus>\<^sub>H is)(x f\<mapsto> (body \<ominus> is)) f++ fmap_of (asToHeap (as \<ominus> is)) \<Down>\<^sup>\<times>\<^sup>u\<^sup>\<times>\<^bsub>x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> \<Delta> \<ominus>\<^sub>H is'"
+    by simp
+  ultimately
+  have "(\<Gamma> \<ominus>\<^sub>H is)(x f\<mapsto> Let (as \<ominus> is) (body \<ominus> is)) \<Down>\<^sup>\<times>\<^sup>u\<^sup>\<times>\<^bsub>x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> \<Delta> \<ominus>\<^sub>H is'"
+    by (rule reds.Let)
+  hence "\<Gamma>(x f\<mapsto> Let as body) \<ominus>\<^sub>H is \<Down>\<^sup>\<times>\<^sup>u\<^sup>\<times>\<^bsub>x # S \<ominus>\<^sub>S is\<^esub> \<Delta> \<ominus>\<^sub>H is'"
+    using `x \<notin> heapVars is` `valid_ind is` `set (bn as) \<sharp>* is`
+    by (simp add: resolveExp_Let)
+  moreover
+  from hV
+  have "heapVars is' \<inter> fdom (\<Gamma>(x f\<mapsto> Terms.Let as body)) \<subseteq> heapVars is" by auto
+  moreover
+  note `ind_for is' \<Delta>` `set is \<subseteq> set is'` `valid_ind is'` `x # S \<ominus>\<^sub>S is' = x # S \<ominus>\<^sub>S is`
+  ultimately
+  show ?case by blast
 qed
 
 end
