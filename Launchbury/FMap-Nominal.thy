@@ -248,6 +248,15 @@ lemma supp_fmap_upd[simp]:
   apply auto
   done
 
+lemma supp_fmap_restr_subset:
+  fixes m :: "'a::fs f\<rightharpoonup> 'b::fs"
+  shows "supp (m f|` S) \<subseteq> supp m"
+  apply (induction m)
+  apply simp
+  apply (case_tac "x \<in> S")
+  apply auto
+  done
+
 lemma fresh_fmap_upd_eq:
   "a \<sharp> m((x::'a::fs) f\<mapsto> v::'b::fs) \<longleftrightarrow> (a \<sharp> (fmap_delete x m) \<and> a \<sharp> x \<and> a \<sharp> v)"
   unfolding fresh_def by simp

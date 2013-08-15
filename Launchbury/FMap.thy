@@ -114,6 +114,9 @@ lift_definition fmap_restr :: "'a set \<Rightarrow> 'a f\<rightharpoonup> 'b \<R
 
 abbreviation fmap_restr_rev  (infixl "f|`"  110) where "fmap_restr_rev m S \<equiv> fmap_restr S m"
 
+lemma fmap_restr_empty[simp]: "f\<emptyset> f|` S = f\<emptyset>"
+  by transfer simp
+
 lemma lookup_fmap_restr[simp]: "x \<in> S \<Longrightarrow> lookup (fmap_restr S m) x = lookup m x"
   by (transfer, auto)
 
@@ -449,7 +452,7 @@ qed
   
 subsection {* Induction over finite maps *}
 
-lemma fmap_induct[induct type: fmap, case_names empty update]:
+lemma fmap_induct[case_names empty update, induct type: fmap]:
   assumes "P fempty"
   assumes "\<And> m x v. P m \<Longrightarrow> x \<notin> fdom m \<Longrightarrow> P (m(x f\<mapsto> v))"
   shows "P m"

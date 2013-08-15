@@ -166,7 +166,10 @@ lemma pure_fresh_star[simp]: "a \<sharp>* (x :: 'a :: pure)"
   by (simp add: fresh_star_def pure_fresh)
 
 lemma supp_set_mem: "x \<in> set L \<Longrightarrow> supp x \<subseteq> supp L"
-  by (induct L, auto simp add: supp_Cons)
+  by (induct L) (auto simp add: supp_Cons)
+
+lemma set_supp_mono: "set L \<subseteq> set L2 \<Longrightarrow> supp L \<subseteq> supp L2"
+  by (induct L)(auto simp add: supp_Cons supp_Nil dest:supp_set_mem)
 
 subsubsection {* Freshness and support for subsets of variables *}
 

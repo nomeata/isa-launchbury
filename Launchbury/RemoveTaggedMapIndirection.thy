@@ -279,8 +279,8 @@ lemma heapVars_resolve_assn[simp]:
   by (induct as rule:asToHeap.induct) auto
 
 
-fun heap_of :: "Heap \<Rightarrow> var list \<Rightarrow> atom set"
-  where "heap_of \<Gamma> S = supp (\<Gamma> f|` (- set S)) \<union> supp (lookup \<Gamma> (hd S))"
+fun heap_of :: "Heap \<Rightarrow> var list \<Rightarrow> (Heap \<times> exp)"
+  where "heap_of \<Gamma> S = (\<Gamma> f|` (- set S), \<Gamma> f! (hd S))"
 declare heap_of.simps[simp del]
 
 
