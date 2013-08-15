@@ -284,7 +284,7 @@ fun heap_of :: "Heap \<Rightarrow> var list \<Rightarrow> (Heap \<times> exp)"
 declare heap_of.simps[simp del]
 
 
-theorem
+theorem remove_indirection:
   "\<Gamma> \<Down>\<^sup>\<surd>\<^sup>u\<^sup>\<times>\<^bsub>S\<^esub> \<Delta> \<Longrightarrow>
     ind_for is \<Gamma> \<Longrightarrow>
     valid_ind is \<Longrightarrow>
@@ -327,7 +327,7 @@ case (Lambda y \<Gamma> x S e u "is")
       by -(rule exI[where x = "is"], auto intro: reds_LambdaI)
   qed
 next
-case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u e' "is")
+case (ApplicationInd n \<Gamma> x e y S z \<Delta> e' u \<Theta> "is")
 
   from `x \<notin> fdom \<Gamma>` `ind_for is (\<Gamma>(x f\<mapsto> App e y))`
   have "ind_for is \<Gamma>" by (metis ind_for_Cons isLam.simps(3) isVar.simps(3))
@@ -356,11 +356,11 @@ case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u e' "is")
   have "fst (hd ((n, e) # (x, App (Var n) y) # \<Gamma>')) \<notin> heapVars is" by (simp)
   moreover
   *)
-  note ApplicationInd(18)[OF calculation]
+  note ApplicationInd(15)[OF calculation]
   ultimately
   obtain "is'"
-  where is': "\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e) \<ominus>\<^sub>H is \<Down>\<^sup>\<times>\<^sup>u\<^sup>\<times>\<^bsub>n # x # S \<ominus>\<^sub>S is\<^esub> \<Delta>(n f\<mapsto> Lam [z]. e') \<ominus>\<^sub>H is'"
-      and "ind_for is' (\<Delta>(n f\<mapsto> Lam [z]. e'))"
+  where is': "\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e) \<ominus>\<^sub>H is \<Down>\<^sup>\<times>\<^sup>u\<^sup>\<times>\<^bsub>n # x # S \<ominus>\<^sub>S is\<^esub> \<Delta> \<ominus>\<^sub>H is'"
+      and "ind_for is' \<Delta>"
       and hV: "heapVars is' \<inter> fdom (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)) \<subseteq> heapVars is"
       and "valid_ind is'"
       and "set is \<subseteq> set is'"
@@ -370,27 +370,12 @@ case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u e' "is")
   from `x \<notin> heapVars is` hV have "x \<notin> heapVars is'" by auto
   from `n \<notin> heapVars is` hV have "n \<notin> heapVars is'" by auto
 
-  from second_stack_element_unchanged[OF ApplicationInd.hyps(17)]  `atom n \<sharp> x`
+  from second_stack_element_unchanged[OF ApplicationInd.hyps(14)]  `atom n \<sharp> x`
   have "lookup \<Delta> x = Some (App (Var n) y)" by simp
 
-  have "z \<notin> fdom \<Delta>"by (metis ApplicationInd.hyps(15) fresh_fdom)
+  have "z \<notin> fdom \<Delta>" by (metis ApplicationInd.hyps(11) fresh_fdom)
 
-  (* New invariant? *)
-  (* TODO: Migrate to fmap 
-  have "(supp is' - supp is) \<inter> supp ((n, e) # (x, App (Var n) y) # \<Gamma>)  \<subseteq> heap_of ((n, e) # (x, App (Var n) y) # \<Gamma>) (n # x # S)"
-    sorry
-  moreover
-  have "heap_of ((n, e) # (x, App (Var n) y) # \<Gamma>) (n # x # S) \<subseteq> supp e \<union> supp \<Gamma>"
-    sorry
-  ultimately 
-  have "atom n \<sharp> is'"
-    using `atom n \<sharp> is`  `atom n \<sharp> e`  `atom n \<sharp> \<Gamma>`
-    by (auto simp add: fresh_def supp_Cons supp_Pair supp_at_base)
-  *)
-  have "atom n \<sharp> is'" sorry
-
-  from `ind_for is' _` `atom n \<sharp> is'` 
-  have "ind_for is' \<Delta>" by simp
+  note `ind_for is' \<Delta>`
   with `z \<notin> fdom \<Delta>`
   have "ind_for ((z,y)#is') (\<Delta>(z f\<mapsto> Var y))" by (rule ind_for_ConsCons)
   hence "ind_for ((z,y)#is') (\<Delta>(z f\<mapsto> Var y)(x f\<mapsto> e'))"
@@ -399,9 +384,8 @@ case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u e' "is")
     by auto
   moreover
 
-  from `ind_for is' \<Delta>` `atom n \<sharp> \<Delta>` `atom z \<sharp> \<Delta>`
-  have "atom n \<sharp> is'" and "atom z \<sharp> is'" by (auto intro: ind_for_fresh simp add: fresh_append)
-  hence "n \<notin> heapVars is'" by (metis heapVars_not_fresh)
+  from `ind_for is' \<Delta>` `atom z \<sharp> \<Delta>`
+  have "atom z \<sharp> is'" by (auto intro: ind_for_fresh simp add: fresh_append)
 
   from `valid_ind is'` `atom z \<sharp> is'` `atom z \<sharp> y`
   have "valid_ind ((z, y) # is')"
@@ -424,7 +408,7 @@ case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u e' "is")
     by simp
   moreover
   *)
-  note ApplicationInd(20)[OF calculation]
+  note ApplicationInd(17)[OF calculation]
   (*
   moreover
   from `distinct (n # x # S \<ominus>\<^sub>S is)` `atom n \<sharp> is `
@@ -447,35 +431,15 @@ case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u e' "is")
   with hV' `atom z \<sharp> x`
   have "x \<notin> heapVars is''" by (auto simp add: fresh_at_base)
 
-  from `ind_for is'' \<Theta>` `atom n \<sharp> \<Theta>`
-  have "atom n \<sharp> is''" by (auto intro: ind_for_fresh simp add: fresh_append)
 
- 
- from is' `x \<notin> fdom \<Gamma>` `x \<notin> heapVars is` `x \<notin> heapVars is'` `n \<notin> heapVars is` `n \<notin> heapVars is'` `atom z \<sharp> is` `atom z \<sharp> is'`  `atom n \<sharp> x` `valid_ind is` `atom n \<sharp> \<Gamma>` `atom n \<sharp> \<Delta>`
-  have "(\<Gamma> \<ominus>\<^sub>H is)(x f\<mapsto> App (Var n) (y \<ominus> is))(n f\<mapsto> e \<ominus> is) \<Down>\<^sup>\<times>\<^sup>u\<^sup>\<times>\<^bsub>n # x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub>  (\<Delta> \<ominus>\<^sub>H is')(n f\<mapsto>Lam [z]. (e' \<ominus> is'))"
+ from is' `x \<notin> fdom \<Gamma>` `x \<notin> heapVars is` `x \<notin> heapVars is'` `n \<notin> heapVars is` `n \<notin> heapVars is'` `atom z \<sharp> is` `atom z \<sharp> is'`  `atom n \<sharp> x` `valid_ind is` `atom n \<sharp> \<Gamma>`
+  have "(\<Gamma> \<ominus>\<^sub>H is)(x f\<mapsto> App (Var n) (y \<ominus> is))(n f\<mapsto> e \<ominus> is) \<Down>\<^sup>\<times>\<^sup>u\<^sup>\<times>\<^bsub>n # x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub>  (\<Delta> \<ominus>\<^sub>H is')"
     by (simp add: resolveExp_App resolveExp_Var resolveExp_Lam)
   from second_stack_element_unchanged[OF this] `atom n \<sharp> x` `x \<notin> heapVars is'`
   have "(\<Delta> f! x) \<ominus> is' = App (Var n) (y \<ominus> is)" by (auto simp add: lookup_resolveHeap')
   with `lookup \<Delta> x = Some (App (Var n) y)`
   have [simp]:"y \<ominus> is' = y \<ominus> is" by (simp add: resolveExp_App)
 
-  (*
-  from  `atom n \<sharp> x` `atom n \<sharp> S` `atom n \<sharp> is`  `atom n \<sharp> is'`
-  have "atom n \<sharp> removeAll x (S \<ominus>\<^sub>S is)" "atom n \<sharp> removeAll x (S \<ominus>\<^sub>S is')"
-   by (simp_all add:
-        eqvt_fresh_cong2[where f = resolveStack, OF resolveStack_eqvt]
-        eqvt_fresh_cong2[where f = removeAll, OF removeAll_eqvt])
-  hence "n \<notin> set (removeAll x (S \<ominus>\<^sub>S is))" and "n \<notin> set (removeAll x (S \<ominus>\<^sub>S is'))" by (metis set_not_fresh)+
-  hence [simp]: "removeAll n (removeAll x (S \<ominus>\<^sub>S is)) = removeAll x (S \<ominus>\<^sub>S is)"
-    by simp
-
-  from  `n # x # S \<ominus>\<^sub>S is' = n # x # S \<ominus>\<^sub>S is`
-        `n \<notin> heapVars is'` `n \<notin> heapVars is` `x \<notin> heapVars is'` `x \<notin> heapVars is`
-        `atom n \<sharp> x` `n \<notin> set (removeAll x (S \<ominus>\<^sub>S is'))`
-  have [simp]: "removeAll x (S \<ominus>\<^sub>S is') = removeAll x (S \<ominus>\<^sub>S is)"
-    by simp
-  *)
-  
   have [simp]: "dropChain is' x S \<ominus>\<^sub>S (z,y) # is' = dropChain is' x S \<ominus>\<^sub>S is'"
     by (metis resolveStack_fresh_noop[OF dropChain_fresh[OF `atom z \<sharp> S`]])
 
@@ -486,9 +450,13 @@ case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u e' "is")
   have "atom z \<sharp> \<Theta> \<ominus>\<^sub>H is''"
     by (auto intro!: resolveHeap'_fresh)
  
+  from `n \<notin> heapVars is'` `lookup \<Delta> n = _` `atom z \<sharp> is'`
+  have "lookup (\<Delta> \<ominus>\<^sub>H is') n = Some (Lam [z]. (e' \<ominus> is'))"
+    by (simp add: lookup_resolveHeap' resolveExp_Lam)
+  moreover
   {
-    from is' `x \<notin> fdom \<Gamma>` `x \<notin> heapVars is` `x \<notin> heapVars is'` `n \<notin> heapVars is` `n \<notin> heapVars is'` `atom z \<sharp> is` `atom z \<sharp> is'`  `atom n \<sharp> x` `valid_ind is` `atom n \<sharp> \<Gamma>` `atom n \<sharp> \<Delta>`
-    have "(\<Gamma> \<ominus>\<^sub>H is)(x f\<mapsto> App (Var n) (y \<ominus> is))(n f\<mapsto> e \<ominus> is) \<Down>\<^sup>\<times>\<^sup>u\<^sup>\<times>\<^bsub>n # x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub>  (\<Delta> \<ominus>\<^sub>H is')(n f\<mapsto>Lam [z]. (e' \<ominus> is'))"
+    from is' `x \<notin> fdom \<Gamma>` `x \<notin> heapVars is` `x \<notin> heapVars is'` `n \<notin> heapVars is` `n \<notin> heapVars is'` `atom z \<sharp> is` `atom z \<sharp> is'`  `atom n \<sharp> x` `valid_ind is` `atom n \<sharp> \<Gamma>`
+    have "(\<Gamma> \<ominus>\<^sub>H is)(x f\<mapsto> App (Var n) (y \<ominus> is))(n f\<mapsto> e \<ominus> is) \<Down>\<^sup>\<times>\<^sup>u\<^sup>\<times>\<^bsub>n # x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub>  (\<Delta> \<ominus>\<^sub>H is')"
       by (simp add: resolveExp_App resolveExp_Var resolveExp_Lam)
   } moreover {
     from is'' `atom z \<sharp> \<Delta>` `atom z \<sharp> x`  `atom z \<sharp> is'` `x \<notin> heapVars is'` `x \<notin> heapVars is` `valid_ind is`
@@ -498,8 +466,8 @@ case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u e' "is")
   ultimately
   have "(\<Gamma> \<ominus>\<^sub>H is)(x f\<mapsto> App (e \<ominus> is) (y \<ominus> is)) \<Down>\<^sup>\<times>\<^sup>u\<^sup>\<times>\<^bsub>x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> \<Theta> \<ominus>\<^sub>H is''"
     apply(rule Application[rotated 3])
-    using  `atom n \<sharp> x`  `atom n \<sharp> z`  `atom n \<sharp> is`  `atom n \<sharp> is'`  `atom n \<sharp> is''` `atom n \<sharp> \<Gamma>` 
-          `atom n \<sharp> \<Delta>`  `atom n \<sharp> e` `atom n \<sharp> y`  `atom n \<sharp> \<Theta>`  `atom n \<sharp> S`
+    using  `atom n \<sharp> x`  `atom n \<sharp> is` `atom n \<sharp> \<Gamma>` 
+            `atom n \<sharp> e` `atom n \<sharp> y`  `atom n \<sharp> S`
     using  `atom z \<sharp> x` `atom z \<sharp> is`  `atom z \<sharp> is'`  `atom z \<sharp> \<Gamma>` 
           `atom z \<sharp> \<Delta>` `atom z \<sharp> e` `atom z \<sharp> y` `atom z \<sharp> S`
     using `atom z \<sharp> \<Theta> \<ominus>\<^sub>H is''`
@@ -525,14 +493,12 @@ case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u e' "is")
   from `set is \<subseteq> set is'` and `_ \<subseteq> set is''`
   have "set is \<subseteq> set is''" by auto
   moreover
-
   { fix x'
     assume "x' \<in> heapVars is''"
-    hence "x' \<noteq> x" and "x' \<noteq> n" 
-      using `x \<notin> heapVars is''` `atom n \<sharp> is''` by (auto dest: heapVars_not_fresh)
+    hence "x' \<noteq> x"  using `x \<notin> heapVars is''` by (auto dest: heapVars_not_fresh)
 
     assume "x' \<in> fdom \<Gamma>"
-    with reds_doesnt_forget[OF ApplicationInd.hyps(17), simplified] `x' \<noteq> x` `x' \<noteq> n`
+    with reds_doesnt_forget[OF ApplicationInd.hyps(14), simplified] `x' \<noteq> x` 
     have "x' \<in> fdom \<Delta>" by auto
     moreover
     have "x' \<noteq> z" by (metis `z \<notin> fdom \<Delta>` `x' \<in> fdom \<Delta>`)

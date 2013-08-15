@@ -24,18 +24,20 @@ where
   \<rbrakk> \<Longrightarrow>
     \<Gamma>(x f\<mapsto> Lam [y]. e) \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>x#S\<^esub> \<Gamma>(x f\<mapsto> Lam [y]. e) " 
  | Application: "\<lbrakk>
-      atom n \<sharp> (\<Gamma>,x,e,y,S,\<Delta>,\<Theta>,z);
+      atom n \<sharp> (\<Gamma>,x,e,y,S);
       atom z \<sharp> (\<Gamma>,x,e,y,S,\<Delta>,\<Theta>);
       x \<notin> fdom \<Gamma>;
-      \<Gamma> (x f\<mapsto> App (Var n) y) (n f\<mapsto> e ) \<Down>\<^sup>\<times>\<^sup>u\<^sup>b\<^bsub>n#x#S\<^esub> (\<Delta>::Heap) (n f\<mapsto> (Lam [z]. e'));
+      lookup \<Delta> n = Some (Lam [z]. e');
+      \<Gamma> (x f\<mapsto> App (Var n) y) (n f\<mapsto> e ) \<Down>\<^sup>\<times>\<^sup>u\<^sup>b\<^bsub>n#x#S\<^esub> \<Delta>;
       \<Delta> (x f\<mapsto> e'[z ::= y]) \<Down>\<^sup>\<times>\<^sup>u\<^sup>b\<^bsub>x#S\<^esub> \<Theta>
     \<rbrakk> \<Longrightarrow>
-      \<Gamma> ( x f\<mapsto> App e y ) \<Down>\<^sup>\<times>\<^sup>u\<^sup>b\<^bsub>x#S\<^esub> \<Theta>" 
+      \<Gamma> ( x f\<mapsto> App e y) \<Down>\<^sup>\<times>\<^sup>u\<^sup>b\<^bsub>x#S\<^esub> \<Theta>" 
  | ApplicationInd: "\<lbrakk>
-      atom n \<sharp> (\<Gamma>,x,e,y,S,\<Delta>,\<Theta>,z);
+      atom n \<sharp> (\<Gamma>,x,e,y,S);
       atom z \<sharp> (\<Gamma>,x,e,y,S,\<Delta>);
       x \<notin> fdom \<Gamma>;
-      \<Gamma> (x f\<mapsto> App (Var n) y) (n f\<mapsto> e ) \<Down>\<^sup>\<surd>\<^sup>u\<^sup>b\<^bsub>n#x#S\<^esub> (\<Delta>::Heap) (n f\<mapsto> (Lam [z]. e'));
+      lookup \<Delta> n = Some (Lam [z]. e');
+      \<Gamma> (x f\<mapsto> App (Var n) y) (n f\<mapsto> e ) \<Down>\<^sup>\<surd>\<^sup>u\<^sup>b\<^bsub>n#x#S\<^esub> \<Delta>;
       \<Delta> (z f\<mapsto> Var y) (x f\<mapsto> e') \<Down>\<^sup>\<surd>\<^sup>u\<^sup>b\<^bsub>x#S\<^esub> \<Theta>
     \<rbrakk> \<Longrightarrow>
       \<Gamma> ( x f\<mapsto> App e y ) \<Down>\<^sup>\<surd>\<^sup>u\<^sup>b\<^bsub>x#S\<^esub> \<Theta>" 
@@ -61,7 +63,7 @@ where
 equivariance reds
 
 nominal_inductive reds
-  avoids Lambda: y | Application: "n" and "z" | ApplicationInd: "n"
+  avoids Lambda: y | Application: "z"
   apply (auto simp add: fresh_star_def fresh_Cons fresh_Pair pure_fresh
       eqvt_fresh_cong3[where f = fmap_upd, OF fmap_upd_eqvt])
   done
@@ -166,14 +168,14 @@ proof (induction \<Gamma> i u b S \<Delta> arbitrary: n rule:reds.induct)
 next
   case (Application n)
     note Application.IH(1)[where n = "Suc n", simplified] Application.IH(2)[where n = n, simplified]
-    note reds.Application[OF _ _ _ this]
-    with Application.hyps(1-3) 
+    note reds.Application[OF _ _ _ _ this]
+    with Application.hyps(1-4) 
     show ?case by (auto simp add: fresh_Pair fresh_take)
 next    
   case (ApplicationInd n)
     note ApplicationInd.IH(1)[where n = "Suc n", simplified] ApplicationInd.IH(2)[where n = n, simplified]
-    note reds.ApplicationInd[OF _ _ _ this]
-    with ApplicationInd.hyps(1-3) 
+    note reds.ApplicationInd[OF _ _ _ _ this]
+    with ApplicationInd.hyps(1-4) 
     show ?case by (auto simp add: fresh_Pair fresh_take)
 next
   case Variable
@@ -200,56 +202,83 @@ lemma reds_fresh:" \<lbrakk> \<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>S\<
 proof(nominal_induct avoiding: x rule: reds.strong_induct)
 case (Lambda \<Gamma> x e) thus ?case by auto
 next
-case (Application n \<Gamma> x e y S \<Delta> \<Theta> z u b e' x')
-  from `atom n \<sharp> x'` `atom x' \<sharp> \<Gamma>(x f\<mapsto> App e y)`
-  have "atom x' \<sharp> \<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)"
-    by (auto simp add: fresh_Pair fresh_fmap_upd_eq eqvt_fresh_cong2[where f = fmap_delete, OF fmap_delete_eqvt])
-  from Application.hyps(20)[OF this]
+case (Application n \<Gamma> x e y S z \<Delta> \<Theta> e' u b x')
   show ?case
-  proof
-    assume "atom x' \<sharp> \<Delta>(n f\<mapsto> Lam [z]. e')"
-    with `atom n \<sharp> \<Delta>` `atom x' \<sharp> \<Gamma>(x f\<mapsto> App e y)`
-    have "atom x' \<sharp> \<Delta>(x f\<mapsto> e'[z::=y])"
-      by (auto simp add: subst_pres_fresh  fresh_fmap_upd_eq fresh_fmap_delete_subset)
-    from Application.hyps(22)[OF this]
-    show ?thesis.
-  next
-    assume "x' \<in> fdom (\<Delta>(n f\<mapsto> Lam [z]. e'))"
-    with `atom n \<sharp> x'`
-    have "x' \<in> fdom (\<Delta>(x f\<mapsto> e'[z::=y]))" by (simp add: fresh_at_base)
-    with reds_doesnt_forget[OF Application(21)]
-    have "x' \<in> fdom \<Theta>" by auto
-    thus ?thesis..
-  qed
-next
-case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u b e' x')
-  show ?case
-  proof(cases "x' = z")
-  case True
-    with  reds_doesnt_forget[OF ApplicationInd(19)]
+  proof(cases "x' = n")
+    case True
+    hence "x' \<in> fdom (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e))" by simp
+    with reds_doesnt_forget[OF Application(16)]
+    have "x' \<in> fdom \<Delta>" by auto
+    hence "x' \<in> fdom (\<Delta>(x f\<mapsto> e'[z::=y]))" by simp
+    with reds_doesnt_forget[OF Application(18)]
     have "x' \<in> fdom \<Theta>" by auto
     thus ?thesis..
   next
-  case False
-    from `atom n \<sharp> x'` `atom x' \<sharp> \<Gamma>(x f\<mapsto> App e y)`
+    case False with `atom x' \<sharp> \<Gamma>(x f\<mapsto> App e y)`
     have "atom x' \<sharp> \<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)"
-      by (auto simp add: fresh_Pair fresh_fmap_upd_eq fresh_fmap_delete_subset)
-    from ApplicationInd.hyps(18)[OF this]
+      by (auto simp add: fresh_Pair fresh_fmap_upd_eq eqvt_fresh_cong2[where f = fmap_delete, OF fmap_delete_eqvt])
+    from Application.hyps(17)[OF this]
     show ?thesis
     proof
-      assume "atom x' \<sharp> \<Delta>(n f\<mapsto> Lam [z]. e')"
-      with `atom n \<sharp> \<Delta>` `atom x' \<sharp> \<Gamma>(x f\<mapsto> App e y)` False
-      have "atom x' \<sharp> \<Delta> (z f\<mapsto> Var y)(x f\<mapsto> e')"
-        by (auto simp add:  fresh_fmap_upd_eq fresh_fmap_delete_subset fresh_at_base)
-      from ApplicationInd.hyps(20)[OF this]
+      assume "atom x' \<sharp> \<Delta>"
+      from this `lookup \<Delta> n = Some (Lam [z]. e')`
+      have "atom x' \<sharp> Lam [z]. e'" by (rule fresh_lookup)
+      with `atom x' \<sharp> \<Delta>` `atom x' \<sharp> \<Gamma>(x f\<mapsto> App e y)`
+      have "atom x' \<sharp> \<Delta>(x f\<mapsto> e'[z::=y])"
+        by (auto simp add: subst_pres_fresh  fresh_fmap_upd_eq fresh_fmap_delete_subset)
+      from Application.hyps(19)[OF this]
       show ?thesis.
     next
-      assume "x' \<in> fdom (\<Delta>(n f\<mapsto> Lam [z]. e'))"
-      with `atom n \<sharp> x'`
-      have "x' \<in> fdom (\<Delta> (z f\<mapsto> Var y)(x f\<mapsto> e'))" by (simp add: fresh_at_base)
-      with reds_doesnt_forget[OF ApplicationInd(19)]
+      assume "x' \<in> fdom \<Delta>"
+      hence "x' \<in> fdom (\<Delta>(x f\<mapsto> e'[z::=y]))" by simp
+      with reds_doesnt_forget[OF Application(18)]
       have "x' \<in> fdom \<Theta>" by auto
       thus ?thesis..
+    qed
+  qed
+next
+case (ApplicationInd n \<Gamma> x e y S z \<Delta> e' u b \<Theta> x')
+  show ?case
+  proof(cases "x' = n")
+    case True
+    hence "x' \<in> fdom (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e))" by simp
+    with reds_doesnt_forget[OF ApplicationInd(14)]
+    have "x' \<in> fdom \<Delta>" by auto
+    hence "x' \<in> fdom (\<Delta>(x f\<mapsto> e'[z::=y]))" by simp
+    with reds_doesnt_forget[OF ApplicationInd(16)]
+    have "x' \<in> fdom \<Theta>" by auto
+    thus ?thesis..
+  next
+    case False
+    show ?thesis
+    proof(cases "x' = z")
+    case True
+      with reds_doesnt_forget[OF ApplicationInd(16)]
+      have "x' \<in> fdom \<Theta>" by auto
+      thus ?thesis..
+    next
+    case False
+      from `x' \<noteq> n` `atom x' \<sharp> \<Gamma>(x f\<mapsto> App e y)`
+      have "atom x' \<sharp> \<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)"
+        by (auto simp add: fresh_Pair fresh_fmap_upd_eq fresh_fmap_delete_subset)
+      from ApplicationInd.hyps(15)[OF this]
+      show ?thesis
+      proof
+        assume "atom x' \<sharp> \<Delta>"
+        from this `lookup \<Delta> n = Some (Lam [z]. e')`
+        have "atom x' \<sharp> Lam [z]. e'" by (rule fresh_lookup)
+        with `atom x' \<sharp> \<Delta>` `atom x' \<sharp> \<Gamma>(x f\<mapsto> App e y)` `x' \<noteq> z`
+        have "atom x' \<sharp> \<Delta> (z f\<mapsto> Var y)(x f\<mapsto> e')"
+          by (auto simp add:  fresh_fmap_upd_eq fresh_fmap_delete_subset fresh_at_base)
+        from ApplicationInd.hyps(17)[OF this]
+        show ?thesis.
+      next
+        assume "x' \<in> fdom \<Delta>"
+        hence "x' \<in> fdom (\<Delta>(z f\<mapsto> Var y)(x f\<mapsto> e'))" by simp
+        with reds_doesnt_forget[OF ApplicationInd(16)]
+        have "x' \<in> fdom \<Theta>" by auto
+        thus ?thesis..
+      qed
     qed
   qed
 next

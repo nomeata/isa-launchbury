@@ -188,7 +188,7 @@ case (Lambda \<Gamma> x y e i u b S)
   case 2 thus ?case .
   case 3 show ?case using Lambda by (rule reds.Lambda)
 next
-case (Application n \<Gamma> x e y S \<Delta> \<Theta> z u b e')
+case (Application n \<Gamma> x e y S z \<Delta> \<Theta> e' u b)
   case 2
     from Application(1) have "n \<noteq> x"  "n \<notin> set S"
       by (simp_all add: fresh_Pair fresh_at_base fresh_at_base_list)
@@ -200,29 +200,30 @@ case (Application n \<Gamma> x e y S \<Delta> \<Theta> z u b e')
     have "validStack (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)) x S" by (rule validStackIndirect)
     ultimately
     have IH1: "validStack (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)) n (x # S)"  by (rule ValidStackCons)
-    hence "validStack (\<Delta>(n f\<mapsto> Lam [z]. e')) n (x # S)" by (rule Application.hyps)
-    hence "validStack (\<Delta>(n f\<mapsto> Lam [z]. e')) x S" by (cases)
+    hence "validStack \<Delta> n (x # S)" by (rule Application.hyps)
+    hence "validStack \<Delta> x S" by (cases)
     hence IH2: "validStack (\<Delta>(x f\<mapsto> e'[z::=y])) x S"
     proof(rule validStack_cong)
-      from stack_unchanged[OF Application.hyps(7)[OF IH1]] `n \<noteq> x`
-      have "lookup (\<Delta>(n f\<mapsto> Lam [z]. e')) x = Some (App (Var n) y)"  by auto
-      hence "depRel (\<Delta>(n f\<mapsto> Lam [z]. e')) x n" by auto
+      from stack_unchanged[OF Application.hyps(8)[OF IH1]] `n \<noteq> x`
+      have "lookup \<Delta> x = Some (App (Var n) y)"  by auto
+      hence "depRel \<Delta> x n" by auto
 
       fix x'
-      assume "(depRel (\<Delta>(n f\<mapsto> Lam [z]. e')))\<^sup>+\<^sup>+ x' x"
+      assume "(depRel \<Delta>)\<^sup>+\<^sup>+ x' x"
       moreover
-      have "\<not> (depRel (\<Delta>(n f\<mapsto> Lam [z]. e')))\<^sup>+\<^sup>+ n x" by auto
+      from `lookup \<Delta> n = Some (Lam [z]. e')`
+      have "\<not> (depRel \<Delta>)\<^sup>+\<^sup>+ n x" by auto
       moreover
-      hence "\<not> (depRel (\<Delta>(n f\<mapsto> Lam [z]. e')))\<^sup>+\<^sup>+ x x" using `depRel (\<Delta>(n f\<mapsto> Lam [z]. e')) x n`
+      hence "\<not> (depRel \<Delta>)\<^sup>+\<^sup>+ x x" using `depRel \<Delta> x n`
         by (metis depRel_via)
       ultimately
       have "x' \<noteq> x" "x' \<noteq> n" by auto
-      thus "lookup (\<Delta>(n f\<mapsto> Lam [z]. e')) x' = lookup (\<Delta>(x f\<mapsto> e'[z::=y])) x'" by simp
+      thus "lookup \<Delta> x' = lookup (\<Delta>(x f\<mapsto> e'[z::=y])) x'" by simp
     qed
     thus "validStack \<Theta> x S"
       by (rule Application.hyps)
   case 1
-    from Application.hyps(5)[OF IH1]
+    from Application.hyps(6)[OF IH1]
     show ?case
     proof(rule contrapos_nn)
       assume "cycle (\<Gamma>(x f\<mapsto> App e y)) x"
@@ -231,12 +232,12 @@ case (Application n \<Gamma> x e y S \<Delta> \<Theta> z u b e')
       thus "cycle (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)) n" using `n \<noteq> x`  by (auto elim!: cycle_depRel)
     qed
   case 3
-    from Application.hyps(1,2,3)
-         Application.hyps(7)[OF IH1]
-         Application.hyps(11)[OF IH2]
+    from Application.hyps(1,2,3,4)
+         Application.hyps(8)[OF IH1]
+         Application.hyps(12)[OF IH2]
     show ?case by (rule reds.Application)
 next
-case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u b e')
+case (ApplicationInd n \<Gamma> x e y S z \<Delta> e' u b \<Theta>)
 case 2
     from ApplicationInd(1) have "n \<noteq> x" by (simp add: fresh_Pair fresh_at_base)
     hence "(depRel (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)))\<^sup>+\<^sup>+ x n" by auto
@@ -247,34 +248,35 @@ case 2
     have "validStack (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)) x S" by (rule validStackIndirect)
     ultimately
     have IH1: "validStack (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)) n (x # S)"  by (rule ValidStackCons)
-    hence "validStack (\<Delta>(n f\<mapsto> Lam [z]. e')) n (x # S)" by (rule ApplicationInd.hyps)
-    hence "validStack (\<Delta>(n f\<mapsto> Lam [z]. e')) x S" by (cases)
+    hence "validStack \<Delta> n (x # S)" by (rule ApplicationInd.hyps)
+    hence "validStack \<Delta> x S" by (cases)
     hence IH2: "validStack (\<Delta>(z f\<mapsto> Var y)(x f\<mapsto> e')) x S"
     proof(rule validStack_cong)
-      from stack_unchanged[OF ApplicationInd.hyps(7)[OF IH1]] `n \<noteq> x`
-      have "depRel (\<Delta>(n f\<mapsto> Lam [z]. e')) x n" by auto
+      from stack_unchanged[OF ApplicationInd.hyps(8)[OF IH1]] `n \<noteq> x`
+      have "depRel \<Delta> x n" by auto
 
       fix x'
-      assume as: "(depRel (\<Delta>(n f\<mapsto> Lam [z]. e')))\<^sup>+\<^sup>+ x' x"
+      assume as: "(depRel \<Delta>)\<^sup>+\<^sup>+ x' x"
       moreover
-      have "\<not> (depRel (\<Delta>(n f\<mapsto> Lam [z]. e')))\<^sup>+\<^sup>+ n x" by auto
+      from `lookup \<Delta> n = Some (Lam [z]. e')`
+      have "\<not> (depRel \<Delta>)\<^sup>+\<^sup>+ n x" by auto
       moreover
-      hence "\<not> (depRel (\<Delta>(n f\<mapsto> Lam [z]. e')))\<^sup>+\<^sup>+ x x" using `depRel (\<Delta>(n f\<mapsto> Lam [z]. e')) x n`
+      hence "\<not> (depRel \<Delta>)\<^sup>+\<^sup>+ x x" using `depRel \<Delta> x n`
         by (metis depRel_via)
       ultimately
       have "x' \<noteq> x" "x' \<noteq> n" by auto
       moreover
       from as `x' \<noteq> n`
-      have "x' \<in> fdom \<Delta>" by (metis (hide_lams, no_types) converse_tranclpE depRel_dom fmap_upd_fdom insert_iff)
+      have "x' \<in> fdom \<Delta>" by (metis (hide_lams, no_types) converse_tranclpE depRel_dom)
       with ApplicationInd(2)
       have "x' \<noteq> z" by (auto simp add: fresh_Pair)
       ultimately
-      show "lookup (\<Delta>(n f\<mapsto> Lam [z]. e')) x' =  lookup (\<Delta>(z f\<mapsto> Var y)(x f\<mapsto> e')) x'" by simp
+      show "lookup \<Delta> x' =  lookup (\<Delta>(z f\<mapsto> Var y)(x f\<mapsto> e')) x'" by simp
     qed
     thus "validStack \<Theta> x S"
       by (rule ApplicationInd.hyps)
   case 1
-    from ApplicationInd.hyps(5)[OF IH1]
+    from ApplicationInd.hyps(6)[OF IH1]
     show ?case
     proof(rule contrapos_nn)
       assume "cycle (\<Gamma>(x f\<mapsto> App e y)) x"
@@ -284,9 +286,9 @@ case 2
         by (auto elim!: cycle_depRel)
     qed
   case 3
-    from ApplicationInd.hyps(1-3)
-         ApplicationInd.hyps(7)[OF IH1]
-         ApplicationInd.hyps(11)[OF IH2]
+    from ApplicationInd.hyps(1-4)
+         ApplicationInd.hyps(8)[OF IH1]
+         ApplicationInd.hyps(12)[OF IH2]
     show ?case by (rule reds.ApplicationInd)
 next
 case (Variable y x S \<Gamma> i \<Delta>)
