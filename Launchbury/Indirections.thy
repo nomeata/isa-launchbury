@@ -136,6 +136,9 @@ definition resolveHeap' :: "Heap \<Rightarrow> indirections \<Rightarrow> Heap" 
 lemma resolveHeap'_empty[simp]: "f\<emptyset> \<ominus>\<^sub>H is = f\<emptyset>"
   unfolding resolveHeap'_def by auto
 
+lemma resolveHeap'_Nil[simp]: "\<Gamma> \<ominus>\<^sub>H [] = \<Gamma>"
+  unfolding resolveHeap'_def by auto
+
 lemma resolveHeap'fdom[simp]:
   "fdom (\<Gamma> \<ominus>\<^sub>H is) = fdom \<Gamma> - heapVars is"
   unfolding resolveHeap'_def by auto
@@ -297,7 +300,7 @@ lemma supp_atom_set: "supp L = atom ` set L"
   done
 
 inductive valid_ind :: "indirections \<Rightarrow> bool" where
-  ValidIndNil: "valid_ind []" |
+  ValidIndNil[simp]: "valid_ind []" |
   ValidIndCons: "valid_ind is \<Longrightarrow> atom x \<sharp> (is,y) \<Longrightarrow> valid_ind ((x,y) # is)"
 
 lemma heapVarFresh: "x \<in> heapVars is \<Longrightarrow> atom x \<sharp> ((v::var) \<ominus> is)" oops

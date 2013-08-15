@@ -289,6 +289,8 @@ subsubsection {* Map *}
 lift_definition fmap_map :: "('b \<Rightarrow> 'c) \<Rightarrow> 'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'c" is "\<lambda> f m. Option.map f \<circ> m"
   by (auto simp add: dom_def)
 
+lemma fmap_map_id[simp]: "fmap_map (\<lambda> x. x) m = m" by transfer (simp add: Option.map.identity)
+
 lemma fdom_fmap_map[simp]: "fdom (fmap_map f m) = fdom m" by transfer (simp add: dom_def)
 
 lemma lookup_fmap_map[simp]: "lookup (fmap_map f m) x = Option.map f (lookup m x)" by transfer simp

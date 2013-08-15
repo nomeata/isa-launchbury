@@ -2,7 +2,6 @@ theory RemoveTaggedMapIndirection
 imports LaunchburyCombinedTaggedMap Indirections "Nominal-Utils" LaunchburyAddBH
 begin
 
-
 fun remdups' :: "'a list \<Rightarrow> 'a list" where
   "remdups' [] = []" |
   "remdups' (x#xs) = x # removeAll x (remdups' xs)"
@@ -96,6 +95,9 @@ lemma resolveStack_fresh_noop[simp]: "atom z \<sharp> S \<Longrightarrow> (S \<o
 
 definition ind_for :: "indirections \<Rightarrow> Heap \<Rightarrow> bool" where
   "ind_for is \<Gamma> = (\<forall> (x,y) \<in> set is. (x \<in> fdom \<Gamma> \<and> (((lookup \<Gamma> x) = Some (Var y) \<or> (isLam (\<Gamma> f! x)) \<and> lookup \<Gamma> x = lookup \<Gamma> y))))"
+
+lemma ind_for_Nil[simp]: "ind_for [] \<Gamma>"
+  unfolding ind_for_def by simp
 
 lemma ind_forE[consumes 2]:
   assumes "ind_for is \<Gamma>"
@@ -284,7 +286,7 @@ fun heap_of :: "Heap \<Rightarrow> var list \<Rightarrow> (Heap \<times> exp)"
 declare heap_of.simps[simp del]
 
 
-theorem remove_indirection:
+theorem remove_indirection':
   "\<Gamma> \<Down>\<^sup>\<surd>\<^sup>u\<^sup>\<times>\<^bsub>S\<^esub> \<Delta> \<Longrightarrow>
     ind_for is \<Gamma> \<Longrightarrow>
     valid_ind is \<Longrightarrow>
@@ -676,5 +678,11 @@ case (Let as \<Gamma> x S body u \<Delta> "is")
   ultimately
   show ?case by blast
 qed
+
+corollary remove_indirection:
+  assumes "\<Gamma> \<Down>\<^sup>\<surd>\<^sup>u\<^sup>\<times>\<^bsub>S\<^esub> \<Delta>"
+  shows "\<exists> \<Delta>'. \<Gamma> \<Down>\<^sup>\<times>\<^sup>u\<^sup>\<times>\<^bsub>S\<^esub> \<Delta>'"
+using remove_indirection'[OF assms, of "[]", simplified] by auto
+
 
 end
