@@ -295,7 +295,8 @@ theorem
        \<and> set is \<subseteq> set is'
        \<and> (heapVars is' \<inter> fdom \<Gamma>) \<subseteq> heapVars is
        \<and> valid_ind is'
-       \<and> S \<ominus>\<^sub>S is' = S \<ominus>\<^sub>S is"
+       \<and> S \<ominus>\<^sub>S is' = S \<ominus>\<^sub>S is
+       \<and> (supp is' - supp is) \<inter> supp \<Gamma> \<subseteq> supp (heap_of \<Gamma> S)"
 proof (nominal_induct \<Gamma> "\<surd>" u "\<times>" S \<Delta> avoiding: "is" rule:reds.strong_induct )
 case (Lambda y \<Gamma> x S e u "is")
   show ?case
@@ -365,6 +366,8 @@ case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u e' "is")
       and "valid_ind is'"
       and "set is \<subseteq> set is'"
       and "n # x # S \<ominus>\<^sub>S is' = n # x # S \<ominus>\<^sub>S is"
+      and is'_not_stack: "(supp is' - supp is) \<inter> supp (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)) \<subseteq>
+                           supp (heap_of (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)) (n # x # S))"
       by blast
 
   from `x \<notin> heapVars is` hV have "x \<notin> heapVars is'" by auto
@@ -375,19 +378,12 @@ case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u e' "is")
 
   have "z \<notin> fdom \<Delta>"by (metis ApplicationInd.hyps(15) fresh_fdom)
 
-  (* New invariant? *)
-  (* TODO: Migrate to fmap 
-  have "(supp is' - supp is) \<inter> supp ((n, e) # (x, App (Var n) y) # \<Gamma>)  \<subseteq> heap_of ((n, e) # (x, App (Var n) y) # \<Gamma>) (n # x # S)"
-    sorry
-  moreover
-  have "heap_of ((n, e) # (x, App (Var n) y) # \<Gamma>) (n # x # S) \<subseteq> supp e \<union> supp \<Gamma>"
-    sorry
-  ultimately 
+  have "supp (heap_of (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)) (n # x # S)) \<subseteq> supp e \<union> supp \<Gamma>"
+    by (auto simp add: heap_of.simps supp_Pair dest: set_mp[OF supp_fmap_restr_subset])
+  with is'_not_stack 
   have "atom n \<sharp> is'"
     using `atom n \<sharp> is`  `atom n \<sharp> e`  `atom n \<sharp> \<Gamma>`
     by (auto simp add: fresh_def supp_Cons supp_Pair supp_at_base)
-  *)
-  have "atom n \<sharp> is'" sorry
 
   from `ind_for is' _` `atom n \<sharp> is'` 
   have "ind_for is' \<Delta>" by simp
@@ -439,6 +435,8 @@ case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u e' "is")
           and "set ((z, y) # is') \<subseteq> set is''"
           and hV': " heapVars is'' \<inter> fdom (\<Delta>(z f\<mapsto> Var y)(x f\<mapsto> e')) \<subseteq> heapVars ((z, y) # is')"
           and "x # S \<ominus>\<^sub>S is'' = x # S \<ominus>\<^sub>S (z, y) # is'"
+          and is''_not_stack: "(supp is'' - supp ((z, y) # is')) \<inter> supp (\<Delta>(z f\<mapsto> Var y)(x f\<mapsto> e'))
+                                              \<subseteq> supp (heap_of (\<Delta>(z f\<mapsto> Var y)(x f\<mapsto> e')) (x # S))"
           by blast
   ultimately have True by simp -- "clear calculation"
 
@@ -549,8 +547,22 @@ case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u e' "is")
   moreover
   from `x # S \<ominus>\<^sub>S is'' = x # S \<ominus>\<^sub>S (z, y) # is'`
   have "x # S \<ominus>\<^sub>S is'' = x # S \<ominus>\<^sub>S is" by simp
+  moreover
+  {
+  from set_supp_mono[OF `set is \<subseteq> set is'`] set_supp_mono[OF `set ((z,y)#is') \<subseteq> set is''`]
+  have "(supp is'' - supp is) \<subseteq> (supp is'' - supp ((z,y)#is')) \<union> supp (z,y) \<union>  (supp is' - supp is)"
+    by (auto dest:set_mp[OF supp_set_mem] simp add: supp_Cons)
+  also
+  have "(\<dots> \<inter> supp (\<Gamma>(x f\<mapsto> App e y))) \<subseteq> supp (heap_of (\<Gamma>(x f\<mapsto> App e y)) (x # S))"
+  unfolding Int_Un_distrib2
+  apply (intro Un_least)
+  sorry
+  finally
+  have "(supp is'' - supp is) \<inter> supp (\<Gamma>(x f\<mapsto> App e y)) \<subseteq> supp (heap_of (\<Gamma>(x f\<mapsto> App e y)) (x # S))"
+    by auto
+  }
   ultimately 
-  show ?case by auto
+  show ?case by blast
 next
 case (VariableNoBH x \<Gamma> y S \<Delta> "is")
   from `\<Gamma>(x f\<mapsto> Var y) \<Down>\<^sup>\<surd>\<^sup>\<surd>\<^sup>\<times>\<^bsub>y # x # S\<^esub> \<Delta>`
