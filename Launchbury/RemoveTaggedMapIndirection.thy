@@ -288,8 +288,6 @@ theorem remove_indirection:
   "\<Gamma> \<Down>\<^sup>\<surd>\<^sup>u\<^sup>\<times>\<^bsub>S\<^esub> \<Delta> \<Longrightarrow>
     ind_for is \<Gamma> \<Longrightarrow>
     valid_ind is \<Longrightarrow>
-    (* distinct (S \<ominus>\<^sub>S is) \<Longrightarrow> *)
-    (*  fst (hd \<Gamma>') \<notin> heapVars is \<Longrightarrow> *)
   \<exists> is'. (\<Gamma> \<ominus>\<^sub>H is \<Down>\<^sup>\<times>\<^sup>u\<^sup>\<times>\<^bsub>S \<ominus>\<^sub>S is\<^esub> \<Delta> \<ominus>\<^sub>H is')
        \<and> ind_for is' \<Delta>
        \<and> set is \<subseteq> set is'
@@ -344,18 +342,6 @@ case (ApplicationInd n \<Gamma> x e y S z \<Delta> e' u \<Theta> "is")
   moreover
   note `valid_ind is`
   moreover
-  (*
-  from `atom n \<sharp> S``atom n \<sharp> x`
-  have "atom n \<sharp> (x # S)" by (simp add: fresh_Cons)
-  with `distinct (x # S \<ominus>\<^sub>S is)` `valid_ind is` `atom n \<sharp> is` 
-  have "distinct (n # x # S \<ominus>\<^sub>S is)"  by (rule resolveStack_distinct_fresh)
-  moreover
-  *)
-  (*
-  from `n \<notin> heapVars is`
-  have "fst (hd ((n, e) # (x, App (Var n) y) # \<Gamma>')) \<notin> heapVars is" by (simp)
-  moreover
-  *)
   note ApplicationInd(15)[OF calculation]
   ultimately
   obtain "is'"
@@ -400,21 +386,7 @@ case (ApplicationInd n \<Gamma> x e y S z \<Delta> e' u \<Theta> "is")
   
   note `valid_ind ((z, y) # is')`
   moreover
-  (*
-  from `x \<notin> heapVars is` hV
-  have "x \<notin> heapVars is'" by auto
-  with  `atom z \<sharp> x`
-  have "fst (hd ((x, e') # \<Delta>')) \<notin> heapVars ((z, y) # is')"
-    by simp
-  moreover
-  *)
   note ApplicationInd(17)[OF calculation]
-  (*
-  moreover
-  from `distinct (n # x # S \<ominus>\<^sub>S is)` `atom n \<sharp> is `
-  have "distinct (x # S \<ominus>\<^sub>S (z,y) # is')" by simp
-  ultimately
-  *)
   then
   obtain "is''"
   where is'':"\<Delta>(z f\<mapsto> Var y)(x f\<mapsto> e') \<ominus>\<^sub>H (z, y) # is' \<Down>\<^sup>\<times>\<^sup>u\<^sup>\<times>\<^bsub>x # S \<ominus>\<^sub>S (z, y) # is'\<^esub> \<Theta> \<ominus>\<^sub>H is''"
@@ -582,11 +554,6 @@ case (VariableNoBH x \<Gamma> y S \<Delta> "is")
     moreover
     from `y # x # S \<ominus>\<^sub>S is' = y # x # S \<ominus>\<^sub>S is`
     have "x # S \<ominus>\<^sub>S is' = x # S \<ominus>\<^sub>S is" by simp
-    (*
-    moreover
-    from `x \<notin> heapVars is'`
-    have "fst (hd ((x, z) # \<Delta>')) \<notin> heapVars is'" by simp
-    *)
     ultimately
     show ?thesis by blast
   next
