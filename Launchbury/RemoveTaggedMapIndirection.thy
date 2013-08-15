@@ -124,7 +124,18 @@ lemma ind_for_Cons[simp]: "x \<notin> fdom \<Gamma> \<Longrightarrow> \<not> isV
   apply auto[1]
   by (metis fdomIff lookup_fmap_upd lookup_fmap_upd_other the.simps)
 
+lemma ind_for_Cons_delete: "\<not> isVar e \<Longrightarrow> \<not> isLam e \<Longrightarrow> ind_for is (\<Gamma>(x f\<mapsto> e)) \<longleftrightarrow> ind_for is (fmap_delete x \<Gamma>)"
+  using ind_for_Cons[where \<Gamma> = "fmap_delete x \<Gamma>" and x = x, simplified].
+
 lemma fresh_not_setE[dest]: "atom x \<sharp> is \<Longrightarrow> (x,a) \<in> set is \<Longrightarrow> False" by (metis heapVars_from_set heapVars_not_fresh)
+
+lemma ind_for_change:
+  assumes "ind_for is (\<Delta>)"
+  assumes "lookup \<Delta> x = Some (App (Var n) y)"
+  shows "ind_for is (\<Delta>(x f\<mapsto> e'))"
+  using assms
+  by (auto simp add: lookup_fmap_upd_eq ind_for_def)
+
 
 lemma ind_for_Cons_fresh[simp]: "atom x \<sharp> is \<Longrightarrow> ind_for is (\<Gamma>(x f\<mapsto> e)) \<longleftrightarrow> ind_for is \<Gamma>"
   unfolding ind_for_def
@@ -382,10 +393,10 @@ case (ApplicationInd n \<Gamma> x e y S \<Delta> \<Theta> z u e' "is")
   have "ind_for is' \<Delta>" by simp
   with `z \<notin> fdom \<Delta>`
   have "ind_for ((z,y)#is') (\<Delta>(z f\<mapsto> Var y))" by (rule ind_for_ConsCons)
-  with `lookup \<Delta> x = Some (App (Var n) y)` `atom z \<sharp> x`
-  have "ind_for ((z,y)#is') (\<Delta>(z f\<mapsto> Var y)(x f\<mapsto> e'))"
-    unfolding ind_for_def
-    by (auto simp add: lookup_fmap_upd_eq)
+  hence "ind_for ((z,y)#is') (\<Delta>(z f\<mapsto> Var y)(x f\<mapsto> e'))"
+    apply (rule ind_for_change)
+    using `lookup \<Delta> x = Some (App (Var n) y)` `atom z \<sharp> x`
+    by auto
   moreover
 
   from `ind_for is' \<Delta>` `atom n \<sharp> \<Delta>` `atom z \<sharp> \<Delta>`
