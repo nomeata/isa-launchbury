@@ -20,6 +20,9 @@ abbreviation the_lookup (infix "f!" 55)
 
 lift_definition fempty :: "'key f\<rightharpoonup> 'value" ("f\<emptyset>") is Map.empty by simp
 
+lemma lookup_fempty[simp]: "lookup f\<emptyset> x = None"
+  by transfer simp
+
 lemma fempty_fdom[simp]: "fdom f\<emptyset> = {}"
   by (transfer, auto)
 
