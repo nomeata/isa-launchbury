@@ -31,7 +31,7 @@ The following definition is in fact just
 \[
 @{text "\<lbrace>h\<rbrace>\<rho> = \<rho>'. \<rho> \<squnion> heapToEnv h (\<lbrakk>-\<rbrakk>\<^bsub>\<rho>'\<^esub>)"}
 \]
-with addiditional book-keeping for domain of the map and the condition that all joins exist.
+with additional book-keeping for domain of the map and the condition that all joins exist.
 *}
 
 definition HSem :: "('var \<times> 'exp) list \<Rightarrow> 'var f\<rightharpoonup> 'value \<Rightarrow> 'var f\<rightharpoonup> 'value"
