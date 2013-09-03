@@ -92,9 +92,43 @@ instantiation cfun :: (Finite_Meet_bifinite_cpo,Finite_Meet_bifinite_cpo) Finite
 qed
 end
 
-instance CValue' :: Finite_Meet_cpo sorry
+instantiation CValue' :: Finite_Meet_cpo begin
+  fixrec CValue'_meet :: "CValue' \<rightarrow> CValue' \<rightarrow> CValue'"
+    where "CValue'_meet\<cdot>(CFn\<cdot>f)\<cdot>(CFn\<cdot>g) = CFn \<cdot>(\<Lambda> x r. CValue'_meet \<cdot> (f\<cdot>x\<cdot>r) \<cdot> (g\<cdot>x\<cdot>r))"
+  
+  lemma[simp]: "CValue'_meet\<cdot>\<bottom>\<cdot>y = \<bottom>" "CValue'_meet\<cdot>x\<cdot>\<bottom> = \<bottom>" by (fixrec_simp, cases x, fixrec_simp+)  
+
+  instance
+  apply default
+  proof(intro exI conjI strip)
+  fix x y
+  {
+    fix t
+    have "(t \<sqsubseteq> CValue'_meet\<cdot>x\<cdot>y) = (t \<sqsubseteq> x \<and> t \<sqsubseteq> y)"
+    proof (induct t rule:CValue'.take_induct)
+      fix n
+      show "(CValue'_take n\<cdot>t \<sqsubseteq> CValue'_meet\<cdot>x\<cdot>y) = (CValue'_take n\<cdot>t \<sqsubseteq> x \<and> CValue'_take n\<cdot>t \<sqsubseteq> y)"
+      proof (induct n arbitrary: t x y rule:nat_induct)
+        case 0 thus ?case by auto
+        next
+        case (Suc n t x y) thus ?case
+          apply -
+          apply (cases t, simp)
+          apply (cases x, simp)
+          apply (cases y, simp)
+          apply (fastforce simp add: cfun_below_iff)
+          done
+      qed
+   qed auto
+  } note * = this
+  show "CValue'_meet\<cdot>x\<cdot>y \<sqsubseteq> x" using * by auto
+  show "CValue'_meet\<cdot>x\<cdot>y \<sqsubseteq> y" using * by auto
+  fix z
+  assume "z \<sqsubseteq> x" and "z \<sqsubseteq> y"
+  thus "z \<sqsubseteq> CValue'_meet\<cdot>x\<cdot>y" using * by auto
+qed
+end
+
 instance CValue' :: Finite_Meet_bifinite_cpo by default
-
-
 
 end
