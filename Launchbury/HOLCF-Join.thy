@@ -325,6 +325,9 @@ lemma is_glb_maximal: "[|S >| x; x \<in> S|] ==> S >>| x"
 
 lemma glb_maximal: "[|S >| x; x \<in> S|] ==> glb S = x"
   by (rule is_glb_maximal [THEN glb_eqI])
+
+lemma glb_above: "S >>| z \<Longrightarrow> x \<sqsubseteq> glb S \<longleftrightarrow> S >| x"
+  by (metis glb_eqI is_glb_above_iff)
 end
 
 lemma (in cpo) Meet_insert: "S >>| l \<Longrightarrow> {x, l} >>| l2 \<Longrightarrow> insert x S >>| l2"
@@ -357,6 +360,39 @@ begin
   apply (metis Meet_insert binary_meet_exists')
   done
 end
+
+definition meet :: "'a::cpo => 'a => 'a" (infix "\<sqinter>" 80) where
+  "x \<sqinter> y = (if \<exists> z. {x, y} >>| z then glb {x, y} else x)"
+
+lemma meet_def': "(x::'a::Finite_Meet_cpo) \<sqinter> y = glb {x, y}"
+  unfolding meet_def by (metis binary_meet_exists')
+
+lemma [cont2cont,simp]: "cont f \<Longrightarrow> cont g \<Longrightarrow> cont (\<lambda>x. (f x \<sqinter> (g x::'a::Finite_Meet_cpo)))" sorry
+
+lemma meet_comm: "(x::'a::Finite_Meet_cpo) \<sqinter> y = y \<sqinter> x" unfolding meet_def' by (metis insert_commute)
+
+lemma meet_bot1[simp]:
+  fixes y :: "'a :: {Finite_Meet_cpo,pcpo}"
+  shows "(\<bottom> \<sqinter> y) = \<bottom>" unfolding meet_def' by (metis minimal po_class.glb_bin)
+lemma meet_bot2[simp]:
+  fixes x :: "'a :: {Finite_Meet_cpo,pcpo}"
+  shows "(x \<sqinter> \<bottom>) = \<bottom>" by (metis meet_bot1 meet_comm)
+
+lemma meet_below1[simp]:
+  fixes x y :: "'a :: {Finite_Meet_cpo,pcpo}"
+  shows "(x \<sqinter> y) \<sqsubseteq> x" unfolding meet_def' by (metis binary_meet_exists' glb_eqI is_glbD1 is_lb_insert)
+lemma meet_below2[simp]:
+  fixes x y :: "'a :: {Finite_Meet_cpo,pcpo}"
+  shows "(y \<sqinter> x) \<sqsubseteq> x" unfolding meet_def' by (metis binary_meet_exists' glb_eqI is_glbD1 is_lb_insert)
+
+lemma meet_above_iff:
+  fixes x y z :: "'a :: {Finite_Meet_cpo,pcpo}"
+  shows "z \<sqsubseteq> x \<sqinter> y \<longleftrightarrow> z \<sqsubseteq> x \<and> z \<sqsubseteq> y"
+proof-
+  obtain g where "{x,y} >>| g" by (metis binary_meet_exists')
+  thus ?thesis
+  unfolding meet_def' by (simp add: glb_above)
+qed
 
 text {* Meets for finite nonempty sets with a lower bound. *}
 

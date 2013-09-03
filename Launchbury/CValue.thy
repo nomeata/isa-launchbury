@@ -74,7 +74,23 @@ instance
   done
 end
 
-instance cfun :: (Finite_Meet_bifinite_cpo,Finite_Meet_bifinite_cpo)Finite_Meet_bifinite_cpo sorry
+instantiation cfun :: (Finite_Meet_bifinite_cpo,Finite_Meet_bifinite_cpo) Finite_Meet_bifinite_cpo begin
+  fixrec cfun_meet :: "('a \<rightarrow> 'b) \<rightarrow> ('a \<rightarrow> 'b) \<rightarrow> ('a \<rightarrow> 'b)"
+    where "cfun_meet\<cdot>f\<cdot>g\<cdot>x = (f\<cdot>x) \<sqinter> (g\<cdot>x)"
+  
+  lemma[simp]: "cfun_meet\<cdot>\<bottom>\<cdot>y = \<bottom>" "cfun_meet\<cdot>x\<cdot>\<bottom> = \<bottom>" by (fixrec_simp)+
+
+  instance
+  apply default
+  proof(intro exI conjI strip)
+    fix x y
+    show "cfun_meet\<cdot>x\<cdot>y \<sqsubseteq> x" by (auto simp add: cfun_below_iff)
+    show "cfun_meet\<cdot>x\<cdot>y \<sqsubseteq> y" by (auto simp add: cfun_below_iff)
+    fix z
+    assume "z \<sqsubseteq> x" and "z \<sqsubseteq> y"
+    thus "z \<sqsubseteq> cfun_meet\<cdot>x\<cdot>y" by (auto simp add: cfun_below_iff meet_above_iff)
+qed
+end
 
 instance CValue' :: Finite_Meet_cpo sorry
 instance CValue' :: Finite_Meet_bifinite_cpo by default
