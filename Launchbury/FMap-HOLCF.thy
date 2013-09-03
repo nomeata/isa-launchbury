@@ -1207,4 +1207,14 @@ proof(rule fmap_eqI)
   qed
 qed
 
+lemma fmap_expand_join_disjunct:
+  assumes "fdom m1 \<inter> fdom m2 = {}"
+  shows "m1\<^bsub>[fdom m1 \<union> fdom m2]\<^esub> \<squnion> m2\<^bsub>[fdom m1 \<union> fdom m2]\<^esub> = m1 f++ m2"
+proof-
+  from assms(1) have disj: "\<And> x. x \<in> fdom m1 \<Longrightarrow> x \<notin> fdom m2" "\<And> x. x \<in> fdom m2 \<Longrightarrow> x \<notin> fdom m1" by auto
+  have [simp]:"compatible (m1\<^bsub>[fdom m1 \<union> fdom m2]\<^esub>) (m2\<^bsub>[fdom m1 \<union> fdom m2]\<^esub>)"
+    by (fastforce intro: compatible_fmapI simp add: disj)
+  show ?thesis by (fastforce simp add: disj)
+qed
+
 end

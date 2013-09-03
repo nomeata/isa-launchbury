@@ -217,7 +217,7 @@ proof (rule admI)
   qed
 qed
 
-lemma similar'_adm: "adm (\<lambda>x. similar' n (fst x) (snd x))"
+lemma similar'_adm: "adm (\<lambda>x. fst x \<triangleleft>\<triangleright>\<^bsub>n\<^esub> snd x)"
   apply (induct n)
   apply (auto simp add: similar'.simps)
   apply (metis similar'_base_adm)
@@ -358,8 +358,35 @@ next
   qed
 qed
 
+lemma similar_FnI[intro]:
+  assumes "\<And>x y.  x \<triangleleft>\<triangleright> y\<cdot>C\<^sup>\<infinity> \<Longrightarrow> f\<cdot>x \<triangleleft>\<triangleright> g\<cdot>y\<cdot>C\<^sup>\<infinity>"
+  shows "Fn\<cdot>f \<triangleleft>\<triangleright> CFn\<cdot>g"
+by (metis assms similar_nice_def)
+
+lemma similar_FnD[elim!]:
+  assumes "Fn\<cdot>f \<triangleleft>\<triangleright> CFn\<cdot>g"
+  assumes "x \<triangleleft>\<triangleright> y\<cdot>C\<^sup>\<infinity>"
+  shows "f\<cdot>x \<triangleleft>\<triangleright> g\<cdot>y\<cdot>C\<^sup>\<infinity>"
+using assms 
+by (subst (asm) similar_nice_def) auto
+
+lemma similar_FnE[elim!]:
+  assumes "Fn\<cdot>f \<triangleleft>\<triangleright> CFn\<cdot>g"
+  assumes "(\<And>x y.  x \<triangleleft>\<triangleright> y\<cdot>C\<^sup>\<infinity> \<Longrightarrow> f\<cdot>x \<triangleleft>\<triangleright> g\<cdot>y\<cdot>C\<^sup>\<infinity>) \<Longrightarrow> P"
+  shows P
+by (metis assms similar_FnD)
+
+section {* The similarity relation lifted to finite maps *}
 
 inductive fmap_similar :: "('a f\<rightharpoonup> Value) \<Rightarrow> ('a f\<rightharpoonup> CValue) \<Rightarrow> bool"  (infix "f\<triangleleft>\<triangleright>" 50) where
-  fmap_similarI: "fdom m = fdom m' \<Longrightarrow> (\<And> x. x\<in>fdom m \<Longrightarrow> m f! x \<triangleleft>\<triangleright> (m' f! x)\<cdot>C\<^sup>\<infinity>) \<Longrightarrow> m f\<triangleleft>\<triangleright> m'"
+  fmap_similarI[intro]: "fdom m = fdom m' \<Longrightarrow> (\<And> x. x\<in>fdom m \<Longrightarrow> m f! x \<triangleleft>\<triangleright> (m' f! x)\<cdot>C\<^sup>\<infinity>) \<Longrightarrow> m f\<triangleleft>\<triangleright> m'"
+
+inductive_cases fmap_similarE[elim]:  "m f\<triangleleft>\<triangleright> m'" 
+
+lemma fmap_similar_adm: "adm (\<lambda>x. fst x f\<triangleleft>\<triangleright> snd x)"
+  sorry
+
+lemma fmap_similar_fmap_bottom[simp]: "f\<emptyset>\<^bsub>[S]\<^esub> f\<triangleleft>\<triangleright> f\<emptyset>\<^bsub>[S]\<^esub>"
+  by (cases "finite S") (auto simp add: fmap_expand_nonfinite)
 
 end

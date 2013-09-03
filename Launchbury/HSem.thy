@@ -902,6 +902,53 @@ subsubsection {* The heap semantics can also be defined inductively over the hea
 
 end
 
+lemma parallel_HSem_ind_different_ESem:
+  assumes cond1: "has_ESem.HSem_cond' ESem1 h \<rho>"
+  assumes cond2: "has_ESem.HSem_cond' ESem2 h2 \<rho>2"
+  assumes "adm_on (fix_join_compat (\<rho>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>) (\<lambda>\<rho>'. heapToEnv h (\<lambda>e. ESem1 e \<rho>')\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>)
+                  \<times> fix_join_compat (\<rho>2\<^bsub>[fdom \<rho>2 \<union> heapVars h2]\<^esub>) (\<lambda>\<rho>'. heapToEnv h2 (\<lambda>e. ESem2 e \<rho>')\<^bsub>[fdom \<rho>2 \<union> heapVars h2]\<^esub>))
+                 (\<lambda>\<rho>'. P (fst \<rho>') (snd \<rho>'))"
+  assumes "P (f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>) (f\<emptyset>\<^bsub>[fdom \<rho>2 \<union> heapVars h2]\<^esub>)"
+  assumes "\<And>y z. y \<in> fix_join_compat (\<rho>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>)
+               (\<lambda>\<rho>'. heapToEnv h (\<lambda>e. ESem1 e \<rho>')\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>) \<Longrightarrow>
+          z \<in> fix_join_compat (\<rho>2\<^bsub>[fdom \<rho>2 \<union> heapVars h2]\<^esub>)
+               (\<lambda>\<rho>'. heapToEnv h2 (\<lambda>e. ESem2 e \<rho>')\<^bsub>[fdom \<rho>2 \<union> heapVars h2]\<^esub>) \<Longrightarrow>
+          P y z \<Longrightarrow>
+          P (\<rho>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub> \<squnion> heapToEnv h (\<lambda>e. ESem1 e y)\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>)
+           (\<rho>2\<^bsub>[fdom \<rho>2 \<union> heapVars h2]\<^esub> \<squnion> heapToEnv h2 (\<lambda>e. ESem2 e z)\<^bsub>[fdom \<rho>2 \<union> heapVars h2]\<^esub>) "
+  shows "P (has_ESem.HSem ESem1 h \<rho>) (has_ESem.HSem ESem2 h2 \<rho>2)"
+  unfolding has_ESem.HSem_def if_P[OF cond1] if_P[OF cond2]
+  apply (rule parallel_fix_on_ind[OF fix_on_cond_fjc[OF cond1] fix_on_cond_fjc[OF cond2]])
+  apply (rule assms(3))
+  using assms(4) apply (simp add: bottom_of_fjc to_bot_fmap_def)
+  by (rule assms(5))
+
+lemma parallel_HSem_ind_different_ESem_disjoint:
+  assumes cont1: "\<And>x. cont (ESem1 x)"
+  assumes cont2: "\<And>x. cont (ESem2 x)"
+  assumes disj1: "fdom \<rho> \<inter> heapVars h = {}"
+  assumes disj2: "fdom \<rho>2 \<inter> heapVars h2 = {}"
+  assumes "adm (\<lambda>\<rho>'. P (fst \<rho>') (snd \<rho>'))"
+  assumes "P (f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>) (f\<emptyset>\<^bsub>[fdom \<rho>2 \<union> heapVars h2]\<^esub>)"
+  assumes "\<And>y z. P y z \<Longrightarrow> P (\<rho> f++ heapToEnv h (\<lambda>e. ESem1 e y)) (\<rho>2 f++ heapToEnv h2 (\<lambda>e. ESem2 e z))"
+  shows "P (has_ESem.HSem ESem1 h \<rho>) (has_ESem.HSem ESem2 h2 \<rho>2)"
+proof (rule parallel_HSem_ind_different_ESem)
+  interpret HSem1: has_cont_ESem ESem1 apply default using cont1.
+  interpret HSem2: has_cont_ESem ESem2 apply default using cont2.
+  case goal1 from disj1 show ?case by (rule HSem1.disjoint_is_HSem_cond)
+  case goal2 from disj2 show ?case by (rule HSem2.disjoint_is_HSem_cond)
+  case goal3 from assms(5) show ?case by (rule adm_is_adm_on)
+  case goal4 from assms(6) show ?case.
+  case goal5
+  note fmap_expand_join_disjunct[of \<rho> "heapToEnv h (\<lambda>e. ESem1 e y)", simplified, OF disj1]
+  moreover
+  note fmap_expand_join_disjunct[of \<rho>2 "heapToEnv h2 (\<lambda>e. ESem2 e z)", simplified, OF disj2]
+  moreover  
+  note assms(7)[OF goal5(3)] 
+  ultimately
+  show ?case by simp
+qed
+
 subsubsection {* Equivariance of @{term HSem} *}
 
 lemma HSem_cong[fundef_cong]:

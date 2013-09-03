@@ -61,6 +61,10 @@ fixrec CFn_project :: "CValue' \<rightarrow> CValue \<rightarrow> CValue"
 abbreviation CFn_project_abbr (infix "\<down>CFn" 55)
   where "f \<down>CFn v \<equiv> CFn_project\<cdot>f\<cdot>v"
 
+lemma CFn_project_strict[simp]:
+  "\<bottom> \<down>CFn v = \<bottom>"
+  by (fixrec_simp) 
+
 instantiation CValue' :: pure_cpo
 begin
   definition "p \<bullet> (v::CValue') = v"
