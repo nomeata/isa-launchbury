@@ -490,9 +490,12 @@ proof-
   thus "P m" by simp
 qed
   
+subsection {* Lifting relations pointwise *}
 
-  
+inductive fmap_lift_rel for P  where
+  fmap_lift_relI[intro]: "fdom m = fdom m' \<Longrightarrow> (\<And> x. x\<in>fdom m \<Longrightarrow> P (m f! x) (m' f! x)) \<Longrightarrow> fmap_lift_rel P m m'"
 
+inductive_cases fmap_lift_relE[elim]:  "fmap_lift_rel P m m'" 
 
 
 end

@@ -480,6 +480,22 @@ lemma adm_less_fmap [simp]:
   apply auto
   done
 
+lemma fmap_lift_rel_adm:
+  assumes "adm (\<lambda> x. P (fst x) (snd x))"
+  shows "adm (\<lambda> m. fmap_lift_rel P (fst m) (snd m))"
+proof (rule admI)
+  case (goal1 Y)
+    have "fdom (fst (Y 0)) = fdom (snd (Y 0))" using goal1(2) by auto
+    hence "fdom (fst (\<Squnion> i. Y i)) = fdom (snd (\<Squnion> i. Y i))" 
+     by (metis cont2contlubE[OF cont_fst `chain Y`]  chain_fdom(2)[OF ch2ch_fst[OF `chain Y`]]
+               cont2contlubE[OF cont_snd `chain Y`]  chain_fdom(2)[OF ch2ch_snd[OF `chain Y`]])
+    thus ?case
+    apply (rule fmap_lift_relI)
+    apply (rule admD[OF adm_subst[where t = "\<lambda>p . (fst p f! x, snd p f! x)", standard, OF _ assms, simplified] `chain Y`])
+    apply (rule fmap_lift_rel.cases[OF spec[OF goal1(2)]])
+    by (metis below_fmap_def fmap_lift_rel.cases fst_monofun goal1(1) goal1(2) is_ub_thelub)
+qed 
+
 subsubsection {* Expanding the domain of finite maps *}
 
 lift_definition fmap_expand :: "'a f\<rightharpoonup> 'b::pcpo \<Rightarrow> 'a set  \<Rightarrow> 'a f\<rightharpoonup> 'b" ("_\<^bsub>[_]\<^esub>" [90, 60] 90)

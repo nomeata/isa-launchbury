@@ -218,16 +218,10 @@ proof (rule admI)
 qed
 
 lemma similar'_adm: "adm (\<lambda>x. fst x \<triangleleft>\<triangleright>\<^bsub>n\<^esub> snd x)"
-  apply (induct n)
-  apply (auto simp add: similar'.simps)
-  apply (metis similar'_base_adm)
-  apply (metis similar'_step_adm)
-  done
+  by (induct n) (auto simp add: similar'.simps intro: similar'_base_adm similar'_step_adm)
 
 lemma similar'_admI: "cont f \<Longrightarrow> cont g \<Longrightarrow> adm (\<lambda>x. f x \<triangleleft>\<triangleright>\<^bsub>n\<^esub> g x)"
-  apply (rule adm_subst[OF _ similar'_adm, where t = "\<lambda>x. (f x, g x)", simplified])
-  apply auto
-  done
+  by (rule adm_subst[OF _ similar'_adm, where t = "\<lambda>x. (f x, g x)", simplified]) auto
 
 section {* The real similarity relation *}
 
@@ -378,13 +372,21 @@ by (metis assms similar_FnD)
 
 section {* The similarity relation lifted to finite maps *}
 
-inductive fmap_similar :: "('a f\<rightharpoonup> Value) \<Rightarrow> ('a f\<rightharpoonup> CValue) \<Rightarrow> bool"  (infix "f\<triangleleft>\<triangleright>" 50) where
-  fmap_similarI[intro]: "fdom m = fdom m' \<Longrightarrow> (\<And> x. x\<in>fdom m \<Longrightarrow> m f! x \<triangleleft>\<triangleright> (m' f! x)\<cdot>C\<^sup>\<infinity>) \<Longrightarrow> m f\<triangleleft>\<triangleright> m'"
+abbreviation fmap_similar :: "('a f\<rightharpoonup> Value) \<Rightarrow> ('a f\<rightharpoonup> CValue) \<Rightarrow> bool"  (infix "f\<triangleleft>\<triangleright>" 50) where
+  "fmap_similar \<equiv> fmap_lift_rel (\<lambda>x y. x \<triangleleft>\<triangleright> y\<cdot>C\<^sup>\<infinity>)"
 
-inductive_cases fmap_similarE[elim]:  "m f\<triangleleft>\<triangleright> m'" 
+lemma similar_adm: "adm (\<lambda>x. fst x \<triangleleft>\<triangleright> snd x)"
+  unfolding similar_def
+  by (intro adm_lemmas similar'_admI cont2cont)
+
+lemma similar_admI: "cont f \<Longrightarrow> cont g \<Longrightarrow> adm (\<lambda>x. f x \<triangleleft>\<triangleright> g x)"
+  by (rule adm_subst[OF _ similar_adm, where t = "\<lambda>x. (f x, g x)", simplified]) auto
 
 lemma fmap_similar_adm: "adm (\<lambda>x. fst x f\<triangleleft>\<triangleright> snd x)"
-  sorry
+  apply (rule fmap_lift_rel_adm)
+  apply (rule similar_admI)
+  apply auto
+  done
 
 lemma fmap_similar_fmap_bottom[simp]: "f\<emptyset>\<^bsub>[S]\<^esub> f\<triangleleft>\<triangleright> f\<emptyset>\<^bsub>[S]\<^esub>"
   by (cases "finite S") (auto simp add: fmap_expand_nonfinite)
