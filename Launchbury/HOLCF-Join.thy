@@ -367,8 +367,6 @@ definition meet :: "'a::cpo => 'a => 'a" (infix "\<sqinter>" 80) where
 lemma meet_def': "(x::'a::Finite_Meet_cpo) \<sqinter> y = glb {x, y}"
   unfolding meet_def by (metis binary_meet_exists')
 
-lemma [cont2cont,simp]: "cont f \<Longrightarrow> cont g \<Longrightarrow> cont (\<lambda>x. (f x \<sqinter> (g x::'a::Finite_Meet_cpo)))" sorry
-
 lemma meet_comm: "(x::'a::Finite_Meet_cpo) \<sqinter> y = y \<sqinter> x" unfolding meet_def' by (metis insert_commute)
 
 lemma meet_bot1[simp]:
@@ -378,21 +376,61 @@ lemma meet_bot2[simp]:
   fixes x :: "'a :: {Finite_Meet_cpo,pcpo}"
   shows "(x \<sqinter> \<bottom>) = \<bottom>" by (metis meet_bot1 meet_comm)
 
-lemma meet_below1[simp]:
-  fixes x y :: "'a :: {Finite_Meet_cpo,pcpo}"
-  shows "(x \<sqinter> y) \<sqsubseteq> x" unfolding meet_def' by (metis binary_meet_exists' glb_eqI is_glbD1 is_lb_insert)
-lemma meet_below2[simp]:
-  fixes x y :: "'a :: {Finite_Meet_cpo,pcpo}"
-  shows "(y \<sqinter> x) \<sqsubseteq> x" unfolding meet_def' by (metis binary_meet_exists' glb_eqI is_glbD1 is_lb_insert)
+lemma meet_below1[intro]:
+  fixes x y :: "'a :: Finite_Meet_cpo"
+  assumes "x \<sqsubseteq> z"
+  shows "(x \<sqinter> y) \<sqsubseteq> z" unfolding meet_def' by (metis assms binary_meet_exists' below_trans glb_eqI is_glbD1 is_lb_insert)
+lemma meet_below2[intro]:
+  fixes x y :: "'a :: Finite_Meet_cpo"
+  assumes "y \<sqsubseteq> z"
+  shows "(x \<sqinter> y) \<sqsubseteq> z" unfolding meet_def' by (metis assms binary_meet_exists' below_trans glb_eqI is_glbD1 is_lb_insert)
 
 lemma meet_above_iff:
-  fixes x y z :: "'a :: {Finite_Meet_cpo,pcpo}"
+  fixes x y z :: "'a :: Finite_Meet_cpo"
   shows "z \<sqsubseteq> x \<sqinter> y \<longleftrightarrow> z \<sqsubseteq> x \<and> z \<sqsubseteq> y"
 proof-
   obtain g where "{x,y} >>| g" by (metis binary_meet_exists')
   thus ?thesis
   unfolding meet_def' by (simp add: glb_above)
 qed
+
+lemma is_meetI:
+  fixes x y z :: "'a :: Finite_Meet_cpo"
+  assumes "z \<sqsubseteq> x"
+  assumes "z \<sqsubseteq> y"
+  assumes "\<And> a. \<lbrakk> a \<sqsubseteq> x ; a \<sqsubseteq> y \<rbrakk> \<Longrightarrow> a \<sqsubseteq> z"
+  shows "x \<sqinter> y = z"
+by (metis assms below_antisym meet_above_iff below_refl)
+
+lemma meet_monofun1:
+  fixes y :: "'a :: Finite_Meet_cpo"
+  shows "monofun (\<lambda>x. (x \<sqinter> y))"
+  by (rule monofunI)(auto simp add: meet_above_iff)
+
+lemma chain_meet1:
+  fixes y :: "'a :: Finite_Meet_cpo"
+  assumes "chain Y"
+  shows "chain (\<lambda> i. Y i \<sqinter> y)"
+by (rule chainI) (auto simp add: meet_above_iff intro: chainI chainE[OF assms])
+
+class cont_binary_meet = Finite_Meet_cpo +
+  assumes meet_cont': "chain Y \<Longrightarrow> (\<Squnion> i. Y i) \<sqinter> y = (\<Squnion> i. Y i \<sqinter> y)"
+
+lemma meet_cont1:
+  fixes y :: "'a :: cont_binary_meet"
+  shows "cont (\<lambda>x. (x \<sqinter> y))"
+  by (rule contI2[OF meet_monofun1]) (simp add: meet_cont')
+
+lemma meet_cont2: 
+  fixes x :: "'a :: cont_binary_meet"
+  shows "cont (\<lambda>y. (x \<sqinter> y))" by (subst meet_comm, rule meet_cont1)
+
+lemma [cont2cont,simp]: "cont f \<Longrightarrow> cont g \<Longrightarrow> cont (\<lambda>x. (f x \<sqinter> (g x::'a::cont_binary_meet)))"
+  apply (rule cont2cont_prod_case[where g = "\<lambda> x. (f x, g x)" and f = "\<lambda> p x y . x \<sqinter> y", simplified])
+  apply (rule meet_cont1)
+  apply (rule meet_cont2)
+  apply (metis cont2cont_Pair)
+  done
 
 text {* Meets for finite nonempty sets with a lower bound. *}
 
