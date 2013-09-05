@@ -78,3 +78,5 @@ next
   have "\<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub> \<triangleleft>\<triangleright> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>asToHeap as\<rbrace>\<sigma>\<^esub>)\<cdot>C\<^sup>\<infinity>" by blast
   thus ?case using Let(1,2) by simp
 qed auto
+
+end
