@@ -39,8 +39,7 @@ equivariance reds
 
 nominal_inductive reds
   avoids Application: "y"
-apply (auto simp add: fresh_star_def fresh_Pair)
-done
+  by (auto simp add: fresh_star_def fresh_Pair)
 
 subsubsection {* Example evaluations *}
 

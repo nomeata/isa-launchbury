@@ -81,12 +81,12 @@ nominal_primrec  (default "sum_case (\<lambda>x. Inl undefined) (\<lambda>x. Inr
 and
   subst_assn :: "assn \<Rightarrow> var \<Rightarrow> var \<Rightarrow> assn" ("_[_::a=_]" [1000,100,100] 1000)
 where
-  "(Var x)[y ::= z] = (Var (x[y ::v= z]))"
- |"(App e v)[y ::= z] = (App (e[y ::= z]) (v[y ::v= z]))"
- |"(set (bn as)) \<sharp>* (y,z) \<Longrightarrow> (Let as body)[y ::= z] = Let (subst_assn as y z) (body[y ::= z])" 
- |"(atom x \<sharp> (y,z)) \<Longrightarrow> (Lam [x].e)[y ::= z] = Lam [x].(e[y::=z])"
- |"subst_assn ANil y z = ANil"
- |"subst_assn (ACons v e as) y z = ACons v (e[y ::= z]) (subst_assn as y z)"
+  "(Var x)[y ::= z] = Var (x[y ::v= z])"
+ |"(App e v)[y ::= z] = App (e[y ::= z]) (v[y ::v= z])"
+ |"set (bn as) \<sharp>* (y,z) \<Longrightarrow> (Let as body)[y ::= z] = Let (as[y ::a= z]) (body[y ::= z])" 
+ |"atom x \<sharp> (y,z) \<Longrightarrow> (Lam [x].e)[y ::= z] = Lam [x].(e[y::=z])"
+ |"ANil[y ::a= z] = ANil"
+ |"(ACons v e as)[y ::a= z] = ACons v (e[y ::= z]) (as[y ::a= z])"
 proof-
 
 have eqvt_at_subst: "\<And> e y z . eqvt_at subst_subst_assn_sumC (Inl (e, y, z)) \<Longrightarrow> eqvt_at (\<lambda>(a, b, c). subst a b c) (e, y, z)"
@@ -256,7 +256,7 @@ by(induct e y z and as y z rule:subst_subst_assn.induct)
 lemma
  subst_pres_fresh: "x \<sharp> e \<Longrightarrow> x \<sharp> z \<Longrightarrow> x \<sharp> e[y ::= z]"
 and
- "x \<sharp> as \<Longrightarrow> x \<sharp> z \<Longrightarrow> x \<notin> set (bn as) \<Longrightarrow> x \<sharp> (subst_assn as y z)"
+ "x \<sharp> as \<Longrightarrow> x \<sharp> z \<Longrightarrow> x \<notin> set (bn as) \<Longrightarrow> x \<sharp> (as[y ::a= z])"
 by(induct e y z and as y z rule:subst_subst_assn.induct)
   (auto simp add:fresh_star_Pair exp_assn.bn_defs)
 

@@ -2,6 +2,7 @@ theory Indirections
 imports Terms "Nominal-Utils" "DistinctVars-Nominal" "FMap-Heap" "FMap-Nominal"
 begin
 
+
 type_synonym indirections = "(var \<times> var) list "
 
 class resolvable =

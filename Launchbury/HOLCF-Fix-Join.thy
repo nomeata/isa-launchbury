@@ -85,7 +85,7 @@ qed
 
 subsubsection {* Conditions for the existence of the fixed point of binary joins *}
 
-inductive fix_join_cond
+inductive fix_join_cond ::  "'a\<Colon>subpcpo_partition \<Rightarrow> ('a \<Rightarrow> 'a) \<Rightarrow> bool"
   where fix_join_condI:
   "cont F \<Longrightarrow>
    (\<And> i. compatible \<rho> (F (((\<lambda>\<rho>'. \<rho> \<squnion> F \<rho>')^^i) (to_bot \<rho>)))) \<Longrightarrow> fix_join_cond \<rho> F "

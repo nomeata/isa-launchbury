@@ -10,6 +10,11 @@ session "HOLCF-Nominal2" in "Nominal2" = HOLCF +
     "~~/src/HOL/Library/Permutation"
 
 session Launchbury (AFP) in "Launchbury" = "HOLCF-Nominal2" +
-  options [document = pdf, document_graph]
+  options [document = pdf, document_graph, document_output = "output"]
   theories
     "Everything"
+
+session LaunchburyComplete (AFP) in "Launchbury" = "HOLCF-Nominal2" +
+  options [document_variants = newstuff, document = pdf, document_graph, document_output = "output", quick_and_dirty]
+  theories
+    "NewStuff"
