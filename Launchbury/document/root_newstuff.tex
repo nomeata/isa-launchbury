@@ -1,0 +1,74 @@
+\documentclass[11pt,a4paper,parskip=half]{scrbook}
+\usepackage{isabelle,isabellesym}
+
+% further packages required for unusual symbols (see also
+% isabellesym.sty), use only when needed
+
+%\usepackage{amssymb}
+  %for \<leadsto>, \<box>, \<diamond>, \<sqsupset>, \<mho>, \<Join>,
+  %\<lhd>, \<lesssim>, \<greatersim>, \<lessapprox>, \<greaterapprox>,
+  %\<triangleq>, \<yen>, \<lozenge>
+
+%\usepackage[greek,english]{babel}
+  %option greek for \<euro>
+  %option english (default language) for \<guillemotleft>, \<guillemotright>
+
+\usepackage[only,bigsqcap]{stmaryrd}
+  %for \<Sqinter>
+
+%\usepackage{eufrak}
+  %for \<AA> ... \<ZZ>, \<aa> ... \<zz> (also included in amssymb)
+
+%\usepackagetcomp}
+  %for \<onequarter>, \<onehalf>, \<threequarters>, \<degree>, \<cent>,
+  %\<currency>
+
+% for uniform font size
+%\renewcommand{\isastyle}{\isastyleminor}
+
+% From src/HOL/HOLCF/document/root
+\newcommand{\isasymnotsqsubseteq}{\isamath{\not\sqsubseteq}}
+
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{mathpartir}
+\usepackage{calc}
+
+% this should be the last package used
+\usepackage{pdfsetup}
+
+% urls in roman style, theorys in math-similar italics
+\urlstyle{rm}
+\isabellestyle{it}
+
+% Isabelle does not like *} in a text {* ... *} block
+% Concrete implemenation thanks to http://www.mrunix.de/forums/showpost.php?p=235085&postcount=5
+\newenvironment{alignstar}{\csname align*\endcsname}{\csname endalign*\endcsname}
+\newenvironment{alignatstar}{\csname alignat*\endcsname}{\csname endalignat*\endcsname}
+
+
+\begin{document}
+
+\title{The Correctness of Launchbury's Natural Semantics for Lazy Evaluation}
+\author{Joachim Breitner\\
+Programming Paradigms Group\\
+Karlsruhe Institute for Technology\\
+\url{breitner@kit.edu}}
+\maketitle
+
+\tableofcontents
+
+%\newcommand{\theory}[1]{\subsection{#1}\label{sec_#1}\input{#1.tex}}
+
+\let\OldInput\input
+\renewcommand{\input}[1]{{
+        \chapter{#1}
+        \OldInput{#1}
+}}
+
+\OldInput{session.tex}
+\end{document}
