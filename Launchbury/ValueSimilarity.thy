@@ -280,6 +280,38 @@ lemma slimilar_bot_cases[consumes 1, case_names bot Fn]:
 using assms
 by (metis bot_or_not_bot CValue'.exhaust Value.exhaust)
 
+lemma similar_adm: "adm (\<lambda>x. fst x \<triangleleft>\<triangleright> snd x)"
+  unfolding similar_def
+  by (intro adm_lemmas similar'_admI cont2cont)
+
+lemma similar_admI: "cont f \<Longrightarrow> cont g \<Longrightarrow> adm (\<lambda>x. f x \<triangleleft>\<triangleright> g x)"
+  by (rule adm_subst[OF _ similar_adm, where t = "\<lambda>x. (f x, g x)", simplified]) auto
+
+lemma adm_prod_case':
+  assumes "adm (\<lambda>x. P (fst (f x)) (snd (f x)))"
+  shows "adm (\<lambda>x. case f x of (a, b) \<Rightarrow> P a b)"
+unfolding prod_case_beta using assms .
+
+lemma admD2:
+  assumes "adm (\<lambda>x. P (fst x) (snd x))"
+  assumes "chain Y1"
+  assumes "chain Y2"
+  assumes "(\<And> i. P (Y1 i) (Y2 i))"
+  shows "P (\<Squnion> i. Y1 i) (\<Squnion> i. Y2 i)"
+proof-
+  from assms(1) have "adm (split P)" by simp
+  moreover
+  from assms(2,3) have "chain (\<lambda>i. (Y1 i, Y2 i))" by simp
+  moreover
+  from assms(4) have "\<And> i. split P (Y1 i, Y2 i)" by simp
+  ultimately
+  have "split P (\<Squnion> i. (Y1 i, Y2 i))" by (rule admD)
+  also have "(\<Squnion> i. (Y1 i, Y2 i)) = (\<Squnion> i. Y1 i, \<Squnion> i. Y2 i)"
+    using assms(2,3) by (rule lub_Pair)
+  finally
+  show ?thesis by simp
+qed
+
 lemma similar_nice_def: "x \<triangleleft>\<triangleright> y \<longleftrightarrow> (x = \<bottom> \<and> y = \<bottom> \<or> (\<exists> f g. x = Fn \<cdot> f \<and> y = CFn \<cdot> g \<and> (\<forall> a b. a \<triangleleft>\<triangleright> b\<cdot>C\<^sup>\<infinity> \<longrightarrow> f\<cdot>a \<triangleleft>\<triangleright> g\<cdot>b\<cdot>C\<^sup>\<infinity>)))"
   (is "?L \<longleftrightarrow> ?R")
 proof
@@ -294,13 +326,46 @@ proof
     proof(intro impI allI)
       fix a b
       assume "a \<triangleleft>\<triangleright> b\<cdot>C\<^sup>\<infinity>"
+
+      (* Variant a: explitict use of admissibility on the outside *)
+      { fix n
+
+        from `a \<triangleleft>\<triangleright> b\<cdot>C\<^sup>\<infinity>`
+        have "Value_take n \<cdot> a \<triangleleft>\<triangleright>\<^bsub>n\<^esub> CValue'_take n \<cdot>(b\<cdot>C\<^sup>\<infinity>)" by (rule similarE)
+        moreover
+        from `Fn\<cdot>f \<triangleleft>\<triangleright> CFn\<cdot>g`
+        have "Value_take (Suc n)\<cdot>(Fn\<cdot>f) \<triangleleft>\<triangleright>\<^bsub>Suc n\<^esub> CValue'_take (Suc n)\<cdot>(CFn\<cdot>g)" by (rule similarE)
+        ultimately
+        have "Value_take n\<cdot>(f\<cdot>(Value_take n\<cdot>(Value_take n\<cdot>a))) \<triangleleft>\<triangleright>\<^bsub>n\<^esub>
+            CValue'_take n\<cdot>(g\<cdot>(CValue_take n\<cdot>(CValue_take n\<cdot>b))\<cdot>C\<^sup>\<infinity>)"
+          by (auto)
+        hence "Value_take n\<cdot>(f\<cdot>(Value_take n\<cdot>a)) \<triangleleft>\<triangleright>\<^bsub>n\<^esub> CValue'_take n\<cdot>(g\<cdot>(CValue_take n\<cdot>b)\<cdot>C\<^sup>\<infinity>)"
+          by (simp add: Value.take_take cfun_map_map CValue'.take_take ID_def eta_cfun)
+        hence "Value_take n\<cdot>(Value_take n\<cdot>(f\<cdot>(Value_take n\<cdot>a))) \<triangleleft>\<triangleright> CValue'_take n\<cdot>(CValue'_take n\<cdot>(g\<cdot>(CValue_take n\<cdot>b)\<cdot>C\<^sup>\<infinity>))"
+          by (rule take_similar'_similar)
+        hence "Value_take n\<cdot>(f\<cdot>(Value_take n\<cdot>a)) \<triangleleft>\<triangleright> CValue'_take n\<cdot>(g\<cdot>(CValue_take n\<cdot>b)\<cdot>C\<^sup>\<infinity>)"
+          by (simp add: Value.take_take cfun_map_map CValue'.take_take ID_def eta_cfun)
+      }
+      hence "(\<Squnion>i. (Value_take i\<cdot>(f\<cdot>(Value_take i \<cdot>a)))) \<triangleleft>\<triangleright> (\<Squnion> i. CValue'_take i\<cdot>(g\<cdot>(CValue_take i\<cdot>b)\<cdot>C\<^sup>\<infinity>))"
+        apply (rule admD2[OF similar_adm, rotated 2])
+        apply simp+
+        done
+      also have "(\<Squnion>i. (Value_take i\<cdot>(f\<cdot>(Value_take i \<cdot>a)))) = f\<cdot>a"
+        by (simp add:
+              lub_APP[OF Value.chain_take ch2ch_Rep_cfunR[OF ch2ch_Rep_cfunL[OF Value.chain_take]]]
+              contlub_cfun_fun contlub_cfun_arg[OF ch2ch_Rep_cfunL[OF Value.chain_take], symmetric] Value.reach)
+      also have "(\<Squnion>i. (CValue'_take i\<cdot>(g\<cdot>(CValue_take i \<cdot>b)\<cdot>C\<^sup>\<infinity>))) = g\<cdot>b\<cdot>C\<^sup>\<infinity>"
+        sorry
+      hence "f\<cdot>a \<triangleleft>\<triangleright> g\<cdot>b\<cdot>C\<^sup>\<infinity>"  sorry
+
+
       show "f\<cdot>a \<triangleleft>\<triangleright> g\<cdot>b\<cdot>C\<^sup>\<infinity>" 
       proof(rule similarI)
         fix n
-        show "Value_take n\<cdot>(f\<cdot>a) \<triangleleft>\<triangleright>\<^bsub>n\<^esub> CValue'_take n\<cdot>(g\<cdot>b\<cdot>C\<^sup>\<infinity>)"
-        apply (induct a b rule: Value_CValue_take_induct)
-        apply (rule adm_prod_case, intro similar'_admI cont2cont)
-        proof-
+        have "adm (\<lambda>(b, a). Value_take n\<cdot>(f\<cdot>b) \<triangleleft>\<triangleright>\<^bsub>n\<^esub> CValue'_take n\<cdot>(g\<cdot>a\<cdot>C\<^sup>\<infinity>))"
+          by (rule adm_prod_case, intro similar'_admI cont2cont)
+        thus "Value_take n\<cdot>(f\<cdot>a) \<triangleleft>\<triangleright>\<^bsub>n\<^esub> CValue'_take n\<cdot>(g\<cdot>b\<cdot>C\<^sup>\<infinity>)"
+        proof (induct a b rule: Value_CValue_take_induct[consumes 1])
           fix m
 
           from `a \<triangleleft>\<triangleright> b\<cdot>C\<^sup>\<infinity>`
@@ -374,13 +439,6 @@ section {* The similarity relation lifted to finite maps *}
 
 abbreviation fmap_similar :: "('a f\<rightharpoonup> Value) \<Rightarrow> ('a f\<rightharpoonup> CValue) \<Rightarrow> bool"  (infix "f\<triangleleft>\<triangleright>" 50) where
   "fmap_similar \<equiv> fmap_lift_rel (\<lambda>x y. x \<triangleleft>\<triangleright> y\<cdot>C\<^sup>\<infinity>)"
-
-lemma similar_adm: "adm (\<lambda>x. fst x \<triangleleft>\<triangleright> snd x)"
-  unfolding similar_def
-  by (intro adm_lemmas similar'_admI cont2cont)
-
-lemma similar_admI: "cont f \<Longrightarrow> cont g \<Longrightarrow> adm (\<lambda>x. f x \<triangleleft>\<triangleright> g x)"
-  by (rule adm_subst[OF _ similar_adm, where t = "\<lambda>x. (f x, g x)", simplified]) auto
 
 lemma fmap_similar_adm: "adm (\<lambda>x. fst x f\<triangleleft>\<triangleright> snd x)"
   apply (rule fmap_lift_rel_adm)
