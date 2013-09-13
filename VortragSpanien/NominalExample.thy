@@ -5,12 +5,15 @@ atom_decl var
 term permute
 thm supp_def
 thm fresh_def
+find_theorems fresh permute
 thm Abs1_eq_iff(3)
 
 nominal_datatype exp =
   Const int
 | Var var
 | Ass v::var i::int body::exp  binds v in body
+
+lemma "Ass a 0 (Var a) = Ass b 0 (Var b)" by auto
 
 nominal_primrec eval :: "(var \<times> int) list \<Rightarrow> exp \<Rightarrow> int" where
   "eval _ (Const i) = i" |
@@ -35,7 +38,7 @@ apply (auto simp add: permute_pure fresh_Pair fresh_perm flip_fresh_fresh)
 done
 
 termination (eqvt) by lexicographic_order
-print_theorems
+thm eval.induct[no_vars]
 
 inductive all_zeros where
   AZConst: "all_zeros (Const 0)" |
@@ -57,6 +60,7 @@ next
   thus "eval l (Var n) = 0" by (auto split:option.splits simp add: ran_def)
 next
   case (AZAss e v)
+    obtain v'::var where "atom v' \<sharp> l" and "atom v' \<sharp> v" by (metis obtain_fresh fresh_Pair)
     from `ran (map_of l) \<subseteq> {0}`
     have "ran (map_of ((v,0)#l)) \<subseteq> {0}" by (auto simp add: ran_def)
     hence "eval ((v, 0) # l) e = 0" by (rule AZAss.hyps)
@@ -64,6 +68,7 @@ next
       (* Need "atom v \<sharp> l" to proceed, but that is not guaranteed! *)
 oops
 
+thm all_zeros.induct all_zeros.strong_induct
 
 lemma "all_zeros e \<Longrightarrow> ran (map_of l) \<subseteq> {0} \<Longrightarrow> eval l e = 0"
 proof (nominal_induct avoiding: l rule: all_zeros.strong_induct)
