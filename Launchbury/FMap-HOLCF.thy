@@ -514,7 +514,6 @@ lemma fmap_lookup_bot_fmap_upd_eq: "h (x f\<mapsto> v) f!\<^sub>\<bottom>  x' = 
 lemma fmap_lookup_bot_fmap_delete_other[simp]: "x' \<noteq> x \<Longrightarrow> (fmap_delete x h) f!\<^sub>\<bottom> x' = h f!\<^sub>\<bottom> x'"
   by (transfer, auto)
 
-
 lemma fmap_lookup_bot_chain:
   assumes "chain (Y :: nat \<Rightarrow> 'a f\<rightharpoonup> 'b::pcpo)"
   shows "chain (\<lambda> i . (Y i) f!\<^sub>\<bottom> x)"
@@ -625,7 +624,20 @@ lemma lookup_fmap_expand2[simp]:
 
 lemma lookup_fmap_expand3[simp]:
   "finite S \<Longrightarrow> x \<notin> S \<Longrightarrow> lookup (m\<^bsub>[S]\<^esub>) x = None"
-  by (transfer, auto split:option.split)
+ by (transfer, auto split:option.split)
+
+lemma fmap_lookup_bot_fmap_expand1[simp]:
+  "finite S \<Longrightarrow> x \<notin> fdom m \<Longrightarrow>  m\<^bsub>[S]\<^esub> f!\<^sub>\<bottom> x = \<bottom>"
+ by (transfer, auto)
+
+lemma fmap_lookup_bot_fmap_expand2[simp]:
+  "finite S \<Longrightarrow> x \<in> S \<Longrightarrow>  m\<^bsub>[S]\<^esub> f!\<^sub>\<bottom> x = m f!\<^sub>\<bottom> x"
+ by (transfer, auto)
+
+lemma fmap_lookup_bot_fmap_expand3[simp]:
+  "finite S \<Longrightarrow> fdom m \<subseteq> S \<Longrightarrow>  m\<^bsub>[S]\<^esub> f!\<^sub>\<bottom> x = m f!\<^sub>\<bottom> x"
+ by (cases "x \<in> fdom m", auto)
+
 
 lemma fmap_expand_fdom[simp]: "\<rho>\<^bsub>[fdom \<rho>]\<^esub> = \<rho>"
   by (transfer, auto split:option.split)

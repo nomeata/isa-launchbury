@@ -204,6 +204,25 @@ next
     done
 qed
 
+lemma fmap_lookup_bot_HSem_other:
+  assumes "y \<notin> heapVars h"
+  shows "(HSem h \<rho>) f!\<^sub>\<bottom> y = \<rho> f!\<^sub>\<bottom> y"
+proof(cases "HSem_cond' h \<rho>")
+  case True show ?thesis
+    apply (subst HSem_eq[OF True])
+    apply (subst fmap_lookup_bot_join[OF rho_F_compat_fjc[OF True HSem_there[OF True]]])
+    apply (cases "y \<in> fdom \<rho>")
+    apply (auto simp add: assms lookup_not_fdom)
+    done
+next
+  case False show ?thesis
+    unfolding HSem_def if_not_P[OF False]
+    apply (cases "y \<in> fdom \<rho>")
+    apply (auto simp add: assms  False lookup_not_fdom)
+    done
+qed
+
+
 lemma the_lookup_HSem_both:
   assumes "HSem_cond' h \<rho>"
   assumes "y \<in> heapVars h"

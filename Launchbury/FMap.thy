@@ -419,6 +419,14 @@ lemma fmap_upd_less[simp, intro]:
   apply (auto dest: fmap_less_eqD)
   done
 
+lemma fmap_upd_less2[simp, intro]:
+  "x \<notin> fdom \<rho> \<Longrightarrow> \<rho> \<le> \<rho>(x f\<mapsto> v)"
+  apply (rule fmap_less_eqI)
+  apply (auto dest: fmap_less_fdom)[1]
+  apply (case_tac "xa = x")
+  apply (auto dest: fmap_less_eqD)
+  done
+
 lemma fmap_update_less[simp, intro]:
   "\<rho>1 \<le> \<rho>1' \<Longrightarrow> \<rho>2 \<le> \<rho>2' \<Longrightarrow>  (fdom \<rho>2' - fdom \<rho>2) \<inter> fdom \<rho>1 = {} \<Longrightarrow> \<rho>1 f++ \<rho>2 \<le> \<rho>1' f++ \<rho>2'"
   apply (rule fmap_less_eqI)
