@@ -72,6 +72,11 @@ qed
 
 subsubsection {* Equivariance lemmas *}
 
+lemma fmap_lookup_bot_eqvt[eqvt]:
+  fixes m :: "'a::{pt} f\<rightharpoonup> 'b::{cont_pt,pcpo}"
+  shows "\<pi> \<bullet> (m f!\<^sub>\<bottom> x) = \<pi> \<bullet> m f!\<^sub>\<bottom> \<pi> \<bullet> x"
+by transfer simp
+
 lemma fmap_expand_eqvt[eqvt]:
   "\<pi> \<bullet> fmap_expand (m :: 'a::{pt} f\<rightharpoonup> 'b::{cont_pt,pcpo}) S = fmap_expand (\<pi> \<bullet> m) (\<pi> \<bullet> S)"
   by (transfer, perm_simp, rule refl)

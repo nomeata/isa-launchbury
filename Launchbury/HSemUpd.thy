@@ -149,6 +149,12 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
     shows "(\<lbrace>h\<rbrace>\<rho>) f! y = \<rho> f! y"
     apply (subst HSem_eq)
     using assms by simp
+
+  lemma fmap_lookup_bot_HSem_other:
+    assumes "y \<notin> heapVars h"
+    shows "(\<lbrace>h\<rbrace>\<rho>) f!\<^sub>\<bottom> y = \<rho> f!\<^sub>\<bottom> y"
+    using assms
+    by (subst HSem_eq, cases "y \<in> fdom \<rho>", auto)
   
   lemma the_lookup_HSem_heap:
     assumes "y \<in> heapVars h"

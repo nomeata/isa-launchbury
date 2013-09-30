@@ -496,6 +496,84 @@ proof (rule admI)
     by (metis below_fmap_def fmap_lift_rel.cases fst_monofun goal1(1) goal1(2) is_ub_thelub)
 qed 
 
+subsubsection {* Lookup defaulting to bottom *}
+
+lift_definition fmap_lookup_bot :: "'a f\<rightharpoonup> 'b::pcpo \<Rightarrow> 'a \<Rightarrow> 'b"  (infix "f!\<^sub>\<bottom>" 55) is "\<lambda> m k. case m k of Some v \<Rightarrow> v | Nothing \<Rightarrow> \<bottom>"..
+
+lemma fmap_lookup_bot_simps[simp]:
+  "x \<in> fdom m \<Longrightarrow> m f!\<^sub>\<bottom> x = m f! x" 
+  "x \<notin> fdom m \<Longrightarrow> m f!\<^sub>\<bottom> x = \<bottom>"
+  by (transfer, auto simp add: dom_def)+
+
+lemma fmap_lookup_bot_fmap_upd_other[simp]: "x' \<noteq> x \<Longrightarrow> h(x f\<mapsto> v) f!\<^sub>\<bottom> x' = h f!\<^sub>\<bottom> x'"
+  by (transfer, auto)
+
+lemma fmap_lookup_bot_fmap_upd_eq: "h (x f\<mapsto> v) f!\<^sub>\<bottom>  x' = (if x = x' then v else h f!\<^sub>\<bottom> x')"
+  by (transfer, auto)
+
+lemma fmap_lookup_bot_fmap_delete_other[simp]: "x' \<noteq> x \<Longrightarrow> (fmap_delete x h) f!\<^sub>\<bottom> x' = h f!\<^sub>\<bottom> x'"
+  by (transfer, auto)
+
+
+lemma fmap_lookup_bot_chain:
+  assumes "chain (Y :: nat \<Rightarrow> 'a f\<rightharpoonup> 'b::pcpo)"
+  shows "chain (\<lambda> i . (Y i) f!\<^sub>\<bottom> x)"
+proof(rule chainI)
+  fix i 
+  have "fdom (Y i) = fdom (Y 0)" and
+       "fdom (Y (Suc i)) = fdom (Y 0)"
+       by (intro chain_fdom[OF `chain Y`])+
+  have "Y i \<sqsubseteq> Y (Suc i)" using `chain _` by (rule chainE)
+    hence "fdom (Y (Suc i)) = fdom (Y i)" unfolding below_fmap_def by simp
+  show "(Y i) f!\<^sub>\<bottom> x \<sqsubseteq> Y (Suc i) f!\<^sub>\<bottom> x"
+    proof(cases "x \<in> fdom (Y i)")
+    case True thus ?thesis using `_ \<sqsubseteq> _`  by (simp add: below_fmap_def)
+    next
+    case False
+      hence "(Y i) f!\<^sub>\<bottom> x = \<bottom>"
+        by (transfer, auto simp add: dom_def)
+      moreover
+      have "x \<notin> fdom (Y (Suc i))"
+        using False `fdom (Y (Suc i)) = fdom (Y i)` by simp
+      hence "Y (Suc i) f!\<^sub>\<bottom> x = \<bottom>"
+        by (transfer, auto simp add: dom_def)
+      ultimately show ?thesis by simp
+    qed
+qed
+
+
+lemma fmap_lookup_bot_cont:
+  assumes "chain (Y :: nat \<Rightarrow> 'a f\<rightharpoonup> 'b::pcpo)"
+  shows "(\<Squnion> i. Y i) f!\<^sub>\<bottom> x = (\<Squnion> i. (Y i) f!\<^sub>\<bottom> x)"
+proof(cases "x \<in> fdom (Y 0)")
+case True
+  have "\<And> i. x \<in> fdom (Y i)" "x \<in> fdom (Lub Y)"
+    apply (metis True assms chain_fdom(1))
+    apply (metis True assms chain_fdom(2))
+    done
+  with lookup_cont[OF assms]
+  show ?thesis by simp
+next
+case False
+  have "\<And> i. x \<notin> fdom (Y i)" "x \<notin> fdom (Lub Y)"
+    apply (metis False assms chain_fdom(1))
+    apply (metis False assms chain_fdom(2))
+    done
+  thus ?thesis by simp
+qed
+
+lemma cont2cont_fmap_lookup_bot[simp,cont2cont]:
+  fixes f :: "'a::cpo \<Rightarrow> 'b::type f\<rightharpoonup> 'c::pcpo"
+  assumes "cont f"
+  shows "cont (\<lambda>p. (f p) f!\<^sub>\<bottom> x)"
+proof (rule cont_compose[OF _ `cont f`], rule contI)
+  fix Y :: "nat \<Rightarrow> 'b::type f\<rightharpoonup> 'c::pcpo"
+  assume "chain Y"
+  show "range (\<lambda>i. (Y i) f!\<^sub>\<bottom> x) <<| ((\<Squnion> i. Y i) f!\<^sub>\<bottom> x)"
+    by (subst fmap_lookup_bot_cont[OF `chain Y`], rule cpo_lubI[OF fmap_lookup_bot_chain[OF `chain Y`]])
+qed
+
+
 subsubsection {* Expanding the domain of finite maps *}
 
 lift_definition fmap_expand :: "'a f\<rightharpoonup> 'b::pcpo \<Rightarrow> 'a set  \<Rightarrow> 'a f\<rightharpoonup> 'b" ("_\<^bsub>[_]\<^esub>" [90, 60] 90)
@@ -1110,6 +1188,15 @@ lemma the_lookup_join[simp]:
   apply (metis assms the_lookup_compatible_and_join)
   apply (metis assms fdomIff fdom_compatible fdom_join join_self)
   done
+
+lemma fmap_lookup_bot_join[simp]: 
+  assumes "compatible m1 m2"
+  shows "(m1 \<squnion> m2) f!\<^sub>\<bottom> x = (m1 f!\<^sub>\<bottom> x) \<squnion> (m2 f!\<^sub>\<bottom> x)"
+  apply (cases "x \<in> fdom m1")
+  apply (metis assms fdom_compatible fdom_join fmap_lookup_bot_simps(1) the_lookup_join)
+  apply (metis assms fdom_compatible fdom_join fmap_lookup_bot_simps(2) join_bottom(2))
+  done
+
 
 lemma the_lookup_compatible:
   assumes "compatible m1 m2"

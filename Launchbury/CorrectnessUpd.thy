@@ -27,10 +27,11 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' \<rho>)
     using 1 reds_doesnt_forget[OF distinct_redsD1[OF Application.hyps(9)]]
     by auto
 
-  have [simp]: "\<lbrace>\<Gamma>\<rbrace>\<rho> f! x = \<lbrace>\<Delta>\<rbrace>\<rho> f! x"
+  have [simp]: "\<lbrace>\<Gamma>\<rbrace>\<rho> f!\<^sub>\<bottom> x = \<lbrace>\<Delta>\<rbrace>\<rho> f!\<^sub>\<bottom> x"
   proof(cases "x \<in> heapVars \<Gamma>")
   case True
-    thus ?thesis
+    with set_mp[OF reds_doesnt_forget[OF distinct_redsD1[OF Application.hyps(9)]] this]
+    show ?thesis
       by (simp add: fmap_less_eqD[OF Application.hyps(11)[OF hyp1]])
   next
   case False
@@ -38,7 +39,7 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' \<rho>)
       by (rule reds_avoids_live[OF distinct_redsD1[OF Application.hyps(9)] _ False], simp)
     with False
     show ?thesis
-      by (simp add: the_lookup_HSem_other)
+      by (simp add: fmap_lookup_bot_HSem_other)
   qed
 
   have "\<lbrakk> App e x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> \<down>Fn \<lbrakk> Var x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"

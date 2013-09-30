@@ -327,38 +327,6 @@ proof
       fix a b
       assume "a \<triangleleft>\<triangleright> b\<cdot>C\<^sup>\<infinity>"
 
-      (* Variant a: explitict use of admissibility on the outside *)
-      { fix n
-
-        from `a \<triangleleft>\<triangleright> b\<cdot>C\<^sup>\<infinity>`
-        have "Value_take n \<cdot> a \<triangleleft>\<triangleright>\<^bsub>n\<^esub> CValue'_take n \<cdot>(b\<cdot>C\<^sup>\<infinity>)" by (rule similarE)
-        moreover
-        from `Fn\<cdot>f \<triangleleft>\<triangleright> CFn\<cdot>g`
-        have "Value_take (Suc n)\<cdot>(Fn\<cdot>f) \<triangleleft>\<triangleright>\<^bsub>Suc n\<^esub> CValue'_take (Suc n)\<cdot>(CFn\<cdot>g)" by (rule similarE)
-        ultimately
-        have "Value_take n\<cdot>(f\<cdot>(Value_take n\<cdot>(Value_take n\<cdot>a))) \<triangleleft>\<triangleright>\<^bsub>n\<^esub>
-            CValue'_take n\<cdot>(g\<cdot>(CValue_take n\<cdot>(CValue_take n\<cdot>b))\<cdot>C\<^sup>\<infinity>)"
-          by (auto)
-        hence "Value_take n\<cdot>(f\<cdot>(Value_take n\<cdot>a)) \<triangleleft>\<triangleright>\<^bsub>n\<^esub> CValue'_take n\<cdot>(g\<cdot>(CValue_take n\<cdot>b)\<cdot>C\<^sup>\<infinity>)"
-          by (simp add: Value.take_take cfun_map_map CValue'.take_take ID_def eta_cfun)
-        hence "Value_take n\<cdot>(Value_take n\<cdot>(f\<cdot>(Value_take n\<cdot>a))) \<triangleleft>\<triangleright> CValue'_take n\<cdot>(CValue'_take n\<cdot>(g\<cdot>(CValue_take n\<cdot>b)\<cdot>C\<^sup>\<infinity>))"
-          by (rule take_similar'_similar)
-        hence "Value_take n\<cdot>(f\<cdot>(Value_take n\<cdot>a)) \<triangleleft>\<triangleright> CValue'_take n\<cdot>(g\<cdot>(CValue_take n\<cdot>b)\<cdot>C\<^sup>\<infinity>)"
-          by (simp add: Value.take_take cfun_map_map CValue'.take_take ID_def eta_cfun)
-      }
-      hence "(\<Squnion>i. (Value_take i\<cdot>(f\<cdot>(Value_take i \<cdot>a)))) \<triangleleft>\<triangleright> (\<Squnion> i. CValue'_take i\<cdot>(g\<cdot>(CValue_take i\<cdot>b)\<cdot>C\<^sup>\<infinity>))"
-        apply (rule admD2[OF similar_adm, rotated 2])
-        apply simp+
-        done
-      also have "(\<Squnion>i. (Value_take i\<cdot>(f\<cdot>(Value_take i \<cdot>a)))) = f\<cdot>a"
-        by (simp add:
-              lub_APP[OF Value.chain_take ch2ch_Rep_cfunR[OF ch2ch_Rep_cfunL[OF Value.chain_take]]]
-              contlub_cfun_fun contlub_cfun_arg[OF ch2ch_Rep_cfunL[OF Value.chain_take], symmetric] Value.reach)
-      also have "(\<Squnion>i. (CValue'_take i\<cdot>(g\<cdot>(CValue_take i \<cdot>b)\<cdot>C\<^sup>\<infinity>))) = g\<cdot>b\<cdot>C\<^sup>\<infinity>"
-        sorry
-      hence "f\<cdot>a \<triangleleft>\<triangleright> g\<cdot>b\<cdot>C\<^sup>\<infinity>"  sorry
-
-
       show "f\<cdot>a \<triangleleft>\<triangleright> g\<cdot>b\<cdot>C\<^sup>\<infinity>" 
       proof(rule similarI)
         fix n
@@ -448,5 +416,17 @@ lemma fmap_similar_adm: "adm (\<lambda>x. fst x f\<triangleleft>\<triangleright>
 
 lemma fmap_similar_fmap_bottom[simp]: "f\<emptyset>\<^bsub>[S]\<^esub> f\<triangleleft>\<triangleright> f\<emptyset>\<^bsub>[S]\<^esub>"
   by (cases "finite S") (auto simp add: fmap_expand_nonfinite)
+
+lemma fmap_similarE[elim]:
+  assumes "m f\<triangleleft>\<triangleright> m'"
+  assumes "fdom m = fdom m' \<Longrightarrow> (\<And>x. (m f!\<^sub>\<bottom> x) \<triangleleft>\<triangleright> (m' f!\<^sub>\<bottom> x)\<cdot>C\<^sup>\<infinity>) \<Longrightarrow> Q"
+  shows Q
+  apply (rule assms(2))
+  using assms(1)
+  apply auto[1]
+  apply (case_tac "x \<in> fdom m")
+  using assms(1)
+  apply auto
+  done
 
 end

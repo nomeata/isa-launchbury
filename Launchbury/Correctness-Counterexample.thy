@@ -57,13 +57,13 @@ proof-
     have "\<dots> = \<lbrakk>Var b'\<rbrakk>\<^bsub>\<lbrace>[(b', Var b')]\<rbrace>\<rho>\<^esub>"
       using `atom b' \<sharp> \<rho>`
       by (auto simp add: fresh_star_def exp_assn.bn_defs)
-    also have "\<dots> = \<lbrace>[(b', Var b')]\<rbrace>\<rho> f! b'" by simp
+    also have "\<dots> = \<lbrace>[(b', Var b')]\<rbrace>\<rho> f!\<^sub>\<bottom> b'" by simp
     also have "\<dots> = \<bottom>"
       apply (rule HSem_ind)
         apply (rule adm_is_adm_on)
         apply auto[1]
       apply (simp add: to_bot_fmap_def)
-      apply (subst the_lookup_join[OF rho_F_compat_fjc], assumption)
+      apply (subst fmap_lookup_bot_join[OF rho_F_compat_fjc], assumption)
       apply simp_all
       done
     finally
@@ -108,7 +108,7 @@ proof-
 
   txt {* On the other hand, we have an inequality between the same terms. *}
   {
-  have "\<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrace>\<Gamma>\<rbrace>\<rho> f! x"
+  have "\<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrace>\<Gamma>\<rbrace>\<rho> f!\<^sub>\<bottom> x"
     by (simp add: e_def)
   also have "\<dots> = (\<rho> f! x) \<squnion> (\<lbrakk>z\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>)"
     by (simp add: \<Gamma>_def \<rho>_def the_lookup_HSem_both[OF cond, unfolded \<Gamma>_def \<rho>_def])

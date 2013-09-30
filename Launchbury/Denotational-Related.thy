@@ -13,12 +13,10 @@ proof(nominal_induct e and as avoiding: \<rho> \<sigma> rule:exp_assn.strong_ind
   proof (cases "v \<in> fdom \<rho>")
     case False
     with Var have "v \<notin> fdom \<sigma>" by cases auto
-    thus ?thesis using False
-      apply simp (* semantics are stupid for values not in the domain *)
-      sorry
+    thus ?thesis using False by simp
   next
     case True
-    with Var have "\<rho> f! v \<triangleleft>\<triangleright> (\<sigma> f! v)\<cdot>C\<^sup>\<infinity>" by cases auto
+    with Var have "\<rho> f!\<^sub>\<bottom> v \<triangleleft>\<triangleright> (\<sigma> f!\<^sub>\<bottom> v)\<cdot>C\<^sup>\<infinity>" by cases auto
     thus ?thesis by simp
   qed
 next
@@ -42,9 +40,7 @@ next
   next
     case (Fn f g)
     from `\<rho> f\<triangleleft>\<triangleright> \<sigma>`
-    have "\<rho> f! v \<triangleleft>\<triangleright> (\<sigma> f! v)\<cdot>C\<^sup>\<infinity>" 
-      (* again stupid semantics for values not in the domain *)
-      sorry
+    have "\<rho> f!\<^sub>\<bottom> v \<triangleleft>\<triangleright> (\<sigma> f!\<^sub>\<bottom> v)\<cdot>C\<^sup>\<infinity>"  by auto
     thus ?thesis using Fn App' by auto
   qed
 next

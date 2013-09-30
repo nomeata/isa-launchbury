@@ -10,7 +10,7 @@ where
   "atom x \<sharp> \<rho> \<Longrightarrow>
   \<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub> = Fn \<cdot> (\<Lambda> v. (\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>))"
 | "\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> \<down>Fn \<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub> "
-| "\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub> = \<rho> f! x"
+| "\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub> = \<rho> f!\<^sub>\<bottom> x"
 | "set (bn as) \<sharp>* \<rho> \<Longrightarrow>
   \<lbrakk> Let as body \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk>body\<rbrakk>\<^bsub>has_ESem.HSem ESem (asToHeap as) \<rho>\<^esub>"
 proof-

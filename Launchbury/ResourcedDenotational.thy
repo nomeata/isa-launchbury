@@ -11,7 +11,7 @@ where
  "atom x \<sharp> \<rho> \<Longrightarrow>
   \<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub>  = (\<Lambda> (C \<cdot> _). CFn \<cdot> (\<Lambda> v r. (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>) \<cdot> r))"
 | "\<N>\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>\<^esub>    = (\<Lambda> (C \<cdot> r).  ((\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>) \<cdot> r \<down>CFn \<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub>) \<cdot> r)"
-| "\<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub>      = (\<Lambda> (C \<cdot> r). (\<rho> f! x) \<cdot> r)"
+| "\<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub>      = (\<Lambda> (C \<cdot> r). (\<rho> f!\<^sub>\<bottom> x) \<cdot> r)"
 | "set (bn as) \<sharp>* \<rho> \<Longrightarrow>
   \<N>\<lbrakk> Let as body \<rbrakk>\<^bsub>\<rho>\<^esub> = (\<Lambda> (C \<cdot> r). (\<N>\<lbrakk>body\<rbrakk>\<^bsub>has_ESem.HSem CESem (asToHeap as) \<rho>\<^esub>) \<cdot> r)"
 sorry

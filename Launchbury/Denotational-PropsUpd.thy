@@ -74,7 +74,7 @@ subsubsection {* Denotation of Substitution *}
 
 lemma ESem_subst: "atom x \<sharp> \<rho> \<Longrightarrow>  \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> \<lbrakk>Var y\<rbrakk>\<^bsub>\<rho>\<^esub>)\<^esub> = \<lbrakk> e[x::= y] \<rbrakk>\<^bsub>\<rho>\<^esub>"
   and 
-  "\<And> x'. x' \<in> heapVars (asToHeap as) \<Longrightarrow> atom x \<sharp> \<rho> \<Longrightarrow>  \<lbrakk> the (map_of (asToHeap as) x') \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> \<rho> f! y)\<^esub> = \<lbrakk> (the (map_of (asToHeap as) x'))[x::= y] \<rbrakk>\<^bsub>\<rho>\<^esub>"
+  "\<And> x'. x' \<in> heapVars (asToHeap as) \<Longrightarrow> atom x \<sharp> \<rho> \<Longrightarrow>  \<lbrakk> the (map_of (asToHeap as) x') \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> \<rho> f!\<^sub>\<bottom> y)\<^esub> = \<lbrakk> (the (map_of (asToHeap as) x'))[x::= y] \<rbrakk>\<^bsub>\<rho>\<^esub>"
 proof (nominal_induct e and as  avoiding: \<rho> x y rule:exp_assn.strong_induct)
 case (Var var \<rho> x y) thus ?case by auto
 next
@@ -87,13 +87,14 @@ case (Let as exp \<rho> x y)
   hence [simp]:"heapVars (asToHeap (as[x::a=y])) = heapVars (asToHeap as)" 
      by (induct as rule: exp_assn.bn_inducts, auto)
   note the_lookup_HSem_other[simp]
+       fmap_lookup_bot_HSem_other[simp]
 
   have [simp]: "x \<notin> fdom \<rho>" using Let.prems by (simp add: sharp_Env)
   
   have prem: "atom x \<sharp> \<lbrace>asToHeap as[x::a=y]\<rbrace>\<rho>" by (simp add: sharp_Env)
    
-  have "\<lbrace>asToHeap as\<rbrace>(\<rho>(x f\<mapsto> \<rho> f! y)) \<sqsubseteq> (\<lbrace>asToHeap (as[x ::a= y])\<rbrace>\<rho>)(x f\<mapsto> \<lbrace>asToHeap (as[x ::a= y])\<rbrace>\<rho> f! y)"
-    (is "?L \<sqsubseteq> ?R(x f\<mapsto> ?R f! y)")
+  have "\<lbrace>asToHeap as\<rbrace>(\<rho>(x f\<mapsto> \<rho> f!\<^sub>\<bottom> y)) \<sqsubseteq> (\<lbrace>asToHeap (as[x ::a= y])\<rbrace>\<rho>)(x f\<mapsto> \<lbrace>asToHeap (as[x ::a= y])\<rbrace>\<rho> f!\<^sub>\<bottom> y)"
+    (is "?L \<sqsubseteq> ?R(x f\<mapsto> ?R f!\<^sub>\<bottom> y)")
   proof (rule HSem_below)
   case goal1 show ?case by simp
   case (goal2 x')
@@ -105,7 +106,7 @@ case (Let as exp \<rho> x y)
     show ?case by (auto simp add:the_lookup_HSem_heap map_of_subst )
   qed
   also
-  have "?R (x f\<mapsto> ?R f! y) \<sqsubseteq> ?L"
+  have "?R (x f\<mapsto> ?R f!\<^sub>\<bottom> y) \<sqsubseteq> ?L"
   proof(rule fmap_upd_below_fmap_deleteI)
     show "?R \<sqsubseteq> fmap_delete x ?L"
     proof(rule HSem_below)
@@ -121,12 +122,12 @@ case (Let as exp \<rho> x y)
       have "the (map_of (asToHeap as[x::a=y]) x') = (the (map_of (asToHeap as) x'))[x::=y]"
         by (rule map_of_subst[symmetric, OF `x' \<in> heapVars (asToHeap as)` `x' \<noteq> x`])
       also
-      have "\<lbrakk>\<dots>\<rbrakk>\<^bsub>fmap_delete x ?L\<^esub> = \<lbrakk>the (map_of (asToHeap as) x')\<rbrakk>\<^bsub>(fmap_delete x ?L)(x f\<mapsto> (fmap_delete x ?L) f! y)\<^esub>"
+      have "\<lbrakk>\<dots>\<rbrakk>\<^bsub>fmap_delete x ?L\<^esub> = \<lbrakk>the (map_of (asToHeap as) x')\<rbrakk>\<^bsub>(fmap_delete x ?L)(x f\<mapsto> (fmap_delete x ?L) f!\<^sub>\<bottom> y)\<^esub>"
         by (rule Let(4)[symmetric, OF `x' \<in> heapVars (asToHeap as)`])(simp add: sharp_Env)
-      also have "(fmap_delete x ?L)(x f\<mapsto> (fmap_delete x ?L) f! y) = (?L)(x f\<mapsto> (fmap_delete x ?L) f! y)"
+      also have "(fmap_delete x ?L)(x f\<mapsto> (fmap_delete x ?L) f!\<^sub>\<bottom> y) = (?L)(x f\<mapsto> (fmap_delete x ?L) f!\<^sub>\<bottom> y)"
         by (rule fmap_delete_fmap_upd2)
-      also have "(?L)(x f\<mapsto> (fmap_delete x ?L) f! y) = ?L"
-        by (cases "y = x", simp_all add: lookup_not_fdom)
+      also have "(?L)(x f\<mapsto> (fmap_delete x ?L) f!\<^sub>\<bottom> y) = ?L"
+        by (cases "y = x", simp_all)
       also have "\<lbrakk>the (map_of (asToHeap as) x')\<rbrakk>\<^bsub>?L\<^esub> =  fmap_delete x ?L f! x'"
         using `x' \<in> heapVars (asToHeap as)` by (simp add: the_lookup_HSem_heap)
       finally
@@ -164,6 +165,9 @@ case (Var x \<rho>1 \<rho>2)
   show ?case
   proof(cases "x \<in> fdom \<rho>1")
   case True
+    with `\<rho>1 \<le> \<rho>2`
+    have "x \<in> fdom \<rho>2" by (metis (full_types) fmap_less_fdom set_mp)
+    with True
     show ?thesis
       by (simp add: fmap_less_eqD[OF `\<rho>1 \<le> \<rho>2` True])
   next
@@ -181,9 +185,12 @@ case (App e x \<rho>1 \<rho>2)
     by (auto simp add: fresh_star_def)
   note hyps = App.hyps[OF App.prems(1) this]
   moreover
-  have "\<rho>1 f! x = \<rho>2 f! x"
+  have "\<rho>1 f!\<^sub>\<bottom> x = \<rho>2 f!\<^sub>\<bottom> x"
   proof(cases "x \<in> fdom \<rho>1")
   case True
+    with `\<rho>1 \<le> \<rho>2`
+    have "x \<in> fdom \<rho>2" by (metis (full_types) fmap_less_fdom set_mp)
+    with True
     show ?thesis
       by (simp add: fmap_less_eqD[OF `\<rho>1 \<le> \<rho>2` True])
   next
