@@ -514,6 +514,9 @@ lemma fmap_lookup_bot_fmap_upd_eq: "h (x f\<mapsto> v) f!\<^sub>\<bottom>  x' = 
 lemma fmap_lookup_bot_fmap_delete_other[simp]: "x' \<noteq> x \<Longrightarrow> (fmap_delete x h) f!\<^sub>\<bottom> x' = h f!\<^sub>\<bottom> x'"
   by (transfer, auto)
 
+lemma fmap_lookup_bot_fmap_add_other[simp]: "x \<notin> fdom \<rho>' \<Longrightarrow> (\<rho> f++ \<rho>') f!\<^sub>\<bottom> x = \<rho> f!\<^sub>\<bottom> x"
+  by (transfer, auto split:option.split)
+
 lemma fmap_lookup_bot_chain:
   assumes "chain (Y :: nat \<Rightarrow> 'a f\<rightharpoonup> 'b::pcpo)"
   shows "chain (\<lambda> i . (Y i) f!\<^sub>\<bottom> x)"

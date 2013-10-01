@@ -18,7 +18,7 @@ case (Lambda \<Gamma> x e L \<rho>)
   case 2 show ?case..
 next
 case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' \<rho>)
-  hence [simp]:"atom y \<sharp> \<lbrace>\<Delta>\<rbrace>\<rho>"
+  hence [simp]:"atom y \<sharp> \<lbrace>\<Delta>\<rbrace>\<rho>" and "y \<noteq> x"
     by (simp_all add: fresh_at_base)
 
   case 1
@@ -51,7 +51,7 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' \<rho>)
   also have "... = \<lbrakk> e' \<rbrakk>\<^bsub>(\<lbrace>\<Delta>\<rbrace>\<rho>)(y f\<mapsto> \<lbrakk> Var x \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>)\<^esub>"
     by simp
   also have "... = \<lbrakk> e'[y ::= x] \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>"
-    by (rule ESem_subst[OF `atom y \<sharp> \<lbrace>\<Delta>\<rbrace>\<rho>`])
+    by (rule ESem_subst[OF `y \<noteq> x` `atom y \<sharp> \<lbrace>\<Delta>\<rbrace>\<rho>`])
   also have "\<dots> = \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Theta>\<rbrace>\<rho>\<^esub>"
     by (rule Application.hyps(13)[OF hyp2])
   finally

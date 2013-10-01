@@ -423,7 +423,6 @@ case (ACons var exp as \<rho> x y)
   show ?case by auto
 qed
 
-
 lemma ESem_subst:
   assumes "x \<noteq> y"
   assumes "atom x \<sharp> \<rho>"
