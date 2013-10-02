@@ -53,6 +53,36 @@ lemma eval_test2:
   "y \<noteq> x \<Longrightarrow> n \<noteq> y \<Longrightarrow> n \<noteq> x \<Longrightarrow>[] : (Let (ACons x (Lam [y]. Var y) ANil) (App (Var x) x)) \<Down>\<^bsub>[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y)"
   by (auto intro!: Lambda Application Variable Let simp add: fresh_Pair fresh_at_base fresh_Cons fresh_Nil fresh_star_def)
 
+subsubsection {* Better Introduction variables *}
+
+lemma reds_ApplicationI:
+  assumes "atom y \<sharp> (\<Gamma>, e, x, L, \<Delta>)" (* Less freshness required here *)
+  assumes "\<Gamma> : e \<Down>\<^bsub>x # L\<^esub> \<Delta> : Lam [y]. e'"
+  assumes "\<Delta> : e'[y::=x] \<Down>\<^bsub>L\<^esub> \<Theta> : z"
+  shows "\<Gamma> : App e x \<Down>\<^bsub>L\<^esub> \<Theta> : z"
+proof-
+  obtain y' :: var where "atom y' \<sharp> (\<Gamma>, e, x, L, \<Delta>, \<Theta>, z, e')" by (rule obtain_fresh)
+
+  have a: "Lam [y']. ((y' \<leftrightarrow> y) \<bullet> e') = Lam [y]. e'"
+    using `atom y' \<sharp> _`
+    by (auto simp add: Abs1_eq_iff fresh_Pair fresh_at_base)
+
+  have [simp]: "(y' \<leftrightarrow> y) \<bullet> x = x" using `atom y \<sharp> _`  `atom y' \<sharp> _`
+      by (simp add: flip_fresh_fresh fresh_Pair fresh_at_base)
+
+  have "((y' \<leftrightarrow> y) \<bullet> e')[y'::=x] = (y' \<leftrightarrow> y) \<bullet> (e'[y::=x])" by simp
+  also have "\<dots> = e'[y::=x]"
+    using `atom y \<sharp> _`  `atom y' \<sharp> _`
+    by (simp add: flip_fresh_fresh fresh_Pair fresh_at_base subst_pres_fresh)
+  finally
+  have b: "((y' \<leftrightarrow> y) \<bullet> e')[y'::=x] = e'[y::=x]".
+
+  have "atom y' \<sharp> (\<Gamma>, e, x, L, \<Delta>, \<Theta>, z)" using  `atom y' \<sharp> _` by (simp add: fresh_Pair)
+  from  this assms(2,3)[folded a b]
+  show ?thesis ..
+qed
+
+
 subsubsection {* Properties of the semantics *}
 
 text {*
