@@ -502,6 +502,7 @@ lift_definition fmap_lookup_bot :: "'a f\<rightharpoonup> 'b::pcpo \<Rightarrow>
 
 lemma fmap_lookup_bot_simps[simp]:
   "x \<in> fdom m \<Longrightarrow> m f!\<^sub>\<bottom> x = m f! x" 
+  "lookup m x = Some e \<Longrightarrow> m f!\<^sub>\<bottom> x = m f! x" 
   "x \<notin> fdom m \<Longrightarrow> m f!\<^sub>\<bottom> x = \<bottom>"
   by (transfer, auto simp add: dom_def)+
 
@@ -1209,7 +1210,7 @@ lemma fmap_lookup_bot_join[simp]:
   shows "(m1 \<squnion> m2) f!\<^sub>\<bottom> x = (m1 f!\<^sub>\<bottom> x) \<squnion> (m2 f!\<^sub>\<bottom> x)"
   apply (cases "x \<in> fdom m1")
   apply (metis assms fdom_compatible fdom_join fmap_lookup_bot_simps(1) the_lookup_join)
-  apply (metis assms fdom_compatible fdom_join fmap_lookup_bot_simps(2) join_bottom(2))
+  apply (metis assms fdom_compatible fdom_join fmap_lookup_bot_simps(3) join_bottom(2))
   done
 
 

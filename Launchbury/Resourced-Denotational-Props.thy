@@ -5,6 +5,16 @@ begin
 lemma CESem_bot[simp]:"(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>\<bottom> = \<bottom>"
   by (nominal_induct e avoiding: \<sigma> rule: exp_assn.strong_induct(1)) auto
 
+lemma CESem_Lam_not_bot[simp]:
+  assumes [simp]:"atom z \<sharp> \<sigma>"
+  assumes  "(\<N>\<lbrakk> Lam [z]. e \<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>c \<noteq> \<bottom>"
+  shows "(\<N>\<lbrakk> Lam [z]. e \<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>c = CFn\<cdot>(\<Lambda> v. \<N>\<lbrakk>e\<rbrakk>\<^bsub>\<sigma>(z f\<mapsto> v)\<^esub>)"
+proof-
+  from assms(2) have "c \<noteq> \<bottom>" by auto
+  then obtain c' where "c = C\<cdot>c'" by (cases c, auto)
+  then show ?thesis by (auto simp add: Rep_cfun_inverse)
+qed
+
 lemma contE_subst:
   "cont g \<Longrightarrow> chain (\<lambda> i. f (Y i)) \<Longrightarrow> range (\<lambda>i. f (Y i)) <<| f (\<Squnion> i. Y i) \<Longrightarrow> range (\<lambda>i. g (f (Y i))) <<| g (f (\<Squnion> i. Y i))"
   by (metis cont_def lub_eqI)
@@ -98,5 +108,13 @@ case (goal1 z)
 next
 case goal2 with assms(1) show ?case by simp
 qed
+
+lemma CHSem_bot[simp]:"(\<N>\<lbrace> \<Gamma> \<rbrace> f!\<^sub>\<bottom> x)\<cdot> \<bottom> = \<bottom>"
+  by (cases "x \<in> heapVars \<Gamma>") auto
+
+interpretation has_ignore_fresh_ESem CESem
+  apply default
+  sorry
+
 
 end

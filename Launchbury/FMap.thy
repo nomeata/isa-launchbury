@@ -32,6 +32,9 @@ lemma fdomIff: "(a : fdom m) = (lookup m a \<noteq> None)"
 lemma lookup_not_fdom: "x \<notin> fdom m \<Longrightarrow> lookup m x = None"
   by (auto iff:fdomIff)
 
+lemma lookup_fdom[simp]: "lookup m x = Some v \<Longrightarrow> x \<in> fdom m"
+  by (auto iff:fdomIff)
+
 lemma finite_range:
   assumes "finite (dom m)"
   shows "finite (ran m)"
