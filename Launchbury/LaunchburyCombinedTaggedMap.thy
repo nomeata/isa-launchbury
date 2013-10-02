@@ -91,6 +91,37 @@ proof-
   show ?thesis by simp
 qed
 
+lemma reds_ApplicationI:
+  assumes "atom n \<sharp> (\<Gamma>, x, e, y, S)"
+  assumes "atom z \<sharp> (\<Gamma>, x, e, y, S, \<Delta>)" (* Less freshness required here *)
+  assumes "x \<notin> fdom \<Gamma>"
+  assumes "lookup \<Delta> n = Some (Lam [z]. e')"
+  assumes "\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e) \<Down>\<^sup>\<times>\<^sup>u\<^sup>b\<^bsub>n # x # S\<^esub> \<Delta>"
+  assumes "\<Delta>(x f\<mapsto> e'[z::=y]) \<Down>\<^sup>\<times>\<^sup>u\<^sup>b\<^bsub>x # S\<^esub> \<Theta>"
+  shows "\<Gamma>(x f\<mapsto> App e y) \<Down>\<^sup>\<times>\<^sup>u\<^sup>b\<^bsub>x # S\<^esub> \<Theta>"
+proof-
+  obtain z' :: var where "atom z' \<sharp> (\<Gamma>, x, e, y, S, \<Delta>, \<Theta>, z, e')" by (rule obtain_fresh)
+
+  have a: "Lam [z']. ((z' \<leftrightarrow> z) \<bullet> e') = Lam [z]. e'"
+    using `atom z' \<sharp> _`
+    by (auto simp add: Abs1_eq_iff fresh_Pair fresh_at_base)
+
+  find_theorems permute subst
+  have [simp]: "(z' \<leftrightarrow> z) \<bullet> y = y" using `atom z \<sharp> _`  `atom z' \<sharp> _`
+      by (simp add: flip_fresh_fresh fresh_Pair fresh_at_base)
+
+  have "((z' \<leftrightarrow> z) \<bullet> e')[z'::=y] = (z' \<leftrightarrow> z) \<bullet> (e'[z::=y])" by simp
+  also have "\<dots> = e'[z::=y]"
+    using `atom z \<sharp> _`  `atom z' \<sharp> _`
+    by (simp add: flip_fresh_fresh fresh_Pair fresh_at_base subst_pres_fresh)
+  finally
+  have b: "((z' \<leftrightarrow> z) \<bullet> e')[z'::=y] = e'[z::=y]".
+
+  have "atom z' \<sharp> (\<Gamma>, x, e, y, S, \<Delta>, \<Theta>)" using  `atom z' \<sharp> _` by (simp add: fresh_Pair)
+  from assms(1) this assms(3,4,5,6)[folded a b]
+  show ?thesis ..
+qed  
+
 subsubsection {* Properties of the semantics *}
 
 lemma stack_head_there:
@@ -113,6 +144,21 @@ lemma
   shows result_evaluated: "isLam (\<Delta> f! (hd S))"
 using assms
  by (induct \<Gamma> i u b S \<Delta> rule:reds.induct) (auto dest: reds_doesnt_forget)
+
+lemma result_evaluated_fresh:
+  assumes "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>x#S\<^esub> \<Delta>"
+  obtains z e
+  where "lookup \<Delta> x = Some (Lam [z]. e)" and "atom z \<sharp> (c::'a::fs)"
+proof-
+  from reds_doesnt_forget[OF assms] stack_head_there[OF assms]
+  have "x \<in> fdom \<Delta>" by auto
+  then obtain e where e: "lookup \<Delta> x = Some e" by (metis fdomIff not_None_eq)
+  with result_evaluated[OF assms]
+  have "isLam e" by simp 
+  hence "\<exists> z e'. e = Lam [z]. e' \<and>  atom z \<sharp> c"
+    by (nominal_induct  e avoiding: c rule:exp_assn.strong_induct(1)) auto
+  thus thesis using that e by blast
+qed
 
   
 text {* The stack is never empty. *}
