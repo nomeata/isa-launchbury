@@ -505,5 +505,33 @@ inductive fmap_lift_rel for P  where
 
 inductive_cases fmap_lift_relE[elim]:  "fmap_lift_rel P m m'" 
 
+subsubsection {* Conversion to associative lists *}
+
+lemma list_of_exists:
+  "\<exists> l. fmap_of l = m"
+proof(induction rule: fmap_induct)
+case empty
+  have "fmap_of [] = f\<emptyset>" by simp
+  thus ?case..
+next
+case (update m x v)
+  from `\<exists>l. fmap_of l = m`
+  obtain l where "fmap_of l = m" ..
+  hence "fmap_of ((x,v)#l) = m(x f\<mapsto> v)" by simp
+  thus ?case..
+qed
+
+definition list_of :: "'a f\<rightharpoonup> 'b \<Rightarrow> ('a \<times> 'b) list" where
+  "list_of m = (SOME l. fmap_of l = m)"
+
+lemma fmap_of_list_of[simp]:
+  "fmap_of (list_of m) = m"
+  unfolding list_of_def
+  by (rule someI_ex[OF list_of_exists])
+
+lemma map_of_list_of[simp]:
+  "map_of (list_of m) = lookup m"
+  unfolding list_of_def
+  by (rule someI2_ex[OF list_of_exists]) auto
 
 end
