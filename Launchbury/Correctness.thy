@@ -49,14 +49,8 @@ proof-
     apply (rule fempty_is_HSem_cond)
     apply simp_all    
     done
-  also have "... = \<lbrace>(x, z) # \<Delta>\<rbrace> f! x"
-    apply (rule arg_cong[OF fmap_less_eqD[OF le, simplified]])
-    apply simp
-    done
-  also have "... = \<lbrakk>z\<rbrakk>\<^bsub>\<lbrace>(x, z) # \<Delta>\<rbrace>\<^esub>"
-    apply (rule the_lookup_HSem_heap[of _ "(x, z) # \<Delta>" x, OF fempty_is_HSem_cond, simplified (no_asm)])
-    apply simp_all    
-    done
+  also have "... = \<lbrace>(x, z) # \<Delta>\<rbrace> f! x"  by (simp add: fmap_less_eqD[OF le, simplified])
+  also have "... = \<lbrakk>z\<rbrakk>\<^bsub>\<lbrace>(x, z) # \<Delta>\<rbrace>\<^esub>" by simp
   also have "... =  \<lbrakk>z\<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<^esub>"
     apply (rule ESem_add_fresh[OF fempty_is_HSem_cond fempty_is_HSem_cond])
     using fresh by (simp add: fresh_Pair)
