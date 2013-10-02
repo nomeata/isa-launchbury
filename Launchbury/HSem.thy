@@ -421,11 +421,9 @@ qed
 subsubsection {* Reordering lemmas for HSem *}
 
 lemma HSem_reorder:
-  assumes "distinctVars \<Gamma>"
-  assumes "distinctVars \<Delta>"
-  assumes "set \<Gamma> = set \<Delta>"
+  assumes "map_of \<Gamma> = map_of \<Delta>"
   shows "HSem \<Gamma> \<rho> = HSem \<Delta> \<rho>"
-by (simp add: HSem_def heapVars_def heapToEnv_reorder[OF assms] assms(3))
+by (simp add: HSem_def heapToEnv_reorder[OF assms] assms dom_map_of_conv_heapVars[symmetric])
 
 lemma HSem_reorder_head:
   assumes "x \<noteq> y"
@@ -577,7 +575,7 @@ subsubsection {* Re-calculating the semantics of the heap is idempotent *}
       show ?case
         apply (subst the_lookup_HSem_both[OF assms(1) `x \<in> heapVars (\<Gamma>@\<Delta>)`])
         apply (rule below_trans[OF _ join_above2[OF the_lookup_HSem_both_compatible[OF assms(1) `x \<in> heapVars (\<Gamma>@\<Delta>)`]]])
-        using goal2 by (auto simp add: map_add_dom_app_simps dom_map_of_conv_image_fst)
+        using goal2 by (auto simp add: map_add_dom_app_simps dom_map_of_conv_image_fst dom_map_of_conv_heapVars[symmetric])
     qed
   
     show "?RHS \<sqsubseteq> ?LHS"
@@ -600,7 +598,7 @@ subsubsection {* Re-calculating the semantics of the heap is idempotent *}
         show ?thesis
           apply (subst the_lookup_HSem_both[OF assms(2) True])
           apply (rule below_trans[OF _ join_above2[OF the_lookup_HSem_both_compatible[OF assms(2) True]]])
-          using True by (auto simp add: map_add_dom_app_simps dom_map_of_conv_image_fst)
+          using True by (auto simp add: map_add_dom_app_simps dom_map_of_conv_image_fst dom_map_of_conv_heapVars[symmetric])
       next
       case False
         hence delta: "x \<in> heapVars \<Delta>" using goal2 by auto
@@ -960,7 +958,7 @@ subsubsection {* Binding more variables increases knowledge *}
         using fresh apply (metis fresh fresh_PairD(1) fresh_heap_expr'[OF _ the_map_of_snd[OF goal2]] fresh_star_def)
         done
       also have "\<dots> = ESem (the (map_of (\<Delta>@\<Gamma>) x)) (\<lbrace>\<Delta>@\<Gamma>\<rbrace>\<rho>)"
-        by (simp add: map_add_dom_app_simps)
+        by (simp add: map_add_dom_app_simps dom_map_of_conv_heapVars)
       also have "\<dots> \<sqsubseteq> ?RHS f! x"
         by (simp, rule HSem_heap_below[OF cond2, where x = x, simplified])
       finally
@@ -978,20 +976,31 @@ subsubsection {* Binding more variables increases knowledge *}
   subsubsection {* Additional, fresh bindings in one or two steps *}  
 
   lemma HSem_merge:
-    assumes distinct1: "distinctVars (\<Delta> @ \<Gamma>)"
     assumes fresh: "atom ` heapVars \<Gamma> \<sharp>* (\<Delta>, \<rho>)"
     assumes rho_fresh: "fdom \<rho> \<inter> heapVars (\<Gamma> @ \<Delta>) = {}"
     shows "\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho> = \<lbrace>\<Gamma>@\<Delta>\<rbrace>\<rho>"
   proof(rule below_antisym)
-    from distinct1
-    have distinct2: "distinctVars (\<Gamma> @ \<Delta>)"
-      by (auto simp add: distinctVars_append)
-  
     from fresh
     have Gamma_fresh: "heapVars \<Gamma> \<inter> (fdom \<rho> \<union> heapVars \<Delta>) = {}"
       by (auto dest: fresh_heapVars_distinct simp add: sharp_star_Env' fresh_star_Pair)
     hence fdoms: "fdom \<rho> \<union> heapVars \<Delta> \<union> heapVars \<Gamma> - (fdom \<rho> \<union> heapVars \<Delta>) = heapVars \<Gamma>"
       by auto
+
+    have map_of_eq: "map_of (\<Delta> @ \<Gamma>) = map_of (\<Gamma> @ \<Delta>)"
+    proof
+      fix x
+      show "map_of (\<Delta> @ \<Gamma>) x = map_of (\<Gamma> @ \<Delta>) x"
+      proof (cases "x \<in> heapVars \<Gamma>")
+        case True
+        hence "x \<notin> heapVars \<Delta>" by (metis Gamma_fresh IntI equals0D in_mono sup_ge2)
+        thus "map_of (\<Delta> @ \<Gamma>) x = map_of (\<Gamma> @ \<Delta>) x"
+          by (simp add: map_add_dom_app_simps dom_map_of_conv_heapVars)
+      next
+        case False
+        thus "map_of (\<Delta> @ \<Gamma>) x = map_of (\<Gamma> @ \<Delta>) x"
+          by (simp add: map_add_dom_app_simps dom_map_of_conv_heapVars)
+      qed
+    qed
   
     have cond1: "HSem_cond' \<Gamma> (\<lbrace>\<Delta>\<rbrace>\<rho>)"
       apply (rule disjoint_is_HSem_cond)
@@ -1011,14 +1020,14 @@ subsubsection {* Binding more variables increases knowledge *}
       have "(\<lbrace>\<Delta>\<rbrace>\<rho>)\<^bsub>[fdom \<rho> \<union> heapVars \<Delta> \<union> heapVars \<Gamma>]\<^esub> \<sqsubseteq> \<lbrace>\<Delta> @ \<Gamma>\<rbrace>\<rho>"
         by (rule HSem_subset_below[OF cond2' fresh])
       also have "\<lbrace>\<Delta> @ \<Gamma>\<rbrace>\<rho> = \<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>"
-        by (rule HSem_reorder[OF distinct1 distinct2], auto)
+        by (rule HSem_reorder[OF map_of_eq])
       finally
       show "(\<lbrace>\<Delta>\<rbrace>\<rho>)\<^bsub>[fdom (\<lbrace>\<Delta>\<rbrace>\<rho>) \<union> heapVars \<Gamma>]\<^esub> \<sqsubseteq> \<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>"
         by simp
       
     case (goal2 x)[simp]
       have "ESem (the (map_of \<Gamma> x)) (\<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>) = ESem (the (map_of (\<Gamma>@\<Delta>) x)) (\<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>)"
-        by (simp add: map_add_dom_app_simps)
+        by (simp add: map_add_dom_app_simps dom_map_of_conv_heapVars)
       also have "\<dots> \<sqsubseteq> \<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho> f! x"
         by (rule HSem_heap_below[OF cond2], simp)
       finally
@@ -1043,7 +1052,7 @@ subsubsection {* Binding more variables increases knowledge *}
       {
         assume x[simp]: "x \<in> heapVars \<Gamma>"
         have "ESem (the (map_of (\<Gamma> @ \<Delta>) x)) (\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>) = ESem (the (map_of (\<Gamma>) x))(\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>)"
-          by (simp add: map_add_dom_app_simps)
+          by (simp add: map_add_dom_app_simps dom_map_of_conv_heapVars)
         also have "\<dots> \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho> f! x"
           by (rule HSem_heap_below[OF cond1 x])
         finally have ?case.
@@ -1052,7 +1061,7 @@ subsubsection {* Binding more variables increases knowledge *}
       {
         assume [simp]:"x \<notin> heapVars \<Gamma>" and  "x \<in> heapVars \<Delta>"
         have "ESem (the (map_of (\<Gamma> @ \<Delta>) x)) (\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>) = ESem (the (map_of \<Delta> x)) (\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>)"
-          by (simp add: map_add_dom_app_simps)
+          by (simp add: map_add_dom_app_simps dom_map_of_conv_heapVars)
         also have "\<dots>  = ESem (the (map_of \<Delta> x)) (\<lbrace>\<Delta>\<rbrace>\<rho>)"
           apply (rule ESem_ignores_fresh[symmetric])
           apply (rule HSem_disjoint_less)

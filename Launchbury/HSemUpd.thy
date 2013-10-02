@@ -182,11 +182,9 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
     done
   
   lemma HSem_reorder:
-    assumes "distinctVars \<Gamma>"
-    assumes "distinctVars \<Delta>"
-    assumes "set \<Gamma> = set \<Delta>"
+    assumes "map_of \<Gamma> = map_of \<Delta>"
     shows "\<lbrace>\<Gamma>\<rbrace>\<rho> = \<lbrace>\<Delta>\<rbrace>\<rho>"
-  by (simp add: HSem_def' heapToEnv_reorder[OF assms] assms(3) heapVars_def)
+  by (simp add: HSem_def' heapToEnv_reorder[OF assms] assms dom_map_of_conv_heapVars[symmetric])
   
   lemma HSem_reorder_head:
     assumes "x \<noteq> y"

@@ -87,7 +87,8 @@ next
       by (simp add: Rep_cfun_inverse fresh_star_Pair) 
     also have "\<N>\<lbrace>asToHeap as\<rbrace>\<N>\<lbrace>\<Gamma>\<rbrace> = \<N>\<lbrace>asToHeap as @ \<Gamma>\<rbrace>"
       apply (rule HSem_merge)
-      sorry
+      using Let(1)
+      by (auto simp add: fresh_star_Pair set_bn_to_atom_heapVars)
     finally 
     have "(\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>asToHeap as @ \<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>".
     }

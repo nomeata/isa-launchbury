@@ -5,6 +5,9 @@ begin
 abbreviation delete where "delete \<equiv> AList.delete"
 abbreviation update where "update \<equiv> AList.update"
 
+lemma delete_append[simp]: "delete x (l1 @ l2) = delete x l1 @ delete x l2"
+  unfolding AList.delete_eq by simp
+
 subsubsection {* The domain of a associative list *}
 
 definition heapVars
@@ -110,7 +113,7 @@ lemma distinctVars_delete:
   apply (auto simp add: distinctVars_Cons)
   done
 
-lemma dom_map_of_conv_heapVars[simp]:
+lemma dom_map_of_conv_heapVars:
   "dom (map_of xys) = heapVars xys"
   by (induct xys) (auto simp add: dom_if)
 
@@ -126,6 +129,21 @@ lemma distinctVars_set_delete_insert:
     apply (metis fst_conv imageI)
   apply auto
   done
+
+lemma distinctVars_map_of_delete_insert:
+  assumes "distinctVars \<Gamma>"
+  assumes "(x,e) \<in> set \<Gamma>"
+  shows "map_of ((x,e) # delete x \<Gamma>) = map_of \<Gamma>"
+  using assms
+  apply (induct \<Gamma> rule:distinctVars.induct)
+  apply auto[1]
+  apply (case_tac "xa = x")
+  apply (auto simp add: heapVars_def)[1]
+    apply (metis fst_conv imageI)
+  apply auto
+    apply (metis fun_upd_twist)
+  done
+
 
 lemma the_map_of_snd:
   "x\<in> heapVars \<Gamma> \<Longrightarrow> the (map_of \<Gamma> x) \<in> snd ` set \<Gamma>"

@@ -296,7 +296,7 @@ case (goal3 x)
     proof (cases "y \<in> heapVars \<Delta>")
     case True
       thus ?thesis
-        by (subst HSem_eq, auto intro: e_less[OF the_map_of_snd] simp add: lookupHeapToEnv map_add_dom_app_simps)
+        by (subst HSem_eq, auto intro: e_less[OF the_map_of_snd] simp add: dom_map_of_conv_heapVars lookupHeapToEnv map_add_dom_app_simps)
     next
     case False
       moreover
@@ -312,19 +312,30 @@ qed
 subsubsection {* Additional, fresh bindings in one or two steps *}
 
 lemma HSem_merge:
-  assumes distinct1: "distinctVars (\<Delta> @ \<Gamma>)"
   assumes fresh: "atom ` heapVars \<Gamma> \<sharp>* (\<Delta>, \<rho>)"
   shows "\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho> = \<lbrace>\<Gamma>@\<Delta>\<rbrace>\<rho>"
 proof(rule below_antisym)
-  from distinct1
-  have distinct2: "distinctVars (\<Gamma> @ \<Delta>)"
-    by (auto simp add: distinctVars_append)
-
   from fresh
   have Gamma_fresh: "heapVars \<Gamma> \<inter> (fdom \<rho> \<union> heapVars \<Delta>) = {}"
     by (auto dest: fresh_heapVars_distinct simp add: sharp_star_Env' fresh_star_Pair)
   hence fdoms: "fdom \<rho> \<union> heapVars \<Delta> \<union> heapVars \<Gamma> - (fdom \<rho> \<union> heapVars \<Delta>) = heapVars \<Gamma>"
     by auto
+
+  have map_of_eq: "map_of (\<Delta> @ \<Gamma>) = map_of (\<Gamma> @ \<Delta>)"
+  proof
+    fix x
+    show "map_of (\<Delta> @ \<Gamma>) x = map_of (\<Gamma> @ \<Delta>) x"
+    proof (cases "x \<in> heapVars \<Gamma>")
+      case True
+      hence "x \<notin> heapVars \<Delta>" by (metis Gamma_fresh IntI equals0D in_mono sup_ge2)
+      thus "map_of (\<Delta> @ \<Gamma>) x = map_of (\<Gamma> @ \<Delta>) x"
+        by (simp add: map_add_dom_app_simps dom_map_of_conv_heapVars)
+    next
+      case False
+      thus "map_of (\<Delta> @ \<Gamma>) x = map_of (\<Gamma> @ \<Delta>) x"
+        by (simp add: map_add_dom_app_simps dom_map_of_conv_heapVars)
+    qed
+  qed
 
   show "\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho> \<sqsubseteq> \<lbrace>\<Gamma>@\<Delta>\<rbrace>\<rho>"
   proof(rule HSem_below)
@@ -334,12 +345,12 @@ proof(rule below_antisym)
     with fmap_belowE[OF HSem_subset_below[OF fresh], where x = x]
     have "\<lbrace>\<Delta>\<rbrace>\<rho> f! x \<sqsubseteq> \<lbrace>\<Delta> @ \<Gamma>\<rbrace>\<rho> f! x" by auto
     also have "\<lbrace>\<Delta> @ \<Gamma>\<rbrace>\<rho> = \<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>"
-      by (rule HSem_reorder[OF distinct1 distinct2], auto)
+      by (rule HSem_reorder[OF map_of_eq])
     finally show ?case.
   next
   case (goal3 x)
     thus ?case
-      by (auto simp add: the_lookup_HSem_heap map_add_dom_app_simps)
+      by (auto simp add: the_lookup_HSem_heap map_add_dom_app_simps dom_map_of_conv_heapVars)
   qed
   
   show "\<lbrace>\<Gamma>@\<Delta>\<rbrace>\<rho> \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>"
@@ -352,14 +363,14 @@ proof(rule below_antisym)
   case (goal3 x)
     {
       assume x: "x \<in> heapVars \<Gamma> "
-      hence "the (map_of (\<Gamma>@\<Delta>) x) = the (map_of \<Gamma> x)" by (simp add: map_add_dom_app_simps dom_map_of_conv_image_fst)
+      hence "the (map_of (\<Gamma>@\<Delta>) x) = the (map_of \<Gamma> x)" by (simp add: map_add_dom_app_simps dom_map_of_conv_image_fst dom_map_of_conv_heapVars[symmetric])
       also
       have "\<lbrakk> the (map_of \<Gamma> x) \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub> = \<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho> f! x"
         by (rule the_lookup_HSem_heap[OF x, symmetric])
       finally have ?case by (rule eq_imp_below)
     } moreover {
       assume "x \<notin> heapVars \<Gamma>"
-      hence "\<lbrakk>  the (map_of (\<Gamma>@\<Delta>) x) \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub> = \<lbrakk> the (map_of \<Delta> x)  \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>" by (simp add: map_add_dom_app_simps dom_map_of_conv_image_fst)
+      hence "\<lbrakk>  the (map_of (\<Gamma>@\<Delta>) x) \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub> = \<lbrakk> the (map_of \<Delta> x)  \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>" by (simp add: map_add_dom_app_simps dom_map_of_conv_image_fst dom_map_of_conv_heapVars[symmetric])
       also
       assume x: "x \<in> heapVars \<Delta>"
       hence "\<lbrakk> the (map_of \<Delta> x) \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub> = \<lbrakk> the (map_of \<Delta> x) \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>"
@@ -367,7 +378,7 @@ proof(rule below_antisym)
         apply (rule ESem_ignores_fresh[symmetric])
         apply (rule HSem_disjoint_less)
           using Gamma_fresh apply auto[1]
-        using assms(2) apply (simp add: fdoms fresh_star_map_of fresh_star_Pair)
+        using assms apply (simp add: fdoms fresh_star_map_of fresh_star_Pair)
         done
       also have "\<dots> = \<lbrace>\<Delta>\<rbrace>\<rho> f! x"
         by (rule the_lookup_HSem_heap[OF  `x \<in> heapVars \<Delta>`, symmetric])
@@ -381,7 +392,6 @@ qed
 subsubsection {* The semantics of let only adds new bindings *}
 
 lemma HSem_less:
-  assumes distinct1: "distinctVars (\<Delta> @ \<Gamma>)"
   assumes fresh: "atom ` heapVars \<Gamma> \<sharp>* (\<Delta>, \<rho>)"
   shows "\<lbrace>\<Delta>\<rbrace>\<rho> \<le> \<lbrace>\<Gamma>@\<Delta>\<rbrace>\<rho>"
 proof-

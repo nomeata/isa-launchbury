@@ -70,84 +70,42 @@ lemma heapToEnv_mono:
 
 subsubsection {* Reordering lemmas *}
 
+lemma heapToEnv_reorder:
+  assumes "map_of \<Gamma> = map_of \<Delta>"
+  shows "heapToEnv \<Gamma> h = heapToEnv \<Delta> h"
+proof (rule fmap_eqI)
+  from assms
+  have *: "heapVars \<Gamma> = heapVars \<Delta>" by (metis dom_map_of_conv_heapVars)
+  thus "fdom (heapToEnv \<Gamma> h) = fdom (heapToEnv \<Delta> h)" by simp
+  
+  fix x
+  assume "x \<in> fdom (heapToEnv \<Gamma> h)"
+  hence "x \<in> heapVars \<Gamma>" "x \<in> heapVars \<Delta>" using * by simp_all
+  thus "heapToEnv \<Gamma> h f! x = heapToEnv \<Delta> h f! x" using assms(1)
+    by (simp add: lookupHeapToEnv)
+qed
+
 lemma heapToEnv_reorder_head:
   assumes "x \<noteq> y"
   shows "heapToEnv ((x,e1)#(y,e2)#\<Gamma>) eval = heapToEnv ((y,e2)#(x,e1)#\<Gamma>) eval"
-  by (simp add: fmap_upd_twist[OF assms])
+  by (rule heapToEnv_reorder) (simp add: fun_upd_twist[OF assms])
 
 lemma heapToEnv_reorder_head_append:
   assumes "x \<notin> heapVars \<Gamma>"
   shows "heapToEnv ((x,e)#\<Gamma>@\<Delta>) eval = heapToEnv (\<Gamma> @ ((x,e)#\<Delta>)) eval"
-  using assms
-  apply (induct \<Gamma>)
-  apply simp
-  apply (case_tac a)
-  apply (auto simp del: heapToEnv.simps simp add: heapToEnv_reorder_head)
-  apply simp
-  done
+  by (rule heapToEnv_reorder) (simp, metis assms dom_map_of_conv_heapVars map_add_upd_left)
 
 lemma heapToEnv_delete_insert:
   assumes "distinctVars \<Gamma>"
   assumes "(x,e) \<in> set \<Gamma>"
   shows "heapToEnv \<Gamma> eval = heapToEnv ((x,e) # delete x \<Gamma>) eval"
-using assms
-proof (induct \<Gamma> rule:distinctVars.induct)
-  case goal1 thus ?case by simp
-next
-  case (goal2 y \<Gamma> e2)
-  show ?case
-  proof(cases "(x,e) = (y,e2)")
-  case True
-    from `y \<notin> heapVars \<Gamma>`
-    have "x \<notin> heapVars \<Gamma>" using True by simp
-    hence "delete x \<Gamma> = \<Gamma>" by (rule delete_no_there)
-    with True show ?thesis by simp
-  next
-  case False
-    hence "x \<noteq> y" by (metis goal2(1) goal2(4) heapVars_from_set set_ConsD)
-    hence "(x, e) \<in> set \<Gamma>" by (metis False goal2(4) set_ConsD)
-    note hyp = goal2(3)[OF this]
-
-    have "heapToEnv ((x, e) # delete x ((y, e2) # \<Gamma>)) eval 
-      = heapToEnv ((x, e) # ((y, e2) # delete x \<Gamma>)) eval"
-      using False by simp
-    also have "... = heapToEnv ((y, e2) # ((x, e) # delete x \<Gamma>)) eval"
-      by (rule heapToEnv_reorder_head[OF `x \<noteq> y`])
-    also have "... = heapToEnv ((y, e2) # \<Gamma>) eval"
-      using hyp
-      by simp
-    finally
-    show ?thesis by (rule sym)
+proof(rule heapToEnv_reorder)
+  show "map_of \<Gamma> = map_of ((x,e) # delete x \<Gamma>)"
+  proof
+    fix x'
+    show "map_of \<Gamma> x' = (map_of ((x,e) # delete x \<Gamma>)) x'"
+    by (cases "x' = x")(simp_all, metis assms distinctVarsE map_of_is_SomeD weak_map_of_SomeI)
   qed
-qed
-
-lemma heapToEnv_reorder:
-  assumes "distinctVars \<Gamma>"
-  assumes "distinctVars \<Delta>"
-  assumes "set \<Gamma> = set \<Delta>"
-  shows "heapToEnv \<Gamma> eval = heapToEnv \<Delta> eval"
-using assms
-proof (induct \<Gamma> arbitrary: \<Delta> rule:distinctVars.induct)
-case goal1 thus ?case by simp
-next
-case (goal2 x \<Gamma> e \<Delta>)
-  hence "(x,e) \<in> set \<Delta>"
-    by (metis ListMem_iff elem)
-  note Delta' = heapToEnv_delete_insert[OF `distinctVars \<Delta>` this]
-
-  have "distinctVars (delete x \<Delta>)" 
-    by (rule distinctVars_delete[OF goal2(4)])
-  moreover
-  from `set ((x, e) # \<Gamma>) = set \<Delta>`
-  have "set (delete x ((x, e) # \<Gamma>)) = set (delete x \<Delta>)"
-    by (metis filter_set delete_eq)
-  hence "set \<Gamma> = set (delete x \<Delta>)"
-    by (simp add: delete_no_there[OF `x \<notin> heapVars \<Gamma>`])
-  ultimately
-  have "heapToEnv \<Gamma> eval = heapToEnv (delete x \<Delta>) eval"
-    by (rule goal2(3))
-  thus ?case
-    by (simp add: Delta')
 qed
 
 lemma heapToEnv_subst_exp:

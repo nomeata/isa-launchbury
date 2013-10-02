@@ -382,7 +382,7 @@ case (DLet as \<Gamma> xa body \<Gamma>' \<Delta>' \<Delta> x)
       show ?thesis
         apply(rule DLet.hyps(9))
         using DLet.prems `atom x \<sharp> asToHeap as` False
-        by (auto simp add: fresh_Pair exp_assn.fresh fresh_append)
+        by (auto simp add: fresh_Pair fresh_append)
     next
     case True
       hence "x \<in> heapVars (asToHeap as)" 

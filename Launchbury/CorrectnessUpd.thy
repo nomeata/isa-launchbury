@@ -108,8 +108,7 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
 
   have "\<lbrace>\<Gamma>\<rbrace>\<rho> = \<lbrace>(x,e) # delete x \<Gamma>\<rbrace>\<rho>"
     apply (rule HSem_reorder)
-    apply (simp_all add: Variable(5) distinctVars_Cons distinctVars_delete)[2]
-    apply (rule distinctVars_set_delete_insert[symmetric, OF Variable(5) Variable(1)])
+    apply (rule distinctVars_map_of_delete_insert[symmetric, OF Variable(5,1)])
     done
   also have "\<dots> = fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars (delete x \<Gamma>))]\<^esub>)
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars (delete x \<Gamma>)) (\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>))"
@@ -130,7 +129,7 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
     (* bottom *)
     using subset apply auto[1]
     (* step *)
-    apply (simp add: fmap_restr_fmap_upd fmap_restr_add)
+    apply (simp add: fmap_restr_add)
     apply (rule arg_cong2[where f = "\<lambda> \<rho>. fmap_upd \<rho> x", OF arg_cong2[where f = "op f++"]])
 
     (* \<rho> *)
@@ -191,11 +190,6 @@ case (Let as \<Gamma> L body \<Delta> z \<rho>)
   have hyp: "fdom \<rho> - heapVars (asToHeap as @ \<Gamma>) \<subseteq> set L"
     using 1 by auto
 
-  have d1: "distinctVars (\<Gamma> @ asToHeap as)"
-    using Let(1) Let(3) Let(7)
-    apply (simp add: distinctVars_append)
-    by (metis fresh_assn_distinct inf_commute)
-  
   have f1: "atom ` heapVars (asToHeap as) \<sharp>* (\<Gamma>, \<rho>)"
     using Let(1) `_ \<sharp>* \<rho>`
     by (simp add: set_bn_to_atom_heapVars fresh_star_Pair)
@@ -203,7 +197,7 @@ case (Let as \<Gamma> L body \<Delta> z \<rho>)
   have "\<lbrakk> Terms.Let as body \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk> body \<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
     by simp
   also have "\<dots> =  \<lbrakk> body \<rbrakk>\<^bsub>\<lbrace>asToHeap as @ \<Gamma>\<rbrace>\<rho>\<^esub>"
-    by (rule arg_cong[OF HSem_merge[OF d1 f1]])
+    by (rule arg_cong[OF HSem_merge[OF f1]])
   also have "\<dots> =  \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>"
     by (rule Let.hyps(5)[OF hyp])
   finally
@@ -211,7 +205,7 @@ case (Let as \<Gamma> L body \<Delta> z \<rho>)
 
   case 2
   have "\<lbrace>\<Gamma>\<rbrace>\<rho> \<le> \<lbrace>asToHeap as @ \<Gamma>\<rbrace>\<rho>"
-    by (rule HSem_less[OF d1 f1])
+    by (rule HSem_less[OF f1])
   also have "\<dots> \<le> \<lbrace>\<Delta>\<rbrace>\<rho>"
     by (rule Let.hyps(6)[OF hyp])
   finally

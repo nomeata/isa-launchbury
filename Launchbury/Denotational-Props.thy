@@ -592,7 +592,7 @@ case goal1
           also have "... = \<lbrakk> body \<rbrakk>\<^bsub>\<lbrace>(x, body) # asToHeap as @ \<Gamma>\<rbrace>\<^esub>"
             by (rule arg_cong[OF HSem_reorder_head_append[OF x_not_as], symmetric])
           finally
-          show ?thesis using True x' by (simp add:the_lookup_HSem_heap [OF fempty_is_HSem_cond])
+          show ?thesis using True x' by simp
         next
           case False thus ?thesis
           apply (subst (2) HSemb_eq)
@@ -619,7 +619,7 @@ case goal1
         proof(cases "x' = x")
           assume "x' = x"
           thus ?case
-            by (simp add: the_lookup_HSem_other[OF x_not_as] the_lookup_HSem_heap[OF fempty_is_HSem_cond])
+            by (simp add: the_lookup_HSem_other[OF x_not_as])
         next
           have merged_r: "?r = \<lbrace>asToHeap as @ ((x, Let as body) # \<Gamma>)\<rbrace>"
             apply (rule HSem_merge)

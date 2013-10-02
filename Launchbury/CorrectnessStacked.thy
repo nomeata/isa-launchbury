@@ -119,18 +119,18 @@ case (Application n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<Theta
 
 next
 case (Variable y e \<Gamma> x \<Gamma>' z \<Delta>' \<Delta>)
-  have "x \<noteq> y"
-    using Variable(3) by (auto simp add: distinctVars_Cons distinctVars_append)
-  have "distinctVars \<Gamma>"
-    using Variable(2) by (auto simp add: distinctVars_Cons distinctVars_append)
-  have d2: "distinctVars (((y, z) # (x, z) # \<Delta>') @ \<Delta>)"
-    using Variable.hyps(4)
-    by (simp add: distinctVars_append distinctVars_Cons)
+  have "x \<noteq> y" using Variable(3) by (auto simp add: distinctVars_Cons distinctVars_append)
+  have [simp]: "y \<notin> heapVars \<Delta>'" using Variable(4) by (simp add: distinctVars_Cons)
+
+  have map_of_eq1: "map_of (((x, Var y) # \<Gamma>') @ \<Gamma>) =  map_of (((y, e) # (x, Var y) # \<Gamma>') @ delete y \<Gamma>)"
+    apply (subst distinctVars_map_of_delete_insert[symmetric,OF Variable(2), where x = y and e = e])
+    using `(y, e) \<in> set \<Gamma>` Variable(3)
+    by (auto simp add: distinctVars_Cons delete_no_there)
+  have map_of_eq2: "map_of (((y, z) # (x, z) # \<Delta>') @ \<Delta>) = map_of (((x, z) # \<Delta>') @ (y, z) # \<Delta>)"
+    by (auto simp add: map_add_upd_left dom_map_of_conv_heapVars)
 
   have "\<lbrace>((x, Var y) # \<Gamma>') @ \<Gamma>\<rbrace> = \<lbrace>((y, e) # (x, Var y) # \<Gamma>') @ delete y \<Gamma>\<rbrace>"
-    apply (rule HSem_reorder[OF Variable.hyps(2,3)])
-    using distinctVars_set_delete_insert[OF `distinctVars \<Gamma>` Variable(1)]
-    by auto
+    by (rule HSem_reorder[OF map_of_eq1])
   also
   have "... \<le>  \<lbrace>((y, z) # (x, Var y) # \<Delta>') @ \<Delta>\<rbrace>"
     -- "Induction hypothesis"
@@ -157,18 +157,24 @@ case (Variable y e \<Gamma> x \<Gamma>' z \<Delta>' \<Delta>)
   also
   have "... = \<lbrace>((x, z) # \<Delta>') @ (y, z) # \<Delta>\<rbrace>"
     -- "Induction hypothesis"
-    by (rule HSem_reorder[OF d2 Variable.hyps(5)], auto)
+    by (rule HSem_reorder[OF map_of_eq2])
   finally
   show "\<lbrace>((x, Var y) # \<Gamma>') @ \<Gamma>\<rbrace> \<le> \<lbrace>((x, z) # \<Delta>') @ (y, z) # \<Delta>\<rbrace>".
 
 next
 case (Let as \<Gamma> x \<Gamma>' body \<Delta>' \<Delta>)
-  have "distinctVars (asToHeap as @ ((x, Terms.Let as body) # \<Gamma>') @ \<Gamma>)"
+  have d1: "distinctVars (asToHeap as @ ((x, Terms.Let as body) # \<Gamma>') @ \<Gamma>)"
     by (metis Let(1) Let(2) Let(3) distinctVars_append_asToHeap fresh_star_Cons fresh_star_Pair fresh_star_append let_binders_fresh)
   hence d3: "distinctVars ((x, body) # asToHeap as @ \<Gamma>' @ \<Gamma>)"
     and d4: "distinctVars (((x, body) # \<Gamma>') @ asToHeap as @ \<Gamma>)"
     and d5: "distinctVars ((x, body) # \<Gamma>' @ \<Gamma>)"
     by (auto simp add: distinctVars_Cons distinctVars_append)
+
+  have map_of_eq: "map_of ((x, body) # asToHeap as @ \<Gamma>' @ \<Gamma>) = map_of (((x, body) # \<Gamma>') @ asToHeap as @ \<Gamma>)"
+    apply (auto simp add: map_add_upd_left dom_map_of_conv_heapVars)
+    apply (subst (1 2) map_add_assoc[symmetric])
+    apply (rule arg_cong[OF map_add_comm])
+    using d1 by (auto simp add: distinctVars_append distinctVars_Cons dom_map_of_conv_heapVars[symmetric])
 
   have "\<lbrace>((x, Let as body) # \<Gamma>') @ \<Gamma>\<rbrace> = \<lbrace>(x, Let as body) # \<Gamma>' @ \<Gamma>\<rbrace>"
     by simp
@@ -179,7 +185,7 @@ case (Let as \<Gamma> x \<Gamma>' body \<Delta>' \<Delta>)
     using Let(1) by (auto simp add: fresh_star_Pair fresh_star_append)
   also
   have "... = \<lbrace>((x, body) # \<Gamma>') @ asToHeap as @ \<Gamma>\<rbrace>"
-     by (rule HSem_reorder[OF d3 d4], auto)
+    by (rule HSem_reorder[OF map_of_eq])
   also
   have "... \<le>  \<lbrace>\<Delta>' @ \<Delta>\<rbrace>"
     -- "Induction hypothesis"
