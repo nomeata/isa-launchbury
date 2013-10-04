@@ -72,7 +72,7 @@ next
 case (ACons v e as Y0 Y)
   have "cont (CESem e)" using ACons.hyps(1) by (rule contI, auto)
   with ACons
-  show ?case by auto
+  show ?case by (auto dest!: set_mp[OF set_delete_subset])
 qed
 
 interpretation has_cont_ESem CESem

@@ -268,18 +268,20 @@ lemma resolve_isLam_there: "valid_ind is \<Longrightarrow> ind_for is \<Gamma> \
 
 lemma resolveHeap'_asToHeap[simp]:
   "fdom (fmap_of (asToHeap as)) \<inter> heapVars is = {} \<Longrightarrow>
-    resolveHeap' (fmap_of (asToHeap as)) is = fmap_of (asToHeap (as \<ominus> is))"
-  by (induct as rule:asToHeap.induct) auto
+    (fmap_of (asToHeap as)) \<ominus>\<^sub>H  is = fmap_of (asToHeap (as \<ominus> is))"
+  by (induct as rule:asToHeap.induct)
+    (auto simp add: fmap_delete_fmap_of[symmetric] simp del: fmap_delete_fmap_of)
 
 lemma bn_resolve_assn[simp]:
   "fdom (fmap_of (asToHeap as)) \<inter> heapVars is = {} \<Longrightarrow> bn (as \<ominus> is) = bn as"
-  by (induct as rule:asToHeap.induct) (auto simp add: exp_assn.bn_defs)
+  by (induct as rule:asToHeap.induct)
+     (auto simp add: exp_assn.bn_defs  fmap_delete_fmap_of[symmetric] simp del: fmap_delete_fmap_of)
 
 lemma heapVars_resolve_assn[simp]:
   "fdom (fmap_of (asToHeap as)) \<inter> heapVars is = {} \<Longrightarrow>
     heapVars (asToHeap (as \<ominus> is)) = heapVars (asToHeap as)"
-  by (induct as rule:asToHeap.induct) auto
-
+  by (induct as rule:asToHeap.induct)
+     (auto simp add: fmap_delete_fmap_of[symmetric] simp del: fmap_delete_fmap_of)
 
 fun heap_of :: "Heap \<Rightarrow> var list \<Rightarrow> (Heap \<times> exp)"
   where "heap_of \<Gamma> S = (\<Gamma> f|` (- set S), \<Gamma> f! (hd S))"
@@ -631,7 +633,7 @@ case (Let as \<Gamma> x S body u \<Delta> "is")
   with `ind_for is (\<Gamma>(x f\<mapsto> Terms.Let as body))` `x \<notin> heapVars is` `x \<notin> fdom \<Gamma>`
   have "ind_for is (\<Gamma>(x f\<mapsto> body) f++ fmap_of (asToHeap as))"  by simp
 
-  from Let.hyps(7)[OF this `valid_ind is`]
+  from Let.hyps(6)[OF this `valid_ind is`]
   obtain is' where
     is': "\<Gamma>(x f\<mapsto> body) f++ fmap_of (asToHeap as) \<ominus>\<^sub>H is \<Down>\<^sup>\<times>\<^sup>u\<^sup>\<times>\<^bsub>x # S \<ominus>\<^sub>S is\<^esub> \<Delta> \<ominus>\<^sub>H is'" and
     "ind_for is' \<Delta>" and
@@ -654,10 +656,6 @@ case (Let as \<Gamma> x S body u \<Delta> "is")
         eqvt_fresh_star_cong2[where f = resolveStack, OF resolveStack_eqvt]
         eqvt_fresh_star_cong3[where f = dropChain, OF dropChain_eqvt]
         )
-  moreover
-  from int_empty `distinctVars _`
-  have "distinctVars (asToHeap (as \<ominus> is))" 
-    by (induct as rule:asToHeap.induct) (auto simp add: distinctVars_Cons )
   moreover
   have "x \<notin> fdom (\<Gamma> \<ominus>\<^sub>H is)" using `x \<notin> fdom \<Gamma>` by simp
   moreover
@@ -683,6 +681,5 @@ corollary remove_indirection:
   assumes "\<Gamma> \<Down>\<^sup>\<surd>\<^sup>u\<^sup>\<times>\<^bsub>S\<^esub> \<Delta>"
   shows "\<exists> \<Delta>'. \<Gamma> \<Down>\<^sup>\<times>\<^sup>u\<^sup>\<times>\<^bsub>S\<^esub> \<Delta>'"
 using remove_indirection'[OF assms, of "[]", simplified] by auto
-
 
 end

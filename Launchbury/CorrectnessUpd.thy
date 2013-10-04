@@ -199,7 +199,7 @@ case (Let as \<Gamma> L body \<Delta> z \<rho>)
   also have "\<dots> =  \<lbrakk> body \<rbrakk>\<^bsub>\<lbrace>asToHeap as @ \<Gamma>\<rbrace>\<rho>\<^esub>"
     by (rule arg_cong[OF HSem_merge[OF f1]])
   also have "\<dots> =  \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>"
-    by (rule Let.hyps(5)[OF hyp])
+    by (rule Let.hyps(4)[OF hyp])
   finally
   show ?case.
 
@@ -207,7 +207,7 @@ case (Let as \<Gamma> L body \<Delta> z \<rho>)
   have "\<lbrace>\<Gamma>\<rbrace>\<rho> \<le> \<lbrace>asToHeap as @ \<Gamma>\<rbrace>\<rho>"
     by (rule HSem_less[OF f1])
   also have "\<dots> \<le> \<lbrace>\<Delta>\<rbrace>\<rho>"
-    by (rule Let.hyps(6)[OF hyp])
+    by (rule Let.hyps(5)[OF hyp])
   finally
   show ?case.
 qed

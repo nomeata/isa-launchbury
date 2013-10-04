@@ -58,7 +58,7 @@ next
 case (ACons v e as Y0 Y)
   have "cont (ESem e)" using ACons.hyps(1) by (rule contI, auto)
   with ACons
-  show ?case by auto
+  show ?case by (auto dest!: set_mp[OF set_delete_subset])
 qed
 
 interpretation has_cont_ESem ESem
@@ -517,8 +517,7 @@ the only case required later on, and easier to prove.
 *}
 
 lemma HSem_unfold_let:
-  assumes distinct1: "distinctVars (asToHeap as)"
-  assumes distinct2: "distinctVars ((x, body) # \<Gamma>)"
+  assumes distinct: "distinctVars ((x, body) # \<Gamma>)"
   assumes fresh: "set (bn as) \<sharp>* (x, Let as body, \<Gamma>)"
   shows "\<lbrace>(x, Let as body) # \<Gamma>\<rbrace> \<le> \<lbrace>(x, body) # asToHeap as @ \<Gamma>\<rbrace>"
 proof (rule iffD2[OF fmap_less_restrict])
@@ -623,7 +622,7 @@ case goal1
         next
           have merged_r: "?r = \<lbrace>asToHeap as @ ((x, Let as body) # \<Gamma>)\<rbrace>"
             apply (rule HSem_merge)
-              using disjoint  distinct1 distinct2 apply (auto simp add: distinctVars_Cons distinctVars_append)[1]
+              using disjoint distinct apply (auto simp add: distinctVars_Cons distinctVars_append)[1]
               using fresh apply (metis fresh_star_Cons fempty_fresh_star fresh_star_Pair set_bn_to_atom_heapVars)              
               apply simp
            done

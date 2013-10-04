@@ -54,7 +54,6 @@ where
       \<Gamma>(x f\<mapsto> Var y) \<Down>\<^sup>i\<^sup>\<surd>\<^sup>\<times>\<^bsub>x#S\<^esub> fmap_copy \<Delta> y x"
  | Let: "\<lbrakk>
       set (bn as) \<sharp>* (\<Gamma>, x, S);
-      distinctVars (asToHeap as);
       x \<notin> fdom \<Gamma>;
       \<Gamma>(x f\<mapsto> body) f++ fmap_of (asToHeap as) \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>x#S\<^esub> \<Delta>
    \<rbrakk> \<Longrightarrow>
@@ -233,7 +232,7 @@ next
     show ?case by simp
 next
   case Let
-    from reds.Let[OF _ Let.hyps(2) Let.hyps(3) Let.IH[where n = n, simplified]] Let.hyps(1)
+    from reds.Let[OF _ Let.hyps(2) Let.IH[where n = n, simplified]] Let.hyps(1)
     show ?case by (auto simp add: fresh_star_Pair fresh_star_take)
 qed
 
@@ -348,7 +347,7 @@ case (Let as \<Gamma> x S body i u b \<Delta> x')
   show ?case
   proof(cases "x' \<in> fdom (fmap_of (asToHeap as))")
     case True
-    with reds_doesnt_forget[OF Let(6)]
+    with reds_doesnt_forget[OF Let(5)]
     show ?thesis by auto
   next
     case False
@@ -358,7 +357,7 @@ case (Let as \<Gamma> x S body i u b \<Delta> x')
       by (simp add: fresh_fmap_upd_eq fresh_fmap_add_subset
               eqvt_fresh_cong1[where f = fmap_of, OF fmap_of_eqvt]
               fresh_fun_eqvt_app[OF asToHeap_eqvt])
-    from Let(7)[OF this]
+    from Let(6)[OF this]
     show ?thesis.
   qed
 qed

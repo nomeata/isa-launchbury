@@ -79,8 +79,6 @@ next
     thus ?thesis using Lam by blast
   next
   case (Let as e')
-    have "distinctVars (asToHeap as)" sorry
-    moreover
     {
     from Suc.prems[unfolded Let] Let(1)
     have prem: "(\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>asToHeap as\<rbrace>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" 
@@ -94,8 +92,7 @@ next
     }
     from Suc.IH[OF this]
     obtain \<Delta> v where "asToHeap as @ \<Gamma> : e' \<Down>\<^bsub>S\<^esub> \<Delta> : v" by blast
-    ultimately
-    have "\<Gamma> : Let as e' \<Down>\<^bsub>S\<^esub> \<Delta> : v"
+    hence "\<Gamma> : Let as e' \<Down>\<^bsub>S\<^esub> \<Delta> : v"
       by (rule reds.Let[OF Let(1)])
     thus ?thesis using Let by auto
   qed

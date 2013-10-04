@@ -195,6 +195,10 @@ lemma fmap_delete_fmap_upd2[simp]:
   "(fmap_delete x m)(x f\<mapsto> v) = m(x f\<mapsto> v)"
   by (transfer, simp)
 
+lemma fmap_delete_fmap_upd3[simp]:
+  "x \<noteq> y \<Longrightarrow> fmap_delete x (m(y f\<mapsto> v)) = (fmap_delete x m)(y f\<mapsto> v)"
+  by (transfer, auto)
+
 lemma fmap_delete_noop[simp]:
   "x \<notin> fdom m \<Longrightarrow> fmap_delete x m = m"
   by (transfer, auto)

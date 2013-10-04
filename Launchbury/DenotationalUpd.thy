@@ -92,9 +92,6 @@ case (goal13 as \<rho> body as' \<rho>' body')
       ESem_sumC (body', has_ESem.HSem (\<lambda>x0 x1. ESem_sumC (x0, x1)) (asToHeap as') \<rho>')" using `\<rho>' = \<rho>`  by simp
 qed auto
 
-lemma  True and [simp]:"(a, b) \<in> set (asToHeap as) \<Longrightarrow> size b < Suc (size as + size body)"
-  by(induct and as rule:exp_assn.inducts, auto simp add: exp_assn.bn_defs fresh_star_insert)
-
 termination (eqvt) by lexicographic_order
 
 interpretation has_ESem ESem.

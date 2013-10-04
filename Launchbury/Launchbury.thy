@@ -30,7 +30,6 @@ where
     \<Gamma> : Var x \<Down>\<^bsub>L\<^esub> (x, z) # \<Delta> : z"
  | Let: "\<lbrakk>
     set (bn as) \<sharp>* (\<Gamma>, L);
-    distinctVars (asToHeap as);
     asToHeap as @ \<Gamma> : body \<Down>\<^bsub>L\<^esub> \<Delta> : z
   \<rbrakk> \<Longrightarrow>
     \<Gamma> : Let as body \<Down>\<^bsub>L\<^esub> \<Delta> : z"
@@ -139,7 +138,7 @@ case (Let as \<Gamma> L body \<Delta> z)
     by (metis finite_set fresh_finite_set_at_base fresh_set)  ultimately
   have "x \<notin> heapVars (asToHeap as @ \<Gamma>)" by auto  
   thus ?case
-    by (rule Let.hyps(4)[OF `x \<in> set L`])
+    by (rule Let.hyps(3)[OF `x \<in> set L`])
 qed
 
 text {*
@@ -170,7 +169,6 @@ where
     \<Gamma> : Var x \<Down>d\<^bsub>L\<^esub> (x, z) # \<Delta> : z"
  | DLet: "\<lbrakk>
     set (bn as) \<sharp>* (\<Gamma>, L);
-    distinctVars (asToHeap as);
     asToHeap as @ \<Gamma> : body \<Down>d\<^bsub>L\<^esub> \<Delta> : z;
     distinctVars \<Gamma>;
     distinctVars \<Delta>
@@ -280,12 +278,10 @@ case (Let as \<Gamma> L body \<Delta> z)
     proof (cases "atom x \<in> set(bn as)")
     case False
       hence "atom x \<sharp> as" using Let.prems by(auto simp add: fresh_Pair)      
-      hence "atom x \<sharp> asToHeap as"
-        by(induct as rule:asToHeap.induct)(auto simp add: fresh_Nil fresh_Cons fresh_Pair)
       show ?thesis
-        apply(rule Let.hyps(4))
-        using Let.prems `atom x \<sharp> asToHeap as` False
-        by (auto simp add: fresh_Pair fresh_append)
+        apply(rule Let.hyps(3))
+        using Let.prems `atom x \<sharp> as` False
+        by (auto simp add: fresh_Pair fresh_append fresh_fun_eqvt_app[OF asToHeap_eqvt])
     next
     case True
       hence "x \<in> heapVars (asToHeap as)" 
@@ -296,7 +292,7 @@ case (Let as \<Gamma> L body \<Delta> z)
         by (metis True fresh_list_elem fresh_star_Pair fresh_star_def not_self_fresh)
       ultimately
       show ?thesis
-      using reds_doesnt_forget[OF Let.hyps(3)] by auto
+      using reds_doesnt_forget[OF Let.hyps(2)] by auto
     qed
 qed
 
@@ -339,7 +335,7 @@ case (Let as \<Gamma>  L body \<Delta> z L')
     using Let(1-3) Let.prems
     by (auto simp add: fresh_star_Pair  fresh_star_set_subset)
   thus ?case
-    by (rule reds.Let[OF _ Let.hyps(3) Let.hyps(5)[OF Let.prems]])
+    by (rule reds.Let[OF _ Let.hyps(4)[OF Let.prems]])
 qed
 
 text {* Things are evaluated to a lambda expression. *}

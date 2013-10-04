@@ -399,7 +399,7 @@ case (Let as \<Gamma> x S body i u b \<Delta>)
         lookup (\<Gamma>(x f\<mapsto> body) f++ fmap_of (asToHeap as)) x'"
         by simp
   qed
-  note hyps = Let(5-7)[OF this]
+  note hyps = Let(4-6)[OF this]
 
   case 1
   show ?case by (auto simp add: cycle_def)
@@ -409,7 +409,7 @@ case (Let as \<Gamma> x S body i u b \<Delta>)
   show ?case.
 
   case 3
-  note Let(1-3) hyps(3)
+  note Let(1-2) hyps(3)
   thus ?case..
 qed
 

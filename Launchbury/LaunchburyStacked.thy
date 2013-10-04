@@ -31,7 +31,6 @@ where
       \<Gamma> : (x, Var y) # \<Gamma>' \<Down> (y, z) # \<Delta> : (x, z) # \<Delta>'"
  | Let: "\<lbrakk>
       set (bn as) \<sharp>* (\<Gamma>, x, \<Gamma>');
-      distinctVars (asToHeap as);
       asToHeap as @ \<Gamma> : (x, body) # \<Gamma>' \<Down> \<Delta> : \<Delta>'
    \<rbrakk> \<Longrightarrow>
       \<Gamma> : (x, Let as body) # \<Gamma>' \<Down> \<Delta> : \<Delta>'"
@@ -102,7 +101,6 @@ where
       \<Gamma> : (x, Var y) # \<Gamma>' \<Down>d (y, z) # \<Delta> : (x, z) # \<Delta>'"
  | DLet: "\<lbrakk>
       set (bn as) \<sharp>* (\<Gamma>, x, \<Gamma>');
-      distinctVars (asToHeap as);
       distinctVars (((x, Let as body) # \<Gamma>') @ \<Gamma>);
       distinctVars (((x, body) # \<Gamma>') @ asToHeap as @ \<Gamma>);
       distinctVars (\<Delta>' @ \<Delta>);
@@ -205,15 +203,13 @@ case (Let as \<Gamma> x \<Gamma>' body \<Delta> \<Delta>')
   have "set (bn as) \<sharp>* (\<Gamma>, x, \<Gamma>')"
     using Let by (simp add: fresh_star_Pair fresh_star_list)
   moreover
-  assume "distinctVars (asToHeap as)"
-  moreover
   assume "distinctVars (((x, Terms.Let as body) # \<Gamma>') @ \<Gamma>)"
   moreover  
   hence "distinctVars (((x, body) # \<Gamma>') @ asToHeap as @ \<Gamma>)"
-    using `distinctVars (asToHeap as)` `_ = {}`
+    using `_ = {}`
     by (auto simp add: distinctVars_append distinctVars_Cons)
   moreover
-  note hyp = Let.hyps(6)[OF this]
+  note hyp = Let.hyps(5)[OF this]
   note distinct_redsD3[OF hyp]
   moreover  
   note hyp
@@ -377,17 +373,15 @@ case (DLet as \<Gamma> xa body \<Gamma>' \<Delta>' \<Delta> x)
     proof (cases "atom x \<in> set (bn as)")
     case False
       hence "atom x \<sharp> as" using DLet.prems by(auto simp add: fresh_Pair)      
-      hence "atom x \<sharp> asToHeap as"
-        by(induct as rule:asToHeap.induct)(auto simp add: fresh_Nil fresh_Cons fresh_Pair)
       show ?thesis
-        apply(rule DLet.hyps(9))
-        using DLet.prems `atom x \<sharp> asToHeap as` False
-        by (auto simp add: fresh_Pair fresh_append)
+        apply(rule DLet.hyps(8))
+        using DLet.prems `atom x \<sharp> as` False
+        by (auto simp add: fresh_Pair fresh_append fresh_fun_eqvt_app[OF asToHeap_eqvt])
     next
     case True
       hence "x \<in> heapVars (asToHeap as)" 
         by(induct as rule:asToHeap.induct)(auto simp add: exp_assn.bn_defs)      
-      thus ?thesis using reds_doesnt_forget'[OF DLet.hyps(8)] by auto
+      thus ?thesis using reds_doesnt_forget'[OF DLet.hyps(7)] by auto
     qed
 qed
 

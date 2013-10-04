@@ -55,6 +55,9 @@ lemma heapToEnv_remove_Cons_fmap_expand:
   apply auto
   done
 
+lemma heapToEnv_delete[simp]: "heapToEnv (delete x \<Gamma>) eval = fmap_delete x (heapToEnv \<Gamma> eval)"
+  by (induct \<Gamma>) auto
+
 lemma heapToEnv_mono:
   "finite d1 \<Longrightarrow>
    d1 = d2 \<Longrightarrow>

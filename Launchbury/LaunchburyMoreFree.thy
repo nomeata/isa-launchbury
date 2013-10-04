@@ -25,7 +25,6 @@ where
     (x,e) \<in> set \<Gamma>; delete x \<Gamma> : e \<Down>*\<^bsub>x#L\<^esub> \<Delta> : z \<rbrakk> \<Longrightarrow> \<Gamma> : Var x \<Down>*\<^bsub>L\<^esub> (x, z) # \<Delta> : z"
  | Let: "\<lbrakk>
     set (bn as) \<sharp>* (\<Gamma>, L);
-    distinctVars (asToHeap as);
     asToHeap as @ \<Gamma> : body \<Down>*\<^bsub>L\<^esub> \<Delta> : z
   \<rbrakk> \<Longrightarrow>
     \<Gamma> : Let as body \<Down>*\<^bsub>L\<^esub> \<Delta> : z"
@@ -137,7 +136,7 @@ case (Let as \<Gamma> L body \<Delta> z L')
     apply (auto simp add: fresh_Pair)
     by (metis heapVars_not_fresh)+
   hence "x \<notin> heapVars (asToHeap as @ \<Gamma>)"
-      by (metis set_mp reds_with_n_doesnt_forget[OF Let.hyps(4)])
+      by (metis set_mp reds_with_n_doesnt_forget[OF Let.hyps(3)])
   hence "atom x \<notin> set (bn as)"
     by (auto simp add: set_bn_to_atom_heapVars)
   hence "set (bn as) \<sharp>* x"
@@ -155,7 +154,7 @@ case (Let as \<Gamma> L body \<Delta> z L')
     by (auto simp add: fresh_Pair fresh_append fresh_fun_eqvt_app[OF asToHeap_eqvt])
   ultimately
   show ?case
-    by (rule reds.Let[OF _ Let.hyps(3) Let.hyps(5)[OF _ Let.prems(2)]])
+    by (rule reds.Let[OF _ Let.hyps(4)[OF _ Let.prems(2)]])
 qed
 
 lemma reds_more_free:
@@ -200,6 +199,5 @@ lemmas reds_with_n_induct = LaunchburyMoreFree.reds.induct[unfolded reds_more_fr
 
 (* This can be shown for reds directly, but we needed it here, and after we got the equality we can transfer it easily. *)
 lemmas reds_add_var_L = reds_with_n_add_var_L[unfolded reds_more_free_eq]
-
 
 end

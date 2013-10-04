@@ -55,7 +55,7 @@ case (Let as \<Gamma> x  \<Gamma>' body \<Delta> \<Delta>' S)
   have "supp S \<subseteq> supp \<Gamma>'"
     using Let.prems[simplified].
   hence hyp: "asToHeap as @ \<Gamma> : body \<Down>\<^bsub>S\<^esub> \<Delta> : snd (hd \<Delta>')"
-    by (rule Let.hyps(6)[simplified])
+    by (rule Let.hyps(5)[simplified])
 
   have "set (bn as) \<sharp>* S"
     using Let(3) using `supp S \<subseteq> supp \<Gamma>'`
@@ -65,7 +65,7 @@ case (Let as \<Gamma> x  \<Gamma>' body \<Delta> \<Delta>' S)
     using Let by (auto simp add: fresh_star_Pair)
 
   show ?case
-    by (simp, rule Launchbury.Let[OF fresh Let.hyps(4) hyp])
+    by (simp, rule Launchbury.Let[OF fresh hyp])
 qed
 
 lemma forget_stack_nice:
@@ -136,11 +136,10 @@ case (Let as \<Gamma> L body \<Delta> z \<Gamma>' x)
     by (simp add: fresh_star_Pair)
  
   have hyp: "asToHeap as @ \<Gamma> : (x, body) # \<Gamma>' \<Down> \<Delta> : (x, z) # \<Gamma>'"
-    apply (rule Let.hyps(5)[OF Let.prems])
-    done
+    by (rule Let.hyps(4)[OF Let.prems])
 
   show ?case
-    by (rule LaunchburyStacked.reds.Let[OF fresh `distinctVars (asToHeap as)` hyp])
+    by (rule LaunchburyStacked.reds.Let[OF fresh hyp])
 qed
 
 end

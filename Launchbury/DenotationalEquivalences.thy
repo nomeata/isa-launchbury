@@ -65,5 +65,5 @@ case (Let as e \<rho>)
   hence "DenotationalUpd.HSem (asToHeap as) \<rho> = Denotational.HSem (asToHeap as) \<rho>"
     by (rule heap_update_join[OF _ Let(2)])
   thus ?case using Let(1,3) by simp
-qed auto
+qed (auto dest!: set_mp[OF set_delete_subset])
 end

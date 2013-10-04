@@ -111,8 +111,6 @@ next
   case (Let as e')
     from Let(1) have "set (bn as) \<sharp>* (\<Gamma>', x, S)" sorry
 
-    have "distinctVars (asToHeap as)" sorry
-
     from Let prem
     have "(\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>asToHeap as\<rbrace>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (simp add: Rep_cfun_inverse fresh_star_Pair)
     also have "\<N>\<lbrace>asToHeap as\<rbrace>\<N>\<lbrace>\<Gamma>\<rbrace> = \<N>\<lbrace>asToHeap as @ \<Gamma>\<rbrace>" sorry
@@ -122,7 +120,7 @@ next
     have "(\<N>\<lbrace>asToHeap as @ (x, e') # delete x \<Gamma>\<rbrace> f!\<^sub>\<bottom> x)\<cdot>C\<^bsup>n\<^esup>  \<noteq> \<bottom>" sorry
     from Suc.IH[OF this]
     obtain \<Delta> where "\<Gamma>'(x f\<mapsto> e') f++ fmap_of (asToHeap as) \<Down>\<^sup>\<times>\<^sup>\<surd>\<^sup>\<times>\<^bsub>x # S\<^esub> \<Delta>" using \<Gamma>'_def by auto
-    from reds.Let[OF `set (bn as) \<sharp>* (\<Gamma>', x, S)` `distinctVars (asToHeap as)` `x \<notin> fdom \<Gamma>'` this, folded Let(2), folded \<Gamma>']
+    from reds.Let[OF `set (bn as) \<sharp>* (\<Gamma>', x, S)` `x \<notin> fdom \<Gamma>'` this, folded Let(2), folded \<Gamma>']
     show ?thesis..
   qed
 qed
