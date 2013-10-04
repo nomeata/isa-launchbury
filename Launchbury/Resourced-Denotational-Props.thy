@@ -117,4 +117,90 @@ interpretation has_ignore_fresh_ESem CESem
   sorry
 
 
+subsubsection {* Denotation of Substitution *}
+
+lemma CESem_subst_same: "\<rho> f!\<^sub>\<bottom> x = \<rho> f!\<^sub>\<bottom> y \<Longrightarrow>  \<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<N>\<lbrakk> e[x::= y] \<rbrakk>\<^bsub>\<rho>\<^esub>"
+  and 
+  "\<rho> f!\<^sub>\<bottom> x = \<rho> f!\<^sub>\<bottom> y  \<Longrightarrow>  heapToEnv (asToHeap as) (\<lambda>e. \<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>) = heapToEnv (asToHeap as[x::a=y]) (\<lambda>e. \<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>) "
+proof (nominal_induct e and as  avoiding: \<rho> x y rule:exp_assn.strong_induct)
+case (Var var \<rho> x y) thus ?case by auto
+next
+case (App exp var \<rho> x y)
+  from App(1)[OF App(2)] App(2)
+  show ?case by auto
+next
+case (Let as exp \<rho> x y)
+  from `set (bn as) \<sharp>* x` `set (bn as) \<sharp>* y` 
+  have "x \<notin> heapVars (asToHeap as)" "y \<notin> heapVars (asToHeap as)"
+    by (induct as rule: exp_assn.bn_inducts, auto simp add: exp_assn.bn_defs fresh_star_insert)
+  hence [simp]:"heapVars (asToHeap (as[x::a=y])) = heapVars (asToHeap as)" 
+     by (induct as rule: exp_assn.bn_inducts, auto)
+
+  have cond1: "HSem_cond' (asToHeap as) \<rho>"
+      (is "fix_join_cond ?\<rho>1 ?F1")
+    apply (rule disjoint_is_HSem_cond)
+    apply (auto simp add:  `x \<notin> heapVars (asToHeap as)`)
+    by (metis Let(1) sharp_star_Env)
+  have cond2: "HSem_cond' (asToHeap as[x::a=y]) \<rho>"
+      (is "fix_join_cond ?\<rho>2 ?F2")
+    apply (rule disjoint_is_HSem_cond)
+    apply (auto simp add:  `x \<notin> heapVars (asToHeap as)`)
+    by (metis Let(1) sharp_star_Env)
+
+
+  from `\<rho> f!\<^sub>\<bottom> x = \<rho> f!\<^sub>\<bottom> y`
+  have "\<N>\<lbrace>asToHeap as\<rbrace>\<rho> f!\<^sub>\<bottom> x = \<N>\<lbrace>asToHeap as\<rbrace>\<rho> f!\<^sub>\<bottom> y"
+    using `x \<notin> heapVars (asToHeap as)` `y \<notin> heapVars (asToHeap as)`
+    by (simp add: fmap_lookup_bot_HSem_other)
+  hence "\<N>\<lbrakk>exp\<rbrakk>\<^bsub>\<N>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub> = \<N>\<lbrakk>exp[x::=y]\<rbrakk>\<^bsub>\<N>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub>"
+    by (rule Let)
+  moreover
+  from `\<rho> f!\<^sub>\<bottom> x = \<rho> f!\<^sub>\<bottom> y`
+  have "\<N>\<lbrace>asToHeap as\<rbrace>\<rho> = \<N>\<lbrace>asToHeap as[x::a=y]\<rbrace>\<rho>" and "\<N>\<lbrace>asToHeap as\<rbrace>\<rho> f!\<^sub>\<bottom> x = \<N>\<lbrace>asToHeap as[x::a=y]\<rbrace>\<rho> f!\<^sub>\<bottom> y"
+    apply (induction rule: parallel_HSem_ind[OF cond1 cond2])
+    apply (rule adm_is_adm_on, simp)
+    apply simp
+    apply simp
+    apply simp
+    apply (erule arg_cong[OF Let(4)])
+    apply (subst fmap_lookup_bot_join[OF rho_F_compat_fjc[OF cond1]], assumption)
+    apply (subst fmap_lookup_bot_join[OF rho_F_compat_fjc[OF cond2]], assumption)
+    using `x \<notin> heapVars (asToHeap as)` `y \<notin> heapVars (asToHeap as)`
+    apply simp
+    done
+  ultimately
+  show ?case using Let(1-3) by (simp add: fresh_star_Pair)
+next
+case (Lam var exp \<rho> x y)
+  from `\<rho> f!\<^sub>\<bottom> x = \<rho> f!\<^sub>\<bottom> y`
+  have "\<And>v. \<rho>(var f\<mapsto> v) f!\<^sub>\<bottom> x = \<rho>(var f\<mapsto> v) f!\<^sub>\<bottom> y"
+    using Lam(2,3) by (simp add: fresh_at_base)
+  hence "\<And> v. \<N>\<lbrakk>exp\<rbrakk>\<^bsub>\<rho>(var f\<mapsto> v)\<^esub> = \<N>\<lbrakk>exp[x::=y]\<rbrakk>\<^bsub>\<rho>(var f\<mapsto> v)\<^esub>"
+    by (rule Lam)
+  thus ?case using Lam(1-3) by simp
+next
+case (ANil \<rho> x y) thus ?case by auto
+next
+case (ACons var exp as \<rho> x y)
+  from ACons(1,2)[OF ACons(3)] ACons(3)
+  show ?case by auto
+qed
+
+lemma CESem_subst:
+  assumes "x \<noteq> y"
+  assumes "atom x \<sharp> \<sigma>"
+  shows "\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<sigma>(x f\<mapsto> (\<sigma> f!\<^sub>\<bottom> y))\<^esub> = \<N>\<lbrakk> e[x::= y] \<rbrakk>\<^bsub>\<sigma>\<^esub>"
+proof-
+  from assms(2) have [simp]:"x \<notin> fdom \<sigma>" by (simp add: sharp_Env)
+  have [simp]:"insert x (fdom \<sigma>) - fdom \<sigma> = {x}" by auto
+
+  have "\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<sigma>(x f\<mapsto> (\<sigma> f!\<^sub>\<bottom> y))\<^esub> = \<N>\<lbrakk> e[x::= y] \<rbrakk>\<^bsub>\<sigma>(x f\<mapsto> (\<sigma> f!\<^sub>\<bottom> y))\<^esub>"
+    using assms(1)
+    by (auto intro: CESem_subst_same simp add: Rep_cfun_inverse)
+  also have "\<dots> = \<N>\<lbrakk> e[x::= y] \<rbrakk>\<^bsub>\<sigma>\<^esub>"
+    by (auto intro: ESem_ignores_fresh[symmetric] simp add: fresh_star_singleton assms(1))
+  finally
+  show ?thesis.
+qed
+
 end

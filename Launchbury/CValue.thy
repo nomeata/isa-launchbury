@@ -10,9 +10,18 @@ begin
 instance by default (auto simp add: permute_C_def)
 end
 
+lemma below_C: "x \<sqsubseteq> C\<cdot>x"
+  by (induct x) auto
+
 definition Cinf ("C\<^sup>\<infinity>") where "C\<^sup>\<infinity> = fix\<cdot>C"
 
 abbreviation Cpow ("C\<^bsup>_\<^esup>") where "C\<^bsup>n\<^esup> \<equiv> iterate n\<cdot>C\<cdot>\<bottom>"
+
+lemma C_case_below: "C_case \<cdot> f \<sqsubseteq> f"
+  apply (rule cfun_belowI)
+  apply (case_tac x)
+  apply (auto intro:monofun_cfun_arg below_C)
+  done
 
 lemma C_case_Cinf[simp]: "C_case \<cdot> f \<cdot> C\<^sup>\<infinity> = f \<cdot> C\<^sup>\<infinity>"
   unfolding Cinf_def

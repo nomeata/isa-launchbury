@@ -57,7 +57,7 @@ next
     obtain n' :: var where "atom n' \<sharp> (\<Gamma>', x, e', y, S)" by (rule obtain_fresh)
 
     from App prem
-    have not_bot1: "((\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn C_case\<cdot>(\<N>\<lbrace>\<Gamma>\<rbrace> f!\<^sub>\<bottom> y))\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>"
+    have not_bot1: "((\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn (\<N>\<lbrace>\<Gamma>\<rbrace> f!\<^sub>\<bottom> y))\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>"
       by (simp add: Rep_cfun_inverse)
 
     have eq1: "\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub> = \<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>(n', e') # \<Gamma>\<rbrace>\<^esub>"
@@ -87,15 +87,15 @@ next
       by (intro monofun_cfun_fun monofun_cfun correct)
     hence not_bot3: "(\<N>\<lbrakk>Lam [z]. e''\<rbrakk>\<^bsub>\<N>\<lbrace>list_of \<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" using n' not_bot2 by auto
 
-    have "((\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn C_case\<cdot>(\<N>\<lbrace>\<Gamma>\<rbrace> f!\<^sub>\<bottom> y))\<cdot>C\<^bsup>n\<^esup> 
-        = ((\<N>\<lbrace>(n', e')#\<Gamma> \<rbrace> f!\<^sub>\<bottom> n')\<cdot>C\<^bsup>n\<^esup> \<down>CFn C_case\<cdot>(\<N>\<lbrace>\<Gamma>\<rbrace> f!\<^sub>\<bottom> y))\<cdot>C\<^bsup>n\<^esup>"
+    have "((\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn (\<N>\<lbrace>\<Gamma>\<rbrace> f!\<^sub>\<bottom> y))\<cdot>C\<^bsup>n\<^esup> 
+        = ((\<N>\<lbrace>(n', e')#\<Gamma> \<rbrace> f!\<^sub>\<bottom> n')\<cdot>C\<^bsup>n\<^esup> \<down>CFn (\<N>\<lbrace>\<Gamma>\<rbrace> f!\<^sub>\<bottom> y))\<cdot>C\<^bsup>n\<^esup>"
       using eq1 by simp
-    also have "\<dots> \<sqsubseteq> ((\<N>\<lbrace>list_of \<Delta>\<rbrace> f!\<^sub>\<bottom> n')\<cdot>C\<^bsup>n\<^esup> \<down>CFn C_case\<cdot>(\<N>\<lbrace>\<Gamma>\<rbrace> f!\<^sub>\<bottom> y))\<cdot>C\<^bsup>n\<^esup>"
+    also have "\<dots> \<sqsubseteq> ((\<N>\<lbrace>list_of \<Delta>\<rbrace> f!\<^sub>\<bottom> n')\<cdot>C\<^bsup>n\<^esup> \<down>CFn (\<N>\<lbrace>\<Gamma>\<rbrace> f!\<^sub>\<bottom> y))\<cdot>C\<^bsup>n\<^esup>"
       by (intro monofun_cfun_arg monofun_cfun_fun correct)
-    also have "\<dots> = ((\<N>\<lbrakk>Lam [z]. e''\<rbrakk>\<^bsub>\<N>\<lbrace>list_of \<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn C_case\<cdot>(\<N>\<lbrace>\<Gamma>\<rbrace> f!\<^sub>\<bottom> y))\<cdot>C\<^bsup>n\<^esup>" using n' by simp
-    also have "\<dots> = (\<N>\<lbrakk>e''\<rbrakk>\<^bsub>(\<N>\<lbrace>list_of \<Delta>\<rbrace>)(z f\<mapsto> (C_case\<cdot>(\<N>\<lbrace>\<Gamma>\<rbrace> f!\<^sub>\<bottom> y)))\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
+    also have "\<dots> = ((\<N>\<lbrakk>Lam [z]. e''\<rbrakk>\<^bsub>\<N>\<lbrace>list_of \<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn (\<N>\<lbrace>\<Gamma>\<rbrace> f!\<^sub>\<bottom> y))\<cdot>C\<^bsup>n\<^esup>" using n' by simp
+    also have "\<dots> = (\<N>\<lbrakk>e''\<rbrakk>\<^bsub>(\<N>\<lbrace>list_of \<Delta>\<rbrace>)(z f\<mapsto> ((\<N>\<lbrace>\<Gamma>\<rbrace> f!\<^sub>\<bottom> y)))\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
       using not_bot3 by (simp add: sharp_Env del: CESem.simps)
-    also have "\<dots> \<sqsubseteq> (\<N>\<lbrakk>e''\<rbrakk>\<^bsub>(\<N>\<lbrace>list_of \<Delta>\<rbrace>)(z f\<mapsto> (C_case\<cdot>(\<N>\<lbrace>list_of \<Delta>\<rbrace> f!\<^sub>\<bottom> y)))\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
+    also have "\<dots> \<sqsubseteq> (\<N>\<lbrakk>e''\<rbrakk>\<^bsub>(\<N>\<lbrace>list_of \<Delta>\<rbrace>)(z f\<mapsto> ((\<N>\<lbrace>list_of \<Delta>\<rbrace> f!\<^sub>\<bottom> y)))\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
       by (intro monofun_cfun_fun monofun_cfun cont2monofunE[OF ESem_cont] fmap_upd_mono below_refl below_trans[OF added correct])
     also have "\<dots> = (\<N>\<lbrakk>e''[z::=y]\<rbrakk>\<^bsub>(\<N>\<lbrace>(x, e''[z::=y])#(list_of \<Delta>)\<rbrace>)\<^esub>)\<cdot>C\<^bsup>n\<^esup>" sorry
     also have "\<dots> = (\<N>\<lbrace>(x, e''[z::=y])#(list_of \<Delta>)\<rbrace> f!\<^sub>\<bottom> x)\<cdot>C\<^bsup>n\<^esup>" by auto
