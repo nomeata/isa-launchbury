@@ -40,7 +40,7 @@ case (goal4 x \<rho> e x' \<rho>' e')
     by auto
 
   { fix xa
-    have "ESem_sumC (e, (\<rho>(x f\<mapsto> xa))) = (x' \<leftrightarrow> x) \<bullet> (ESem_sumC (e, (\<rho>(x f\<mapsto> xa))))" by (simp add: permute_Value_def)
+    have "ESem_sumC (e, (\<rho>(x f\<mapsto> xa))) = (x' \<leftrightarrow> x) \<bullet> (ESem_sumC (e, (\<rho>(x f\<mapsto> xa))))" by (simp add: permute_pure)
     also have "\<dots> = ESem_sumC ((x' \<leftrightarrow> x) \<bullet> ((e, (\<rho>(x f\<mapsto> xa)))))"
       using goal4(1) by (metis eqvt_at_def)
     also have "\<dots> = ESem_sumC ((x' \<leftrightarrow> x) \<bullet> e, \<rho>(x' f\<mapsto> xa))"
