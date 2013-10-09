@@ -39,7 +39,7 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' \<rho>)
       by (rule reds_avoids_live[OF distinct_redsD1[OF Application.hyps(9)] _ False], simp)
     with False
     show ?thesis
-      by (simp add: fmap_lookup_bot_HSem_other)
+      by (simp add: fmap_lookup_bot_UHSem_other)
   qed
 
   have "\<lbrakk> App e x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> \<down>Fn \<lbrakk> Var x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
@@ -101,30 +101,30 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
   have condGamma: "fix_on_cond {\<rho>' . f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars (delete x \<Gamma>))]\<^esub> \<sqsubseteq> \<rho>'}
                                (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars (delete x \<Gamma>))]\<^esub>)
                                (\<lambda>\<rho>'a. (\<rho> f++ fmap_restr (heapVars (delete x \<Gamma>)) (\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'a))(x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>'a\<^esub>))"
-    apply (rule fix_on_cond_cong[OF iterative_HSem'_cond])
+    apply (rule fix_on_cond_cong[OF iterative_UHSem'_cond])
       apply simp
       apply (rule arg_cong[OF Variable.hyps(3)])
     using 2 by auto
 
   have "\<lbrace>\<Gamma>\<rbrace>\<rho> = \<lbrace>(x,e) # delete x \<Gamma>\<rbrace>\<rho>"
-    apply (rule HSem_reorder)
+    apply (rule UHSem_reorder)
     apply (rule distinctVars_map_of_delete_insert[symmetric, OF Variable(5,1)])
     done
   also have "\<dots> = fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars (delete x \<Gamma>))]\<^esub>)
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars (delete x \<Gamma>)) (\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>))"
-    by (rule iterative_HSem, simp)
+    by (rule iterative_UHSem, simp)
   also have "\<dots> = fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars (delete x \<Gamma>))]\<^esub>)
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars (delete x \<Gamma>)) (\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'\<^esub>))"
-    by (rule iterative_HSem', simp)
+    by (rule iterative_UHSem', simp)
   also have "\<dots> = fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars (delete x \<Gamma>))]\<^esub>)
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars (delete x \<Gamma>)) (\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>'\<^esub>))"
     apply (rule fix_on_cong[OF _ arg_cong[OF  Variable.hyps(3)]])
-    apply (rule iterative_HSem'_cond)
+    apply (rule iterative_UHSem'_cond)
     using 2 by auto
   also have "\<dots> \<le> fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars \<Delta>)]\<^esub>)
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars \<Delta>) (\<lbrace>\<Delta>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>'\<^esub>))"
     apply (subst fmap_less_restrict)
-    apply (rule parallel_fix_on_ind[OF condGamma iterative_HSem'_cond[OF `x \<notin> heapVars \<Delta>`]])
+    apply (rule parallel_fix_on_ind[OF condGamma iterative_UHSem'_cond[OF `x \<notin> heapVars \<Delta>`]])
     apply (intro adm_is_adm_on adm_lemmas cont2cont)
     (* bottom *)
     using subset apply auto[1]
@@ -139,18 +139,18 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
     apply (subst Variable.hyps(4)[unfolded fmap_less_restrict])
       using 2 apply (auto)[1]
     apply simp
-    apply (subst (1 2) HSem_restr[symmetric])
+    apply (subst (1 2) UHSem_restr[symmetric])
     apply simp
     
     (* x *)
-    apply (subst (1 2) HSem_restr[symmetric])
+    apply (subst (1 2) UHSem_restr[symmetric])
     apply simp
     done
   also have "\<dots> = fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars \<Delta>)]\<^esub>)
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars \<Delta>) (\<lbrace>\<Delta>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<rho>'\<^esub>))"
-    by (rule iterative_HSem'[symmetric, OF reds_avoids_live[OF distinct_redsD1[OF Variable(2)]]], simp_all)
+    by (rule iterative_UHSem'[symmetric, OF reds_avoids_live[OF distinct_redsD1[OF Variable(2)]]], simp_all)
   also have "\<dots> = \<lbrace>(x,z) # \<Delta>\<rbrace>\<rho>"
-    by (rule iterative_HSem[symmetric, OF reds_avoids_live[OF distinct_redsD1[OF Variable(2)]]], simp_all)
+    by (rule iterative_UHSem[symmetric, OF reds_avoids_live[OF distinct_redsD1[OF Variable(2)]]], simp_all)
   finally
   show le: ?case.
 
@@ -158,7 +158,7 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
   have "\<lbrakk> Var x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk> Var x \<rbrakk>\<^bsub>\<lbrace>(x, z) # \<Delta>\<rbrace>\<rho>\<^esub>"
     by (simp add: fmap_less_eqD[OF le])
   also have "\<dots> =  \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>(x, z) # \<Delta>\<rbrace>\<rho>\<^esub>"
-    by (simp add: the_lookup_HSem_heap)
+    by (simp add: the_lookup_UHSem_heap)
   finally
   show ?case.
 next
@@ -197,7 +197,7 @@ case (Let as \<Gamma> L body \<Delta> z \<rho>)
   have "\<lbrakk> Terms.Let as body \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk> body \<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
     by simp
   also have "\<dots> =  \<lbrakk> body \<rbrakk>\<^bsub>\<lbrace>asToHeap as @ \<Gamma>\<rbrace>\<rho>\<^esub>"
-    by (rule arg_cong[OF HSem_merge[OF f1]])
+    by (rule arg_cong[OF UHSem_merge[OF f1]])
   also have "\<dots> =  \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>"
     by (rule Let.hyps(4)[OF hyp])
   finally
@@ -205,7 +205,7 @@ case (Let as \<Gamma> L body \<Delta> z \<rho>)
 
   case 2
   have "\<lbrace>\<Gamma>\<rbrace>\<rho> \<le> \<lbrace>asToHeap as @ \<Gamma>\<rbrace>\<rho>"
-    by (rule HSem_less[OF f1])
+    by (rule UHSem_less[OF f1])
   also have "\<dots> \<le> \<lbrace>\<Delta>\<rbrace>\<rho>"
     by (rule Let.hyps(5)[OF hyp])
   finally

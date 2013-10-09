@@ -1,5 +1,5 @@
 theory Adequacy
-imports "Resourced-Denotational-Props" "Launchbury" "DistinctVars"
+imports "Resourced-Denotational-Props" "Launchbury" "DistinctVars" "CorrectnessResourced"
 begin
 
 lemma VariableNoBH:
@@ -11,6 +11,7 @@ sorry
 
 theorem adequacy:
   assumes "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>"
+  and "distinctVars \<Gamma>"
   shows "\<exists> \<Delta> v. \<Gamma> : e \<Down>\<^bsub>S\<^esub> \<Delta> : v"
 using assms
 proof(induction n arbitrary: \<Gamma> e S)
@@ -29,7 +30,7 @@ next
     moreover
     from Suc.prems[unfolded Var] `(x, ?e) \<in> set \<Gamma>` `x \<in> heapVars \<Gamma>`
     have "(\<N>\<lbrakk>?e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by auto
-    from Suc.IH[OF this]
+    from Suc.IH[OF this Suc.prems(2)]
     obtain \<Delta> v where " \<Gamma> : ?e \<Down>\<^bsub>x # S\<^esub> \<Delta> : v" by blast
     ultimately
     have "\<Gamma> : (Var x) \<Down>\<^bsub>S\<^esub> (x,v) # delete x \<Delta> : v" by (rule VariableNoBH)
@@ -39,7 +40,7 @@ next
     from Suc.prems[unfolded App]
     have prem: "((\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn (\<N>\<lbrace>\<Gamma>\<rbrace> f!\<^sub>\<bottom> x))\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (auto simp add: Rep_cfun_inverse)
     hence e'_not_bot: "(\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by auto
-    from Suc.IH[OF this]
+    from Suc.IH[OF this Suc.prems(2)]
     obtain \<Delta> v where lhs': "\<Gamma> : e' \<Down>\<^bsub>x#S\<^esub> \<Delta> : v" by blast 
 
     from result_evaluated_fresh[OF lhs']
@@ -48,9 +49,11 @@ next
     have lhs: "\<Gamma> : e' \<Down>\<^bsub>x # S\<^esub> \<Delta> : Lam [y]. e''" by simp
 
     from `atom y \<sharp> _` have "y \<notin> heapVars \<Delta>" by (metis (full_types) fresh_Pair heapVars_not_fresh)
+   
 
-    have correct1: "\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub> \<sqsubseteq> \<N>\<lbrakk>Lam [y]. e''\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>" sorry
-    have correct2: "\<And> v. \<N>\<lbrace>\<Gamma>\<rbrace> f!\<^sub>\<bottom> v \<sqsubseteq> \<N>\<lbrace>\<Delta>\<rbrace> f!\<^sub>\<bottom> v" sorry
+    from correctness[OF lhs `distinctVars \<Gamma>`, where \<rho> = "f\<emptyset>"]
+    have correct1: "\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub> \<sqsubseteq> \<N>\<lbrakk>Lam [y]. e''\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>" and correct2: "op f!\<^sub>\<bottom> (\<N>\<lbrace>\<Gamma>\<rbrace>) \<sqsubseteq> op f!\<^sub>\<bottom> (\<N>\<lbrace>\<Delta>\<rbrace>)"
+      by auto
 
     from e'_not_bot correct1
     have lam_not_bot: "(\<N>\<lbrakk>Lam [y]. e''\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (metis below_bottom_iff monofun_cfun_fun)
@@ -59,7 +62,7 @@ next
           \<sqsubseteq> ((\<N>\<lbrakk>Lam [y]. e''\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn (\<N>\<lbrace>\<Gamma>\<rbrace> f!\<^sub>\<bottom> x))\<cdot>C\<^bsup>n\<^esup>"
       by (intro monofun_cfun_arg monofun_cfun_fun correct1)
     also have "\<dots> \<sqsubseteq> ((\<N>\<lbrakk>Lam [y]. e''\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn (\<N>\<lbrace>\<Delta>\<rbrace> f!\<^sub>\<bottom> x))\<cdot>C\<^bsup>n\<^esup>"
-      by (intro monofun_cfun_arg monofun_cfun_fun correct2)
+      by (intro monofun_cfun_arg monofun_cfun_fun fun_belowD[OF correct2])
     also have "\<dots> = (\<N>\<lbrakk>e''\<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>)(y f\<mapsto> (\<N>\<lbrace>\<Delta>\<rbrace> f!\<^sub>\<bottom> x))\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
       using lam_not_bot `y \<notin> heapVars \<Delta>`
       by (simp add: sharp_Env del: CESem.simps)
@@ -68,8 +71,11 @@ next
       using `atom y \<sharp> _` by (simp_all add: fresh_Pair fresh_at_base)
     finally
     have "\<dots> \<noteq> \<bottom>" using prem by auto
-    from Suc.IH[OF this]
-    obtain \<Theta> v' where rhs: "\<Delta> : e''[y::=x] \<Down>\<^bsub>S\<^esub> \<Theta> : v'" by blast
+    moreover
+    have "distinctVars \<Delta>"
+      by (rule reds_pres_distinctVars[OF lhs' Suc.prems(2)])
+    ultimately
+    obtain \<Theta> v' where rhs: "\<Delta> : e''[y::=x] \<Down>\<^bsub>S\<^esub> \<Theta> : v'" using Suc.IH by blast
     
     have "\<Gamma> : App e' x \<Down>\<^bsub>S\<^esub> \<Theta> : v'"
       by (rule reds_ApplicationI[OF `atom y \<sharp> _` lhs rhs])

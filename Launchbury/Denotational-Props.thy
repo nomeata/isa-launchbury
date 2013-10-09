@@ -315,27 +315,6 @@ qed
 interpretation has_ignore_fresh_ESem ESem
   by default (metis ESem_ignores_fresh')
 
-lemma HSem_add_fresh:
-  assumes cond1: "HSem_cond' \<Gamma> \<rho>"
-  assumes cond2: "HSem_cond' ((x,e) # \<Gamma>) \<rho>"
-  assumes fresh: "atom x \<sharp> (\<rho>, \<Gamma>)"
-  shows  "fmap_restr (fdom \<rho> \<union> heapVars \<Gamma>) (\<lbrace>(x, e) # \<Gamma>\<rbrace>\<rho>) = \<lbrace>\<Gamma>\<rbrace>\<rho>"
-proof(rule HSem_add_fresh[OF assms])
-case (goal1 e \<rho>')
-  assume "e \<in> snd ` set \<Gamma>"
-  hence "atom x \<sharp> e"
-    apply auto
-    by (metis fresh fresh_PairD(2) fresh_list_elem)
-
-  assume "fdom \<rho>' = fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>)"
-  hence [simp]:"fdom \<rho>' - fdom \<rho>' \<inter> (fdom \<rho>' - {x}) = {x}" by auto
-
-  show ?case
-    apply (rule ESem_ignores_fresh[symmetric, OF fmap_restr_less])
-    apply (simp add: fresh_star_def)
-    using `atom x \<sharp> e`.
-qed
-
 lemma ESem_add_fresh:
   assumes cond1: "HSem_cond' \<Gamma> \<rho>"
   assumes cond2: "HSem_cond' ((x,e') # \<Gamma>) \<rho>"

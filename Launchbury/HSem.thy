@@ -1,5 +1,5 @@
 theory HSem
-  imports "HeapToEnv" "DistinctVars-Nominal" "HOLCF-Fix-Join-Nominal" "FMap-Utils"
+  imports "HeapToEnv" "DistinctVars-Nominal" "HOLCF-Fix-Join-Nominal" "FMap-Utils" "HasESem"
 begin
 
 subsubsection {* A locale for heap semantics, abstract in the expression semantics *}
@@ -12,8 +12,7 @@ continuity of the expression semantics, to allow for a mutually recursive
 proof.
 *}
 
-locale has_ESem =
-  fixes ESem :: "'exp::pt \<Rightarrow> 'var::{cont_pt,at_base} f\<rightharpoonup> 'value \<Rightarrow> 'value::{pure_cpo,Nonempty_Meet_cpo,pcpo}"
+context has_ESem
 begin
 
 text {*
@@ -305,50 +304,6 @@ lemma HSem_cong[fundef_cong]:
   unfolding HSem_def
   by (auto cong:heapToEnv_cong)
 
-subsubsection {* Adding a fresh variable to a heap does not affect its semantics *} 
-
-lemma HSem_add_fresh:
-  assumes cond1: "HSem_cond' \<Gamma> \<rho>"
-  assumes cond2: "HSem_cond' ((x,e) # \<Gamma>) \<rho>"
-  assumes fresh: "atom x \<sharp> (\<rho>,\<Gamma>)"
-  assumes step: "\<And>e \<rho>'. fdom \<rho>' = fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>) \<Longrightarrow> e \<in> snd ` set \<Gamma> \<Longrightarrow> ESem e \<rho>' = ESem e (fmap_restr (fdom \<rho>' - {x}) \<rho>')"
-  shows  "fmap_restr (fdom \<rho> \<union> heapVars \<Gamma>) (HSem ((x, e) # \<Gamma>) \<rho>) = HSem \<Gamma> \<rho>"
-proof (rule parallel_HSem_ind[OF cond1 cond2])
-case goal1 show ?case by (auto intro:adm_is_adm_on)
-case goal2 show ?case by (auto)[1]
-case goal3
-  have "fmap_restr (fdom \<rho> \<union> heapVars \<Gamma>) (\<rho>\<^bsub>[fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>)]\<^esub>) = \<rho>\<^bsub>[fdom \<rho> \<union> heapVars \<Gamma>]\<^esub>"
-    apply (subst fmap_restr_fmap_expand2)
-    by auto
-  moreover
-
-  have "x \<notin> fdom \<rho> \<union> heapVars \<Gamma>"
-    using fresh
-    apply (auto simp add: sharp_Env fresh_Pair)
-    by (metis heapVars_not_fresh)
-  hence [simp]:"fdom z - {x} = fdom \<rho> \<union> heapVars \<Gamma>"
-    using fdom_fix_join_compat[OF fix_on_cond_fjc[OF cond2] goal3(2)]
-    by auto
-
-  have "fmap_restr (fdom \<rho> \<union> heapVars \<Gamma>) (heapToEnv ((x, e) # \<Gamma>) (\<lambda>e. ESem e z)\<^bsub>[fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>)]\<^esub>)
-    =  heapToEnv \<Gamma> (\<lambda>e. ESem e y)\<^bsub>[fdom \<rho> \<union> heapVars \<Gamma>]\<^esub> "
-    apply (subst fmap_restr_fmap_expand2)
-      apply simp
-      apply auto[1]
-    apply (subst heapToEnv_remove_Cons_fmap_expand[OF _ `x \<notin> fdom \<rho> \<union> heapVars \<Gamma>`])
-      apply simp
-    apply (rule arg_cong[OF heapToEnv_cong[OF refl]])
-    apply (subst step)
-    using fdom_fix_join_compat[OF fix_on_cond_fjc[OF cond2] goal3(2)] apply simp
-    apply assumption
-    using `_ = y`[symmetric]
-    apply simp
-    done
-  ultimately
-  show ?case
-    apply (subst fmap_restr_join[OF _ rho_F_compat_fjc[OF cond2 `z \<in> _`]])
-    by simp+
-qed
 
 lemma fjc'_of_member:
   assumes "fix_join_cond \<rho> F"
@@ -502,8 +457,7 @@ extend the locale by assuming this for alle expressions, and repeat some of the 
 their more specific assumptions.
 *}
 
-locale has_cont_ESem = has_ESem +
-  assumes ESem_cont: "\<And> e. cont (ESem e)"
+context has_cont_ESem
 begin
   lemma HSem_below:
     assumes "\<rho>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub> \<sqsubseteq> r"
@@ -666,23 +620,22 @@ subsubsection {* The heap semantics can also be defined inductively over the hea
   
     have closedR1: "closed_on ?R1"
       apply (rule closed_onI)
-      apply (rule HSem_ind)
-      apply (rule adm_is_adm_on[OF subcpo_mem_adm[OF subcpo_fjc]])
-      apply (rule down_closed_fjc, assumption)
-      apply (frule fdom)
-      apply (auto simp add:to_bot_fmap_def simp del:fjc_iff)[1]
-      apply (rule join_fjc)
-       apply (subst fmap_expand_noop)
-       apply (frule fdom, auto)[1]
+         apply (rule HSem_ind)
+        apply (rule adm_is_adm_on[OF subcpo_mem_adm[OF subcpo_fjc]])
+        apply (rule down_closed_fjc, assumption)
+        apply (frule fdom)
+       apply (auto simp add:to_bot_fmap_def simp del:fjc_iff)[1]
+        apply (rule join_fjc)
+         apply (subst fmap_expand_noop)
+        apply (frule fdom, auto)[1]
        apply assumption
-      
-      apply (rule down_closed_fjc[OF F_pres_compat''[OF assms(1)]], assumption) back
-      apply (rule heapToEnv_mono)
-      apply simp
-      apply (frule fdom, auto)[1]
+       apply (rule down_closed_fjc[OF F_pres_compat''[OF assms(1)]], assumption) back
+         apply (rule heapToEnv_mono)
+        apply simp
+       apply (frule fdom, auto)[1]
       apply (simp add: assms(2))
       apply (subst fmap_expand_noop)
-      apply (frule fdom, auto)[1]
+       apply (frule fdom, auto)[1]
       apply assumption
       done
       
@@ -839,7 +792,240 @@ subsubsection {* The heap semantics can also be defined inductively over the hea
       unfolding bottom_of_fjc
       by (rule R_there[unfolded fjc_iff, unfolded bottom_of_fjc])
   qed
+
+  (*  
+  lemma iterative_HSem':
+    assumes "HSem_cond' ((x, e) # \<Gamma>) \<rho>"
+    assumes "x \<notin> heapVars \<Gamma>"
+    shows "HSem ((x,e) # \<Gamma>) \<rho> =
+        fix_on (fix_join_compat (\<rho>\<^bsub>[fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>)]\<^esub>) (\<lambda> \<rho>'. heapToEnv ((x, e) # \<Gamma>) (\<lambda>e. ESem e \<rho>')\<^bsub>[fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>)]\<^esub>))
+                (\<lambda> \<rho>'. (HSem \<Gamma> (\<rho>' f|` (-heapVars \<Gamma>)))
+                        \<squnion> ((f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>)]\<^esub>)(x f\<mapsto> ESem e (HSem \<Gamma> (\<rho>' f|` (-heapVars \<Gamma>)))) 
+                        \<squnion> (\<rho>\<^bsub>[fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>)]\<^esub>)))" (is "_ = fix_on ?S ?R")
+  apply (subst HSem_def'[OF assms(1)])
+  proof(rule below_antisym)
+    interpret subpcpo ?S by (rule subpcpo_fjc)
   
+    let "?d" = "fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>)"
+
+    have [simp]: "\<And> \<rho>. fdom (\<rho> f|` (- heapVars \<Gamma>)) \<union> heapVars \<Gamma> = fdom \<rho> \<union> heapVars \<Gamma>"
+      by auto
+    have [simp]: "insert x (fdom \<rho> \<union> heapVars \<Gamma>) \<inter> - heapVars \<Gamma> \<union> heapVars \<Gamma> =  insert x (fdom \<rho> \<union> heapVars \<Gamma>)"
+      by auto
+  
+    let "fix_on _ ?L" = "fix_on ?S
+                         (\<lambda>\<rho>'. \<rho>\<^bsub>[?d]\<^esub> \<squnion>
+                               heapToEnv ((x, e) # \<Gamma>) (\<lambda>e. ESem e \<rho>')\<^bsub>[fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>)]\<^esub>)"
+    let "(\<lambda> \<rho>'. ?L1 \<rho>' \<squnion> ?L2 \<rho>')" = ?L
+    let "(\<lambda> \<rho>'. ?R1 \<rho>' \<squnion> (?R2 \<rho>' \<squnion> ?R3 \<rho>'))" = ?R
+  
+    { fix \<rho>' assume "\<rho>' \<in> ?S"
+      hence fdom1: "fdom \<rho>' = ?d"
+      apply (subst (asm) fjc_iff)
+      apply (drule fmap_below_dom)
+      apply (subst (asm) fdom_fix_on[OF fix_on_cond_fjc[OF assms(1)], unfolded bottom_of_fjc])
+      apply auto
+      done
+    } note fdom = this
+  
+    { fix \<rho>' assume "\<rho>' \<in> ?S"
+      have fdom1: "(fdom \<rho>' \<union> heapVars \<Gamma>) = ?d" using fdom[OF `\<rho>' \<in> ?S`] by auto
+      have fdom2: "(fdom \<rho>' \<union> heapVars ((x,e) # \<Gamma>)) = ?d" using fdom1 by auto
+      have "HSem_cond' ((x,e) # \<Gamma>) \<rho>'" by (rule HSem_cond'_of_member[OF assms(1) `\<rho>'\<in>?S`])
+      from this[unfolded fdom2]
+      have "HSem_cond' \<Gamma> \<rho>'"
+        apply (subst (1 2) fdom1, rule fjc'_of_fun_below)
+        apply (rule fun_belowI)
+        apply (rule heapToEnv_mono)
+        apply simp
+        apply rule
+        apply (simp add: assms(2))
+        apply (rule cont_compose[OF fmap_expand_cont cont2cont_heapToEnv[OF ESem_cont]])
+        done
+    } note HSem_cond'_Gamma = this
+  
+    have closedL: "closed_on ?L"
+      by (rule closed_on_fjc[OF assms(1)])
+  
+    have closedR1: "closed_on ?R1"
+      apply (rule closed_onI)
+         apply (rule HSem_ind)
+        apply (rule adm_is_adm_on[OF subcpo_mem_adm[OF subcpo_fjc]])
+        apply (rule down_closed_fjc, assumption)
+        apply (frule fdom)
+       apply (auto simp add:to_bot_fmap_def simp del:fjc_iff)[1]
+        apply (rule join_fjc)
+        apply (frule fdom)
+        apply (erule down_closed_fjc)
+       apply (auto intro: fmap_expand_fmap_restr_below)[1]
+       apply (rule down_closed_fjc[OF F_pres_compat''[OF assms(1)]], assumption) back
+         apply (rule heapToEnv_mono)
+        apply simp
+       apply (frule fdom, auto)[1]
+      apply (simp add: assms(2))
+      apply (frule fdom)
+      apply (erule down_closed_fjc)
+      apply (auto intro: fmap_expand_fmap_restr_below)[1]
+      done
+      
+    have closedR2: "closed_on ?R2"
+      apply (rule closed_onI)
+      thm down_closed_fjc
+      thm F_pres_compat''
+      apply (rule down_closed_fjc[OF F_pres_compat''[OF assms(1)]], assumption)
+      apply (rule fmap_belowI)
+      apply (frule fdom, auto)[1]
+      apply (case_tac "xaa = x", simp_all)
+      find_theorems "ESem _ _ \<sqsubseteq> ESem _ _"
+      done    
+      
+    have closedR3: "closed_on ?R3"
+      apply (rule closed_onI)
+      by (rule rho_fjc[OF assms(1)])
+  
+    have closedR: "closed_on ?R"
+      by (rule closed_on_join_fjc[OF closedR1 closed_on_join_fjc[OF closedR2 closedR3]])
+  
+    have contL: "cont_on ?L"
+      by (rule cont_on_fjc[OF assms(1)])
+      
+    have contR1: "cont_on ?R1"
+      apply (rule cont_onI2)
+      apply (rule monofun_onI)
+      apply (erule (2) HSem_monofun''[OF ESem_cont HSem_cond'_Gamma HSem_cond'_Gamma])
+      apply (rule eq_imp_below[OF HSem_cont''[OF ESem_cont]])
+      apply (erule HSem_cond'_Gamma[OF chain_on_lub_on])
+      apply (erule HSem_cond'_Gamma[OF chain_on_is_on])
+      apply (erule chain_on_is_chain)
+      done
+  
+    have contR2: "cont_on ?R2"
+      by (rule cont_is_cont_on[OF fmap_upd_cont[OF cont_const ESem_cont]])
+  
+    have contR3: "cont_on ?R3"
+      by (rule cont_is_cont_on[OF cont_const])
+  
+    have contR: "cont_on ?R"
+      apply (rule cont_on_join_fjc)
+      apply (rule closedR1)
+      apply (rule closed_on_join_fjc[OF closedR2 closedR3])
+      apply (rule contR1)
+      apply (rule cont_on_join_fjc)
+      apply (rule closedR2)
+      apply (rule closedR3)
+      apply (rule contR2)
+      apply (rule contR3)
+      done
+  
+    note fix_on_condL = fix_on_cond_fjc[OF assms(1)]
+  
+    have fix_on_condR: "fix_on_cond ?S bottom_of ?R"
+      by (rule fix_on_condI[OF subpcpo_fjc refl closedR contR])
+  
+    have R_there: "fix_on ?S ?R \<in> ?S"
+      by (rule fix_on_there[OF fix_on_condR])
+  
+      
+    have compatL: "\<And> x. x \<in> ?S \<Longrightarrow> compatible (?L1 x) (?L2 x)"
+      by (rule compat_fjc[OF rho_fjc[OF assms(1)]  F_pres_compat''[OF assms(1)]])
+      
+    have compatR2R3: "\<And> x. x \<in> ?S \<Longrightarrow> compatible (?R2 x) (?R3 x)"
+      by (rule compat_fjc[OF closed_onE[OF closedR2] closed_onE[OF closedR3]])
+    have compatR1R2: "\<And> x. x \<in> ?S \<Longrightarrow> compatible (?R1 x) (?R2 x)"
+      by (rule compat_fjc[OF closed_onE[OF closedR1] closed_onE[OF closedR2]])
+    have compatR1R2R3: "\<And> x. x \<in> ?S \<Longrightarrow> compatible (?R1 x) (?R2 x \<squnion> ?R3 x)"
+      by (rule compat_fjc[OF closed_onE[OF closedR1] closed_onE[OF closed_on_join_fjc[OF closedR2 closedR3]]])
+    have compatR1R2R3': "\<And> x. x \<in> ?S \<Longrightarrow> compatible (?R1 x \<squnion> ?R2 x) (?R3 x)"
+      by (rule compat_fjc[OF closed_onE[OF closed_on_join_fjc[OF closedR1 closedR2]] closed_onE[OF closedR3]])
+  
+    show "fix_on ?S ?L \<sqsubseteq> fix_on ?S ?R"
+    proof (rule fix_on_mono[OF fix_on_condL fix_on_condR])
+      fix \<rho>'
+      assume there: "\<rho>' \<in> ?S"
+      hence [simp]:"fdom \<rho>' = ?d" by (rule fdom)
+  
+      have inner_cond: "HSem_cond' \<Gamma> \<rho>'"
+        by (rule HSem_cond'_Gamma[OF there])
+      have inner_refine: "\<rho>' \<sqsubseteq> HSem \<Gamma> \<rho>'"
+        apply (insert HSem_refines[OF inner_cond])
+        apply (subst (asm) fmap_expand_noop)
+        apply auto
+        done
+  
+      have belowL1: "?L1 \<rho>' \<sqsubseteq> ?R \<rho>'"
+        by (rule below_trans[OF join_above2[OF compatR2R3[OF there]] join_above2[OF compatR1R2R3[OF there]]])
+  
+      have "?L2 \<rho>' \<sqsubseteq> ?R1 \<rho>' \<squnion> ?R2 \<rho>'"
+      proof (rule fmap_belowI)
+      case goal1 show ?case
+        by (subst fdom_join[OF compatR1R2[OF there]], auto)
+      case (goal2 x')
+        hence "x' \<in> ?d" by simp
+        show ?case
+        proof(cases "x' = x")
+        case True
+          show ?thesis
+            apply (subst the_lookup_join[OF compatR1R2[OF there]])
+            apply (insert the_lookup_compatible[OF compatR1R2[OF there], of x'])
+            apply (simp add: True)
+            apply (erule join_above2)
+            done
+        next
+        case False
+          show ?thesis
+          proof (cases "x' \<in> heapVars \<Gamma>")
+          case True
+            have "heapToEnv \<Gamma> (\<lambda>e. ESem e \<rho>') f! x' \<sqsubseteq> HSem \<Gamma> \<rho>' f! x'"
+              apply (subst HSem_eq[OF inner_cond])
+              apply (subst the_lookup_join[OF rho_F_compat_fjc[OF inner_cond  HSem_there[OF inner_cond]]])
+              apply (insert the_lookup_compatible[OF rho_F_compat_fjc[OF inner_cond  HSem_there[OF inner_cond]], of x'])
+              apply (subst (2) lookup_fmap_expand1)
+              apply (simp_all add: True)[3]
+              apply (subst (asm) (2) lookup_fmap_expand1)
+              apply (simp_all add: True)[3]
+              apply (erule below_trans[OF _ join_above2, rotated])
+              apply (rule cont2monofunE[OF _ inner_refine])
+              apply (intro cont2cont ESem_cont)
+              done
+            thus ?thesis
+              apply (subst lookup_fmap_expand1)
+              apply simp
+              apply (simp add: True)
+              apply (simp add: True)
+              apply (subst the_lookup_join[OF compatR1R2[OF there]])
+              apply (insert the_lookup_compatible[OF compatR1R2[OF there], of x'])
+              apply (simp add: True False)
+              done
+          next
+          case False
+            show ?thesis
+            apply (subst lookup_fmap_expand2)
+            apply simp
+            apply fact
+            apply (simp add: False `x' \<noteq> x`)
+            apply simp
+            done
+          qed
+        qed
+      qed
+      hence belowL2: "?L2 \<rho>' \<sqsubseteq> ?R \<rho>'"
+        apply (subst join_assoc[symmetric, OF compatR1R2[OF there] compatR1R2R3[OF there] compatR2R3[OF there]])
+        apply (erule below_trans[OF _ join_above1[OF compatR1R2R3'[OF there]]])
+        done
+  
+      show "?L \<rho>' \<sqsubseteq> ?R \<rho>'"
+        apply (rule join_below[OF compatL[OF there]])
+        apply (rule belowL1)
+        apply (rule belowL2)
+        done
+    qed
+  
+    show "fix_on ?S ?R \<sqsubseteq> fix_on ?S ?L"
+      unfolding bottom_of_fjc
+      by (rule R_there[unfolded fjc_iff, unfolded bottom_of_fjc])
+  qed
+  *)
+
   subsubsection {* Substitution *}
   
   lemma HSem_subst_expr_below:
@@ -1077,6 +1263,72 @@ subsubsection {* Binding more variables increases knowledge *}
       }
       ultimately show ?case using goal2 by auto
     qed
+  qed
+
+subsubsection {* Adding a fresh variable to a heap does not affect its semantics *} 
+
+  lemma HSem_add_fresh':
+    assumes cond1: "HSem_cond' \<Gamma> \<rho>"
+    assumes cond2: "HSem_cond' ((x,e) # \<Gamma>) \<rho>"
+    assumes fresh: "atom x \<sharp> (\<rho>,\<Gamma>)"
+    assumes step: "\<And>e \<rho>'. fdom \<rho>' = fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>) \<Longrightarrow> e \<in> snd ` set \<Gamma> \<Longrightarrow> ESem e \<rho>' = ESem e (fmap_restr (fdom \<rho>' - {x}) \<rho>')"
+    shows  "fmap_restr (fdom \<rho> \<union> heapVars \<Gamma>) (HSem ((x, e) # \<Gamma>) \<rho>) = HSem \<Gamma> \<rho>"
+  proof (rule parallel_HSem_ind[OF cond1 cond2])
+  case goal1 show ?case by (auto intro:adm_is_adm_on)
+  case goal2 show ?case by (auto)[1]
+  case goal3
+    have "fmap_restr (fdom \<rho> \<union> heapVars \<Gamma>) (\<rho>\<^bsub>[fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>)]\<^esub>) = \<rho>\<^bsub>[fdom \<rho> \<union> heapVars \<Gamma>]\<^esub>"
+      apply (subst fmap_restr_fmap_expand2)
+      by auto
+    moreover
+  
+    have "x \<notin> fdom \<rho> \<union> heapVars \<Gamma>"
+      using fresh
+      apply (auto simp add: sharp_Env fresh_Pair)
+      by (metis heapVars_not_fresh)
+    hence [simp]:"fdom z - {x} = fdom \<rho> \<union> heapVars \<Gamma>"
+      using fdom_fix_join_compat[OF fix_on_cond_fjc[OF cond2] goal3(2)]
+      by auto
+  
+    have "fmap_restr (fdom \<rho> \<union> heapVars \<Gamma>) (heapToEnv ((x, e) # \<Gamma>) (\<lambda>e. ESem e z)\<^bsub>[fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>)]\<^esub>)
+      =  heapToEnv \<Gamma> (\<lambda>e. ESem e y)\<^bsub>[fdom \<rho> \<union> heapVars \<Gamma>]\<^esub> "
+      apply (subst fmap_restr_fmap_expand2)
+        apply simp
+        apply auto[1]
+      apply (subst heapToEnv_remove_Cons_fmap_expand[OF _ `x \<notin> fdom \<rho> \<union> heapVars \<Gamma>`])
+        apply simp
+      apply (rule arg_cong[OF heapToEnv_cong[OF refl]])
+      apply (subst step)
+      using fdom_fix_join_compat[OF fix_on_cond_fjc[OF cond2] goal3(2)] apply simp
+      apply assumption
+      using `_ = y`[symmetric]
+      apply simp
+      done
+    ultimately
+    show ?case
+      apply (subst fmap_restr_join[OF _ rho_F_compat_fjc[OF cond2 `z \<in> _`]])
+      by simp+
+  qed
+
+  lemma HSem_add_fresh:
+    assumes cond1: "HSem_cond' \<Gamma> \<rho>"
+    assumes cond2: "HSem_cond' ((x,e) # \<Gamma>) \<rho>"
+    assumes fresh: "atom x \<sharp> (\<rho>, \<Gamma>)"
+    shows  "fmap_restr (fdom \<rho> \<union> heapVars \<Gamma>) (\<lbrace>(x, e) # \<Gamma>\<rbrace>\<rho>) = \<lbrace>\<Gamma>\<rbrace>\<rho>"
+  proof(rule HSem_add_fresh'[OF assms])
+  case (goal1 e \<rho>')
+    assume "e \<in> snd ` set \<Gamma>"
+    hence "atom x \<sharp> e"
+      apply auto
+      by (metis fresh fresh_PairD(2) fresh_list_elem)
+  
+    assume "fdom \<rho>' = fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>)"
+    hence [simp]:"fdom \<rho>' - fdom \<rho>' \<inter> (fdom \<rho>' - {x}) = {x}" by auto
+  
+    show ?case
+      apply (rule ESem_ignores_fresh[symmetric, OF fmap_restr_less])
+      apply (simp add: fresh_star_def)
+      using `atom x \<sharp> e`.
   qed
 
 end

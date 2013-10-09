@@ -545,7 +545,7 @@ proof(rule chainI)
 qed
 
 
-lemma fmap_lookup_bot_cont:
+lemma fmap_lookup_bot_cont':
   assumes "chain (Y :: nat \<Rightarrow> 'a f\<rightharpoonup> 'b::pcpo)"
   shows "(\<Squnion> i. Y i) f!\<^sub>\<bottom> x = (\<Squnion> i. (Y i) f!\<^sub>\<bottom> x)"
 proof(cases "x \<in> fdom (Y 0)")
@@ -573,8 +573,12 @@ proof (rule cont_compose[OF _ `cont f`], rule contI)
   fix Y :: "nat \<Rightarrow> 'b::type f\<rightharpoonup> 'c::pcpo"
   assume "chain Y"
   show "range (\<lambda>i. (Y i) f!\<^sub>\<bottom> x) <<| ((\<Squnion> i. Y i) f!\<^sub>\<bottom> x)"
-    by (subst fmap_lookup_bot_cont[OF `chain Y`], rule cpo_lubI[OF fmap_lookup_bot_chain[OF `chain Y`]])
+    by (subst fmap_lookup_bot_cont'[OF `chain Y`], rule cpo_lubI[OF fmap_lookup_bot_chain[OF `chain Y`]])
 qed
+
+lemma fmap_lookup_bot_cont:
+  "cont (op f!\<^sub>\<bottom>)"
+  by (rule cont2cont_lambda[OF cont2cont_fmap_lookup_bot[OF cont_id]])
 
 
 subsubsection {* Expanding the domain of finite maps *}

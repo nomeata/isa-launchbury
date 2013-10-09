@@ -75,7 +75,7 @@ case (ACons v e as Y0 Y)
   show ?case by (auto dest!: set_mp[OF set_delete_subset])
 qed
 
-interpretation has_cont_ESem CESem
+interpretation Foo?: has_cont_ESem CESem
   apply default
   using CESem_cont'[OF refl]
   by (rule contI)

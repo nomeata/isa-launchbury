@@ -17,11 +17,11 @@ definition Cinf ("C\<^sup>\<infinity>") where "C\<^sup>\<infinity> = fix\<cdot>C
 
 abbreviation Cpow ("C\<^bsup>_\<^esup>") where "C\<^bsup>n\<^esup> \<equiv> iterate n\<cdot>C\<cdot>\<bottom>"
 
+lemma case_of_C_below: "(case r of C\<cdot>_ \<Rightarrow> x) \<sqsubseteq> x"
+  by (cases r) auto
+
 lemma C_case_below: "C_case \<cdot> f \<sqsubseteq> f"
-  apply (rule cfun_belowI)
-  apply (case_tac x)
-  apply (auto intro:monofun_cfun_arg below_C)
-  done
+  by (metis cfun_belowI C.case_rews(2) below_C monofun_cfun_arg)
 
 lemma C_case_Cinf[simp]: "C_case \<cdot> f \<cdot> C\<^sup>\<infinity> = f \<cdot> C\<^sup>\<infinity>"
   unfolding Cinf_def

@@ -39,13 +39,13 @@ case (Let as e Y0 Y)
   have conts: "\<forall>e\<in>snd ` set (asToHeap as). cont (ESem e)" using Let.hyps(2) by metis
   have "cont (ESem e)" using Let.hyps(3) by (rule contI, auto)
 
-  have chain: "chain (\<lambda>i. HSem (asToHeap as) (Y i))"
+  have chain: "chain (\<lambda>i. UHSem (asToHeap as) (Y i))"
     apply (rule chainI)
-    apply (rule HSem_monofun''[OF Let.hyps(2)  chainE[OF `chain Y`]])
+    apply (rule UHSem_monofun''[OF Let.hyps(2)  chainE[OF `chain Y`]])
     by assumption
 
-  have "(\<Squnion> i. HSem (asToHeap as) (Y i)) = HSem (asToHeap as) (Lub Y)"
-    apply (rule HSem_cont''[OF Let.hyps(2) `chain Y`, symmetric])
+  have "(\<Squnion> i. UHSem (asToHeap as) (Y i)) = UHSem (asToHeap as) (Lub Y)"
+    apply (rule UHSem_cont''[OF Let.hyps(2) `chain Y`, symmetric])
     by assumption
   thus ?case
     apply simp
@@ -66,7 +66,7 @@ interpretation has_cont_ESem ESem
 
 lemmas ESem_cont2cont[simp,cont2cont] = cont_compose[OF ESem_cont]
 
-abbreviation HSem_syn ("\<lbrace>_\<rbrace>_"  [60,60] 60) where "\<lbrace>\<Gamma>\<rbrace>\<rho> \<equiv> HSem \<Gamma> \<rho>"
+abbreviation HSem_syn ("\<lbrace>_\<rbrace>_"  [60,60] 60) where "\<lbrace>\<Gamma>\<rbrace>\<rho> \<equiv> UHSem \<Gamma> \<rho>"
 
 abbreviation HSem_fempty  ("\<lbrace>_\<rbrace>"  [60] 60) where "\<lbrace>\<Gamma>\<rbrace> \<equiv> \<lbrace>\<Gamma>\<rbrace>fempty"
 
@@ -126,7 +126,7 @@ case (Let as e \<rho>1 \<rho>2)
   have "fdom \<rho>1 \<subseteq> fdom \<rho>2" by (metis Let(5) fmap_less_fdom)
 
   have "\<lbrace>asToHeap as\<rbrace>\<rho>1 \<le> \<lbrace>asToHeap as\<rbrace>\<rho>2"
-  proof (rule parallel_HSem_ind)
+  proof (rule parallel_UHSem_ind)
   case goal1 show ?case by simp
   case goal2
     show ?case
@@ -213,13 +213,13 @@ case (Let as exp \<rho> x y)
   from `\<rho> f!\<^sub>\<bottom> x = \<rho> f!\<^sub>\<bottom> y`
   have "\<lbrace>asToHeap as\<rbrace>\<rho> f!\<^sub>\<bottom> x = \<lbrace>asToHeap as\<rbrace>\<rho> f!\<^sub>\<bottom> y"
     using `x \<notin> heapVars (asToHeap as)` `y \<notin> heapVars (asToHeap as)`
-    by (simp add: fmap_lookup_bot_HSem_other)
+    by (simp add: fmap_lookup_bot_UHSem_other)
   hence "\<lbrakk>exp\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub> = \<lbrakk>exp[x::=y]\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub>"
     by (rule Let)
   moreover
   from `\<rho> f!\<^sub>\<bottom> x = \<rho> f!\<^sub>\<bottom> y` `x \<notin> heapVars (asToHeap as)` `y \<notin> heapVars (asToHeap as)`
   have "\<lbrace>asToHeap as\<rbrace>\<rho> = \<lbrace>asToHeap as[x::a=y]\<rbrace>\<rho>" and "\<lbrace>asToHeap as\<rbrace>\<rho> f!\<^sub>\<bottom> x = \<lbrace>asToHeap as[x::a=y]\<rbrace>\<rho> f!\<^sub>\<bottom> y"
-    by (induction rule: parallel_HSem_ind) (auto dest: Let(4))
+    by (induction rule: parallel_UHSem_ind) (auto dest: Let(4))
   ultimately
   show ?case using Let(1-3) by (simp add: fresh_star_Pair)
 next
@@ -256,10 +256,10 @@ qed
 
 subsubsection {* Binding more variables increases knowledge *}
 
-lemma HSem_subset_below:
+lemma UHSem_subset_below:
   assumes fresh: "atom ` heapVars \<Gamma> \<sharp>* (\<Delta>, \<rho>)" 
   shows "(\<lbrace>\<Delta>\<rbrace>\<rho>)\<^bsub>[fdom \<rho> \<union> heapVars \<Delta> \<union> heapVars \<Gamma>]\<^esub> \<sqsubseteq> \<lbrace>\<Delta>@\<Gamma>\<rbrace>\<rho>"
-proof (rule HSem_ind) back
+proof (rule UHSem_ind) back
 case goal1 show ?case by (auto intro!: adm_is_adm_on adm_subst[OF fmap_expand_cont])
 next
 case goal2 show ?case by (auto simp add: to_bot_fmap_def)
@@ -296,7 +296,7 @@ case (goal3 x)
     proof (cases "y \<in> heapVars \<Delta>")
     case True
       thus ?thesis
-        by (subst HSem_eq, auto intro: e_less[OF the_map_of_snd] simp add: dom_map_of_conv_heapVars lookupHeapToEnv map_add_dom_app_simps)
+        by (subst UHSem_eq, auto intro: e_less[OF the_map_of_snd] simp add: dom_map_of_conv_heapVars lookupHeapToEnv map_add_dom_app_simps)
     next
     case False
       moreover
@@ -304,14 +304,14 @@ case (goal3 x)
       have "y \<notin> heapVars \<Gamma>" by auto
       ultimately
       show ?thesis
-        by (subst HSem_eq, simp)
+        by (subst UHSem_eq, simp)
     qed
   qed
 qed
 
 subsubsection {* Additional, fresh bindings in one or two steps *}
 
-lemma HSem_merge:
+lemma UHSem_merge:
   assumes fresh: "atom ` heapVars \<Gamma> \<sharp>* (\<Delta>, \<rho>)"
   shows "\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho> = \<lbrace>\<Gamma>@\<Delta>\<rbrace>\<rho>"
 proof(rule below_antisym)
@@ -338,27 +338,27 @@ proof(rule below_antisym)
   qed
 
   show "\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho> \<sqsubseteq> \<lbrace>\<Gamma>@\<Delta>\<rbrace>\<rho>"
-  proof(rule HSem_below)
+  proof(rule UHSem_below)
   case goal1 show ?case by (auto simp add: adm_is_adm_on)
   next
   case (goal2 x)
     with fmap_belowE[OF HSem_subset_below[OF fresh], where x = x]
     have "\<lbrace>\<Delta>\<rbrace>\<rho> f! x \<sqsubseteq> \<lbrace>\<Delta> @ \<Gamma>\<rbrace>\<rho> f! x" by auto
     also have "\<lbrace>\<Delta> @ \<Gamma>\<rbrace>\<rho> = \<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>"
-      by (rule HSem_reorder[OF map_of_eq])
+      by (rule UHSem_reorder[OF map_of_eq])
     finally show ?case.
   next
   case (goal3 x)
     thus ?case
-      by (auto simp add: the_lookup_HSem_heap map_add_dom_app_simps dom_map_of_conv_heapVars)
+      by (auto simp add: the_lookup_UHSem_heap map_add_dom_app_simps dom_map_of_conv_heapVars)
   qed
   
   show "\<lbrace>\<Gamma>@\<Delta>\<rbrace>\<rho> \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>"
-  proof(rule HSem_below)
+  proof(rule UHSem_below)
   case goal1 show ?case by (auto simp add: adm_is_adm_on)
   next
   case (goal2 x)
-    thus ?case by (simp add: the_lookup_HSem_other)
+    thus ?case by (simp add: the_lookup_UHSem_other)
   next
   case (goal3 x)
     {
@@ -366,7 +366,7 @@ proof(rule below_antisym)
       hence "the (map_of (\<Gamma>@\<Delta>) x) = the (map_of \<Gamma> x)" by (simp add: map_add_dom_app_simps dom_map_of_conv_image_fst dom_map_of_conv_heapVars[symmetric])
       also
       have "\<lbrakk> the (map_of \<Gamma> x) \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub> = \<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho> f! x"
-        by (rule the_lookup_HSem_heap[OF x, symmetric])
+        by (rule the_lookup_UHSem_heap[OF x, symmetric])
       finally have ?case by (rule eq_imp_below)
     } moreover {
       assume "x \<notin> heapVars \<Gamma>"
@@ -376,14 +376,14 @@ proof(rule below_antisym)
       hence "\<lbrakk> the (map_of \<Delta> x) \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub> = \<lbrakk> the (map_of \<Delta> x) \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>"
         apply -
         apply (rule ESem_ignores_fresh[symmetric])
-        apply (rule HSem_disjoint_less)
+        apply (rule UHSem_disjoint_less)
           using Gamma_fresh apply auto[1]
         using assms apply (simp add: fdoms fresh_star_map_of fresh_star_Pair)
         done
       also have "\<dots> = \<lbrace>\<Delta>\<rbrace>\<rho> f! x"
-        by (rule the_lookup_HSem_heap[OF  `x \<in> heapVars \<Delta>`, symmetric])
+        by (rule the_lookup_UHSem_heap[OF  `x \<in> heapVars \<Delta>`, symmetric])
       also have "\<dots> = \<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho> f! x"
-        by (rule the_lookup_HSem_other[OF `x \<notin> heapVars \<Gamma>`, symmetric])
+        by (rule the_lookup_UHSem_other[OF `x \<notin> heapVars \<Gamma>`, symmetric])
       finally have ?case by (rule eq_imp_below)
   } ultimately show ?case using goal3 by auto
   qed
@@ -391,7 +391,7 @@ qed
 
 subsubsection {* The semantics of let only adds new bindings *}
 
-lemma HSem_less:
+lemma UHSem_less:
   assumes fresh: "atom ` heapVars \<Gamma> \<sharp>* (\<Delta>, \<rho>)"
   shows "\<lbrace>\<Delta>\<rbrace>\<rho> \<le> \<lbrace>\<Gamma>@\<Delta>\<rbrace>\<rho>"
 proof-
@@ -399,9 +399,9 @@ proof-
     using fresh
     by (auto dest: fresh_heapVars_distinct simp add: sharp_star_Env' fresh_star_Pair)
   hence "\<lbrace>\<Delta>\<rbrace>\<rho> \<le> \<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>"
-    by (rule HSem_disjoint_less)
+    by (rule UHSem_disjoint_less)
   also have "\<dots> =  \<lbrace>\<Gamma>@\<Delta>\<rbrace>\<rho>"
-    by (rule HSem_merge[OF assms])
+    by (rule UHSem_merge[OF assms])
   finally
   show ?thesis.
 qed
