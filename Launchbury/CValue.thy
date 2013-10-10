@@ -31,6 +31,11 @@ lemma below_Cinf[simp]: "r \<sqsubseteq> C\<^sup>\<infinity>"
   apply (metis (full_types) C_Cinf monofun_cfun_arg)
   done
 
+lemma C_eq_Cinf[simp]: "C\<^bsup>i\<^esup> \<noteq> C\<^sup>\<infinity>"
+  by (metis C_below_C Suc_n_not_le_n below_Cinf)
+
+lemma Cinf_eq_C[simp]: "C\<^sup>\<infinity> = C \<cdot> r \<longleftrightarrow> C\<^sup>\<infinity> = r"
+  by (metis C.injects C_Cinf)
 
 lemma C_eq_C[simp]: "(C\<^bsup>i\<^esup> = C\<^bsup>j\<^esup>) \<longleftrightarrow> i = j"
   by (metis C_below_C le_antisym le_refl)

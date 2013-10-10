@@ -9,27 +9,37 @@ lemma VariableNoBH:
 sorry
 
 
-definition demand :: "CEnv => exp => nat option" where
-  "demand \<rho> e = (if (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>C\<^sup>\<infinity> \<noteq> \<bottom> then Some (LEAST n. (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>) else None)"
+definition demand :: "(C \<rightarrow> 'a::pcpo) \<Rightarrow> C" where
+  "demand f = (if f\<cdot>C\<^sup>\<infinity> \<noteq> \<bottom> then C\<^bsup>(LEAST n. f\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>)\<^esup> else C\<^sup>\<infinity>)"
 
 lemma finite_resources_suffice:
-  assumes "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>C\<^sup>\<infinity> \<noteq> \<bottom>"
-  obtains n where "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>"
-  sorry
+  assumes "f\<cdot>C\<^sup>\<infinity> \<noteq> \<bottom>"
+  obtains n where "f\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>"
+proof-
+  {
+  assume "\<forall>n. f\<cdot>(C\<^bsup>n\<^esup>) = \<bottom>"
+  hence "f\<cdot>C\<^sup>\<infinity> \<sqsubseteq> \<bottom>"
+    by (auto intro: lub_below[OF ch2ch_Rep_cfunR[OF chain_iterate]]
+             simp add: Cinf_def fix_def2 contlub_cfun_arg[OF chain_iterate])
+  with assms have False by simp
+  }
+  thus ?thesis using that by blast
+qed
+
 
 lemma more_resources_suffice:
-  assumes "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" and "n \<le> m"
-  shows "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>C\<^bsup>m\<^esup> \<noteq> \<bottom>"
-  sorry
+  assumes "f\<cdot>r \<noteq> \<bottom>" and "r \<sqsubseteq> r'"
+  shows "f\<cdot>r' \<noteq> \<bottom>"
+  using assms(1) monofun_cfun_arg[OF assms(2), where  f = f]
+  by auto
 
 lemma infinite_resources_suffice:
-  assumes "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>"
-  shows "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>C\<^sup>\<infinity> \<noteq> \<bottom>"
-  sorry
+  shows "f\<cdot>r \<noteq> \<bottom> \<Longrightarrow> f\<cdot>C\<^sup>\<infinity> \<noteq> \<bottom>"
+  by (erule more_resources_suffice[OF _ below_Cinf])
 
 lemma demand_suffices:
-  assumes "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>C\<^sup>\<infinity> \<noteq> \<bottom>"
-  shows "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>C\<^bsup>the (demand \<rho> e)\<^esup> \<noteq> \<bottom>"
+  assumes "f\<cdot>C\<^sup>\<infinity> \<noteq> \<bottom>"
+  shows "f\<cdot>(demand f) \<noteq> \<bottom>"
   apply (simp add: assms demand_def)
   apply (rule finite_resources_suffice[OF assms])
   apply (rule LeastI)
@@ -37,164 +47,139 @@ lemma demand_suffices:
   done
 
 lemma not_bot_demand:
-  "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom> \<longleftrightarrow> demand \<rho> e \<noteq> None \<and> n \<ge> the (demand \<rho> e)"
+  "f\<cdot>r \<noteq> \<bottom> \<longleftrightarrow> demand f \<noteq> C\<^sup>\<infinity> \<and> demand f \<sqsubseteq> r"
 proof(intro iffI)
-  assume "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>"
-  thus "demand \<rho> e \<noteq> None \<and> n \<ge> the (demand \<rho> e)"
-    by (auto intro: Least_le simp add: demand_def dest: infinite_resources_suffice)
+  assume "f\<cdot>r \<noteq> \<bottom>"
+  thus "demand f \<noteq> C\<^sup>\<infinity> \<and> demand f \<sqsubseteq> r"
+    apply (cases r rule:C_cases)
+    apply (auto intro: Least_le simp add: demand_def dest: infinite_resources_suffice)
+    done
 next
-  assume *: "demand \<rho> e \<noteq> None \<and> n \<ge> the (demand \<rho> e)"
-  then have "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>C\<^sup>\<infinity> \<noteq> \<bottom>"
-    by (auto intro: Least_le simp add: demand_def dest: infinite_resources_suffice)
-  hence "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>C\<^bsup>the (demand \<rho> e)\<^esup> \<noteq> \<bottom>" by (rule demand_suffices)
-  moreover from * have "n \<ge> the (demand \<rho> e)"..
+  assume *: "demand f \<noteq> C\<^sup>\<infinity>  \<and> demand f \<sqsubseteq> r"
+  then have "f\<cdot>C\<^sup>\<infinity> \<noteq> \<bottom>" by (auto intro: Least_le simp add: demand_def dest: infinite_resources_suffice)
+  hence "f\<cdot>(demand f) \<noteq> \<bottom>" by (rule demand_suffices)
+  moreover from * have "demand f \<sqsubseteq> r"..
   ultimately
-  show "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (rule more_resources_suffice)
+  show "f\<cdot>r \<noteq> \<bottom>" by (rule more_resources_suffice)
 qed
 
 lemma infinity_bot_demand:
-  "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>C\<^sup>\<infinity> = \<bottom> \<longleftrightarrow> demand \<rho> e = None"
-  by (metis demand_suffices infinite_resources_suffice nat_le_linear not_bot_demand)
+  "f\<cdot>C\<^sup>\<infinity> = \<bottom> \<longleftrightarrow> demand f = C\<^sup>\<infinity>"
+  by (metis below_Cinf not_bot_demand)
 
 lemma demand_suffices':
-  assumes "demand \<rho> e = Some n"
-  shows "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>"
-  by (metis assms not_bot_demand option.distinct(1) order_refl the.simps)
+  assumes "demand f = C\<^bsup>n\<^esup>"
+  shows "f\<cdot>(demand f) \<noteq> \<bottom>"
+  by (metis C_eq_Cinf assms demand_suffices infinity_bot_demand)
 
-lemma demand_not_0: "demand \<rho> e \<noteq> Some 0"
+lemma demand_not_0: "demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>) \<noteq> \<bottom>"
 proof
-  assume "demand \<rho> e = Some 0"
-  hence "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>C\<^bsup>0\<^esup> \<noteq> \<bottom>" by (rule demand_suffices')
+  assume "demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>) = \<bottom>"
+  hence "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>\<bottom> \<noteq> \<bottom>" by (metis demand_suffices' iterate_0)
   thus False by simp
 qed
 
 lemma demand_Suc_Least:
-  assumes "demand \<rho> e \<noteq> None"
-  shows "demand \<rho> e = Some (Suc (LEAST n. (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>C\<^bsup>Suc n\<^esup> \<noteq> \<bottom>))"
+  assumes [simp]: "f\<cdot>\<bottom> = \<bottom>"
+  assumes "demand f \<noteq> C\<^sup>\<infinity>"
+  shows "demand f = C\<^bsup>(Suc (LEAST n. f\<cdot>C\<^bsup>Suc n\<^esup> \<noteq> \<bottom>))\<^esup>"
 proof-
   from assms
-  have "demand \<rho> e = Some (LEAST n. (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>)" by (auto simp add: demand_def)
+  have "demand f = C\<^bsup>(LEAST n. f\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>)\<^esup>" by (auto simp add: demand_def)
   also
-  then obtain n where "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (metis  demand_suffices')
-  hence "(LEAST n. (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>) = Suc (LEAST n. (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>C\<^bsup>Suc n\<^esup> \<noteq> \<bottom>)"
-    by (rule Least_Suc) auto
+  then obtain n where "f\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (metis  demand_suffices')
+  hence "(LEAST n. f\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>) = Suc (LEAST n. f\<cdot>C\<^bsup>Suc n\<^esup> \<noteq> \<bottom>)"
+    apply (rule Least_Suc) by simp
+  finally show ?thesis.
+qed
+
+lemma demand_C_case[simp]: "demand (C_case\<cdot>f) = C \<cdot> (demand f)"
+proof(cases "demand (C_case\<cdot>f) = C\<^sup>\<infinity>")
+  case True
+  with assms
+  have "C_case\<cdot>f\<cdot>C\<^sup>\<infinity> = \<bottom>"
+    by (metis infinity_bot_demand)
+  with True
+  show ?thesis apply auto by (metis infinity_bot_demand)
+next
+  case False
+  hence "demand (C_case\<cdot>f) = C\<^bsup>Suc (LEAST n. (C_case\<cdot>f)\<cdot>C\<^bsup>Suc n\<^esup> \<noteq> \<bottom>)\<^esup>"
+    by (rule demand_Suc_Least[OF C.case_rews(1)])
+  also have "\<dots> = C\<cdot>C\<^bsup>LEAST n. f\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>\<^esup>" by simp
+  also have "\<dots> = C\<cdot>(demand  f)"
+    using False unfolding demand_def by auto
   finally show ?thesis.
 qed
 
 
 lemma demand_Var:
-  assumes "distinctVars \<Gamma>"
-  assumes "(x,e) \<in> set \<Gamma>"
-  shows "demand (\<N>\<lbrace>\<Gamma>\<rbrace>) (Var x) = Option.map Suc (demand (\<N>\<lbrace>\<Gamma>\<rbrace>) e)"
-proof(cases "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^sup>\<infinity> = \<bottom>")
-  case True
-  with assms
-  have "(\<N>\<lbrakk>Var x\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^sup>\<infinity> = \<bottom>"
-    by (simp add: distinctVars_map_of heapVars_from_set)
-  with True
-  show ?thesis unfolding infinity_bot_demand by simp
-next
-  case False
-  with assms
-  have *: "(\<N>\<lbrakk>Var x\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^sup>\<infinity> \<noteq> \<bottom>"
-    by (simp add: distinctVars_map_of heapVars_from_set)
-  hence "demand (\<N>\<lbrace>\<Gamma>\<rbrace>) (Var x) \<noteq> None" by (metis infinity_bot_demand)
-
-  have [simp]: "x \<in> heapVars \<Gamma>" by (metis assms(2) heapVars_from_set)
-  have [simp]: "map_of \<Gamma> x = Some e" by (metis assms distinctVars_map_of)
-
-  have "demand (\<N>\<lbrace>\<Gamma>\<rbrace>) (Var x) = Some (Suc (LEAST n. (\<N>\<lbrakk>Var x\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>Suc n\<^esup> \<noteq> \<bottom>))"
-    by (rule demand_Suc_Least[OF `demand (\<N>\<lbrace>\<Gamma>\<rbrace>) (Var x) \<noteq> None`])
-  also have "\<dots> = Some (Suc (LEAST n. (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>))" by simp
-  also have "\<dots> = Option.map Suc (demand (\<N>\<lbrace>\<Gamma>\<rbrace>) e)"
-    using False by (simp add: demand_def)
-  finally
-  show ?thesis.
-qed
+  shows "demand (\<N>\<lbrakk>Var x\<rbrakk>\<^bsub>\<rho>\<^esub>) = C\<cdot>(demand (\<rho> f!\<^sub>\<bottom> x))"
+  by (simp add: Rep_cfun_inverse)
 
 lemma demand_Var_there:
-  assumes "demand \<rho> (Var x) \<noteq> None"
+  assumes "demand (\<N>\<lbrakk>Var x\<rbrakk>\<^bsub>\<rho>\<^esub>) \<noteq> C\<^sup>\<infinity>"
   shows "x \<in> fdom \<rho>"
 proof-
   from assms obtain n where *: "(\<N>\<lbrakk>Var x\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>"
-    by (metis not_bot_demand order_refl)
+    by (metis finite_resources_suffice infinity_bot_demand)
   hence "n \<noteq> 0" by (auto intro: ccontr)
   from * not0_implies_Suc[OF this]
    show ?thesis by (auto intro: ccontr)
 qed
 
+lemma least_const_True[simp]: "(LEAST n. True) = (0::nat)"
+  by (metis gr0I not_less_Least)
+
 lemma demand_Lam:
-  assumes "atom x \<sharp> \<rho>"
-  shows "demand \<rho> (Lam [x]. e') = Some 1"
-proof-
-  from assms
-  have "(\<N>\<lbrakk>Lam [x]. e'\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>C\<^bsup>1\<^esup> \<noteq> \<bottom>" by simp
-  hence "demand \<rho> (Lam [x]. e') \<noteq> None" and "the (demand \<rho> (Lam [x]. e')) \<le> 1"
-    by (metis not_bot_demand)+
-  with demand_not_0[where \<rho> = \<rho> and e = "Lam [x]. e'"]
-  show ?thesis by auto
-qed
+  shows "demand (\<N>\<lbrakk>Lam [x]. e\<rbrakk>\<^bsub>\<rho>\<^esub>) = C\<cdot>\<bottom>"
+  apply (simp add: Rep_cfun_inverse)
+  apply (auto simp add: demand_def)
+  done
 
 lemma demand_App:
-  shows "demand \<rho> (App e x) = undefined"
-proof(cases "demand \<rho> (App e x) = None")
-  case False
-  hence "demand \<rho> (App e x) = Some (Suc (LEAST n. (\<N>\<lbrakk>App e x\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>C\<^bsup>Suc n\<^esup> \<noteq> \<bottom>))" by (rule demand_Suc_Least)
-  also have "\<dots> = Some (Suc (LEAST n. ((\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn (\<rho> f!\<^sub>\<bottom> x))\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>))" by simp
-  oops
-
+  shows "demand (\<N>\<lbrakk>App e x\<rbrakk>\<^bsub>\<rho>\<^esub>) = C \<cdot> (demand (\<Lambda> r. ((\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r \<down>CFn (\<rho> f!\<^sub>\<bottom> x))\<cdot>r))"
+  by simp
 
 lemma
-  assumes "n < the (demand \<rho> (Var x))"
-  assumes "demand \<rho> e = Some n"
-  shows higher_demand_ignore: "demand \<rho> e = demand (fmap_delete x \<rho>) e"
+  assumes "C\<^bsup>n\<^esup> \<sqsubseteq> demand (\<rho> f!\<^sub>\<bottom> x)"
+  assumes "demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>) = C\<^bsup>n\<^esup>"
+  shows higher_demand_ignore: "demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>) = demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>fmap_delete x \<rho>\<^esub>)"
 using assms
 proof(induction n arbitrary: \<rho> e)
   case 0
-  from `demand \<rho> e = Some 0`
-  have False by (metis demand_not_0)
+  from `demand _ = C\<^bsup>0\<^esup>`
+  have False by (metis demand_not_0 iterate_0)
   thus ?case..
 next
   case (Suc n)
-  note d = `distinctVars \<Gamma>`
-  have "n < the (demand \<Gamma> (Var x))" using Suc(3) by simp
-  note prems = d this
+  have prem: "C\<^bsup>n\<^esup> \<sqsubseteq> demand (\<rho> f!\<^sub>\<bottom> x)"
+    by (auto intro: below_trans[OF _ Suc(2)] simp add: below_C)
 
   show ?case
-  proof(cases e rule:exp_assn.strong_exhaust(1)[where c= \<Gamma>, case_names Var App Let Lam])
+  proof(cases e rule:exp_assn.strong_exhaust(1)[where c= \<rho>, case_names Var App Let Lam])
     case (Var v)
-    note d2 = distinctVars_delete[OF d]
+    from Suc(2,3)[unfolded Var]
+    have "v \<noteq> x" apply (auto simp add:Rep_cfun_inverse)
+      by (metis C_below_C Suc.prems(1) Suc_n_not_le_n)
 
-    from Suc(3,4)[unfolded Var]
-    have "v \<noteq> x" by auto
+    from Suc(3)[unfolded Var]
+    have [simp]: "v \<in> fdom \<rho>" by (auto intro: demand_Var_there simp del: iterate_Suc)
 
-    from Suc(4)[unfolded Var]
-    have [simp]: "v \<in> heapVars \<Gamma>" by (auto intro: demand_Var_there)
-    then obtain e' where e': "(v,e') \<in> set \<Gamma>" by (auto simp add: heapVars_def)
-    with `v \<noteq> x` have e'': "(v, e') \<in> set (delete x \<Gamma>)" by (metis d distinctVars_map_of map_of_SomeD map_of_delete)
-
-    from Suc.prems(3)
-    have "demand \<Gamma> e' = Some n"  unfolding Var demand_Var[OF d e'] by simp
-    hence "demand \<Gamma> e' = demand (delete x \<Gamma>) e'"
-      by (rule Suc.IH[OF prems])
-    thus ?thesis
-      unfolding Var demand_Var[OF d e']  demand_Var[OF d2 e'']
-      by simp
+    from Suc.prems(2)
+    have "demand (\<rho> f!\<^sub>\<bottom> v) = C\<^bsup>n\<^esup>"  unfolding Var demand_Var by simp
+    hence "demand (\<rho> f!\<^sub>\<bottom> v) = demand (fmap_delete x \<rho> f!\<^sub>\<bottom> v) " using `v \<noteq> x` by simp
+    thus ?thesis unfolding Var demand_Var  by simp
   next
     case (Lam v e')
-    hence "atom v \<sharp> \<Gamma>" by (simp add: fresh_star_def)
-    moreover
-    hence "atom v \<sharp> delete x \<Gamma>" by (rule fresh_delete)
-    ultimately
-    show ?thesis
-      unfolding Lam by (simp only: demand_Lam)
+    show ?thesis unfolding Lam by (simp only: demand_Lam)
   next
-    case (Let e' v)
+    case (App e' v)
+    note Suc(3)[unfolded App]
+
     show ?thesis
-    
-    
-    
-  
+      unfolding App
+      apply simp
+      oops
 
   
 
@@ -207,12 +192,13 @@ proof-
   from assms
   have "(\<N>\<lbrakk>Var x\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>Suc n\<^esup> \<noteq> \<bottom>"
     by (simp add: distinctVars_map_of heapVars_from_set)
-  hence "demand \<Gamma> (Var x) \<noteq> None"  unfolding not_bot_demand by auto
+  hence "demand (\<N>\<lbrakk>Var x\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>) \<noteq> None"  unfolding not_bot_demand by auto
 
-  from `demand \<Gamma> (Var x) \<noteq> None` demand_Var[OF assms(1,2)]
-  have "the (demand \<Gamma> (Var x)) = Suc (the (demand \<Gamma> e))" by auto
-  hence "the (demand \<Gamma> e) < the (demand \<Gamma> (Var x))" by simp
-  hence "demand \<Gamma> e = demand (delete x \<Gamma>) e" sorry
+  from `demand (\<N>\<lbrakk>Var x\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>) \<noteq> None` 
+  have "the (demand (\<N>\<lbrakk>Var x\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)) = Suc (the (demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)))"
+    unfolding demand_Var using assms by (auto simp add: distinctVars_map_of heapVars_from_set)
+  hence "the (demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)) < the (demand (\<N>\<lbrakk>Var x\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>))" by simp
+  hence "demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>) = demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)" sorry
   with assms(3)
   show ?thesis unfolding not_bot_demand by simp
 qed
@@ -239,7 +225,7 @@ next
     moreover
     from Suc.prems[unfolded Var] `(x, ?e) \<in> set \<Gamma>` `x \<in> heapVars \<Gamma>`
     have "(\<N>\<lbrakk>?e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by auto
-    hence "(\<N>\<lbrakk>?e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (rule add_BH)
+    hence "(\<N>\<lbrakk>?e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (rule add_BH[OF `distinctVars \<Gamma>` `(x, ?e) \<in> set \<Gamma>`])
     from Suc.IH[OF this distinctVars_delete[OF Suc.prems(2)]]
     obtain \<Delta> v where "delete x \<Gamma> : ?e \<Down>\<^bsub>x # S\<^esub> \<Delta> : v" by blast
     ultimately
@@ -275,7 +261,7 @@ next
       by (intro monofun_cfun_arg monofun_cfun_fun fun_belowD[OF correct2])
     also have "\<dots> = (\<N>\<lbrakk>e''\<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>)(y f\<mapsto> (\<N>\<lbrace>\<Delta>\<rbrace> f!\<^sub>\<bottom> x))\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
       using lam_not_bot `y \<notin> heapVars \<Delta>`
-      by (simp add: sharp_Env del: CESem.simps)
+      by (simp add: sharp_Env del: CESem.simps CESem_Lam)
     also have "\<dots> = (\<N>\<lbrakk>e''[y::=x]\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
       apply (rule arg_cong[OF CESem_subst])
       using `atom y \<sharp> _` by (simp_all add: fresh_Pair fresh_at_base)
@@ -307,8 +293,10 @@ next
     finally 
     have "(\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>asToHeap as @ \<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>".
     }
-    from Suc.IH[OF this]
-    obtain \<Delta> v where "asToHeap as @ \<Gamma> : e' \<Down>\<^bsub>S\<^esub> \<Delta> : v" by blast
+    moreover
+    have "distinctVars (asToHeap as @ \<Gamma>)" by (metis Let(1) Suc.prems(2) distinctVars_append_asToHeap fresh_star_Pair)
+    ultimately
+    obtain \<Delta> v where "asToHeap as @ \<Gamma> : e' \<Down>\<^bsub>S\<^esub> \<Delta> : v" using Suc.IH by blast
     hence "\<Gamma> : Let as e' \<Down>\<^bsub>S\<^esub> \<Delta> : v"
       by (rule reds.Let[OF Let(1)])
     thus ?thesis using Let by auto
