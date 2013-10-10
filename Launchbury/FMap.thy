@@ -218,6 +218,12 @@ subsubsection {* Addition (merging) of finite maps *}
 lift_definition fmap_add :: "'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b" (infixl "f++" 100) 
   is "map_add" by auto
 
+lemma fmap_add_fempty[simp]: "f\<emptyset> f++ m = m" 
+  by (transfer, simp)
+
+lemma fmap_add_fempty2[simp]: "m f++ f\<emptyset>= m" 
+  by (transfer, simp)
+
 lemma fdom_fmap_add[simp]: "fdom (m1 f++ m2) = fdom m1 \<union> fdom m2"
   by (transfer, auto)
 
@@ -415,6 +421,10 @@ lemma fmap_less_restrict:
 
 lemma fmap_restr_less:
   "fmap_restr S \<rho> \<le> \<rho>"
+  unfolding less_eq_fmap_def
+  by (transfer, auto)
+
+lemma fmap_delete_less: "fmap_delete x \<rho> \<le> \<rho>"
   unfolding less_eq_fmap_def
   by (transfer, auto)
 
