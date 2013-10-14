@@ -1,5 +1,5 @@
 theory LaunchburyCombined
-imports Terms Heap "FMap-Heap" "FMap-Nominal"
+imports Terms Heap "FMap-Heap" "FMap-Nominal" Flag
 begin
 
 lemma fdom_fmap_of_conv_heapVars: "fdom (fmap_of (asToHeap as)) = heapVars (asToHeap as)"
@@ -15,17 +15,6 @@ lemma fresh_star_list_distinct:  "atom ` (S::var set) \<sharp>* (l::var list) \<
   by (auto simp add: fresh_star_def set_not_fresh fresh_at_base_list dest:bspec)
 
 subsubsection {* The natural semantics, all variants at once*}
-
-datatype Flag = FlagSet ("\<surd>") | FlagNotSet ("\<times>")
-
-instantiation  Flag :: pure
-begin
-  definition "p \<bullet> (v::Flag) = v"
-instance
-  apply default
-  apply (auto simp add: permute_Flag_def)
-  done
-end
 
 inductive
   reds :: "Heap \<Rightarrow> exp \<Rightarrow> Flag \<Rightarrow> Flag \<Rightarrow> var list \<Rightarrow> Heap \<Rightarrow> exp \<Rightarrow> bool"
@@ -346,6 +335,5 @@ case (Let as \<Gamma>  L body \<Delta> z L')
     by (rule reds.Let[OF _  Let.hyps(4)[OF Let.prems]])
 qed
 
-unused_thms
 end
 

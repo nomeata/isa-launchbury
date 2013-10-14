@@ -1,20 +1,9 @@
 theory LaunchburyCombinedTaggedMap
-imports Terms Heap "FMap-Heap" "FMap-Nominal"
+imports Terms Heap "FMap-Heap" "FMap-Nominal" Flag
 begin
 
 lemma fdom_fmap_of_conv_heapVars: "fdom (fmap_of (asToHeap as)) = heapVars (asToHeap as)"
   by (metis dom_map_of_conv_heapVars fdom.rep_eq fmap_of.rep_eq)
-
-datatype Flag = FlagSet ("\<surd>") | FlagNotSet ("\<times>")
-
-instantiation  Flag :: pure
-begin
-  definition "p \<bullet> (v::Flag) = v"
-instance
-  apply default
-  apply (auto simp add: permute_Flag_def)
-  done
-end
 
 inductive reds :: "Heap \<Rightarrow> Flag \<Rightarrow> Flag \<Rightarrow> Flag \<Rightarrow> var list \<Rightarrow> Heap \<Rightarrow> bool" ("_/ \<Down>\<^sup>_\<^sup>_\<^sup>_\<^bsub>_\<^esub>/ _" [50,50,50,50,50] 50)
 where
@@ -29,7 +18,7 @@ where
       x \<notin> fdom \<Gamma>;
       lookup \<Delta> n = Some (Lam [z]. e');
       \<Gamma> (x f\<mapsto> App (Var n) y) (n f\<mapsto> e ) \<Down>\<^sup>\<times>\<^sup>u\<^sup>b\<^bsub>n#x#S\<^esub> \<Delta>;
-      \<Delta> (x f\<mapsto> e'[z ::= y]) \<Down>\<^sup>\<times>\<^sup>u\<^sup>b\<^bsub>x#S\<^esub> \<Theta>
+      (fmap_delete n \<Delta>) (x f\<mapsto> e'[z ::= y]) \<Down>\<^sup>\<times>\<^sup>u\<^sup>b\<^bsub>x#S\<^esub> \<Theta>
     \<rbrakk> \<Longrightarrow>
       \<Gamma> ( x f\<mapsto> App e y) \<Down>\<^sup>\<times>\<^sup>u\<^sup>b\<^bsub>x#S\<^esub> \<Theta>" 
  | ApplicationInd: "\<lbrakk>
@@ -96,7 +85,7 @@ lemma reds_ApplicationI:
   assumes "x \<notin> fdom \<Gamma>"
   assumes "lookup \<Delta> n = Some (Lam [z]. e')"
   assumes "\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e) \<Down>\<^sup>\<times>\<^sup>u\<^sup>b\<^bsub>n # x # S\<^esub> \<Delta>"
-  assumes "\<Delta>(x f\<mapsto> e'[z::=y]) \<Down>\<^sup>\<times>\<^sup>u\<^sup>b\<^bsub>x # S\<^esub> \<Theta>"
+  assumes "(fmap_delete n \<Delta>)(x f\<mapsto> e'[z::=y]) \<Down>\<^sup>\<times>\<^sup>u\<^sup>b\<^bsub>x # S\<^esub> \<Theta>"
   shows "\<Gamma>(x f\<mapsto> App e y) \<Down>\<^sup>\<times>\<^sup>u\<^sup>b\<^bsub>x # S\<^esub> \<Theta>"
 proof-
   obtain z' :: var where "atom z' \<sharp> (\<Gamma>, x, e, y, S, \<Delta>, \<Theta>, z, e')" by (rule obtain_fresh)
@@ -187,7 +176,7 @@ lemma stack_unchanged:
 using assms
  apply (induct \<Gamma> i u \<surd> S \<Delta> arbitrary: x rule:reds.induct)
  apply (auto simp add: fresh_Pair fresh_star_Pair set_bn_to_atom_fdom fresh_star_list_distinct fresh_at_base_list)
- apply (metis lookup_fmap_upd_other)
+ apply (metis lookup_fmap_delete lookup_fmap_upd_eq)
  apply (metis lookup_fmap_upd_other)
  apply (metis lookup_fmap_upd_other)
  apply (metis Int_iff empty_iff lookup_fmap_add2 lookup_fmap_upd_other)
@@ -236,6 +225,16 @@ next
     show ?case by (auto simp add: fresh_star_Pair fresh_star_take)
 qed
 
+text {*
+Variables only on the stack stay fresh.
+*}
+
+lemma stack_stays_fresh:
+  "\<lbrakk> \<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>S\<^esub> \<Delta>;
+   x \<in> set S;
+   atom (x::var) \<sharp> (\<Gamma> f|` (- set S), \<Gamma> f! hd S)
+  \<rbrakk> \<Longrightarrow> atom (x::var) \<sharp> (\<Delta> f|` (- set S), \<Delta> f! hd S)"
+oops
 
 text {* 
 Fresh variables either stay fresh or are added to the heap.
@@ -254,7 +253,7 @@ case (Application n \<Gamma> x e y S z \<Delta> \<Theta> e' u b x')
     hence "x' \<in> fdom (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e))" by simp
     with reds_doesnt_forget[OF Application(16)]
     have "x' \<in> fdom \<Delta>" by auto
-    hence "x' \<in> fdom (\<Delta>(x f\<mapsto> e'[z::=y]))" by simp
+    hence "x' \<in> fdom ((fmap_delete n \<Delta>)(x f\<mapsto> e'[z::=y]))" sorry
     with reds_doesnt_forget[OF Application(18)]
     have "x' \<in> fdom \<Theta>" by auto
     thus ?thesis..
@@ -269,13 +268,13 @@ case (Application n \<Gamma> x e y S z \<Delta> \<Theta> e' u b x')
       from this `lookup \<Delta> n = Some (Lam [z]. e')`
       have "atom x' \<sharp> Lam [z]. e'" by (rule fresh_lookup)
       with `atom x' \<sharp> \<Delta>` `atom x' \<sharp> \<Gamma>(x f\<mapsto> App e y)`
-      have "atom x' \<sharp> \<Delta>(x f\<mapsto> e'[z::=y])"
-        by (auto simp add: subst_pres_fresh  fresh_fmap_upd_eq fresh_fmap_delete_subset)
+      have "atom x' \<sharp> (fmap_delete n \<Delta>)(x f\<mapsto> e'[z::=y])"
+        by (auto simp add: subst_pres_fresh fresh_fmap_upd_eq fresh_fmap_delete_subset)
       from Application.hyps(19)[OF this]
       show ?thesis.
     next
       assume "x' \<in> fdom \<Delta>"
-      hence "x' \<in> fdom (\<Delta>(x f\<mapsto> e'[z::=y]))" by simp
+      hence "x' \<in> fdom ((fmap_delete n \<Delta>)(x f\<mapsto> e'[z::=y]))" using False by simp
       with reds_doesnt_forget[OF Application(18)]
       have "x' \<in> fdom \<Theta>" by auto
       thus ?thesis..
@@ -360,7 +359,8 @@ case (Let as \<Gamma> x S body i u b \<Delta> x')
     from Let(6)[OF this]
     show ?thesis.
   qed
-qed
+(* qed *)
+oops
 
 end
 

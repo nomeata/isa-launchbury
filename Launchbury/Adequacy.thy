@@ -2,12 +2,22 @@ theory Adequacy
 imports "Resourced-Denotational-Props" "Launchbury" "DistinctVars" "CorrectnessResourced"
 begin
 
+(*
+fixrec restr :: "CValue \<rightarrow> C \<rightarrow> CValue"
+  where "restr\<cdot>f\<cdot>r\<cdot>r' = f\<cdot>(r \<sqinter> r')" 
+
+consts resource_preserving :: "CValue' \<Rightarrow> bool"
+
+lemma resource_preservingD:
+  "resource_preserving (CFn\<cdot>f) \<Longrightarrow> (f\<cdot>x\<cdot>r = f\<cdot>(restr\<cdot>x\<cdot>r)\<cdot>r)"
+  sorry
+*)
+
 lemma VariableNoBH:
   assumes "(x, e) \<in> set \<Gamma>"
   assumes "\<Gamma> : e \<Down>\<^bsub>x # L\<^esub> \<Delta> : z"
   shows "\<Gamma> : Var x \<Down>\<^bsub>L\<^esub> (x, z) # delete x \<Delta> : z"
 sorry
-
 
 definition demand :: "(C \<rightarrow> 'a::pcpo) \<Rightarrow> C" where
   "demand f = (if f\<cdot>C\<^sup>\<infinity> \<noteq> \<bottom> then C\<^bsup>(LEAST n. f\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>)\<^esup> else C\<^sup>\<infinity>)"
@@ -140,6 +150,17 @@ lemma demand_App:
   shows "demand (\<N>\<lbrakk>App e x\<rbrakk>\<^bsub>\<rho>\<^esub>) = C \<cdot> (demand (\<Lambda> r. ((\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r \<down>CFn (\<rho> f!\<^sub>\<bottom> x))\<cdot>r))"
   by simp
 
+notepad
+begin
+  fix f g r
+  assume *: "(f\<cdot>r \<down>CFn g)\<cdot>r \<noteq> \<bottom>"
+  hence "f \<cdot> r \<noteq> \<bottom>" by auto
+  then obtain h where "f\<cdot>r = (CFn\<cdot>h)" by (metis CValue'.exhaust)
+  from *[unfolded `f\<cdot>r = _`]
+  have "(h\<cdot>g)\<cdot>r \<noteq> \<bottom>" by simp
+end
+  
+
 lemma
   assumes "C\<^bsup>n\<^esup> \<sqsubseteq> demand (\<rho> f!\<^sub>\<bottom> x)"
   assumes "demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>) = C\<^bsup>n\<^esup>"
@@ -189,15 +210,9 @@ lemma add_BH:
   assumes  "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>"
   shows "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>"
 proof-
-  from assms
-  have "(\<N>\<lbrakk>Var x\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>Suc n\<^esup> \<noteq> \<bottom>"
-    by (simp add: distinctVars_map_of heapVars_from_set)
-  hence "demand (\<N>\<lbrakk>Var x\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>) \<noteq> None"  unfolding not_bot_demand by auto
-
-  from `demand (\<N>\<lbrakk>Var x\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>) \<noteq> None` 
-  have "the (demand (\<N>\<lbrakk>Var x\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)) = Suc (the (demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)))"
+  have "demand (\<N>\<lbrakk>Var x\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>) = C\<cdot>(demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>))"
     unfolding demand_Var using assms by (auto simp add: distinctVars_map_of heapVars_from_set)
-  hence "the (demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)) < the (demand (\<N>\<lbrakk>Var x\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>))" by simp
+  hence "demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>) \<sqsubseteq> demand (\<N>\<lbrace>\<Gamma>\<rbrace> f!\<^sub>\<bottom> x)" by (simp add: Rep_cfun_inverse)
   hence "demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>) = demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)" sorry
   with assms(3)
   show ?thesis unfolding not_bot_demand by simp
