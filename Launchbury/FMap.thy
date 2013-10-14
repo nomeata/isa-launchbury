@@ -120,8 +120,9 @@ lift_definition fmap_restr :: "'a set \<Rightarrow> 'a f\<rightharpoonup> 'b \<R
 
 abbreviation fmap_restr_rev  (infixl "f|`"  110) where "fmap_restr_rev m S \<equiv> fmap_restr S m"
 
-lemma fmap_restr_empty[simp]: "f\<emptyset> f|` S = f\<emptyset>"
-  by transfer simp
+lemma fmap_restr_empty[simp]: "fdom m \<inter> S = {} \<Longrightarrow> m f|` S = f\<emptyset>"
+  apply transfer
+  by (metis disjoint_iff_not_equal domIff restrict_in restrict_out)
 
 lemma lookup_fmap_restr[simp]: "x \<in> S \<Longrightarrow> lookup (fmap_restr S m) x = lookup m x"
   by (transfer, auto)

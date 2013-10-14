@@ -257,6 +257,12 @@ lemma supp_fmap_restr_subset:
   apply auto
   done
 
+lemma fresh_fmap_restr_subset:
+  fixes m :: "'a::fs f\<rightharpoonup> 'b::fs"
+  shows "a \<sharp> m \<Longrightarrow> a \<sharp> m f|` S"
+  using supp_fmap_restr_subset
+  by (auto simp add: fresh_def)
+
 lemma fresh_fmap_upd_eq:
   "a \<sharp> m((x::'a::fs) f\<mapsto> v::'b::fs) \<longleftrightarrow> (a \<sharp> (fmap_delete x m) \<and> a \<sharp> x \<and> a \<sharp> v)"
   unfolding fresh_def by simp
@@ -267,15 +273,25 @@ lemma fresh_lookup:
   by (induction m)
      (auto simp add: lookup_fmap_upd_eq fresh_fmap_upd_eq split:if_splits)
 
+lemma fresh_lookup_fdom:
+  fixes m :: "'a::fs f\<rightharpoonup> 'b::fs"
+  shows "a \<sharp> m \<Longrightarrow> x \<in> fdom m \<Longrightarrow> a \<sharp> m f! x"
+  by (metis (full_types) fmap_upd_noop fresh_fmap_upd_eq)
+
 lemma fresh_star_fmap_upd_eq:
   "a \<sharp>* m((x::'a::fs) f\<mapsto> v::'b::fs) \<longleftrightarrow> (a \<sharp>* (fmap_delete x m) \<and> a \<sharp>* x \<and> a \<sharp>* v)"
 by (metis fresh_fmap_upd_eq fresh_star_def)
 
-lemma fresh_fmap_delete_subset:
-  "a \<sharp>  (m :: 'a::at_base f\<rightharpoonup> 'b::fs) \<Longrightarrow> a \<sharp> fmap_delete x m"
-  by (auto simp add: fresh_def supp_fmap simp del: fdom_fmap_delete
+lemma supp_fmap_delete_subset:
+  "supp (fmap_delete x m) \<subseteq> supp (m :: 'a::at_base f\<rightharpoonup> 'b::fs)"
+  by (auto simp add: supp_fmap simp del: fdom_fmap_delete
         dest: set_mp[OF supp_mono[OF finite_fdom fdom_fmap_delete_subset]]
         dest: set_mp[OF supp_mono[OF finite_fran fran_fmap_delete_subset]])
+
+lemma fresh_fmap_delete_subset:
+  "a \<sharp>  (m :: 'a::at_base f\<rightharpoonup> 'b::fs) \<Longrightarrow> a \<sharp> fmap_delete x m"
+  using supp_fmap_delete_subset
+  by (auto simp add: fresh_def)
 
 lemma fresh_fmap_copy_subset:
   "a \<sharp> (m :: 'a::at_base f\<rightharpoonup> 'b::fs) \<Longrightarrow> a \<sharp> y \<Longrightarrow> a \<sharp> fmap_copy m x y"
