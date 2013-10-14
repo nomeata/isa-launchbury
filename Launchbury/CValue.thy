@@ -148,6 +148,34 @@ instantiation C :: Finite_Meet_cpo begin
 qed
 end
 
+lemma C_meet_is_meet: "(z \<sqsubseteq> C_meet\<cdot>x\<cdot>y) = (z \<sqsubseteq> x \<and> z \<sqsubseteq> y)"
+proof (induct z rule:C.take_induct)
+  fix n
+  show "(C_take n\<cdot>z \<sqsubseteq> C_meet\<cdot>x\<cdot>y) = (C_take n\<cdot>z \<sqsubseteq> x \<and> C_take n\<cdot>z \<sqsubseteq> y)"
+  proof (induct n arbitrary: z x y rule:nat_induct)
+    case 0 thus ?case by auto
+    next
+    case (Suc n z x y) thus ?case
+      apply -
+      apply (cases z, simp)
+      apply (cases x, simp)
+      apply (cases y, simp)
+      apply (fastforce simp add: cfun_below_iff)
+      done
+  qed
+qed auto
+
+
+instance C :: cont_binary_meet
+proof
+  have [simp]:"\<And> x y. x \<sqinter> y = C_meet\<cdot>x\<cdot>y"
+    using C_meet_is_meet
+    by (blast intro: is_meetI)
+  case goal1 thus ?case
+    by (simp add: ch2ch_Rep_cfunR contlub_cfun_arg contlub_cfun_fun)
+qed
+
+
 instance C :: Finite_Meet_bifinite_cpo by default
 
 
