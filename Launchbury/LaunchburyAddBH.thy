@@ -202,7 +202,7 @@ case (Application n \<Gamma> x e y S z \<Delta> \<Theta> e' u b)
     have IH1: "validStack (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)) n (x # S)"  by (rule ValidStackCons)
     hence "validStack \<Delta> n (x # S)" by (rule Application.hyps)
     hence "validStack \<Delta> x S" by (cases)
-    hence IH2: "validStack (\<Delta>(x f\<mapsto> e'[z::=y])) x S"
+    hence IH2: "validStack ((fmap_delete n \<Delta>)(x f\<mapsto> e'[z::=y])) x S"
     proof(rule validStack_cong)
       from stack_unchanged[OF Application.hyps(8)[OF IH1]] `n \<noteq> x`
       have "lookup \<Delta> x = Some (App (Var n) y)"  by auto
@@ -218,7 +218,7 @@ case (Application n \<Gamma> x e y S z \<Delta> \<Theta> e' u b)
         by (metis depRel_via)
       ultimately
       have "x' \<noteq> x" "x' \<noteq> n" by auto
-      thus "lookup \<Delta> x' = lookup (\<Delta>(x f\<mapsto> e'[z::=y])) x'" by simp
+      thus "lookup \<Delta> x' = lookup (fmap_delete n \<Delta>(x f\<mapsto> e'[z::=y])) x'" by simp
     qed
     thus "validStack \<Theta> x S"
       by (rule Application.hyps)
@@ -448,7 +448,6 @@ proof
   hence "\<Gamma>(x f\<mapsto> Var x) \<Down>\<^sup>i\<^sup>u\<^sup>\<surd>\<^bsub>[x]\<^esub> \<Delta>" by (rule add_blackholing[OF _ ValidStackNil])
   thus False  by cases (auto dest: fmap_upd_eqD1)
 qed
-
 
 end
 
