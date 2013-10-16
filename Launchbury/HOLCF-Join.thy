@@ -402,6 +402,13 @@ lemma is_meetI:
   shows "x \<sqinter> y = z"
 by (metis assms below_antisym meet_above_iff below_refl)
 
+lemma meet_assoc[simp]: "((x::'a::Finite_Meet_cpo) \<sqinter> y) \<sqinter> z = x \<sqinter> (y \<sqinter> z)"
+  apply (rule is_meetI)
+  apply (metis below_refl meet_above_iff)
+  apply (metis below_refl meet_below2)
+  apply (metis meet_above_iff)
+  done
+
 lemma meet_monofun1:
   fixes y :: "'a :: Finite_Meet_cpo"
   shows "monofun (\<lambda>x. (x \<sqinter> y))"

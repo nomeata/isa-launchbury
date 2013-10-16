@@ -21,7 +21,7 @@ case (Lam x e Y0 Y)
   have [simp]:"\<And> i. atom x \<sharp> Y i" and [simp]:"atom x \<sharp> Lub Y"  using Lam.hyps(1) Lam.prems(1)
     unfolding sharp_Env by auto
   have "cont (CESem e)" using Lam.hyps(2) by (rule contI, auto)
-  have  "cont (\<lambda> \<rho>. (\<Lambda> (C \<cdot> _). CFn \<cdot> (\<Lambda> v r. (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>) \<cdot> r)))"
+  have  "cont (\<lambda> \<rho>. (\<Lambda> (C \<cdot> _). CFn \<cdot> (\<Lambda> v. \<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>)))"
     by (intro cont2cont cont_compose[OF `cont (CESem e)`])
   from contE[OF this `chain Y`]
   show ?case by simp
@@ -298,17 +298,17 @@ interpretation has_ignore_fresh_ESem CESem
 
 subsection {* Nicer equations for CESem, without freshness requirements *}
 
-lemma CESem_Lam[simp]: "\<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub>  = (\<Lambda> (C \<cdot> _). CFn \<cdot> (\<Lambda> v r. (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>) \<cdot> r))"
+lemma CESem_Lam[simp]: "\<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub>  = (\<Lambda> (C \<cdot> _). CFn \<cdot> (\<Lambda> v. \<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>))"
 proof-
   have "\<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>fmap_delete x \<rho>\<^esub>"
     apply (rule ESem_ignores_fresh[symmetric, OF fmap_delete_less])
     apply (auto simp add: fresh_star_def)
     done
-  also have "\<dots> = (\<Lambda> (C \<cdot> _). CFn \<cdot> (\<Lambda> v r. (\<N>\<lbrakk> e \<rbrakk>\<^bsub>(fmap_delete x \<rho>)(x f\<mapsto> v)\<^esub>) \<cdot> r))"
+  also have "\<dots> = (\<Lambda> (C \<cdot> _). CFn \<cdot> (\<Lambda> v. \<N>\<lbrakk> e \<rbrakk>\<^bsub>(fmap_delete x \<rho>)(x f\<mapsto> v)\<^esub>))"
     apply (rule CESem.simps)
     apply (simp add: sharp_Env)
     done
-  also have "\<dots> = (\<Lambda> (C \<cdot> _). CFn \<cdot> (\<Lambda> v r. (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>) \<cdot> r))" by simp
+  also have "\<dots> = (\<Lambda> (C \<cdot> _). CFn \<cdot> (\<Lambda> v. \<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>))" by simp
   finally show ?thesis.
 qed
 

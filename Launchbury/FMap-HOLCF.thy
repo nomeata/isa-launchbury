@@ -576,6 +576,13 @@ proof (rule cont_compose[OF _ `cont f`], rule contI)
     by (subst fmap_lookup_bot_cont'[OF `chain Y`], rule cpo_lubI[OF fmap_lookup_bot_chain[OF `chain Y`]])
 qed
 
+lemma adm_fmap_lookup_bot[simp, intro]: "adm f \<Longrightarrow> adm (\<lambda> \<rho>. f (\<rho> f!\<^sub>\<bottom> x))"
+  apply (rule admI)
+  apply (subst fmap_lookup_bot_cont', assumption)
+  apply (erule (1) admD[OF _ fmap_lookup_bot_chain])
+  apply auto
+  done
+
 lemma fmap_lookup_bot_cont:
   "cont (op f!\<^sub>\<bottom>)"
   by (rule cont2cont_lambda[OF cont2cont_fmap_lookup_bot[OF cont_id]])

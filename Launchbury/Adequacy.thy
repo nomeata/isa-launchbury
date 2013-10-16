@@ -36,7 +36,6 @@ proof-
   thus ?thesis using that by blast
 qed
 
-
 lemma more_resources_suffice:
   assumes "f\<cdot>r \<noteq> \<bottom>" and "r \<sqsubseteq> r'"
   shows "f\<cdot>r' \<noteq> \<bottom>"
@@ -88,6 +87,126 @@ proof
   hence "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>\<bottom> \<noteq> \<bottom>" by (metis demand_suffices' iterate_0)
   thus False by simp
 qed
+
+inductive pres1 :: "(CValue \<Rightarrow> bool) \<Rightarrow> CValue' \<Rightarrow> bool" for s where
+  pres1_bot[simp,intro!]: "pres1 s \<bottom>" |
+  pres1_CFn[intro]: "(\<And> x . s x \<Longrightarrow> s (f\<cdot>x)) \<Longrightarrow> pres1 s (CFn\<cdot>f)"
+
+fun pres_prop'
+  where
+  "pres_prop' P 0 v = True" |
+  "pres_prop' P (Suc n) v = pres1 (pres_prop' P n) (v \<cdot> C\<^sup>\<infinity>)" 
+
+definition pres_prop where "pres_prop P v \<longleftrightarrow> (\<forall> n. pres_prop' P n v)"
+
+lemma pres_prop_bot: "pres_prop P \<bottom>"
+  unfolding pres_prop_def
+  apply rule
+  apply (induct_tac n)
+  apply simp_all
+  done
+
+lemma pres_prop_CFnI: "(\<And> x. pres_prop P x \<Longrightarrow> pres_prop P (f\<cdot>x)) \<Longrightarrow> v \<cdot> C\<^sup>\<infinity> = CFn\<cdot>f \<Longrightarrow> pres_prop P v"
+  unfolding pres_prop_def
+  apply rule
+  apply (induct_tac n)
+  apply simp
+  apply auto
+  apply (intro pres1_CFn)
+oops  
+ 
+
+(* Nice try again, but breaks down in CFn_project: 
+
+definition step_fun where
+  "step_fun f \<longleftrightarrow> (\<forall> r r'. f\<cdot>r \<noteq> \<bottom> \<and> r \<sqsubseteq> r' \<longrightarrow> f\<cdot>r' = f\<cdot>r)"
+
+lemma step_funI:
+  "(\<And> r r'. f \<cdot> r \<noteq> \<bottom> \<Longrightarrow> r \<sqsubseteq> r' \<Longrightarrow> f\<cdot>r' = f\<cdot>r) \<Longrightarrow> step_fun f"
+by (metis step_fun_def)
+
+lemma [simp]: "step_fun \<bottom>"
+  unfolding step_fun_def by simp
+
+lemma [simp]: "adm step_fun"
+  sorry
+
+lemma step_fun_C_case[simp, intro]: "step_fun f \<Longrightarrow> step_fun (C_case\<cdot>f)"
+  unfolding step_fun_def
+  apply (rule, rule)
+  apply (case_tac r, case_tac [2] r')
+  apply auto
+  done
+
+lemma step_fun_CFn_project[simp, intro]:
+  assumes "step_fun f"
+  assumes "step_fun g"
+  shows "step_fun (\<Lambda> r. ((f \<cdot> r) \<down>CFn g) \<cdot> r)"
+proof (rule step_funI)
+  fix r r'
+  assume "(\<Lambda> r. (f\<cdot>r \<down>CFn g)\<cdot>r)\<cdot>r \<noteq> \<bottom>"
+  hence "f \<cdot> r \<noteq> \<bottom>" by auto
+  moreover
+  assume "r \<sqsubseteq> r'"
+  ultimately
+  have [simp]: "f \<cdot> r' = f \<cdot> r" by (metis step_fun_def `step_fun f`)
+  from `f \<cdot> r \<noteq> \<bottom>` obtain h where [simp]:"f \<cdot> r = CFn \<cdot> h" by (metis CValue'.exhaust)
+  
+  from `step_fun g` 
+  have "step_fun (h \<cdot> g)" sorry
+  with `(\<Lambda> r. (f\<cdot>r \<down>CFn g)\<cdot>r)\<cdot>r \<noteq> \<bottom>` `r \<sqsubseteq> r'`
+  have [simp]: "h\<cdot>g\<cdot>r' = h\<cdot>g\<cdot>r" apply simp by (metis step_fun_def)
+
+  show "(\<Lambda> r. (f\<cdot>r \<down>CFn g)\<cdot>r)\<cdot>r' = (\<Lambda> r. (f\<cdot>r \<down>CFn g)\<cdot>r)\<cdot>r" by simp
+qed
+
+lemma step_fun_const[intro, simp]: "(\<And> g. step_fun g \<Longrightarrow> step_fun (f \<cdot> g)) \<Longrightarrow> step_fun (\<Lambda> _. CFn\<cdot>f)"
+  unfolding step_fun_def by simp
+
+lemma bot_or_equal:
+  assumes "\<And> x. step_fun (\<rho> f!\<^sub>\<bottom> x)"
+  shows "step_fun (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)" and "\<And> x . x \<in> heapVars (asToHeap as) \<Longrightarrow> step_fun (\<N>\<lbrakk>the (map_of (asToHeap as) x)\<rbrakk>\<^bsub>\<rho>\<^esub>)"
+using assms
+proof(nominal_induct e and as avoiding: \<rho> rule: exp_assn.strong_induct)
+  case Var thus ?case by (simp add: Rep_cfun_inverse)
+next
+  case App thus ?case by simp
+next
+  case (Lam x e)
+  { fix v :: CValue
+    assume "step_fun v"
+    have "step_fun (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>)"
+      apply (rule Lam)
+      apply (case_tac "xa = x")
+      using `step_fun v` apply simp
+      using Lam(3) apply simp
+      done
+  }
+  with Lam show ?case by auto
+next
+  case (Let as body)
+  have *: "has_cont_ESem CESem" by unfold_locales
+  have "\<forall> x. step_fun (\<N>\<lbrace>asToHeap as\<rbrace>(\<rho> f|` (- heapVars (asToHeap as))) f!\<^sub>\<bottom> x)" 
+    unfolding has_cont_ESem.replace_upd[symmetric, OF *]
+    apply (rule has_cont_ESem.UHSem_ind[OF *])
+    apply simp
+    apply simp
+    apply rule
+    apply (case_tac "x \<in> heapVars (asToHeap as)")
+    apply (auto intro: Let(4) elim: Let(2) simp add: lookupHeapToEnv)
+    done
+  moreover have "\<rho> f|` (- heapVars (asToHeap as)) = \<rho>"
+    using Let(1) by (auto intro: fmap_restr_useless  simp add:  sharp_star_Env)
+  moreover note Let(1)
+  ultimately
+  show ?case by (auto simp add: Rep_cfun_inverse intro: Let(3))
+next
+  case ANil hence False by simp thus ?case..
+next
+  case ACons thus ?case by (auto dest: set_mp[OF set_delete_subset])
+qed
+
+*)
 
 lemma demand_Suc_Least:
   assumes [simp]: "f\<cdot>\<bottom> = \<bottom>"
@@ -159,7 +278,225 @@ begin
   from *[unfolded `f\<cdot>r = _`]
   have "(h\<cdot>g)\<cdot>r \<noteq> \<bottom>" by simp
 end
+
+fixrec CValue_restr :: "C \<rightarrow> CValue \<rightarrow> CValue"
+  and  CValue'_restr :: "C \<rightarrow> CValue' \<rightarrow> CValue'"
+  where "CValue_restr\<cdot>r\<cdot>f\<cdot>r' = (f\<cdot>(r \<sqinter> r'))" 
+  |     "CValue'_restr\<cdot>r\<cdot>(CFn\<cdot>f) = CFn\<cdot>(CValue_restr\<cdot>r oo f)"
+
+
+lemma [simp]: "CValue'_restr\<cdot>r\<cdot>\<bottom> = \<bottom>" by fixrec_simp
+lemma [simp]: "CValue_restr\<cdot>r\<cdot>\<bottom> = \<bottom>" by fixrec_simp
+lemma [simp]: "f \<cdot> \<bottom> = \<bottom> \<Longrightarrow> CValue_restr\<cdot>\<bottom>\<cdot>f = \<bottom>"  by fixrec_simp
+
+lemma [simp]: "r \<sqinter> r = (r::C)"
+  by (metis below_refl is_meetI)
+
+lemma [simp]: "(r::C) \<sqinter> (r \<sqinter> x) = r \<sqinter> x"
+  by (metis below_refl is_meetI meet_below1)
+
+
+lemma [simp]: "CValue_restr\<cdot>r\<cdot>(CValue_restr\<cdot>r'\<cdot>v) = CValue_restr\<cdot>(r' \<sqinter> r)\<cdot>v"
+  apply (rule cfun_eqI)
+  apply simp
+  done
   
+
+definition fmap_C_restr where
+  "fmap_C_restr r f = fmap_map (Rep_cfun (CValue_restr\<cdot>r)) f"
+
+lemma cont2cont_fmap_map [simp, cont2cont]: "cont f \<Longrightarrow> cont g \<Longrightarrow> cont (\<lambda> x. fmap_map (f x) (g x))"
+  sorry
+
+lemma [simp, cont2cont]: "cont f \<Longrightarrow> cont g \<Longrightarrow> cont (\<lambda> x. fmap_C_restr (f x) (g x))"
+  unfolding fmap_C_restr_def by simp
+
+lemma [simp]: "v \<in> fdom \<rho> \<Longrightarrow> fmap_map f \<rho> f! v = f (\<rho> f! v)"
+  apply auto
+  by (metis fdomIff option.exhaust option_map_Some the.simps)
+
+lemma [simp]: "f \<bottom> = \<bottom> \<Longrightarrow> fmap_map f \<rho> f!\<^sub>\<bottom> v = f (\<rho> f!\<^sub>\<bottom> v)"
+  apply (cases "v \<in> fdom \<rho>")
+  apply auto
+  by (metis fdomIff option.exhaust option_map_Some the.simps)
+
+lemma [simp]: "fmap_C_restr r (\<rho>(x f\<mapsto> v)) = fmap_C_restr r \<rho>(x f\<mapsto> CValue_restr\<cdot>r\<cdot>v)"
+  unfolding fmap_C_restr_def by simp
+
+lemma [simp]: "fmap_C_restr r \<rho> f!\<^sub>\<bottom> v = CValue_restr\<cdot>r\<cdot>(\<rho> f!\<^sub>\<bottom> v)"
+  unfolding fmap_C_restr_def by simp
+
+lemma [simp]: "v \<in> fdom \<rho> \<Longrightarrow> fmap_C_restr r \<rho> f! v = CValue_restr\<cdot>r\<cdot>(\<rho> f! v)"
+  unfolding fmap_C_restr_def by (simp del: lookup_fmap_map)
+
+lemma [simp]: "C\<cdot>r \<sqinter> r = r"
+  by (auto intro: is_meetI simp add: below_C)
+
+lemma fdom_fmap_C_restr[simp]: "fdom (fmap_C_restr r \<rho>) = fdom \<rho>"
+  unfolding fmap_C_restr_def by simp
+
+lemma CValue_restr_below[intro, simp]:
+  "CValue_restr\<cdot>r\<cdot>x \<sqsubseteq> x"
+  apply (rule cfun_belowI)
+  apply simp
+  by (metis below_refl meet_below2 monofun_cfun_arg)
+  
+lemma fmap_C_restr_restr_below[intro]:  "fmap_C_restr r \<rho> \<sqsubseteq> \<rho>"
+  by (auto intro: fmap_belowI)
+
+lemma CValue_restr_below_cong:
+  "(\<And> r'. r' \<sqsubseteq> r \<Longrightarrow> f \<cdot> r' \<sqsubseteq> g \<cdot> r') \<Longrightarrow> CValue_restr\<cdot>r\<cdot>f \<sqsubseteq> CValue_restr\<cdot>r\<cdot>g"
+  apply (rule cfun_belowI)
+  apply simp
+  by (metis below_refl meet_below1)
+
+lemma CValue_restr_cong:
+  "(\<And> r'. r' \<sqsubseteq> r \<Longrightarrow> f \<cdot> r' = g \<cdot> r') \<Longrightarrow> CValue_restr\<cdot>r\<cdot>f = CValue_restr\<cdot>r\<cdot>g"
+  apply (intro below_antisym CValue_restr_below_cong )
+  by (metis below_refl)+
+
+lemma [simp]: "C\<cdot>r \<sqinter> C\<cdot>r' = C\<cdot>(r \<sqinter> r')"
+  apply (rule is_meetI)
+  apply (metis below_refl meet_below1 monofun_cfun_arg)
+  apply (metis below_refl meet_below2 monofun_cfun_arg)
+  apply (case_tac a)
+  apply auto
+  by (metis meet_above_iff)
+
+lemma CValue_restr_C_case[simp]:
+  "CValue_restr\<cdot>(C\<cdot>r)\<cdot>(C_case\<cdot>f) = C_case\<cdot>(CValue_restr\<cdot>r\<cdot>f)"
+  apply (rule cfun_eqI)
+  apply simp
+  apply (case_tac x)
+  apply simp
+  apply simp
+  done
+
+
+thm CESem_Lam
+lemma [simp]: "\<N>\<lbrakk>Lam [x]. e\<rbrakk>\<^bsub>\<rho>\<^esub> = (\<Lambda> (C\<cdot>r). (CFn\<cdot>(\<Lambda> v. CValue_restr\<cdot>r\<cdot>(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>(x f\<mapsto> CValue_restr\<cdot>r\<cdot>v)\<^esub>))))"
+  sorry
+thm CESem.simps(2)[no_vars]
+lemma [simp]: "\<N>\<lbrakk>App e x\<rbrakk>\<^bsub>\<rho>\<^esub> = (\<Lambda> (C\<cdot>r). ((\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r \<down>CFn CValue_restr\<cdot>r\<cdot>(\<rho> f!\<^sub>\<bottom> x))\<cdot>r)"
+  sorry
+
+thm exp_assn.strong_induct[no_vars]
+
+
+lemma  exp_strong_induct[case_names Var App Let Lam]:
+  assumes "\<And>var c. P c (Var var)"
+  assumes "\<And>exp var c. (\<And>c. P c exp) \<Longrightarrow> P c (App exp var)"
+  assumes "\<And>assn exp c.
+    set (bn assn) \<sharp>* c \<Longrightarrow> (\<And>c x. x \<in> heapVars (asToHeap assn) \<Longrightarrow>  P c (the (map_of (asToHeap assn) x))) \<Longrightarrow> (\<And>c. P c exp) \<Longrightarrow> P c (Terms.Let assn exp)"
+  assumes "\<And>var exp c. {atom var} \<sharp>* c \<Longrightarrow> (\<And>c. P c exp) \<Longrightarrow> P c (Lam [var]. exp)"
+  shows "P (c::'a::fs) exp"
+  apply (rule exp_assn.strong_induct(1)[of P "\<lambda> c assn. (\<forall>x \<in> heapVars (asToHeap assn). P c (the (map_of (asToHeap assn) x)))"])
+  apply (metis assms(1))
+  apply (metis assms(2))
+  apply (metis assms(3))
+  apply (metis assms(4))
+  apply auto
+  done
+
+lemma restr_can_restrict_heap: "CValue_restr\<cdot>r\<cdot>(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>) = CValue_restr\<cdot>r\<cdot>(\<N>\<lbrakk>e\<rbrakk>\<^bsub>fmap_C_restr r \<rho>\<^esub>)"
+proof(nominal_induct e avoiding: \<rho> arbitrary: r rule: exp_strong_induct)
+  case (Var x)
+  show ?case
+    apply (rule below_antisym)
+    defer
+    apply (rule cont2monofunE[OF _ fmap_C_restr_restr_below], simp)
+    apply (simp add: Rep_cfun_inverse)
+    apply (cases r)
+    apply simp_all
+    done
+next
+  case (Lam x e)
+  show ?case
+    apply (simp del: CESem_Lam)
+    apply (rule CValue_restr_cong)
+    apply (case_tac r')
+    apply simp
+    apply simp
+    apply (rule cfun_eqI)
+    apply simp
+    apply (rule below_antisym)
+    apply (subst Lam(2))
+    apply simp
+    apply (rule cont2monofunE) back back back back
+    apply simp
+    apply (metis below_C rev_below_trans)
+    apply (rule cont2monofunE[OF _ fmap_C_restr_restr_below], simp)
+    done
+next
+  case (App e x)
+  { fix r r'
+    from App[where r = r and b = \<rho>]
+    have "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>(r \<sqinter> r') = (\<N>\<lbrakk>e\<rbrakk>\<^bsub>fmap_C_restr r \<rho>\<^esub>)\<cdot>(r \<sqinter> r')"
+      by (metis CValue_restr.simps)
+  } note * = this
+  show ?case
+    apply (rule below_antisym)
+    defer
+    apply (rule cont2monofunE[OF _ fmap_C_restr_restr_below], simp)
+    apply (cases r, simp)
+    apply (simp del: CValue_restr.simps CESem.simps(2))
+    apply (rule monofun_cfun_arg)
+    apply (rule cfun_belowI)
+    apply (simp)
+    apply (subst *)
+    apply (rule cont2monofunE) back
+    apply simp
+    apply (rule monofun_cfun)
+    apply (rule cont2monofunE[OF _ below_C], simp)
+    apply (rule cont2monofunE) back back 
+    apply simp
+    by (metis below_C below_refl meet_above_iff meet_below1)
+next
+  case (Let as e)
+  hence [simp]: "fdom \<rho> \<inter> heapVars (asToHeap as) = {}" by (metis disjoint_iff_not_equal sharp_star_Env)
+
+  note Let(1)[simp]
+  hence fresh2[simp]: "set (bn as) \<sharp>* fmap_C_restr r \<rho>" by (metis fdom_fmap_C_restr sharp_star_Env)
+
+  { fix r
+    have *: "has_cont_ESem CESem" by unfold_locales
+    have "fmap_C_restr r (\<N>\<lbrace>asToHeap as\<rbrace>(\<rho> f|` (- heapVars (asToHeap as)))) = fmap_C_restr r (\<N>\<lbrace>asToHeap as\<rbrace>((fmap_C_restr r \<rho>)  f|` (- heapVars (asToHeap as))))" 
+      unfolding has_cont_ESem.replace_upd[symmetric, OF *]
+      apply (rule has_cont_ESem.parallel_UHSem_ind[OF *])
+      apply simp
+      apply simp
+      apply (rule, simp)
+      apply (case_tac "x \<in> heapVars (asToHeap as)")
+      apply (simp add: lookupHeapToEnv)
+      apply (subst (1 2) Let(2), assumption)
+      apply simp
+      apply simp
+      done
+    also have "\<rho> f|` (- heapVars (asToHeap as)) = \<rho>"
+      using Let(1) by (auto intro: fmap_restr_useless  simp add:  sharp_star_Env)
+    also have "(fmap_C_restr r \<rho>) f|` (- heapVars (asToHeap as)) = (fmap_C_restr r \<rho>)"
+      using Let(1) by (auto intro: fmap_restr_useless  simp add:  sharp_star_Env)
+    finally
+    have "fmap_C_restr r (\<N>\<lbrace>asToHeap as\<rbrace>\<rho>) = fmap_C_restr r (\<N>\<lbrace>asToHeap as\<rbrace>fmap_C_restr r \<rho>)".
+  } note * = this
+
+  show ?case
+    apply (rule below_antisym)
+    defer
+    apply (rule cont2monofunE[OF _ fmap_C_restr_restr_below], simp)
+    apply (simp add: Abs_cfun_inverse)
+    apply (cases r, simp)
+    apply (simp add: Abs_cfun_inverse Rep_cfun_inverse)
+    apply (subst (1 2) Let(3))
+    apply (subst *)
+    apply (rule cont2monofunE[OF _ ]) back back back back
+    apply simp
+    apply (rule HSem_mono[OF disjoint_is_HSem_cond disjoint_is_HSem_cond])
+    prefer 3
+    apply (rule cont2monofunE[OF _ below_C])
+    apply simp_all
+    done
+qed
 
 lemma
   assumes "C\<^bsup>n\<^esup> \<sqsubseteq> demand (\<rho> f!\<^sub>\<bottom> x)"

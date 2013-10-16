@@ -46,6 +46,11 @@ lemma case_of_C_below: "(case r of C\<cdot>_ \<Rightarrow> x) \<sqsubseteq> x"
 lemma C_case_below: "C_case \<cdot> f \<sqsubseteq> f"
   by (metis cfun_belowI C.case_rews(2) below_C monofun_cfun_arg)
 
+lemma C_case_bot[simp]: "C_case \<cdot> \<bottom> = \<bottom>"
+  apply (subst eq_bottom_iff)
+  apply (rule C_case_below)
+  done
+
 lemma C_case_Cinf[simp]: "C_case \<cdot> f \<cdot> C\<^sup>\<infinity> = f \<cdot> C\<^sup>\<infinity>"
   unfolding Cinf_def
   by (subst fix_eq) simp
