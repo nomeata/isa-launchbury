@@ -3,11 +3,13 @@ imports "Resourced-Denotational-Props" "Launchbury" "DistinctVars" "CorrectnessR
 begin
 
 
+(*
 lemma VariableNoBH:
   assumes "(x, e) \<in> set \<Gamma>"
   assumes "\<Gamma> : e \<Down>\<^bsub>x # L\<^esub> \<Delta> : z"
   shows "\<Gamma> : Var x \<Down>\<^bsub>L\<^esub> (x, z) # delete x \<Delta> : z"
 sorry
+*)
 
 lemma demand_not_0: "demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>) \<noteq> \<bottom>"
 proof
@@ -159,52 +161,62 @@ lemma demand_Lam:
   apply (auto simp add: demand_def)
   done
 
+(*
 lemma demand_App:
   shows "demand (\<N>\<lbrakk>App e x\<rbrakk>\<^bsub>\<rho>\<^esub>) = C \<cdot> (demand (\<Lambda> r. ((\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r \<down>CFn (\<rho> f!\<^sub>\<bottom> x))\<cdot>r))"
   by simp
-
-
-definition fmap_C_restr where
-  "fmap_C_restr r f = fmap_map (Rep_cfun (C_restr\<cdot>r)) f"
+*)
 
 lemma cont2cont_fmap_map [simp, cont2cont]: "cont f \<Longrightarrow> cont g \<Longrightarrow> cont (\<lambda> x. fmap_map (f x) (g x))"
   sorry
 
-lemma [simp, cont2cont]: "cont f \<Longrightarrow> cont g \<Longrightarrow> cont (\<lambda> x. fmap_C_restr (f x) (g x))"
-  unfolding fmap_C_restr_def by simp
-
-lemma [simp]: "v \<in> fdom \<rho> \<Longrightarrow> fmap_map f \<rho> f! v = f (\<rho> f! v)"
+lemma fmap_map_lookup[simp]: "v \<in> fdom \<rho> \<Longrightarrow> fmap_map f \<rho> f! v = f (\<rho> f! v)"
   apply auto
   by (metis fdomIff option.exhaust option_map_Some the.simps)
 
-lemma [simp]: "f \<bottom> = \<bottom> \<Longrightarrow> fmap_map f \<rho> f!\<^sub>\<bottom> v = f (\<rho> f!\<^sub>\<bottom> v)"
+lemma fmap_map_lookup_bot[simp]: "f \<bottom> = \<bottom> \<Longrightarrow> fmap_map f \<rho> f!\<^sub>\<bottom> v = f (\<rho> f!\<^sub>\<bottom> v)"
   apply (cases "v \<in> fdom \<rho>")
   apply auto
   by (metis fdomIff option.exhaust option_map_Some the.simps)
 
-lemma [simp]: "fmap_C_restr r (\<rho>(x f\<mapsto> v)) = fmap_C_restr r \<rho>(x f\<mapsto> C_restr\<cdot>r\<cdot>v)"
+definition fmap_cmap :: "('a::cpo \<rightarrow> 'b::cpo) \<rightarrow> 'c::type f\<rightharpoonup> 'a \<rightarrow> 'c::type f\<rightharpoonup> 'b" 
+  where  "fmap_cmap = (\<Lambda> f \<rho>. fmap_map (\<lambda> x. f\<cdot>x) \<rho>)"
+
+lemma [simp]: "fdom (fmap_cmap\<cdot>f\<cdot>\<rho>) = fdom \<rho>"
+  unfolding fmap_cmap_def by simp
+
+lemma [simp]: "fmap_cmap\<cdot>f\<cdot>(\<rho>(x f\<mapsto> v)) = fmap_cmap\<cdot>f\<cdot>\<rho>(x f\<mapsto> f\<cdot>v)"
+  unfolding fmap_cmap_def by simp
+
+lemma [simp]: "x \<in> fdom \<rho> \<Longrightarrow> fmap_cmap\<cdot>f\<cdot>\<rho> f! x = f\<cdot>(\<rho> f! x )"
+  unfolding fmap_cmap_def by (simp del: lookup_fmap_map)
+
+lemma [simp]: "f\<cdot>\<bottom> = \<bottom> \<Longrightarrow> fmap_cmap\<cdot>f\<cdot>\<rho> f!\<^sub>\<bottom> x = f\<cdot>(\<rho> f!\<^sub>\<bottom> x )"
+  unfolding fmap_cmap_def by (simp del: lookup_fmap_map)
+
+definition fmap_C_restr :: "C \<rightarrow> (var f\<rightharpoonup> (C \<rightarrow> 'a::pcpo)) \<rightarrow> (var f\<rightharpoonup> (C \<rightarrow> 'a))" where
+  "fmap_C_restr = (\<Lambda> r f.  fmap_cmap\<cdot>(C_restr\<cdot>r)\<cdot>f)"
+
+lemma [simp]: "fmap_C_restr\<cdot>r\<cdot>(\<rho>(x f\<mapsto> v)) = fmap_C_restr\<cdot>r\<cdot>\<rho>(x f\<mapsto> C_restr\<cdot>r\<cdot>v)"
   unfolding fmap_C_restr_def by simp
 
-lemma [simp]: "fmap_C_restr r \<rho> f!\<^sub>\<bottom> v = C_restr\<cdot>r\<cdot>(\<rho> f!\<^sub>\<bottom> v)"
+lemma [simp]: "fmap_C_restr\<cdot>r\<cdot>\<rho> f!\<^sub>\<bottom> v = C_restr\<cdot>r\<cdot>(\<rho> f!\<^sub>\<bottom> v)"
   unfolding fmap_C_restr_def by simp
 
-lemma [simp]: "v \<in> fdom \<rho> \<Longrightarrow> fmap_C_restr r \<rho> f! v = C_restr\<cdot>r\<cdot>(\<rho> f! v)"
+lemma [simp]: "v \<in> fdom \<rho> \<Longrightarrow> fmap_C_restr\<cdot>r\<cdot>\<rho> f! v = C_restr\<cdot>r\<cdot>(\<rho> f! v)"
   unfolding fmap_C_restr_def by (simp del: lookup_fmap_map)
 
-lemma fdom_fmap_C_restr[simp]: "fdom (fmap_C_restr r \<rho>) = fdom \<rho>"
+lemma fdom_fmap_C_restr[simp]: "fdom (fmap_C_restr\<cdot>r\<cdot>\<rho>) = fdom \<rho>"
   unfolding fmap_C_restr_def by simp
-lemma fmap_C_restr_restr_below[intro]:  "fmap_C_restr r \<rho> \<sqsubseteq> \<rho>"
+
+lemma fmap_C_restr_restr_below[intro]: "fmap_C_restr\<cdot>r\<cdot>\<rho> \<sqsubseteq> \<rho>"
   by (auto intro: fmap_belowI)
 
-thm CESem_Lam
-lemma CESem_Lam_better[simp]: "\<N>\<lbrakk>Lam [x]. e\<rbrakk>\<^bsub>\<rho>\<^esub> = (\<Lambda> (C\<cdot>r). (CFn\<cdot>(\<Lambda> v. C_restr\<cdot>r\<cdot>(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>(x f\<mapsto> C_restr\<cdot>r\<cdot>v)\<^esub>))))"
-  sorry
-thm CESem.simps(2)[no_vars]
-lemma [simp]: "\<N>\<lbrakk>App e x\<rbrakk>\<^bsub>\<rho>\<^esub> = (\<Lambda> (C\<cdot>r). ((\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r \<down>CFn C_restr\<cdot>r\<cdot>(\<rho> f!\<^sub>\<bottom> x))\<cdot>r)"
+lemma fmap_restr_eq_Cpred: 
+  "fmap_C_restr\<cdot>r\<cdot>\<rho>1 = fmap_C_restr\<cdot>r\<cdot>\<rho>2 \<Longrightarrow> fmap_C_restr\<cdot>(Cpred\<cdot>r)\<cdot>\<rho>1 = fmap_C_restr\<cdot>(Cpred\<cdot>r)\<cdot>\<rho>2"
   sorry
 
-
-lemma restr_can_restrict_heap: "C_restr\<cdot>r\<cdot>(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>) = C_restr\<cdot>r\<cdot>(\<N>\<lbrakk>e\<rbrakk>\<^bsub>fmap_C_restr r \<rho>\<^esub>)"
+lemma restr_can_restrict_heap: "C_restr\<cdot>r\<cdot>(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>) = C_restr\<cdot>r\<cdot>(\<N>\<lbrakk>e\<rbrakk>\<^bsub>fmap_C_restr\<cdot>(Cpred\<cdot>r)\<cdot>\<rho>\<^esub>)"
 proof(nominal_induct e avoiding: \<rho> arbitrary: r rule: exp_strong_induct)
   case (Var x)
   show ?case
@@ -218,72 +230,69 @@ proof(nominal_induct e avoiding: \<rho> arbitrary: r rule: exp_strong_induct)
 next
   case (Lam x e)
   show ?case
-    apply (simp del: CESem_Lam)
+    apply (simp)
     apply (rule C_restr_cong)
-    apply (case_tac r')
-    apply simp
+    apply (case_tac r', simp)
     apply simp
     apply (rule cfun_eqI)
     apply simp
     apply (rule below_antisym)
+    defer
+    apply (rule cont2monofunE[OF _ fmap_C_restr_restr_below], simp)
     apply (subst Lam(2))
     apply simp
-    apply (rule cont2monofunE) back back back back
-    apply simp
-    apply (metis below_C rev_below_trans)
-    apply (rule cont2monofunE[OF _ fmap_C_restr_restr_below], simp)
-    done
+    apply (intro monofun_cfun below_refl cont2monofunE[OF ESem_cont] fmap_upd_mono Cpred_below )
+    by (metis below_C rev_below_trans)
 next
   case (App e x)
   { fix r r'
     from App[where r = r and b = \<rho>]
-    have "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>(r \<sqinter> r') = (\<N>\<lbrakk>e\<rbrakk>\<^bsub>fmap_C_restr r \<rho>\<^esub>)\<cdot>(r \<sqinter> r')"
-      by (metis (hide_lams, no_types) C_restr.simps)
+    have "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>(r \<sqinter> r') = (\<N>\<lbrakk>e\<rbrakk>\<^bsub>fmap_C_restr\<cdot>(Cpred\<cdot>r)\<cdot>\<rho>\<^esub>)\<cdot>(r \<sqinter> r')"
+      apply (rule C_restr_eqD)
+      by (metis below_refl meet_below1)
   } note * = this
   show ?case
     apply (rule below_antisym)
     defer
-    apply (rule cont2monofunE[OF _ fmap_C_restr_restr_below], simp)
+    apply (intro monofun_cfun_arg cont2monofunE[OF ESem_cont] fmap_C_restr_restr_below )
     apply (cases r, simp)
-    apply (simp del: C_restr.simps CESem.simps(2))
+    apply (simp del: C_restr.simps)
     apply (rule monofun_cfun_arg)
     apply (rule cfun_belowI)
     apply (simp)
     apply (subst *)
-    apply (rule cont2monofunE) back
-    apply simp
-    apply (rule monofun_cfun)
-    apply (rule cont2monofunE[OF _ below_C], simp)
-    apply (rule cont2monofunE) back back 
-    apply simp
-    by (metis below_C below_refl meet_above_iff meet_below1)
+    apply (intro monofun_cfun_fun monofun_cfun_arg cont2monofunE[OF ESem_cont] Cpred_below )
+    done
 next
   case (Let as e)
-  hence [simp]: "fdom \<rho> \<inter> heapVars (asToHeap as) = {}" by (metis disjoint_iff_not_equal sharp_star_Env)
+  hence [simp]: "fdom \<rho> \<inter> heapVars (asToHeap as) = {}"
+    by (metis disjoint_iff_not_equal sharp_star_Env)
 
   note Let(1)[simp]
-  hence fresh2[simp]: "set (bn as) \<sharp>* fmap_C_restr r \<rho>" by (metis (hide_lams, no_types) fdom_fmap_C_restr sharp_star_Env)
+  hence fresh2[simp]: "set (bn as) \<sharp>* fmap_C_restr\<cdot>(Cpred\<cdot>r)\<cdot>\<rho>"
+    by (metis (hide_lams, no_types) fdom_fmap_C_restr sharp_star_Env)
 
   { fix r
     have *: "has_cont_ESem CESem" by unfold_locales
-    have "fmap_C_restr r (\<N>\<lbrace>asToHeap as\<rbrace>(\<rho> f|` (- heapVars (asToHeap as)))) = fmap_C_restr r (\<N>\<lbrace>asToHeap as\<rbrace>((fmap_C_restr r \<rho>)  f|` (- heapVars (asToHeap as))))" 
+    have "fmap_C_restr\<cdot>r\<cdot>(\<N>\<lbrace>asToHeap as\<rbrace>(\<rho> f|` (- heapVars (asToHeap as)))) = fmap_C_restr\<cdot>r\<cdot>(\<N>\<lbrace>asToHeap as\<rbrace>((fmap_C_restr\<cdot>r\<cdot>\<rho>)  f|` (- heapVars (asToHeap as))))" 
       unfolding has_cont_ESem.replace_upd[symmetric, OF *]
       apply (rule has_cont_ESem.parallel_UHSem_ind[OF *])
       apply simp
       apply simp
       apply (rule, simp)
       apply (case_tac "x \<in> heapVars (asToHeap as)")
-      apply (simp add: lookupHeapToEnv)
+      apply (simp add: lookupHeapToEnv) 
       apply (subst (1 2) Let(2), assumption)
+      apply (drule fmap_restr_eq_Cpred)
       apply simp
       apply simp
       done
     also have "\<rho> f|` (- heapVars (asToHeap as)) = \<rho>"
       using Let(1) by (auto intro: fmap_restr_useless  simp add:  sharp_star_Env)
-    also have "(fmap_C_restr r \<rho>) f|` (- heapVars (asToHeap as)) = (fmap_C_restr r \<rho>)"
+    also have "(fmap_C_restr\<cdot>r\<cdot>\<rho>) f|` (- heapVars (asToHeap as)) = (fmap_C_restr\<cdot>r\<cdot>\<rho>)"
       using Let(1) by (auto intro: fmap_restr_useless  simp add:  sharp_star_Env)
     finally
-    have "fmap_C_restr r (\<N>\<lbrace>asToHeap as\<rbrace>\<rho>) = fmap_C_restr r (\<N>\<lbrace>asToHeap as\<rbrace>fmap_C_restr r \<rho>)".
+    have "fmap_C_restr\<cdot>r\<cdot>(\<N>\<lbrace>asToHeap as\<rbrace>\<rho>) = fmap_C_restr\<cdot>r\<cdot>(\<N>\<lbrace>asToHeap as\<rbrace>fmap_C_restr\<cdot>r\<cdot>\<rho>)".
   } note * = this
 
   show ?case
@@ -298,67 +307,48 @@ next
     apply (rule cont2monofunE[OF _ ]) back back back back
     apply simp
     apply (rule HSem_mono[OF disjoint_is_HSem_cond disjoint_is_HSem_cond])
-    prefer 3
-    apply (rule cont2monofunE[OF _ below_C])
-    apply simp_all
+    apply (simp_all)[2]
+    apply (intro monofun_cfun_arg monofun_cfun_fun Cpred_below)
     done
 qed
 
-lemma
-  assumes "C\<^bsup>n\<^esup> \<sqsubseteq> demand (\<rho> f!\<^sub>\<bottom> x)"
-  assumes "demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>) = C\<^bsup>n\<^esup>"
-  shows higher_demand_ignore: "demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>) = demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>fmap_delete x \<rho>\<^esub>)"
-using assms
-proof(induction n arbitrary: \<rho> e)
-  case 0
-  from `demand _ = C\<^bsup>0\<^esup>`
-  have False by (metis demand_not_0 iterate_0)
-  thus ?case..
-next
-  case (Suc n)
-  have prem: "C\<^bsup>n\<^esup> \<sqsubseteq> demand (\<rho> f!\<^sub>\<bottom> x)"
-    by (auto intro: below_trans[OF _ Suc(2)] simp add: below_C)
-
-  show ?case
-  proof(cases e rule:exp_assn.strong_exhaust(1)[where c= \<rho>, case_names Var App Let Lam])
-    case (Var v)
-    from Suc(2,3)[unfolded Var]
-    have "v \<noteq> x" apply (auto simp add:Rep_cfun_inverse)
-      by (metis C_below_C Suc.prems(1) Suc_n_not_le_n)
-
-    from Suc(3)[unfolded Var]
-    have [simp]: "v \<in> fdom \<rho>" by (auto intro: demand_Var_there simp del: iterate_Suc)
-
-    from Suc.prems(2)
-    have "demand (\<rho> f!\<^sub>\<bottom> v) = C\<^bsup>n\<^esup>"  unfolding Var demand_Var by simp
-    hence "demand (\<rho> f!\<^sub>\<bottom> v) = demand (fmap_delete x \<rho> f!\<^sub>\<bottom> v) " using `v \<noteq> x` by simp
-    thus ?thesis unfolding Var demand_Var  by simp
-  next
-    case (Lam v e')
-    show ?thesis unfolding Lam by (simp only: demand_Lam)
-  next
-    case (App e' v)
-    note Suc(3)[unfolded App]
-
-    show ?thesis
-      unfolding App
-      apply simp
-      oops
-
+lemma can_restrict_heap:
+  "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r = (\<N>\<lbrakk>e\<rbrakk>\<^bsub>fmap_C_restr\<cdot>(Cpred\<cdot>r)\<cdot>\<rho>\<^esub>)\<cdot>r"
+  by (rule C_restr_eqD[OF restr_can_restrict_heap below_refl])
   
-
 lemma add_BH:
   assumes "distinctVars \<Gamma>"
   assumes "(x, e) \<in> set \<Gamma>"
   assumes  "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>"
   shows "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>"
 proof-
+  
+
+
   have "demand (\<N>\<lbrakk>Var x\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>) = C\<cdot>(demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>))"
     unfolding demand_Var using assms by (auto simp add: distinctVars_map_of heapVars_from_set)
   hence "demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>) \<sqsubseteq> demand (\<N>\<lbrace>\<Gamma>\<rbrace> f!\<^sub>\<bottom> x)" by (simp add: Rep_cfun_inverse)
   hence "demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>) = demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)" sorry
   with assms(3)
   show ?thesis unfolding not_bot_demand by simp
+qed
+
+
+
+lemma CESem_Lam_not_bot[simp]:
+  assumes  "(\<N>\<lbrakk> Lam [z]. e \<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>c \<noteq> \<bottom>"
+  shows "(\<N>\<lbrakk> Lam [z]. e \<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>c \<sqsubseteq> CFn\<cdot>(\<Lambda> v. \<N>\<lbrakk>e\<rbrakk>\<^bsub>\<sigma>(z f\<mapsto> v)\<^esub>)"
+proof-
+  from assms have "c \<noteq> \<bottom>" by auto
+  then obtain c' where "c = C\<cdot>c'" by (cases c, auto)
+  then show ?thesis
+    apply (auto simp add: Rep_cfun_inverse)
+    apply (rule cfun_belowI)
+    apply simp
+    apply (rule below_trans[OF C_restr_below])
+    apply (rule cont2monofunE[OF _ C_restr_below])
+    apply simp
+    done
 qed
 
 
@@ -392,7 +382,7 @@ next
   next
   case (App e' x)
     from Suc.prems[unfolded App]
-    have prem: "((\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn (\<N>\<lbrace>\<Gamma>\<rbrace> f!\<^sub>\<bottom> x))\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (auto simp add: Rep_cfun_inverse)
+    have prem: "((\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn  C_restr\<cdot>C\<^bsup>n\<^esup>\<cdot>(\<N>\<lbrace>\<Gamma>\<rbrace> f!\<^sub>\<bottom> x))\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (auto simp add: Rep_cfun_inverse)
     hence e'_not_bot: "(\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by auto
     from Suc.IH[OF this Suc.prems(2)]
     obtain \<Delta> v where lhs': "\<Gamma> : e' \<Down>\<^bsub>x#S\<^esub> \<Delta> : v" by blast 
@@ -412,14 +402,17 @@ next
     from e'_not_bot correct1
     have lam_not_bot: "(\<N>\<lbrakk>Lam [y]. e''\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (metis below_bottom_iff monofun_cfun_fun)
 
-    have "((\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn (\<N>\<lbrace>\<Gamma>\<rbrace> f!\<^sub>\<bottom> x))\<cdot>C\<^bsup>n\<^esup>
-          \<sqsubseteq> ((\<N>\<lbrakk>Lam [y]. e''\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn (\<N>\<lbrace>\<Gamma>\<rbrace> f!\<^sub>\<bottom> x))\<cdot>C\<^bsup>n\<^esup>"
+    have "((\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn C_restr\<cdot>C\<^bsup>n\<^esup>\<cdot>(\<N>\<lbrace>\<Gamma>\<rbrace> f!\<^sub>\<bottom> x))\<cdot>C\<^bsup>n\<^esup>
+          \<sqsubseteq> ((\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn (\<N>\<lbrace>\<Gamma>\<rbrace> f!\<^sub>\<bottom> x))\<cdot>C\<^bsup>n\<^esup>"
+          by (rule cont2monofunE[OF _ C_restr_below], simp)
+    also have "\<dots>  \<sqsubseteq> ((\<N>\<lbrakk>Lam [y]. e''\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn (\<N>\<lbrace>\<Gamma>\<rbrace> f!\<^sub>\<bottom> x))\<cdot>C\<^bsup>n\<^esup>"
       by (intro monofun_cfun_arg monofun_cfun_fun correct1)
     also have "\<dots> \<sqsubseteq> ((\<N>\<lbrakk>Lam [y]. e''\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn (\<N>\<lbrace>\<Delta>\<rbrace> f!\<^sub>\<bottom> x))\<cdot>C\<^bsup>n\<^esup>"
       by (intro monofun_cfun_arg monofun_cfun_fun fun_belowD[OF correct2])
+    also have "\<dots> \<sqsubseteq> (CFn\<cdot>(\<Lambda> v. \<N>\<lbrakk>e''\<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>)(y f\<mapsto> v)\<^esub>) \<down>CFn (\<N>\<lbrace>\<Delta>\<rbrace> f!\<^sub>\<bottom> x))\<cdot>C\<^bsup>n\<^esup>"
+      by (rule cont2monofunE[OF _ CESem_Lam_not_bot[OF lam_not_bot]]) simp
     also have "\<dots> = (\<N>\<lbrakk>e''\<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>)(y f\<mapsto> (\<N>\<lbrace>\<Delta>\<rbrace> f!\<^sub>\<bottom> x))\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
-      using lam_not_bot `y \<notin> heapVars \<Delta>`
-      by (simp add: sharp_Env del: CESem.simps CESem_Lam CESem_Lam_better)
+      using  `y \<notin> heapVars \<Delta>`  by (simp add: sharp_Env)
     also have "\<dots> = (\<N>\<lbrakk>e''[y::=x]\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
       apply (rule arg_cong[OF CESem_subst])
       using `atom y \<sharp> _` by (simp_all add: fresh_Pair fresh_at_base)

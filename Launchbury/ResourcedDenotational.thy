@@ -9,10 +9,10 @@ nominal_primrec
   CESem :: "exp \<Rightarrow> CEnv \<Rightarrow> CValue" ("\<N>\<lbrakk>_\<rbrakk>\<^bsub>_\<^esub>"  [60,60] 60)
 where
  "atom x \<sharp> \<rho> \<Longrightarrow>
-  \<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub>  = (\<Lambda> (C \<cdot> _). CFn \<cdot> (\<Lambda> v. \<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>))"
+  \<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub>  = (\<Lambda> (C\<cdot>r). (CFn\<cdot>(\<Lambda> v. C_restr\<cdot>r\<cdot>(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>(x f\<mapsto> C_restr\<cdot>r\<cdot>v)\<^esub>))))"
   (* Do not use \<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub>  in the rule for App; it costs an additional
      resource and makes the adequacy proof difficult. *)
-| "\<N>\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>\<^esub>    = (\<Lambda> (C \<cdot> r). ((\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>) \<cdot> r \<down>CFn (\<rho> f!\<^sub>\<bottom> x)) \<cdot> r)"
+| "\<N>\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>\<^esub>    =  (\<Lambda> (C\<cdot>r). ((\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r \<down>CFn C_restr\<cdot>r\<cdot>(\<rho> f!\<^sub>\<bottom> x))\<cdot>r)"
 | "\<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub>      = (\<Lambda> (C \<cdot> r). (\<rho> f!\<^sub>\<bottom> x) \<cdot> r)"
 | "set (bn as) \<sharp>* \<rho> \<Longrightarrow>
   \<N>\<lbrakk> Let as body \<rbrakk>\<^bsub>\<rho>\<^esub> = (\<Lambda> (C \<cdot> r). (\<N>\<lbrakk>body\<rbrakk>\<^bsub>has_ESem.HSem CESem (asToHeap as) \<rho>\<^esub>) \<cdot> r)"
@@ -42,16 +42,16 @@ case (goal4 x \<rho> e x' \<rho>' e')
     apply (simp only: Pair_eq exp_assn.eq_iff(4) Abs1_eq_iff)
     by auto
 
-  { fix xa
-    have "CESem_sumC (e, (\<rho>(x f\<mapsto> xa))) = (x' \<leftrightarrow> x) \<bullet> (CESem_sumC (e, (\<rho>(x f\<mapsto> xa))))" by (simp add: permute_pure)
-    also have "\<dots> = CESem_sumC ((x' \<leftrightarrow> x) \<bullet> ((e, (\<rho>(x f\<mapsto> xa)))))"
-      using goal4(1) by (metis (no_types) eqvt_at_apply')
-    also have "\<dots> = CESem_sumC ((x' \<leftrightarrow> x) \<bullet> e, \<rho>(x' f\<mapsto> xa))"
+  { fix r xa
+    have "CESem_sumC (e, (\<rho>(x f\<mapsto> C_restr\<cdot>r\<cdot>xa))) = (x' \<leftrightarrow> x) \<bullet> (CESem_sumC (e, (\<rho>(x f\<mapsto> C_restr\<cdot>r\<cdot>xa))))" by (simp add: permute_pure)
+    also have "\<dots> = CESem_sumC ((x' \<leftrightarrow> x) \<bullet> ((e, (\<rho>(x f\<mapsto> C_restr\<cdot>r\<cdot>xa)))))"
+      using eqvt_at_apply'[OF goal4(1)].
+    also have "\<dots> = CESem_sumC ((x' \<leftrightarrow> x) \<bullet> e, \<rho>(x' f\<mapsto> C_restr\<cdot>r\<cdot>xa))"
       by (simp add: all_fresh)
-    also have "\<dots> = CESem_sumC (e', \<rho>'(x' f\<mapsto> xa))"
+    also have "\<dots> = CESem_sumC (e', \<rho>'(x' f\<mapsto> C_restr\<cdot>r\<cdot>xa))"
       by (simp only: `(x' \<leftrightarrow> x) \<bullet> e = e'` `\<rho> = \<rho>'`)
     finally
-    have "CESem_sumC (e, (\<rho>(x f\<mapsto> xa))) = CESem_sumC (e', (\<rho>'(x' f\<mapsto> xa)))".
+    have "CESem_sumC (e, (\<rho>(x f\<mapsto> C_restr\<cdot>r\<cdot>xa))) = CESem_sumC (e', (\<rho>'(x' f\<mapsto> C_restr\<cdot>r\<cdot>xa)))".
   }
   thus ?case by simp
 next

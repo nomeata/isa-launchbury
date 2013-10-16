@@ -2,6 +2,8 @@ theory C
 imports "Nominal-Utils" "Nominal-HOLCF" "HOLCF-Join"
 begin
 
+default_sort cpo
+
 domain C = C (lazy "C")
 
 instantiation C :: pure_cpo
@@ -9,6 +11,8 @@ begin
   definition "p \<bullet> (c::C) = c"
 instance by default (auto simp add: permute_C_def)
 end
+
+fixrec Cpred :: "C \<rightarrow> C" where "Cpred\<cdot>(C\<cdot>r) = r"
 
 lemma below_C: "x \<sqsubseteq> C\<cdot>x"
   by (induct x) auto
@@ -284,7 +288,7 @@ qed
 lemma least_const_True[simp]: "(LEAST n. True) = (0::nat)"
   by (metis gr0I not_less_Least)
 
-fixrec C_restr :: "C \<rightarrow> (C \<rightarrow> 'a) \<rightarrow> (C \<rightarrow> 'a)"
+fixrec C_restr :: "C \<rightarrow> (C \<rightarrow> 'a::pcpo) \<rightarrow> (C \<rightarrow> 'a)"
   where "C_restr\<cdot>r\<cdot>f\<cdot>r' = (f\<cdot>(r \<sqinter> r'))" 
 
 lemma [simp]: "C_restr\<cdot>r\<cdot>\<bottom> = \<bottom>" by fixrec_simp
@@ -300,9 +304,29 @@ lemma [simp]: "C_restr\<cdot>r\<cdot>(C_restr\<cdot>r'\<cdot>v) = C_restr\<cdot>
   apply (rule cfun_eqI)
   apply simp
   done
-  
+
+lemma C_restr_eqD:
+  assumes "C_restr\<cdot>r\<cdot>f = C_restr\<cdot>r\<cdot>g"
+  assumes "r' \<sqsubseteq> r"
+  shows "f\<cdot>r' = g\<cdot>r'"
+by (metis C_restr.simps assms below_refl is_meetI)
+
 lemma [simp]: "C\<cdot>r \<sqinter> r = r"
   by (auto intro: is_meetI simp add: below_C)
+
+lemma [simp]: "r \<sqinter> C\<cdot>r = r"
+  by (auto intro: is_meetI simp add: below_C)
+
+lemma Cpred_strict[simp]: "Cpred\<cdot>\<bottom> = \<bottom>" by fixrec_simp
+
+lemma Cpred_below: "Cpred\<cdot>r \<sqsubseteq> r"
+  by (cases r) (simp_all add: below_C)
+
+lemma [simp]: "(r \<sqinter> Cpred\<cdot>r) = Cpred \<cdot> r"
+  by (metis Cpred_below below_refl is_meetI)
+
+lemma [simp]: "(Cpred\<cdot>r \<sqinter> r) = Cpred \<cdot> r"
+  by (metis Cpred_below below_refl is_meetI)
 
 lemma C_restr_below[intro, simp]:
   "C_restr\<cdot>r\<cdot>x \<sqsubseteq> x"

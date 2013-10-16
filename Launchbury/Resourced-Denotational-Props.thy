@@ -21,7 +21,7 @@ case (Lam x e Y0 Y)
   have [simp]:"\<And> i. atom x \<sharp> Y i" and [simp]:"atom x \<sharp> Lub Y"  using Lam.hyps(1) Lam.prems(1)
     unfolding sharp_Env by auto
   have "cont (CESem e)" using Lam.hyps(2) by (rule contI, auto)
-  have  "cont (\<lambda> \<rho>. (\<Lambda> (C \<cdot> _). CFn \<cdot> (\<Lambda> v. \<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>)))"
+  have  "cont (\<lambda> \<rho>. (\<Lambda> (C \<cdot> r). CFn \<cdot> (\<Lambda> v. C_restr\<cdot>r\<cdot>(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> C_restr\<cdot>r\<cdot>v)\<^esub>))))"
     by (intro cont2cont cont_compose[OF `cont (CESem e)`])
   from contE[OF this `chain Y`]
   show ?case by simp
@@ -298,30 +298,23 @@ interpretation has_ignore_fresh_ESem CESem
 
 subsection {* Nicer equations for CESem, without freshness requirements *}
 
-lemma CESem_Lam[simp]: "\<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub>  = (\<Lambda> (C \<cdot> _). CFn \<cdot> (\<Lambda> v. \<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>))"
+lemma CESem_Lam[simp]: "\<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub>  = (\<Lambda> (C \<cdot> r). CFn \<cdot> (\<Lambda> v. C_restr\<cdot>r\<cdot>(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> C_restr\<cdot>r\<cdot>v)\<^esub>)))"
 proof-
   have "\<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>fmap_delete x \<rho>\<^esub>"
     apply (rule ESem_ignores_fresh[symmetric, OF fmap_delete_less])
     apply (auto simp add: fresh_star_def)
     done
-  also have "\<dots> = (\<Lambda> (C \<cdot> _). CFn \<cdot> (\<Lambda> v. \<N>\<lbrakk> e \<rbrakk>\<^bsub>(fmap_delete x \<rho>)(x f\<mapsto> v)\<^esub>))"
+  also have "\<dots> = (\<Lambda> (C \<cdot> r). CFn \<cdot> (\<Lambda> v. C_restr\<cdot>r\<cdot>(\<N>\<lbrakk> e \<rbrakk>\<^bsub>(fmap_delete x \<rho>)(x f\<mapsto> C_restr\<cdot>r\<cdot>v)\<^esub>)))"
     apply (rule CESem.simps)
     apply (simp add: sharp_Env)
     done
-  also have "\<dots> = (\<Lambda> (C \<cdot> _). CFn \<cdot> (\<Lambda> v. \<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>))" by simp
+  also have "\<dots> = (\<Lambda> (C \<cdot> r). CFn \<cdot> (\<Lambda> v. C_restr\<cdot>r\<cdot>(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> C_restr\<cdot>r\<cdot>v)\<^esub>)))" by simp
   finally show ?thesis.
 qed
 
-lemma CESem_Lam_not_bot[simp]:
-  assumes  "(\<N>\<lbrakk> Lam [z]. e \<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>c \<noteq> \<bottom>"
-  shows "(\<N>\<lbrakk> Lam [z]. e \<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>c = CFn\<cdot>(\<Lambda> v. \<N>\<lbrakk>e\<rbrakk>\<^bsub>\<sigma>(z f\<mapsto> v)\<^esub>)"
-proof-
-  from assms have "c \<noteq> \<bottom>" by auto
-  then obtain c' where "c = C\<cdot>c'" by (cases c, auto)
-  then show ?thesis by (auto simp add: Rep_cfun_inverse)
-qed
 
-text {* Does not work with update-based semantics :-( *}
+
+text {* Does not work with join-based semantics :-( *}
 
 lemma CESem_Let[simp]: "\<N>\<lbrakk>Let as body\<rbrakk>\<^bsub>\<rho>\<^esub> = (\<Lambda> (C \<cdot> r). (\<N>\<lbrakk>body\<rbrakk>\<^bsub>has_ESem.HSem CESem (asToHeap as) \<rho>\<^esub>) \<cdot> r)"
 proof-
