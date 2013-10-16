@@ -33,7 +33,6 @@ where
 
 type_synonym heap = "(var \<times> exp) list"
 
-
 subsubsection {* Testing alpha equivalence *}
               
 lemma alpha_test:

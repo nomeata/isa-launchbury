@@ -439,6 +439,12 @@ proof-
   show ?thesis by auto
 qed
 
+lemma Application_x_unchanged:
+  assumes "\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e) \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>n # x # S\<^esub> \<Delta>"
+  and "n \<noteq> x"
+  shows "lookup \<Delta> x = Some (App (Var n) y)"
+  using second_stack_element_unchanged[OF assms] assms(2) by auto
+
 lemma var_not_self:
   shows  "\<not> (\<Gamma>(x f\<mapsto> Var x) \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>x # S\<^esub> \<Delta>)"
 proof

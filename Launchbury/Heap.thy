@@ -53,4 +53,21 @@ lemma set_delete_subset: "set (delete x l) \<subseteq> set l"
 lemma  True and [simp]:"(a, b) \<in> set (asToHeap as) \<Longrightarrow> size b < Suc (size as + size body)"
   by (induct and as rule:exp_assn.inducts, auto simp add: exp_assn.bn_defs fresh_star_insert dest: set_mp[OF set_delete_subset])
 
+subsubsection {* Nicer induction rule for expressions *}
+
+lemma  exp_strong_induct[case_names Var App Let Lam]:
+  assumes "\<And>var c. P c (Var var)"
+  assumes "\<And>exp var c. (\<And>c. P c exp) \<Longrightarrow> P c (App exp var)"
+  assumes "\<And>assn exp c.
+    set (bn assn) \<sharp>* c \<Longrightarrow> (\<And>c x. x \<in> heapVars (asToHeap assn) \<Longrightarrow>  P c (the (map_of (asToHeap assn) x))) \<Longrightarrow> (\<And>c. P c exp) \<Longrightarrow> P c (Terms.Let assn exp)"
+  assumes "\<And>var exp c. {atom var} \<sharp>* c \<Longrightarrow> (\<And>c. P c exp) \<Longrightarrow> P c (Lam [var]. exp)"
+  shows "P (c::'a::fs) exp"
+  apply (rule exp_assn.strong_induct(1)[of P "\<lambda> c assn. (\<forall>x \<in> heapVars (asToHeap assn). P c (the (map_of (asToHeap assn) x)))"])
+  apply (metis assms(1))
+  apply (metis assms(2))
+  apply (metis assms(3))
+  apply (metis assms(4))
+  apply auto
+  done
+
 end

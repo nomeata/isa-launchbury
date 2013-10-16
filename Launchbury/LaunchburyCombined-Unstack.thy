@@ -55,7 +55,7 @@ lemma convert_stack_subset:
   using stack_unchanged[OF assms(1), simplified] reds_doesnt_forget[OF assms(1)] assms(2)
   by (induction S) (auto simp add: fdomIff)
 
-lemma forget_stack:
+lemma forget_stack_BH:
   assumes "\<Gamma> \<Down>\<^sup>\<times>\<^sup>u\<^sup>\<surd>\<^bsub>S\<^esub> \<Delta>"
   assumes "distinct S"
   assumes "set S \<subseteq> fdom \<Gamma>"
@@ -199,19 +199,13 @@ case (Let as \<Gamma> x S body u \<Delta>)
   thus ?case by simp
 qed
 
-lemma forget_stack_nice:
-  assumes "\<Gamma> : (x, e) # \<Gamma>' \<Down> \<Delta> : (x, z) # \<Delta>'"
-  and "supp L \<subseteq> supp \<Gamma>'"
-  shows "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
-using forget_stack[OF assms(1)] assms(2) by auto
-
 subsubsection {* Original evaluation implies stacked evaluation. *}
 
 lemma add_stack:
-  assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
+  assumes "\<Gamma> : e \<Down>\<^sup>\<times>\<^sup>b\<^bsub>L\<^esub> \<Delta> : z"
   assumes "x \<in> set L"
   assumes "supp \<Gamma>' \<subseteq> supp L"
-  shows "\<Gamma> : (x,e) # \<Gamma>' \<Down> \<Delta> : (x,z) # \<Gamma>'"
+  shows "(\<Gamma> f++ \<Gamma>')(x f\<mapsto> e)  \<Down>\<^sup>\<times>\<^sup>u\<^sup>b\<^bsub>S\<^esub> (\<Delta> f++ \<Gamma>')(x f\<mapsto> e') "
 using assms
 proof (nominal_induct avoiding: \<Gamma>' x rule: reds_with_n_strong_induct)
 case (Lambda \<Gamma> xa e L \<Gamma>')

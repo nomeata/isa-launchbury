@@ -24,7 +24,7 @@ where
     \<Longrightarrow> \<Gamma> : Lam [x]. e \<Down>\<^sup>i\<^sup>b\<^bsub>L\<^esub> \<Gamma> : Lam [x]. e"
  | Application: "\<lbrakk>
     atom y \<sharp> (\<Gamma>,e,x,L,\<Delta>,\<Theta>,z) ;
-    \<Gamma> : e \<Down>\<^sup>\<times>\<^sup>u\<^bsub>x#L\<^esub> \<Delta> : (Lam [y]. e');
+    \<Gamma> : e \<Down>\<^sup>\<times>\<^sup>b\<^bsub>x#L\<^esub> \<Delta> : (Lam [y]. e');
     \<Delta> : e'[y ::= x] \<Down>\<^sup>\<times>\<^sup>b\<^bsub>L\<^esub> \<Theta> : z
   \<rbrakk>  \<Longrightarrow>
     \<Gamma> : App e x \<Down>\<^sup>\<times>\<^sup>b\<^bsub>L\<^esub> \<Theta> : z" 
@@ -275,6 +275,9 @@ Reducing the set of variables to avoid is always possible.
 lemma fresh_set_subset: "x \<sharp> L \<Longrightarrow> set L' \<subseteq> set L \<Longrightarrow> x \<sharp> L'"
   by (induction L') (auto simp add: fresh_Cons fresh_Nil dest: fresh_list_elem)
 
+lemma fresh_set_eq: "set L' = set L \<Longrightarrow> x \<sharp> L' \<longleftrightarrow> x \<sharp> L"
+  by (metis fresh_set_subset order_refl)
+
 lemma reds_smaller_L: "\<lbrakk> \<Gamma> : e \<Down>\<^sup>i\<^sup>u\<^bsub>L\<^esub> \<Delta> : z;
    set L' \<subseteq> set L
   \<rbrakk> \<Longrightarrow> \<Gamma> : e \<Down>\<^sup>i\<^sup>u\<^bsub>L'\<^esub> \<Delta> : z"
@@ -283,7 +286,7 @@ case (Lambda \<Gamma> x e L L')
   show ?case
     by (rule LambdaI)
 next
-case (Application y \<Gamma> e x L \<Delta> \<Theta> z u e' b L')
+case (Application y \<Gamma> e x L \<Delta> \<Theta> z b e' L')
   show ?case
   proof(rule reds.Application)
     show "atom y \<sharp> (\<Gamma>, e, x, L', \<Delta>, \<Theta>, z)"
@@ -292,7 +295,7 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z u e' b L')
   
     have "set (x # L') \<subseteq> set (x # L)"
       using `set L' \<subseteq> set L` by auto
-    thus "\<Gamma> : e \<Down>\<^sup>\<times>\<^sup>u\<^bsub>x # L'\<^esub> \<Delta> : Lam [y]. e'"
+    thus "\<Gamma> : e \<Down>\<^sup>\<times>\<^sup>b\<^bsub>x # L'\<^esub> \<Delta> : Lam [y]. e'"
       by (rule Application.hyps(10))
 
     show "\<Delta> : e'[y ::= x] \<Down>\<^sup>\<times>\<^sup>b\<^bsub>L'\<^esub> \<Theta> : z "
