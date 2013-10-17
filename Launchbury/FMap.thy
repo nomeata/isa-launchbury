@@ -127,6 +127,12 @@ lemma fmap_restr_empty[simp]: "fdom m \<inter> S = {} \<Longrightarrow> m f|` S 
 lemma lookup_fmap_restr[simp]: "x \<in> S \<Longrightarrow> lookup (fmap_restr S m) x = lookup m x"
   by (transfer, auto)
 
+lemma lookup_fmap_restr_not_there[simp]: "x \<notin> S \<Longrightarrow> lookup (fmap_restr S m) x = None"
+  by (transfer, auto)
+
+lemma lookup_fmap_restr_eq: "lookup (fmap_restr S m) x = (if x \<in> S then lookup m x else None)"
+  by (transfer, auto)
+
 lemma fdom_fmap_restr[simp]: "fdom (fmap_restr S m) = fdom m \<inter> S"
   by (transfer, simp)
 
@@ -238,8 +244,8 @@ lemma lookup_fmap_add2[simp]:  "x \<notin> fdom m2 \<Longrightarrow> lookup (m1 
   apply transfer
   by (metis map_add_dom_app_simps(3))
 
-lemma [simp]: "\<rho> f++ f\<emptyset> = \<rho>"
-  by (transfer, auto)
+lemma lookup_fmap_add_eq: "lookup (m1 f++ m2) x = (if x \<in> fdom m2 then lookup m2 x else  lookup m1 x)"
+  by (cases "x \<notin> fdom m2") simp_all
 
 lemma fmap_add_overwrite: "fdom m1 \<subseteq> fdom m2 \<Longrightarrow> m1 f++ m2 = m2"
   apply transfer

@@ -4,6 +4,32 @@ begin
 
 default_sort type
 
+lemma cont_compose2:
+  assumes "cont c"
+  assumes "\<And> x. cont (c x)"
+  assumes "cont f"
+  assumes "cont g"
+  shows "cont (\<lambda>x. c (f x) (g x))"
+proof-
+  have "monofun (\<lambda>x. c (f x) (g x))"
+    apply (rule monofunI)
+    apply (rule below_trans[OF cont2monofunE[OF assms(2) cont2monofunE[OF `cont g`]]], assumption)
+    apply (rule fun_belowD[OF cont2monofunE[OF `cont c` cont2monofunE[OF `cont f`]]], assumption)
+    done
+  thus ?thesis
+    apply (rule contI2)
+    apply (subst cont2contlubE[OF `cont f`], assumption)
+    apply (subst cont2contlubE[OF `cont g`], assumption)
+    apply (subst cont2contlubE[OF `cont c` ch2ch_cont[OF `cont f`]], assumption)
+    apply (subst lub_fun[OF ch2ch_cont[OF `cont c` ch2ch_cont[OF `cont f`]]], assumption)
+    apply (subst cont2contlubE[OF assms(2)ch2ch_cont[OF `cont g`]], assumption)
+    apply (subst diag_lub)
+    apply (rule ch2ch_fun[OF ch2ch_cont[OF `cont c` ch2ch_cont[OF `cont f`]]], assumption)
+    apply (rule ch2ch_cont[OF assms(2) ch2ch_cont[OF `cont g`]], assumption)
+    apply (rule below_refl)
+    done
+qed
+
 subsubsection {* A partial order on finite maps *}
 
 instantiation fmap :: (type, po) po
@@ -162,6 +188,7 @@ lemma unfold_lub_fmap:  "chain (Y::nat => 'a f\<rightharpoonup> 'b::cpo) \<Longr
 
 subsubsection {* Continuity and finite maps *}
 
+
 lemma chain_fdom:
   assumes "chain (Y :: nat \<Rightarrow> 'a\<Colon>type f\<rightharpoonup> 'b\<Colon>cpo) "
   shows "fdom (Y i) = fdom (Y 0)" and "fdom (\<Squnion> i. Y i) = fdom (Y 0)"
@@ -172,6 +199,29 @@ proof-
     have "Y 0 \<sqsubseteq> (\<Squnion>i . Y i)"  by (rule is_ub_thelub[OF `chain Y`])
     thus "fdom (\<Squnion> i. Y i) = fdom (Y 0)" by-(drule fmap_below_dom, rule sym)
 qed
+
+lemma cont_if_fdom:
+  assumes "cont (\<lambda>x. k (f x))"
+  assumes "cont (\<lambda>x. k (g x))"
+  assumes "cont h"
+  shows "cont (\<lambda>x. k (if j (fdom (h x))  then f x else g x))"
+proof-
+  have "monofun (\<lambda>x. k (if j (fdom (h x)) then f x else g x))"
+    apply (rule monofunI)
+    apply (frule fmap_below_dom[OF cont2monofunE[OF `cont h`]])
+    apply (auto intro: cont2monofunE[OF assms(1)] cont2monofunE[OF assms(2)])
+    done
+  thus ?thesis
+    unfolding if_distrib
+    apply (rule contI2)
+    apply (subst cont2contlubE[OF `cont h`], assumption)
+    apply (subst chain_fdom(1)[OF ch2ch_cont[OF `cont h`]], assumption)
+    apply (subst chain_fdom(2)[OF ch2ch_cont[OF `cont h`]], assumption)
+    apply (subst cont2contlubE[OF cont_if[OF assms(1) assms(2)]], assumption)
+    apply (rule below_refl)
+    done
+qed
+
 
 lemma lookup_chain:
   assumes "chain (Y :: nat \<Rightarrow> 'a f\<rightharpoonup> 'b::cpo)"
@@ -230,27 +280,27 @@ proof (rule cont_compose[OF _ `cont f`], rule contI)
     by (subst lookup_cont[OF `chain Y`], rule cpo_lubI[OF lookup_chain[OF `chain Y`]])
 qed
 
-lemma fmap_contI:
+lemma fmap_cont_via_lookupI:
   assumes "\<And> x y . x \<sqsubseteq> y \<Longrightarrow> fdom (f x) = fdom (f y)"
-  and "\<And>x y z. x \<sqsubseteq> y \<Longrightarrow> z \<in> fdom (f x) \<Longrightarrow> z \<in> fdom (f y) \<Longrightarrow> (f x) f! z \<sqsubseteq> (f y) f! z" (is "PROP ?a2")
-  and "\<And> Y x. chain Y \<Longrightarrow> chain (\<lambda>i. f (Y i)) \<Longrightarrow>
-       x \<in> fdom (f (\<Squnion> i. Y i)) \<Longrightarrow> x \<in> fdom (\<Squnion> i. f (Y i)) \<Longrightarrow>
-       f (\<Squnion> i. Y i) f! x \<sqsubseteq> (\<Squnion> i. f (Y i)) f! x" (is "PROP ?a3") 
-  shows "cont (f :: 'c::cpo \<Rightarrow> 'a f\<rightharpoonup> 'b::cpo)"
-proof(intro contI2 monofunI fmap_belowI)
-  fix x y :: 'c
-  assume "x \<sqsubseteq> y"
-  thus "fdom (f x) = fdom (f y)" using assms(1) by auto
-next
-  next
-  fix Y
-  assume c1: "chain (Y :: nat \<Rightarrow> 'c)"
-  assume c2: "chain (\<lambda>i. f (Y i))"
-  have "Y 0 \<sqsubseteq> Lub Y" by (metis is_ub_thelub[OF c1])
-  hence "fdom (f (Y 0)) = fdom (f (Lub Y))" using assms(1) by auto
-  thus "fdom (f (\<Squnion> i. Y i)) = fdom (\<Squnion> i. f (Y i))"
-    by (simp add: chain_fdom(2)[OF c2])
-qed fact+
+  assumes "\<And> x. cont (\<lambda> \<rho> . f \<rho> f! x)"
+  shows "cont f"
+proof-
+  have "monofun f"
+    apply (rule monofunI)
+    apply (rule fmap_belowI)
+    apply (erule assms(1))
+    apply (erule cont2monofunE[OF assms(2)])
+    done
+  thus ?thesis
+    apply (rule contI2)
+    apply (rule fmap_belowI)
+    apply (simp add: chain_fdom)
+    apply (erule assms(1)[symmetric, OF is_ub_thelub])
+    apply (subst cont2contlubE[OF assms(2)], assumption)
+    apply (subst lookup_cont, assumption)
+    apply (rule below_refl)
+    done
+qed
 
 lemma fmap_upd_mono:
   "\<rho>1 \<sqsubseteq> \<rho>2 \<Longrightarrow> v1 \<sqsubseteq> v2 \<Longrightarrow> \<rho>1(x f\<mapsto> v1) \<sqsubseteq> \<rho>2(x f\<mapsto> v2)"
@@ -264,59 +314,11 @@ lemma fmap_upd_mono:
 lemma fmap_upd_cont[simp,cont2cont]:
   assumes "cont f" and "cont h"
   shows "cont (\<lambda> x. fmap_upd (f x) v (h x) :: 'a f\<rightharpoonup> 'b::cpo)"
-proof (intro contI2  monofunI fmap_belowI)
-  fix x1 x2 :: 'c
-  assume "x1 \<sqsubseteq> x2"
-  hence "f x1 \<sqsubseteq> f x2" by -(erule cont2monofunE[OF `cont f`])
-  thus "fdom (f x1(v f\<mapsto> h x1)) = fdom (f x2(v f\<mapsto> h x2))"
-    by (simp add: fmap_below_dom)
-
-  fix v'
-  assume "v' \<in> fdom (f x1(v f\<mapsto> h x1))"  and "v' \<in> fdom (f x2(v f\<mapsto> h x2))"
-  thus "f x1(v f\<mapsto> h x1) f! v' \<sqsubseteq> f x2(v f\<mapsto> h x2) f! v'"
-  proof(cases "v = v'")
-    case True
-    thus ?thesis
-      using cont2monofunE[OF `cont h` `x1 \<sqsubseteq> x2`]
-      by (transfer, auto)
-  next
-    case False
-    moreover
-    with ` v' \<in> fdom (f x1(v f\<mapsto> h x1))` `v' \<in> fdom (f x2(v f\<mapsto> h x2))`
-    have "v' \<in> fdom (f x1)" and "v' \<in> fdom (f x2)" by auto
-    moreover
-    have "f x1 f! v' \<sqsubseteq> f x2 f! v'"
-      by (rule fmap_belowE[OF cont2monofunE[OF `cont f` `x1 \<sqsubseteq> x2`]])
-    ultimately
-    show  ?thesis  by (transfer, simp)
-  qed
-
-next
-  fix Y
-  assume c1: "chain (Y :: nat \<Rightarrow> 'c)"
-  assume c2: "chain (\<lambda>i. f (Y i)(v f\<mapsto> h (Y i)))"
-  have "Y 0 \<sqsubseteq> Lub Y" by (metis is_ub_thelub[OF c1])
-  hence "f (Y 0) \<sqsubseteq> f (Lub Y)" by (rule cont2monofunE[OF `cont f`])
-  hence "fdom (f (Y 0)) = fdom (f (Lub Y))" by (rule fmap_below_dom)
-
-  thus "fdom (f (\<Squnion> i. Y i)(v f\<mapsto> h (\<Squnion> i. Y i))) = fdom (\<Squnion> i. f (Y i)(v f\<mapsto> h (Y i)))"
-    by (simp add: chain_fdom(2)[OF c2])
-
-  fix v'
-  show "f (\<Squnion> i. Y i)(v f\<mapsto> h (\<Squnion> i. Y i)) f! v' \<sqsubseteq> (\<Squnion> i. f (Y i)(v f\<mapsto> h (Y i))) f! v'"
-  proof(cases "v = v'")
-    case True
-    thus ?thesis
-      using lookup_cont[OF c2]  cont2contlubE[OF `cont h` c1]
-      by simp
-  next
-    case False
-    thus ?thesis
-      using lookup_cont[OF c2] cont2contlubE[OF `cont f` c1]
-            lookup_cont[OF ch2ch_cont[OF `cont f` `chain Y`]]
-      by simp
-  qed
-qed      
+  apply (rule fmap_cont_via_lookupI)
+  apply (drule fmap_below_dom[OF cont2monofunE[OF `cont f`]], simp)
+  apply (case_tac "x = v")
+  apply (auto simp add: assms)
+  done
 
 lemma fdom_adm[intro]: "adm (\<lambda> a. P (fdom a))" 
   by (rule admI, metis chain_fdom(2))
@@ -337,49 +339,19 @@ lemma  fmap_add_belowI:
   by (metis fdomIff lookup_fmap_add1 lookup_fmap_add2)
 
 lemma fmap_add_cont1: "cont (\<lambda> x. x f++ m::('a::type f\<rightharpoonup> 'b::cpo))"
-proof(rule fmap_contI)
-  fix x y :: "'a f\<rightharpoonup> 'b"
-  assume "x \<sqsubseteq> y"
-  hence "fdom x = fdom y" by (rule fmap_below_dom)
-  thus "fdom (x f++ m) = fdom (y f++ m)"  by simp 
-next
-  fix x y :: "'a f\<rightharpoonup> 'b"
-  assume "x \<sqsubseteq> y"
-  fix z :: 'a  
-  show "(x f++ m) f! z \<sqsubseteq> (y f++ m) f! z"
-    using `x \<sqsubseteq> y`
-    by(cases "z \<in> fdom m", auto elim: fmap_belowE)
-next
-  fix Y :: "nat \<Rightarrow> 'a f\<rightharpoonup> 'b"
-  assume c1: "chain Y" and c2: "chain (\<lambda>i. Y i f++ m)"
-  fix x :: 'a
-  show "(\<Squnion> i. Y i) f++ m f! x \<sqsubseteq> (\<Squnion> i. Y i f++ m) f! x"
-    by (cases "x \<in> fdom m", auto simp add: lookup_cont[OF c2] lookup_cont[OF c1])
-qed
+  apply (rule fmap_cont_via_lookupI)
+  apply (drule fmap_below_dom, simp)
+  apply (case_tac "x \<in> fdom m")
+  apply (auto simp add: assms)
+  done
 
 lemma fmap_add_cont2: "cont (\<lambda> x. m f++ x::('a::type f\<rightharpoonup> 'b::cpo))"
-proof(rule fmap_contI)
-  fix x y :: "'a f\<rightharpoonup> 'b"
-  assume "x \<sqsubseteq> y"
-  hence "fdom x = fdom y" by (rule fmap_below_dom)
-  thus "fdom (m f++ x) = fdom (m f++ y)" by simp
-next
-  fix x y :: "'a f\<rightharpoonup> 'b"
-  assume "x \<sqsubseteq> y"
-  hence "fdom x = fdom y" by (rule fmap_below_dom)
-  fix z :: 'a  
-  show "m f++ x f! z \<sqsubseteq> m f++ y f! z"
-    using `x \<sqsubseteq> y` `fdom x = fdom y`
-    by(cases "z \<in> fdom x", auto elim: fmap_belowE)
-next
-  fix Y :: "nat \<Rightarrow> 'a f\<rightharpoonup> 'b"
-  assume c1: "chain Y" and c2: "chain (\<lambda>i. m f++ Y i)"
-    hence [simp]:"\<And> i. fdom (Y i) =  fdom (\<Squnion> i . Y i)"
-      by (metis chain_fdom(1) chain_fdom(2))
-  fix x :: 'a
-  show "m f++ (\<Squnion> i. Y i) f! x \<sqsubseteq> (\<Squnion> i. m f++ Y i) f! x"
-    by (cases "x \<in> fdom (\<Squnion> i . Y i)", auto simp add: lookup_cont[OF c2] lookup_cont[OF c1])
-qed
+  apply (rule fmap_cont_via_lookupI)
+  apply (drule fmap_below_dom, simp)
+  apply (subst lookup_fmap_add_eq)
+  apply (rule cont_if_fdom)
+  apply simp_all
+  done
 
 lemma fmap_add_cont2cont[simp, cont2cont]:
   assumes "cont f"
@@ -432,39 +404,26 @@ lemma fmap_restr_belowI:
   apply (simp add: `fdom m1 = fdom m2`)
   by (metis Int_iff assms(1) fdom_fmap_restr)
 
-lemma fmap_restr_monofun:  "monofun (fmap_restr S)"
-  apply (rule monofunI)
-  apply (rule fmap_restr_belowI)
-  apply (subst lookup_fmap_restr, assumption)+
-  apply (metis fmap_belowE)
-  by (metis fmap_below_dom)
-
 lemma fmap_restr_cont:  "cont (fmap_restr S)"
-  apply (rule contI2[OF fmap_restr_monofun])
-  apply (rule fmap_belowI)
-  apply (simp add: chain_fdom(2))[1]
-  apply auto
-  apply (subst lookup_cont, assumption)+
-  apply (rule lub_mono[OF lookup_chain lookup_chain], assumption+)
-  apply (subst lookup_fmap_restr, assumption)
-  apply (rule below_refl)
+  apply (rule fmap_cont_via_lookupI)
+  apply (drule fmap_below_dom, simp)
+  apply (case_tac "x \<in> S")
+  apply (auto simp add: assms)
   done
 
 lemma fmap_restr_fdom_cont'[simp, cont2cont]:
   assumes "cont f"
   assumes "cont g"
   shows "cont (\<lambda> x. fmap_restr (S (fdom (f x))) (g x))"
-proof (rule contI)
-  case (goal1 Y)
-  have [simp]:"\<And> i. fdom (f (Y i)) = fdom (f (\<Squnion>i. Y i))"
-    apply (subst cont2contlubE[OF `cont f` `chain Y`])
-    using ch2ch_cont[OF `cont f` `chain Y`]
-    by (metis chain_fdom)
-  show "?case"
-    apply simp
-    apply (subst cont2contlubE[OF cont_compose[OF fmap_restr_cont `cont g`] `chain Y`])
-    by (metis assms(2) ch2ch_cont cpo_lubI fmap_restr_cont goal1)
-qed    
+  apply (rule fmap_cont_via_lookupI)
+  apply (frule fmap_below_dom[OF cont2monofunE[OF `cont f`]])
+  apply (frule fmap_below_dom[OF cont2monofunE[OF `cont g`]])
+  apply simp
+  find_theorems fmap_restr lookup
+  apply (subst lookup_fmap_restr_eq)
+  apply (rule cont_if_fdom)
+  apply (simp_all add: assms)
+  done
 
 lemmas fmap_restr_cont2cont[simp,cont2cont] = cont_compose[OF fmap_restr_cont]
 
@@ -506,6 +465,10 @@ lemma fmap_lookup_bot_simps[simp]:
   "x \<notin> fdom m \<Longrightarrow> m f!\<^sub>\<bottom> x = \<bottom>"
   by (transfer, auto simp add: dom_def)+
 
+lemma fmap_lookup_bot_eq:
+  "m f!\<^sub>\<bottom> x = (if x \<in> fdom m then m f! x else \<bottom>)" 
+  by (transfer, auto simp add: dom_def)
+
 lemma fmap_lookup_bot_fmap_upd_other[simp]: "x' \<noteq> x \<Longrightarrow> h(x f\<mapsto> v) f!\<^sub>\<bottom> x' = h f!\<^sub>\<bottom> x'"
   by (transfer, auto)
 
@@ -518,75 +481,21 @@ lemma fmap_lookup_bot_fmap_delete_other[simp]: "x' \<noteq> x \<Longrightarrow> 
 lemma fmap_lookup_bot_fmap_add_other[simp]: "x \<notin> fdom \<rho>' \<Longrightarrow> (\<rho> f++ \<rho>') f!\<^sub>\<bottom> x = \<rho> f!\<^sub>\<bottom> x"
   by (transfer, auto split:option.split)
 
-lemma fmap_lookup_bot_chain:
-  assumes "chain (Y :: nat \<Rightarrow> 'a f\<rightharpoonup> 'b::pcpo)"
-  shows "chain (\<lambda> i . (Y i) f!\<^sub>\<bottom> x)"
-proof(rule chainI)
-  fix i 
-  have "fdom (Y i) = fdom (Y 0)" and
-       "fdom (Y (Suc i)) = fdom (Y 0)"
-       by (intro chain_fdom[OF `chain Y`])+
-  have "Y i \<sqsubseteq> Y (Suc i)" using `chain _` by (rule chainE)
-    hence "fdom (Y (Suc i)) = fdom (Y i)" unfolding below_fmap_def by simp
-  show "(Y i) f!\<^sub>\<bottom> x \<sqsubseteq> Y (Suc i) f!\<^sub>\<bottom> x"
-    proof(cases "x \<in> fdom (Y i)")
-    case True thus ?thesis using `_ \<sqsubseteq> _`  by (simp add: below_fmap_def)
-    next
-    case False
-      hence "(Y i) f!\<^sub>\<bottom> x = \<bottom>"
-        by (transfer, auto simp add: dom_def)
-      moreover
-      have "x \<notin> fdom (Y (Suc i))"
-        using False `fdom (Y (Suc i)) = fdom (Y i)` by simp
-      hence "Y (Suc i) f!\<^sub>\<bottom> x = \<bottom>"
-        by (transfer, auto simp add: dom_def)
-      ultimately show ?thesis by simp
-    qed
-qed
-
-
-lemma fmap_lookup_bot_cont':
-  assumes "chain (Y :: nat \<Rightarrow> 'a f\<rightharpoonup> 'b::pcpo)"
-  shows "(\<Squnion> i. Y i) f!\<^sub>\<bottom> x = (\<Squnion> i. (Y i) f!\<^sub>\<bottom> x)"
-proof(cases "x \<in> fdom (Y 0)")
-case True
-  have "\<And> i. x \<in> fdom (Y i)" "x \<in> fdom (Lub Y)"
-    apply (metis True assms chain_fdom(1))
-    apply (metis True assms chain_fdom(2))
-    done
-  with lookup_cont[OF assms]
-  show ?thesis by simp
-next
-case False
-  have "\<And> i. x \<notin> fdom (Y i)" "x \<notin> fdom (Lub Y)"
-    apply (metis False assms chain_fdom(1))
-    apply (metis False assms chain_fdom(2))
-    done
-  thus ?thesis by simp
-qed
-
 lemma cont2cont_fmap_lookup_bot[simp,cont2cont]:
   fixes f :: "'a::cpo \<Rightarrow> 'b::type f\<rightharpoonup> 'c::pcpo"
   assumes "cont f"
   shows "cont (\<lambda>p. (f p) f!\<^sub>\<bottom> x)"
-proof (rule cont_compose[OF _ `cont f`], rule contI)
-  fix Y :: "nat \<Rightarrow> 'b::type f\<rightharpoonup> 'c::pcpo"
-  assume "chain Y"
-  show "range (\<lambda>i. (Y i) f!\<^sub>\<bottom> x) <<| ((\<Squnion> i. Y i) f!\<^sub>\<bottom> x)"
-    by (subst fmap_lookup_bot_cont'[OF `chain Y`], rule cpo_lubI[OF fmap_lookup_bot_chain[OF `chain Y`]])
-qed
+  apply (subst fmap_lookup_bot_eq)
+  apply (rule cont_if_fdom)
+  apply (simp_all add: assms)
+  done
 
 lemma adm_fmap_lookup_bot[simp, intro]: "adm f \<Longrightarrow> adm (\<lambda> \<rho>. f (\<rho> f!\<^sub>\<bottom> x))"
-  apply (rule admI)
-  apply (subst fmap_lookup_bot_cont', assumption)
-  apply (erule (1) admD[OF _ fmap_lookup_bot_chain])
-  apply auto
-  done
+  by (erule adm_subst[OF cont2cont_fmap_lookup_bot[OF cont_id]])
 
 lemma fmap_lookup_bot_cont:
   "cont (op f!\<^sub>\<bottom>)"
   by (rule cont2cont_lambda[OF cont2cont_fmap_lookup_bot[OF cont_id]])
-
 
 subsubsection {* Expanding the domain of finite maps *}
 
@@ -641,6 +550,11 @@ lemma lookup_fmap_expand3[simp]:
   "finite S \<Longrightarrow> x \<notin> S \<Longrightarrow> lookup (m\<^bsub>[S]\<^esub>) x = None"
  by (transfer, auto split:option.split)
 
+lemma lookup_fmap_expand_eq:
+  "finite S \<Longrightarrow> lookup (m\<^bsub>[S]\<^esub>) x = (if x \<in> S then Some (m f!\<^sub>\<bottom> x) else None)"
+ by (transfer, auto split:option.split)
+
+
 lemma fmap_lookup_bot_fmap_expand1[simp]:
   "finite S \<Longrightarrow> x \<notin> fdom m \<Longrightarrow>  m\<^bsub>[S]\<^esub> f!\<^sub>\<bottom> x = \<bottom>"
  by (transfer, auto)
@@ -674,49 +588,21 @@ lemma fmap_expand_fmap_restr_below:
   apply (rule fmap_expand_belowI[OF assms(1)])
   by (metis Int_iff below.r_refl  fdom_fmap_restr  lookup_fmap_restr)
 
-lemma fmap_expand_monofun:
-  "monofun (\<lambda> m. m\<^bsub>[S]\<^esub>)"
-proof(cases "finite S")
-case True
-  show ?thesis
-  proof (rule monofunI, rule fmap_belowI)
-  case goal1 thus *: ?case using True by (simp add: fmap_below_dom)
-  case (goal2 m1 m2 x) thus ?case
-    using goal2 True
-    apply (cases "x \<in> S")
-    apply (cases "x \<in> fdom m1")
-    apply (subgoal_tac "x \<in> fdom m2")
-    apply (auto dest:fmap_belowE simp add: fmap_below_dom)
-    done
-  qed
-next
-case False
-  show ?thesis by (rule monofunI, simp add: fmap_expand_nonfinite[OF False])
-qed
 
 lemma fmap_expand_cont:
   "cont (\<lambda> m. m\<^bsub>[S]\<^esub>)"
-proof(cases "finite S")
-case True[simp]
-  show ?thesis
-  proof (rule fmap_contI)
-  case goal1 thus ?case by (simp add: fmap_below_dom)
-  case goal2 thus ?case by (metis True below_fmap_def fdom_fmap_expand lookup_fmap_expand1 lookup_fmap_expand2 minimal the.simps)
-  next
-  case (goal3 Y x)[simp]
-    hence [simp]:"x \<in> S" by simp
-    show ?case
-      apply (cases "x \<in> fdom (\<Squnion> i. Y i)")
-      apply (subgoal_tac "\<And> i. x \<in> fdom (Y i)")
-      apply (simp add: lookup_cont)
-      apply (metis chain_fdom(1) chain_fdom(2) goal3(1))
-      apply (simp)
-      done
-  qed
-next
-case False
-  show ?thesis by (rule contI2[OF fmap_expand_monofun] , simp add: fmap_expand_nonfinite[OF False])
-qed
+  apply (cases "finite S")
+  apply (rule fmap_cont_via_lookupI)
+  apply (drule fmap_below_dom, simp)
+  find_theorems fmap_expand lookup
+  apply (subst lookup_fmap_expand_eq, assumption)
+  apply (rule cont_if_fdom[OF _ _ cont_id])
+  apply simp_all[2]
+  apply (subst fmap_expand_nonfinite, assumption)
+  apply simp
+  done
+
+lemmas cont2cont_fmap_expand[simp, cont2cont] = cont_compose[OF fmap_expand_cont]
 
 lemma fmap_upd_expand:
   "finite S \<Longrightarrow>
@@ -1346,5 +1232,51 @@ proof-
     by (fastforce intro: compatible_fmapI simp add: disj)
   show ?thesis by (fastforce simp add: disj)
 qed
+
+subsection {* Mapping *}
+
+lemma fmap_map_lookup[simp]: "v \<in> fdom \<rho> \<Longrightarrow> fmap_map f \<rho> f! v = f (\<rho> f! v)"
+  apply auto
+  by (metis fdomIff option.exhaust option_map_Some the.simps)
+
+lemma fmap_map_lookup_not_there[simp]: "v \<notin> fdom \<rho> \<Longrightarrow> lookup (fmap_map f \<rho>) v = None"
+  apply auto
+  by (metis fdomIff)
+
+lemma fmap_map_lookup_eq: "fmap_map f \<rho> f! v = (if v \<in> fdom \<rho> then f (\<rho> f! v) else the None)"
+  by (simp del: lookup_fmap_map)
+
+lemma fmap_map_lookup_bot[simp]: "f \<bottom> = \<bottom> \<Longrightarrow> fmap_map f \<rho> f!\<^sub>\<bottom> v = f (\<rho> f!\<^sub>\<bottom> v)"
+  apply (cases "v \<in> fdom \<rho>")
+  apply auto
+  by (metis fdomIff option.exhaust option_map_Some the.simps)
+
+
+lemma cont2cont_fmap_map [simp, cont2cont]:
+  assumes "cont f"
+  assumes "\<And> x. cont (f x)"
+  assumes "cont g"
+  shows "cont (\<lambda> x. fmap_map (f x) (g x))"
+  apply (rule fmap_cont_via_lookupI)
+  apply (drule fmap_below_dom[OF cont2monofunE[OF `cont g`]], simp)
+  apply (simp del: lookup_fmap_map add: fmap_map_lookup_eq)
+  apply (intro cont2cont cont_if_fdom `cont g` `cont f` cont_compose2[OF assms(1,2)])
+  done
+
+definition fmap_cmap :: "('a::cpo \<rightarrow> 'b::cpo) \<rightarrow> 'c::type f\<rightharpoonup> 'a \<rightarrow> 'c::type f\<rightharpoonup> 'b" 
+  where  "fmap_cmap = (\<Lambda> f \<rho>. fmap_map (\<lambda> x. f\<cdot>x) \<rho>)"
+
+lemma [simp]: "fdom (fmap_cmap\<cdot>f\<cdot>\<rho>) = fdom \<rho>"
+  unfolding fmap_cmap_def by simp
+
+lemma [simp]: "fmap_cmap\<cdot>f\<cdot>(\<rho>(x f\<mapsto> v)) = fmap_cmap\<cdot>f\<cdot>\<rho>(x f\<mapsto> f\<cdot>v)"
+  unfolding fmap_cmap_def by simp
+
+lemma [simp]: "x \<in> fdom \<rho> \<Longrightarrow> fmap_cmap\<cdot>f\<cdot>\<rho> f! x = f\<cdot>(\<rho> f! x )"
+  unfolding fmap_cmap_def by (simp del: lookup_fmap_map)
+
+lemma [simp]: "f\<cdot>\<bottom> = \<bottom> \<Longrightarrow> fmap_cmap\<cdot>f\<cdot>\<rho> f!\<^sub>\<bottom> x = f\<cdot>(\<rho> f!\<^sub>\<bottom> x )"
+  unfolding fmap_cmap_def by (simp del: lookup_fmap_map)
+
 
 end

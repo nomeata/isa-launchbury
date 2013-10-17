@@ -69,10 +69,10 @@ lemma HSem_monofun'':
     apply (rule fix_on_mono2[OF fix_on_cond_fjc[OF cond1] fix_on_cond_fjc[OF cond2]])
     apply (simp add: bottom_of_fjc to_bot_fmap_def fmap_below_dom[OF `\<rho> \<sqsubseteq> \<rho>'`])
     apply (erule (1) join_mono[OF rho_F_compat_fjc[OF cond1] rho_F_compat_fjc[OF cond2]])
-    apply (subst fmap_below_dom[OF `\<rho> \<sqsubseteq> \<rho>'`], rule monofunE[OF fmap_expand_monofun assms(4)])
-    apply (subst fmap_below_dom[OF `\<rho> \<sqsubseteq> \<rho>'`], rule monofunE[OF fmap_expand_monofun])
+    apply (subst fmap_below_dom[OF `\<rho> \<sqsubseteq> \<rho>'`], rule cont2monofunE[OF cont2cont_fmap_expand[OF cont_id] assms(4)])
+    apply (subst fmap_below_dom[OF `\<rho> \<sqsubseteq> \<rho>'`], rule cont2monofunE[OF cont2cont_fmap_expand[OF cont_id]])
     apply (erule cont2monofunE[rotated])
-    apply (intro cont_compose[OF fmap_expand_cont] cont2cont_heapToEnv assms) apply assumption
+    apply (intro cont2cont_fmap_expand cont2cont_heapToEnv assms) apply assumption
     done
 
 lemma HSem_cont'':
@@ -106,7 +106,7 @@ subsubsection {* Disjoint heaps and environments are compatible *}
 lemma disjoint_is_HSem_cond':
   "fdom \<rho> \<inter> heapVars h = {} \<Longrightarrow> (\<forall> e \<in> snd`set h. cont (ESem e)) \<Longrightarrow> HSem_cond' h \<rho>"
   apply (rule fix_join_condI)
-  apply (rule cont_compose[OF fmap_expand_cont cont2cont_heapToEnv])
+  apply (rule cont2cont_fmap_expand[OF cont2cont_heapToEnv])
   apply (metis)
   apply (rule compatible_fmapI)
   apply (case_tac "x \<in> fdom \<rho>")
@@ -611,7 +611,7 @@ subsubsection {* The heap semantics can also be defined inductively over the hea
         apply simp
         apply rule
         apply (simp add: assms(2))
-        apply (rule cont_compose[OF fmap_expand_cont cont2cont_heapToEnv[OF ESem_cont]])
+        apply (rule cont2cont_fmap_expand[OF  cont2cont_heapToEnv[OF ESem_cont]])
         done
     } note HSem_cond'_Gamma = this
   
@@ -840,7 +840,7 @@ subsubsection {* The heap semantics can also be defined inductively over the hea
         apply simp
         apply rule
         apply (simp add: assms(2))
-        apply (rule cont_compose[OF fmap_expand_cont cont2cont_heapToEnv[OF ESem_cont]])
+        apply (rule cont2cont_fmap_expand[OF  cont2cont_heapToEnv[OF ESem_cont]])
         done
     } note HSem_cond'_Gamma = this
   
