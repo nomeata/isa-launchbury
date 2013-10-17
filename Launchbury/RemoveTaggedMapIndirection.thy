@@ -2,6 +2,10 @@ theory RemoveTaggedMapIndirection
 imports LaunchburyCombinedTaggedMap Indirections "Nominal-Utils" LaunchburyAddBH
 begin
 
+text {*
+This is broken if the Application rule does not remove n from the heap again.
+*}
+
 fun remdups' :: "'a list \<Rightarrow> 'a list" where
   "remdups' [] = []" |
   "remdups' (x#xs) = x # removeAll x (remdups' xs)"
@@ -441,6 +445,8 @@ case (ApplicationInd n \<Gamma> x e y S z \<Delta> e' u \<Theta> "is")
   }
   ultimately
   have "(\<Gamma> \<ominus>\<^sub>H is)(x f\<mapsto> App (e \<ominus> is) (y \<ominus> is)) \<Down>\<^sup>\<times>\<^sup>u\<^sup>\<times>\<^bsub>x # (dropChain is x S \<ominus>\<^sub>S is)\<^esub> \<Theta> \<ominus>\<^sub>H is''"
+    sorry
+    (*
     apply(rule Application[rotated 3])
     using  `atom n \<sharp> x`  `atom n \<sharp> is` `atom n \<sharp> \<Gamma>` 
             `atom n \<sharp> e` `atom n \<sharp> y`  `atom n \<sharp> S`
@@ -457,6 +463,7 @@ case (ApplicationInd n \<Gamma> x e y S z \<Delta> e' u \<Theta> "is")
         eqvt_fresh_cong2[where f = removeAll, OF removeAll_eqvt]
         resolveHeapOneFresh subst_is_fresh(1))
       done
+    *)
 
   with `x \<notin> heapVars is` `valid_ind is`
   have "\<Gamma>(x f\<mapsto> App e y) \<ominus>\<^sub>H is \<Down>\<^sup>\<times>\<^sup>u\<^sup>\<times>\<^bsub> (x # S) \<ominus>\<^sub>S is\<^esub> \<Theta> \<ominus>\<^sub>H is''"

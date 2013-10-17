@@ -13,7 +13,7 @@ where
   \<rbrakk> \<Longrightarrow>
     \<Gamma>(x f\<mapsto> Lam [y]. e) \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>x#S\<^esub> \<Gamma>(x f\<mapsto> Lam [y]. e) " 
  | Application: "\<lbrakk>
-      atom n \<sharp> (\<Gamma>,x,e,y,S);
+      atom n \<sharp> (\<Gamma>,x,e,y,S,\<Theta>);
       atom z \<sharp> (\<Gamma>,x,e,y,S,\<Delta>,\<Theta>);
       x \<notin> fdom \<Gamma>;
       lookup \<Delta> n = Some (Lam [z]. e');
@@ -80,7 +80,7 @@ proof-
 qed
 
 lemma reds_ApplicationI:
-  assumes "atom n \<sharp> (\<Gamma>, x, e, y, S)"
+  assumes "atom n \<sharp> (\<Gamma>, x, e, y, S, \<Theta>)"
   assumes "atom z \<sharp> (\<Gamma>, x, e, y, S, \<Delta>)" (* Less freshness required here *)
   assumes "x \<notin> fdom \<Gamma>"
   assumes "lookup \<Delta> n = Some (Lam [z]. e')"
@@ -246,22 +246,16 @@ lemma reds_fresh:" \<lbrakk> \<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>S\<
 proof(nominal_induct avoiding: x rule: reds.strong_induct)
 case (Lambda \<Gamma> x e) thus ?case by auto
 next
-case (Application n \<Gamma> x e y S z \<Delta> \<Theta> e' u b x')
+case (Application n \<Gamma> x e y S \<Theta> z \<Delta> e' u b x')
   show ?case
   proof(cases "x' = n")
-    case True
-    hence "x' \<in> fdom (\<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e))" by simp
-    with reds_doesnt_forget[OF Application(16)]
-    have "x' \<in> fdom \<Delta>" by auto
-    hence "x' \<in> fdom ((fmap_delete n \<Delta>)(x f\<mapsto> e'[z::=y]))" sorry
-    with reds_doesnt_forget[OF Application(18)]
-    have "x' \<in> fdom \<Theta>" by auto
-    thus ?thesis..
+    case True with `atom n \<sharp> \<Theta>`
+    show ?thesis by simp
   next
     case False with `atom x' \<sharp> \<Gamma>(x f\<mapsto> App e y)`
     have "atom x' \<sharp> \<Gamma>(x f\<mapsto> App (Var n) y)(n f\<mapsto> e)"
       by (auto simp add: fresh_Pair fresh_fmap_upd_eq eqvt_fresh_cong2[where f = fmap_delete, OF fmap_delete_eqvt])
-    from Application.hyps(17)[OF this]
+    from Application.hyps(18)[OF this]
     show ?thesis
     proof
       assume "atom x' \<sharp> \<Delta>"
@@ -270,12 +264,12 @@ case (Application n \<Gamma> x e y S z \<Delta> \<Theta> e' u b x')
       with `atom x' \<sharp> \<Delta>` `atom x' \<sharp> \<Gamma>(x f\<mapsto> App e y)`
       have "atom x' \<sharp> (fmap_delete n \<Delta>)(x f\<mapsto> e'[z::=y])"
         by (auto simp add: subst_pres_fresh fresh_fmap_upd_eq fresh_fmap_delete_subset)
-      from Application.hyps(19)[OF this]
+      from Application.hyps(20)[OF this]
       show ?thesis.
     next
       assume "x' \<in> fdom \<Delta>"
       hence "x' \<in> fdom ((fmap_delete n \<Delta>)(x f\<mapsto> e'[z::=y]))" using False by simp
-      with reds_doesnt_forget[OF Application(18)]
+      with reds_doesnt_forget[OF Application(19)]
       have "x' \<in> fdom \<Theta>" by auto
       thus ?thesis..
     qed
@@ -359,8 +353,7 @@ case (Let as \<Gamma> x S body i u b \<Delta> x')
     from Let(6)[OF this]
     show ?thesis.
   qed
-(* qed *)
-oops
+qed 
 
 end
 

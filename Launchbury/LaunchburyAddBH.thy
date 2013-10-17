@@ -188,7 +188,7 @@ case (Lambda \<Gamma> x y e i u b S)
   case 2 thus ?case .
   case 3 show ?case using Lambda by (rule reds.Lambda)
 next
-case (Application n \<Gamma> x e y S z \<Delta> \<Theta> e' u b)
+case (Application n \<Gamma> x e y S \<Theta> z \<Delta> e' u b)
   case 2
     from Application(1) have "n \<noteq> x"  "n \<notin> set S"
       by (simp_all add: fresh_Pair fresh_at_base fresh_at_base_list)

@@ -1,5 +1,5 @@
 theory NewStuff
-imports Everything  "Denotational-Related" "RemoveTaggedMapIndirection" "LaunchburyAddBH" "Adequacy" "Adequacy-Stacked"
+imports Everything "RemoveTaggedMapIndirection" "LaunchburyAddBH" "Adequacy"
 begin
 
 end

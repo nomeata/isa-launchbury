@@ -152,7 +152,7 @@ maps the given expression semantics over the heap, producing a semantic environm
 
 The other, here shown with a superscript @{text "u"}, uses the right-sided update operator @{text "f++"}
 and is defined by the recursive equation
-\[ @{thm "Denotational-PropsUpd.HSem_eq"[no_vars]}. \]
+\[ @{thm "Denotational-PropsUpd.UHSem_eq"[no_vars]}. \]
 
 The semantics of the heap in the empty environment @{term "fempty"} is abbreviated as @{abbrev "HSem_fempty \<Gamma>"}.
 

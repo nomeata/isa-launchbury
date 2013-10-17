@@ -342,7 +342,7 @@ proof(rule below_antisym)
   case goal1 show ?case by (auto simp add: adm_is_adm_on)
   next
   case (goal2 x)
-    with fmap_belowE[OF HSem_subset_below[OF fresh], where x = x]
+    with fmap_belowE[OF UHSem_subset_below[OF fresh], where x = x]
     have "\<lbrace>\<Delta>\<rbrace>\<rho> f! x \<sqsubseteq> \<lbrace>\<Delta> @ \<Gamma>\<rbrace>\<rho> f! x" by auto
     also have "\<lbrace>\<Delta> @ \<Gamma>\<rbrace>\<rho> = \<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>"
       by (rule UHSem_reorder[OF map_of_eq])
