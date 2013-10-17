@@ -4,7 +4,7 @@ begin
 
 theorem
   assumes "\<rho> f\<triangleleft>\<triangleright> \<sigma>"
-  shows "\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub> \<triangleleft>\<triangleright> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>(C\<^sup>\<infinity>)"
+  shows denotational_semantics_similar: "\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub> \<triangleleft>\<triangleright> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>(C\<^sup>\<infinity>)"
   and "\<And> x. x \<in> heapVars (asToHeap as) \<Longrightarrow>  \<lbrakk>the (map_of (asToHeap as) x)\<rbrakk>\<^bsub>\<rho>\<^esub> \<triangleleft>\<triangleright> (\<N>\<lbrakk>the (map_of (asToHeap as) x)\<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>C\<^sup>\<infinity>"
 using assms
 proof(nominal_induct e and as avoiding: \<rho> \<sigma> rule:exp_assn.strong_induct)
@@ -74,5 +74,13 @@ next
   have "\<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub> \<triangleleft>\<triangleright> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>asToHeap as\<rbrace>\<sigma>\<^esub>)\<cdot>C\<^sup>\<infinity>" by blast
   thus ?case using Let(1,2) by simp
 qed auto
+
+theorem heaps_similar: "\<lbrace>\<Gamma>\<rbrace> f\<triangleleft>\<triangleright> \<N>\<lbrace>\<Gamma>\<rbrace>"
+  by (rule parallel_HSem_ind_different_ESem_disjoint
+                [OF "Denotational-Props.ESem_cont"
+                    "Resourced-Denotational-Props.ESem_cont"
+                     _ _ fmap_similar_adm
+                  ])
+     (auto simp add: lookupHeapToEnv denotational_semantics_similar)
 
 end
