@@ -415,4 +415,46 @@ proof-
   show ?thesis.
 qed
 
+lemma CESem_fmap_cong:
+  assumes "fmap_lookup_bot \<rho>1 = fmap_lookup_bot \<rho>2"
+  shows "\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>1\<^esub> = \<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>2\<^esub>"
+using assms
+proof(nominal_induct e avoiding: \<rho>1 \<rho>2 rule:exp_strong_induct)
+case (Var x \<rho>)
+  from Var.prems
+  show ?case by simp
+next
+case (App e x \<rho>)
+  from App.hyps[OF App.prems] App.prems
+  show ?case by simp
+next
+case (Lam x e)
+  have "\<And> v. op f!\<^sub>\<bottom> (\<rho>1(x f\<mapsto> v)) = op f!\<^sub>\<bottom> (\<rho>2(x f\<mapsto> v))"
+    by (auto simp add: fmap_lookup_bot_fmap_upd_eq Lam.prems)
+  from Lam.hyps(3)[OF this]
+  show ?case by auto
+next
+case (Let as x)
+  from Let(1) have d1: "fdom \<rho>1 \<inter> heapVars (asToHeap as) = {}" by (metis disjoint_iff_not_equal sharp_star_Env)
+  from Let(2) have d2: "fdom \<rho>2 \<inter> heapVars (asToHeap as) = {}" by (metis disjoint_iff_not_equal sharp_star_Env)
+  
+  have "op f!\<^sub>\<bottom> (\<N>\<lbrace>asToHeap as\<rbrace>\<rho>1) = op f!\<^sub>\<bottom> (\<N>\<lbrace>asToHeap as\<rbrace>\<rho>2)"
+    apply (rule parallel_HSem_ind[OF disjoint_is_HSem_cond[OF d1] disjoint_is_HSem_cond[OF d2]])
+    apply (rule adm_is_adm_on, simp)
+    apply simp
+    apply rule
+    apply (subst (1 2) fmap_lookup_bot_join)
+    apply (rule rho_F_compat_fjc[OF disjoint_is_HSem_cond[OF d2]], assumption)
+    apply (rule rho_F_compat_fjc[OF disjoint_is_HSem_cond[OF d1]], assumption)
+    apply (rule arg_cong2[where f = join])
+    apply (simp add:  Let.prems)
+    apply (case_tac "x \<in> heapVars (asToHeap as)")
+    apply (simp add: lookupHeapToEnv )
+    apply (rule Let.hyps(3), assumption, assumption)
+    apply simp
+    done
+  from Let.hyps(4)[OF this]
+  show ?case using Let(1,2) by simp
+qed
+
 end

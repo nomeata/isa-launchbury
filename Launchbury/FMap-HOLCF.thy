@@ -554,6 +554,9 @@ lemma lookup_fmap_expand_eq:
   "finite S \<Longrightarrow> lookup (m\<^bsub>[S]\<^esub>) x = (if x \<in> S then Some (m f!\<^sub>\<bottom> x) else None)"
  by (transfer, auto split:option.split)
 
+lemma fmap_lookup_bot_fmap_expand_eq:
+  "finite S \<Longrightarrow> m\<^bsub>[S]\<^esub> f!\<^sub>\<bottom> x = (if x \<in> S then m f!\<^sub>\<bottom> x else  \<bottom>)"
+ by (transfer, auto)
 
 lemma fmap_lookup_bot_fmap_expand1[simp]:
   "finite S \<Longrightarrow> x \<notin> fdom m \<Longrightarrow>  m\<^bsub>[S]\<^esub> f!\<^sub>\<bottom> x = \<bottom>"
@@ -570,6 +573,10 @@ lemma fmap_lookup_bot_fmap_expand3[simp]:
 
 lemma fmap_expand_fdom[simp]: "\<rho>\<^bsub>[fdom \<rho>]\<^esub> = \<rho>"
   by (transfer, auto split:option.split)
+
+lemma the_lookup_bot_fmap_expand_subset:
+  "finite S \<Longrightarrow> fdom \<rho> \<subseteq> S \<Longrightarrow> op f!\<^sub>\<bottom> (\<rho>\<^bsub>[S]\<^esub>) = op f!\<^sub>\<bottom> \<rho>"
+by (rule) auto
 
 lemma fmap_expand_belowI:
   assumes "fdom \<rho>' = S"
