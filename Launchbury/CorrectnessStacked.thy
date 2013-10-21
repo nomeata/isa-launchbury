@@ -164,7 +164,7 @@ case (Variable y e \<Gamma> x \<Gamma>' z \<Delta>' \<Delta>)
 next
 case (Let as \<Gamma> x \<Gamma>' body \<Delta>' \<Delta>)
   have d1: "distinctVars (asToHeap as @ ((x, Terms.Let as body) # \<Gamma>') @ \<Gamma>)"
-    by (metis Let(1) Let(2) distinctVars_append_asToHeap fresh_star_Cons fresh_star_Pair fresh_star_append let_binders_fresh)
+    by (metis Let(1) Let(2) distinctVars_append_asToHeap fresh_star_list(1,2) fresh_star_Pair let_binders_fresh)
   hence d3: "distinctVars ((x, body) # asToHeap as @ \<Gamma>' @ \<Gamma>)"
     and d4: "distinctVars (((x, body) # \<Gamma>') @ asToHeap as @ \<Gamma>)"
     and d5: "distinctVars ((x, body) # \<Gamma>' @ \<Gamma>)"
@@ -182,7 +182,7 @@ case (Let as \<Gamma> x \<Gamma>' body \<Delta>' \<Delta>)
   have "... \<le> \<lbrace>(x, body) # asToHeap as @ \<Gamma>' @ \<Gamma>\<rbrace>"
     -- "Semantics of let"
     apply (rule HSem_unfold_let[OF d5])
-    using Let(1) by (auto simp add: fresh_star_Pair fresh_star_append)
+    using Let(1) by (auto simp add: fresh_star_Pair fresh_star_list)
   also
   have "... = \<lbrace>((x, body) # \<Gamma>') @ asToHeap as @ \<Gamma>\<rbrace>"
     by (rule HSem_reorder[OF map_of_eq])

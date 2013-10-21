@@ -190,7 +190,7 @@ lemma fresh_take: "a \<sharp> xs \<Longrightarrow> a \<sharp> take n xs"
   by (metis append_take_drop_id fresh_append)
 
 lemma fresh_star_take: "a \<sharp>* xs \<Longrightarrow> a \<sharp>* take n xs"
-  by (metis append_take_drop_id fresh_star_append)
+  by (metis append_take_drop_id fresh_star_list(1))
 
 lemma shorten_stack:
   assumes "\<Gamma> \<Down>\<^sup>i\<^sup>u\<^sup>b\<^bsub>S\<^esub> \<Delta>"

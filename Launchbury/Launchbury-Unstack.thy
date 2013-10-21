@@ -125,7 +125,7 @@ next
 case (Let as \<Gamma> L body \<Delta> z \<Gamma>' x)
   from `x \<in> set L` and `_ \<sharp>* L`
   have [simp]:"set (bn as) \<sharp>* x"
-    by (metis fresh_star_Cons fresh_star_list(1) in_set_conv_decomp)
+    by (metis fresh_star_list(1,2) in_set_conv_decomp)
 
   from `supp \<Gamma>' \<subseteq> supp L` and `_ \<sharp>* L`
   have [simp]:"set (bn as) \<sharp>* \<Gamma>'"

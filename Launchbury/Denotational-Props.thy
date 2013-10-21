@@ -602,7 +602,7 @@ case goal1
           have merged_r: "?r = \<lbrace>asToHeap as @ ((x, Let as body) # \<Gamma>)\<rbrace>"
             apply (rule HSem_merge)
               using disjoint distinct apply (auto simp add: distinctVars_Cons distinctVars_append)[1]
-              using fresh apply (metis fresh_star_Cons fempty_fresh_star fresh_star_Pair set_bn_to_atom_heapVars)              
+              using fresh apply (metis fresh_star_list(2) fempty_fresh_star fresh_star_Pair set_bn_to_atom_heapVars)              
               apply simp
            done
 

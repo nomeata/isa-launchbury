@@ -107,7 +107,7 @@ lemma resolve_var_fresh'[simp]: "atom v \<sharp> is \<Longrightarrow> (v::var) \
   by (induct "is" rule:resolve_var.induct)(auto simp add: fresh_Cons fresh_Pair)
 
 lemma resolve_var_list_fresh: "atom ` heapVars is \<sharp>* L \<Longrightarrow> (L::var list) \<ominus> is = L"
-  by (induct L) (auto simp add: fresh_star_Cons resolve_var_fresh)
+  by (induct L) (auto simp add: fresh_star_list resolve_var_fresh)
 
 
 lemma resolveExp_Lam: "atom x \<sharp> is \<Longrightarrow> (Lam [x]. e) \<ominus> is = Lam [x]. (e \<ominus> is)"
@@ -123,7 +123,7 @@ lemma resolveExp_Var: "Var x \<ominus> is = Var (x \<ominus> is)"
   by (induction "is" arbitrary: x) auto
 
 lemma resolveExp_Let: "set (bn as) \<sharp>* is \<Longrightarrow> (Let as e) \<ominus> is = Let (as \<ominus> is) (e \<ominus> is)"
-  by (induction "is" arbitrary: as e) (auto simp add: fresh_star_Cons)
+  by (induction "is" arbitrary: as e) (auto simp add: fresh_star_list)
 
 lemma resolve_assn_ANil[simp]: "ANil \<ominus> is = ANil"
   by (induction "is") auto

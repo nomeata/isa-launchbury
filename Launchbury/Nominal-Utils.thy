@@ -143,14 +143,6 @@ lemma map_of_eqvt[eqvt]:
 
 subsubsection {* Freshness lemmas *}
 
-lemma fresh_star_Cons:
-  "S \<sharp>* (x # xs) = (S \<sharp>* x \<and> S \<sharp>* xs)"
-by (metis fresh_star_def fresh_Cons)
-
-lemma fresh_star_append:
-  shows "a \<sharp>* (xs @ ys) \<longleftrightarrow> a \<sharp>* xs \<and> a \<sharp>* ys"
-by (metis fresh_star_def fresh_append)
-
 lemma fresh_list_elem:
   assumes "a \<sharp> \<Gamma>"
   and "e \<in> set \<Gamma>"
