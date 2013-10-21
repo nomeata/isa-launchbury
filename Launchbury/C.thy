@@ -44,7 +44,7 @@ lemma Cinf_eq_C[simp]: "C\<^sup>\<infinity> = C \<cdot> r \<longleftrightarrow> 
 lemma C_eq_C[simp]: "(C\<^bsup>i\<^esup> = C\<^bsup>j\<^esup>) \<longleftrightarrow> i = j"
   by (metis C_below_C le_antisym le_refl)
 
-lemma case_of_C_below: "(case r of C\<cdot>_ \<Rightarrow> x) \<sqsubseteq> x"
+lemma case_of_C_below: "(case r of C\<cdot>y \<Rightarrow> x) \<sqsubseteq> x"
   by (cases r) auto
 
 lemma C_case_below: "C_case \<cdot> f \<sqsubseteq> f"

@@ -1,4 +1,4 @@
-session "HOLCF-Nominal2" in "Nominal2" = HOLCF +
+session "HOLCF-Nominal2" in "Nominal2-Isabelle2013-1/Nominal" = HOLCF +
   options [document = false]
   theories
     "Nominal2"
