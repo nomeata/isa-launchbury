@@ -18,7 +18,7 @@ lemma CESem_simps:
   "\<N>\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>\<^esub>    =  (\<Lambda> (C\<cdot>r). ((\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r \<down>CFn C_restr\<cdot>r\<cdot>(\<rho> f!\<^sub>\<bottom> x))\<cdot>r)"
   "\<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub>      = (\<Lambda> (C \<cdot> r). (\<rho> f!\<^sub>\<bottom> x) \<cdot> r)"
   "set (bn as) \<sharp>* \<rho> \<Longrightarrow>
-  \<N>\<lbrakk> Let as body \<rbrakk>\<^bsub>\<rho>\<^esub> = (\<Lambda> (C \<cdot> r). (\<N>\<lbrakk>body\<rbrakk>\<^bsub>has_ESem.HSem CESem (asToHeap as) \<rho>\<^esub>) \<cdot> r)"
+  \<N>\<lbrakk> Let as body \<rbrakk>\<^bsub>\<rho>\<^esub> = (\<Lambda> (C \<cdot> r). (\<N>\<lbrakk>body\<rbrakk>\<^bsub>has_ESem.UHSem CESem (asToHeap as) \<rho>\<^esub>) \<cdot> r)"
   by (simp_all add: eta_cfun)
 
 
@@ -28,7 +28,7 @@ abbreviation CHSem_cond''
       fix_join_cond (\<rho>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>) 
                         (\<lambda> \<rho>' . heapToEnv h (\<lambda>e. CESem e \<rho>')\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>)"
 
-abbreviation CHSem_syn ("\<N>\<lbrace>_\<rbrace>_"  [60,60] 60) where "\<N>\<lbrace>\<Gamma>\<rbrace>\<rho> \<equiv> HSem \<Gamma> \<rho>"
+abbreviation CHSem_syn ("\<N>\<lbrace>_\<rbrace>_"  [60,60] 60) where "\<N>\<lbrace>\<Gamma>\<rbrace>\<rho> \<equiv> UHSem \<Gamma> \<rho>"
 abbreviation CHSem_fempty  ("\<N>\<lbrace>_\<rbrace>"  [60] 60) where "\<N>\<lbrace>\<Gamma>\<rbrace> \<equiv> \<N>\<lbrace>\<Gamma>\<rbrace>fempty"
 
 
@@ -36,7 +36,7 @@ lemma CESem_bot[simp]:"(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot
   by (nominal_induct e avoiding: \<sigma> rule: exp_assn.strong_induct(1)) auto
 
 lemma CHSem_bot[simp]:"(\<N>\<lbrace> \<Gamma> \<rbrace> f!\<^sub>\<bottom> x)\<cdot> \<bottom> = \<bottom>"
-  by (cases "x \<in> heapVars \<Gamma>") auto
+  by (cases "x \<in> heapVars \<Gamma>") (auto simp add: the_lookup_UHSem_heap)
 
 end
 

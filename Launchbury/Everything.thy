@@ -139,13 +139,13 @@ written \mbox{@{term_type "Denotational.ESem e \<rho>"}} and defined by the foll
 *}
 
 text {*
-We study two alternatives for the semantics @{term "Denotational.HSem \<Gamma> \<rho>"}@{text "::"}@{typ Env} of a
+We study two alternatives for the semantics @{term "Denotational.UHSem \<Gamma> \<rho>"}@{text "::"}@{typ Env} of a
 heap @{term "\<Gamma> :: heap"}@{text "::"}@{typ heap}
 in an environment @{term "\<rho>"}@{text "::"}@{typ Env}. As this is used in denotations of a Let expression,
 we have also two expression semantics. Their defining equations are, besides the choice of heap semantics, identical.
 
 The first involves a least upper bound ($\sqcup$) and is defined by the recursive equation
-\[ @{thm (concl) Denotational.HSem_eq[no_vars]}, \]
+\[ @{thm (concl) Denotational.UHSem_eq[no_vars]}, \]
 where the set in the index position indicates the expansion of the map to the given domain and
 @{term "heapToEnv:: heap \<Rightarrow> (exp \<Rightarrow> Value) \<Rightarrow> Env"}@{text "::"}@{typ "heap \<Rightarrow> (exp \<Rightarrow> Value) \<Rightarrow> Env"}
 maps the given expression semantics over the heap, producing a semantic environment.
@@ -156,7 +156,7 @@ and is defined by the recursive equation
 
 The semantics of the heap in the empty environment @{term "fempty"} is abbreviated as @ {abbrev "HSem_fempty \<Gamma>"}.
 
-It is worth noting that the two semantics agree on expressions, i.e. @{thm HSem_join_update(1)[no_vars] },
+It is worth noting that the two semantics agree on expressions, i.e. @ {thm UHSem_join_update(1)[no_vars] },
 but obviously not on heaps that bind variables that also occur in the environment.
 *}
 

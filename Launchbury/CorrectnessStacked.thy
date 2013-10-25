@@ -51,25 +51,22 @@ case (Application n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<Theta
   also
   have "... = ?restr (\<lbrace>(n, e) # (x, App e y) # \<Gamma>' @ \<Gamma>\<rbrace>)"
     -- {* Adding a fresh variable *}
-    apply (subst HSem_add_fresh[of fempty "(x, App e y) # \<Gamma>' @ \<Gamma>" n e, symmetric])
-    apply (rule fempty_is_HSem_cond)
-    apply (rule fempty_is_HSem_cond)
+    thm UHSem_add_fresh[symmetric]
+    apply (subst UHSem_add_fresh[of n "f\<emptyset>" "(x, App e y) # \<Gamma>' @ \<Gamma>" e , symmetric])
     using Application(1) apply (simp add: fresh_Pair fresh_Cons fresh_append)
     apply simp
     done
   also have  "... = ?restr (\<lbrace>(x, App e y) # (n, e) # \<Gamma>' @ \<Gamma>\<rbrace>)"
-    by (rule arg_cong[OF HSem_reorder_head[OF `n \<noteq> x`]])
+    by (rule arg_cong[OF UHSem_reorder_head[OF `n \<noteq> x`]])
   also
   have "... = ?restr (\<lbrace>(x, App (Var n) y) # (n, e) # \<Gamma>' @ \<Gamma>\<rbrace>)"
     -- {* Substituting the variable *}
     apply (rule arg_cong[OF HSem_subst_var_app[symmetric]])
-    apply (rule fempty_is_HSem_cond)
-    apply (rule fempty_is_HSem_cond)
     using Application(1) apply (simp add: fresh_Pair)
     done
   also
   have "... = ?restr (\<lbrace>(n, e) # (x, App (Var n) y) # \<Gamma>' @ \<Gamma>\<rbrace>)"
-    by (simp add: HSem_reorder_head[OF `n \<noteq> x`])
+    by (simp add: UHSem_reorder_head[OF `n \<noteq> x`])
   also
   have "... \<le> ?restr2  (\<lbrace>(n, Lam [z]. e') # (x, App (Var n) y) # \<Delta>' @ \<Delta>\<rbrace>)"
     -- "Induction hypothesis"
@@ -77,31 +74,27 @@ case (Application n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<Theta
     using subset1 subset2 by auto
   also
   have "... \<le> ?restr2  (\<lbrace>(x, App (Var n) y) # (n, Lam [z]. e') # \<Delta>' @ \<Delta>\<rbrace>)"
-    by (simp add: HSem_reorder_head[OF `n \<noteq> x`])
+    by (simp add: UHSem_reorder_head[OF `n \<noteq> x`])
   also
   have "... = ?restr2 (\<lbrace>(x, App (Lam [z]. e') y) # (n, Lam [z]. e') # \<Delta>' @ \<Delta>\<rbrace>)"
     -- "Substituting the variable again"
     apply (rule arg_cong[OF HSem_subst_var_app])
-    apply (rule fempty_is_HSem_cond)
-    apply (rule fempty_is_HSem_cond)
     using Application(1) apply (simp add: fresh_Pair)
     done
   also
   have "... = ?restr2 (\<lbrace>(n, Lam [z]. e') # (x, App (Lam [z]. e') y) # \<Delta>' @ \<Delta>\<rbrace>)"
-    by (simp add: HSem_reorder_head[OF `n \<noteq> x`])
+    by (simp add: UHSem_reorder_head[OF `n \<noteq> x`])
   also
   have "... = (\<lbrace>(x, App (Lam [z]. e') y) # \<Delta>' @ \<Delta>\<rbrace>)"
     -- "Removing the fresh variable"
-    apply (subst HSem_add_fresh[of fempty "(x, App (Lam [z]. e') y) # \<Delta>' @ \<Delta>" n "Lam [z]. e'", symmetric])
-    apply (rule fempty_is_HSem_cond)
-    apply (rule fempty_is_HSem_cond)
+    apply (subst UHSem_add_fresh[of n fempty "(x, App (Lam [z]. e') y) # \<Delta>' @ \<Delta>" "Lam [z]. e'", symmetric])
     using Application(1) apply (simp add: fresh_Pair fresh_Cons fresh_append)
     apply simp
     done
   also
   have "... =  \<lbrace>(x, e'[z::=y]) # \<Delta>' @ \<Delta>\<rbrace>"
     -- "Semantics of application"
-    apply (rule HSem_subst_exp[OF fempty_is_HSem_cond fempty_is_HSem_cond])
+    apply (rule UHSem_subst_exp)
     apply (subgoal_tac "atom z \<sharp> \<rho>'")
     (* HOLCF simpproc looping bug:
     apply (simp only: AESem.simps Fn_project.simps (* beta_cfun CESem_cont2cont fmap_upd_cont cont_const cont_id*))
@@ -135,7 +128,7 @@ case (Variable y e \<Gamma> x \<Gamma>' z \<Delta>' \<Delta>)
     by (auto simp add: map_add_upd_left dom_map_of_conv_heapVars)
 
   have "\<lbrace>((x, Var y) # \<Gamma>') @ \<Gamma>\<rbrace> = \<lbrace>((y, e) # (x, Var y) # \<Gamma>') @ delete y \<Gamma>\<rbrace>"
-    by (rule HSem_reorder[OF map_of_eq1])
+    by (rule UHSem_reorder[OF map_of_eq1])
   also
   have "... \<le>  \<lbrace>((y, z) # (x, Var y) # \<Delta>') @ \<Delta>\<rbrace>"
     -- "Induction hypothesis"
@@ -145,24 +138,22 @@ case (Variable y e \<Gamma> x \<Gamma>' z \<Delta>' \<Delta>)
     by simp
   also
   have "... =  \<lbrace>(x, Var y) # (y, z) # \<Delta>' @ \<Delta>\<rbrace>"
-    by (simp add: HSem_reorder_head[OF `x \<noteq> y`])
+    by (simp add: UHSem_reorder_head[OF `x \<noteq> y`])
   also
   have "... =  \<lbrace>(x, z) # (y, z) # \<Delta>' @ \<Delta>\<rbrace>"
     -- {* Substituting the variable @{term y} *}
     apply (rule HSem_subst_var_var)
-    apply (rule fempty_is_HSem_cond)
-    apply (rule fempty_is_HSem_cond)
     using `x \<noteq> y` by (simp add: fresh_Pair fresh_at_base)
   also
   have "... =  \<lbrace>(y, z) # (x, z) # \<Delta>' @ \<Delta>\<rbrace>"
-    by (simp add: HSem_reorder_head[OF `x \<noteq> y`])
+    by (simp add: UHSem_reorder_head[OF `x \<noteq> y`])
   also
   have "... =  \<lbrace>((y, z) # (x, z) # \<Delta>') @ \<Delta>\<rbrace>"
     by simp
   also
   have "... = \<lbrace>((x, z) # \<Delta>') @ (y, z) # \<Delta>\<rbrace>"
     -- "Induction hypothesis"
-    by (rule HSem_reorder[OF map_of_eq2])
+    by (rule UHSem_reorder[OF map_of_eq2])
   finally
   show "\<lbrace>((x, Var y) # \<Gamma>') @ \<Gamma>\<rbrace> \<le> \<lbrace>((x, z) # \<Delta>') @ (y, z) # \<Delta>\<rbrace>".
 
@@ -190,7 +181,7 @@ case (Let as \<Gamma> x \<Gamma>' body \<Delta>' \<Delta>)
     using Let(1) by (auto simp add: fresh_star_Pair fresh_star_list)
   also
   have "... = \<lbrace>((x, body) # \<Gamma>') @ asToHeap as @ \<Gamma>\<rbrace>"
-    by (rule HSem_reorder[OF map_of_eq])
+    by (rule UHSem_reorder[OF map_of_eq])
   also
   have "... \<le>  \<lbrace>\<Delta>' @ \<Delta>\<rbrace>"
     -- "Induction hypothesis"

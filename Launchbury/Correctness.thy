@@ -30,29 +30,26 @@ proof-
     by (rule CorrectnessStacked.correctness)
 
   have "\<lbrace>\<Gamma>\<rbrace> = fmap_restr (heapVars \<Gamma>) (\<lbrace>(x, e) # \<Gamma>\<rbrace>)"
-    apply (rule HSem_add_fresh[OF fempty_is_HSem_cond fempty_is_HSem_cond, simplified (no_asm), symmetric])
+    apply (rule UHSem_add_fresh[where \<rho> = "f\<emptyset>", simplified, symmetric])
     using fresh apply (simp add: fresh_Pair)
     done
   also have "... \<le> fmap_restr (heapVars \<Delta>) (\<lbrace>(x, z) # \<Delta>\<rbrace>)"
     by (rule fmap_restr_le[OF le Launchbury.reds_doesnt_forget[OF assms(1)], simplified])
   also have "... = \<lbrace>\<Delta>\<rbrace>"
-    apply (rule HSem_add_fresh[OF fempty_is_HSem_cond fempty_is_HSem_cond, simplified (no_asm)])
+    apply (rule UHSem_add_fresh[where \<rho> = "f\<emptyset>", simplified (no_asm)])
     using fresh apply (simp add: fresh_Pair)
     done
   finally show "\<lbrace>\<Gamma>\<rbrace> \<le> \<lbrace>\<Delta>\<rbrace>".
 
   have "\<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<^esub> = \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>(x, e) # \<Gamma>\<rbrace>\<^esub>"
-    apply (rule ESem_add_fresh[OF fempty_is_HSem_cond fempty_is_HSem_cond, symmetric])
+    apply (rule ESem_add_fresh[where \<rho> = "f\<emptyset>", symmetric])
     using fresh by (simp add: fresh_Pair)
   also have "... = \<lbrace>(x, e) # \<Gamma>\<rbrace> f! x"
-    apply (rule the_lookup_HSem_heap[of _ "(x, e) # \<Gamma>" x, simplified (no_asm), symmetric])
-    apply (rule fempty_is_HSem_cond)
-    apply simp_all    
-    done
-  also have "... = \<lbrace>(x, z) # \<Delta>\<rbrace> f! x"  by (simp add: fmap_less_eqD[OF le, simplified])
-  also have "... = \<lbrakk>z\<rbrakk>\<^bsub>\<lbrace>(x, z) # \<Delta>\<rbrace>\<^esub>" by simp
+    by (simp add: the_lookup_UHSem_heap)
+  also have "... = \<lbrace>(x, z) # \<Delta>\<rbrace> f! x" by (simp add: fmap_less_eqD[OF le, simplified])
+  also have "... = \<lbrakk>z\<rbrakk>\<^bsub>\<lbrace>(x, z) # \<Delta>\<rbrace>\<^esub>" by (simp add: the_lookup_UHSem_heap)
   also have "... =  \<lbrakk>z\<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<^esub>"
-    apply (rule ESem_add_fresh[OF fempty_is_HSem_cond fempty_is_HSem_cond])
+    apply (rule ESem_add_fresh)
     using fresh by (simp add: fresh_Pair)
   finally show "\<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<^esub> = \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<^esub>".
 qed

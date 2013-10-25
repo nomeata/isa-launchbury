@@ -5,6 +5,8 @@ begin
 text {* In this theory we show that Theorem 2 in Launchbury's original paper \cite{launchbury} does not hold if one
 takes @{text "\<squnion>"} to mean the least upper bound, by giving a counter example. *}
 
+(* TODO: State using HSem, not USemUpd *)
+
 theorem counterexample:
   assumes correct: "
     \<And> \<Gamma> e L \<Delta> z \<rho>.
@@ -126,5 +128,6 @@ proof-
   txt {* So clearly, this is a contradiction. *}
   show False by metis
 qed
+oops
 
 end
