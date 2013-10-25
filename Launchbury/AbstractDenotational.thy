@@ -119,11 +119,6 @@ lemmas HSem_fresh[simp] = eqvt_fresh_cong2[of UHSem, OF HSem_eqvt']
  and   asToHeap_fresh[simp] = eqvt_fresh_cong1[of asToHeap, OF asToHeap.eqvt]
  and   fresh_fmap_upd[simp] = eqvt_fresh_cong3[of fmap_upd, OF fmap_upd_eqvt]
 
-(* Re-Do the abbreviation from inside the the locale, as abbreviations are not exported *)
-abbreviation AHSem_cond''
-  where "AHSem_cond'' h \<rho> \<equiv>
-      fix_join_cond (\<rho>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>) 
-                        (\<lambda> \<rho>' . heapToEnv h (\<lambda>e. AESem e \<rho>')\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>)"
 end
 
 end

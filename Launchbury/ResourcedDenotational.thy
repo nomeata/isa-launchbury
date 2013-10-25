@@ -22,12 +22,6 @@ lemma CESem_simps:
   by (simp_all add: eta_cfun)
 
 
-(* Re-Do the abbreviation from inside the the locale, as abbreviations are not exported *)
-abbreviation CHSem_cond''
-  where "CHSem_cond'' h \<rho> \<equiv>
-      fix_join_cond (\<rho>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>) 
-                        (\<lambda> \<rho>' . heapToEnv h (\<lambda>e. CESem e \<rho>')\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>)"
-
 abbreviation CHSem_syn ("\<N>\<lbrace>_\<rbrace>_"  [60,60] 60) where "\<N>\<lbrace>\<Gamma>\<rbrace>\<rho> \<equiv> UHSem \<Gamma> \<rho>"
 abbreviation CHSem_fempty  ("\<N>\<lbrace>_\<rbrace>"  [60] 60) where "\<N>\<lbrace>\<Gamma>\<rbrace> \<equiv> \<N>\<lbrace>\<Gamma>\<rbrace>fempty"
 

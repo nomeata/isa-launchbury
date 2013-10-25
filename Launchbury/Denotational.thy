@@ -90,12 +90,6 @@ lemmas HSem_fresh[simp] = eqvt_fresh_cong2[of HSem, OF HSem_eqvt']
  and   fresh_fmap_upd[simp] = eqvt_fresh_cong3[of fmap_upd, OF fmap_upd_eqvt]
 *)
 
-(* Re-Do the abbreviation from inside the the locale, as abbreviations are not exported *)
-abbreviation HSem_cond''
-  where "HSem_cond'' h \<rho> \<equiv>
-      fix_join_cond (\<rho>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>) 
-                        (\<lambda> \<rho>' . heapToEnv h (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>)"
-
 
 notation AHSem_syn ("\<lbrace>_\<rbrace>_"  [60,60] 60)
 notation AHSem_fempty ("\<lbrace>_\<rbrace>"  [60] 60)

@@ -90,25 +90,6 @@ abbreviation AHSem_fempty  ("\<lbrace>_\<rbrace>"  [60] 60) where "\<lbrace>\<Ga
 lemma fresh_fmap_upd_lookup[simp]: "S \<sharp>* (\<rho>::Env) \<Longrightarrow> S \<sharp>* x \<Longrightarrow> S \<sharp>* \<rho>(x f\<mapsto> \<rho> f! y)"
   by (auto simp add: fresh_append fresh_star_fmap_upd_eq intro: eqvt_fresh_star_cong2[where f = fmap_delete, OF fmap_delete_eqvt])
 
-lemma compatible_insert:
-  assumes [simp]: "S = insert x (fdom \<rho>1)"
-  and "x \<notin> fdom \<rho>1"
-  and "x \<notin> fdom \<rho>2"
-  and compat: "compatible \<rho>1 (\<rho>2\<^bsub>[fdom \<rho>1]\<^esub>)"  
-  shows "compatible (\<rho>1(x f\<mapsto> y)) (\<rho>2\<^bsub>[S]\<^esub>)"
-proof(rule compatible_fmapI)
-case (goal1 z)
-  show ?case
-  apply(cases "z = x")
-  using `x \<notin> fdom \<rho>2` apply simp
-  using goal1(1) the_lookup_compatible[OF compat, of z]
-  apply (cases "z \<in> fdom \<rho>2")
-  by auto
-next
-case goal2 with assms(1) show ?case by simp
-qed
-
-
 subsubsection {* The semantics ignores fresh variables *}
 
 lemma ESem_ignores_fresh':
