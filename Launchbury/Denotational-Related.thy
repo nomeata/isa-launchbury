@@ -1,5 +1,5 @@
 theory "Denotational-Related"
-imports "Denotational-Props" "Resourced-Denotational-Props" ValueSimilarity
+imports "Denotational" "Resourced-Denotational-Props" ValueSimilarity
 begin
 
 theorem
@@ -53,7 +53,7 @@ next
 
   have "\<lbrace>asToHeap as\<rbrace>\<rho> f\<triangleleft>\<triangleright> \<N>\<lbrace>asToHeap as\<rbrace>\<sigma>"
   proof (rule parallel_HSem_ind_different_ESem_disjoint
-                [OF "Denotational-Props.ESem_cont"
+                [OF "Denotational.ESem_cont"
                     "Resourced-Denotational-Props.ESem_cont"
                     disj1 disj2 fmap_similar_adm
                   ])
@@ -77,7 +77,7 @@ qed auto
 
 theorem heaps_similar: "\<lbrace>\<Gamma>\<rbrace> f\<triangleleft>\<triangleright> \<N>\<lbrace>\<Gamma>\<rbrace>"
   by (rule parallel_HSem_ind_different_ESem_disjoint
-                [OF "Denotational-Props.ESem_cont"
+                [OF "Denotational.ESem_cont"
                     "Resourced-Denotational-Props.ESem_cont"
                      _ _ fmap_similar_adm
                   ])

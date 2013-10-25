@@ -1258,7 +1258,6 @@ lemma fmap_map_lookup_bot[simp]: "f \<bottom> = \<bottom> \<Longrightarrow> fmap
   apply auto
   by (metis fdomIff option.exhaust option_map_Some the.simps)
 
-
 lemma cont2cont_fmap_map [simp, cont2cont]:
   assumes "cont f"
   assumes "\<And> x. cont (f x)"

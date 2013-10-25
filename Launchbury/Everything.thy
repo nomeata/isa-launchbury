@@ -131,10 +131,10 @@ The type of semantic environments, @{typ Env}, is an abbreviation for @{typ "var
 The semantics of an expression @{term_type "e :: exp"} in an environment @{term "\<rho>"}@{text "::"}@{typ Env} is 
 written \mbox{@{term_type "Denotational.ESem e \<rho>"}} and defined by the following equations:
 \begin{alignstar}
-@{thm (lhs) Denotational.ESem.simps(1)[no_vars]} & = @{thm (rhs) Denotational.ESem.simps(1)[no_vars]} && \text{if } @{thm (prem 1) Denotational.ESem.simps(1)[no_vars]} \\
-@{thm (lhs) Denotational.ESem.simps(2)[no_vars]} & = @{thm (rhs) Denotational.ESem.simps(2)[no_vars]} \\
-@{thm (lhs) Denotational.ESem.simps(3)[no_vars]} & = @{thm (rhs) Denotational.ESem.simps(3)[no_vars]} \\
-@{thm (lhs) Denotational.ESem.simps(4)[no_vars]} & = @{thm (rhs) Denotational.ESem.simps(4)[no_vars]} && \text{if } @{thm (prem 1) Denotational.ESem.simps(4)[no_vars]}.
+@{thm (lhs) Denotational.AESem.simps(1)[no_vars]} & = @{thm (rhs) Denotational.AESem.simps(1)[no_vars]} && \text{if } @{thm (prem 1) Denotational.AESem.simps(1)[no_vars]} \\
+@{thm (lhs) Denotational.AESem.simps(2)[no_vars]} & = @{thm (rhs) Denotational.AESem.simps(2)[no_vars]} \\
+@{thm (lhs) Denotational.AESem.simps(3)[no_vars]} & = @{thm (rhs) Denotational.AESem.simps(3)[no_vars]} \\
+@{thm (lhs) Denotational.AESem.simps(4)[no_vars]} & = @{thm (rhs) Denotational.AESem.simps(4)[no_vars]} && \text{if } @{thm (prem 1) Denotational.AESem.simps(4)[no_vars]}.
 \end{alignstar}
 *}
 
@@ -154,7 +154,7 @@ The other, here shown with a superscript @{text "u"}, uses the right-sided updat
 and is defined by the recursive equation
 \[ @{thm "Denotational-PropsUpd.UHSem_eq"[no_vars]}. \]
 
-The semantics of the heap in the empty environment @{term "fempty"} is abbreviated as @{abbrev "HSem_fempty \<Gamma>"}.
+The semantics of the heap in the empty environment @{term "fempty"} is abbreviated as @ {abbrev "HSem_fempty \<Gamma>"}.
 
 It is worth noting that the two semantics agree on expressions, i.e. @{thm HSem_join_update(1)[no_vars] },
 but obviously not on heaps that bind variables that also occur in the environment.

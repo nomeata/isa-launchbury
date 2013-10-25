@@ -1,5 +1,5 @@
 theory "Correctness-Counterexample"
-imports "Denotational-Props" Launchbury
+imports "Denotational" Launchbury
 begin
 
 text {* In this theory we show that Theorem 2 in Launchbury's original paper \cite{launchbury} does not hold if one
@@ -25,7 +25,7 @@ proof-
   def id \<equiv> "Fn\<cdot>(\<Lambda> x. x)"
   def const \<equiv> "\<lambda> y. Fn\<cdot>(\<Lambda> x. y)"
   have "const id \<down>Fn id \<noteq> const \<bottom> \<down>Fn id"
-    by (simp add: const_def id_def)
+    by (simp only: const_def id_def Fn_project.simps beta_cfun cont2cont Value.con_rews not_False_eq_True)
   hence "const id \<noteq> const \<bottom>" by auto
   have [simp]:"compatible (const id) (const \<bottom>)"
     by (auto intro: compatibleI[where z = "const id"] simp add: const_def id_def)

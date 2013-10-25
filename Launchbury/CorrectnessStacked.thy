@@ -1,5 +1,5 @@
 theory CorrectnessStacked
-  imports "Denotational-Props" LaunchburyStacked
+  imports "Denotational" LaunchburyStacked
 begin
 
 text {* This is the main correctness theorem for the stacked semantics. *}
@@ -102,10 +102,15 @@ case (Application n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<Theta
   have "... =  \<lbrace>(x, e'[z::=y]) # \<Delta>' @ \<Delta>\<rbrace>"
     -- "Semantics of application"
     apply (rule HSem_subst_exp[OF fempty_is_HSem_cond fempty_is_HSem_cond])
-    apply (simp)
     apply (subgoal_tac "atom z \<sharp> \<rho>'")
-    apply (subst ESem.simps, assumption)
-    apply simp
+    (* HOLCF simpproc looping bug:
+    apply (simp only: AESem.simps Fn_project.simps (* beta_cfun CESem_cont2cont fmap_upd_cont cont_const cont_id*))
+    apply (subst beta_cfun)
+    apply (thin_tac ?x)+
+    using [[simp_trace]] [[simp_trace_depth_limit=1000]]
+    apply (simp del: fmap_upd_noop)
+    *)
+    apply (simp only: AESem.simps Fn_project.simps beta_cfun CESem_cont2cont fmap_upd_cont cont_const cont_id)
     apply (rule ESem_subst[simplified])
       using Application(2)
       apply (auto simp add: sharp_Env fresh_Pair heapVars_not_fresh)
