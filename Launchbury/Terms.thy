@@ -52,6 +52,23 @@ lemma alpha_test3:
   apply (simp add: Abs_swap2[of "atom x" "(?lb,?la)" "[atom x, atom y]" "atom y"])
 done
 
+subsubsection {* Free variables *}
+
+definition fv :: "'a::pt \<Rightarrow> var set" where "fv e = {v. atom v \<in> supp e}"
+
+lemma fv_eqvt[simp,eqvt]: "\<pi> \<bullet> (fv e) = fv (\<pi> \<bullet> e)"
+  unfolding fv_def by simp
+
+lemma fv_supp_exp: "supp e = atom ` (fv (e::exp))" and fv_supp_as: "supp as = atom ` (fv (as::assn))"
+  by (induction e and as rule:exp_assn.inducts)
+     (auto simp add: fv_def exp_assn.supp supp_at_base)
+
+lemma fv_Lam[simp]: "fv (Lam [x]. e) = fv e - {x}"
+  unfolding fv_def by (auto simp add: exp_assn.supp)
+
+lemma fv_not_fresh: "atom x \<sharp> e \<longleftrightarrow> x \<notin> fv e"
+  unfolding fv_def fresh_def by blast
+
 subsubsection {* Substitution *}
 
 fun subst_var :: "var \<Rightarrow> var \<Rightarrow> var \<Rightarrow> var" ("_[_::v=_]" [1000,100,100] 1000)
