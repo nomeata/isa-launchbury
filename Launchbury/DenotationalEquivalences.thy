@@ -1,5 +1,5 @@
 theory DenotationalEquivalences
-imports "Denotational-PropsUpd" "Denotational" "HSem-Equivalences"
+imports "Denotational" "HSem-Equivalences"
 begin
 
 (* TODO: Replace this by a lemma showing that the equation for Let with update-based semantics 
