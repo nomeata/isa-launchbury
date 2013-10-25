@@ -140,8 +140,7 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
     apply simp
     apply (rule below_trans[OF Variable.hyps(3)])
     using 2 apply auto[1]
-    apply (rule ESem_mono)
-    apply (erule UHSem_monofun_relaxed)
+    apply (erule ESem_mono_relaxed[OF UHSem_monofun_relaxed])
 
     apply (case_tac "xa \<in> heapVars \<Gamma>")
     apply (subgoal_tac "xa \<in> heapVars \<Delta>")

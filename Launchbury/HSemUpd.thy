@@ -236,20 +236,6 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
     shows "\<lbrace>\<Gamma>\<rbrace>\<rho>1 \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<rho>2"
     by(rule UHSem_monofun''[OF ESem_cont assms])
 
-  lemma ESem_mono: "\<And> e \<rho>1 \<rho>2. op f!\<^sub>\<bottom> \<rho>1 \<sqsubseteq> op f!\<^sub>\<bottom> \<rho>2  \<Longrightarrow> ESem e \<rho>1 \<sqsubseteq> ESem e \<rho>2"
-    sorry
-
-  lemma UHSem_monofun_relaxed:
-    assumes "op f!\<^sub>\<bottom> \<rho> \<sqsubseteq> op f!\<^sub>\<bottom>\<rho>'"
-    shows "op f!\<^sub>\<bottom> (\<lbrace>h\<rbrace>\<rho>) \<sqsubseteq> op f!\<^sub>\<bottom> (\<lbrace>h\<rbrace>\<rho>')"
-    apply (rule parallel_UHSem_ind)
-    apply simp
-    apply simp
-    apply (rule fun_belowI)
-    apply (case_tac "x \<in> heapVars h")
-    apply (auto simp add: lookupHeapToEnv ESem_mono fun_belowD[OF assms])
-    done
-
 subsubsection {* Re-calculating the semantics of the heap is idempotent *} 
 
   lemma map_add_heapVars[simp]: 

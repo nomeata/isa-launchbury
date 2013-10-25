@@ -1,10 +1,12 @@
 (*<*)
 theory Everything
-imports DenotationalEquivalences Correctness CorrectnessUpd "Correctness-Counterexample" "~~/src/HOL/Library/LaTeXsugar" 
+imports DenotationalEquivalences Correctness  "Correctness-Counterexample" "~~/src/HOL/Library/LaTeXsugar" 
 begin
 
+(*
 notation (latex output) DenotationalUpd.ESem ("\<lbrakk>_\<rbrakk>\<^bsup>u\<^esup>\<^bsub>_\<^esub>"  [60,60] 60)
 notation (latex output) "Denotational-PropsUpd.HSem_syn" ("\<lbrace>_\<rbrace>\<^bsup>u\<^esup>_"  [60,60] 60)
+*)
 
 translations
   "xs" <= "CONST set xs"
@@ -152,7 +154,7 @@ maps the given expression semantics over the heap, producing a semantic environm
 
 The other, here shown with a superscript @{text "u"}, uses the right-sided update operator @{text "f++"}
 and is defined by the recursive equation
-\[ @{thm "Denotational-PropsUpd.UHSem_eq"[no_vars]}. \]
+\[ @ {thm "Denotational-PropsUpd.UHSem_eq"[no_vars]}. \]
 
 The semantics of the heap in the empty environment @{term "fempty"} is abbreviated as @ {abbrev "HSem_fempty \<Gamma>"}.
 
@@ -185,10 +187,10 @@ If \mbox{@{thm [mode=IfThen] (prem 1) Correctness.correctness(1)[no_vars]}} and,
  @{thm [mode=IfThen] (concl) Correctness.correctness(2)[no_vars]} *}
 
 text {* The generalization introduced by Launchbury is true if the update-based semantics is chosen:
-If @{thm [mode=IfThen] (prem 1) CorrectnessUpd.correctness(1)[no_vars]} and, as a side condition,
-@{thm [mode=IfThen] (prem 2) CorrectnessUpd.correctness(1)[no_vars]} and
-\mbox{@{thm [mode=IfThen] (prem 3) CorrectnessUpd.correctness(1)[no_vars]}} hold,
-then @{thm [mode=IfThen] (concl) CorrectnessUpd.correctness(1)[no_vars]} and  @{thm [mode=IfThen] (concl) CorrectnessUpd.correctness(2)[no_vars]}. *}
+If @ {thm [mode=IfThen] (prem 1) CorrectnessUpd.correctness(1)[no_vars]} and, as a side condition,
+@ {thm [mode=IfThen] (prem 2) CorrectnessUpd.correctness(1)[no_vars]} and
+\mbox{@ {thm [mode=IfThen] (prem 3) CorrectnessUpd.correctness(1)[no_vars]}} hold,
+then @ {thm [mode=IfThen] (concl) CorrectnessUpd.correctness(1)[no_vars]} and  @ {thm [mode=IfThen] (concl) CorrectnessUpd.correctness(2)[no_vars]}. *}
 
 
 (*<*)

@@ -10,6 +10,9 @@ lemmas cont_compose[OF conts(1), simp, cont2cont]
 lemmas cont_compose2[OF conts(2,3), simp, cont2cont]
 lemmas cont_compose[OF conts(4), simp, cont2cont]
 
+lemma Fn_project_mono: "a \<sqsubseteq> b \<Longrightarrow> c \<sqsubseteq> d \<Longrightarrow> Fn_project a c \<sqsubseteq> Fn_project b d"
+  by (metis (hide_lams, no_types) cont2monofunE conts(2) conts(3) fun_belowD rev_below_trans)
+
 lemma contE_subst:
   "cont g \<Longrightarrow> chain (\<lambda> i. f (Y i)) \<Longrightarrow> range (\<lambda>i. f (Y i)) <<| f (\<Squnion> i. Y i) \<Longrightarrow> range (\<lambda>i. g (f (Y i))) <<| g (f (\<Squnion> i. Y i))"
   by (metis cont_def lub_eqI)
@@ -354,40 +357,61 @@ proof-
   show ?thesis.
 qed
 
-lemma ESem_fmap_cong:
-  assumes "fmap_lookup_bot \<rho>1 = fmap_lookup_bot \<rho>2"
-  shows "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>1\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho>2\<^esub>"
+lemma ESem_mono_relaxed:
+  assumes "fmap_lookup_bot \<rho>1 \<sqsubseteq> fmap_lookup_bot \<rho>2"
+  shows "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>1\<^esub> \<sqsubseteq> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>2\<^esub>"
 using assms
 proof(nominal_induct e avoiding: \<rho>1 \<rho>2 rule:exp_strong_induct)
 case (Var x \<rho>)
   from Var.prems
-  show ?case by simp
+  show ?case by (auto intro: cont2monofunE[OF conts(4)] dest: fun_belowD)
 next
 case (App e x \<rho>)
   from App.hyps[OF App.prems] App.prems
-  show ?case by simp
+  show ?case
+    by (auto intro: Fn_project_mono cont2monofunE[OF conts(4)] dest: fun_belowD)
 next
 case (Lam x e)
-  have "\<And> v. op f!\<^sub>\<bottom> (\<rho>1(x f\<mapsto> v)) = op f!\<^sub>\<bottom> (\<rho>2(x f\<mapsto> v))"
-    by (auto simp add: fmap_lookup_bot_fmap_upd_eq Lam.prems)
+  from Lam(4)
+  have "\<And> v. op f!\<^sub>\<bottom> (\<rho>1(x f\<mapsto> v)) \<sqsubseteq> op f!\<^sub>\<bottom> (\<rho>2(x f\<mapsto> v))"
+    by (auto intro!: fun_belowI fun_belowD[OF  Lam(4)] simp add: fmap_lookup_bot_fmap_upd_eq Lam.prems)
   from Lam.hyps(3)[OF this]
-  show ?case by auto
+  show ?case
+    by (auto intro!: cfun_belowI cont2monofunE[OF conts(1)]  cont2monofunE[OF conts(4)] dest: fun_belowD)
 next
 case (Let as x)
 
-  have "op f!\<^sub>\<bottom> (\<lbrace>asToHeap as\<rbrace>\<rho>1) = op f!\<^sub>\<bottom> (\<lbrace>asToHeap as\<rbrace>\<rho>2)"
+  have "op f!\<^sub>\<bottom> (\<lbrace>asToHeap as\<rbrace>\<rho>1) \<sqsubseteq> op f!\<^sub>\<bottom> (\<lbrace>asToHeap as\<rbrace>\<rho>2)"
     apply (rule parallel_UHSem_ind)
     apply simp
     apply simp
-    apply rule
+    apply (rule fun_belowI)
     apply (case_tac "x \<in> heapVars (asToHeap as)")
      apply (simp add: lookupHeapToEnv )
      apply (rule Let.hyps(3), assumption, assumption)
-    apply (simp add: Let.prems)
+    apply (simp add: fun_belowD[OF Let.prems])
     done
   from Let.hyps(4)[OF this]
-  show ?case using Let(1,2) by simp
+  show ?case using Let(1,2) by (auto intro: cont2monofunE[OF conts(4)] dest: fun_belowD)
 qed
+
+lemma ESem_fmap_cong:
+  assumes "fmap_lookup_bot \<rho>1 = fmap_lookup_bot \<rho>2"
+  shows "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>1\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho>2\<^esub>"
+using assms
+by (metis (full_types) ESem_mono_relaxed below_antisym below_refl)
+
+lemma UHSem_monofun_relaxed:
+  assumes "op f!\<^sub>\<bottom> \<rho> \<sqsubseteq> op f!\<^sub>\<bottom>\<rho>'"
+  shows "op f!\<^sub>\<bottom> (\<lbrace>h\<rbrace>\<rho>) \<sqsubseteq> op f!\<^sub>\<bottom> (\<lbrace>h\<rbrace>\<rho>')"
+  apply (rule parallel_UHSem_ind)
+  apply simp
+  apply simp
+  apply (rule fun_belowI)
+  apply (case_tac "x \<in> heapVars h")
+  apply (auto simp add: lookupHeapToEnv ESem_mono_relaxed fun_belowD[OF assms])
+  done
+
 end
 
 end
