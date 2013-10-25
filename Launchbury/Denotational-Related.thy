@@ -1,5 +1,5 @@
 theory "Denotational-Related"
-imports "Denotational" "Resourced-Denotational-Props" ValueSimilarity
+imports "Denotational" "ResourcedDenotational" ValueSimilarity
 begin
 
 theorem
@@ -29,8 +29,14 @@ next
     hence "\<lbrakk>e\<rbrakk>\<^bsub>\<rho>(v f\<mapsto> x)\<^esub> \<triangleleft>\<triangleright> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<sigma>(v f\<mapsto> y)\<^esub>)\<cdot>C\<^sup>\<infinity>"
       by (rule Lam.hyps)
   }
-  with Lam(1,2)
-  show ?case by auto
+  thus ?case 
+    apply simp
+    apply (rule similar_FnI)
+    apply (subst (1 2) beta_cfun) (* Working around HOLCF simpproc bug? *)
+     apply simp
+     apply simp
+    apply simp
+    done
 next
   case (App e v \<rho> \<sigma>)
   hence App': "\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub> \<triangleleft>\<triangleright> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>C\<^sup>\<infinity>" by auto
@@ -54,7 +60,7 @@ next
   have "\<lbrace>asToHeap as\<rbrace>\<rho> f\<triangleleft>\<triangleright> \<N>\<lbrace>asToHeap as\<rbrace>\<sigma>"
   proof (rule parallel_HSem_ind_different_ESem_disjoint
                 [OF "Denotational.ESem_cont"
-                    "Resourced-Denotational-Props.ESem_cont"
+                    "ResourcedDenotational.ESem_cont"
                     disj1 disj2 fmap_similar_adm
                   ])
     case goal1 show ?case by (simp add: `fdom \<rho> = fdom \<sigma>`)
@@ -78,7 +84,7 @@ qed auto
 theorem heaps_similar: "\<lbrace>\<Gamma>\<rbrace> f\<triangleleft>\<triangleright> \<N>\<lbrace>\<Gamma>\<rbrace>"
   by (rule parallel_HSem_ind_different_ESem_disjoint
                 [OF "Denotational.ESem_cont"
-                    "Resourced-Denotational-Props.ESem_cont"
+                    "ResourcedDenotational.ESem_cont"
                      _ _ fmap_similar_adm
                   ])
      (auto simp add: lookupHeapToEnv denotational_semantics_similar)

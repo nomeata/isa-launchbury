@@ -1,5 +1,5 @@
 theory CorrectnessResourced
-  imports "Resourced-Denotational-Props" Launchbury "HSem-Equivalences"
+  imports "ResourcedDenotational" Launchbury "HSem-Equivalences"
 begin
 
 
@@ -61,9 +61,9 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' \<rho>)
     apply (rule cont2monofunE[OF _ C_restr_below], simp)
     done
   also have "\<dots> = (\<Lambda> (C\<cdot>r). (\<N>\<lbrakk> e'[y ::= x] \<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho>)\<^esub>) \<cdot> r)"
-    by (rule arg_cong[OF CESem_subst[OF `y \<noteq> x` `atom y \<sharp> \<N>\<lbrace>\<Delta>\<rbrace>\<rho>`]])
+    by (rule arg_cong[OF ESem_subst[OF `y \<noteq> x` `atom y \<sharp> \<N>\<lbrace>\<Delta>\<rbrace>\<rho>`]])
   also have "\<dots> \<sqsubseteq> \<N>\<lbrakk> e'[y ::= x] \<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho>)\<^esub>"
-    by (metis C_case_below eta_cfun)
+    by (subst eta_cfun, rule C_case_below)
   also have "\<dots> \<sqsubseteq> \<N>\<lbrakk> z \<rbrakk>\<^bsub>\<N>\<lbrace>\<Theta>\<rbrace>\<rho>\<^esub>"
     by (rule Application.hyps(13)[OF hyp2 prem2'])
   finally
@@ -144,7 +144,9 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
   also have "\<dots> = fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars (delete x \<Gamma>))]\<^esub>)
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars (delete x \<Gamma>)) (\<N>\<lbrace>delete x \<Gamma>\<rbrace>(\<rho>' f|` (- heapVars (delete x \<Gamma>)))))( x f\<mapsto> \<N>\<lbrakk> e \<rbrakk>\<^bsub>(\<N>\<lbrace>delete x \<Gamma>\<rbrace>(\<rho>' f|` (- heapVars (delete x \<Gamma>))))\<^esub>))"
     by (rule iterative_HSem'_join, simp)
-  also have "fmap_lookup_bot \<dots> \<sqsubseteq> fmap_lookup_bot (fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars \<Delta>)]\<^esub>)
+  finally
+  have "fmap_lookup_bot (\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>) \<sqsubseteq> fmap_lookup_bot ..." by (rule ssubst) (rule below_refl)
+  also have "\<dots> \<sqsubseteq> fmap_lookup_bot (fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars \<Delta>)]\<^esub>)
                           (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars \<Delta>) (\<N>\<lbrace>\<Delta>\<rbrace>(\<rho>' f|` (- heapVars \<Delta>))))( x f\<mapsto> \<N>\<lbrakk> z \<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>(\<rho>' f|` (- heapVars \<Delta>))\<^esub>)))"
     apply (rule parallel_fix_on_ind[OF condGamma condDelta])
     apply (intro adm_is_adm_on adm_lemmas fmap_lookup_bot_cont cont2cont_fmap_lookup_bot cont2cont_lambda cont2cont)

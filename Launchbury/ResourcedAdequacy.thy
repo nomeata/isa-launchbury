@@ -1,15 +1,18 @@
 theory ResourcedAdequacy
-imports "Resourced-Denotational-Props" "Launchbury" "DistinctVars" "CorrectnessResourced"
+imports "ResourcedDenotational" "Launchbury" "DistinctVars" "CorrectnessResourced"
 begin
 
+lemma not_bot_below_trans[trans]:
+  "a \<noteq> \<bottom> \<Longrightarrow> a \<sqsubseteq> b \<Longrightarrow> b \<noteq> \<bottom>"
+  by (metis below_bottom_iff)
 
 lemma demand_not_0: "demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>) \<noteq> \<bottom>"
 proof
   assume "demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>) = \<bottom>"
-  hence "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>\<bottom> \<noteq> \<bottom>" by (metis demand_suffices' iterate_0)
+  with demand_suffices'[where n = 0, simplified, OF this]
+  have "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>\<bottom> \<noteq> \<bottom>" by simp
   thus False by simp
 qed
-
 
 definition fmap_C_restr :: "C \<rightarrow> (var f\<rightharpoonup> (C \<rightarrow> 'a::pcpo)) \<rightarrow> (var f\<rightharpoonup> (C \<rightarrow> 'a))" where
   "fmap_C_restr = (\<Lambda> r f.  fmap_cmap\<cdot>(C_restr\<cdot>r)\<cdot>f)"
@@ -203,13 +206,10 @@ proof(cases "demand f" rule:C_cases)
   fix n
   assume "demand f = C\<^bsup>n\<^esup>"
   hence "f\<cdot>(demand f) \<noteq> \<bottom>" by (metis demand_suffices')
-  hence "g\<cdot>(demand f) \<noteq> \<bottom>" using assms by (metis below_bottom_iff monofun_cfun_fun)
+  also note monofun_cfun_fun[OF assms]
+  finally have "g\<cdot>(demand f) \<noteq> \<bottom>" .
   thus "demand g \<sqsubseteq> demand f" unfolding not_bot_demand by auto
 qed auto
-
-lemma not_bot_below_trans[trans]:
-  "a \<noteq> \<bottom> \<Longrightarrow> a \<sqsubseteq> b \<Longrightarrow> b \<noteq> \<bottom>"
-  by (metis below_bottom_iff)
 
 lemma add_BH:
   assumes "distinctVars \<Gamma>"
@@ -332,8 +332,9 @@ next
     have correct1: "\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub> \<sqsubseteq> \<N>\<lbrakk>Lam [y]. e''\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>" and correct2: "op f!\<^sub>\<bottom> (\<N>\<lbrace>\<Gamma>\<rbrace>) \<sqsubseteq> op f!\<^sub>\<bottom> (\<N>\<lbrace>\<Delta>\<rbrace>)"
       by auto
 
-    from e'_not_bot correct1
-    have lam_not_bot: "(\<N>\<lbrakk>Lam [y]. e''\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (metis below_bottom_iff monofun_cfun_fun)
+    note e'_not_bot
+    also note monofun_cfun_fun[OF correct1]
+    finally have lam_not_bot: "(\<N>\<lbrakk>Lam [y]. e''\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>".
 
     have "((\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn C_restr\<cdot>C\<^bsup>n\<^esup>\<cdot>(\<N>\<lbrace>\<Gamma>\<rbrace> f!\<^sub>\<bottom> x))\<cdot>C\<^bsup>n\<^esup>
           \<sqsubseteq> ((\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn (\<N>\<lbrace>\<Gamma>\<rbrace> f!\<^sub>\<bottom> x))\<cdot>C\<^bsup>n\<^esup>"
@@ -347,7 +348,7 @@ next
     also have "\<dots> = (\<N>\<lbrakk>e''\<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>)(y f\<mapsto> (\<N>\<lbrace>\<Delta>\<rbrace> f!\<^sub>\<bottom> x))\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
       using  `y \<notin> heapVars \<Delta>`  by (simp add: sharp_Env)
     also have "\<dots> = (\<N>\<lbrakk>e''[y::=x]\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
-      apply (rule arg_cong[OF CESem_subst])
+      apply (rule arg_cong[OF ESem_subst])
       using `atom y \<sharp> _` by (simp_all add: fresh_Pair fresh_at_base)
     finally
     have "\<dots> \<noteq> \<bottom>" using prem by auto
