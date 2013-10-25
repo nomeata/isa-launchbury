@@ -52,9 +52,8 @@ proof-
       apply (subst Abs_swap2[where a = "atom b" and b = "atom b'"])
       apply (auto simp add: exp_assn.bn_defs exp_assn.supp supp_Pair supp_at_base)
       done
-    hence "\<lbrakk>let b be Var b in Var b\<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk>let b' be Var b' in Var b'\<rbrakk>\<^bsub>\<rho>\<^esub>" by metis
     also
-    have "\<dots> = \<lbrakk>Var b'\<rbrakk>\<^bsub>\<lbrace>[(b', Var b')]\<rbrace>\<rho>\<^esub>"
+    have "\<lbrakk>\<dots>\<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk>Var b'\<rbrakk>\<^bsub>\<lbrace>[(b', Var b')]\<rbrace>\<rho>\<^esub>"
       using `atom b' \<sharp> \<rho>`
       by (auto simp add: fresh_star_def exp_assn.bn_defs)
     also have "\<dots> = \<lbrace>[(b', Var b')]\<rbrace>\<rho> f!\<^sub>\<bottom> b'" by simp
@@ -77,11 +76,11 @@ proof-
     hence [simp]:"b \<noteq> a'" "atom a' \<sharp> \<rho>"
       by (auto simp add: fresh_Pair fresh_at_base sharp_Env)
 
-    have "Lam [a]. let b be Var b in Var b = Lam [a']. let b be Var b in Var b"
+    have "z = Lam [a]. let b be Var b in Var b" unfolding z_def..
+    also have "\<dots> = Lam [a']. let b be Var b in Var b"
       apply (simp add: fresh_Pair)
       by (metis `b \<noteq> a'` `b \<noteq> a` flip_at_base_simps(3) not_self_fresh)
-    hence "\<lbrakk>z\<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk>Lam [a']. let b be Var b in Var b\<rbrakk>\<^bsub>\<rho>\<^esub>" unfolding z_def by metis
-    also have "\<dots> = const \<bottom>"
+    also have "\<lbrakk>\<dots>\<rbrakk>\<^bsub>\<rho>\<^esub> = const \<bottom>"
       by (simp add: const_def)
     finally show "\<lbrakk>z\<rbrakk>\<^bsub>\<rho>\<^esub> = const \<bottom>".
   qed
