@@ -231,6 +231,25 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
   lemma UHSem_Nil[simp]: "\<lbrace>[]\<rbrace>\<rho> = \<rho>"
     by (subst UHSem_eq, simp)
 
+  lemma UHSem_mono:
+    assumes "\<rho>1 \<sqsubseteq> \<rho>2"
+    shows "\<lbrace>\<Gamma>\<rbrace>\<rho>1 \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<rho>2"
+    by(rule UHSem_monofun''[OF ESem_cont assms])
+
+  lemma ESem_mono: "\<And> e \<rho>1 \<rho>2. op f!\<^sub>\<bottom> \<rho>1 \<sqsubseteq> op f!\<^sub>\<bottom> \<rho>2  \<Longrightarrow> ESem e \<rho>1 \<sqsubseteq> ESem e \<rho>2"
+    sorry
+
+  lemma UHSem_monofun_relaxed:
+    assumes "op f!\<^sub>\<bottom> \<rho> \<sqsubseteq> op f!\<^sub>\<bottom>\<rho>'"
+    shows "op f!\<^sub>\<bottom> (\<lbrace>h\<rbrace>\<rho>) \<sqsubseteq> op f!\<^sub>\<bottom> (\<lbrace>h\<rbrace>\<rho>')"
+    apply (rule parallel_UHSem_ind)
+    apply simp
+    apply simp
+    apply (rule fun_belowI)
+    apply (case_tac "x \<in> heapVars h")
+    apply (auto simp add: lookupHeapToEnv ESem_mono fun_belowD[OF assms])
+    done
+
 subsubsection {* Re-calculating the semantics of the heap is idempotent *} 
 
   lemma map_add_heapVars[simp]: 
@@ -609,5 +628,26 @@ subsubsection {* Substitution *}
     by (metis assms UHSem_subst_expr_below below_antisym)
 
 end
+
+lemma parallel_UHSem_ind_different_ESem:
+  assumes cont1: "\<And>x. cont (ESem1 x)"
+  assumes cont2: "\<And>x. cont (ESem2 x)"
+  assumes "adm (\<lambda>\<rho>'. P (fst \<rho>') (snd \<rho>'))"
+  assumes "P (f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>) (f\<emptyset>\<^bsub>[fdom \<rho>2 \<union> heapVars h2]\<^esub>)"
+  assumes "\<And>y z. P y z \<Longrightarrow> P (\<rho> f++ heapToEnv h (\<lambda>e. ESem1 e y)) (\<rho>2 f++ heapToEnv h2 (\<lambda>e. ESem2 e z))"
+  shows "P (has_ESem.UHSem ESem1 h \<rho>) (has_ESem.UHSem ESem2 h2 \<rho>2)"
+proof-
+  interpret HSem1: has_cont_ESem ESem1 apply default using cont1.
+  interpret HSem2: has_cont_ESem ESem2 apply default using cont2.
+
+  show ?thesis
+    unfolding HSem1.UHSem_def' HSem2.UHSem_def'
+    apply (rule parallel_fix_on_ind[OF HSem1.fix_on_cond_UHSem HSem2.fix_on_cond_UHSem])
+    apply (rule adm_is_adm_on[OF assms(3)])
+    apply (rule assms(4))
+    apply (erule assms(5))
+    done
+qed
+
 
 end

@@ -132,7 +132,6 @@ next
   { fix r
     have *: "has_cont_ESem CESem" by unfold_locales
     have "fmap_C_restr\<cdot>r\<cdot>(\<N>\<lbrace>asToHeap as\<rbrace>(\<rho> f|` (- heapVars (asToHeap as)))) = fmap_C_restr\<cdot>r\<cdot>(\<N>\<lbrace>asToHeap as\<rbrace>((fmap_C_restr\<cdot>r\<cdot>\<rho>)  f|` (- heapVars (asToHeap as))))" 
-      unfolding has_cont_ESem.replace_upd[symmetric, OF *]
       apply (rule has_cont_ESem.parallel_UHSem_ind[OF *])
       apply simp
       apply simp
@@ -163,8 +162,7 @@ next
     apply (subst *)
     apply (rule cont2monofunE[OF _ ]) back back back back
     apply simp
-    apply (rule HSem_mono[OF disjoint_is_HSem_cond disjoint_is_HSem_cond])
-    apply (simp_all)[2]
+    apply (rule UHSem_mono)
     apply (intro monofun_cfun_arg monofun_cfun_fun Cpred_below)
     done
 qed
@@ -225,12 +223,12 @@ proof-
   from assms(1,2)
   have [simp]: "the (map_of \<Gamma> x) = e" by (metis distinctVars_map_of the.simps)
 
-  have heaps: "fmap_C_restr\<cdot>(Cpred\<cdot>?C)\<cdot>(\<N>\<lbrace>\<Gamma>\<rbrace>) \<sqsubseteq> (\<N>\<lbrace>delete x \<Gamma>\<rbrace>)\<^bsub>[heapVars \<Gamma>]\<^esub>"
-    apply (rule parallel_HSem_ind[OF fempty_is_HSem_cond fempty_is_HSem_cond adm_is_adm_on])  back 
+  have "fmap_C_restr\<cdot>(Cpred\<cdot>?C)\<cdot>(\<N>\<lbrace>\<Gamma>\<rbrace>) \<sqsubseteq> (\<N>\<lbrace>delete x \<Gamma>\<rbrace>)\<^bsub>[heapVars \<Gamma>]\<^esub> \<and> \<N>\<lbrace>\<Gamma>\<rbrace> \<sqsubseteq> \<N>\<lbrace>\<Gamma>\<rbrace>"
+    apply (rule UHSem_ind) back back back back back back back back back
     apply (intro adm_lemmas cont2cont)
     apply simp
-    unfolding fix_join_compat_def 
-    unfolding HSem_def'[OF fempty_is_HSem_cond, symmetric, unfolded bottom_of_fjc]
+    apply (erule conjE)
+    apply rule
     apply (rule fmap_belowI)
     apply simp
     apply (case_tac "xa = x")
@@ -239,15 +237,20 @@ proof-
     apply (subst C_Cpred_id[OF demand_not_0])
     apply (erule demand_contravariant[OF cont2monofunE[OF ESem_cont]])
 
-    apply (simp add: lookupHeapToEnv)
+    apply (simp add: lookupHeapToEnv the_lookup_UHSem_heap)
     apply (subst restr_can_restrict_heap)
     apply (rule below_trans[OF C_restr_below])
     apply (rule below_trans[OF cont2monofunE[OF ESem_cont] eq_imp_below])
     apply (erule below_trans[OF monofun_cfun_fun[OF monofun_cfun_arg[OF Cpred_below]]])
-    apply (rule CESem_fmap_cong[OF the_lookup_bot_fmap_expand_subset])
+    thm ESem_fmap_cong
+    apply (rule ESem_fmap_cong[OF the_lookup_bot_fmap_expand_subset])
     apply simp
-    apply (auto dest: fmap_below_dom)
+    apply (auto dest: fmap_below_dom)[1]
+
+    apply (rule fmap_belowI)
+    apply (auto simp add: lookupHeapToEnv the_lookup_UHSem_heap cont2monofunE[OF ESem_cont])
     done
+  hence heaps: "fmap_C_restr\<cdot>(Cpred\<cdot>?C)\<cdot>(\<N>\<lbrace>\<Gamma>\<rbrace>) \<sqsubseteq> (\<N>\<lbrace>delete x \<Gamma>\<rbrace>)\<^bsub>[heapVars \<Gamma>]\<^esub>"..
 
   from assms(3)
   have "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>?C \<noteq> \<bottom>"
@@ -260,7 +263,7 @@ proof-
     by (intro cont2monofunE[OF ESem_cont] monofun_cfun_fun heaps )
   also
   have "\<dots> = (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)\<cdot>?C"
-    by (rule arg_cong[OF CESem_fmap_cong[OF the_lookup_bot_fmap_expand_subset]]) auto
+    by (rule arg_cong[OF ESem_fmap_cong[OF the_lookup_bot_fmap_expand_subset]]) auto
   also
   have "\<dots> \<sqsubseteq> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
     using `?C \<sqsubseteq> C\<^bsup>n\<^esup>` by (rule monofun_cfun_arg)
@@ -305,7 +308,7 @@ next
     hence "(x, ?e) \<in> set \<Gamma>" by (induction \<Gamma>) auto
     moreover
     from Suc.prems[unfolded Var] `(x, ?e) \<in> set \<Gamma>` `x \<in> heapVars \<Gamma>`
-    have "(\<N>\<lbrakk>?e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by auto
+    have "(\<N>\<lbrakk>?e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (auto simp add: the_lookup_UHSem_heap)
     hence "(\<N>\<lbrakk>?e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (rule add_BH[OF `distinctVars \<Gamma>` `(x, ?e) \<in> set \<Gamma>`])
     from Suc.IH[OF this distinctVars_delete[OF Suc.prems(2)]]
     obtain \<Delta> v where "delete x \<Gamma> : ?e \<Down>\<^bsub>x # S\<^esub> \<Delta> : v" by blast
@@ -372,7 +375,7 @@ next
     have prem: "(\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>asToHeap as\<rbrace>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" 
       by (simp add: Rep_cfun_inverse fresh_star_Pair) 
     also have "\<N>\<lbrace>asToHeap as\<rbrace>\<N>\<lbrace>\<Gamma>\<rbrace> = \<N>\<lbrace>asToHeap as @ \<Gamma>\<rbrace>"
-      apply (rule HSem_merge)
+      apply (rule UHSem_merge)
       using Let(1)
       by (auto simp add: fresh_star_Pair set_bn_to_atom_heapVars)
     finally 

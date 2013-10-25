@@ -76,8 +76,8 @@ qed
 
 sublocale has_cont_ESem AESem
   apply default
-  using ESem_cont'[OF refl]
-  by (rule contI)
+  using ESem_cont'[OF refl] by (rule contI)
+  
 
 lemmas CESem_cont2cont[simp,cont2cont] = cont_compose[OF ESem_cont]
 

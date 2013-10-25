@@ -8,5 +8,4 @@ locale has_ESem =
 locale has_cont_ESem = has_ESem +
   assumes ESem_cont: "\<And> e. cont (ESem e)"
 
-
 end

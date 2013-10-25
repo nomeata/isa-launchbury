@@ -52,16 +52,12 @@ next
 next
   case (Let as e \<rho> \<sigma>)
   have "fdom \<rho> = fdom \<sigma>" using Let(5) by auto
-  have disj1: "fdom \<rho> \<inter> heapVars (asToHeap as) = {}"
-    by (metis Let.hyps(1) disjoint_iff_not_equal sharp_star_Env)
-  have disj2: "fdom \<sigma> \<inter> heapVars (asToHeap as) = {}"
-    by (metis Let.hyps(2) disjoint_iff_not_equal sharp_star_Env)
 
   have "\<lbrace>asToHeap as\<rbrace>\<rho> f\<triangleleft>\<triangleright> \<N>\<lbrace>asToHeap as\<rbrace>\<sigma>"
-  proof (rule parallel_HSem_ind_different_ESem_disjoint
+  proof (rule parallel_UHSem_ind_different_ESem
                 [OF "Denotational.ESem_cont"
                     "ResourcedDenotational.ESem_cont"
-                    disj1 disj2 fmap_similar_adm
+                     fmap_similar_adm
                   ])
     case goal1 show ?case by (simp add: `fdom \<rho> = fdom \<sigma>`)
   next
@@ -82,10 +78,10 @@ next
 qed auto
 
 theorem heaps_similar: "\<lbrace>\<Gamma>\<rbrace> f\<triangleleft>\<triangleright> \<N>\<lbrace>\<Gamma>\<rbrace>"
-  by (rule parallel_HSem_ind_different_ESem_disjoint
+  by (rule parallel_UHSem_ind_different_ESem
                 [OF "Denotational.ESem_cont"
                     "ResourcedDenotational.ESem_cont"
-                     _ _ fmap_similar_adm
+                     fmap_similar_adm
                   ])
      (auto simp add: lookupHeapToEnv denotational_semantics_similar)
 
