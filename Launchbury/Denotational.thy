@@ -80,6 +80,8 @@ thm Abs_eq_iff[unfolded alpha_lst.simps]
 interpretation semantic_domain "\<lambda>x. Fn$x" "\<lambda>x y. Fn_project$x$y" "\<lambda> x. x".
 interpretation cont_semantic_domain "\<lambda>x. Fn$x" "\<lambda>x y. Fn_project$x$y" "\<lambda> x. x"
   by unfold_locales simp_all
+declare cont_semantic_domain_conts[simp del, cont2cont del]
+
 
 abbreviation ESem ("\<lbrakk> _ \<rbrakk>\<^bsub>_\<^esub>"  [60,60] 60) where "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> \<equiv> AESem e \<rho>"
 
@@ -278,6 +280,7 @@ case goal1
   thus ?case
     by (rule subst[where s = "insert q Q", standard, rotated], auto)
 qed
+
 
 
 end

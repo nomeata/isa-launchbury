@@ -6,9 +6,10 @@ locale cont_semantic_domain = semantic_domain +
   assumes conts: "cont Fn" "cont Fn_project" "\<And> x. cont (Fn_project x)" "cont tick"
 begin
 
-lemmas cont_compose[OF conts(1), simp, cont2cont]
-lemmas cont_compose2[OF conts(2,3), simp, cont2cont]
-lemmas cont_compose[OF conts(4), simp, cont2cont]
+lemmas cont_semantic_domain_conts[simp,cont2cont] =
+  cont_compose[OF conts(1)]
+  cont_compose2[OF conts(2,3)]
+  cont_compose[OF conts(4)]
 
 lemma Fn_project_mono: "a \<sqsubseteq> b \<Longrightarrow> c \<sqsubseteq> d \<Longrightarrow> Fn_project a c \<sqsubseteq> Fn_project b d"
   by (metis (hide_lams, no_types) cont2monofunE conts(2) conts(3) fun_belowD rev_below_trans)

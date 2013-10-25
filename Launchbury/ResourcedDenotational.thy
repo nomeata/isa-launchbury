@@ -9,6 +9,7 @@ interpretation cont_semantic_domain
   "\<lambda>x y. (\<Lambda> r. (x\<cdot>r \<down>CFn C_restr\<cdot>r\<cdot>y)\<cdot>r)"
   "\<lambda> x. C_case \<cdot> x"
   by unfold_locales simp_all
+declare cont_semantic_domain_conts[simp del]
 
 abbreviation CESem ("\<N>\<lbrakk> _ \<rbrakk>\<^bsub>_\<^esub>"  [60,60] 60) where "\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> \<equiv> AESem e \<rho>"
 

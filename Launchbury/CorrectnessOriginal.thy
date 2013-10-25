@@ -49,7 +49,7 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' \<rho>)
   also have "\<dots> = \<lbrakk> Lam [y]. e' \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub> \<down>Fn (\<lbrace>\<Delta>\<rbrace>\<rho> f!\<^sub>\<bottom> x)"
     unfolding *..
   also have "... = \<lbrakk> e' \<rbrakk>\<^bsub>(\<lbrace>\<Delta>\<rbrace>\<rho>)(y f\<mapsto> (\<lbrace>\<Delta>\<rbrace>\<rho> f!\<^sub>\<bottom> x))\<^esub>"
-    by (simp only: AESem_Lam Fn_project.simps, rule arg_cong[OF beta_cfun], simp)
+    by simp
   also have "... = \<lbrakk> e'[y ::= x] \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>"
     by (rule ESem_subst[OF `y \<noteq> x` `atom y \<sharp> \<lbrace>\<Delta>\<rbrace>\<rho>`])
   also have "\<dots> = \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Theta>\<rbrace>\<rho>\<^esub>"

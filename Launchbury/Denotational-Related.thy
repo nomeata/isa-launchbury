@@ -29,14 +29,7 @@ next
     hence "\<lbrakk>e\<rbrakk>\<^bsub>\<rho>(v f\<mapsto> x)\<^esub> \<triangleleft>\<triangleright> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<sigma>(v f\<mapsto> y)\<^esub>)\<cdot>C\<^sup>\<infinity>"
       by (rule Lam.hyps)
   }
-  thus ?case 
-    apply simp
-    apply (rule similar_FnI)
-    apply (subst (1 2) beta_cfun) (* Working around HOLCF simpproc bug? *)
-     apply simp
-     apply simp
-    apply simp
-    done
+  thus ?case by auto
 next
   case (App e v \<rho> \<sigma>)
   hence App': "\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub> \<triangleleft>\<triangleright> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>C\<^sup>\<infinity>" by auto
