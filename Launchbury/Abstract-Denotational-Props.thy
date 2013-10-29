@@ -91,135 +91,70 @@ abbreviation AHSem_fempty  ("\<lbrace>_\<rbrace>"  [60] 60) where "\<lbrace>\<Ga
 
 subsubsection {* The semantics ignores fresh variables *}
 
-lemma ESem_ignores_fresh':
-  "\<rho>1 \<le> \<rho>2 \<Longrightarrow> atom ` (fdom \<rho>2 - fdom \<rho>1) \<sharp>* e \<Longrightarrow> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>1\<^esub> = \<lbrakk>e\<rbrakk>\<^bsub>\<rho>2\<^esub>"
-proof (nominal_induct e avoiding: \<rho>1 \<rho>2 rule:exp_strong_induct)
-case (Var x \<rho>1 \<rho>2)
-  show ?case
-  proof(cases "x \<in> fdom \<rho>1")
-  case True
-    with Var(1)
-    have "x \<in> fdom \<rho>2" by (metis (full_types) fmap_less_fdom set_mp)
-    with True
-    show ?thesis
-      by (simp add: fmap_less_eqD[OF `\<rho>1 \<le> \<rho>2` True])
-  next
-  case False
-    have "x \<notin> fdom \<rho>2"
-    proof
-      assume "x \<in> fdom \<rho>2"
-      hence "x \<in> fdom \<rho>2 - fdom \<rho>1" using False by simp
-      thus False
-        using Var(2)
-        apply (simp add: fresh_star_def)
-        apply (erule ballE[where x = "x"])
-        by auto
-    qed
-    with False
-    show ?thesis
-      by (auto simp add: lookup_not_fdom)
-  qed
+lemma ESem_ignores_fresh'':
+ "atom ` set S \<sharp>* e \<Longrightarrow> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho> f|` (- set S)\<^esub>"
+proof (nominal_induct e avoiding: \<rho> S rule:exp_strong_induct)
+  case (Var x)
+  hence "x \<notin> set S" by (auto simp add: fresh_star_def )
+  thus ?case by (cases "x \<in> fdom \<rho>") simp_all
 next
-case (App e x \<rho>1 \<rho>2)
-  from App(3)
-  have "atom ` (fdom \<rho>2 - fdom \<rho>1) \<sharp>* e"
-    by (auto simp add: fresh_star_def)
-  note hyps = App.hyps[OF App.prems(1) this]
-  moreover
-  have "\<rho>1 f!\<^sub>\<bottom> x = \<rho>2 f!\<^sub>\<bottom> x"
-  proof(cases "x \<in> fdom \<rho>1")
-  case True
-    with App(2)
-    have "x \<in> fdom \<rho>2" by (metis (full_types) fmap_less_fdom set_mp)
-    with True
-    show ?thesis
-      by (simp add: fmap_less_eqD[OF `\<rho>1 \<le> \<rho>2` True])
-  next
-  case False
-    have "x \<notin> fdom \<rho>2"
-    proof
-      assume "x \<in> fdom \<rho>2"
-      hence "x \<in> fdom \<rho>2 - fdom \<rho>1" using False by simp
-      thus False
-        using App(3)
-        apply (simp add: fresh_star_def)
-        apply (erule ballE[where x = "x"])
-        by auto
-    qed
-    with False
-    show ?thesis
-      by (auto simp add: lookup_not_fdom)
-  qed
-  ultimately
-  show ?case
-    by simp
+  case (App e x)
+  hence "atom ` set S \<sharp>* e" and "x \<notin> set S" by (auto simp add: fresh_star_def )
+  from App(1)[OF this(1)] this(2)
+  show ?case by (cases "x \<in> fdom \<rho>") auto
 next
-case (Let as e \<rho>1 \<rho>2)
-  have "fdom \<rho>1 \<subseteq> fdom \<rho>2" by (metis Let(5) fmap_less_fdom)
+  case (Lam x e)
+  hence [simp]: "atom x \<sharp> \<rho> f|` (- set S)" by (metis fresh_fmap_restr_subset)
+  have [simp]: "x \<notin> set S" using `atom x \<sharp> S` by (metis set_not_fresh)
+  have *: "atom ` set S \<sharp>* e" using Lam(4) by (auto simp add: fresh_star_def)
+  from Lam(1)
+  show ?case by (simp, subst Lam(3)[OF *], simp)
+next
+  case (Let as e)
+  hence [simp]: "set (bn as) \<sharp>* \<rho> f|` (- set S)" by (metis fresh_star_def fresh_fmap_restr_subset)
 
-  have "\<lbrace>asToHeap as\<rbrace>\<rho>1 \<le> \<lbrace>asToHeap as\<rbrace>\<rho>2"
-  proof (rule parallel_UHSem_ind)
-  case goal1 show ?case by simp
-  case goal2
+  from `set (bn as) \<sharp>* S` have d: "set (bn as) \<inter> atom ` set S = {}" by (auto simp add: fresh_star_def set_not_fresh)
+  hence *: "atom ` set S \<sharp>* e" and **: "atom ` set S \<sharp>* asToHeap as"
+    using `atom \` set S \<sharp>* Let as e` by (auto simp add: fresh_star_def intro: asToHeap_fresh )
+  have d2: "heapVars (asToHeap as) \<inter> set S = {}"
+    using d by(metis image_Int_subset image_is_empty set_bn_to_atom_heapVars subset_empty)
+
+  have "\<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub> = \<lbrakk>e\<rbrakk>\<^bsub>(\<lbrace>asToHeap as\<rbrace>\<rho>) f|` (- set S)\<^esub>"
+    by (rule Let(4)[OF *])
+  also
+  have "(\<lbrace>asToHeap as\<rbrace>\<rho>) f|` (- set S) = \<lbrace>asToHeap as\<rbrace>(\<rho> f|` (- set S))"
+  proof(induction rule: parallel_UHSem_ind[case_names adm base step])
+    case adm thus ?case by simp
+  next
+    case base show ?case using d2 by -(rule, auto)
+  next
+    case (step y z)
     show ?case
-      apply (rule fmap_bottom_less)
-      using `fdom \<rho>1 \<subseteq> fdom \<rho>2` by auto
-  case (goal3 \<rho>1' \<rho>2')[simp]
-    have prem: "atom ` (fdom \<rho>2' - fdom \<rho>1') \<sharp>* asToHeap as"
-      using Let(6) Let(1) Let(2)
-      by -(rule asToHeap_fresh_star, auto simp add:  sharp_star_Env fresh_star_def)
-
-    show "\<rho>1 f++ heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>1'\<^esub>) \<le> \<rho>2 f++ heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>2'\<^esub>) "
-    proof(rule fmap_less_eqI)
-    case goal1
-      show ?case using `fdom \<rho>1 \<subseteq> fdom \<rho>2` by auto
-    next
-    case (goal2 x)
-      thus ?case
-      proof (cases "x \<in> heapVars (asToHeap as)")
-        case True
-        with goal2 fresh_star_map_of[OF True prem]
-        show ?thesis
-          by (simp add: lookupHeapToEnv  Let(3)[OF _ goal3(3)])
-      next
-        case False with goal2 show ?thesis
-          by (simp add: fmap_less_eqD[OF `\<rho>1 \<le> \<rho>2`])
-      qed
-    qed
+      apply rule
+      using d2 apply auto[1]
+      apply (case_tac "x \<in> heapVars (asToHeap as)")
+      apply (auto simp add: lookupHeapToEnv step(3)[symmetric] Let(3)[OF _ fresh_star_map_of[OF _ **], symmetric])
+      done
   qed
-  moreover
-  have "atom ` (fdom (\<lbrace>asToHeap as\<rbrace>\<rho>2) - fdom (\<lbrace>asToHeap as\<rbrace>\<rho>1)) \<sharp>* e "
-    using Let(6) Let(1) Let(2)
-    by (auto simp add: sharp_star_Env fresh_star_def)
-  ultimately
-  have "\<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>1\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>2\<^esub>"
-    apply (rule Let.hyps(4))
-    done
-  thus "\<lbrakk> Terms.Let as e \<rbrakk>\<^bsub>\<rho>1\<^esub> = \<lbrakk> Terms.Let as e \<rbrakk>\<^bsub>\<rho>2\<^esub>"
-    using Let.hyps(1,2) by simp
-next
-case (Lam x e \<rho>1 \<rho>2)
-  { fix v
-    have "\<rho>1(x f\<mapsto> v) \<le> \<rho>2(x f\<mapsto> v)"
-      apply (rule fmap_less_eqI)
-      using fmap_less_fdom[OF Lam(4)] apply auto[1]
-      apply (case_tac "xa = x")
-      by (auto simp add: fmap_less_eqD[OF `\<rho>1 \<le> \<rho>2`])
-    moreover
-    have "atom ` (fdom (\<rho>2(x f\<mapsto> v)) - fdom (\<rho>1(x f\<mapsto> v))) \<sharp>* e"
-      using Lam(5)
-      by (auto simp add: fresh_star_def)
-    ultimately
-    have "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>1(x f\<mapsto> v)\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho>2(x f\<mapsto> v)\<^esub>"
-      by (rule Lam(3))
-  }
-  thus "\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>1\<^esub> = \<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>2\<^esub>"
-    using Lam(1,2)
-    by simp
+  finally
+  show ?case using Let(1) by simp
+qed
+lemma ESem_ignores_fresh':
+ assumes "atom ` S \<sharp>* e"
+ shows "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho> f|` (- S)\<^esub>"
+proof-
+  obtain L where L: "set L = fdom \<rho> \<inter> S" by (metis finite_Int finite_fdom finite_list) 
+  
+  have "atom ` set L \<sharp>* e" 
+    unfolding L using assms by (auto simp add: fresh_star_def)
+  hence "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho> f|` (- set L)\<^esub>" by (rule ESem_ignores_fresh'')
+  also have "\<rho> f|` (- set L) = \<rho> f|` (- S)" using L by auto
+  finally
+  show ?thesis.
 qed
 
 sublocale has_ignore_fresh_ESem AESem
-  by default (metis ESem_ignores_fresh')
+  by default (rule ESem_ignores_fresh')
 
 lemma ESem_add_fresh:
   assumes fresh: "atom x \<sharp> (\<rho>, \<Gamma>, e)"
@@ -260,9 +195,8 @@ qed
 lemma CESem_Let[simp]: "\<lbrakk>Let as body\<rbrakk>\<^bsub>\<rho>\<^esub> = tick (\<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub>)"
 proof-
   have "\<lbrakk> Let as body \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> Let as body \<rbrakk>\<^bsub>(\<rho> f|` (fdom \<rho> - heapVars (asToHeap as)))\<^esub>"
-    apply (rule ESem_ignores_fresh[symmetric, OF fmap_restr_less])
-    apply (auto simp add: fresh_star_def set_bn_to_atom_heapVars)
-    done
+    by (rule ESem_ignores_fresh_restr')
+       (auto simp add: fresh_star_def set_bn_to_atom_heapVars)
   also have "\<dots> = tick (\<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>(\<rho> f|` (fdom \<rho> - heapVars (asToHeap as)))\<^esub>)"
     by (auto simp add:fresh_star_def sharp_Env set_bn_to_atom_heapVars)
   also have "\<lbrace>asToHeap as\<rbrace>(\<rho> f|` (fdom \<rho> - heapVars (asToHeap as))) = \<lbrace>asToHeap as\<rbrace>\<rho>"

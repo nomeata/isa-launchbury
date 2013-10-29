@@ -1,3 +1,4 @@
+
 theory Denotational
   imports "Denotational-Common" "Value-Meet" "HSemUpd" "Abstract-Denotational-Props"
 begin
@@ -187,9 +188,7 @@ proof (rule iffD2[OF fmap_less_restrict])
       by (rule fresh_star_heap_expr'[OF fresh_Gamma `_ \<in> snd\` set \<Gamma>`])
 
     have "\<lbrakk> e \<rbrakk>\<^bsub>fmap_restr (insert x (heapVars \<Gamma>)) (\<lbrace>(x, body) # asToHeap as @ \<Gamma>\<rbrace>)\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>(x, body) # asToHeap as @ \<Gamma>\<rbrace>\<^esub>"
-      apply (rule ESem_ignores_fresh[OF fmap_restr_less])
-      apply (subst fdom_fmap_restr)
-      apply (subst simp1)
+      apply (rule ESem_ignores_fresh_restr'[symmetric])
       apply (subst simp2)
       apply (rule fresh_e)
       done

@@ -413,11 +413,21 @@ case False
 qed
 
 locale has_ignore_fresh_ESem = has_cont_ESem +
-  assumes ESem_ignores_fresh: "\<rho>1 \<le> \<rho>2 \<Longrightarrow> atom ` (fdom \<rho>2 - fdom \<rho>1) \<sharp>* e \<Longrightarrow> ESem e \<rho>1 = ESem e \<rho>2"
+  assumes ESem_ignores_fresh_restr: "atom ` S \<sharp>* e \<Longrightarrow> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho> f|` (- S)\<^esub>"
 begin
 
-  lemma ESem_ignores_fresh_restr: "atom ` S \<sharp>* e \<Longrightarrow> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho> f|` (- S)\<^esub>"
-    by (rule ESem_ignores_fresh[symmetric, OF fmap_restr_less]) (auto simp add: fresh_star_def)
+  lemma ESem_ignores_fresh_restr':
+    assumes "atom ` (fdom \<rho> - S) \<sharp>* e"
+    shows "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho> f|` S\<^esub>"
+  proof-
+    have "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> =  \<lbrakk> e \<rbrakk>\<^bsub>\<rho> f|` (- (fdom \<rho> - S))\<^esub>"
+      by (rule ESem_ignores_fresh_restr[OF assms])
+    also have "\<rho> f|` (- (fdom \<rho> - S)) = \<rho> f|` S" by auto
+    finally show ?thesis.
+  qed
+
+  lemma ESem_ignores_fresh: "\<rho>1 \<le> \<rho>2 \<Longrightarrow> atom ` (fdom \<rho>2 - fdom \<rho>1) \<sharp>* e \<Longrightarrow> ESem e \<rho>1 = ESem e \<rho>2"
+    by (metis ESem_ignores_fresh_restr' fmap_less_restrict)  
 
   lemma HSem_ignores_fresh_restr:
     assumes "atom ` S \<sharp>* \<Gamma>"
@@ -441,7 +451,7 @@ subsubsection {* Adding a fresh variable to a heap does not affect its semantics
 
   lemma HSem_add_fresh':
     assumes fresh: "atom x \<sharp> (\<rho>,\<Gamma>)"
-    assumes step: "\<And>e \<rho>'. fdom \<rho>' = fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>) \<Longrightarrow> e \<in> snd ` set \<Gamma> \<Longrightarrow> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho>' f|` (fdom \<rho>' - {x})\<^esub>"
+    assumes step: "\<And>e \<rho>'. fdom \<rho>' = fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>) \<Longrightarrow> e \<in> snd ` set \<Gamma> \<Longrightarrow> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho>' f|` (- {x})\<^esub>"
     shows  "(\<lbrace>(x, e) # \<Gamma>\<rbrace>\<rho>) f|` (fdom \<rho> \<union> heapVars \<Gamma>) = \<lbrace>\<Gamma>\<rbrace>\<rho>"
   proof (rule parallel_UHSem_ind)
   case goal1 show ?case by simp
@@ -449,14 +459,14 @@ subsubsection {* Adding a fresh variable to a heap does not affect its semantics
   case (goal3 y z)
     have "fmap_restr (fdom \<rho> \<union> heapVars \<Gamma>) \<rho> = \<rho>" by auto
     moreover
-  
     have "x \<notin> fdom \<rho> \<union> heapVars \<Gamma>"
       using fresh
       apply (auto simp add: sharp_Env fresh_Pair)
       by (metis heapVars_not_fresh)
-    hence "fdom y - {x} = fdom \<rho> \<union> heapVars \<Gamma>"
+    hence "fdom y \<inter> (- {x}) = fdom \<rho> \<union> heapVars \<Gamma>"
       using goal3(1) by auto
-    hence [simp]: "z = y f|` (fdom y - {x})" using `_ = z` by auto
+    hence [simp]: "z = y f|` (- {x})"
+      by (auto simp add: `_= z`[symmetric] intro: fmap_restr_cong)
 
     have "heapToEnv ((x, e) # \<Gamma>) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>y\<^esub>) f|` (fdom \<rho> \<union> heapVars \<Gamma>) = heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>y\<^esub>)"
       using `x \<notin> fdom \<rho> \<union> heapVars \<Gamma>` by auto
@@ -484,7 +494,7 @@ subsubsection {* Adding a fresh variable to a heap does not affect its semantics
     hence [simp]:"fdom \<rho>' - fdom \<rho>' \<inter> (fdom \<rho>' - {x}) = {x}" by auto
   
     show ?case
-      apply (rule ESem_ignores_fresh[symmetric, OF fmap_restr_less])
+      apply (rule ESem_ignores_fresh_restr)
       apply (simp add: fresh_star_def)
       using `atom x \<sharp> e`.
   qed
@@ -507,8 +517,8 @@ subsubsection {* Adding a fresh variable to a heap does not affect its semantics
       apply (auto simp add: fmap_restr_add fmap_restr_useless)
       apply (rule arg_cong) back
       apply (rule heapToEnv_cong)
-      apply simp
-      apply (rule ESem_ignores_fresh[symmetric, OF fmap_restr_less])
+      apply simp                    
+      apply (rule ESem_ignores_fresh_restr')
       apply (auto simp add: fresh_star_def fresh_Pair fresh_heap_expr)
       done
    qed  
