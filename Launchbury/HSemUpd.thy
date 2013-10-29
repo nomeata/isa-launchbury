@@ -221,10 +221,10 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
       unfolding UHSem_def  heapToEnv_reorder_head_append[OF assms]
       by simp
   qed  
-    
-  lemma fmap_restr_UHSem_noop:
-    assumes "heapVars \<Gamma> \<inter> fdom \<rho> = {}"
-    shows "fmap_restr (fdom \<rho>) (\<lbrace>\<Gamma>\<rbrace>\<rho>) = \<rho>"
+
+ lemma fmap_restr_UHSem:
+    assumes "heapVars \<Gamma> \<inter> S = {}"
+    shows "fmap_restr S (\<lbrace>\<Gamma>\<rbrace>\<rho>) = fmap_restr S \<rho>"
     apply (rule fmap_eqI)
     using assms apply auto[1]
     using assms apply auto[1]
@@ -232,6 +232,11 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
     apply auto
     done
   
+  lemma fmap_restr_UHSem_noop:
+    assumes "heapVars \<Gamma> \<inter> fdom \<rho> = {}"
+    shows "fmap_restr (fdom \<rho>) (\<lbrace>\<Gamma>\<rbrace>\<rho>) = \<rho>"
+    by (simp add: fmap_restr_UHSem[OF assms] fmap_restr_useless)
+ 
   lemma UHSem_disjoint_less:
     assumes "heapVars \<Gamma> \<inter> fdom \<rho> = {}"
     shows "\<rho> \<le> \<lbrace>\<Gamma>\<rbrace>\<rho>"
@@ -411,6 +416,27 @@ locale has_ignore_fresh_ESem = has_cont_ESem +
   assumes ESem_ignores_fresh: "\<rho>1 \<le> \<rho>2 \<Longrightarrow> atom ` (fdom \<rho>2 - fdom \<rho>1) \<sharp>* e \<Longrightarrow> ESem e \<rho>1 = ESem e \<rho>2"
 begin
 
+  lemma ESem_ignores_fresh_restr: "atom ` S \<sharp>* e \<Longrightarrow> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho> f|` (- S)\<^esub>"
+    by (rule ESem_ignores_fresh[symmetric, OF fmap_restr_less]) (auto simp add: fresh_star_def)
+
+  lemma HSem_ignores_fresh_restr:
+    assumes "atom ` S \<sharp>* \<Gamma>"
+    shows "(\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` (- S) = \<lbrace>\<Gamma>\<rbrace>\<rho> f|` (- S)"
+  proof(induction rule: parallel_UHSem_ind[case_names adm base step])
+    case adm thus ?case by simp
+  next
+    case base show ?case using fresh_distinct[OF assms]  by -(rule, auto)
+  next
+    case (step y z)
+    show ?case
+      apply rule
+      using fresh_distinct[OF assms]  apply auto[1]
+      apply (case_tac "x \<in> heapVars \<Gamma>")
+      apply (auto simp add: lookupHeapToEnv step(3)[symmetric] ESem_ignores_fresh_restr[symmetric, OF fresh_star_map_of[OF _ assms]])
+      done
+  qed
+
+
 subsubsection {* Adding a fresh variable to a heap does not affect its semantics *} 
 
   lemma HSem_add_fresh':
@@ -491,53 +517,34 @@ subsubsection {* Adding a fresh variable to a heap does not affect its semantics
 subsubsection {* Binding more variables increases knowledge *}
 
   lemma UHSem_subset_below:
-    assumes fresh: "atom ` heapVars \<Gamma> \<sharp>* (\<Delta>, \<rho>)" 
-    shows "(\<lbrace>\<Delta>\<rbrace>\<rho>)\<^bsub>[fdom \<rho> \<union> heapVars \<Delta> \<union> heapVars \<Gamma>]\<^esub> \<sqsubseteq> \<lbrace>\<Delta>@\<Gamma>\<rbrace>\<rho>"
-  proof-
-    have fdoms: "fdom \<rho> \<union> (heapVars \<Delta> \<union> heapVars \<Gamma>) - (fdom \<rho> \<union> heapVars \<Delta>) = heapVars \<Gamma>"
-      using fresh by (auto dest: fresh_heapVars_distinct simp add: sharp_star_Env' fresh_star_Pair)
+    assumes fresh: "atom ` heapVars \<Gamma> \<sharp>* \<Delta>" 
+    shows "\<lbrace>\<Delta>\<rbrace>(\<rho> f|` (- heapVars \<Gamma>)) \<sqsubseteq> (\<lbrace>\<Delta>@\<Gamma>\<rbrace>\<rho>)  f|` (- heapVars \<Gamma>)"
+  proof(rule UHSem_below)
+    from fresh
+    show "fdom ((\<lbrace>\<Delta> @ \<Gamma>\<rbrace>\<rho>) f|` (- heapVars \<Gamma>)) = fdom (\<rho> f|` (- heapVars \<Gamma>)) \<union> heapVars \<Delta>"
+      by (auto dest: fresh_distinct )
 
-    have *: "\<And> x. x \<in> fdom \<rho> \<Longrightarrow> x \<notin> heapVars \<Gamma>"
-      using fresh by (auto simp add: sharp_star_Env' fresh_star_Pair)
-    
-    have below: "\<lbrace>\<Delta>\<rbrace>\<rho> \<sqsubseteq> (\<lbrace>\<Delta>@\<Gamma>\<rbrace>\<rho>)\<^bsub>[fdom \<rho> \<union> heapVars \<Delta>]\<^esub>" (is "_ \<sqsubseteq> ?RHS")
-    apply (rule UHSem_below)
-    apply (auto simp add: the_lookup_UHSem_other the_lookup_UHSem_heap *)
-    apply (subst ESem_ignores_fresh)
-    prefer 3
-    apply (rule below_refl)
-    apply auto[1]
-    apply (simp add: fdoms)
-    apply (metis fresh fresh_Pair fresh_map_of fresh_star_def)
-    done
-
-    show ?thesis
-    proof(rule fmap_expand_belowI)
-    case (goal2 x) 
-      with fmap_belowE[OF below, where x = x]
-      show ?case by (cases "x\<in> fdom \<rho>", auto)
-    qed auto
-  qed
+    fix x
+    assume [simp]: "x \<in> heapVars \<Delta>"
+    with assms have *: "atom ` heapVars \<Gamma> \<sharp>* the (map_of \<Delta> x)" by (metis fresh_star_map_of)
+    hence [simp]: "x \<notin> heapVars \<Gamma>" using fresh `x \<in> heapVars \<Delta>` by (metis fresh_star_def heapVars_not_fresh image_eqI)
+    show "\<lbrakk> the (map_of \<Delta> x) \<rbrakk>\<^bsub>(\<lbrace>\<Delta> @ \<Gamma>\<rbrace>\<rho>) f|` (- heapVars \<Gamma>)\<^esub> \<sqsubseteq> (\<lbrace>\<Delta> @ \<Gamma>\<rbrace>\<rho>) f|` (- heapVars \<Gamma>) f! x"
+      by (simp add: the_lookup_UHSem_heap ESem_ignores_fresh_restr[OF *, symmetric])
+   qed (simp add: the_lookup_UHSem_other)
 
   subsubsection {* Additional, fresh bindings in one or two steps *}  
 
   lemma UHSem_merge:
-    assumes fresh: "atom ` heapVars \<Gamma> \<sharp>* (\<Delta>, \<rho>)"
+    assumes fresh: "atom ` heapVars \<Gamma> \<sharp>* \<Delta>"
     shows "\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho> = \<lbrace>\<Gamma>@\<Delta>\<rbrace>\<rho>"
   proof(rule below_antisym)
-    from fresh
-    have Gamma_fresh: "heapVars \<Gamma> \<inter> (fdom \<rho> \<union> heapVars \<Delta>) = {}"
-      by (auto dest: fresh_heapVars_distinct simp add: sharp_star_Env' fresh_star_Pair)
-    hence fdoms: "fdom \<rho> \<union> heapVars \<Delta> \<union> heapVars \<Gamma> - (fdom \<rho> \<union> heapVars \<Delta>) = heapVars \<Gamma>"
-      by auto
-
     have map_of_eq: "map_of (\<Delta> @ \<Gamma>) = map_of (\<Gamma> @ \<Delta>)"
     proof
       fix x
       show "map_of (\<Delta> @ \<Gamma>) x = map_of (\<Gamma> @ \<Delta>) x"
       proof (cases "x \<in> heapVars \<Gamma>")
         case True
-        hence "x \<notin> heapVars \<Delta>" by (metis Gamma_fresh IntI equals0D in_mono sup_ge2)
+        hence "x \<notin> heapVars \<Delta>" by (metis fresh_distinct fresh IntI equals0D)
         thus "map_of (\<Delta> @ \<Gamma>) x = map_of (\<Gamma> @ \<Delta>) x"
           by (simp add: map_add_dom_app_simps dom_map_of_conv_heapVars)
       next
@@ -550,12 +557,15 @@ subsubsection {* Binding more variables increases knowledge *}
     show "\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho> \<sqsubseteq> \<lbrace>\<Gamma>@\<Delta>\<rbrace>\<rho>"
     proof(rule UHSem_below)
       fix x
-      assume "x \<in> fdom (\<lbrace>\<Delta>\<rbrace>\<rho>)" and "x \<notin> heapVars \<Gamma>"
-      hence "\<lbrace>\<Delta>\<rbrace>\<rho> f! x = (\<lbrace>\<Delta>\<rbrace>\<rho>)\<^bsub>[fdom \<rho> \<union> heapVars \<Delta> \<union> heapVars \<Gamma>]\<^esub> f! x" by simp
-      also have "\<dots> \<sqsubseteq> \<lbrace>\<Delta> @ \<Gamma>\<rbrace>\<rho> f! x"
-        by (rule fmap_belowE[OF UHSem_subset_below[OF fresh]])
-      also have "\<dots> = \<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>  f! x"
-        by (rule arg_cong[OF UHSem_reorder[OF map_of_eq]])
+      assume "x \<in> fdom (\<lbrace>\<Delta>\<rbrace>\<rho>)" and [simp]:"x \<notin> heapVars \<Gamma>"
+
+      have "\<lbrace>\<Delta>\<rbrace>\<rho> f! x = ((\<lbrace>\<Delta>\<rbrace>\<rho>) f|` (- heapVars \<Gamma>)) f! x" by simp
+      also have "\<dots> = \<lbrace>\<Delta>\<rbrace>(\<rho> f|` (- heapVars \<Gamma>)) f! x"
+        by (rule arg_cong[OF HSem_ignores_fresh_restr[OF fresh]])
+      also have "\<dots> \<sqsubseteq> (\<lbrace>\<Delta>@\<Gamma>\<rbrace>\<rho>)  f|` (- heapVars \<Gamma>) f! x"
+        by (rule fmap_belowE[OF UHSem_subset_below[OF fresh]] )
+      also have "\<dots> = \<lbrace>\<Delta>@\<Gamma>\<rbrace>\<rho> f! x" by simp
+      also have "\<dots> = \<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>  f! x" by (rule arg_cong[OF UHSem_reorder[OF map_of_eq]])
       finally
       show "\<lbrace>\<Delta>\<rbrace>\<rho> f! x \<sqsubseteq> \<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho> f! x".
     qed (auto simp add: the_lookup_UHSem_heap)
@@ -563,14 +573,22 @@ subsubsection {* Binding more variables increases knowledge *}
      have *: "\<And> x. x \<in> heapVars \<Delta> \<Longrightarrow> x \<notin> heapVars \<Gamma>"
       using fresh by (auto simp add: fresh_Pair fresh_star_def heapVars_not_fresh)
 
+    have foo: "fdom \<rho> \<union> heapVars \<Delta> \<union> heapVars \<Gamma> - (fdom \<rho> \<union> heapVars \<Delta> \<union> heapVars \<Gamma>) \<inter> - heapVars \<Gamma> = heapVars \<Gamma>" by auto
+    have foo2:"(fdom \<rho> \<union> heapVars \<Delta> - (fdom \<rho> \<union> heapVars \<Delta>) \<inter> - heapVars \<Gamma>) \<subseteq> heapVars \<Gamma>" by auto
+
     { fix x
       assume "x \<in> heapVars \<Delta>"
-      have "\<lbrakk> the (map_of \<Delta> x) \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub> = \<lbrakk> the (map_of \<Delta> x) \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>"
-        apply (rule ESem_ignores_fresh[symmetric])
-        apply (rule UHSem_disjoint_less) apply (metis Gamma_fresh  fdom_UHSem)
-        apply (simp add: fdoms)
-            using fresh apply (metis fresh fresh_PairD(1) fresh_heap_expr'[OF _ the_map_of_snd[OF `x \<in> heapVars \<Delta>`]] fresh_star_def)
-        done
+      hence *: "atom ` heapVars \<Gamma> \<sharp>* the (map_of \<Delta> x)"
+        by (rule  fresh_star_map_of[OF _ fresh])
+
+      have "\<lbrakk> the (map_of \<Delta> x) \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub> = \<lbrakk> the (map_of \<Delta> x) \<rbrakk>\<^bsub>(\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>) f|` (- heapVars \<Gamma>)\<^esub>"
+        by (rule ESem_ignores_fresh_restr[OF *])
+      also have "(\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>) f|` (- heapVars \<Gamma>) = (\<lbrace>\<Delta>\<rbrace>\<rho>) f|` (- heapVars \<Gamma>)"
+        by (simp add: fmap_restr_UHSem)
+      also have "\<lbrakk> the (map_of \<Delta> x) \<rbrakk>\<^bsub>\<dots>\<^esub> = \<lbrakk> the (map_of \<Delta> x) \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>"
+        by (rule ESem_ignores_fresh_restr[symmetric, OF *])
+      finally
+      have "\<lbrakk> the (map_of \<Delta> x) \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub> = \<lbrakk> the (map_of \<Delta> x) \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>".
     }
     thus "\<lbrace>\<Gamma>@\<Delta>\<rbrace>\<rho> \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>"
       by -(rule UHSem_below, auto simp add: the_lookup_UHSem_other the_lookup_UHSem_heap *)
@@ -584,11 +602,12 @@ subsubsection {* Binding more variables increases knowledge *}
   proof-
     have "heapVars \<Gamma> \<inter> fdom (\<lbrace>\<Delta>\<rbrace>\<rho>) = {}"
       using fresh
-      by (auto dest: fresh_heapVars_distinct simp add: sharp_star_Env' fresh_star_Pair)
+      by (auto dest: fresh_distinct simp add: sharp_star_Env' fresh_star_Pair)
     hence "\<lbrace>\<Delta>\<rbrace>\<rho> \<le> \<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>"
       by (rule UHSem_disjoint_less)
     also have "\<dots> =  \<lbrace>\<Gamma>@\<Delta>\<rbrace>\<rho>"
-      by (rule UHSem_merge[OF assms])
+      apply (rule UHSem_merge)
+      using fresh by (simp add: fresh_star_Pair)
     finally
     show ?thesis.
   qed

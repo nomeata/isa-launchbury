@@ -94,12 +94,12 @@ lemma distinctVars_eqvt[eqvt]:
 
 subsubsection {* Freshness and distinctness *}
 
-lemma fresh_heapVars_distinct:
- assumes "atom ` heapVars \<Delta> \<sharp>* \<Gamma>"
- shows "heapVars \<Delta> \<inter> heapVars \<Gamma> = {}"
+lemma fresh_distinct:
+ assumes "atom ` S \<sharp>* \<Gamma>"
+ shows "S \<inter> heapVars \<Gamma> = {}"
 proof-
   { fix x
-    assume "x \<in> heapVars \<Delta>"
+    assume "x \<in> S"
     moreover
     assume "x \<in> heapVars \<Gamma>"
     hence "atom x \<in> supp \<Gamma>"
@@ -109,6 +109,6 @@ proof-
       using assms
       by (simp add: fresh_star_def fresh_def)
   }
-  thus "heapVars \<Delta> \<inter> heapVars \<Gamma> = {}" by auto
+  thus "S \<inter> heapVars \<Gamma> = {}" by auto
 qed
 end

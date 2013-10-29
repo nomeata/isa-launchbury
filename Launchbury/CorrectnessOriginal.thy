@@ -195,7 +195,8 @@ case (Let as \<Gamma> L body \<Delta> z \<rho>)
   have "\<lbrakk> Let as body \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk> body \<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
     by simp
   also have "\<dots> =  \<lbrakk> body \<rbrakk>\<^bsub>\<lbrace>asToHeap as @ \<Gamma>\<rbrace>\<rho>\<^esub>"
-    by (rule arg_cong[OF UHSem_merge[OF f1]])
+    apply (rule arg_cong[OF UHSem_merge])
+    using f1 by (simp add: fresh_star_Pair)
   also have "\<dots> =  \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>"
     by (rule Let.hyps(4)[OF hyp])
   finally

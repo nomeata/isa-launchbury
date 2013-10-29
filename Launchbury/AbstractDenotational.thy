@@ -117,6 +117,7 @@ lemmas HSem_eqvt' = UHSem_eqvt[of _ AESem, unfolded permute_ESem]
 lemmas HSem_fresh[simp] = eqvt_fresh_cong2[of UHSem, OF HSem_eqvt']
  and   HSem_fresh_star[simp] = eqvt_fresh_star_cong2[of UHSem, OF HSem_eqvt']
  and   asToHeap_fresh[simp] = eqvt_fresh_cong1[of asToHeap, OF asToHeap.eqvt]
+ and   asToHeap_fresh_star[simp] = eqvt_fresh_star_cong1[of asToHeap, OF asToHeap.eqvt]
  and   fresh_fmap_upd[simp] = eqvt_fresh_cong3[of fmap_upd, OF fmap_upd_eqvt]
 
 end

@@ -36,7 +36,7 @@ lemma fresh_assn_distinct:
  assumes "set (bn as) \<sharp>* \<Gamma>"
  shows "heapVars (asToHeap as) \<inter> heapVars \<Gamma> = {}"
  using assms
-by (metis set_bn_to_atom_heapVars fresh_heapVars_distinct)
+by (metis set_bn_to_atom_heapVars fresh_distinct)
 
 lemma distinctVars_asToHeap[simp]: "distinctVars (asToHeap as)"
    by (induct as rule: asToHeap.induct)(auto simp add: distinctVars_Cons distinctVars_delete)

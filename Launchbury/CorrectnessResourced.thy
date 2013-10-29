@@ -202,19 +202,12 @@ case (Let as \<Gamma> L body \<Delta> z \<rho>)
       using 1 by auto
   }
   note * = this
-  hence "set (bn as) \<sharp>* \<rho>"
-    apply (subst fresh_star_def)
-    apply (subst set_bn_to_atom_heapVars)
-    apply (auto simp add: sharp_Env)
-    done
-
   
   have hyp: "fdom \<rho> - heapVars (asToHeap as @ \<Gamma>) \<subseteq> set L"
     using 1 by auto
 
-  have f1: "atom ` heapVars (asToHeap as) \<sharp>* (\<Gamma>, \<rho>)"
-    using Let(1) `_ \<sharp>* \<rho>`
-    by (simp add: set_bn_to_atom_heapVars fresh_star_Pair)
+  have f1: "atom ` heapVars (asToHeap as) \<sharp>* \<Gamma>"
+    using Let(1) by (simp add: set_bn_to_atom_heapVars)
 
   have "\<N>\<lbrakk> Terms.Let as body \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> \<sqsubseteq> \<N>\<lbrakk> body \<rbrakk>\<^bsub>\<N>\<lbrace>asToHeap as\<rbrace>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
     apply (rule cfun_belowI)
