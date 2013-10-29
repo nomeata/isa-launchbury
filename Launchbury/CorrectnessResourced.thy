@@ -15,8 +15,7 @@ case (Lambda \<Gamma> x e L \<rho>)
   case 2 show ?case..
 next
 case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' \<rho>)
-  hence "atom y \<sharp> \<N>\<lbrace>\<Delta>\<rbrace>\<rho>" and "y \<noteq> x"
-    by (simp_all add: fresh_at_base)
+  hence "y \<noteq> x" by (simp_all add: fresh_at_base)
 
   case 1
   hence hyp1: "fdom \<rho> - heapVars \<Gamma> \<subseteq> set (x # L)" by auto
@@ -43,10 +42,6 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' \<rho>)
     apply (rule monofun_cfun[OF cont2monofunE[OF _ below_C] below_C])
     apply simp
     done
-  (*
-  also have "\<dots> \<sqsubseteq> (\<Lambda> (C\<cdot>r). ((CFn \<cdot> (\<Lambda> v.  C_restr\<cdot>r\<cdot>(\<N>\<lbrakk> e' \<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho>)(y f\<mapsto> C_restr\<cdot>r\<cdot>v)\<^esub>)))\<down>CFn  C_restr\<cdot>r\<cdot>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho> f!\<^sub>\<bottom> x)) \<cdot> r)"
-    by (fastforce intro: monofun_cfun_arg monofun_cfun_fun monofun_LAM case_of_C_below)    
-  *)
   also have "\<dots> = (\<Lambda> (C\<cdot>r). (\<N>\<lbrakk> e' \<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho>)(y f\<mapsto> C_restr\<cdot>r\<cdot>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho> f!\<^sub>\<bottom> x))\<^esub>) \<cdot> r)"
     by simp
   also have "\<dots> \<sqsubseteq> (\<Lambda> (C\<cdot>r). (\<N>\<lbrakk> e' \<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho>)(y f\<mapsto> \<N>\<lbrace>\<Delta>\<rbrace>\<rho> f!\<^sub>\<bottom> x)\<^esub>) \<cdot> r)"
@@ -57,7 +52,7 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' \<rho>)
     apply (rule cont2monofunE[OF _ C_restr_below], simp)
     done
   also have "\<dots> = (\<Lambda> (C\<cdot>r). (\<N>\<lbrakk> e'[y ::= x] \<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho>)\<^esub>) \<cdot> r)"
-    by (rule arg_cong[OF ESem_subst[OF `y \<noteq> x` `atom y \<sharp> \<N>\<lbrace>\<Delta>\<rbrace>\<rho>`]])
+    by (rule arg_cong[OF ESem_subst[OF `y \<noteq> x`]])
   also have "\<dots> \<sqsubseteq> \<N>\<lbrakk> e'[y ::= x] \<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho>)\<^esub>"
     by (subst eta_cfun, rule C_case_below)
   also have "\<dots> \<sqsubseteq> \<N>\<lbrakk> z \<rbrakk>\<^bsub>\<N>\<lbrace>\<Theta>\<rbrace>\<rho>\<^esub>"
@@ -212,8 +207,7 @@ case (Let as \<Gamma> L body \<Delta> z \<rho>)
     apply (subst set_bn_to_atom_heapVars)
     apply (auto simp add: sharp_Env)
     done
-  hence  [simp]: "set (bn as) \<sharp>* (\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>)"
-    using Let(1) by simp
+
   
   have hyp: "fdom \<rho> - heapVars (asToHeap as @ \<Gamma>) \<subseteq> set L"
     using 1 by auto
@@ -221,7 +215,6 @@ case (Let as \<Gamma> L body \<Delta> z \<rho>)
   have f1: "atom ` heapVars (asToHeap as) \<sharp>* (\<Gamma>, \<rho>)"
     using Let(1) `_ \<sharp>* \<rho>`
     by (simp add: set_bn_to_atom_heapVars fresh_star_Pair)
-
 
   have "\<N>\<lbrakk> Terms.Let as body \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> \<sqsubseteq> \<N>\<lbrakk> body \<rbrakk>\<^bsub>\<N>\<lbrace>asToHeap as\<rbrace>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
     apply (rule cfun_belowI)

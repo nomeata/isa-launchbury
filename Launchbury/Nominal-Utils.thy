@@ -55,6 +55,12 @@ proof-
   thus ?thesis by simp
 qed
 
+lemma eqvt_fresh_star_cong1:
+  assumes eqvt: "(\<And>p x. p \<bullet> (f x) = f (p \<bullet> x))"
+  and fresh1: "a \<sharp>* x"
+  shows "a \<sharp>* f x"
+  by (metis fresh_star_def eqvt_fresh_cong1 assms)
+
 lemma eqvt_fresh_star_cong2:
   assumes eqvt: "(\<And>p x y. p \<bullet> (f x y) = f (p \<bullet> x) (p \<bullet> y))"
   and fresh1: "a \<sharp>* x" and fresh2: "a \<sharp>* y"

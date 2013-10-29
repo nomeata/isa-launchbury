@@ -88,6 +88,16 @@ begin
 
 subsubsection {* Induction and other lemmas about @{term HSem} *}
 
+  lemma UHSem_cont: "cont (\<lambda>\<rho> . \<lbrace>h\<rbrace>\<rho>)"
+    apply (rule contI2)
+    apply (rule monofunI)
+    apply (erule UHSem_monofun''[OF ESem_cont])
+    apply (subst UHSem_cont''[OF ESem_cont], assumption)
+    apply (rule below_refl)
+    done
+
+  lemmas cont2cont_UHSem[simp, cont2cont] = cont_compose[OF UHSem_cont]
+
   lemma UHSem_ind:
     assumes "adm P"
     assumes "P (f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>)"

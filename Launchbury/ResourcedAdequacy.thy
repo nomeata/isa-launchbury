@@ -125,10 +125,6 @@ next
   hence [simp]: "fdom \<rho> \<inter> heapVars (asToHeap as) = {}"
     by (metis disjoint_iff_not_equal sharp_star_Env)
 
-  note Let(1)[simp]
-  hence fresh2[simp]: "set (bn as) \<sharp>* fmap_C_restr\<cdot>(Cpred\<cdot>r)\<cdot>\<rho>"
-    by (metis (hide_lams, no_types) fdom_fmap_C_restr sharp_star_Env)
-
   { fix r
     have *: "has_cont_ESem CESem" by unfold_locales
     have "fmap_C_restr\<cdot>r\<cdot>(\<N>\<lbrace>asToHeap as\<rbrace>(\<rho> f|` (- heapVars (asToHeap as)))) = fmap_C_restr\<cdot>r\<cdot>(\<N>\<lbrace>asToHeap as\<rbrace>((fmap_C_restr\<cdot>r\<cdot>\<rho>)  f|` (- heapVars (asToHeap as))))" 
@@ -153,17 +149,14 @@ next
 
   show ?case
     apply (rule below_antisym)
-    defer
-    apply (rule cont2monofunE[OF _ fmap_C_restr_restr_below], simp)
     apply (simp add: Abs_cfun_inverse)
     apply (cases r, simp)
     apply (simp add: Abs_cfun_inverse Rep_cfun_inverse)
     apply (subst (1 2) Let(3))
     apply (subst *)
-    apply (rule cont2monofunE[OF _ ]) back back back back
-    apply simp
-    apply (rule UHSem_mono)
-    apply (intro monofun_cfun_arg monofun_cfun_fun Cpred_below)
+    apply (rule cont2monofunE[OF _ Cpred_below], simp)
+
+    apply (rule cont2monofunE[OF _ fmap_C_restr_restr_below], simp)
     done
 qed
 

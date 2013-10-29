@@ -55,6 +55,20 @@ lemma  True and [simp]:"(a, b) \<in> set (asToHeap as) \<Longrightarrow> size b 
 
 subsubsection {* Nicer induction rule for expressions *}
 
+lemma exp_induct[case_names Var App Let Lam]:
+  assumes "\<And>var. P (Var var)"
+  assumes "\<And>exp var. P exp \<Longrightarrow> P (App exp var)"
+  assumes "\<And>assn exp. (\<And> x. x \<in> heapVars (asToHeap assn) \<Longrightarrow>  P (the (map_of (asToHeap assn) x))) \<Longrightarrow> P exp \<Longrightarrow> P (Let assn exp)"
+  assumes "\<And>var exp.  P exp \<Longrightarrow> P (Lam [var]. exp)"
+  shows "P  exp"
+  apply (rule exp_assn.inducts(1)[of P "\<lambda> assn. (\<forall>x \<in> heapVars (asToHeap assn). P (the (map_of (asToHeap assn) x)))"])
+  apply (metis assms(1))
+  apply (metis assms(2))
+  apply (metis assms(3))
+  apply (metis assms(4))
+  apply auto
+  done
+
 lemma  exp_strong_induct[case_names Var App Let Lam]:
   assumes "\<And>var c. P c (Var var)"
   assumes "\<And>exp var c. (\<And>c. P c exp) \<Longrightarrow> P c (App exp var)"

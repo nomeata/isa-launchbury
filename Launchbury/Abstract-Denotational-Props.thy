@@ -98,9 +98,7 @@ subsubsection {* The semantics ignores fresh variables *}
 
 lemma ESem_ignores_fresh':
   "\<rho>1 \<le> \<rho>2 \<Longrightarrow> atom ` (fdom \<rho>2 - fdom \<rho>1) \<sharp>* e \<Longrightarrow> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>1\<^esub> = \<lbrakk>e\<rbrakk>\<^bsub>\<rho>2\<^esub>"
-  and
-  "\<rho>1 \<le> \<rho>2 \<Longrightarrow> atom ` (fdom \<rho>2 - fdom \<rho>1) \<sharp>* as \<Longrightarrow> heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>1\<^esub>) = heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>2\<^esub>)"
-proof (nominal_induct e and as avoiding: \<rho>1 \<rho>2 rule:exp_assn.strong_induct)
+proof (nominal_induct e avoiding: \<rho>1 \<rho>2 rule:exp_strong_induct)
 case (Var x \<rho>1 \<rho>2)
   show ?case
   proof(cases "x \<in> fdom \<rho>1")
@@ -172,9 +170,9 @@ case (Let as e \<rho>1 \<rho>2)
       apply (rule fmap_bottom_less)
       using `fdom \<rho>1 \<subseteq> fdom \<rho>2` by auto
   case (goal3 \<rho>1' \<rho>2')[simp]
-    have prem: "atom ` (fdom \<rho>2' - fdom \<rho>1') \<sharp>* as"
+    have prem: "atom ` (fdom \<rho>2' - fdom \<rho>1') \<sharp>* asToHeap as"
       using Let(6) Let(1) Let(2)
-      by (auto simp add: sharp_star_Env fresh_star_def)
+      by -(rule asToHeap_fresh_star, auto simp add:  sharp_star_Env fresh_star_def)
 
     show "\<rho>1 f++ heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>1'\<^esub>) \<le> \<rho>2 f++ heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>2'\<^esub>) "
     proof(rule fmap_less_eqI)
@@ -183,10 +181,15 @@ case (Let as e \<rho>1 \<rho>2)
     next
     case (goal2 x)
       thus ?case
-      apply (cases "x \<in> heapVars (asToHeap as)")
-      apply (simp add: Let(3)[OF goal3(3) prem])
-      apply (simp add: fmap_less_eqD[OF `\<rho>1 \<le> \<rho>2`])
-      done
+      proof (cases "x \<in> heapVars (asToHeap as)")
+        case True
+        with goal2 fresh_star_map_of[OF True prem]
+        show ?thesis
+          by (simp add: lookupHeapToEnv  Let(3)[OF _ goal3(3)])
+      next
+        case False with goal2 show ?thesis
+          by (simp add: fmap_less_eqD[OF `\<rho>1 \<le> \<rho>2`])
+      qed
     qed
   qed
   moreover
@@ -218,16 +221,6 @@ case (Lam x e \<rho>1 \<rho>2)
   thus "\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>1\<^esub> = \<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>2\<^esub>"
     using Lam(1,2)
     by simp
-next
-case ANil
-  thus ?case by simp
-next
-case (ACons x e as \<rho>1 \<rho>2)
-  from ACons(4)
-  have prem1: "atom ` (fdom \<rho>2 - fdom \<rho>1) \<sharp>* e" and  prem2: "atom ` (fdom \<rho>2 - fdom \<rho>1) \<sharp>* as"
-    by (auto simp add: fresh_star_def)
-  from ACons.hyps(1)[OF `\<rho>1 \<le> \<rho>2` prem1] ACons.hyps(2)[OF `\<rho>1 \<le> \<rho>2` prem2]
-  show ?case by simp
 qed
 
 sublocale has_ignore_fresh_ESem AESem
@@ -269,22 +262,18 @@ proof-
   finally show ?thesis.
 qed
 
-
-(*
-text {* Does not work with join-based semantics :-( *}
-
-lemma CESem_Let[simp]: "\<N>\<lbrakk>Let as body\<rbrakk>\<^bsub>\<rho>\<^esub> = (\<Lambda> (C \<cdot> r). (\<N>\<lbrakk>body\<rbrakk>\<^bsub>has_ESem.HSem CESem (asToHeap as) \<rho>\<^esub>) \<cdot> r)"
+lemma CESem_Let[simp]: "\<lbrakk>Let as body\<rbrakk>\<^bsub>\<rho>\<^esub> = tick (\<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub>)"
 proof-
-  have "\<N>\<lbrakk> Let as body \<rbrakk>\<^bsub>\<rho>\<^esub> = \<N>\<lbrakk> Let as body \<rbrakk>\<^bsub>(\<rho> f|` (- heapVars (asToHeap as)))\<^esub>"
+  have "\<lbrakk> Let as body \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> Let as body \<rbrakk>\<^bsub>(\<rho> f|` (fdom \<rho> - heapVars (asToHeap as)))\<^esub>"
     apply (rule ESem_ignores_fresh[symmetric, OF fmap_restr_less])
     apply (auto simp add: fresh_star_def set_bn_to_atom_heapVars)
     done
-  also have "\<dots> = (\<Lambda> (C\<cdot>r). (\<N>\<lbrakk>body\<rbrakk>\<^bsub>\<N>\<lbrace>asToHeap as\<rbrace>(\<rho> f|` (- heapVars (asToHeap as)))\<^esub>)\<cdot>r)"
-    apply (rule CESem.simps)
-    by (metis Compl_iff Int_iff fdom_fmap_restr sharp_star_Env)
-  also have "\<N>\<lbrace>asToHeap as\<rbrace>(\<rho> f|` (- heapVars (asToHeap as))) = \<N>\<lbrace>asToHeap as\<rbrace>\<rho>"
-    oops
-*)
+  also have "\<dots> = tick (\<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>(\<rho> f|` (fdom \<rho> - heapVars (asToHeap as)))\<^esub>)"
+    by (auto simp add:fresh_star_def sharp_Env set_bn_to_atom_heapVars)
+  also have "\<lbrace>asToHeap as\<rbrace>(\<rho> f|` (fdom \<rho> - heapVars (asToHeap as))) = \<lbrace>asToHeap as\<rbrace>\<rho>"
+     by (rule UHSem_restr)
+  finally show ?thesis.
+qed
 
 subsubsection {* Denotation of Substitution *}
 
@@ -343,17 +332,17 @@ qed
 
 lemma ESem_subst:
   assumes "x \<noteq> y"
-  assumes "atom x \<sharp> \<sigma>"
   shows "\<lbrakk> e \<rbrakk>\<^bsub>\<sigma>(x f\<mapsto> (\<sigma> f!\<^sub>\<bottom> y))\<^esub> = \<lbrakk> e[x::= y] \<rbrakk>\<^bsub>\<sigma>\<^esub>"
 proof-
-  from assms(2) have [simp]:"x \<notin> fdom \<sigma>" by (simp add: sharp_Env)
-  have [simp]:"insert x (fdom \<sigma>) - fdom \<sigma> = {x}" by auto
+  have [simp]: "insert x (fdom \<sigma>) - (fdom \<sigma> - {x}) = {x}" by auto
 
   have "\<lbrakk> e \<rbrakk>\<^bsub>\<sigma>(x f\<mapsto> (\<sigma> f!\<^sub>\<bottom> y))\<^esub> = \<lbrakk> e[x::= y] \<rbrakk>\<^bsub>\<sigma>(x f\<mapsto> (\<sigma> f!\<^sub>\<bottom> y))\<^esub>"
     using assms(1)
     by (auto intro: ESem_subst_same simp add: Rep_cfun_inverse)
+  also have "\<dots> = \<lbrakk> e[x::= y] \<rbrakk>\<^bsub>fmap_delete x \<sigma>\<^esub>"
+    by (rule ESem_ignores_fresh[symmetric]) (auto simp add: fresh_star_singleton assms(1))
   also have "\<dots> = \<lbrakk> e[x::= y] \<rbrakk>\<^bsub>\<sigma>\<^esub>"
-    by (auto intro: ESem_ignores_fresh[symmetric] simp add: fresh_star_singleton assms(1))
+    by (rule ESem_ignores_fresh[OF fmap_delete_less]) (auto simp add: fresh_star_def assms(1))
   finally
   show ?thesis.
 qed

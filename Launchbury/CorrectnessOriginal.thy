@@ -18,7 +18,7 @@ case (Lambda \<Gamma> x e L \<rho>)
   case 2 show ?case..
 next
 case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' \<rho>)
-  hence [simp]:"atom y \<sharp> \<lbrace>\<Delta>\<rbrace>\<rho>" and "y \<noteq> x"
+  hence  "y \<noteq> x"
     by (simp_all add: fresh_at_base)
 
   case 1
@@ -51,7 +51,7 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' \<rho>)
   also have "... = \<lbrakk> e' \<rbrakk>\<^bsub>(\<lbrace>\<Delta>\<rbrace>\<rho>)(y f\<mapsto> (\<lbrace>\<Delta>\<rbrace>\<rho> f!\<^sub>\<bottom> x))\<^esub>"
     by simp
   also have "... = \<lbrakk> e'[y ::= x] \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>"
-    by (rule ESem_subst[OF `y \<noteq> x` `atom y \<sharp> \<lbrace>\<Delta>\<rbrace>\<rho>`])
+    by (rule ESem_subst[OF `y \<noteq> x`])
   also have "\<dots> = \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Theta>\<rbrace>\<rho>\<^esub>"
     by (rule Application.hyps(13)[OF hyp2])
   finally
@@ -184,8 +184,6 @@ case (Let as \<Gamma> L body \<Delta> z \<rho>)
     apply (subst set_bn_to_atom_heapVars)
     apply (auto simp add: sharp_Env)
     done
-  hence  [simp]: "set (bn as) \<sharp>* (\<lbrace>\<Gamma>\<rbrace>\<rho>)"
-    using Let(1) by simp
   
   have hyp: "fdom \<rho> - heapVars (asToHeap as @ \<Gamma>) \<subseteq> set L"
     using 1 by auto
@@ -194,7 +192,7 @@ case (Let as \<Gamma> L body \<Delta> z \<rho>)
     using Let(1) `_ \<sharp>* \<rho>`
     by (simp add: set_bn_to_atom_heapVars fresh_star_Pair)
 
-  have "\<lbrakk> Terms.Let as body \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk> body \<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
+  have "\<lbrakk> Let as body \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk> body \<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
     by simp
   also have "\<dots> =  \<lbrakk> body \<rbrakk>\<^bsub>\<lbrace>asToHeap as @ \<Gamma>\<rbrace>\<rho>\<^esub>"
     by (rule arg_cong[OF UHSem_merge[OF f1]])

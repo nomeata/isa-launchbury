@@ -5,9 +5,8 @@ begin
 theorem
   assumes "\<rho> f\<triangleleft>\<triangleright> \<sigma>"
   shows denotational_semantics_similar: "\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub> \<triangleleft>\<triangleright> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>(C\<^sup>\<infinity>)"
-  and "\<And> x. x \<in> heapVars (asToHeap as) \<Longrightarrow>  \<lbrakk>the (map_of (asToHeap as) x)\<rbrakk>\<^bsub>\<rho>\<^esub> \<triangleleft>\<triangleright> (\<N>\<lbrakk>the (map_of (asToHeap as) x)\<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>C\<^sup>\<infinity>"
 using assms
-proof(nominal_induct e and as avoiding: \<rho> \<sigma> rule:exp_assn.strong_induct)
+proof(induct e arbitrary: \<rho> \<sigma> rule:exp_induct)
   case (Var v)
   show ?case
   proof (cases "v \<in> fdom \<rho>")
@@ -44,7 +43,7 @@ next
   qed
 next
   case (Let as e \<rho> \<sigma>)
-  have "fdom \<rho> = fdom \<sigma>" using Let(5) by auto
+  have "fdom \<rho> = fdom \<sigma>" using Let(3) by auto
 
   have "\<lbrace>asToHeap as\<rbrace>\<rho> f\<triangleleft>\<triangleright> \<N>\<lbrace>asToHeap as\<rbrace>\<sigma>"
   proof (rule parallel_UHSem_ind_different_ESem
@@ -62,13 +61,13 @@ next
       case (goal2 x)
       hence "x \<in> fdom \<rho> \<and> x \<notin> heapVars (asToHeap as) \<or> x \<in> heapVars (asToHeap as)" by auto
       thus ?case using `\<rho>' f\<triangleleft>\<triangleright> \<sigma>'` `\<rho> f\<triangleleft>\<triangleright> \<sigma>`
-        by (auto simp add: lookupHeapToEnv elim: Let(3) )
+        by (auto simp add: lookupHeapToEnv elim: Let(1) )
     qed
   qed
-  with Let(4)
+  with Let(2)
   have "\<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub> \<triangleleft>\<triangleright> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>asToHeap as\<rbrace>\<sigma>\<^esub>)\<cdot>C\<^sup>\<infinity>" by blast
-  thus ?case using Let(1,2) by simp
-qed auto
+  thus ?case by simp
+qed
 
 theorem heaps_similar: "\<lbrace>\<Gamma>\<rbrace> f\<triangleleft>\<triangleright> \<N>\<lbrace>\<Gamma>\<rbrace>"
   by (rule parallel_UHSem_ind_different_ESem
