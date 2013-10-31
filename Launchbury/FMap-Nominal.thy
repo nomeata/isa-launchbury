@@ -168,6 +168,11 @@ lemma the_lookup_eqvt:
   apply auto
   by (metis Some_eqvt permute_fun_app_eq the.simps)
 
+lemma the_lookup_perm[simp]:
+  fixes \<rho> :: "'a::at_base f\<rightharpoonup> 'b::pure"
+  shows "((x' \<leftrightarrow> x) \<bullet> \<rho>) f! xa = \<rho> f! ((x' \<leftrightarrow> x) \<bullet> xa) " 
+  by (metis lookup_eqvt permute_flip_cancel permute_pure)
+
 lemma fempty_eqvt[eqvt, simp]:
   "\<pi> \<bullet> fempty = fempty"
   by (transfer, auto simp add: permute_fun_def)
@@ -184,6 +189,11 @@ lemma fempty_fresh_star[simp]: "a \<sharp>* fempty"
 lemma fdom_perm: "fdom (\<pi> \<bullet> f) = \<pi> \<bullet> (fdom f)"
   apply transfer by (rule dom_perm)
 lemmas fdom_perm_rev[simp,eqvt] = fdom_perm[symmetric]
+
+lemma mem_fdom_perm[simp]:
+  fixes \<rho> :: "'a::at_base f\<rightharpoonup> 'b::pure"
+  shows "xa \<in> fdom ((x' \<leftrightarrow> x) \<bullet> \<rho>) \<longleftrightarrow> (x' \<leftrightarrow> x) \<bullet> xa \<in> fdom \<rho>" 
+  by (metis fdom_perm_rev flip_commute mem_permute_iff permute_flip_cancel2)
 
 lemma fmap_upd_eqvt[eqvt]: "p \<bullet> (fmap_upd f x y) = fmap_upd (p \<bullet> f) (p \<bullet> x) (p \<bullet> y)"
   by transfer (metis Some_eqvt fun_upd_eqvt)
@@ -203,6 +213,13 @@ case goal2
   also have "... = fmap_restr (\<pi> \<bullet> d) (\<pi> \<bullet> m) f! x" using `x \<in> _ \<inter> _` by simp
   finally show ?case.
 qed
+
+lemma fmap_restr_perm:
+  fixes \<rho> :: "'a::at f\<rightharpoonup> 'b::pure"
+  assumes "x \<notin> S" and "x' \<notin> S"
+  shows "((x' \<leftrightarrow> x) \<bullet> \<rho>) f|` S = \<rho> f|` S"
+  using assms
+  by (auto simp add: permute_flip_at  split:if_splits)
 
 lemma fmap_delete_eqvt[eqvt]:
   "\<pi> \<bullet> fmap_delete x m = fmap_delete (\<pi> \<bullet> x) (\<pi> \<bullet> m)"

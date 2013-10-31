@@ -1,5 +1,5 @@
 theory Terms
-  imports Main  "./Nominal/Nominal/Nominal2" 
+  imports Main  "./Nominal/Nominal/Nominal2"  "Nominal-Utils"
 begin
 
 subsubsection {* Variables (names) and expressions *}
@@ -54,17 +54,16 @@ done
 
 subsubsection {* Free variables *}
 
-definition fv :: "'a::pt \<Rightarrow> var set" where "fv e = {v. atom v \<in> supp e}"
-
-lemma fv_eqvt[simp,eqvt]: "\<pi> \<bullet> (fv e) = fv (\<pi> \<bullet> e)"
-  unfolding fv_def by simp
-
-lemma fv_supp_exp: "supp e = atom ` (fv (e::exp))" and fv_supp_as: "supp as = atom ` (fv (as::assn))"
+lemma fv_supp_exp: "supp e = atom ` (fv (e::exp) :: var set)" and fv_supp_as: "supp as = atom ` (fv (as::assn) :: var set)"
   by (induction e and as rule:exp_assn.inducts)
      (auto simp add: fv_def exp_assn.supp supp_at_base)
 
 lemma fv_Lam[simp]: "fv (Lam [x]. e) = fv e - {x}"
   unfolding fv_def by (auto simp add: exp_assn.supp)
+lemma fv_Var[simp]: "fv (Var x) = {x}"
+  unfolding fv_def by (auto simp add: exp_assn.supp supp_at_base)
+lemma fv_App[simp]: "fv (App e x) = insert x (fv e)"
+  unfolding fv_def by (auto simp add: exp_assn.supp supp_at_base)
 
 lemma fv_not_fresh: "atom x \<sharp> e \<longleftrightarrow> x \<notin> fv e"
   unfolding fv_def fresh_def by blast

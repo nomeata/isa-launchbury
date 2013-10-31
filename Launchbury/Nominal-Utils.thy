@@ -185,4 +185,21 @@ lemma fresh_star_subset:
 lemma fresh_star_set_subset:
   "x \<sharp>* (B :: 'a::at_base list) \<Longrightarrow> set A \<subseteq> set B \<Longrightarrow> x \<sharp>* A"
   by (metis fresh_star_set fresh_star_subset[OF finite_set])
+
+subsection {* A locale for things with atoms of one type *}
+
+definition fv :: "'a::pt \<Rightarrow> 'b::at_base set" where "fv e = {v. atom v \<in> supp e}"
+
+lemma fv_eqvt[simp,eqvt]: "\<pi> \<bullet> (fv e) = fv (\<pi> \<bullet> e)"
+  unfolding fv_def by simp
+
+lemma fv_Cons[simp]: "fv (x # xs) = fv x \<union> fv xs"
+  by (auto simp add: fv_def supp_Cons)
+lemma fv_Pair[simp]: "fv (x, y) = fv x \<union> fv y"
+  by (auto simp add: fv_def supp_Pair)
+lemma fv_at_base[simp]: "fv a = {a::'a::at_base}"
+  by (auto simp add: fv_def supp_at_base)
+
+
+
 end

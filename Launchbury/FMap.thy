@@ -217,6 +217,9 @@ lemma fran_fmap_upd[simp]:
   "fran (m(x f\<mapsto> v)) = insert v (fran (fmap_delete x m))"
 by (transfer, auto simp add: ran_def)
 
+lemma fmap_restr_fmap_delete_other[simp]: "x \<notin> S \<Longrightarrow> fmap_restr S (fmap_delete x m) = (fmap_restr S m)"
+  by (rule fmap_eqI) auto
+
 subsubsection {* Deleting *}
 
  

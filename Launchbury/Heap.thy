@@ -53,6 +53,14 @@ lemma set_delete_subset: "set (delete x l) \<subseteq> set l"
 lemma  True and [simp]:"(a, b) \<in> set (asToHeap as) \<Longrightarrow> size b < Suc (size as + size body)"
   by (induct and as rule:exp_assn.inducts, auto simp add: exp_assn.bn_defs fresh_star_insert dest: set_mp[OF set_delete_subset])
 
+lemma True and fv_asToHeap: "fv (asToHeap as) \<subseteq> fv as"
+  apply (induct and as rule:exp_assn.inducts)
+  apply (auto simp add: fv_def exp_assn.supp supp_Nil supp_at_base supp_Cons supp_Pair)
+  by (metis (lifting) mem_Collect_eq set_delete_subset set_supp_mono subsetD)
+
+lemma fv_Let[simp]: "fv (Let as e) = (fv as \<union> fv e) - heapVars (asToHeap as)"
+  unfolding fv_def by (auto simp add: exp_assn.supp supp_at_base set_bn_to_atom_heapVars)
+
 subsubsection {* Nicer induction rule for expressions *}
 
 lemma exp_induct[case_names Var App Let Lam]:

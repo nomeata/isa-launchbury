@@ -78,6 +78,11 @@ lemma fresh_star_map_of:
   shows "a \<sharp>* the (map_of \<Gamma> x)"
   using assms by (simp add: fresh_star_def fresh_map_of)
 
+lemma heapVars_fv_subset: "heapVars \<Gamma> \<subseteq> fv \<Gamma>"
+  by (induction \<Gamma>) auto
+
+lemma map_of_fv_subset: "x \<in> heapVars \<Gamma> \<Longrightarrow> fv (the (map_of \<Gamma> x)) \<subseteq> fv \<Gamma>"
+  by (induction \<Gamma>) auto
 
 subsubsection {* Equivariance lemmas *}
 

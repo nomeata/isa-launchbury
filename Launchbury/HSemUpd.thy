@@ -182,10 +182,7 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
     by (subst UHSem_eq, simp)
 
   lemma fmap_restr_fmap_addI:"finite S \<Longrightarrow> fdom \<rho>1 - fdom \<rho>2 \<subseteq> S \<Longrightarrow> fmap_restr S \<rho>1 f++ \<rho>2 = \<rho>1 f++ \<rho>2"
-    apply (rule fmap_eqI)
-    apply auto[1]
-    apply auto
-    by (metis lookup_fmap_add1 lookup_fmap_add2 lookup_fmap_restr)
+    by rule (auto simp add: lookup_fmap_add_eq)
 
   lemma UHSem_restr:
     "\<lbrace>h\<rbrace>(fmap_restr (fdom \<rho> - heapVars h) \<rho>) = \<lbrace>h\<rbrace>\<rho>"
@@ -195,7 +192,7 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
     apply (subst fmap_restr_fmap_addI)
     apply simp_all
     done
-  
+
   lemma UHSem_reorder:
     assumes "map_of \<Gamma> = map_of \<Delta>"
     shows "\<lbrace>\<Gamma>\<rbrace>\<rho> = \<lbrace>\<Delta>\<rbrace>\<rho>"
@@ -412,9 +409,53 @@ case False
    done
 qed
 
-locale has_ignore_fresh_ESem = has_cont_ESem +
-  assumes ESem_ignores_fresh_restr: "atom ` S \<sharp>* e \<Longrightarrow> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho> f|` (- S)\<^esub>"
+subsubsection {* Fresh variables on the heap are irrelevant *}
+
+context  has_cont_ESem 
 begin
+  lemma HSem_ignores_fresh_restr':
+    assumes "fv \<Gamma> \<subseteq> S"
+    assumes "\<And> x \<rho>. x \<in> heapVars \<Gamma> \<Longrightarrow> \<lbrakk> the (map_of \<Gamma> x) \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> the (map_of \<Gamma> x) \<rbrakk>\<^bsub>\<rho> f|` (fv (the (map_of \<Gamma> x)))\<^esub>"
+    shows "(\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` S = \<lbrace>\<Gamma>\<rbrace>\<rho> f|` S"
+  proof(induction rule: parallel_UHSem_ind[case_names adm base step])
+    case adm thus ?case by simp
+  next
+    case base
+      from assms(1) heapVars_fv_subset have "heapVars \<Gamma> \<subseteq> S" by auto
+      thus ?case by -(rule, auto)
+  next
+    case (step y z)
+    thm step(3)[symmetric]
+    have "heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>y\<^esub>) = heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>z\<^esub>)"
+    proof(rule heapToEnv_cong')
+      fix x
+      assume "x \<in> heapVars \<Gamma>"
+      hence "fv (the (map_of \<Gamma> x)) \<subseteq> fv \<Gamma>" by (rule map_of_fv_subset)
+      with assms(1)
+      have "fv (the (map_of \<Gamma> x)) \<inter> S = fv (the (map_of \<Gamma> x))" by auto
+      with `x \<in> heapVars \<Gamma>`
+      show "\<lbrakk> the (map_of \<Gamma> x) \<rbrakk>\<^bsub>y\<^esub> = \<lbrakk> the (map_of \<Gamma> x) \<rbrakk>\<^bsub>z\<^esub>"
+        by (subst (1 2) assms(2)[OF `x \<in> heapVars \<Gamma>`]) (simp add: step(3)[symmetric])
+    qed
+    moreover
+    have "heapVars \<Gamma> \<subseteq> S" using heapVars_fv_subset assms(1) by auto
+    ultimately
+    show ?case by (simp add: fmap_restr_add fmap_restr_heapToEnv_noop)
+  qed
+end
+
+locale has_ignore_fresh_ESem = has_cont_ESem +
+  assumes fv_supp: "supp e = atom ` (fv e :: 'b set)"
+  assumes ESem_considers_fv: "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho> f|` (fv e)\<^esub>"
+begin
+
+  lemma ESem_ignores_fresh_restr:
+    assumes "atom ` S \<sharp>* e"
+    shows "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho> f|` (- S)\<^esub>"
+  proof-
+    have "fv e \<inter> - S = fv e" using assms by (auto simp add: fresh_def fresh_star_def fv_supp)
+    thus ?thesis by (subst (1 2) ESem_considers_fv) simp
+  qed
 
   lemma ESem_ignores_fresh_restr':
     assumes "atom ` (fdom \<rho> - S) \<sharp>* e"
@@ -432,20 +473,10 @@ begin
   lemma HSem_ignores_fresh_restr:
     assumes "atom ` S \<sharp>* \<Gamma>"
     shows "(\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` (- S) = \<lbrace>\<Gamma>\<rbrace>\<rho> f|` (- S)"
-  proof(induction rule: parallel_UHSem_ind[case_names adm base step])
-    case adm thus ?case by simp
-  next
-    case base show ?case using fresh_distinct[OF assms]  by -(rule, auto)
-  next
-    case (step y z)
-    show ?case
-      apply rule
-      using fresh_distinct[OF assms]  apply auto[1]
-      apply (case_tac "x \<in> heapVars \<Gamma>")
-      apply (auto simp add: lookupHeapToEnv step(3)[symmetric] ESem_ignores_fresh_restr[symmetric, OF fresh_star_map_of[OF _ assms]])
-      done
+  proof-
+    from assms have "fv \<Gamma> \<subseteq> - S" by (auto simp add: fv_def fresh_star_def fresh_def)
+    thus ?thesis by (rule HSem_ignores_fresh_restr'[OF _ ESem_considers_fv])
   qed
-
 
 subsubsection {* Adding a fresh variable to a heap does not affect its semantics *} 
 

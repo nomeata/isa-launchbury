@@ -24,6 +24,10 @@ lemma heapToEnv_eqvt[eqvt]:
 lemma heapToEnv_fdom[simp]:"fdom (heapToEnv h eval) = heapVars h"
   by (induct h eval rule:heapToEnv.induct, auto)
 
+lemma fmap_restr_heapToEnv_noop:
+  "heapVars h \<subseteq> S \<Longrightarrow> fmap_restr S (heapToEnv h eval) = heapToEnv h eval"
+  by rule auto
+
 lemma heapToEnv_cong[fundef_cong]:
   "\<lbrakk> heap1 = heap2 ;  (\<And> e. e \<in> snd ` set heap2 \<Longrightarrow> eval1 e = eval2 e) \<rbrakk>
     \<Longrightarrow>  heapToEnv heap1 eval1 = heapToEnv heap2 eval2"
@@ -38,6 +42,11 @@ lemma lookupHeapToEnv:
   apply (case_tac a)
   apply auto
   done
+
+lemma heapToEnv_cong':
+  "\<lbrakk> (\<And> x. x \<in> heapVars heap \<Longrightarrow> eval1 (the (map_of heap x)) = eval2 (the (map_of heap x))) \<rbrakk>
+    \<Longrightarrow>  heapToEnv heap eval1 = heapToEnv heap eval2"
+ by rule (auto simp add: lookupHeapToEnv)
 
 lemma lookupHeapToEnvNotAppend[simp]:
   assumes "x \<notin> heapVars \<Gamma>"

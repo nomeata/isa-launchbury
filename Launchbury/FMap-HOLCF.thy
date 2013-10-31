@@ -481,6 +481,12 @@ lemma fmap_lookup_bot_fmap_delete_other[simp]: "x' \<noteq> x \<Longrightarrow> 
 lemma fmap_lookup_bot_fmap_add_other[simp]: "x \<notin> fdom \<rho>' \<Longrightarrow> (\<rho> f++ \<rho>') f!\<^sub>\<bottom> x = \<rho> f!\<^sub>\<bottom> x"
   by (transfer, auto split:option.split)
 
+lemma lookup_fmap_restr[simp]: "x \<in> S \<Longrightarrow> m f|` S f!\<^sub>\<bottom> x = m f!\<^sub>\<bottom> x"
+  by (transfer, auto)
+
+lemma lookup_fmap_restr_not_there[simp]: "x \<notin> S \<Longrightarrow> m f|` S f!\<^sub>\<bottom> x = \<bottom>"
+  by (transfer, auto)
+
 lemma cont2cont_fmap_lookup_bot[simp,cont2cont]:
   fixes f :: "'a::cpo \<Rightarrow> 'b::type f\<rightharpoonup> 'c::pcpo"
   assumes "cont f"
@@ -592,9 +598,8 @@ lemma fmap_expand_belowI:
 lemma fmap_expand_fmap_restr_below:
   assumes [simp]:"fdom x = S2"
   shows "(fmap_restr S1 x)\<^bsub>[S2]\<^esub> \<sqsubseteq> x"
-  apply (rule fmap_expand_belowI[OF assms(1)])
-  by (metis Int_iff below.r_refl  fdom_fmap_restr  lookup_fmap_restr)
-
+  by (rule fmap_expand_belowI[OF assms(1)])
+     (auto simp add: lookup_fmap_restr_eq)
 
 lemma fmap_expand_cont:
   "cont (\<lambda> m. m\<^bsub>[S]\<^esub>)"
