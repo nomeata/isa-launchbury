@@ -448,7 +448,12 @@ locale has_ignore_fresh_ESem = has_cont_ESem +
   assumes fv_supp: "supp e = atom ` (fv e :: 'b set)"
   assumes ESem_considers_fv: "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho> f|` (fv e)\<^esub>"
 begin
-
+ 
+  lemma ESem_fresh_cong:
+    assumes "\<rho> f|` (fv e) = \<rho>' f|` (fv e)"
+    shows "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>"
+  by (metis assms ESem_considers_fv )
+  
   lemma ESem_ignores_fresh_restr:
     assumes "atom ` S \<sharp>* e"
     shows "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho> f|` (- S)\<^esub>"
@@ -517,43 +522,11 @@ subsubsection {* Adding a fresh variable to a heap does not affect its semantics
   proof(rule HSem_add_fresh'[OF assms])
   case (goal1 e \<rho>')
     assume "e \<in> snd ` set \<Gamma>"
-    hence "atom x \<sharp> e"
-      apply auto
-      by (metis fresh fresh_PairD(2) fresh_list_elem)
-  
-    assume "fdom \<rho>' = fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>)"
-    hence [simp]:"fdom \<rho>' - fdom \<rho>' \<inter> (fdom \<rho>' - {x}) = {x}" by auto
-  
-    show ?case
-      apply (rule ESem_ignores_fresh_restr)
-      apply (simp add: fresh_star_def)
-      using `atom x \<sharp> e`.
+    hence "atom x \<sharp> e" by (metis fresh fresh_PairD(2) fresh_heap_expr')
+    hence "fv e \<inter> -{x} = fv e" by (auto simp add: fv_def fresh_def)
+    thus ?case by (simp cong: ESem_fresh_cong)
   qed
-
-  lemma UHSem_append_fresh:
-    assumes fresh: "atom ` heapVars \<Gamma> \<sharp>* (\<Delta>, \<rho>)"
-    shows  "(\<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>) f|` (fdom \<rho> \<union> heapVars \<Delta>) = \<lbrace>\<Delta>\<rbrace>\<rho>"
-  proof-
-    have [simp]: "\<And> f . heapToEnv (\<Gamma> @ \<Delta>) f f|` (fdom \<rho> \<union> heapVars \<Delta>) = heapToEnv \<Delta> f"
-      apply rule
-      using assms
-      apply (auto simp add: heapVars_not_fresh  fresh_star_def fresh_Pair lookupHeapToEnv)
-      apply (metis fresh_fdom map_add_heapVars(2))
-      apply (metis heapVars_not_fresh map_add_heapVars(2))
-      done
-    show ?thesis using assms
-      apply (induction rule: parallel_UHSem_ind)
-      apply simp
-      apply auto
-      apply (auto simp add: fmap_restr_add fmap_restr_useless)
-      apply (rule arg_cong) back
-      apply (rule heapToEnv_cong)
-      apply simp                    
-      apply (rule ESem_ignores_fresh_restr')
-      apply (auto simp add: fresh_star_def fresh_Pair fresh_heap_expr)
-      done
-   qed  
-  
+ 
 
 subsubsection {* Binding more variables increases knowledge *}
 
