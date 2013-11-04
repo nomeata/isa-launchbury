@@ -487,6 +487,9 @@ lemma lookup_fmap_restr[simp]: "x \<in> S \<Longrightarrow> m f|` S f!\<^sub>\<b
 lemma lookup_fmap_restr_not_there[simp]: "x \<notin> S \<Longrightarrow> m f|` S f!\<^sub>\<bottom> x = \<bottom>"
   by (transfer, auto)
 
+lemma lookup_fmap_restr_eq: "m f|` S f!\<^sub>\<bottom> x = (if x \<in> S then m f!\<^sub>\<bottom> x else \<bottom>)"
+  by (transfer, auto)
+
 lemma cont2cont_fmap_lookup_bot[simp,cont2cont]:
   fixes f :: "'a::cpo \<Rightarrow> 'b::type f\<rightharpoonup> 'c::pcpo"
   assumes "cont f"

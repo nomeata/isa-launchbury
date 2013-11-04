@@ -14,6 +14,12 @@ session Launchbury (AFP) in "Launchbury" = "HOLCF-Nominal2" +
   theories
     "Everything"
 
+session LaunchburyAdequacy (AFP) in "Launchbury" = "HOLCF-Nominal2" +
+  options [document_variants = newstuff, document = pdf, document_graph, document_output = "output", quick_and_dirty]
+  theories
+    "Adequacy"
+    "CorrectnessOriginal"
+
 session LaunchburyComplete (AFP) in "Launchbury" = "HOLCF-Nominal2" +
   options [document_variants = newstuff, document = pdf, document_graph, document_output = "output", quick_and_dirty]
   theories

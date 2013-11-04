@@ -41,29 +41,13 @@ case (Var v Y0 Y)
     by (rule contE[OF _ `chain Y`])
 next
 case (Let as e Y0 Y)
-  have fdoms[simp]: "\<And> i. fdom (Y i) = fdom (Lub Y)"
-    by (metis chain_fdom `chain Y`)
-  have [simp]:"\<And> i. set (bn as) \<sharp>* Y i" and [simp]: "set (bn as) \<sharp>* Lub Y"  using Let.hyps(1) Let.prems(1)
-    unfolding sharp_star_Env by auto
-  have unset: "\<And>i. fdom (Y i) \<inter> (heapVars (asToHeap as)) = {}"
-    using Let by (metis fdoms disjoint_iff_not_equal sharp_star_Env)
-  have heap_conts: "\<forall>e\<in>snd ` set (asToHeap as). cont (AESem e)" using Let.hyps(2) by metis
-  have "cont (AESem e)" using Let.hyps(3) by (rule contI, auto)
+  have ch: "cont (has_ESem.UHSem AESem (asToHeap as))"
+    by (rule UHSem_cont'''[OF Let.hyps(2)])
+  have ce: "cont (AESem e)" using Let.hyps(3) by (rule contI, auto)
 
-  have chain: "chain (\<lambda>i. UHSem (asToHeap as) (Y i))"
-    apply (rule chainI)
-    apply (rule UHSem_monofun''[OF Let.hyps(2)  chainE[OF `chain Y`]])
-    by assumption
-
-  have "(\<Squnion> i. (UHSem (asToHeap as) (Y i))) = (UHSem (asToHeap as) (Lub Y))"
-    apply (rule UHSem_cont''[OF Let.hyps(2) `chain Y`, symmetric])
-    by assumption
-  hence "range (\<lambda>i. \<lbrakk>e\<rbrakk>\<^bsub>has_ESem.UHSem AESem (asToHeap as) (Y i)\<^esub>) <<| \<lbrakk>e\<rbrakk>\<^bsub>has_ESem.UHSem AESem (asToHeap as) (Lub Y)\<^esub>"
-    using Let(3)[OF refl chain] by simp
-  thus ?case
-    apply simp
-    using ch2ch_cont[OF `cont (AESem e)` chain]
-    by (erule contE_subst[OF conts(4)]) 
+  have "cont (\<lambda>\<rho>. \<lbrakk>Let as e\<rbrakk>\<^bsub>\<rho>\<^esub>)" 
+    by simp (intro cont2cont cont_compose[OF ce] cont_compose[OF ch])
+  thus ?case by (rule contE[OF _ `chain Y`])
 next
 case ANil thus ?case by auto
 next
@@ -100,18 +84,16 @@ next
   show ?case by simp
 next
   case (Let as e)
-  hence [simp]: "set (bn as) \<sharp>* \<rho> f|` (fv as \<union> fv e - heapVars (asToHeap as))" by (metis fresh_star_def fresh_fmap_restr_subset)
 
-  thm Let(3)
   have "\<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub> = \<lbrakk>e\<rbrakk>\<^bsub>(\<lbrace>asToHeap as\<rbrace>\<rho>) f|` (fv as \<union> fv e)\<^esub>"
     by (subst (1 2) Let(3)) (simp add:  sup_commute)
   also
   have "fv (asToHeap as) \<subseteq> fv as \<union> fv e" using fv_asToHeap by auto
   hence "(\<lbrace>asToHeap as\<rbrace>\<rho>) f|` (fv as \<union> fv e) = \<lbrace>asToHeap as\<rbrace>(\<rho> f|` (fv as \<union> fv e))"
-    by (rule HSem_ignores_fresh_restr'[OF _ Let(2)])
+     by (rule HSem_ignores_fresh_restr'[OF _ Let(2)])
   also
   have "\<lbrace>asToHeap as\<rbrace>(\<rho> f|` (fv as \<union> fv e)) = \<lbrace>asToHeap as\<rbrace>\<rho> f|` (fv as \<union> fv e - heapVars (asToHeap as))"
-    by (subst UHSem_restr[symmetric]) (auto intro:  arg_cong[OF fmap_restr_cong])
+    by (rule UHSem_fresh_cong) auto
   finally
   show ?case using Let(1) by simp
 qed
@@ -131,8 +113,7 @@ proof(rule ESem_ignores_fresh[symmetric])
 
   have "(insert x (fdom \<rho> \<union> heapVars \<Gamma>) - (fdom \<rho> \<union> heapVars \<Gamma>)) = {x}"
     using fresh
-    apply (auto simp add: fresh_Pair sharp_Env)
-    by (metis heapVars_not_fresh)
+    by (auto simp add: fresh_Pair fresh_fmap_pure heapVars_not_fresh)
   thus "atom ` (fdom (\<lbrace>(x, e') # \<Gamma>\<rbrace>\<rho>) - fdom (\<lbrace>\<Gamma>\<rbrace>\<rho>)) \<sharp>* e"
     using fresh
     by (simp add: fresh_star_def fresh_Pair)
@@ -164,15 +145,17 @@ declare AESem.simps(1)[simp del]
 
 lemma CESem_Let[simp]: "\<lbrakk>Let as body\<rbrakk>\<^bsub>\<rho>\<^esub> = tick (\<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub>)"
 proof-
-  have "\<lbrakk> Let as body \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> Let as body \<rbrakk>\<^bsub>(\<rho> f|` (fdom \<rho> - heapVars (asToHeap as)))\<^esub>"
-    by (rule ESem_ignores_fresh_restr')
-       (auto simp add: fresh_star_def set_bn_to_atom_heapVars)
-  also have "\<dots> = tick (\<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>(\<rho> f|` (fdom \<rho> - heapVars (asToHeap as)))\<^esub>)"
-    by (auto simp add:fresh_star_def sharp_Env set_bn_to_atom_heapVars)
-  also have "\<lbrace>asToHeap as\<rbrace>(\<rho> f|` (fdom \<rho> - heapVars (asToHeap as))) = \<lbrace>asToHeap as\<rbrace>\<rho>"
-     by (rule UHSem_restr)
+  have "\<lbrakk> Let as body \<rbrakk>\<^bsub>\<rho>\<^esub> = tick (\<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>(\<rho> f|` fv (Let as body))\<^esub>)" 
+    by simp
+  also have "\<lbrace>asToHeap as\<rbrace>(\<rho> f|` fv(Let as body)) = \<lbrace>asToHeap as\<rbrace>(\<rho> f|` (fv as \<union> fv body))" 
+    by (rule UHSem_fresh_cong) auto
+  also have "\<dots> = (\<lbrace>asToHeap as\<rbrace>\<rho>) f|` (fv as \<union> fv body)"
+    by (rule HSem_ignores_fresh_restr'[symmetric, OF subset_trans[OF fv_asToHeap Un_upper1] ESem_considers_fv])
+  also have "\<lbrakk>body\<rbrakk>\<^bsub>\<dots>\<^esub> = \<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub>"
+    by (rule ESem_fresh_cong) auto
   finally show ?thesis.
 qed
+declare AESem.simps(4)[simp del]
 
 subsubsection {* Denotation of Substitution *}
 
@@ -246,6 +229,22 @@ proof-
   show ?thesis.
 qed
 
+lemma fmap_restr_monofun_relaxed:
+  "op f!\<^sub>\<bottom> \<rho> \<sqsubseteq> op f!\<^sub>\<bottom>\<rho>' \<Longrightarrow> op f!\<^sub>\<bottom> (\<rho> f|` S) \<sqsubseteq> op f!\<^sub>\<bottom> (\<rho>' f|` S)"
+by (auto simp add: below_fun_def lookup_fmap_restr_eq)
+
+lemma UHSem_monofun_relaxed':
+  assumes "\<And>x \<rho> \<rho>'. x \<in> heapVars h \<Longrightarrow> op f!\<^sub>\<bottom> \<rho> \<sqsubseteq> op f!\<^sub>\<bottom>\<rho>' \<Longrightarrow> \<lbrakk> the (map_of h x) \<rbrakk>\<^bsub>\<rho>\<^esub> \<sqsubseteq> \<lbrakk> the (map_of h x) \<rbrakk>\<^bsub>\<rho>'\<^esub>"
+  assumes "op f!\<^sub>\<bottom> \<rho> \<sqsubseteq> op f!\<^sub>\<bottom>\<rho>'"
+  shows "op f!\<^sub>\<bottom> (\<lbrace>h\<rbrace>\<rho>) \<sqsubseteq> op f!\<^sub>\<bottom> (\<lbrace>h\<rbrace>\<rho>')"
+  apply (rule parallel_UHSem_ind)
+  apply simp
+  apply simp
+  apply (rule fun_belowI)
+  apply (case_tac "x \<in> heapVars h")
+  apply (auto simp add: lookupHeapToEnv  assms(1) fun_belowD[OF assms(2)])
+  done
+
 lemma ESem_mono_relaxed:
   assumes "fmap_lookup_bot \<rho>1 \<sqsubseteq> fmap_lookup_bot \<rho>2"
   shows "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>1\<^esub> \<sqsubseteq> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>2\<^esub>"
@@ -269,19 +268,8 @@ case (Lam x e)
     by (auto intro!: cfun_belowI cont2monofunE[OF conts(1)]  cont2monofunE[OF conts(4)] dest: fun_belowD)
 next
 case (Let as x)
-
-  have "op f!\<^sub>\<bottom> (\<lbrace>asToHeap as\<rbrace>\<rho>1) \<sqsubseteq> op f!\<^sub>\<bottom> (\<lbrace>asToHeap as\<rbrace>\<rho>2)"
-    apply (rule parallel_UHSem_ind)
-    apply simp
-    apply simp
-    apply (rule fun_belowI)
-    apply (case_tac "x \<in> heapVars (asToHeap as)")
-     apply (simp add: lookupHeapToEnv )
-     apply (rule Let.hyps(3), assumption, assumption)
-    apply (simp add: fun_belowD[OF Let.prems])
-    done
-  from Let.hyps(4)[OF this]
-  show ?case using Let(1,2) by (auto intro: cont2monofunE[OF conts(4)] dest: fun_belowD)
+  show ?case
+    by (auto intro!: cont2monofunE[OF conts(4)] UHSem_monofun_relaxed' Let.hyps(3) Let.hyps(4) fmap_restr_monofun_relaxed  Let.prems)
 qed
 
 lemma ESem_fmap_cong:
@@ -293,13 +281,7 @@ by (metis (full_types) ESem_mono_relaxed below_antisym below_refl)
 lemma UHSem_monofun_relaxed:
   assumes "op f!\<^sub>\<bottom> \<rho> \<sqsubseteq> op f!\<^sub>\<bottom>\<rho>'"
   shows "op f!\<^sub>\<bottom> (\<lbrace>h\<rbrace>\<rho>) \<sqsubseteq> op f!\<^sub>\<bottom> (\<lbrace>h\<rbrace>\<rho>')"
-  apply (rule parallel_UHSem_ind)
-  apply simp
-  apply simp
-  apply (rule fun_belowI)
-  apply (case_tac "x \<in> heapVars h")
-  apply (auto simp add: lookupHeapToEnv ESem_mono_relaxed fun_belowD[OF assms])
-  done
+  by (rule UHSem_monofun_relaxed'[OF ESem_mono_relaxed assms])
 
 end
 

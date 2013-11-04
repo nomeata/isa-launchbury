@@ -37,6 +37,6 @@ instance
 end
 
 lemma sharp_star_Env: "set (bn as) \<sharp>* (\<rho> :: (var f\<rightharpoonup> 'b::{pure_cpo})) \<longleftrightarrow> (\<forall> x \<in> heapVars (asToHeap as) . x \<notin> fdom \<rho>)"
-  by(induct rule:asToHeap.induct, auto simp add: fresh_star_def exp_assn.bn_defs sharp_Env)
+  by(induct rule:asToHeap.induct, auto simp add: fresh_star_def exp_assn.bn_defs fresh_fmap_pure)
 
 end

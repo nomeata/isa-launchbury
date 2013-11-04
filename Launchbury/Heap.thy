@@ -61,6 +61,14 @@ lemma True and fv_asToHeap: "fv (asToHeap as) \<subseteq> fv as"
 lemma fv_Let[simp]: "fv (Let as e) = (fv as \<union> fv e) - heapVars (asToHeap as)"
   unfolding fv_def by (auto simp add: exp_assn.supp supp_at_base set_bn_to_atom_heapVars)
 
+lemma fv_ANil[simp]: "fv ANil = {}"
+  unfolding fv_def by (auto simp add: exp_assn.supp supp_at_base)
+lemma fv_ACons[simp]: "fv (ACons x e as) = insert x (fv e \<union> fv as)"
+  unfolding fv_def by (auto simp add: exp_assn.supp supp_at_base)
+
+lemma finite_fv_exp[simp]: "finite (fv (e::exp) :: var set)" and finite_fv_as[simp]: "finite (fv (as::assn) :: var set)"
+  by (induction e and as rule:exp_assn.inducts) auto
+
 subsubsection {* Nicer induction rule for expressions *}
 
 lemma exp_induct[case_names Var App Let Lam]:

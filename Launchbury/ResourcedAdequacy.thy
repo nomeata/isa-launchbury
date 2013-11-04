@@ -342,7 +342,7 @@ next
     also have "\<dots> \<sqsubseteq> (CFn\<cdot>(\<Lambda> v. \<N>\<lbrakk>e''\<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>)(y f\<mapsto> v)\<^esub>) \<down>CFn (\<N>\<lbrace>\<Delta>\<rbrace> f!\<^sub>\<bottom> x))\<cdot>C\<^bsup>n\<^esup>"
       by (rule cont2monofunE[OF _ CESem_Lam_not_bot[OF lam_not_bot]]) simp
     also have "\<dots> = (\<N>\<lbrakk>e''\<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>)(y f\<mapsto> (\<N>\<lbrace>\<Delta>\<rbrace> f!\<^sub>\<bottom> x))\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
-      using  `y \<notin> heapVars \<Delta>`  by (simp add: sharp_Env)
+      using  `y \<notin> heapVars \<Delta>`  by (simp add: fresh_fmap_pure)
     also have "\<dots> = (\<N>\<lbrakk>e''[y::=x]\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
       apply (rule arg_cong[OF ESem_subst])
       using `atom y \<sharp> _` by (simp_all add: fresh_Pair fresh_at_base)

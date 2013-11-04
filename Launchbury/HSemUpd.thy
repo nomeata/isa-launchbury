@@ -71,6 +71,16 @@ proof-
            by metis
     qed
 qed
+
+lemma UHSem_cont''':
+  assumes cont: "\<And> e. e \<in> snd ` set h \<Longrightarrow> cont (ESem e)"
+  shows "cont (\<lambda> \<rho>. \<lbrace>h\<rbrace>\<rho>)"
+  apply (rule contI2)
+  apply (rule monofunI)
+  apply (rule UHSem_monofun''[OF cont], assumption, assumption)
+  apply (subst UHSem_cont''[OF cont], assumption, assumption)
+  apply (rule below_refl)
+  done
 end
 
 context has_cont_ESem
@@ -181,17 +191,32 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
     "fdom (\<lbrace>h\<rbrace>\<rho>) = fdom \<rho> \<union> heapVars h"
     by (subst UHSem_eq, simp)
 
-  lemma fmap_restr_fmap_addI:"finite S \<Longrightarrow> fdom \<rho>1 - fdom \<rho>2 \<subseteq> S \<Longrightarrow> fmap_restr S \<rho>1 f++ \<rho>2 = \<rho>1 f++ \<rho>2"
+  lemma fmap_restr_fmap_addI:"fdom \<rho>1 - fdom \<rho>2 \<subseteq> S \<Longrightarrow> fmap_restr S \<rho>1 f++ \<rho>2 = \<rho>1 f++ \<rho>2"
     by rule (auto simp add: lookup_fmap_add_eq)
 
   lemma UHSem_restr:
-    "\<lbrace>h\<rbrace>(fmap_restr (fdom \<rho> - heapVars h) \<rho>) = \<lbrace>h\<rbrace>\<rho>"
+    "\<lbrace>h\<rbrace>(\<rho> f|` (fdom \<rho> - heapVars h)) = \<lbrace>h\<rbrace>\<rho>"
     apply (rule parallel_UHSem_ind)
     apply simp
-    apply auto
+    apply auto[1]
     apply (subst fmap_restr_fmap_addI)
     apply simp_all
     done
+
+  lemma UHSem_restr':
+    "\<lbrace>h\<rbrace>(\<rho> f|` (- heapVars h)) = \<lbrace>h\<rbrace>\<rho>"
+    apply (rule parallel_UHSem_ind)
+    apply simp
+    apply auto[1]
+    apply (subst fmap_restr_fmap_addI)
+    apply auto
+    done
+
+  lemma UHSem_fresh_cong:
+    assumes "\<rho> f|` (- heapVars h) = \<rho>' f|` (- heapVars h)"
+    shows "\<lbrace>h\<rbrace>\<rho> = \<lbrace>h\<rbrace>\<rho>'"
+    apply (subst (1 2) UHSem_restr'[symmetric])
+    by (simp add: assms)
 
   lemma UHSem_reorder:
     assumes "map_of \<Gamma> = map_of \<Delta>"
@@ -497,8 +522,7 @@ subsubsection {* Adding a fresh variable to a heap does not affect its semantics
     moreover
     have "x \<notin> fdom \<rho> \<union> heapVars \<Gamma>"
       using fresh
-      apply (auto simp add: sharp_Env fresh_Pair)
-      by (metis heapVars_not_fresh)
+      by (auto simp add: fresh_fmap_pure fresh_Pair heapVars_not_fresh)
     hence "fdom y \<inter> (- {x}) = fdom \<rho> \<union> heapVars \<Gamma>"
       using goal3(1) by auto
     hence [simp]: "z = y f|` (- {x})"

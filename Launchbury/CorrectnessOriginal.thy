@@ -182,7 +182,7 @@ case (Let as \<Gamma> L body \<Delta> z \<rho>)
   hence "set (bn as) \<sharp>* \<rho>"
     apply (subst fresh_star_def)
     apply (subst set_bn_to_atom_heapVars)
-    apply (auto simp add: sharp_Env)
+    apply (auto simp add: fresh_fmap_pure)
     done
   
   have hyp: "fdom \<rho> - heapVars (asToHeap as @ \<Gamma>) \<subseteq> set L"

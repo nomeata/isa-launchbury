@@ -150,7 +150,6 @@ lemma supp_fmap_transfer[transfer_rule]:
 
 lemma supp_fmap:
   "supp (m:: 'a::fs f\<rightharpoonup> 'b::fs) = (supp (fdom m) \<union> supp (fran m))"
-apply transfer
 by transfer(erule supp_map_union)
 
 instance "fmap" :: (fs,fs) fs
@@ -192,8 +191,8 @@ lemmas fdom_perm_rev[simp,eqvt] = fdom_perm[symmetric]
 
 lemma mem_fdom_perm[simp]:
   fixes \<rho> :: "'a::at_base f\<rightharpoonup> 'b::pure"
-  shows "xa \<in> fdom ((x' \<leftrightarrow> x) \<bullet> \<rho>) \<longleftrightarrow> (x' \<leftrightarrow> x) \<bullet> xa \<in> fdom \<rho>" 
-  by (metis fdom_perm_rev flip_commute mem_permute_iff permute_flip_cancel2)
+  shows "xa \<in> fdom (p \<bullet> \<rho>) \<longleftrightarrow> - p \<bullet> xa \<in> fdom \<rho>" 
+  by (metis (mono_tags) fdom_perm_rev mem_Collect_eq permute_set_eq)
 
 lemma fmap_upd_eqvt[eqvt]: "p \<bullet> (fmap_upd f x y) = fmap_upd (p \<bullet> f) (p \<bullet> x) (p \<bullet> y)"
   by transfer (metis Some_eqvt fun_upd_eqvt)
@@ -213,13 +212,6 @@ case goal2
   also have "... = fmap_restr (\<pi> \<bullet> d) (\<pi> \<bullet> m) f! x" using `x \<in> _ \<inter> _` by simp
   finally show ?case.
 qed
-
-lemma fmap_restr_perm:
-  fixes \<rho> :: "'a::at f\<rightharpoonup> 'b::pure"
-  assumes "x \<notin> S" and "x' \<notin> S"
-  shows "((x' \<leftrightarrow> x) \<bullet> \<rho>) f|` S = \<rho> f|` S"
-  using assms
-  by (auto simp add: permute_flip_at  split:if_splits)
 
 lemma fmap_delete_eqvt[eqvt]:
   "\<pi> \<bullet> fmap_delete x m = fmap_delete (\<pi> \<bullet> x) (\<pi> \<bullet> m)"
@@ -243,17 +235,20 @@ by transfer simp
 
 subsubsection {* Freshness and support *}
 
+lemma supp_fmap_pure:
+  fixes \<rho> :: "'a::fs f\<rightharpoonup> 'b::pure"
+  shows "supp \<rho> = supp (fdom \<rho>)"
+  by (metis supp_fmap Un_empty_right pure_supp)
+
+lemma fresh_fmap_pure:
+  fixes \<rho> :: "'a::at_base f\<rightharpoonup> 'b::pure"
+  shows "atom a \<sharp> \<rho> \<longleftrightarrow> a \<notin> fdom \<rho>"
+  by (auto simp add: fresh_def supp_fmap_pure supp_finite_set_at_base)
+
 lemma fresh_fdom[simp]: "atom x \<sharp> (f :: 'a::at_base f\<rightharpoonup> 'b::fs) \<Longrightarrow> x \<notin> fdom f"
   apply (subst (asm) fresh_def)
   apply (simp  add: supp_fmap)
   apply (subst (asm) (1 2) fresh_def[symmetric])
-  apply (simp add: fresh_finite_set_at_base[OF finite_fdom] pure_fresh)
-  done
-
-lemma sharp_Env: "atom x \<sharp> (\<rho> :: 'a::at_base f\<rightharpoonup> 'b::pure) \<longleftrightarrow> x \<notin> fdom \<rho>"
-  apply (subst fresh_def)
-  apply (simp  add: supp_fmap)
-  apply (subst (1 2) fresh_def[symmetric])
   apply (simp add: fresh_finite_set_at_base[OF finite_fdom] pure_fresh)
   done
 
@@ -320,5 +315,34 @@ lemma fresh_fmap_add_subset:
   "a \<sharp> (m1 :: 'a::at_base f\<rightharpoonup> 'b::fs) \<Longrightarrow> a \<sharp> m2 \<Longrightarrow> a \<sharp> m1 f++ m2"
   by (auto simp add: fresh_def supp_fmap supp_of_finite_insert supp_of_finite_union 
       dest: set_mp[OF supp_mono[OF finite_UnI[OF finite_fran finite_fran] fran_fmap_add_subset]])
+
+subsubsection {* Permutation and restriction *}
+
+lemma fmap_restr_perm:
+  fixes \<rho> :: "'a::at f\<rightharpoonup> 'b::pure"
+  assumes "supp p \<sharp>* S" and [simp]: "finite S"
+  shows "(p \<bullet> \<rho>) f|` S = \<rho> f|` S"
+proof-
+  have "supp p \<sharp>* atom ` S"
+    using assms  by (metis finite_imageI fresh_star_supp_conv supp_finite_atom_set supp_finite_set_at_base)
+  hence "supp p \<inter> atom ` S = {}"
+    by (rule iffD1[OF atom_fresh_star_disjoint, rotated]) simp
+  hence *: "supp p \<sharp>* \<rho> f|` S" by (auto simp add: fresh_star_def fresh_def supp_fmap_pure supp_finite_set_at_base)
+
+  have "(p \<bullet> \<rho>) f|` S  = (p \<bullet> \<rho>) f|` (p \<bullet> S)"
+    unfolding  perm_supp_eq[OF assms(1)]..
+  also have "\<dots> = p \<bullet> (\<rho> f|` S)" by simp
+  also have "\<dots> = \<rho> f|` S"
+    by (rule perm_supp_eq[OF *])
+  finally show ?thesis.
+qed
+
+lemma fmap_restr_flip:
+  fixes \<rho> :: "'a::at f\<rightharpoonup> 'b::pure"
+  assumes "x \<notin> S" and "x' \<notin> S"
+  shows "((x' \<leftrightarrow> x) \<bullet> \<rho>) f|` S = \<rho> f|` S"
+  using assms
+  by (auto simp add: permute_flip_at  split:if_splits)
+
 
 end
