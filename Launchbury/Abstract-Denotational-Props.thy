@@ -20,47 +20,21 @@ lemma contE_subst:
 
 subsubsection {* Continuity of the semantics *}
 
-lemma ESem_cont': "Y0 = Y 0 \<Longrightarrow> chain Y \<Longrightarrow> range (\<lambda>i. \<lbrakk> e \<rbrakk>\<^bsub>Y i\<^esub>) <<| \<lbrakk> e \<rbrakk>\<^bsub>(\<Squnion> i. Y i)\<^esub> " and
+lemma ESem_cont': "cont (AESem e)" and
   "\<And>e. e \<in> snd ` set (asToHeap as) \<Longrightarrow> cont (AESem e)"
-proof(nominal_induct e and as avoiding: Y0  arbitrary: Y rule:exp_assn.strong_induct)
-case (Lam x e Y0 Y)
-  have "cont (\<lambda> \<rho>. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)" using Lam.hyps(2) by (rule contI, auto)
-  note cont_compose[OF this, cont2cont]
-  have "cont (\<lambda> \<rho>. \<lbrakk>Lam [x]. e\<rbrakk>\<^bsub>\<rho>\<^esub>)" unfolding AESem.simps by (intro cont2cont)
-  from contE[OF this, OF Lam.prems(2)]
-  show ?case by simp
+proof(nominal_induct e and as rule:exp_assn.strong_induct)
+case (Lam x e)
+  show "cont (\<lambda> \<rho>. \<lbrakk>Lam [x]. e\<rbrakk>\<^bsub>\<rho>\<^esub>)"
+    unfolding AESem.simps
+    by (intro cont2cont cont_compose[OF Lam.hyps])
 next
-case (App e v Y0 Y)
-  have "cont (AESem e)" using App.hyps(1) by (rule contI, auto)
-  thus ?case
-    by (auto intro:contE[OF _ App.prems(2)])
-next
-case (Var v Y0 Y)
-  have "cont (\<lambda> \<rho>. AESem (Var v) \<rho>)" by auto
-  thus ?case
-    by (rule contE[OF _ `chain Y`])
-next
-case (Let as e Y0 Y)
-  have ch: "cont (has_ESem.UHSem AESem (asToHeap as))"
-    by (rule UHSem_cont'''[OF Let.hyps(2)])
-  have ce: "cont (AESem e)" using Let.hyps(3) by (rule contI, auto)
+case (Let as e)
+  show "cont (\<lambda>\<rho>. \<lbrakk>Let as e\<rbrakk>\<^bsub>\<rho>\<^esub>)"
+    unfolding AESem.simps
+    by (intro cont2cont cont_compose[OF Let.hyps(2)] cont_compose[OF UHSem_cont'''[OF Let.hyps(1)]])
+qed (auto dest!:set_mp[OF set_delete_subset])
 
-  have "cont (\<lambda>\<rho>. \<lbrakk>Let as e\<rbrakk>\<^bsub>\<rho>\<^esub>)" 
-    by simp (intro cont2cont cont_compose[OF ce] cont_compose[OF ch])
-  thus ?case by (rule contE[OF _ `chain Y`])
-next
-case ANil thus ?case by auto
-next
-case (ACons v e as Y0 Y)
-  have "cont (AESem e)" using ACons.hyps(1) by (rule contI, auto)
-  with ACons
-  show ?case by (auto dest!:set_mp[OF set_delete_subset])
-qed
-
-sublocale has_cont_ESem AESem
-  apply default
-  using ESem_cont'[OF refl] by (rule contI)
-  
+sublocale has_cont_ESem AESem by default (rule ESem_cont')
 
 lemmas CESem_cont2cont[simp,cont2cont] = cont_compose[OF ESem_cont]
 
