@@ -45,7 +45,7 @@ abbreviation AHSem_fempty  ("\<lbrace>_\<rbrace>"  [60] 60) where "\<lbrace>\<Ga
 subsubsection {* The semantics ignores fresh variables *}
 
 lemma ESem_considers_fv': "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho> f|` (fv e)\<^esub>"
-proof (nominal_induct e avoiding: \<rho> rule:exp_strong_induct)
+proof (induct e arbitrary: \<rho> rule:exp_induct)
   case Var
   show ?case by simp
 next
@@ -60,16 +60,16 @@ next
   case (Let as e)
 
   have "\<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub> = \<lbrakk>e\<rbrakk>\<^bsub>(\<lbrace>asToHeap as\<rbrace>\<rho>) f|` (fv as \<union> fv e)\<^esub>"
-    by (subst (1 2) Let(3)) (simp add:  sup_commute)
+    by (subst (1 2) Let(2)) (simp add:  sup_commute)
   also
   have "fv (asToHeap as) \<subseteq> fv as \<union> fv e" using fv_asToHeap by auto
   hence "(\<lbrace>asToHeap as\<rbrace>\<rho>) f|` (fv as \<union> fv e) = \<lbrace>asToHeap as\<rbrace>(\<rho> f|` (fv as \<union> fv e))"
-     by (rule HSem_ignores_fresh_restr'[OF _ Let(2)])
+     by (rule HSem_ignores_fresh_restr'[OF _ Let(1)])
   also
   have "\<lbrace>asToHeap as\<rbrace>(\<rho> f|` (fv as \<union> fv e)) = \<lbrace>asToHeap as\<rbrace>\<rho> f|` (fv as \<union> fv e - heapVars (asToHeap as))"
     by (rule UHSem_fresh_cong) auto
   finally
-  show ?case using Let(1) by simp
+  show ?case by simp
 qed
 
 sublocale has_ignore_fresh_ESem AESem
@@ -136,14 +136,14 @@ subsubsection {* Denotation of Substitution *}
 lemma ESem_subst_same: "\<rho> f!\<^sub>\<bottom> x = \<rho> f!\<^sub>\<bottom> y \<Longrightarrow>  \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e[x::= y] \<rbrakk>\<^bsub>\<rho>\<^esub>"
   and 
   "\<rho> f!\<^sub>\<bottom> x = \<rho> f!\<^sub>\<bottom> y  \<Longrightarrow>  heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>) = heapToEnv (asToHeap as[x::a=y]) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>) "
-proof (nominal_induct e and as  avoiding: \<rho> x y rule:exp_assn.strong_induct)
-case (Var var \<rho> x y) thus ?case by auto
+proof (nominal_induct e and as avoiding: x y arbitrary: \<rho> and \<rho> rule:exp_assn.strong_induct)
+case Var thus ?case by auto
 next
-case (App exp var \<rho> x y)
+case App
   from App(1)[OF App(2)] App(2)
   show ?case by auto
 next
-case (Let as exp \<rho> x y)
+case (Let as exp x y \<rho>)
   from `set (bn as) \<sharp>* x` `set (bn as) \<sharp>* y` 
   have "x \<notin> heapVars (asToHeap as)" "y \<notin> heapVars (asToHeap as)"
     by (induct as rule: exp_assn.bn_inducts, auto simp add: exp_assn.bn_defs fresh_star_insert)
@@ -164,24 +164,24 @@ case (Let as exp \<rho> x y)
     apply simp
     apply simp
     apply simp
-    apply (erule arg_cong[OF Let(4)])
+    apply (erule arg_cong[OF Let(3)])
     using `x \<notin> heapVars (asToHeap as)` `y \<notin> heapVars (asToHeap as)`
     apply simp
     done
   ultimately
-  show ?case using Let(1-3) by (simp add: fresh_star_Pair)
+  show ?case using Let(1,2,3) by (simp add: fresh_star_Pair)
 next
-case (Lam var exp \<rho> x y)
+case (Lam var exp x y \<rho>)
   from `\<rho> f!\<^sub>\<bottom> x = \<rho> f!\<^sub>\<bottom> y`
   have "\<And>v. \<rho>(var f\<mapsto> v) f!\<^sub>\<bottom> x = \<rho>(var f\<mapsto> v) f!\<^sub>\<bottom> y"
-    using Lam(2,3) by (simp add: fresh_at_base)
+    using Lam(1,2) by (simp add: fresh_at_base)
   hence "\<And> v. \<lbrakk>exp\<rbrakk>\<^bsub>\<rho>(var f\<mapsto> v)\<^esub> = \<lbrakk>exp[x::=y]\<rbrakk>\<^bsub>\<rho>(var f\<mapsto> v)\<^esub>"
     by (rule Lam)
-  thus ?case using Lam(1-3) by simp
+  thus ?case using Lam(1,2) by simp
 next
-case (ANil \<rho> x y) thus ?case by auto
+case ANil thus ?case by auto
 next
-case (ACons var exp as \<rho> x y)
+case ACons
   from ACons(1,2)[OF ACons(3)] ACons(3)
   show ?case by auto
 qed
