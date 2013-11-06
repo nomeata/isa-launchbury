@@ -2,45 +2,8 @@ theory "Abstract-Denotational-Props"
   imports "AbstractDenotational"
 begin
 
-locale cont_semantic_domain = semantic_domain + 
-  assumes conts: "cont Fn" "cont Fn_project" "\<And> x. cont (Fn_project x)" "cont tick"
+context semantic_domain
 begin
-
-lemmas cont_semantic_domain_conts[simp,cont2cont] =
-  cont_compose[OF conts(1)]
-  cont_compose2[OF conts(2,3)]
-  cont_compose[OF conts(4)]
-
-lemma Fn_project_mono: "a \<sqsubseteq> b \<Longrightarrow> c \<sqsubseteq> d \<Longrightarrow> Fn_project a c \<sqsubseteq> Fn_project b d"
-  by (metis (hide_lams, no_types) cont2monofunE conts(2) conts(3) fun_belowD rev_below_trans)
-
-lemma contE_subst:
-  "cont g \<Longrightarrow> chain (\<lambda> i. f (Y i)) \<Longrightarrow> range (\<lambda>i. f (Y i)) <<| f (\<Squnion> i. Y i) \<Longrightarrow> range (\<lambda>i. g (f (Y i))) <<| g (f (\<Squnion> i. Y i))"
-  by (metis cont_def lub_eqI)
-
-subsubsection {* Continuity of the semantics *}
-
-lemma ESem_cont': "cont (AESem e)" and
-  "\<And>e. e \<in> snd ` set (asToHeap as) \<Longrightarrow> cont (AESem e)"
-proof(nominal_induct e and as rule:exp_assn.strong_induct)
-case (Lam x e)
-  show "cont (\<lambda> \<rho>. \<lbrakk>Lam [x]. e\<rbrakk>\<^bsub>\<rho>\<^esub>)"
-    unfolding AESem.simps
-    by (intro cont2cont cont_compose[OF Lam.hyps])
-next
-case (Let as e)
-  show "cont (\<lambda>\<rho>. \<lbrakk>Let as e\<rbrakk>\<^bsub>\<rho>\<^esub>)"
-    unfolding AESem.simps
-    by (intro cont2cont cont_compose[OF Let.hyps(2)] cont_compose[OF UHSem_cont'''[OF Let.hyps(1)]])
-qed (auto dest!:set_mp[OF set_delete_subset])
-
-sublocale has_cont_ESem AESem by default (rule ESem_cont')
-
-lemmas CESem_cont2cont[simp,cont2cont] = cont_compose[OF ESem_cont]
-
-abbreviation AHSem_syn ("\<lbrace>_\<rbrace>_"  [60,60] 60) where "\<lbrace>\<Gamma>\<rbrace>\<rho> \<equiv> UHSem \<Gamma> \<rho>"
-
-abbreviation AHSem_fempty  ("\<lbrace>_\<rbrace>"  [60] 60) where "\<lbrace>\<Gamma>\<rbrace> \<equiv> \<lbrace>\<Gamma>\<rbrace>fempty"
 
 subsubsection {* The semantics ignores fresh variables *}
 
@@ -96,7 +59,7 @@ qed
 
 subsection {* Nicer equations for CESem, without freshness requirements *}
 
-lemma AESem_Lam[simp]: "\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub>  = tick (Fn (\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>))"
+lemma AESem_Lam[simp]: "\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub>  = tick \<cdot> (Fn \<cdot> (\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>))"
 proof-
   have *: "\<And> v. ((\<rho> f|` (fv e - {x}))(x f\<mapsto> v)) f|` fv e = (\<rho>(x f\<mapsto> v)) f|` fv e"
     by rule auto
@@ -105,21 +68,21 @@ proof-
     apply (rule ESem_ignores_fresh[symmetric, OF fmap_delete_less])
     apply (auto simp add: fresh_star_def)
     done
-  also have "\<dots> = tick (Fn (\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>(\<rho> f|` (fv e - {x}))(x f\<mapsto> v)\<^esub>))"
+  also have "\<dots> = tick \<cdot> (Fn \<cdot> (\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>(\<rho> f|` (fv e - {x}))(x f\<mapsto> v)\<^esub>))"
     by simp
-  also have "\<dots> = tick (Fn (\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>((\<rho> f|` (fv e - {x}))(x f\<mapsto> v)) f|` fv e\<^esub>))"
+  also have "\<dots> = tick \<cdot> (Fn \<cdot> (\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>((\<rho> f|` (fv e - {x}))(x f\<mapsto> v)) f|` fv e\<^esub>))"
     by (subst  ESem_considers_fv, rule)
-  also have "\<dots> = tick (Fn (\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v) f|` fv e\<^esub>))"
+  also have "\<dots> = tick \<cdot> (Fn \<cdot> (\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v) f|` fv e\<^esub>))"
     unfolding *..
-  also have "\<dots> = tick (Fn (\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>))"
+  also have "\<dots> = tick \<cdot> (Fn \<cdot> (\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>))"
     unfolding  ESem_considers_fv[symmetric]..
   finally show ?thesis.
 qed
 declare AESem.simps(1)[simp del]
 
-lemma CESem_Let[simp]: "\<lbrakk>Let as body\<rbrakk>\<^bsub>\<rho>\<^esub> = tick (\<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub>)"
+lemma CESem_Let[simp]: "\<lbrakk>Let as body\<rbrakk>\<^bsub>\<rho>\<^esub> = tick \<cdot> (\<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub>)"
 proof-
-  have "\<lbrakk> Let as body \<rbrakk>\<^bsub>\<rho>\<^esub> = tick (\<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>(\<rho> f|` fv (Let as body))\<^esub>)" 
+  have "\<lbrakk> Let as body \<rbrakk>\<^bsub>\<rho>\<^esub> = tick \<cdot> (\<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>(\<rho> f|` fv (Let as body))\<^esub>)" 
     by simp
   also have "\<lbrace>asToHeap as\<rbrace>(\<rho> f|` fv(Let as body)) = \<lbrace>asToHeap as\<rbrace>(\<rho> f|` (fv as \<union> fv body))" 
     by (rule UHSem_fresh_cong) auto
@@ -226,12 +189,12 @@ using assms
 proof(nominal_induct e avoiding: \<rho>1 \<rho>2 rule:exp_strong_induct)
 case (Var x \<rho>)
   from Var.prems
-  show ?case by (auto intro: cont2monofunE[OF conts(4)] dest: fun_belowD)
+  show ?case by (auto intro: monofun_cfun dest: fun_belowD)
 next
 case (App e x \<rho>)
   from App.hyps[OF App.prems] App.prems
   show ?case
-    by (auto intro: Fn_project_mono cont2monofunE[OF conts(4)] dest: fun_belowD)
+    by (auto intro: monofun_cfun monofun_cfun_fun dest: fun_belowD)
 next
 case (Lam x e)
   from Lam(4)
@@ -239,11 +202,11 @@ case (Lam x e)
     by (auto intro!: fun_belowI fun_belowD[OF  Lam(4)] simp add: fmap_lookup_bot_fmap_upd_eq Lam.prems)
   from Lam.hyps(3)[OF this]
   show ?case
-    by (auto intro!: cfun_belowI cont2monofunE[OF conts(1)]  cont2monofunE[OF conts(4)] dest: fun_belowD)
+    by (auto intro!: cfun_belowI monofun_cfun_arg dest: fun_belowD)
 next
 case (Let as x)
   show ?case
-    by (auto intro!: cont2monofunE[OF conts(4)] UHSem_monofun_relaxed' Let.hyps(3) Let.hyps(4) fmap_restr_monofun_relaxed  Let.prems)
+    by (auto intro: monofun_cfun_arg UHSem_monofun_relaxed' Let.hyps(3) Let.hyps(4) fmap_restr_monofun_relaxed  Let.prems)
 qed
 
 lemma ESem_fmap_cong:

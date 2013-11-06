@@ -1,26 +1,13 @@
-
 theory Denotational
   imports "Denotational-Common" "Value-Meet" "HSemUpd" "Abstract-Denotational-Props"
 begin
 
-interpretation semantic_domain "\<lambda>x. Fn$x" "\<lambda>x y. Fn_project$x$y" "\<lambda> x. x".
-interpretation cont_semantic_domain "\<lambda>x. Fn$x" "\<lambda>x y. Fn_project$x$y" "\<lambda> x. x"
-  by unfold_locales simp_all
-declare cont_semantic_domain_conts[simp del, cont2cont del]
+interpretation semantic_domain Fn Fn_project "\<Lambda> x. x".
 
+abbreviation ESem_syn ("\<lbrakk> _ \<rbrakk>\<^bsub>_\<^esub>"  [60,60] 60) where "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> \<equiv> AESem e \<cdot> \<rho>"
+abbreviation HSem_syn ("\<lbrace>_\<rbrace>_"  [60,60] 60) where "\<lbrace>\<Gamma>\<rbrace>\<rho> \<equiv> UHSem \<Gamma> \<cdot> \<rho>"
+abbreviation HSem_fempty  ("\<lbrace>_\<rbrace>"  [60] 60) where "\<lbrace>\<Gamma>\<rbrace> \<equiv> \<lbrace>\<Gamma>\<rbrace>f\<emptyset>"
 
-abbreviation ESem ("\<lbrakk> _ \<rbrakk>\<^bsub>_\<^esub>"  [60,60] 60) where "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> \<equiv> AESem e \<rho>"
-
-(*
-lemmas HSem_fresh[simp] = eqvt_fresh_cong2[of HSem, OF HSem_eqvt']
- and   HSem_fresh_star[simp] = eqvt_fresh_star_cong2[of HSem, OF HSem_eqvt']
- and   asToHeap_fresh[simp] = eqvt_fresh_cong1[of asToHeap, OF asToHeap.eqvt]
- and   fresh_fmap_upd[simp] = eqvt_fresh_cong3[of fmap_upd, OF fmap_upd_eqvt]
-*)
-
-
-notation AHSem_syn ("\<lbrace>_\<rbrace>_"  [60,60] 60)
-notation AHSem_fempty ("\<lbrace>_\<rbrace>"  [60] 60)
 
 subsubsection {* Replacing subexpressions by variables *}
 
@@ -155,10 +142,6 @@ case goal1
       qed
     qed auto
 
-    have [simp]: "set (bn as) \<sharp>* (\<lbrace>(x, Terms.Let as body) # \<Gamma>\<rbrace>)"
-      apply (rule HSem_fresh_star)
-      using fresh by (auto simp add: fresh_star_Pair fresh_star_list)
-
     have "(\<lbrace>(x, body) # asToHeap as @ \<Gamma>\<rbrace>) \<sqsubseteq> \<lbrace>asToHeap as\<rbrace>\<lbrace>(x, Let as body) # \<Gamma>\<rbrace>" (is "_ \<sqsubseteq> ?r")
     proof (rule UHSem_fempty_below)
       fix x'
@@ -174,7 +157,7 @@ case goal1
         have merged_r: "?r = \<lbrace>asToHeap as @ ((x, Let as body) # \<Gamma>)\<rbrace>"
           apply (rule UHSem_merge)
             using disjoint distinct apply (auto simp add: distinctVars_Cons distinctVars_append)[1]
-            using fresh apply (metis fresh_star_list(2) fempty_fresh_star fresh_star_Pair set_bn_to_atom_heapVars)              
+            using fresh apply (metis fresh_star_list(2) fresh_star_Pair set_bn_to_atom_heapVars)              
           done
 
         assume "x' \<noteq> x"
@@ -204,7 +187,5 @@ case goal1
   thus ?case
     by (rule subst[where s = "insert q Q", standard, rotated], auto)
 qed
-
-
 
 end

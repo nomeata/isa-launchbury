@@ -147,6 +147,12 @@ lemma distinctVars_map_of_delete_insert:
     apply (metis fun_upd_twist)
   done
 
+lemma map_add_heapVars[simp]: 
+  "x \<in> heapVars \<Gamma> \<Longrightarrow> (map_of \<Delta> ++ map_of \<Gamma>) x = map_of \<Gamma> x"
+  "x \<notin> heapVars \<Gamma> \<Longrightarrow> (map_of \<Delta> ++ map_of \<Gamma>) x = map_of \<Delta> x"
+    apply (metis dom_map_of_conv_heapVars map_add_dom_app_simps(1))
+    apply (metis dom_map_of_conv_heapVars map_add_dom_app_simps(3))
+    done
 
 lemma the_map_of_snd:
   "x\<in> heapVars \<Gamma> \<Longrightarrow> the (map_of \<Gamma> x) \<in> snd ` set \<Gamma>"

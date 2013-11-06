@@ -24,7 +24,7 @@ next
     assume "x \<triangleleft>\<triangleright> y\<cdot>C\<^sup>\<infinity>"
     with `\<rho> f\<triangleleft>\<triangleright> \<sigma>`
     have "\<rho>(v f\<mapsto> x) f\<triangleleft>\<triangleright> \<sigma>(v f\<mapsto> y)"
-      by (fastforce simp add: lookup_fmap_upd_eq)
+      by (auto 1 4 simp add: lookup_fmap_upd_eq)
     hence "\<lbrakk>e\<rbrakk>\<^bsub>\<rho>(v f\<mapsto> x)\<^esub> \<triangleleft>\<triangleright> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<sigma>(v f\<mapsto> y)\<^esub>)\<cdot>C\<^sup>\<infinity>"
       by (rule Lam.hyps)
   }
@@ -46,11 +46,7 @@ next
   have "fdom \<rho> = fdom \<sigma>" using Let(3) by auto
 
   have "\<lbrace>asToHeap as\<rbrace>\<rho> f\<triangleleft>\<triangleright> \<N>\<lbrace>asToHeap as\<rbrace>\<sigma>"
-  proof (rule parallel_UHSem_ind_different_ESem
-                [OF "Denotational.ESem_cont"
-                    "ResourcedDenotational.ESem_cont"
-                     fmap_similar_adm
-                  ])
+  proof (rule parallel_UHSem_ind_different_ESem[OF fmap_similar_adm])
     case goal1 show ?case by (simp add: `fdom \<rho> = fdom \<sigma>`)
   next
     case (goal2 \<rho>' \<sigma>')
@@ -70,11 +66,7 @@ next
 qed
 
 theorem heaps_similar: "\<lbrace>\<Gamma>\<rbrace> f\<triangleleft>\<triangleright> \<N>\<lbrace>\<Gamma>\<rbrace>"
-  by (rule parallel_UHSem_ind_different_ESem
-                [OF "Denotational.ESem_cont"
-                    "ResourcedDenotational.ESem_cont"
-                     fmap_similar_adm
-                  ])
+  by (rule parallel_UHSem_ind_different_ESem[OF fmap_similar_adm])
      (auto simp add: lookupHeapToEnv denotational_semantics_similar)
 
 end

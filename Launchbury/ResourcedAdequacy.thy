@@ -80,9 +80,9 @@ proof(nominal_induct e avoiding: \<rho> arbitrary: r rule: exp_strong_induct)
     apply (rule below_antisym)
     defer
     apply (rule cont2monofunE[OF _ fmap_C_restr_restr_below], simp)
-    apply (simp add: Rep_cfun_inverse)
+    apply (simp)
     apply (cases r)
-    apply simp_all
+    apply (simp_all add: Rep_cfun_inverse)
     done
 next
   case (Lam x e)
@@ -98,7 +98,7 @@ next
     apply (rule cont2monofunE[OF _ fmap_C_restr_restr_below], simp)
     apply (subst Lam(2))
     apply simp
-    apply (intro monofun_cfun below_refl cont2monofunE[OF ESem_cont] fmap_upd_mono Cpred_below )
+    apply (intro monofun_cfun below_refl monofun_cfun_arg fmap_upd_mono Cpred_below )
     by (metis below_C rev_below_trans)
 next
   case (App e x)
@@ -111,14 +111,14 @@ next
   show ?case
     apply (rule below_antisym)
     defer
-    apply (intro monofun_cfun_arg cont2monofunE[OF ESem_cont] fmap_C_restr_restr_below )
+    apply (intro monofun_cfun_arg monofun_cfun_arg fmap_C_restr_restr_below )
     apply (cases r, simp)
     apply (simp del: C_restr.simps)
     apply (rule monofun_cfun_arg)
     apply (rule cfun_belowI)
     apply (simp)
     apply (subst *)
-    apply (intro monofun_cfun_fun monofun_cfun_arg cont2monofunE[OF ESem_cont] Cpred_below )
+    apply (intro monofun_cfun_fun monofun_cfun_arg Cpred_below )
     done
 next
   case (Let as e)
@@ -126,9 +126,8 @@ next
     by (metis disjoint_iff_not_equal sharp_star_Env)
 
   { fix r
-    have *: "has_cont_ESem CESem" by unfold_locales
     have "fmap_C_restr\<cdot>r\<cdot>(\<N>\<lbrace>asToHeap as\<rbrace>(\<rho> f|` (- heapVars (asToHeap as)))) = fmap_C_restr\<cdot>r\<cdot>(\<N>\<lbrace>asToHeap as\<rbrace>((fmap_C_restr\<cdot>r\<cdot>\<rho>)  f|` (- heapVars (asToHeap as))))" 
-      apply (rule has_cont_ESem.parallel_UHSem_ind[OF *])
+      apply (rule has_ESem.parallel_UHSem_ind)
       apply simp
       apply simp
       apply (rule, simp)
@@ -149,14 +148,13 @@ next
 
   show ?case
     apply (rule below_antisym)
-    apply (simp add: Abs_cfun_inverse)
+    defer apply (rule cont2monofunE[OF _ fmap_C_restr_restr_below], simp)
     apply (cases r, simp)
-    apply (simp add: Abs_cfun_inverse Rep_cfun_inverse)
+    apply simp
+    apply (subst (1 4) Rep_cfun_inverse) (* Be careful not to destroy the locale parameters *)
     apply (subst (1 2) Let(3))
     apply (subst *)
     apply (rule cont2monofunE[OF _ Cpred_below], simp)
-
-    apply (rule cont2monofunE[OF _ fmap_C_restr_restr_below], simp)
     done
 qed
 
@@ -228,12 +226,12 @@ proof-
     apply (simp add: lookupHeapToEnv)
     apply (rule C_restr_bot_demand)
     apply (subst C_Cpred_id[OF demand_not_0])
-    apply (erule demand_contravariant[OF cont2monofunE[OF ESem_cont]])
+    apply (erule demand_contravariant[OF monofun_cfun_arg])
 
     apply (simp add: lookupHeapToEnv the_lookup_UHSem_heap)
     apply (subst restr_can_restrict_heap)
     apply (rule below_trans[OF C_restr_below])
-    apply (rule below_trans[OF cont2monofunE[OF ESem_cont] eq_imp_below])
+    apply (rule below_trans[OF monofun_cfun_arg eq_imp_below])
     apply (erule below_trans[OF monofun_cfun_fun[OF monofun_cfun_arg[OF Cpred_below]]])
     thm ESem_fmap_cong
     apply (rule ESem_fmap_cong[OF the_lookup_bot_fmap_expand_subset])
@@ -241,7 +239,7 @@ proof-
     apply (auto dest: fmap_below_dom)[1]
 
     apply (rule fmap_belowI)
-    apply (auto simp add: lookupHeapToEnv the_lookup_UHSem_heap cont2monofunE[OF ESem_cont])
+    apply (auto simp add: lookupHeapToEnv the_lookup_UHSem_heap monofun_cfun_arg)
     done
   hence heaps: "fmap_C_restr\<cdot>(Cpred\<cdot>?C)\<cdot>(\<N>\<lbrace>\<Gamma>\<rbrace>) \<sqsubseteq> (\<N>\<lbrace>delete x \<Gamma>\<rbrace>)\<^bsub>[heapVars \<Gamma>]\<^esub>"..
 
@@ -253,7 +251,7 @@ proof-
     by (rule can_restrict_heap)
   also
   have "\<dots> \<sqsubseteq> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>(\<N>\<lbrace>delete x \<Gamma>\<rbrace>)\<^bsub>[heapVars \<Gamma>]\<^esub>\<^esub>)\<cdot>?C"
-    by (intro cont2monofunE[OF ESem_cont] monofun_cfun_fun heaps )
+    by (intro monofun_cfun_arg monofun_cfun_fun heaps )
   also
   have "\<dots> = (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)\<cdot>?C"
     by (rule arg_cong[OF ESem_fmap_cong[OF the_lookup_bot_fmap_expand_subset]]) auto
@@ -271,7 +269,7 @@ proof-
   from assms have "c \<noteq> \<bottom>" by auto
   then obtain c' where "c = C\<cdot>c'" by (cases c, auto)
   then show ?thesis
-    apply (auto simp add: Rep_cfun_inverse)
+    apply auto
     apply (rule cfun_belowI)
     apply simp
     apply (rule below_trans[OF C_restr_below])
@@ -311,7 +309,7 @@ next
   next
   case (App e' x)
     from Suc.prems[unfolded App]
-    have prem: "((\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn  C_restr\<cdot>C\<^bsup>n\<^esup>\<cdot>(\<N>\<lbrace>\<Gamma>\<rbrace> f!\<^sub>\<bottom> x))\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (auto simp add: Rep_cfun_inverse)
+    have prem: "((\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn  C_restr\<cdot>C\<^bsup>n\<^esup>\<cdot>(\<N>\<lbrace>\<Gamma>\<rbrace> f!\<^sub>\<bottom> x))\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by auto
     hence e'_not_bot: "(\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by auto
     from Suc.IH[OF this Suc.prems(2)]
     obtain \<Delta> v where lhs': "\<Gamma> : e' \<Down>\<^bsub>x#S\<^esub> \<Delta> : v" by blast 
@@ -366,7 +364,7 @@ next
     {
     from Suc.prems[unfolded Let] Let(1)
     have prem: "(\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>asToHeap as\<rbrace>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" 
-      by (simp add: Rep_cfun_inverse fresh_star_Pair) 
+      by (simp add: fresh_star_Pair) 
     also have "\<N>\<lbrace>asToHeap as\<rbrace>\<N>\<lbrace>\<Gamma>\<rbrace> = \<N>\<lbrace>asToHeap as @ \<Gamma>\<rbrace>"
       apply (rule UHSem_merge)
       using Let(1)
@@ -388,8 +386,7 @@ theorem resourced_adequacy:
   assumes "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>r \<noteq> \<bottom>"
   and "distinctVars \<Gamma>"
   shows "\<exists> \<Delta> v. \<Gamma> : e \<Down>\<^bsub>S\<^esub> \<Delta> : v"
-  apply (rule finite_resources_suffice[OF infinite_resources_suffice[OF assms(1)]])
-  apply (erule adequacy_finite[OF _ assms(2)])
-  done
+  by (rule finite_resources_suffice[OF infinite_resources_suffice[OF assms(1)]])
+     (erule adequacy_finite[OF _ assms(2)])
 
 end

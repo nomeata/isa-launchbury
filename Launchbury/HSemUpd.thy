@@ -12,101 +12,55 @@ instead of least upper bounds.
 context has_ESem
 begin
 
-definition UHSem :: "('var \<times> 'exp) list \<Rightarrow> 'var f\<rightharpoonup> 'value \<Rightarrow> 'var f\<rightharpoonup> 'value" ("\<lbrace>_\<rbrace>_"  [60,60] 60)
+definition UHSem :: "('var \<times> 'exp) list \<Rightarrow> 'var f\<rightharpoonup> 'value \<rightarrow> 'var f\<rightharpoonup> 'value" 
   where
-  "\<lbrace>h\<rbrace>\<rho> = 
-    (if (\<forall> e \<in> snd `set h. cont (ESem e))
-     then  fix_on' (f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>) (\<lambda> \<rho>'. \<rho> f++ heapToEnv h (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))
-     else (f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>))"
+  "UHSem h = (\<Lambda> \<rho> . fix_on' (f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>) (\<lambda> \<rho>'. \<rho> f++ heapToEnv h (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)))"
 
-lemma UHSem_def'':
-  assumes "\<And> e. e \<in> snd ` set h \<Longrightarrow> cont (ESem e)"
-  shows "\<lbrace>h\<rbrace>\<rho> = fix_on' (f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>) (\<lambda> \<rho>'. \<rho> f++ heapToEnv h (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
-  unfolding UHSem_def using assms by metis
+abbreviation UHSem_syn ("\<lbrace> _ \<rbrace>_"  [60,60] 60) where "\<lbrace>\<Gamma>\<rbrace>\<rho> \<equiv> UHSem \<Gamma> \<cdot> \<rho>"
 
-lemma fix_on_cond_UHSem':
-  assumes cont: "\<And> e. e \<in> snd ` set h \<Longrightarrow> cont (ESem e)"
+lemma fix_on_cond_UHSem:
   shows "fix_on_cond {x. f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub> \<sqsubseteq> x}
           (f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>) (\<lambda>\<rho>'. \<rho> f++ heapToEnv h (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
   apply (rule fix_on_condI)
   apply (rule subpcpo_cone_above)
   apply (rule bottom_of_cone_above)
   apply (rule closed_onI, simp)
-  apply (rule cont_onI)
-  apply (rule contE[OF fmap_add_cont2cont[OF cont_const cont2cont_heapToEnv[OF assms]] chain_on_is_chain])
-    apply assumption+
+  apply (rule cont_is_cont_on, simp)
   done
 
-subsubsection {* Continuity *}
-
-lemma UHSem_monofun'':
-  assumes cont: "\<And> e. e \<in> snd ` set h \<Longrightarrow> cont (ESem e)"
-  assumes "\<rho> \<sqsubseteq> \<rho>'"
-  shows "\<lbrace>h\<rbrace>\<rho> \<sqsubseteq> \<lbrace>h\<rbrace>\<rho>'"
-  apply (subst (1 2) UHSem_def'')
-  apply (erule cont)
-  apply (rule fix_on_mono2[OF fix_on_cond_UHSem'[OF cont] fix_on_cond_UHSem'[OF cont]])
-    apply assumption+
-  apply (metis assms(2) below.r_refl fmap_below_dom)
-  apply (rule fmap_add_mono[OF `\<rho> \<sqsubseteq> \<rho>'`])
-  by (rule cont2monofunE[OF cont2cont_heapToEnv[OF cont]])
+lemma UHSem_monofun'': "monofun (\<lambda> \<rho>. fix_on' (f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars \<Gamma>]\<^esub>) (\<lambda>\<rho>''. \<rho> f++ heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>''\<^esub>)))"
+  apply (rule monofunI)
+  apply (rule fix_on_mono2[OF fix_on_cond_UHSem fix_on_cond_UHSem])
+  unfolding fmap_below_dom[OF assms] apply rule
+  by (simp, intro fmap_add_mono assms heapToEnv_mono  cont2monofunE[OF cont2cont_heapToEnv] cont_Rep_cfun2)
 
 lemma UHSem_cont'':
-  assumes cont: "\<And> e. e \<in> snd ` set h \<Longrightarrow> cont (ESem e)"
   assumes "chain Y"
-  shows "\<lbrace>h\<rbrace>(\<Squnion> i. Y  i) = (\<Squnion> i. \<lbrace>h\<rbrace>(Y i))"
+  shows "fix_on' (f\<emptyset>\<^bsub>[fdom (\<Squnion> i. Y i) \<union> heapVars \<Gamma>]\<^esub>) (\<lambda>\<rho>'. (\<Squnion> i. Y i) f++ heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)) =
+        (\<Squnion> i. fix_on' (f\<emptyset>\<^bsub>[fdom (Y i) \<union> heapVars \<Gamma>]\<^esub>) (\<lambda>\<rho>'. Y i f++ heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)))"
 proof-
   have fdoms:"\<And> i. fdom (Y i) = fdom (\<Squnion> i. Y i)" (is "\<And> _ .(_ = ?d)") by (metis chain_fdom `chain Y`) 
   show ?thesis
-    apply (subst (1 2) UHSem_def'')
-    apply (erule cont)+
     unfolding fdoms
-    proof (rule fix_on_cont[OF `chain Y`, where S = "{x . f\<emptyset>\<^bsub>[fdom (\<Squnion> i. Y i) \<union> heapVars h]\<^esub> \<sqsubseteq> x}"])
-      show "cont (\<lambda>a b. a f++ heapToEnv h (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>b\<^esub>))"
-        by (rule cont2cont_lambda[OF fmap_add_cont1])
-      fix i
-        from fix_on_cond_UHSem'[OF cont, where \<rho> = "Y i", unfolded fdoms]
-        show "fix_on_cond {x. f\<emptyset>\<^bsub>[fdom (\<Squnion> i. Y i) \<union> heapVars h]\<^esub> \<sqsubseteq> x}
-               (f\<emptyset>\<^bsub>[fdom (Lub Y) \<union> heapVars h]\<^esub>) (\<lambda>a. Y i f++ heapToEnv h (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>a\<^esub>))"
-           by metis
-    qed
+    apply (rule fix_on_cont[OF `chain Y`, where S = "{x . f\<emptyset>\<^bsub>[fdom (\<Squnion> i. Y i) \<union> heapVars \<Gamma>]\<^esub> \<sqsubseteq> x}"])
+    apply (rule fix_on_cond_UHSem[where \<rho> = "Y i", standard, where Y = Y, unfolded fdoms])
+    apply simp
+    done
 qed
 
-lemma UHSem_cont''':
-  assumes cont: "\<And> e. e \<in> snd ` set h \<Longrightarrow> cont (ESem e)"
-  shows "cont (\<lambda> \<rho>. \<lbrace>h\<rbrace>\<rho>)"
+lemma UHSem_cont':
+  shows "cont (\<lambda> \<rho>. fix_on' (f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars \<Gamma>]\<^esub>) (\<lambda>\<rho>''. \<rho> f++ heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>''\<^esub>)))"
   apply (rule contI2)
-  apply (rule monofunI)
-  apply (rule UHSem_monofun''[OF cont], assumption, assumption)
-  apply (subst UHSem_cont''[OF cont], assumption, assumption)
-  apply (rule below_refl)
+  apply (rule UHSem_monofun'')
+  apply (erule eq_imp_below[OF UHSem_cont''])
   done
-end
 
-context has_cont_ESem
-begin
-
-  lemma UHSem_def':
-    shows "\<lbrace>h\<rbrace>\<rho> = fix_on' (f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>) (\<lambda> \<rho>'. \<rho> f++ heapToEnv h (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
-    unfolding UHSem_def using ESem_cont by metis
-
-  lemma fix_on_cond_UHSem:
-    shows "fix_on_cond {x. f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub> \<sqsubseteq> x}
-            (f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>) (\<lambda>\<rho>'. \<rho> f++ heapToEnv h (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
-    apply (rule fix_on_cond_UHSem') using ESem_cont by metis
-
+lemma UHSem_def':
+    "\<lbrace>\<Gamma>\<rbrace>\<rho> = fix_on' (f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars \<Gamma>]\<^esub>) (\<lambda> \<rho>'. \<rho> f++ heapToEnv \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
+  unfolding UHSem_def
+  by (rule arg_cong[OF beta_cfun[OF UHSem_cont']])
 
 subsubsection {* Induction and other lemmas about @{term HSem} *}
-
-  lemma UHSem_cont: "cont (\<lambda>\<rho> . \<lbrace>h\<rbrace>\<rho>)"
-    apply (rule contI2)
-    apply (rule monofunI)
-    apply (erule UHSem_monofun''[OF ESem_cont])
-    apply (subst UHSem_cont''[OF ESem_cont], assumption)
-    apply (rule below_refl)
-    done
-
-  lemmas cont2cont_UHSem[simp, cont2cont] = cont_compose[OF UHSem_cont]
 
   lemma UHSem_ind:
     assumes "adm P"
@@ -127,18 +81,14 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
     assumes [simp]:"fdom r = fdom \<rho> \<union> heapVars h" 
     assumes rho: "\<And>x. x \<in> fdom \<rho> \<Longrightarrow> x \<notin> heapVars h \<Longrightarrow> \<rho> f! x \<sqsubseteq> r f! x"
     assumes h: "\<And>x. x \<in> heapVars h \<Longrightarrow> \<lbrakk>the (map_of h x)\<rbrakk>\<^bsub>r\<^esub> \<sqsubseteq> r f! x"
-    shows "UHSem h \<rho> \<sqsubseteq> r"
+    shows "\<lbrace>h\<rbrace>\<rho> \<sqsubseteq> r"
   proof (rule UHSem_ind)
     case goal1 show ?case by (auto intro: adm_is_adm_on)
     case goal2 show ?case by (simp add: to_bot_fmap_def)
     case (goal3 \<rho>')
       show ?case
-      apply (rule fmap_add_belowI)
-      apply simp
-      apply (auto intro: below_trans[OF cont2monofunE[OF ESem_cont goal3(2)] h]
-                  simp add: lookupHeapToEnv)[1]
-      apply (auto intro: rho)
-      done
+      by (rule fmap_add_belowI)
+         (auto simp add: lookupHeapToEnv  below_trans[OF monofun_cfun_arg[OF `\<rho>' \<sqsubseteq> r`] h] rho)
   qed  
 
   lemma UHSem_fempty_below:
@@ -268,19 +218,7 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
   lemma UHSem_Nil[simp]: "\<lbrace>[]\<rbrace>\<rho> = \<rho>"
     by (subst UHSem_eq, simp)
 
-  lemma UHSem_mono:
-    assumes "\<rho>1 \<sqsubseteq> \<rho>2"
-    shows "\<lbrace>\<Gamma>\<rbrace>\<rho>1 \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>\<rho>2"
-    by(rule UHSem_monofun''[OF ESem_cont assms])
-
 subsubsection {* Re-calculating the semantics of the heap is idempotent *} 
-
-  lemma map_add_heapVars[simp]: 
-    "x \<in> heapVars \<Gamma> \<Longrightarrow> (map_of \<Delta> ++ map_of \<Gamma>) x = map_of \<Gamma> x"
-    "x \<notin> heapVars \<Gamma> \<Longrightarrow> (map_of \<Delta> ++ map_of \<Gamma>) x = map_of \<Delta> x"
-      apply (metis dom_map_of_conv_heapVars map_add_dom_app_simps(1))
-      apply (metis dom_map_of_conv_heapVars map_add_dom_app_simps(3))
-      done
 
   lemma UHSem_redo:
     shows "\<lbrace>\<Gamma>\<rbrace>(\<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>) f|` (fdom \<rho> \<union> heapVars \<Delta>) = \<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>" (is "?LHS = ?RHS")
@@ -304,11 +242,8 @@ subsubsection {* Re-calculating the semantics of the heap is idempotent *}
       next
       case False
         hence delta: "x \<in> heapVars \<Delta>" using goal3 by auto
-        with False
-        show ?thesis
-          apply (auto simp add: the_lookup_UHSem_other the_lookup_UHSem_heap)
-          apply (rule cont2monofunE[OF ESem_cont `?LHS \<sqsubseteq> ?RHS`])
-          done
+        with False  `?LHS \<sqsubseteq> ?RHS`
+        show ?thesis by (auto simp add: the_lookup_UHSem_other the_lookup_UHSem_heap monofun_cfun_arg)
       qed
     qed
   qed
@@ -331,7 +266,7 @@ subsubsection {* Iterative definition of the heap semantics *}
       apply -
       apply unfold_locales
       using assms
-      by (simp_all add: ESem_cont)
+      by (simp_all)
 
     have "\<lbrace>(x,e) # \<Gamma>\<rbrace>\<rho> = fix_on' b L"
       by (simp add: UHSem_def' fmap_add_upd)
@@ -358,7 +293,7 @@ subsubsection {* Iterative definition of the heap semantics *}
       apply -
       apply unfold_locales
       using assms
-      by (simp_all add: ESem_cont)
+      by simp_all
 
     show ?thesis
       by (rule fix_on_cond_cong[OF condR'], simp add: UHSem_def')
@@ -380,7 +315,7 @@ subsubsection {* Iterative definition of the heap semantics *}
       apply -
       apply unfold_locales
       using assms
-      by (simp_all add: ESem_cont)
+      by simp_all
 
     have "fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars \<Gamma>)]\<^esub>)
             (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)) =
@@ -400,35 +335,23 @@ subsubsection {* Iterative definition of the heap semantics *}
 end
 
 lemma UHSem_cong[fundef_cong]:
-  "\<lbrakk> (\<And> e. e \<in> snd ` set heap2 \<Longrightarrow> ESem1 e = ESem2 e); env1 = env2 ; heap1 = heap2  \<rbrakk>
-      \<Longrightarrow> has_ESem.UHSem ESem1 heap1 env1 = has_ESem.UHSem  ESem2 heap2 env2"
+  "\<lbrakk> (\<And> e. e \<in> snd ` set heap2 \<Longrightarrow> ESem1 e = ESem2 e); heap1 = heap2  \<rbrakk>
+      \<Longrightarrow> has_ESem.UHSem ESem1 heap1 = has_ESem.UHSem ESem2 heap2"
   unfolding has_ESem.UHSem_def
   by (auto cong:heapToEnv_cong)
 
 subsubsection {* Equivariance *}
 
 lemma UHSem_eqvt[eqvt]:
-  "\<pi> \<bullet> has_ESem.UHSem ESem h \<rho> = has_ESem.UHSem (\<pi> \<bullet> ESem) (\<pi> \<bullet> h) (\<pi> \<bullet> \<rho>)"
-proof(cases "\<forall> e \<in> snd ` set h.  cont (ESem e)")
-case True
-  from permute_boolI[OF this, where p = \<pi>]
-  have True_permuted: "\<forall> e \<in> snd ` set (\<pi> \<bullet> h). cont ((\<pi> \<bullet> ESem) e)"
-    by perm_simp
-
-  show ?thesis          
-   unfolding has_ESem.UHSem_def if_P[OF True]  if_P[OF True_permuted] 
-   apply (subst fix_on_eqvt[OF has_ESem.fix_on_cond_UHSem'])
-   apply (metis True)
-   apply perm_simp
-   apply rule
-   done
-next
-case False 
-  from permute_boolI[OF this, where p = \<pi>]
-  have False_permuted: "\<not> (\<forall> e \<in> snd ` set (\<pi> \<bullet> h). cont ((\<pi> \<bullet> ESem) e))"
-    by perm_simp
+  "\<pi> \<bullet> has_ESem.UHSem ESem h = has_ESem.UHSem (\<pi> \<bullet> ESem) (\<pi> \<bullet> h)"
+proof-
   show ?thesis
-   unfolding has_ESem.UHSem_def if_not_P[OF False]  if_not_P[OF False_permuted] 
+   unfolding has_ESem.UHSem_def
+   apply (subst permute_Lam[OF HSemUpd.has_ESem.UHSem_cont'])
+   apply (rule arg_cong[where f = Abs_cfun])
+   apply (subst eqvt_lambda)
+   apply rule
+   apply (subst fix_on_eqvt[OF has_ESem.fix_on_cond_UHSem])
    apply perm_simp
    apply rule
    done
@@ -436,7 +359,7 @@ qed
 
 subsubsection {* Fresh variables on the heap are irrelevant *}
 
-context  has_cont_ESem 
+context  has_ESem 
 begin
   lemma HSem_ignores_fresh_restr':
     assumes "fv \<Gamma> \<subseteq> S"
@@ -469,7 +392,7 @@ begin
   qed
 end
 
-locale has_ignore_fresh_ESem = has_cont_ESem +
+locale has_ignore_fresh_ESem = has_ESem +
   assumes fv_supp: "supp e = atom ` (fv e :: 'b set)"
   assumes ESem_considers_fv: "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho> f|` (fv e)\<^esub>"
 begin
@@ -497,7 +420,7 @@ begin
     finally show ?thesis.
   qed
 
-  lemma ESem_ignores_fresh: "\<rho>1 \<le> \<rho>2 \<Longrightarrow> atom ` (fdom \<rho>2 - fdom \<rho>1) \<sharp>* e \<Longrightarrow> ESem e \<rho>1 = ESem e \<rho>2"
+  lemma ESem_ignores_fresh: "\<rho>1 \<le> \<rho>2 \<Longrightarrow> atom ` (fdom \<rho>2 - fdom \<rho>1) \<sharp>* e \<Longrightarrow> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>1\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho>2\<^esub>"
     by (metis ESem_ignores_fresh_restr' fmap_less_restrict)  
 
   lemma HSem_ignores_fresh_restr:
@@ -531,7 +454,7 @@ subsubsection {* Adding a fresh variable to a heap does not affect its semantics
     have "heapToEnv ((x, e) # \<Gamma>) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>y\<^esub>) f|` (fdom \<rho> \<union> heapVars \<Gamma>) = heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>y\<^esub>)"
       using `x \<notin> fdom \<rho> \<union> heapVars \<Gamma>` by auto
     moreover
-    have "heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>y\<^esub>) = heapToEnv \<Gamma> (\<lambda>e. ESem e z)"
+    have "heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>y\<^esub>) = heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>z\<^esub>)"
       apply (rule heapToEnv_cong[OF refl])
       apply (subst (1) step)
       using goal3(1) apply auto
@@ -653,7 +576,7 @@ subsubsection {* Binding more variables increases knowledge *}
 subsubsection {* Substitution *}
 
   lemma UHSem_subst_exp:
-    assumes "\<And>\<rho>'. fdom \<rho>' = fdom \<rho> \<union> (heapVars ((x,e)#\<Gamma>)) \<Longrightarrow> ESem e \<rho>' = ESem e' \<rho>'"
+    assumes "\<And>\<rho>'. fdom \<rho>' = fdom \<rho> \<union> (heapVars ((x,e)#\<Gamma>)) \<Longrightarrow>  \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub> = \<lbrakk> e' \<rbrakk>\<^bsub>\<rho>'\<^esub>"
     shows "\<lbrace>(x, e) # \<Gamma>\<rbrace>\<rho> = \<lbrace>(x, e') # \<Gamma>\<rbrace>\<rho>"
     by (rule parallel_UHSem_ind) (auto simp add: assms heapToEnv_subst_exp)
 
@@ -669,8 +592,8 @@ subsubsection {* Substitution *}
       apply (rule fmap_add_mono[OF below_refl])
       apply simp
       apply (rule fmap_upd_mono)
-      apply (rule cont2monofunE[OF cont2cont_heapToEnv[OF ESem_cont] goal3(2)])
-      apply (rule below_trans[OF cont2monofunE[OF ESem_cont goal3(2)] below])
+      apply (rule cont2monofunE[OF cont2cont_heapToEnv[OF cont_Rep_cfun2] goal3(2)])
+      apply (rule below_trans[OF cont2monofunE[OF cont_Rep_cfun2 goal3(2)] below])
       done
   qed
   
@@ -683,24 +606,21 @@ subsubsection {* Substitution *}
 end
 
 lemma parallel_UHSem_ind_different_ESem:
-  assumes cont1: "\<And>x. cont (ESem1 x)"
-  assumes cont2: "\<And>x. cont (ESem2 x)"
   assumes "adm (\<lambda>\<rho>'. P (fst \<rho>') (snd \<rho>'))"
   assumes "P (f\<emptyset>\<^bsub>[fdom \<rho> \<union> heapVars h]\<^esub>) (f\<emptyset>\<^bsub>[fdom \<rho>2 \<union> heapVars h2]\<^esub>)"
-  assumes "\<And>y z. P y z \<Longrightarrow> P (\<rho> f++ heapToEnv h (\<lambda>e. ESem1 e y)) (\<rho>2 f++ heapToEnv h2 (\<lambda>e. ESem2 e z))"
-  shows "P (has_ESem.UHSem ESem1 h \<rho>) (has_ESem.UHSem ESem2 h2 \<rho>2)"
+  assumes "\<And>y z. P y z \<Longrightarrow> P (\<rho> f++ heapToEnv h (\<lambda>e. ESem1 e $ y)) (\<rho>2 f++ heapToEnv h2 (\<lambda>e. ESem2 e $ z))"
+  shows "P (has_ESem.UHSem ESem1 h\<cdot>\<rho>) (has_ESem.UHSem ESem2 h2\<cdot>\<rho>2)"
 proof-
-  interpret HSem1: has_cont_ESem ESem1 apply default using cont1.
-  interpret HSem2: has_cont_ESem ESem2 apply default using cont2.
+  interpret HSem1: has_ESem ESem1.
+  interpret HSem2: has_ESem ESem2.
 
   show ?thesis
     unfolding HSem1.UHSem_def' HSem2.UHSem_def'
     apply (rule parallel_fix_on_ind[OF HSem1.fix_on_cond_UHSem HSem2.fix_on_cond_UHSem])
-    apply (rule adm_is_adm_on[OF assms(3)])
-    apply (rule assms(4))
-    apply (erule assms(5))
+    apply (rule adm_is_adm_on[OF assms(1)])
+    apply (rule assms(2))
+    apply (erule assms(3))
     done
 qed
-
 
 end

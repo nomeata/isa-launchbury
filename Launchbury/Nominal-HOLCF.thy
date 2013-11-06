@@ -79,13 +79,22 @@ end
 lemma permute_cfun_eq: "permute p = (\<lambda> f. (Abs_cfun (permute p)) oo f oo (Abs_cfun (permute (-p))))"
   by (rule, rule cfun_eqI, auto simp add: permute_cfun_def)
 
-instance "cfun" :: (cont_pt, cont_pt) cont_pt
-  by (default,subst permute_cfun_eq, auto)
-
 lemma Cfun_app_eqvt[eqvt]:
   "\<pi> \<bullet> (f \<cdot> x) = (\<pi> \<bullet> f) \<cdot> (\<pi> \<bullet> x)"
   unfolding permute_cfun_def
   by auto
+
+lemma permute_Lam: "cont f \<Longrightarrow> p \<bullet> (\<Lambda> x. f x) = (\<Lambda> x. (p \<bullet> f) x)"
+  apply (rule cfun_eqI)
+  unfolding permute_cfun_def
+  by (metis Abs_cfun_inverse2 eqvt_lambda unpermute_def )
+
+lemma Abs_cfun_eqvt: "cont f \<Longrightarrow> (p \<bullet> Abs_cfun) f = Abs_cfun f"
+  apply (subst permute_fun_def)
+  by (metis permute_Lam perm_still_cont permute_minus_cancel(1))
+
+instance "cfun" :: (cont_pt, cont_pt) cont_pt
+  by (default,subst permute_cfun_eq, auto)
 
 lemma chain_eqvt[eqvt]:
   fixes F :: "nat \<Rightarrow> 'a::cont_pt"
