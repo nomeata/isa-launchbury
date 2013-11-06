@@ -481,13 +481,13 @@ lemma fmap_lookup_bot_fmap_delete_other[simp]: "x' \<noteq> x \<Longrightarrow> 
 lemma fmap_lookup_bot_fmap_add_other[simp]: "x \<notin> fdom \<rho>' \<Longrightarrow> (\<rho> f++ \<rho>') f!\<^sub>\<bottom> x = \<rho> f!\<^sub>\<bottom> x"
   by (transfer, auto split:option.split)
 
-lemma lookup_fmap_restr[simp]: "x \<in> S \<Longrightarrow> m f|` S f!\<^sub>\<bottom> x = m f!\<^sub>\<bottom> x"
+lemma fmap_lookup_bot_fmap_restr[simp]: "x \<in> S \<Longrightarrow> m f|` S f!\<^sub>\<bottom> x = m f!\<^sub>\<bottom> x"
   by (transfer, auto)
 
-lemma lookup_fmap_restr_not_there[simp]: "x \<notin> S \<Longrightarrow> m f|` S f!\<^sub>\<bottom> x = \<bottom>"
+lemma fmap_lookup_bot_restr_not_there[simp]: "x \<notin> S \<Longrightarrow> m f|` S f!\<^sub>\<bottom> x = \<bottom>"
   by (transfer, auto)
 
-lemma lookup_fmap_restr_eq: "m f|` S f!\<^sub>\<bottom> x = (if x \<in> S then m f!\<^sub>\<bottom> x else \<bottom>)"
+lemma fmap_lookup_bot_fmap_restr_eq: "m f|` S f!\<^sub>\<bottom> x = (if x \<in> S then m f!\<^sub>\<bottom> x else \<bottom>)"
   by (transfer, auto)
 
 lemma cont2cont_fmap_lookup_bot[simp,cont2cont]:
