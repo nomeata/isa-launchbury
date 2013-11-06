@@ -12,31 +12,31 @@ theorem correctness:
   and     "fdom \<rho> - heapVars \<Gamma> \<subseteq> set L"
   shows   "\<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk>z\<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>" and "\<lbrace>\<Gamma>\<rbrace>\<rho> \<le> \<lbrace>\<Delta>\<rbrace>\<rho>"
   using assms
-proof(nominal_induct avoiding: \<rho> rule:reds_distinct_strong_ind)
-case (Lambda \<Gamma> x e L \<rho>)
+proof(nominal_induct arbitrary: \<rho> rule:reds_distinct_strong_ind)
+case (Lambda \<Gamma> x e L)
   case 1 show ?case..
   case 2 show ?case..
 next
-case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' \<rho>)
+case (Application y \<Gamma> e x L \<Delta> \<Theta> z e')
   hence  "y \<noteq> x"
     by (simp_all add: fresh_at_base)
 
   case 1
   hence hyp1: "fdom \<rho> - heapVars \<Gamma> \<subseteq> set (x # L)" by auto
   have hyp2: "fdom \<rho> - heapVars \<Delta> \<subseteq> set L"
-    using 1 reds_doesnt_forget[OF distinct_redsD1[OF Application.hyps(9)]]
+    using 1 reds_doesnt_forget[OF distinct_redsD1[OF Application.hyps(8)]]
     by auto
 
   have *: "\<lbrace>\<Gamma>\<rbrace>\<rho> f!\<^sub>\<bottom> x = \<lbrace>\<Delta>\<rbrace>\<rho> f!\<^sub>\<bottom> x"
   proof(cases "x \<in> heapVars \<Gamma>")
   case True
-    with set_mp[OF reds_doesnt_forget[OF distinct_redsD1[OF Application.hyps(9)]] this]
+    with set_mp[OF reds_doesnt_forget[OF distinct_redsD1[OF Application.hyps(8)]] this]
     show ?thesis
-      by (simp add: fmap_less_eqD[OF Application.hyps(11)[OF hyp1]])
+      by (simp add: fmap_less_eqD[OF Application.hyps(10)[OF hyp1]])
   next
   case False
     have "x \<notin> heapVars \<Delta>"
-      by (rule reds_avoids_live[OF distinct_redsD1[OF Application.hyps(9)] _ False], simp)
+      by (rule reds_avoids_live[OF distinct_redsD1[OF Application.hyps(8)] _ False], simp)
     with False
     show ?thesis
       by (simp add: fmap_lookup_bot_HSem_other)
@@ -45,7 +45,7 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' \<rho>)
   have "\<lbrakk> App e x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> \<down>Fn (\<lbrace>\<Gamma>\<rbrace>\<rho> f!\<^sub>\<bottom> x)"
     by simp
   also have "\<dots> = \<lbrakk> Lam [y]. e' \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub> \<down>Fn (\<lbrace>\<Gamma>\<rbrace>\<rho> f!\<^sub>\<bottom> x)"
-    by (rule arg_cong[OF Application.hyps(10)[OF hyp1]])
+    by (rule arg_cong[OF Application.hyps(9)[OF hyp1]])
   also have "\<dots> = \<lbrakk> Lam [y]. e' \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub> \<down>Fn (\<lbrace>\<Delta>\<rbrace>\<rho> f!\<^sub>\<bottom> x)"
     unfolding *..
   also have "... = \<lbrakk> e' \<rbrakk>\<^bsub>(\<lbrace>\<Delta>\<rbrace>\<rho>)(y f\<mapsto> (\<lbrace>\<Delta>\<rbrace>\<rho> f!\<^sub>\<bottom> x))\<^esub>"
@@ -53,7 +53,7 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' \<rho>)
   also have "... = \<lbrakk> e'[y ::= x] \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>"
     by (rule ESem_subst[OF `y \<noteq> x`])
   also have "\<dots> = \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Theta>\<rbrace>\<rho>\<^esub>"
-    by (rule Application.hyps(13)[OF hyp2])
+    by (rule Application.hyps(12)[OF hyp2])
   finally
   show ?case.
   
@@ -61,11 +61,11 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' \<rho>)
   show ?case using Application hyp1 hyp2
     by (blast intro: order_trans)
 next
-case (Variable x e \<Gamma> L \<Delta> z \<rho>)
+case (Variable x e \<Gamma> L \<Delta> z)
   hence [simp]:"x \<in> heapVars \<Gamma>"
     by (metis heapVars_from_set)
 
-  case 2
+  case 1
 
   have "x \<notin> heapVars \<Delta>"
     by (rule reds_avoids_live[OF distinct_redsD1[OF Variable.hyps(2)]], simp_all)
@@ -74,7 +74,7 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
     by (rule reds_doesnt_forget[OF distinct_redsD1[OF Variable.hyps(2)]])
 
   have new_fresh[simp]: "(heapVars \<Delta> - (heapVars \<Gamma> - {x})) \<inter> fdom \<rho> = {}"
-    using reds_avoids_live[OF distinct_redsD1[OF Variable.hyps(2)]] 2
+    using reds_avoids_live[OF distinct_redsD1[OF Variable.hyps(2)]] 1
     by auto
 
   have [simp]: "insert x (fdom \<rho> \<union> (heapVars \<Gamma> - {x})) - heapVars \<Delta> = insert x (fdom \<rho> - heapVars \<Gamma>)"
@@ -104,7 +104,7 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
     apply (rule fix_on_cond_cong[OF iterative_HSem'_cond])
       apply simp
       apply (rule arg_cong[OF Variable.hyps(3)])
-    using 2 by auto
+    using 1 by auto
 
   have "\<lbrace>\<Gamma>\<rbrace>\<rho> = \<lbrace>(x,e) # delete x \<Gamma>\<rbrace>\<rho>"
     apply (rule HSem_reorder)
@@ -120,7 +120,7 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars (delete x \<Gamma>)) (\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>'\<^esub>))"
     apply (rule fix_on_cong[OF _ arg_cong[OF  Variable.hyps(3)]])
     apply (rule iterative_HSem'_cond)
-    using 2 by auto
+    using 1 by auto
   also have "\<dots> \<le> fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars \<Delta>)]\<^esub>)
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars \<Delta>) (\<lbrace>\<Delta>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>'\<^esub>))"
     apply (subst fmap_less_restrict)
@@ -137,7 +137,7 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
 
     (* \<Gamma> *)
     apply (subst Variable.hyps(4)[unfolded fmap_less_restrict])
-      using 2 apply (auto)[1]
+      using 1 apply (auto)[1]
     apply simp
     apply (subst (1 2) HSem_restr[symmetric])
     apply simp
@@ -152,17 +152,16 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
   also have "\<dots> = \<lbrace>(x,z) # \<Delta>\<rbrace>\<rho>"
     by (rule iterative_HSem[symmetric, OF reds_avoids_live[OF distinct_redsD1[OF Variable(2)]]], simp_all)
   finally
-  show le: ?case.
+  show le: "\<lbrace>\<Gamma>\<rbrace>\<rho> \<le> \<lbrace>(x, z) # \<Delta>\<rbrace>\<rho>".
 
-  case 1
   have "\<lbrakk> Var x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk> Var x \<rbrakk>\<^bsub>\<lbrace>(x, z) # \<Delta>\<rbrace>\<rho>\<^esub>"
     by (simp add: fmap_less_eqD[OF le])
   also have "\<dots> =  \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>(x, z) # \<Delta>\<rbrace>\<rho>\<^esub>"
     by (simp add: the_lookup_HSem_heap)
   finally
-  show ?case.
+  show "\<lbrakk> Var x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>(x, z) # \<Delta>\<rbrace>\<rho>\<^esub>".
 next
-case (Let as \<Gamma> L body \<Delta> z \<rho>)
+case (Let as \<Gamma> L body \<Delta> z)
   case 1
   { fix a
     assume a: "a \<in> heapVars (asToHeap as)"
@@ -202,12 +201,11 @@ case (Let as \<Gamma> L body \<Delta> z \<rho>)
   finally
   show ?case.
 
-  case 2
   have "\<lbrace>\<Gamma>\<rbrace>\<rho> \<le> \<lbrace>asToHeap as @ \<Gamma>\<rbrace>\<rho>"
     by (rule HSem_less[OF f1])
   also have "\<dots> \<le> \<lbrace>\<Delta>\<rbrace>\<rho>"
     by (rule Let.hyps(5)[OF hyp])
   finally
-  show ?case.
+  show "\<lbrace>\<Gamma>\<rbrace>\<rho> \<le> \<lbrace>\<Delta>\<rbrace>\<rho>".
 qed
 end

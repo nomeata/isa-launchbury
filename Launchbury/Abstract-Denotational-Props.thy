@@ -168,7 +168,7 @@ lemma ESem_mono_relaxed:
   assumes "fmap_lookup_bot \<rho>1 \<sqsubseteq> fmap_lookup_bot \<rho>2"
   shows "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>1\<^esub> \<sqsubseteq> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>2\<^esub>"
 using assms
-proof(nominal_induct e avoiding: \<rho>1 \<rho>2 rule:exp_strong_induct)
+proof(nominal_induct e arbitrary: \<rho>1 \<rho>2 rule:exp_strong_induct)
 case (Var x \<rho>)
   from Var.prems
   show ?case by (auto intro: monofun_cfun dest: fun_belowD)
@@ -179,16 +179,16 @@ case (App e x \<rho>)
     by (auto intro: monofun_cfun monofun_cfun_fun dest: fun_belowD)
 next
 case (Lam x e)
-  from Lam(4)
+  from Lam(2)
   have "\<And> v. op f!\<^sub>\<bottom> (\<rho>1(x f\<mapsto> v)) \<sqsubseteq> op f!\<^sub>\<bottom> (\<rho>2(x f\<mapsto> v))"
-    by (auto intro!: fun_belowI fun_belowD[OF  Lam(4)] simp add: fmap_lookup_bot_fmap_upd_eq Lam.prems)
-  from Lam.hyps(3)[OF this]
+    by (auto intro!: fun_belowI fun_belowD[OF  Lam(2)] simp add: fmap_lookup_bot_fmap_upd_eq Lam.prems)
+  from Lam.hyps(1)[OF this]
   show ?case
     by (auto intro!: cfun_belowI monofun_cfun_arg dest: fun_belowD)
 next
 case (Let as x)
   show ?case
-    by (auto intro: monofun_cfun_arg HSem_monofun_relaxed' Let.hyps(3) Let.hyps(4) fmap_restr_monofun_relaxed  Let.prems)
+    by (auto intro: monofun_cfun_arg HSem_monofun_relaxed' Let.hyps(1) Let.hyps(2) fmap_restr_monofun_relaxed  Let.prems)
 qed
 
 lemma ESem_fmap_cong:

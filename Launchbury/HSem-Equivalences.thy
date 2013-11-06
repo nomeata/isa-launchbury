@@ -36,13 +36,11 @@ qed
    
 theorem heap_update_join:
   assumes disjoint: "fdom \<rho> \<inter> heapVars \<Gamma> = {}"
-  assumes cont1: "\<And> e. cont (ESem1 e)"
-  assumes cont2: "\<And> e. cont (ESem2 e)"
-  assumes exp_eq: "\<And> e \<rho>. e \<in> snd ` set \<Gamma> \<Longrightarrow> ESem1 e \<rho> = ESem2 e \<rho>"
-  shows "HSemUpd.has_ESem.UHSem ESem1 \<Gamma> \<rho> = HSem.has_ESem.HSem ESem2 \<Gamma> \<rho>"
+  assumes exp_eq: "\<And> e. e \<in> snd ` set \<Gamma> \<Longrightarrow> ESem1 e = ESem2 e"
+  shows "HSemUpd.has_ESem.HSem ESem1 \<Gamma> \<cdot> \<rho> = HSem.has_ESem.HSem ESem2 \<Gamma> \<rho>"
 proof-
-  interpret Upd: has_cont_ESem ESem1 by default fact
-  interpret HSem:has_cont_ESem ESem2 by default fact
+  interpret Upd: has_ESem ESem1.
+  interpret HSem:has_ESem ESem2.
 
   have cond: "fix_join_cond (\<rho>\<^bsub>[fdom \<rho> \<union> heapVars \<Gamma>]\<^esub>) 
                         (\<lambda> \<rho>' . heapToEnv \<Gamma> (\<lambda>e. ESem2 e \<rho>')\<^bsub>[fdom \<rho> \<union> heapVars \<Gamma>]\<^esub>)"

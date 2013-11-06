@@ -71,7 +71,7 @@ next
 qed
 
 lemma restr_can_restrict_heap: "C_restr\<cdot>r\<cdot>(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>) = C_restr\<cdot>r\<cdot>(\<N>\<lbrakk>e\<rbrakk>\<^bsub>fmap_C_restr\<cdot>(Cpred\<cdot>r)\<cdot>\<rho>\<^esub>)"
-proof(nominal_induct e avoiding: \<rho> arbitrary: r rule: exp_strong_induct)
+proof(nominal_induct e arbitrary: \<rho> r rule: exp_strong_induct)
   case (Var x)
   show ?case
     apply (rule below_antisym)
@@ -93,14 +93,14 @@ next
     apply (rule below_antisym)
     defer
     apply (rule cont2monofunE[OF _ fmap_C_restr_restr_below], simp)
-    apply (subst Lam(2))
+    apply (subst Lam(1))
     apply simp
     apply (intro monofun_cfun below_refl monofun_cfun_arg fmap_upd_mono Cpred_below )
     by (metis below_C rev_below_trans)
 next
   case (App e x)
   { fix r r'
-    from App[where r = r and b = \<rho>]
+    from App[where r = r and \<rho> = \<rho>]
     have "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>(r \<sqinter> r') = (\<N>\<lbrakk>e\<rbrakk>\<^bsub>fmap_C_restr\<cdot>(Cpred\<cdot>r)\<cdot>\<rho>\<^esub>)\<cdot>(r \<sqinter> r')"
       apply (rule C_restr_eqD)
       by (metis below_refl meet_below1)
@@ -119,29 +119,19 @@ next
     done
 next
   case (Let as e)
-  hence [simp]: "fdom \<rho> \<inter> heapVars (asToHeap as) = {}"
-    by (metis disjoint_iff_not_equal sharp_star_Env)
 
-  { fix r
-    have "fmap_C_restr\<cdot>r\<cdot>(\<N>\<lbrace>asToHeap as\<rbrace>(\<rho> f|` (- heapVars (asToHeap as)))) = fmap_C_restr\<cdot>r\<cdot>(\<N>\<lbrace>asToHeap as\<rbrace>((fmap_C_restr\<cdot>r\<cdot>\<rho>)  f|` (- heapVars (asToHeap as))))" 
-      apply (rule has_ESem.parallel_HSem_ind)
-      apply simp
-      apply simp
-      apply (rule, simp)
-      apply (case_tac "x \<in> heapVars (asToHeap as)")
-      apply (simp add: lookupHeapToEnv) 
-      apply (subst (1 2) Let(2), assumption)
-      apply (drule fmap_restr_eq_Cpred)
-      apply simp
-      apply simp
-      done
-    also have "\<rho> f|` (- heapVars (asToHeap as)) = \<rho>"
-      using Let(1) by (auto intro: fmap_restr_useless  simp add:  sharp_star_Env)
-    also have "(fmap_C_restr\<cdot>r\<cdot>\<rho>) f|` (- heapVars (asToHeap as)) = (fmap_C_restr\<cdot>r\<cdot>\<rho>)"
-      using Let(1) by (auto intro: fmap_restr_useless  simp add:  sharp_star_Env)
-    finally
-    have "fmap_C_restr\<cdot>r\<cdot>(\<N>\<lbrace>asToHeap as\<rbrace>\<rho>) = fmap_C_restr\<cdot>r\<cdot>(\<N>\<lbrace>asToHeap as\<rbrace>fmap_C_restr\<cdot>r\<cdot>\<rho>)".
-  } note * = this
+  have *: "\<And> r. fmap_C_restr\<cdot>r\<cdot>(\<N>\<lbrace>asToHeap as\<rbrace>\<rho>) = fmap_C_restr\<cdot>r\<cdot>(\<N>\<lbrace>asToHeap as\<rbrace>fmap_C_restr\<cdot>r\<cdot>\<rho>)"
+    apply (rule has_ESem.parallel_HSem_ind)
+    apply simp
+    apply simp
+    apply (rule, simp)
+    apply (case_tac "x \<in> heapVars (asToHeap as)")
+    apply (simp add: lookupHeapToEnv) 
+    apply (subst (1 2) Let(1), assumption)
+    apply (drule fmap_restr_eq_Cpred)
+    apply simp
+    apply simp
+    done
 
   show ?case
     apply (rule below_antisym)
@@ -149,7 +139,7 @@ next
     apply (cases r, simp)
     apply simp
     apply (subst (1 4) Rep_cfun_inverse) (* Be careful not to destroy the locale parameters *)
-    apply (subst (1 2) Let(3))
+    apply (subst (1 2) Let(2))
     apply (subst *)
     apply (rule cont2monofunE[OF _ Cpred_below], simp)
     done

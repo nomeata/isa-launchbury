@@ -152,9 +152,11 @@ lemma supp_fmap:
   "supp (m:: 'a::fs f\<rightharpoonup> 'b::fs) = (supp (fdom m) \<union> supp (fran m))"
 by transfer(erule supp_map_union)
 
+(*
+Not needed any more... time to switch to "var \<rightarrow> Value"
 instance "fmap" :: (fs,fs) fs
   by (default, auto intro: finite_sets_supp simp add: supp_fmap)
-
+*)
 subsubsection {* Equivariance lemmas related to finite maps *}
 
 lemma lookup_eqvt[eqvt]:
