@@ -148,10 +148,10 @@ lemma supp_fmap_transfer[transfer_rule]:
   "(pcr_fmap op= op= ===> op =) supp supp"
   unfolding supp_def[abs_def] by transfer_prover
 
+
 lemma supp_fmap:
   "supp (m:: 'a::fs f\<rightharpoonup> 'b::fs) = (supp (fdom m) \<union> supp (fran m))"
 by transfer(erule supp_map_union)
-
 (*
 Not needed any more... time to switch to "var \<rightarrow> Value"
 instance "fmap" :: (fs,fs) fs
@@ -242,6 +242,8 @@ lemma supp_fmap_pure:
   shows "supp \<rho> = supp (fdom \<rho>)"
   by (metis supp_fmap Un_empty_right pure_supp)
 
+(*
+
 lemma fresh_fmap_pure:
   fixes \<rho> :: "'a::at_base f\<rightharpoonup> 'b::pure"
   shows "atom a \<sharp> \<rho> \<longleftrightarrow> a \<notin> fdom \<rho>"
@@ -317,9 +319,11 @@ lemma fresh_fmap_add_subset:
   "a \<sharp> (m1 :: 'a::at_base f\<rightharpoonup> 'b::fs) \<Longrightarrow> a \<sharp> m2 \<Longrightarrow> a \<sharp> m1 f++ m2"
   by (auto simp add: fresh_def supp_fmap supp_of_finite_insert supp_of_finite_union 
       dest: set_mp[OF supp_mono[OF finite_UnI[OF finite_fran finite_fran] fran_fmap_add_subset]])
+*)
 
 subsubsection {* Permutation and restriction *}
 
+(* This seems to be the only remaining lemma that talks about the support of a fmap... *)
 lemma fmap_restr_perm:
   fixes \<rho> :: "'a::at f\<rightharpoonup> 'b::pure"
   assumes "supp p \<sharp>* S" and [simp]: "finite S"
