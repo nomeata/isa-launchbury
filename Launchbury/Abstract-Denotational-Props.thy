@@ -38,28 +38,9 @@ qed
 sublocale has_ignore_fresh_ESem AESem
   by default (rule fv_supp_exp, rule ESem_considers_fv')
 
-lemma ESem_add_fresh:
-  assumes fresh: "atom x \<sharp> (\<rho>, \<Gamma>, e)"
-  shows "\<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>(x, e') # \<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
-proof(rule ESem_ignores_fresh[symmetric])
-  have "\<lbrace>\<Gamma>\<rbrace>\<rho> = fmap_restr (fdom \<rho> \<union> heapVars \<Gamma>) (\<lbrace>(x, e') # \<Gamma>\<rbrace>\<rho>) "
-    apply (rule UHSem_add_fresh[symmetric])
-    using fresh by (simp add: fresh_Pair)
-  thus "\<lbrace>\<Gamma>\<rbrace>\<rho> \<le> \<lbrace>(x, e') # \<Gamma>\<rbrace>\<rho>"
-    by (auto simp add: fmap_less_restrict)
-
-  have "(insert x (fdom \<rho> \<union> heapVars \<Gamma>) - (fdom \<rho> \<union> heapVars \<Gamma>)) = {x}"
-    using fresh
-    by (auto simp add: fresh_Pair fresh_fmap_pure heapVars_not_fresh)
-  thus "atom ` (fdom (\<lbrace>(x, e') # \<Gamma>\<rbrace>\<rho>) - fdom (\<lbrace>\<Gamma>\<rbrace>\<rho>)) \<sharp>* e"
-    using fresh
-    by (simp add: fresh_star_def fresh_Pair)
-qed
-
-
 subsection {* Nicer equations for CESem, without freshness requirements *}
 
-lemma AESem_Lam[simp]: "\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub>  = tick \<cdot> (Fn \<cdot> (\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>))"
+lemma AESem_Lam[simp]: "\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub> = tick \<cdot> (Fn \<cdot> (\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>))"
 proof-
   have *: "\<And> v. ((\<rho> f|` (fv e - {x}))(x f\<mapsto> v)) f|` fv e = (\<rho>(x f\<mapsto> v)) f|` fv e"
     by rule auto
@@ -93,6 +74,7 @@ proof-
   finally show ?thesis.
 qed
 declare AESem.simps(4)[simp del]
+
 
 subsubsection {* Denotation of Substitution *}
 

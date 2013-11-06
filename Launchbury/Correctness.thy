@@ -2,6 +2,26 @@ theory Correctness
   imports "CorrectnessStacked" "Launchbury-Unstack"
 begin
 
+text {* Fresh bindings can be added to the heap *}
+
+lemma ESem_add_fresh:
+  assumes fresh: "atom x \<sharp> (\<rho>, \<Gamma>, e)"
+  shows "\<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>(x, e') # \<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
+proof(rule ESem_ignores_fresh[symmetric])
+  have "\<lbrace>\<Gamma>\<rbrace>\<rho> = fmap_restr (fdom \<rho> \<union> heapVars \<Gamma>) (\<lbrace>(x, e') # \<Gamma>\<rbrace>\<rho>) "
+    apply (rule UHSem_add_fresh[symmetric])
+    using fresh by (simp add: fresh_Pair)
+  thus "\<lbrace>\<Gamma>\<rbrace>\<rho> \<le> \<lbrace>(x, e') # \<Gamma>\<rbrace>\<rho>"
+    by (auto simp add: fmap_less_restrict)
+
+  have "(insert x (fdom \<rho> \<union> heapVars \<Gamma>) - (fdom \<rho> \<union> heapVars \<Gamma>)) = {x}"
+    using fresh
+    by (auto simp add: fresh_Pair fresh_fmap_pure heapVars_not_fresh)
+  thus "atom ` (fdom (\<lbrace>(x, e') # \<Gamma>\<rbrace>\<rho>) - fdom (\<lbrace>\<Gamma>\<rbrace>\<rho>)) \<sharp>* e"
+    using fresh
+    by (simp add: fresh_star_def fresh_Pair)
+qed
+
 text {*
 As a corollary of the correctness of the stacked semantics and its equivalence to the original
 semantics we obtaim Theorem 2 from \cite{launchbury}.

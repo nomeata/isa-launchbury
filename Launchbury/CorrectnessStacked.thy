@@ -98,7 +98,7 @@ case (Application n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<Theta
     apply simp
     apply (rule ESem_subst[simplified])
       using Application(2)
-      apply (auto simp add: sharp_Env fresh_Pair heapVars_not_fresh)
+      apply (auto simp add: fresh_fmap_pure fresh_Pair heapVars_not_fresh)
     done
   also
   have "... \<le> \<lbrace>\<Theta>' @ \<Theta>\<rbrace>"
