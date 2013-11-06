@@ -1,5 +1,5 @@
 theory HSemUpd
-  imports "HeapToEnv" "DistinctVars-Nominal" "HOLCF-Set-Nominal" "FMap-Utils" "HasESem"
+  imports "HeapToEnv" "DistinctVars-Nominal" "HOLCF-Set-Nominal" "FMap-Nominal-HOLCF" "HasESem"
 begin
 
 subsubsection {* A locale for heap semantics, abstract in the expression semantics *}
@@ -434,7 +434,8 @@ begin
 subsubsection {* Adding a fresh variable to a heap does not affect its semantics *} 
 
   lemma HSem_add_fresh':
-    assumes fresh: "atom x \<sharp> (\<rho>,\<Gamma>)"
+    assumes fresh: "atom x \<sharp> \<Gamma>"
+    assumes "x \<notin> fdom \<rho>"
     assumes step: "\<And>e \<rho>'. fdom \<rho>' = fdom \<rho> \<union> heapVars ((x, e) # \<Gamma>) \<Longrightarrow> e \<in> snd ` set \<Gamma> \<Longrightarrow> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho>' f|` (- {x})\<^esub>"
     shows  "(\<lbrace>(x, e) # \<Gamma>\<rbrace>\<rho>) f|` (fdom \<rho> \<union> heapVars \<Gamma>) = \<lbrace>\<Gamma>\<rbrace>\<rho>"
   proof (rule parallel_HSem_ind)
@@ -444,8 +445,7 @@ subsubsection {* Adding a fresh variable to a heap does not affect its semantics
     have "fmap_restr (fdom \<rho> \<union> heapVars \<Gamma>) \<rho> = \<rho>" by auto
     moreover
     have "x \<notin> fdom \<rho> \<union> heapVars \<Gamma>"
-      using fresh
-      by (auto simp add: fresh_fmap_pure fresh_Pair heapVars_not_fresh)
+      using fresh `x \<notin> fdom \<rho>` by (auto simp add: fresh_Pair heapVars_not_fresh)
     hence "fdom y \<inter> (- {x}) = fdom \<rho> \<union> heapVars \<Gamma>"
       using goal3(1) by auto
     hence [simp]: "z = y f|` (- {x})"
@@ -464,12 +464,13 @@ subsubsection {* Adding a fresh variable to a heap does not affect its semantics
   qed
 
   lemma HSem_add_fresh:
-    assumes fresh: "atom x \<sharp> (\<rho>, \<Gamma>)"
+    assumes "atom x \<sharp> \<Gamma>"
+    assumes "x \<notin> fdom \<rho>"
     shows  "(\<lbrace>(x, e) # \<Gamma>\<rbrace>\<rho>) f|` (fdom \<rho> \<union> heapVars \<Gamma>) = \<lbrace>\<Gamma>\<rbrace>\<rho>"
   proof(rule HSem_add_fresh'[OF assms])
   case (goal1 e \<rho>')
     assume "e \<in> snd ` set \<Gamma>"
-    hence "atom x \<sharp> e" by (metis fresh fresh_PairD(2) fresh_heap_expr')
+    hence "atom x \<sharp> e" by (metis assms(1) fresh_heap_expr')
     hence "fv e \<inter> -{x} = fv e" by (auto simp add: fv_def fresh_def)
     thus ?case by (simp cong: ESem_fresh_cong)
   qed

@@ -1,5 +1,5 @@
 theory HSem
-  imports "HeapToEnv" "DistinctVars-Nominal" "HOLCF-Fix-Join-Nominal" "FMap-Utils" "HasESem" "FMap-Join"
+  imports "HeapToEnv" "DistinctVars-Nominal" "HOLCF-Fix-Join-Nominal" "FMap-Nominal-HOLCF" "HasESem" "FMap-Join"
 begin
 
 lemma fdom_fix_join_compat:
@@ -1109,11 +1109,12 @@ subsubsection {* Binding more variables increases knowledge *}
 
   lemma HSem_subset_below:
     assumes cond2: "HSem_cond' (\<Delta>@\<Gamma>) \<rho>"
-    assumes fresh: "atom ` heapVars \<Gamma> \<sharp>* (\<Delta>, \<rho>)" 
+    assumes fresh: "atom ` heapVars \<Gamma> \<sharp>* \<Delta>" 
+    assumes rho_fresh: "fdom \<rho> \<inter> heapVars (\<Gamma> @ \<Delta>) = {}"
     shows "(\<lbrace>\<Delta>\<rbrace>\<rho>)\<^bsub>[fdom \<rho> \<union> heapVars \<Delta> \<union> heapVars \<Gamma>]\<^esub> \<sqsubseteq> \<lbrace>\<Delta>@\<Gamma>\<rbrace>\<rho>"
   proof-
     have fdoms: "fdom \<rho> \<union> (heapVars \<Delta> \<union> heapVars \<Gamma>) - (fdom \<rho> \<union> heapVars \<Delta>) = heapVars \<Gamma>"
-      using fresh by (auto dest: fresh_distinct simp add: sharp_star_Env' fresh_star_Pair)
+      using fresh rho_fresh by (auto dest: fresh_distinct)
     
     have below: "\<lbrace>\<Delta>\<rbrace>\<rho> \<sqsubseteq> (\<lbrace>\<Delta>@\<Gamma>\<rbrace>\<rho>)\<^bsub>[fdom \<rho> \<union> heapVars \<Delta>]\<^esub>" (is "_ \<sqsubseteq> ?RHS")
     proof (rule HSem_below)
@@ -1131,7 +1132,7 @@ subsubsection {* Binding more variables increases knowledge *}
         apply simp
         apply auto[1]
         apply (simp add: fdoms)
-        using fresh apply (metis fresh fresh_PairD(1) fresh_heap_expr'[OF _ the_map_of_snd[OF goal2]] fresh_star_def)
+        using fresh apply (metis fresh fresh_heap_expr'[OF _ the_map_of_snd[OF goal2]] fresh_star_def)
         done
       also have "\<dots> = ESem (the (map_of (\<Delta>@\<Gamma>) x)) \<cdot> (\<lbrace>\<Delta>@\<Gamma>\<rbrace>\<rho>)"
         by (simp add: map_add_dom_app_simps dom_map_of_conv_heapVars)
@@ -1152,13 +1153,13 @@ subsubsection {* Binding more variables increases knowledge *}
   subsubsection {* Additional, fresh bindings in one or two steps *}  
 
   lemma HSem_merge:
-    assumes fresh: "atom ` heapVars \<Gamma> \<sharp>* (\<Delta>, \<rho>)"
+    assumes fresh: "atom ` heapVars \<Gamma> \<sharp>* \<Delta>"
     assumes rho_fresh: "fdom \<rho> \<inter> heapVars (\<Gamma> @ \<Delta>) = {}"
     shows "\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho> = \<lbrace>\<Gamma>@\<Delta>\<rbrace>\<rho>"
   proof(rule below_antisym)
-    from fresh
+    from fresh rho_fresh
     have Gamma_fresh: "heapVars \<Gamma> \<inter> (fdom \<rho> \<union> heapVars \<Delta>) = {}"
-      by (auto dest: fresh_distinct simp add: sharp_star_Env' fresh_star_Pair)
+      by (auto dest: fresh_distinct)
     hence fdoms: "fdom \<rho> \<union> heapVars \<Delta> \<union> heapVars \<Gamma> - (fdom \<rho> \<union> heapVars \<Delta>) = heapVars \<Gamma>"
       by auto
 
@@ -1194,7 +1195,7 @@ subsubsection {* Binding more variables increases knowledge *}
     show "\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho> \<sqsubseteq> \<lbrace>\<Gamma>@\<Delta>\<rbrace>\<rho>"
     proof(rule HSem_below)
       have "(\<lbrace>\<Delta>\<rbrace>\<rho>)\<^bsub>[fdom \<rho> \<union> heapVars \<Delta> \<union> heapVars \<Gamma>]\<^esub> \<sqsubseteq> \<lbrace>\<Delta> @ \<Gamma>\<rbrace>\<rho>"
-        by (rule HSem_subset_below[OF cond2' fresh])
+        by (rule HSem_subset_below[OF cond2' fresh rho_fresh])
       also have "\<lbrace>\<Delta> @ \<Gamma>\<rbrace>\<rho> = \<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>"
         by (rule HSem_reorder[OF map_of_eq])
       finally
@@ -1243,7 +1244,7 @@ subsubsection {* Binding more variables increases knowledge *}
           apply (rule HSem_disjoint_less)
             using Gamma_fresh apply auto[1]
           apply (simp add: fdoms)
-            using fresh apply (metis fresh fresh_PairD(1) fresh_heap_expr'[OF _ the_map_of_snd[OF `x \<in> heapVars \<Delta>`]] fresh_star_def)
+            using fresh apply (metis fresh fresh_heap_expr'[OF _ the_map_of_snd[OF `x \<in> heapVars \<Delta>`]] fresh_star_def)
           done
         also have "\<dots> \<sqsubseteq> \<lbrace>\<Delta>\<rbrace>\<rho> f! x"
           by (rule HSem_heap_below[OF cond3 `x \<in> heapVars \<Delta>`])

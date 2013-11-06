@@ -51,9 +51,9 @@ case (Application n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<Theta
   also
   have "... = ?restr (\<lbrace>(n, e) # (x, App e y) # \<Gamma>' @ \<Gamma>\<rbrace>)"
     -- {* Adding a fresh variable *}
-    thm HSem_add_fresh[symmetric]
-    apply (subst HSem_add_fresh[of n "f\<emptyset>" "(x, App e y) # \<Gamma>' @ \<Gamma>" e , symmetric])
+    apply (subst HSem_add_fresh[of n "(x, App e y) # \<Gamma>' @ \<Gamma>" "f\<emptyset>"  e , symmetric])
     using Application(1) apply (simp add: fresh_Pair fresh_Cons fresh_append)
+    apply simp
     apply simp
     done
   also have  "... = ?restr (\<lbrace>(x, App e y) # (n, e) # \<Gamma>' @ \<Gamma>\<rbrace>)"
@@ -63,6 +63,7 @@ case (Application n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<Theta
     -- {* Substituting the variable *}
     apply (rule arg_cong[OF HSem_subst_var_app[symmetric]])
     using Application(1) apply (simp add: fresh_Pair)
+    apply simp
     done
   also
   have "... = ?restr (\<lbrace>(n, e) # (x, App (Var n) y) # \<Gamma>' @ \<Gamma>\<rbrace>)"
@@ -80,6 +81,7 @@ case (Application n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<Theta
     -- "Substituting the variable again"
     apply (rule arg_cong[OF HSem_subst_var_app])
     using Application(1) apply (simp add: fresh_Pair)
+    apply simp
     done
   also
   have "... = ?restr2 (\<lbrace>(n, Lam [z]. e') # (x, App (Lam [z]. e') y) # \<Delta>' @ \<Delta>\<rbrace>)"
@@ -87,8 +89,9 @@ case (Application n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<Theta
   also
   have "... = (\<lbrace>(x, App (Lam [z]. e') y) # \<Delta>' @ \<Delta>\<rbrace>)"
     -- "Removing the fresh variable"
-    apply (subst HSem_add_fresh[of n fempty "(x, App (Lam [z]. e') y) # \<Delta>' @ \<Delta>" "Lam [z]. e'", symmetric])
+    apply (subst HSem_add_fresh[of n  "(x, App (Lam [z]. e') y) # \<Delta>' @ \<Delta>" fempty "Lam [z]. e'", symmetric])
     using Application(1) apply (simp add: fresh_Pair fresh_Cons fresh_append)
+    apply simp
     apply simp
     done
   also
@@ -98,7 +101,7 @@ case (Application n \<Gamma> \<Gamma>' \<Delta> \<Delta>' x e y \<Theta> \<Theta
     apply simp
     apply (rule ESem_subst[simplified])
       using Application(2)
-      apply (auto simp add: fresh_fmap_pure fresh_Pair heapVars_not_fresh)
+      apply (auto simp add: fresh_Pair heapVars_not_fresh)
     done
   also
   have "... \<le> \<lbrace>\<Theta>' @ \<Theta>\<rbrace>"
@@ -135,7 +138,9 @@ case (Variable y e \<Gamma> x \<Gamma>' z \<Delta>' \<Delta>)
   have "... =  \<lbrace>(x, z) # (y, z) # \<Delta>' @ \<Delta>\<rbrace>"
     -- {* Substituting the variable @{term y} *}
     apply (rule HSem_subst_var_var)
-    using `x \<noteq> y` by (simp add: fresh_Pair fresh_at_base)
+    using `x \<noteq> y` apply (simp add: fresh_Pair fresh_at_base)
+    apply simp
+    done
   also
   have "... =  \<lbrace>(y, z) # (x, z) # \<Delta>' @ \<Delta>\<rbrace>"
     by (simp add: HSem_reorder_head[OF `x \<noteq> y`])

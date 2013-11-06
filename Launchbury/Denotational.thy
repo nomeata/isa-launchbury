@@ -12,10 +12,10 @@ abbreviation HSem_fempty  ("\<lbrace>_\<rbrace>"  [60] 60) where "\<lbrace>\<Gam
 subsubsection {* Replacing subexpressions by variables *}
 
 lemma HSem_subst_var_app:
-  assumes fresh: "atom n \<sharp> (x,\<rho>)"
+  assumes fresh: "atom n \<sharp> x" and [simp]: "n \<notin> fdom \<rho>"
   shows "\<lbrace>(x, App (Var n) y) # (n, e) # \<Gamma>\<rbrace>\<rho> = \<lbrace>(x, App e y) # (n, e) # \<Gamma>\<rbrace>\<rho> "
 proof(rule HSem_subst_expr)
-  from fresh have [simp]:"n \<notin> fdom \<rho>" "n \<noteq> x" by (simp add: fresh_Pair fresh_fmap_pure fresh_at_base)+
+  from fresh have [simp]: "n \<noteq> x" by (simp add: fresh_at_base)
   have ne: "(n,e) \<in> set ((x, App e y) # (n, e) # \<Gamma>)" by simp
 
   have "\<lbrakk> Var n \<rbrakk>\<^bsub>\<lbrace>(x, App e y) # (n, e) # \<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrace>(x, App e y) # (n, e) # \<Gamma>\<rbrace>\<rho> f! n"
@@ -36,10 +36,10 @@ proof(rule HSem_subst_expr)
 qed
 
 lemma HSem_subst_var_var:
-  assumes fresh: "atom n \<sharp> (x,\<rho>)"
+  assumes fresh: "atom n \<sharp> x" and [simp]: "n \<notin> fdom \<rho>"
   shows "\<lbrace>(x, Var n) # (n, e) # \<Gamma>\<rbrace>\<rho> = \<lbrace>(x, e) # (n, e) # \<Gamma>\<rbrace>\<rho> "
 proof(rule HSem_subst_expr)
-  from fresh have [simp]:"n \<notin> fdom \<rho>" "n \<noteq> x" by (simp add: fresh_Pair fresh_fmap_pure fresh_at_base)+
+  from fresh have [simp]: "n \<noteq> x" by (simp add: fresh_at_base)
   have ne: "(n,e) \<in> set ((x, e) # (n, e) # \<Gamma>)" by simp
 
   have "\<lbrakk> Var n \<rbrakk>\<^bsub>\<lbrace>(x, e) # (n, e) # \<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrace>(x, e) # (n, e) # \<Gamma>\<rbrace>\<rho> f! n"
@@ -111,9 +111,6 @@ case goal1
   proof(rule below_antisym)
     show "\<lbrace>(x, Let as body) # \<Gamma>\<rbrace> \<sqsubseteq> fmap_restr (insert x (heapVars \<Gamma>)) (\<lbrace>(x, body) # asToHeap as @ \<Gamma>\<rbrace>)" (is "_ \<sqsubseteq> ?r")
     proof (rule HSem_fempty_below)
-      have "fdom ?r = insert x (heapVars \<Gamma>)" by auto
-      hence [simp]: "set (bn as) \<sharp>* ?r" using disjoint by (auto simp add: set_bn_to_atom_heapVars fresh_star_def fresh_fmap_pure)
-
       fix x'
       assume "x' \<in> heapVars ((x, Terms.Let as body) # \<Gamma>)"
       hence x': "x' \<in> insert x (heapVars \<Gamma>)" by simp
