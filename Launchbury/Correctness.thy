@@ -9,7 +9,7 @@ lemma ESem_add_fresh:
   shows "\<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>(x, e') # \<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
 proof(rule ESem_ignores_fresh[symmetric])
   have "\<lbrace>\<Gamma>\<rbrace>\<rho> = fmap_restr (fdom \<rho> \<union> heapVars \<Gamma>) (\<lbrace>(x, e') # \<Gamma>\<rbrace>\<rho>) "
-    apply (rule UHSem_add_fresh[symmetric])
+    apply (rule HSem_add_fresh[symmetric])
     using fresh by (simp add: fresh_Pair)
   thus "\<lbrace>\<Gamma>\<rbrace>\<rho> \<le> \<lbrace>(x, e') # \<Gamma>\<rbrace>\<rho>"
     by (auto simp add: fmap_less_restrict)
@@ -50,13 +50,13 @@ proof-
     by (rule CorrectnessStacked.correctness)
 
   have "\<lbrace>\<Gamma>\<rbrace> = fmap_restr (heapVars \<Gamma>) (\<lbrace>(x, e) # \<Gamma>\<rbrace>)"
-    apply (rule UHSem_add_fresh[where \<rho> = "f\<emptyset>", simplified, symmetric])
+    apply (rule HSem_add_fresh[where \<rho> = "f\<emptyset>", simplified, symmetric])
     using fresh apply (simp add: fresh_Pair)
     done
   also have "... \<le> fmap_restr (heapVars \<Delta>) (\<lbrace>(x, z) # \<Delta>\<rbrace>)"
     by (rule fmap_restr_le[OF le Launchbury.reds_doesnt_forget[OF assms(1)], simplified])
   also have "... = \<lbrace>\<Delta>\<rbrace>"
-    apply (rule UHSem_add_fresh[where \<rho> = "f\<emptyset>", simplified (no_asm)])
+    apply (rule HSem_add_fresh[where \<rho> = "f\<emptyset>", simplified (no_asm)])
     using fresh apply (simp add: fresh_Pair)
     done
   finally show "\<lbrace>\<Gamma>\<rbrace> \<le> \<lbrace>\<Delta>\<rbrace>".
@@ -65,9 +65,9 @@ proof-
     apply (rule ESem_add_fresh[where \<rho> = "f\<emptyset>", symmetric])
     using fresh by (simp add: fresh_Pair)
   also have "... = \<lbrace>(x, e) # \<Gamma>\<rbrace> f! x"
-    by (simp add: the_lookup_UHSem_heap)
+    by (simp add: the_lookup_HSem_heap)
   also have "... = \<lbrace>(x, z) # \<Delta>\<rbrace> f! x" by (simp add: fmap_less_eqD[OF le, simplified])
-  also have "... = \<lbrakk>z\<rbrakk>\<^bsub>\<lbrace>(x, z) # \<Delta>\<rbrace>\<^esub>" by (simp add: the_lookup_UHSem_heap)
+  also have "... = \<lbrakk>z\<rbrakk>\<^bsub>\<lbrace>(x, z) # \<Delta>\<rbrace>\<^esub>" by (simp add: the_lookup_HSem_heap)
   also have "... =  \<lbrakk>z\<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<^esub>"
     apply (rule ESem_add_fresh)
     using fresh by (simp add: fresh_Pair)

@@ -30,7 +30,7 @@ next
      by (rule HSem_ignores_fresh_restr'[OF _ Let(1)])
   also
   have "\<lbrace>asToHeap as\<rbrace>(\<rho> f|` (fv as \<union> fv e)) = \<lbrace>asToHeap as\<rbrace>\<rho> f|` (fv as \<union> fv e - heapVars (asToHeap as))"
-    by (rule UHSem_fresh_cong) auto
+    by (rule HSem_fresh_cong) auto
   finally
   show ?case by simp
 qed
@@ -66,7 +66,7 @@ proof-
   have "\<lbrakk> Let as body \<rbrakk>\<^bsub>\<rho>\<^esub> = tick \<cdot> (\<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>(\<rho> f|` fv (Let as body))\<^esub>)" 
     by simp
   also have "\<lbrace>asToHeap as\<rbrace>(\<rho> f|` fv(Let as body)) = \<lbrace>asToHeap as\<rbrace>(\<rho> f|` (fv as \<union> fv body))" 
-    by (rule UHSem_fresh_cong) auto
+    by (rule HSem_fresh_cong) auto
   also have "\<dots> = (\<lbrace>asToHeap as\<rbrace>\<rho>) f|` (fv as \<union> fv body)"
     by (rule HSem_ignores_fresh_restr'[symmetric, OF subset_trans[OF fv_asToHeap Un_upper1] ESem_considers_fv])
   also have "\<lbrakk>body\<rbrakk>\<^bsub>\<dots>\<^esub> = \<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub>"
@@ -98,13 +98,13 @@ case (Let as exp x y \<rho>)
   from `\<rho> f!\<^sub>\<bottom> x = \<rho> f!\<^sub>\<bottom> y`
   have "\<lbrace>asToHeap as\<rbrace>\<rho> f!\<^sub>\<bottom> x = \<lbrace>asToHeap as\<rbrace>\<rho> f!\<^sub>\<bottom> y"
     using `x \<notin> heapVars (asToHeap as)` `y \<notin> heapVars (asToHeap as)`
-    by (simp add: fmap_lookup_bot_UHSem_other)
+    by (simp add: fmap_lookup_bot_HSem_other)
   hence "\<lbrakk>exp\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub> = \<lbrakk>exp[x::=y]\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub>"
     by (rule Let)
   moreover
   from `\<rho> f!\<^sub>\<bottom> x = \<rho> f!\<^sub>\<bottom> y`
   have "\<lbrace>asToHeap as\<rbrace>\<rho> = \<lbrace>asToHeap as[x::a=y]\<rbrace>\<rho>" and "\<lbrace>asToHeap as\<rbrace>\<rho> f!\<^sub>\<bottom> x = \<lbrace>asToHeap as[x::a=y]\<rbrace>\<rho> f!\<^sub>\<bottom> y"
-    apply (induction rule: parallel_UHSem_ind)
+    apply (induction rule: parallel_HSem_ind)
     apply simp
     apply simp
     apply simp
@@ -152,11 +152,11 @@ lemma fmap_restr_monofun_relaxed:
   "op f!\<^sub>\<bottom> \<rho> \<sqsubseteq> op f!\<^sub>\<bottom>\<rho>' \<Longrightarrow> op f!\<^sub>\<bottom> (\<rho> f|` S) \<sqsubseteq> op f!\<^sub>\<bottom> (\<rho>' f|` S)"
 by (auto simp add: below_fun_def lookup_fmap_restr_eq)
 
-lemma UHSem_monofun_relaxed':
+lemma HSem_monofun_relaxed':
   assumes "\<And>x \<rho> \<rho>'. x \<in> heapVars h \<Longrightarrow> op f!\<^sub>\<bottom> \<rho> \<sqsubseteq> op f!\<^sub>\<bottom>\<rho>' \<Longrightarrow> \<lbrakk> the (map_of h x) \<rbrakk>\<^bsub>\<rho>\<^esub> \<sqsubseteq> \<lbrakk> the (map_of h x) \<rbrakk>\<^bsub>\<rho>'\<^esub>"
   assumes "op f!\<^sub>\<bottom> \<rho> \<sqsubseteq> op f!\<^sub>\<bottom>\<rho>'"
   shows "op f!\<^sub>\<bottom> (\<lbrace>h\<rbrace>\<rho>) \<sqsubseteq> op f!\<^sub>\<bottom> (\<lbrace>h\<rbrace>\<rho>')"
-  apply (rule parallel_UHSem_ind)
+  apply (rule parallel_HSem_ind)
   apply simp
   apply simp
   apply (rule fun_belowI)
@@ -188,7 +188,7 @@ case (Lam x e)
 next
 case (Let as x)
   show ?case
-    by (auto intro: monofun_cfun_arg UHSem_monofun_relaxed' Let.hyps(3) Let.hyps(4) fmap_restr_monofun_relaxed  Let.prems)
+    by (auto intro: monofun_cfun_arg HSem_monofun_relaxed' Let.hyps(3) Let.hyps(4) fmap_restr_monofun_relaxed  Let.prems)
 qed
 
 lemma ESem_fmap_cong:
@@ -197,10 +197,10 @@ lemma ESem_fmap_cong:
 using assms
 by (metis (full_types) ESem_mono_relaxed below_antisym below_refl)
 
-lemma UHSem_monofun_relaxed:
+lemma HSem_monofun_relaxed:
   assumes "op f!\<^sub>\<bottom> \<rho> \<sqsubseteq> op f!\<^sub>\<bottom>\<rho>'"
   shows "op f!\<^sub>\<bottom> (\<lbrace>h\<rbrace>\<rho>) \<sqsubseteq> op f!\<^sub>\<bottom> (\<lbrace>h\<rbrace>\<rho>')"
-  by (rule UHSem_monofun_relaxed'[OF ESem_mono_relaxed assms])
+  by (rule HSem_monofun_relaxed'[OF ESem_mono_relaxed assms])
 
 end
 

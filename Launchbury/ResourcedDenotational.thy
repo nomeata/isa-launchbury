@@ -10,7 +10,7 @@ interpretation semantic_domain
   "\<Lambda> x. (\<Lambda> (C\<cdot>r). x \<cdot> r)".
 
 abbreviation CESem_syn ("\<N>\<lbrakk> _ \<rbrakk>\<^bsub>_\<^esub>"  [60,60] 60) where "\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> \<equiv> AESem e \<cdot> \<rho>"
-abbreviation CHSem_syn ("\<N>\<lbrace>_\<rbrace>_"  [60,60] 60) where "\<N>\<lbrace>\<Gamma>\<rbrace>\<rho> \<equiv> UHSem \<Gamma> \<cdot> \<rho>"
+abbreviation CHSem_syn ("\<N>\<lbrace>_\<rbrace>_"  [60,60] 60) where "\<N>\<lbrace>\<Gamma>\<rbrace>\<rho> \<equiv> HSem \<Gamma> \<cdot> \<rho>"
 abbreviation CHSem_fempty  ("\<N>\<lbrace>_\<rbrace>"  [60] 60) where "\<N>\<lbrace>\<Gamma>\<rbrace> \<equiv> \<N>\<lbrace>\<Gamma>\<rbrace>fempty"
 
 (* The same, but with some beta_cfun's and eta_cfuns resolved.*)
@@ -25,7 +25,7 @@ lemma CESem_bot[simp]:"(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot
   by (nominal_induct e avoiding: \<sigma> rule: exp_assn.strong_induct(1)) auto
 
 lemma CHSem_bot[simp]:"(\<N>\<lbrace> \<Gamma> \<rbrace> f!\<^sub>\<bottom> x)\<cdot> \<bottom> = \<bottom>"
-  by (cases "x \<in> heapVars \<Gamma>") (auto simp add: the_lookup_UHSem_heap)
+  by (cases "x \<in> heapVars \<Gamma>") (auto simp add: the_lookup_HSem_heap)
 
 end
 

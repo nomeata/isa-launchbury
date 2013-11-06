@@ -105,24 +105,24 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
   have condGamma: "fix_on_cond {\<rho>' . f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars (delete x \<Gamma>))]\<^esub> \<sqsubseteq> \<rho>'}
                                (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars (delete x \<Gamma>))]\<^esub>)
      (\<lambda>a. (\<rho> f++ (\<N>\<lbrace>delete x \<Gamma>\<rbrace>a) f|` heapVars (delete x \<Gamma>))(x f\<mapsto> \<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>a\<^esub>))"
-     thm fix_on_cond_cong[OF iterative_UHSem'_cond]
-    by (rule fix_on_cond_cong[OF iterative_UHSem'_cond], auto)
+     thm fix_on_cond_cong[OF iterative_HSem'_cond]
+    by (rule fix_on_cond_cong[OF iterative_HSem'_cond], auto)
   have condDelta: "fix_on_cond {\<rho>' . f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars \<Delta>)]\<^esub> \<sqsubseteq> \<rho>'}
                                     (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars \<Delta>)]\<^esub>)
                                     (\<lambda>\<rho>'. (\<rho> f++ (\<N>\<lbrace>\<Delta>\<rbrace>\<rho>') f|` heapVars \<Delta>)(x f\<mapsto> \<N>\<lbrakk>z\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<rho>'\<^esub>))"
     using `x \<notin> heapVars \<Delta>` 
-    by (rule fix_on_cond_cong[OF iterative_UHSem'_cond]) auto
+    by (rule fix_on_cond_cong[OF iterative_HSem'_cond]) auto
 
   have "\<N>\<lbrace>\<Gamma>\<rbrace>\<rho> = \<N>\<lbrace>(x,e) # delete x \<Gamma>\<rbrace>\<rho>"
-    apply (rule UHSem_reorder)
+    apply (rule HSem_reorder)
     apply (rule distinctVars_map_of_delete_insert[symmetric, OF Variable(5,1)])
     done
   also have "\<dots> = fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars (delete x \<Gamma>))]\<^esub>)
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars (delete x \<Gamma>)) (\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>))"
-    by (rule iterative_UHSem, simp)
+    by (rule iterative_HSem, simp)
   also have "\<dots> = fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars (delete x \<Gamma>))]\<^esub>)
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars (delete x \<Gamma>)) (\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<N>\<lbrakk> e \<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'\<^esub>))"
-    by (rule iterative_UHSem', simp)
+    by (rule iterative_HSem', simp)
   finally
   have "fmap_lookup_bot (\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>) \<sqsubseteq> fmap_lookup_bot ..." by (rule ssubst) (rule below_refl)
   also have "\<dots> \<sqsubseteq> fmap_lookup_bot (fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars \<Delta>)]\<^esub>)
@@ -135,7 +135,7 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
     apply simp
     apply (rule below_trans[OF Variable.hyps(3)])
     using 2 apply auto[1]
-    apply (erule ESem_mono_relaxed[OF UHSem_monofun_relaxed])
+    apply (erule ESem_mono_relaxed[OF HSem_monofun_relaxed])
 
     apply (case_tac "xa \<in> heapVars \<Gamma>")
     apply (subgoal_tac "xa \<in> heapVars \<Delta>")
@@ -149,7 +149,7 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
     apply (drule_tac  x = xa in fun_belowD) back
     apply simp
     apply (erule below_trans)
-    apply (drule UHSem_monofun_relaxed)
+    apply (drule HSem_monofun_relaxed)
     apply (drule_tac  x = xa in fun_belowD)
     apply simp
 
@@ -162,9 +162,9 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
     done
   also have "\<dots> = fmap_lookup_bot (fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars \<Delta>)]\<^esub>)
     (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars \<Delta>) (\<N>\<lbrace>\<Delta>\<rbrace>\<rho>'))( x f\<mapsto> \<N>\<lbrakk> z \<rbrakk>\<^bsub>\<rho>'\<^esub>)))"
-    by (rule arg_cong[OF iterative_UHSem'[symmetric], OF `x \<notin> heapVars \<Delta>`])
+    by (rule arg_cong[OF iterative_HSem'[symmetric], OF `x \<notin> heapVars \<Delta>`])
   also have "\<dots> = fmap_lookup_bot (\<N>\<lbrace>(x,z) # \<Delta>\<rbrace>\<rho>)"
-    by (rule arg_cong[OF iterative_UHSem[symmetric], OF `x \<notin> heapVars \<Delta>`])
+    by (rule arg_cong[OF iterative_HSem[symmetric], OF `x \<notin> heapVars \<Delta>`])
   finally
   show le: ?case.
 
@@ -179,7 +179,7 @@ case (Variable x e \<Gamma> L \<Delta> z \<rho>)
   also have "\<dots> \<sqsubseteq> \<N>\<lbrakk> z \<rbrakk>\<^bsub>\<N>\<lbrace>(x, z) # \<Delta>\<rbrace>\<rho>\<^esub>"
     apply (rule cfun_belowI)
     apply (case_tac xa)
-    apply (auto simp add: the_lookup_UHSem_heap  monofun_cfun_arg[OF below_C])
+    apply (auto simp add: the_lookup_HSem_heap  monofun_cfun_arg[OF below_C])
     done
   finally
   show ?case.
@@ -215,7 +215,7 @@ case (Let as \<Gamma> L body \<Delta> z \<rho>)
     apply (simp_all add: monofun_cfun_arg[OF below_C])
     done
   also have "\<dots> =  \<N>\<lbrakk> body \<rbrakk>\<^bsub>\<N>\<lbrace>asToHeap as @ \<Gamma>\<rbrace>\<rho>\<^esub>"
-    by (rule arg_cong[OF UHSem_merge[OF f1]])
+    by (rule arg_cong[OF HSem_merge[OF f1]])
   also have "\<dots> \<sqsubseteq>  \<N>\<lbrakk> z \<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>"
     by (rule Let.hyps(4)[OF hyp])
   finally
@@ -225,10 +225,10 @@ case (Let as \<Gamma> L body \<Delta> z \<rho>)
   have "fmap_lookup_bot (\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>) \<sqsubseteq> fmap_lookup_bot (\<N>\<lbrace>asToHeap as\<rbrace>(\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>))"
     apply (rule fun_belowI)
     apply (case_tac "x \<in> heapVars (asToHeap as)")
-    apply (auto simp add: the_lookup_UHSem_heap the_lookup_UHSem_other * fmap_lookup_bot_UHSem_other)
+    apply (auto simp add: the_lookup_HSem_heap the_lookup_HSem_other * fmap_lookup_bot_HSem_other)
     done
   also have "\<dots> = fmap_lookup_bot (\<N>\<lbrace>asToHeap as @ \<Gamma>\<rbrace>\<rho>)"
-    by (rule arg_cong[OF UHSem_merge[OF f1]])
+    by (rule arg_cong[OF HSem_merge[OF f1]])
   also have "\<dots> \<sqsubseteq> fmap_lookup_bot (\<N>\<lbrace>\<Delta>\<rbrace>\<rho>)"
     by (rule Let.hyps(5)[OF hyp])
   finally
