@@ -131,23 +131,23 @@ is constructed as a pointed chain-complete partial order from this equation by t
 The type of semantic environments, @{typ Env}, is an abbreviation for @{typ "var f\<rightharpoonup> Value"}.
 
 The semantics of an expression @{term_type "e :: exp"} in an environment @{term "\<rho>"}@{text "::"}@{typ Env} is 
-written \mbox{@{term_type "Denotational.ESem e \<rho>"}} and defined by the following equations:
+written \mbox{@{term_type "Rep_cfun (Denotational.ESem e) \<rho>"}} and defined by the following equations:
 \begin{alignstar}
-@{thm (lhs) Denotational.ESem.simps(1)[no_vars]} & = @{thm (rhs) Denotational.ESem.simps(1)[no_vars]} && \text{if } @{thm (prem 1) Denotational.ESem.simps(1)[no_vars]} \\
+@{thm (lhs) Denotational.ESem.simps(1)[no_vars]} & = @{thm (rhs) Denotational.ESem.simps(1)[no_vars]} \\
 @{thm (lhs) Denotational.ESem.simps(2)[no_vars]} & = @{thm (rhs) Denotational.ESem.simps(2)[no_vars]} \\
 @{thm (lhs) Denotational.ESem.simps(3)[no_vars]} & = @{thm (rhs) Denotational.ESem.simps(3)[no_vars]} \\
-@{thm (lhs) Denotational.ESem.simps(4)[no_vars]} & = @{thm (rhs) Denotational.ESem.simps(4)[no_vars]} && \text{if } @{thm (prem 1) Denotational.ESem.simps(4)[no_vars]}.
+@{thm (lhs) Denotational.ESem.simps(4)[no_vars]} & = @{thm (rhs) Denotational.ESem.simps(4)[no_vars]}.
 \end{alignstar}
 *}
 
 text {*
-We study two alternatives for the semantics @{term "Denotational.UHSem \<Gamma> \<rho>"}@{text "::"}@{typ Env} of a
+We study two alternatives for the semantics @{term "Rep_cfun (Denotational.HSem \<Gamma>) \<rho>"}@{text "::"}@{typ Env} of a
 heap @{term "\<Gamma> :: heap"}@{text "::"}@{typ heap}
 in an environment @{term "\<rho>"}@{text "::"}@{typ Env}. As this is used in denotations of a Let expression,
 we have also two expression semantics. Their defining equations are, besides the choice of heap semantics, identical.
 
 The first involves a least upper bound ($\sqcup$) and is defined by the recursive equation
-\[ @{thm (concl) Denotational.UHSem_eq[no_vars]}, \]
+\[ @{thm (concl) Denotational.HSem_eq[no_vars]}, \]
 where the set in the index position indicates the expansion of the map to the given domain and
 @{term "heapToEnv:: heap \<Rightarrow> (exp \<Rightarrow> Value) \<Rightarrow> Env"}@{text "::"}@{typ "heap \<Rightarrow> (exp \<Rightarrow> Value) \<Rightarrow> Env"}
 maps the given expression semantics over the heap, producing a semantic environment.

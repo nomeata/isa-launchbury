@@ -47,7 +47,7 @@ proof-
 
     obtain b' :: var where fresh: "atom b' \<sharp> (b,\<rho>)" by (rule obtain_fresh)
     hence "b' \<noteq> b" "atom b' \<sharp> \<rho>" and [simp]: "b' \<notin> fdom \<rho>"
-      by (auto simp add: fresh_Pair fresh_at_base sharp_Env)
+      by (auto simp add: fresh_Pair fresh_at_base fresh_fmap_pure)
 
     have "let b be Var b in Var b = let b' be Var b' in Var b'"
       apply simp
