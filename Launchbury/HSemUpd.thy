@@ -558,17 +558,15 @@ subsubsection {* Binding more variables increases knowledge *}
   subsubsection {* The semantics of let only adds new bindings *}
   
   lemma HSem_less:
-    assumes fresh: "atom ` heapVars \<Gamma> \<sharp>* (\<Delta>, \<rho>)"
+    assumes fresh: "atom ` heapVars \<Gamma> \<sharp>* \<Delta>"
+    assumes distinct: "heapVars \<Gamma> \<inter> fdom (\<lbrace>\<Delta>\<rbrace>\<rho>) = {}"
     shows "\<lbrace>\<Delta>\<rbrace>\<rho> \<le> \<lbrace>\<Gamma>@\<Delta>\<rbrace>\<rho>"
   proof-
-    have "heapVars \<Gamma> \<inter> fdom (\<lbrace>\<Delta>\<rbrace>\<rho>) = {}"
-      using fresh
-      by (auto dest: fresh_distinct simp add: sharp_star_Env' fresh_star_Pair)
-    hence "\<lbrace>\<Delta>\<rbrace>\<rho> \<le> \<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>"
-      by (rule HSem_disjoint_less)
+    have "\<lbrace>\<Delta>\<rbrace>\<rho> \<le> \<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>"
+      by (rule HSem_disjoint_less[OF distinct])
     also have "\<dots> =  \<lbrace>\<Gamma>@\<Delta>\<rbrace>\<rho>"
       apply (rule HSem_merge)
-      using fresh by (simp add: fresh_star_Pair)
+      using fresh by simp
     finally
     show ?thesis.
   qed

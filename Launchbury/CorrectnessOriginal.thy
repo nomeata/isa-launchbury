@@ -178,18 +178,13 @@ case (Let as \<Gamma> L body \<Delta> z)
     have "a \<notin> fdom \<rho>" and "a \<notin> heapVars \<Gamma>"
       using 1 by auto
   }
-  hence "set (bn as) \<sharp>* \<rho>"
-    apply (subst fresh_star_def)
-    apply (subst set_bn_to_atom_heapVars)
-    apply (auto simp add: fresh_fmap_pure)
-    done
+  hence distinct: "heapVars (asToHeap as) \<inter> fdom (\<lbrace>\<Gamma>\<rbrace>\<rho>) = {}" by auto
   
   have hyp: "fdom \<rho> - heapVars (asToHeap as @ \<Gamma>) \<subseteq> set L"
     using 1 by auto
 
-  have f1: "atom ` heapVars (asToHeap as) \<sharp>* (\<Gamma>, \<rho>)"
-    using Let(1) `_ \<sharp>* \<rho>`
-    by (simp add: set_bn_to_atom_heapVars fresh_star_Pair)
+  have f1: "atom ` heapVars (asToHeap as) \<sharp>* \<Gamma>"
+    using Let(1) by (simp add: set_bn_to_atom_heapVars)
 
   have "\<lbrakk> Let as body \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk> body \<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
     by simp
@@ -202,7 +197,7 @@ case (Let as \<Gamma> L body \<Delta> z)
   show ?case.
 
   have "\<lbrace>\<Gamma>\<rbrace>\<rho> \<le> \<lbrace>asToHeap as @ \<Gamma>\<rbrace>\<rho>"
-    by (rule HSem_less[OF f1])
+    by (rule HSem_less[OF f1 distinct])
   also have "\<dots> \<le> \<lbrace>\<Delta>\<rbrace>\<rho>"
     by (rule Let.hyps(5)[OF hyp])
   finally

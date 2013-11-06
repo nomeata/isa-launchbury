@@ -5,6 +5,10 @@ begin
 (* TODO: Replace this by a lemma showing that the equation for Let with update-based semantics 
   also holds for HSem (thus showing that either definition would be the equivalent)
 
+lemma sharp_star_Env: "set (bn as) \<sharp>* (\<rho> :: (var f\<rightharpoonup> 'b::{pure_cpo})) \<longleftrightarrow> (\<forall> x \<in> heapVars (asToHeap as) . x \<notin> fdom \<rho>)"
+  by(induct rule:asToHeap.induct, auto simp add: fresh_star_def exp_assn.bn_defs fresh_fmap_pure)
+
+
 theorem HSem_join_update:
   "DenotationalUpd.ESem e \<rho> = Denotational.ESem e \<rho>" and "\<And> e. e \<in> snd ` set (asToHeap as) \<Longrightarrow> DenotationalUpd.ESem e \<rho> = Denotational.ESem e \<rho>"
 proof(nominal_induct e and  avoiding: \<rho>  rule:exp_assn.strong_induct)
