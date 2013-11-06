@@ -23,7 +23,7 @@ next
   case (Let as e)
 
   have "\<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub> = \<lbrakk>e\<rbrakk>\<^bsub>(\<lbrace>asToHeap as\<rbrace>\<rho>) f|` (fv as \<union> fv e)\<^esub>"
-    by (subst (1 2) Let(2)) (simp add:  sup_commute)
+    by (subst (1 2) Let(2)) (simp add: sup_commute)
   also
   have "fv (asToHeap as) \<subseteq> fv as \<union> fv e" using fv_asToHeap by auto
   hence "(\<lbrace>asToHeap as\<rbrace>\<rho>) f|` (fv as \<union> fv e) = \<lbrace>asToHeap as\<rbrace>(\<rho> f|` (fv as \<union> fv e))"
@@ -35,12 +35,12 @@ next
   show ?case by simp
 qed
 
-sublocale has_ignore_fresh_ESem AESem
+sublocale has_ignore_fresh_ESem ESem
   by default (rule fv_supp_exp, rule ESem_considers_fv')
 
-subsection {* Nicer equations for CESem, without freshness requirements *}
+subsection {* Nicer equations for ESem, without freshness requirements *}
 
-lemma AESem_Lam[simp]: "\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub> = tick \<cdot> (Fn \<cdot> (\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>))"
+lemma ESem_Lam[simp]: "\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub> = tick \<cdot> (Fn \<cdot> (\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>))"
 proof-
   have *: "\<And> v. ((\<rho> f|` (fv e - {x}))(x f\<mapsto> v)) f|` fv e = (\<rho>(x f\<mapsto> v)) f|` fv e"
     by rule auto
@@ -59,9 +59,9 @@ proof-
     unfolding  ESem_considers_fv[symmetric]..
   finally show ?thesis.
 qed
-declare AESem.simps(1)[simp del]
+declare ESem.simps(1)[simp del]
 
-lemma CESem_Let[simp]: "\<lbrakk>Let as body\<rbrakk>\<^bsub>\<rho>\<^esub> = tick \<cdot> (\<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub>)"
+lemma ESem_Let[simp]: "\<lbrakk>Let as body\<rbrakk>\<^bsub>\<rho>\<^esub> = tick \<cdot> (\<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub>)"
 proof-
   have "\<lbrakk> Let as body \<rbrakk>\<^bsub>\<rho>\<^esub> = tick \<cdot> (\<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>(\<rho> f|` fv (Let as body))\<^esub>)" 
     by simp
@@ -73,7 +73,7 @@ proof-
     by (rule ESem_fresh_cong) auto
   finally show ?thesis.
 qed
-declare AESem.simps(4)[simp del]
+declare ESem.simps(4)[simp del]
 
 
 subsubsection {* Denotation of Substitution *}

@@ -32,9 +32,6 @@ lemma fdom_fmap_C_restr[simp]: "fdom (fmap_C_restr\<cdot>r\<cdot>\<rho>) = fdom 
 lemma fdom_fmap_C_restrD: "fmap_C_restr\<cdot>r\<cdot>\<rho> = fmap_C_restr\<cdot>r'\<cdot>\<rho>' \<Longrightarrow>  fdom \<rho> = fdom \<rho>'"
   by (metis fdom_fmap_C_restr)
 
-lemma fmap_C_restr_heapToEnv[simp]: "fmap_C_restr\<cdot>r\<cdot>(heapToEnv \<Gamma> ESem) = heapToEnv \<Gamma> (\<lambda> x. C_restr\<cdot>r\<cdot>(ESem x))"
-  by (auto simp add: lookupHeapToEnv)
-
 lemma fmap_C_restr_fmap_expand[simp]: "fmap_C_restr\<cdot>r\<cdot>(\<rho>\<^bsub>[S]\<^esub>) = (fmap_C_restr\<cdot>r\<cdot>\<rho>)\<^bsub>[S]\<^esub>"
   apply (cases "finite S")
   apply (rule fmap_eqI)
@@ -262,7 +259,7 @@ proof-
   show ?thesis.
 qed
 
-lemma CESem_Lam_not_bot[simp]:
+lemma ESem_Lam_not_bot[simp]:
   assumes  "(\<N>\<lbrakk> Lam [z]. e \<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>c \<noteq> \<bottom>"
   shows "(\<N>\<lbrakk> Lam [z]. e \<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>c \<sqsubseteq> CFn\<cdot>(\<Lambda> v. \<N>\<lbrakk>e\<rbrakk>\<^bsub>\<sigma>(z f\<mapsto> v)\<^esub>)"
 proof-
@@ -338,7 +335,7 @@ next
     also have "\<dots> \<sqsubseteq> ((\<N>\<lbrakk>Lam [y]. e''\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn (\<N>\<lbrace>\<Delta>\<rbrace> f!\<^sub>\<bottom> x))\<cdot>C\<^bsup>n\<^esup>"
       by (intro monofun_cfun_arg monofun_cfun_fun fun_belowD[OF correct2])
     also have "\<dots> \<sqsubseteq> (CFn\<cdot>(\<Lambda> v. \<N>\<lbrakk>e''\<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>)(y f\<mapsto> v)\<^esub>) \<down>CFn (\<N>\<lbrace>\<Delta>\<rbrace> f!\<^sub>\<bottom> x))\<cdot>C\<^bsup>n\<^esup>"
-      by (rule cont2monofunE[OF _ CESem_Lam_not_bot[OF lam_not_bot]]) simp
+      by (rule cont2monofunE[OF _ ESem_Lam_not_bot[OF lam_not_bot]]) simp
     also have "\<dots> = (\<N>\<lbrakk>e''\<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>)(y f\<mapsto> (\<N>\<lbrace>\<Delta>\<rbrace> f!\<^sub>\<bottom> x))\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
       using  `y \<notin> heapVars \<Delta>`  by (simp add: fresh_fmap_pure)
     also have "\<dots> = (\<N>\<lbrakk>e''[y::=x]\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
