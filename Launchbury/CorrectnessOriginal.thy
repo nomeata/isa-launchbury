@@ -57,9 +57,8 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e')
   finally
   show ?case.
   
-  case 2
-  show ?case using Application hyp1 hyp2
-    by (blast intro: order_trans)
+  from Application(10)[OF hyp1] Application(13)[OF hyp2]
+  show "\<lbrace>\<Gamma>\<rbrace>\<rho> \<le> \<lbrace>\<Theta>\<rbrace>\<rho>" by (rule order_trans) 
 next
 case (Variable x e \<Gamma> L \<Delta> z)
   hence [simp]:"x \<in> heapVars \<Gamma>"

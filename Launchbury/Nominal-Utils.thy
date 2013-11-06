@@ -201,5 +201,12 @@ lemma fv_at_base[simp]: "fv a = {a::'a::at_base}"
   by (auto simp add: fv_def supp_at_base)
 
 
+lemma supp_set_elem_finite:
+  assumes "finite S"
+  and "(m::'a::fs) \<in> S"
+  and "y \<in> supp m"
+  shows "y \<in> supp S"
+  using assms supp_of_finite_sets
+  by auto
 
 end

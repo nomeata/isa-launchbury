@@ -15,6 +15,9 @@ begin
   done
 end
 
+(*
+Not needed any more... time to switch to "var \<rightarrow> Value"
+
 subsubsection {* Finite maps have finite support *}
 
 lemma map_between_finite:
@@ -38,13 +41,6 @@ qed
 lemma perm_finite: "finite (dom m2) \<Longrightarrow> finite {m1. dom m1 = dom m2 \<and> ran m1 = ran m2}"
   by (rule map_between_finite[OF _ finite_range])
 
-lemma supp_set_elem_finite:
-  assumes "finite S"
-  and "(m::'a::fs) \<in> S"
-  and "y \<in> supp m"
-  shows "y \<in> supp S"
-  using assms supp_of_finite_sets
-  by auto
 
 lemma supp_map_union:
   assumes "finite (dom (m:: 'a::fs \<rightharpoonup> 'b::fs))"
@@ -152,8 +148,7 @@ lemma supp_fmap_transfer[transfer_rule]:
 lemma supp_fmap:
   "supp (m:: 'a::fs f\<rightharpoonup> 'b::fs) = (supp (fdom m) \<union> supp (fran m))"
 by transfer(erule supp_map_union)
-(*
-Not needed any more... time to switch to "var \<rightarrow> Value"
+
 instance "fmap" :: (fs,fs) fs
   by (default, auto intro: finite_sets_supp simp add: supp_fmap)
 *)
@@ -235,6 +230,7 @@ lemma fmap_map_eqvt[eqvt]:
   "\<pi> \<bullet> fmap_map f m = fmap_map (\<pi> \<bullet> f) (\<pi> \<bullet> m)"
 by transfer simp
 
+(*
 subsubsection {* Freshness and support *}
 
 lemma supp_fmap_pure:
@@ -242,7 +238,6 @@ lemma supp_fmap_pure:
   shows "supp \<rho> = supp (fdom \<rho>)"
   by (metis supp_fmap Un_empty_right pure_supp)
 
-(*
 
 lemma fresh_fmap_pure:
   fixes \<rho> :: "'a::at_base f\<rightharpoonup> 'b::pure"
@@ -323,25 +318,20 @@ lemma fresh_fmap_add_subset:
 
 subsubsection {* Permutation and restriction *}
 
-(* This seems to be the only remaining lemma that talks about the support of a fmap... *)
 lemma fmap_restr_perm:
   fixes \<rho> :: "'a::at f\<rightharpoonup> 'b::pure"
   assumes "supp p \<sharp>* S" and [simp]: "finite S"
   shows "(p \<bullet> \<rho>) f|` S = \<rho> f|` S"
-proof-
-  have "supp p \<sharp>* atom ` S"
-    using assms  by (metis finite_imageI fresh_star_supp_conv supp_finite_atom_set supp_finite_set_at_base)
-  hence "supp p \<inter> atom ` S = {}"
-    by (rule iffD1[OF atom_fresh_star_disjoint, rotated]) simp
-  hence *: "supp p \<sharp>* \<rho> f|` S" by (auto simp add: fresh_star_def fresh_def supp_fmap_pure supp_finite_set_at_base)
-
-  have "(p \<bullet> \<rho>) f|` S  = (p \<bullet> \<rho>) f|` (p \<bullet> S)"
-    unfolding  perm_supp_eq[OF assms(1)]..
-  also have "\<dots> = p \<bullet> (\<rho> f|` S)" by simp
-  also have "\<dots> = \<rho> f|` S"
-    by (rule perm_supp_eq[OF *])
-  finally show ?thesis.
-qed
+using assms
+apply transfer
+apply rule
+apply (case_tac "x \<in> S")
+apply (simp)
+apply (subst permute_fun_def)
+apply (simp add: permute_pure)
+apply (subst perm_supp_eq)
+apply (auto simp add:perm_supp_eq supp_minus_perm fresh_star_def fresh_def supp_set_elem_finite)
+done
 
 lemma fmap_restr_flip:
   fixes \<rho> :: "'a::at f\<rightharpoonup> 'b::pure"
