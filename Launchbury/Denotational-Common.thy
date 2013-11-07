@@ -1,5 +1,5 @@
 theory "Denotational-Common"
-  imports Terms Heap "Nominal-Utils" "FMap-Nominal-HOLCF"
+  imports Terms Heap "Nominal-Utils" "Env-Nominal-HOLCF"
 begin
 
 default_sort cpo

@@ -33,11 +33,10 @@ lemma fdom_fmap_C_restrD: "fmap_C_restr\<cdot>r\<cdot>\<rho> = fmap_C_restr\<cdo
   by (metis fdom_fmap_C_restr)
 
 lemma fmap_C_restr_fmap_expand[simp]: "fmap_C_restr\<cdot>r\<cdot>(\<rho>\<^bsub>[S]\<^esub>) = (fmap_C_restr\<cdot>r\<cdot>\<rho>)\<^bsub>[S]\<^esub>"
-  apply (cases "finite S")
   apply (rule fmap_eqI)
-  apply auto
+  apply simp
   apply (case_tac "x \<in> fdom \<rho>")
-  apply (auto simp add: fmap_expand_nonfinite)
+  apply auto
   done
 
 lemma fmap_C_restr_fempty[simp]: "fmap_C_restr\<cdot>r\<cdot>f\<emptyset> = f\<emptyset>"

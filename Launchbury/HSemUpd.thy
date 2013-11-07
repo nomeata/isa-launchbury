@@ -1,5 +1,5 @@
 theory HSemUpd
-  imports "HeapToEnv" "DistinctVars-Nominal" "HOLCF-Set-Nominal" "FMap-Nominal-HOLCF" "HasESem"
+  imports "HeapToEnv" "DistinctVars-Nominal" "HOLCF-Set-Nominal" "HasESem"
 begin
 
 subsubsection {* A locale for heap semantics, abstract in the expression semantics *}

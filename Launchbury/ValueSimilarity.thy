@@ -415,7 +415,7 @@ lemma fmap_similar_adm: "adm (\<lambda>x. fst x f\<triangleleft>\<triangleright>
   done
 
 lemma fmap_similar_fmap_bottom[simp]: "f\<emptyset>\<^bsub>[S]\<^esub> f\<triangleleft>\<triangleright> f\<emptyset>\<^bsub>[S]\<^esub>"
-  by (cases "finite S") (auto simp add: fmap_expand_nonfinite)
+  by auto
 
 lemma fmap_similarE[elim]:
   assumes "m f\<triangleleft>\<triangleright> m'"

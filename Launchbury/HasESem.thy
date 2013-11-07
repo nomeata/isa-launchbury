@@ -1,5 +1,5 @@
 theory HasESem
-imports "Nominal-HOLCF" "FMap-HOLCF" "HOLCF-Join"
+imports "Nominal-HOLCF" "Env-HOLCF" "HOLCF-Join"
 begin
 
 locale has_ESem =
