@@ -24,6 +24,8 @@ instance
   done
 end
 
+instance CValue' :: pcpo_pt by default
+
 
 instantiation cfun :: (cpo,"{bifinite,cont_binary_meet}") Finite_Meet_cpo begin
   fixrec cfun_meet :: "('a \<rightarrow> 'b) \<rightarrow> ('a \<rightarrow> 'b) \<rightarrow> ('a \<rightarrow> 'b)"

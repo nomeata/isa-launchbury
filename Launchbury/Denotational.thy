@@ -12,7 +12,7 @@ abbreviation HSem_fempty  ("\<lbrace>_\<rbrace>"  [60] 60) where "\<lbrace>\<Gam
 subsubsection {* Replacing subexpressions by variables *}
 
 lemma HSem_subst_var_app:
-  assumes fresh: "atom n \<sharp> x" and [simp]: "n \<notin> fdom \<rho>"
+  assumes fresh: "atom n \<sharp> x"
   shows "\<lbrace>(x, App (Var n) y) # (n, e) # \<Gamma>\<rbrace>\<rho> = \<lbrace>(x, App e y) # (n, e) # \<Gamma>\<rbrace>\<rho> "
 proof(rule HSem_subst_expr)
   from fresh have [simp]: "n \<noteq> x" by (simp add: fresh_at_base)
@@ -36,7 +36,7 @@ proof(rule HSem_subst_expr)
 qed
 
 lemma HSem_subst_var_var:
-  assumes fresh: "atom n \<sharp> x" and [simp]: "n \<notin> fdom \<rho>"
+  assumes fresh: "atom n \<sharp> x"
   shows "\<lbrace>(x, Var n) # (n, e) # \<Gamma>\<rbrace>\<rho> = \<lbrace>(x, e) # (n, e) # \<Gamma>\<rbrace>\<rho> "
 proof(rule HSem_subst_expr)
   from fresh have [simp]: "n \<noteq> x" by (simp add: fresh_at_base)
@@ -70,8 +70,10 @@ the only case required later on, and easier to prove.
 lemma HSem_unfold_let:
   assumes distinct: "distinctVars ((x, body) # \<Gamma>)"
   assumes fresh: "set (bn as) \<sharp>* (x, Let as body, \<Gamma>)"
-  shows "\<lbrace>(x, Let as body) # \<Gamma>\<rbrace> \<le> \<lbrace>(x, body) # asToHeap as @ \<Gamma>\<rbrace>"
-proof (rule iffD2[OF fmap_less_restrict])
+  shows "\<lbrace>(x, Let as body) # \<Gamma>\<rbrace> = (\<lbrace>(x, body) # asToHeap as @ \<Gamma>\<rbrace>)f|` (insert x (heapVars \<Gamma>))"
+sorry
+(*
+proof-
   from fresh
   have fresh_Gamma: "atom ` heapVars (asToHeap as) \<sharp>* \<Gamma>"
     by (metis fresh_star_Pair set_bn_to_atom_heapVars)
@@ -184,5 +186,7 @@ case goal1
   thus ?case
     by (rule subst[where s = "insert q Q", standard, rotated], auto)
 qed
+*)
+
 
 end

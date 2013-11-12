@@ -15,6 +15,13 @@ class discr_pt =
   discrete_cpo + 
   pt
 
+class pcpo_pt = 
+  cont_pt + 
+  pcpo
+
+instance pcpo_pt \<subseteq> cont_pt
+ by (default, auto intro: perm_cont)
+
 instance discr_pt \<subseteq> cont_pt
  by (default, auto)
 
@@ -118,5 +125,26 @@ instance "cfun" :: (pure_cpo, pure_cpo) pure_cpo
   apply default
   apply (auto  simp add: permute_cfun_def permute_pure Cfun.cfun.Rep_cfun_inverse)
   done
+
+instance "cfun" :: (cont_pt, pcpo_pt) pcpo_pt
+  by (default)
+
+
+lemma adm_subst2: "cont f \<Longrightarrow> cont g \<Longrightarrow> adm (\<lambda>x. f (fst x) = g (snd x))"
+  apply (rule admI)
+  apply (simp add:
+      cont2contlubE[where f = f]  cont2contlubE[where f = g]
+      cont2contlubE[where f = snd]  cont2contlubE[where f = fst]
+      )
+  done
+
+lemma fix_eqvt[eqvt]:
+  "\<pi> \<bullet> fix = (fix :: ('a \<rightarrow> 'a) \<rightarrow> 'a::{cont_pt,pcpo})"
+apply (rule cfun_eqI)
+apply (subst permute_cfun_def)
+apply simp
+apply (rule parallel_fix_ind[OF adm_subst2])
+apply (auto simp add: permute_self)
+done
 
 end

@@ -7,7 +7,7 @@ theorem correctness:
   assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
   and     "distinctVars \<Gamma>"
   and     "fdom \<rho> - heapVars \<Gamma> \<subseteq> set L"
-  shows   "\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> \<sqsubseteq> \<N>\<lbrakk>z\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>" and "fmap_lookup_bot (\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>) \<sqsubseteq> fmap_lookup_bot (\<N>\<lbrace>\<Delta>\<rbrace>\<rho>)"
+  shows   "\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> \<sqsubseteq> \<N>\<lbrakk>z\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>" and "\<N>\<lbrace>\<Gamma>\<rbrace>\<rho> \<sqsubseteq> \<N>\<lbrace>\<Delta>\<rbrace>\<rho>"
   using assms
 proof(nominal_induct arbitrary: \<rho> rule:reds_distinct_strong_ind)
 case (Lambda \<Gamma> x e L)
@@ -23,17 +23,17 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e')
     using 1 reds_doesnt_forget[OF distinct_redsD1[OF Application.hyps(8)]]
     by auto
 
-  have "\<N>\<lbrakk> App e x \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = (\<Lambda> (C\<cdot>r). ((\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>) \<cdot> r \<down>CFn C_restr\<cdot>r\<cdot>(\<N>\<lbrace>\<Gamma>\<rbrace>\<rho> f!\<^sub>\<bottom> x)) \<cdot> r)"
+  have "\<N>\<lbrakk> App e x \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = (\<Lambda> (C\<cdot>r). ((\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>) \<cdot> r \<down>CFn C_restr\<cdot>r\<cdot>(\<N>\<lbrace>\<Gamma>\<rbrace>\<rho> f! x)) \<cdot> r)"
     by simp
-  also have "\<dots> \<sqsubseteq> (\<Lambda> (C\<cdot>r). ((\<N>\<lbrakk> Lam [y]. e' \<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>) \<cdot> r \<down>CFn C_restr\<cdot>r\<cdot>(\<N>\<lbrace>\<Gamma>\<rbrace>\<rho> f!\<^sub>\<bottom> x)) \<cdot> r)"
+  also have "\<dots> \<sqsubseteq> (\<Lambda> (C\<cdot>r). ((\<N>\<lbrakk> Lam [y]. e' \<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>) \<cdot> r \<down>CFn C_restr\<cdot>r\<cdot>(\<N>\<lbrace>\<Gamma>\<rbrace>\<rho> f! x)) \<cdot> r)"
     using Application.hyps(9)[OF hyp1]
     by (fastforce intro: monofun_cfun_arg monofun_cfun_fun monofun_LAM)
-  also have "\<dots> \<sqsubseteq> (\<Lambda> (C\<cdot>r). ((\<N>\<lbrakk> Lam [y]. e' \<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>) \<cdot> r \<down>CFn C_restr\<cdot>r\<cdot>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho> f!\<^sub>\<bottom> x)) \<cdot> r)"
-    using fun_belowD[OF Application.hyps(10)[OF hyp1]]
+  also have "\<dots> \<sqsubseteq> (\<Lambda> (C\<cdot>r). ((\<N>\<lbrakk> Lam [y]. e' \<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>) \<cdot> r \<down>CFn C_restr\<cdot>r\<cdot>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho> f! x)) \<cdot> r)"
+    using fmap_belowE[OF Application.hyps(10)[OF hyp1]]
     by (fastforce intro: monofun_cfun_arg monofun_cfun_fun monofun_LAM)
-  also have "\<dots> = (\<Lambda> (C\<cdot>r). (((\<Lambda> (C \<cdot> r). CFn \<cdot> (\<Lambda> v. C_restr\<cdot>r\<cdot>(\<N>\<lbrakk> e' \<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho>)(y f\<mapsto> C_restr\<cdot>r\<cdot>v)\<^esub>)))) \<cdot> r \<down>CFn C_restr\<cdot>r\<cdot>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho> f!\<^sub>\<bottom> x)) \<cdot> r)"
+  also have "\<dots> = (\<Lambda> (C\<cdot>r). (((\<Lambda> (C \<cdot> r). CFn \<cdot> (\<Lambda> v. C_restr\<cdot>r\<cdot>(\<N>\<lbrakk> e' \<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho>)(y f\<mapsto> C_restr\<cdot>r\<cdot>v)\<^esub>)))) \<cdot> r \<down>CFn C_restr\<cdot>r\<cdot>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho> f! x)) \<cdot> r)"
     by simp
-  also have "\<dots> \<sqsubseteq> (\<Lambda> (C\<cdot>r). ((CFn \<cdot> (\<Lambda> v. C_restr\<cdot>r\<cdot>(\<N>\<lbrakk> e' \<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho>)(y f\<mapsto> C_restr\<cdot>r\<cdot>v)\<^esub>))) \<down>CFn C_restr\<cdot>r\<cdot>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho> f!\<^sub>\<bottom> x)) \<cdot> r)"
+  also have "\<dots> \<sqsubseteq> (\<Lambda> (C\<cdot>r). ((CFn \<cdot> (\<Lambda> v. C_restr\<cdot>r\<cdot>(\<N>\<lbrakk> e' \<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho>)(y f\<mapsto> C_restr\<cdot>r\<cdot>v)\<^esub>))) \<down>CFn C_restr\<cdot>r\<cdot>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho> f! x)) \<cdot> r)"
     apply (rule cfun_belowI)
     apply (case_tac xa, simp)
     apply simp
@@ -42,9 +42,9 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e')
     apply (rule monofun_cfun[OF cont2monofunE[OF _ below_C] below_C])
     apply simp
     done
-  also have "\<dots> = (\<Lambda> (C\<cdot>r). (\<N>\<lbrakk> e' \<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho>)(y f\<mapsto> C_restr\<cdot>r\<cdot>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho> f!\<^sub>\<bottom> x))\<^esub>) \<cdot> r)"
+  also have "\<dots> = (\<Lambda> (C\<cdot>r). (\<N>\<lbrakk> e' \<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho>)(y f\<mapsto> C_restr\<cdot>r\<cdot>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho> f! x))\<^esub>) \<cdot> r)"
     by simp
-  also have "\<dots> \<sqsubseteq> (\<Lambda> (C\<cdot>r). (\<N>\<lbrakk> e' \<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho>)(y f\<mapsto> \<N>\<lbrace>\<Delta>\<rbrace>\<rho> f!\<^sub>\<bottom> x)\<^esub>) \<cdot> r)"
+  also have "\<dots> \<sqsubseteq> (\<Lambda> (C\<cdot>r). (\<N>\<lbrakk> e' \<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho>)(y f\<mapsto> \<N>\<lbrace>\<Delta>\<rbrace>\<rho> f! x)\<^esub>) \<cdot> r)"
     apply (rule cont2monofunE[OF _ _]) back
     apply simp
     apply (rule cfun_belowI)
@@ -60,7 +60,7 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e')
   finally
   show ?case.
   
-  show "op f!\<^sub>\<bottom> (\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>) \<sqsubseteq> op f!\<^sub>\<bottom> (\<N>\<lbrace>\<Theta>\<rbrace>\<rho>)"
+  show "\<N>\<lbrace>\<Gamma>\<rbrace>\<rho> \<sqsubseteq> \<N>\<lbrace>\<Theta>\<rbrace>\<rho>"
     using Application.hyps(10)[OF hyp1] Application.hyps(13)[OF hyp2]
     by (rule below_trans)
 next
@@ -101,36 +101,26 @@ case (Variable x e \<Gamma> L \<Delta> z)
   have [simp]: "(fdom \<rho> - heapVars \<Gamma>) \<inter> (fdom \<rho> \<union> (heapVars \<Gamma> - {x})) = (fdom \<rho> - heapVars \<Gamma>)"
     by auto
 
-  have condGamma: "fix_on_cond {\<rho>' . f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars (delete x \<Gamma>))]\<^esub> \<sqsubseteq> \<rho>'}
-                               (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars (delete x \<Gamma>))]\<^esub>)
-     (\<lambda>a. (\<rho> f++ (\<N>\<lbrace>delete x \<Gamma>\<rbrace>a) f|` heapVars (delete x \<Gamma>))(x f\<mapsto> \<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>a\<^esub>))"
-     thm fix_on_cond_cong[OF iterative_HSem'_cond]
-    by (rule fix_on_cond_cong[OF iterative_HSem'_cond], auto)
-  have condDelta: "fix_on_cond {\<rho>' . f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars \<Delta>)]\<^esub> \<sqsubseteq> \<rho>'}
-                                    (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars \<Delta>)]\<^esub>)
-                                    (\<lambda>\<rho>'. (\<rho> f++ (\<N>\<lbrace>\<Delta>\<rbrace>\<rho>') f|` heapVars \<Delta>)(x f\<mapsto> \<N>\<lbrakk>z\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<rho>'\<^esub>))"
-    using `x \<notin> heapVars \<Delta>` 
-    by (rule fix_on_cond_cong[OF iterative_HSem'_cond]) auto
 
   have "\<N>\<lbrace>\<Gamma>\<rbrace>\<rho> = \<N>\<lbrace>(x,e) # delete x \<Gamma>\<rbrace>\<rho>"
     apply (rule HSem_reorder)
     apply (rule distinctVars_map_of_delete_insert[symmetric, OF Variable(5,1)])
     done
-  also have "\<dots> = fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars (delete x \<Gamma>))]\<^esub>)
-    (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars (delete x \<Gamma>)) (\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>))"
+    thm iterative_HSem
+  also have "\<dots> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>(heapVars (delete x \<Gamma>))\<^esub> (\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>))"
     by (rule iterative_HSem, simp)
-  also have "\<dots> = fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars (delete x \<Gamma>))]\<^esub>)
-    (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars (delete x \<Gamma>)) (\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<N>\<lbrakk> e \<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'\<^esub>))"
+  also have "\<dots> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>(heapVars (delete x \<Gamma>))\<^esub> (\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<N>\<lbrakk> e \<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'\<^esub>))"
     by (rule iterative_HSem', simp)
   finally
-  have "fmap_lookup_bot (\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>) \<sqsubseteq> fmap_lookup_bot ..." by (rule ssubst) (rule below_refl)
-  also have "\<dots> \<sqsubseteq> fmap_lookup_bot (fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars \<Delta>)]\<^esub>)
-                          (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars \<Delta>) (\<N>\<lbrace>\<Delta>\<rbrace>\<rho>' ))( x f\<mapsto> \<N>\<lbrakk> z \<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<rho>'\<^esub>)))"
-    apply (rule parallel_fix_on_ind[OF condGamma condDelta])
-    apply (intro adm_is_adm_on adm_lemmas fmap_lookup_bot_cont cont2cont_fmap_lookup_bot cont2cont_lambda cont2cont)
+  have "\<N>\<lbrace>\<Gamma>\<rbrace>\<rho> \<sqsubseteq>  ..." by (rule ssubst) (rule below_refl)
+  also have "\<dots> \<sqsubseteq> (\<mu> \<rho>'. (\<rho> f++\<^bsub>heapVars \<Delta>\<^esub> (\<N>\<lbrace>\<Delta>\<rbrace>\<rho>'))( x f\<mapsto> \<N>\<lbrakk> z \<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<rho>'\<^esub>))"
+    apply (rule parallel_fix_ind)
+    apply (intro adm_is_adm_on adm_lemmas lookup_cont  cont2cont_lambda cont2cont)
     apply simp
-    apply (rule fun_belowI)
-    apply (case_tac "xa = x")
+    apply (rule fmap_belowI)
+    apply (case_tac "xaa = x")
+    sorry
+    (*
     apply simp
     apply (rule below_trans[OF Variable.hyps(3)])
     using 2 apply auto[1]
@@ -159,10 +149,10 @@ case (Variable x e \<Gamma> L \<Delta> z)
     apply simp
     apply simp
     done
-  also have "\<dots> = fmap_lookup_bot (fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars \<Delta>)]\<^esub>)
-    (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars \<Delta>) (\<N>\<lbrace>\<Delta>\<rbrace>\<rho>'))( x f\<mapsto> \<N>\<lbrakk> z \<rbrakk>\<^bsub>\<rho>'\<^esub>)))"
+    *)
+  also have "\<dots> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>heapVars \<Delta>\<^esub> (\<N>\<lbrace>\<Delta>\<rbrace>\<rho>'))( x f\<mapsto> \<N>\<lbrakk> z \<rbrakk>\<^bsub>\<rho>'\<^esub>))"
     by (rule arg_cong[OF iterative_HSem'[symmetric], OF `x \<notin> heapVars \<Delta>`])
-  also have "\<dots> = fmap_lookup_bot (\<N>\<lbrace>(x,z) # \<Delta>\<rbrace>\<rho>)"
+  also have "\<dots> = \<N>\<lbrace>(x,z) # \<Delta>\<rbrace>\<rho>"
     by (rule arg_cong[OF iterative_HSem[symmetric], OF `x \<notin> heapVars \<Delta>`])
   finally
   show le: ?case.
@@ -171,7 +161,7 @@ case (Variable x e \<Gamma> L \<Delta> z)
     apply (rule cfun_belowI)
     apply (case_tac xa)
     apply simp
-    using fun_belowD[OF le, where x = x]
+    using fmap_belowE[OF le, where x = x]
     apply (simp add: monofun_cfun_fun)
     done
   also have "\<dots> \<sqsubseteq> \<N>\<lbrakk> z \<rbrakk>\<^bsub>\<N>\<lbrace>(x, z) # \<Delta>\<rbrace>\<rho>\<^esub>"
@@ -219,16 +209,17 @@ case (Let as \<Gamma> L body \<Delta> z)
   finally
   show ?case.
 
-  have "fmap_lookup_bot (\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>) \<sqsubseteq> fmap_lookup_bot (\<N>\<lbrace>asToHeap as\<rbrace>(\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>))"
-    apply (rule fun_belowI)
+  have "\<N>\<lbrace>\<Gamma>\<rbrace>\<rho> \<sqsubseteq> \<N>\<lbrace>asToHeap as\<rbrace>(\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>)"
+    apply (rule fmap_belowI)
     apply (case_tac "x \<in> heapVars (asToHeap as)")
-    apply (auto simp add: the_lookup_HSem_heap the_lookup_HSem_other * fmap_lookup_bot_HSem_other)
-    done
-  also have "\<dots> = fmap_lookup_bot (\<N>\<lbrace>asToHeap as @ \<Gamma>\<rbrace>\<rho>)"
+    apply (auto simp add: the_lookup_HSem_heap the_lookup_HSem_other * )
+    (* done *)
+    sorry
+  also have "\<dots> = \<N>\<lbrace>asToHeap as @ \<Gamma>\<rbrace>\<rho>"
     by (rule arg_cong[OF HSem_merge[OF f1]])
-  also have "\<dots> \<sqsubseteq> fmap_lookup_bot (\<N>\<lbrace>\<Delta>\<rbrace>\<rho>)"
+  also have "\<dots> \<sqsubseteq> \<N>\<lbrace>\<Delta>\<rbrace>\<rho>"
     by (rule Let.hyps(5)[OF hyp])
   finally
-  show "op f!\<^sub>\<bottom> (\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>) \<sqsubseteq> op f!\<^sub>\<bottom> (\<N>\<lbrace>\<Delta>\<rbrace>\<rho>)".
+  show "\<N>\<lbrace>\<Gamma>\<rbrace>\<rho> \<sqsubseteq> \<N>\<lbrace>\<Delta>\<rbrace>\<rho>".
 qed
 end

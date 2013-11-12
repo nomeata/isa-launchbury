@@ -30,7 +30,7 @@ next
      by (rule HSem_ignores_fresh_restr'[OF _ Let(1)])
   also
   have "\<lbrace>asToHeap as\<rbrace>(\<rho> f|` (fv as \<union> fv e)) = \<lbrace>asToHeap as\<rbrace>\<rho> f|` (fv as \<union> fv e - heapVars (asToHeap as))"
-    by (rule HSem_fresh_cong) auto
+    by (rule HSem_fresh_cong) (auto simp add: lookup_fmap_restr_eq)
   finally
   show ?case by simp
 qed
@@ -43,12 +43,10 @@ subsection {* Nicer equations for ESem, without freshness requirements *}
 lemma ESem_Lam[simp]: "\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub> = tick \<cdot> (Fn \<cdot> (\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>))"
 proof-
   have *: "\<And> v. ((\<rho> f|` (fv e - {x}))(x f\<mapsto> v)) f|` fv e = (\<rho>(x f\<mapsto> v)) f|` fv e"
-    by rule auto
+    by rule (auto simp add: lookup_fmap_restr_eq lookup_fmap_upd_eq)
 
   have "\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>fmap_delete x \<rho>\<^esub>"
-    apply (rule ESem_ignores_fresh[symmetric, OF fmap_delete_less])
-    apply (auto simp add: fresh_star_def)
-    done
+    by (rule ESem_fresh_cong) simp
   also have "\<dots> = tick \<cdot> (Fn \<cdot> (\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>(\<rho> f|` (fv e - {x}))(x f\<mapsto> v)\<^esub>))"
     by simp
   also have "\<dots> = tick \<cdot> (Fn \<cdot> (\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>((\<rho> f|` (fv e - {x}))(x f\<mapsto> v)) f|` fv e\<^esub>))"
@@ -66,11 +64,11 @@ proof-
   have "\<lbrakk> Let as body \<rbrakk>\<^bsub>\<rho>\<^esub> = tick \<cdot> (\<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>(\<rho> f|` fv (Let as body))\<^esub>)" 
     by simp
   also have "\<lbrace>asToHeap as\<rbrace>(\<rho> f|` fv(Let as body)) = \<lbrace>asToHeap as\<rbrace>(\<rho> f|` (fv as \<union> fv body))" 
-    by (rule HSem_fresh_cong) auto
+    by (rule HSem_fresh_cong) (auto simp add: lookup_fmap_restr_eq)
   also have "\<dots> = (\<lbrace>asToHeap as\<rbrace>\<rho>) f|` (fv as \<union> fv body)"
     by (rule HSem_ignores_fresh_restr'[symmetric, OF subset_trans[OF fv_asToHeap Un_upper1] ESem_considers_fv])
   also have "\<lbrakk>body\<rbrakk>\<^bsub>\<dots>\<^esub> = \<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub>"
-    by (rule ESem_fresh_cong) auto
+    by (rule ESem_fresh_cong) (auto simp add: lookup_fmap_restr_eq)
   finally show ?thesis.
 qed
 declare ESem.simps(4)[simp del]
@@ -78,9 +76,9 @@ declare ESem.simps(4)[simp del]
 
 subsubsection {* Denotation of Substitution *}
 
-lemma ESem_subst_same: "\<rho> f!\<^sub>\<bottom> x = \<rho> f!\<^sub>\<bottom> y \<Longrightarrow>  \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e[x::= y] \<rbrakk>\<^bsub>\<rho>\<^esub>"
+lemma ESem_subst_same: "\<rho> f! x = \<rho> f! y \<Longrightarrow>  \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e[x::= y] \<rbrakk>\<^bsub>\<rho>\<^esub>"
   and 
-  "\<rho> f!\<^sub>\<bottom> x = \<rho> f!\<^sub>\<bottom> y  \<Longrightarrow>  heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>) = heapToEnv (asToHeap as[x::a=y]) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>) "
+  "\<rho> f! x = \<rho> f! y  \<Longrightarrow>  heapToEnv (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>) = heapToEnv (asToHeap as[x::a=y]) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>) "
 proof (nominal_induct e and as avoiding: x y arbitrary: \<rho> and \<rho> rule:exp_assn.strong_induct)
 case Var thus ?case by auto
 next
@@ -95,15 +93,15 @@ case (Let as exp x y \<rho>)
   hence [simp]:"heapVars (asToHeap (as[x::a=y])) = heapVars (asToHeap as)" 
      by (induct as rule: exp_assn.bn_inducts, auto)
 
-  from `\<rho> f!\<^sub>\<bottom> x = \<rho> f!\<^sub>\<bottom> y`
-  have "\<lbrace>asToHeap as\<rbrace>\<rho> f!\<^sub>\<bottom> x = \<lbrace>asToHeap as\<rbrace>\<rho> f!\<^sub>\<bottom> y"
+  from `\<rho> f! x = \<rho> f! y`
+  have "\<lbrace>asToHeap as\<rbrace>\<rho> f! x = \<lbrace>asToHeap as\<rbrace>\<rho> f! y"
     using `x \<notin> heapVars (asToHeap as)` `y \<notin> heapVars (asToHeap as)`
-    by (simp add: fmap_lookup_bot_HSem_other)
+    by (simp add: the_lookup_HSem_other)
   hence "\<lbrakk>exp\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub> = \<lbrakk>exp[x::=y]\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub>"
     by (rule Let)
   moreover
-  from `\<rho> f!\<^sub>\<bottom> x = \<rho> f!\<^sub>\<bottom> y`
-  have "\<lbrace>asToHeap as\<rbrace>\<rho> = \<lbrace>asToHeap as[x::a=y]\<rbrace>\<rho>" and "\<lbrace>asToHeap as\<rbrace>\<rho> f!\<^sub>\<bottom> x = \<lbrace>asToHeap as[x::a=y]\<rbrace>\<rho> f!\<^sub>\<bottom> y"
+  from `\<rho> f! x = \<rho> f! y`
+  have "\<lbrace>asToHeap as\<rbrace>\<rho> = \<lbrace>asToHeap as[x::a=y]\<rbrace>\<rho>" and "\<lbrace>asToHeap as\<rbrace>\<rho> f! x = \<lbrace>asToHeap as[x::a=y]\<rbrace>\<rho> f! y"
     apply (induction rule: parallel_HSem_ind)
     apply simp
     apply simp
@@ -117,8 +115,8 @@ case (Let as exp x y \<rho>)
   show ?case using Let(1,2,3) by (simp add: fresh_star_Pair)
 next
 case (Lam var exp x y \<rho>)
-  from `\<rho> f!\<^sub>\<bottom> x = \<rho> f!\<^sub>\<bottom> y`
-  have "\<And>v. \<rho>(var f\<mapsto> v) f!\<^sub>\<bottom> x = \<rho>(var f\<mapsto> v) f!\<^sub>\<bottom> y"
+  from `\<rho> f! x = \<rho> f! y`
+  have "\<And>v. \<rho>(var f\<mapsto> v) f! x = \<rho>(var f\<mapsto> v) f! y"
     using Lam(1,2) by (simp add: fresh_at_base)
   hence "\<And> v. \<lbrakk>exp\<rbrakk>\<^bsub>\<rho>(var f\<mapsto> v)\<^esub> = \<lbrakk>exp[x::=y]\<rbrakk>\<^bsub>\<rho>(var f\<mapsto> v)\<^esub>"
     by (rule Lam)
@@ -133,29 +131,28 @@ qed
 
 lemma ESem_subst:
   assumes "x \<noteq> y"
-  shows "\<lbrakk> e \<rbrakk>\<^bsub>\<sigma>(x f\<mapsto> (\<sigma> f!\<^sub>\<bottom> y))\<^esub> = \<lbrakk> e[x::= y] \<rbrakk>\<^bsub>\<sigma>\<^esub>"
+  shows "\<lbrakk> e \<rbrakk>\<^bsub>\<sigma>(x f\<mapsto> (\<sigma> f! y))\<^esub> = \<lbrakk> e[x::= y] \<rbrakk>\<^bsub>\<sigma>\<^esub>"
 proof-
-  have [simp]: "insert x (fdom \<sigma>) - (fdom \<sigma> - {x}) = {x}" by auto
+  have [simp]: "x \<notin> fv e[x::=y]" using assms by (auto simp add: fv_def supp_subst supp_at_base dest: set_mp[OF supp_subst]) 
 
-  have "\<lbrakk> e \<rbrakk>\<^bsub>\<sigma>(x f\<mapsto> (\<sigma> f!\<^sub>\<bottom> y))\<^esub> = \<lbrakk> e[x::= y] \<rbrakk>\<^bsub>\<sigma>(x f\<mapsto> (\<sigma> f!\<^sub>\<bottom> y))\<^esub>"
+  have "\<lbrakk> e \<rbrakk>\<^bsub>\<sigma>(x f\<mapsto> (\<sigma> f! y))\<^esub> = \<lbrakk> e[x::= y] \<rbrakk>\<^bsub>\<sigma>(x f\<mapsto> (\<sigma> f! y))\<^esub>"
     using assms(1)
     by (auto intro: ESem_subst_same simp add: Rep_cfun_inverse)
-  also have "\<dots> = \<lbrakk> e[x::= y] \<rbrakk>\<^bsub>fmap_delete x \<sigma>\<^esub>"
-    by (rule ESem_ignores_fresh[symmetric]) (auto simp add: fresh_star_singleton assms(1))
   also have "\<dots> = \<lbrakk> e[x::= y] \<rbrakk>\<^bsub>\<sigma>\<^esub>"
-    by (rule ESem_ignores_fresh[OF fmap_delete_less]) (auto simp add: fresh_star_def assms(1))
+    by (rule ESem_fresh_cong) simp
   finally
   show ?thesis.
 qed
 
+(*
 lemma fmap_restr_monofun_relaxed:
-  "op f!\<^sub>\<bottom> \<rho> \<sqsubseteq> op f!\<^sub>\<bottom>\<rho>' \<Longrightarrow> op f!\<^sub>\<bottom> (\<rho> f|` S) \<sqsubseteq> op f!\<^sub>\<bottom> (\<rho>' f|` S)"
-by (auto simp add: below_fun_def fmap_lookup_bot_fmap_restr_eq)
+  "op f! \<rho> \<sqsubseteq> op f! \<rho>' \<Longrightarrow> op f! (\<rho> f|` S) \<sqsubseteq> op f! (\<rho>' f|` S)"
+by (auto simp add: below_fun_def lookup_fmap_restr_eq)
 
 lemma HSem_monofun_relaxed':
-  assumes "\<And>x \<rho> \<rho>'. x \<in> heapVars h \<Longrightarrow> op f!\<^sub>\<bottom> \<rho> \<sqsubseteq> op f!\<^sub>\<bottom>\<rho>' \<Longrightarrow> \<lbrakk> the (map_of h x) \<rbrakk>\<^bsub>\<rho>\<^esub> \<sqsubseteq> \<lbrakk> the (map_of h x) \<rbrakk>\<^bsub>\<rho>'\<^esub>"
-  assumes "op f!\<^sub>\<bottom> \<rho> \<sqsubseteq> op f!\<^sub>\<bottom>\<rho>'"
-  shows "op f!\<^sub>\<bottom> (\<lbrace>h\<rbrace>\<rho>) \<sqsubseteq> op f!\<^sub>\<bottom> (\<lbrace>h\<rbrace>\<rho>')"
+  assumes "\<And>x \<rho> \<rho>'. x \<in> heapVars h \<Longrightarrow> op f! \<rho> \<sqsubseteq> op f! \<rho>' \<Longrightarrow> \<lbrakk> the (map_of h x) \<rbrakk>\<^bsub>\<rho>\<^esub> \<sqsubseteq> \<lbrakk> the (map_of h x) \<rbrakk>\<^bsub>\<rho>'\<^esub>"
+  assumes "op f! \<rho> \<sqsubseteq> op f! \<rho>'"
+  shows "op f! (\<lbrace>h\<rbrace>\<rho>) \<sqsubseteq> op f! (\<lbrace>h\<rbrace>\<rho>')"
   apply (rule parallel_HSem_ind)
   apply simp
   apply simp
@@ -201,6 +198,7 @@ lemma HSem_monofun_relaxed:
   assumes "op f!\<^sub>\<bottom> \<rho> \<sqsubseteq> op f!\<^sub>\<bottom>\<rho>'"
   shows "op f!\<^sub>\<bottom> (\<lbrace>h\<rbrace>\<rho>) \<sqsubseteq> op f!\<^sub>\<bottom> (\<lbrace>h\<rbrace>\<rho>')"
   by (rule HSem_monofun_relaxed'[OF ESem_mono_relaxed assms])
+*)
 
 end
 

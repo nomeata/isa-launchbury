@@ -1,85 +1,59 @@
 theory Env
-  imports Main "~~/HOL/Library/Quotient_Option" "~~/src/HOL/Library/AList"
+  imports Main "~~/HOL/Library/Quotient_Option" "~~/src/HOL/Library/AList" HOLCF
 begin
+
+default_sort type
 
 subsubsection {* The type of finite maps *}
 
-typedef ('a, 'b) fmap  (infixr "f\<rightharpoonup>" 1) = "{x :: 'a \<rightharpoonup> 'b. True }" by auto
+typedef ('a, 'b) fmap  (infixr "f\<rightharpoonup>" 1) = "{x :: 'a \<Rightarrow> 'b. True }" by auto
 
 setup_lifting type_definition_fmap
 
-lift_definition fdom :: "'key f\<rightharpoonup> 'value \<Rightarrow> 'key set" is "dom" ..
+lift_definition fdom :: "'key f\<rightharpoonup> 'value::pcpo \<Rightarrow> 'key set" is "\<lambda> m . {x. m x \<noteq> \<bottom>}" ..
 
-lift_definition lookup :: "'key f\<rightharpoonup> 'value \<Rightarrow> 'key \<Rightarrow> 'value option" is "(\<lambda> x. x)" ..
+lift_definition lookup :: "'key f\<rightharpoonup> 'value \<Rightarrow> 'key \<Rightarrow> 'value" (infix "f!" 55) is "(\<lambda> x. x)" ..
 
-abbreviation the_lookup (infix "f!" 55)
-  where "m f! x \<equiv> the (lookup m x)"
+lift_definition fempty :: "'key f\<rightharpoonup> 'value::pcpo" ("f\<emptyset>") is "\<lambda> x. \<bottom>" by simp
 
-lift_definition fempty :: "'key f\<rightharpoonup> 'value" ("f\<emptyset>") is Map.empty by simp
-
-lemma lookup_fempty[simp]: "lookup f\<emptyset> x = None"
+lemma lookup_fempty[simp]: "lookup f\<emptyset> x = \<bottom>"
   by transfer simp
 
 lemma fempty_fdom[simp]: "fdom f\<emptyset> = {}"
   by (transfer, auto)
 
-lemma fdomIff: "(a : fdom m) = (lookup m a \<noteq> None)"
+lemma fdomIff: "(a : fdom m) = (lookup m a \<noteq> \<bottom>)"
  by (transfer, auto)
 
-lemma lookup_not_fdom: "x \<notin> fdom m \<Longrightarrow> lookup m x = None"
+lemma lookup_not_fdom: "x \<notin> fdom m \<Longrightarrow> lookup m x = \<bottom>"
   by (auto iff:fdomIff)
 
-lemma lookup_fdom[simp]: "lookup m x = Some v \<Longrightarrow> x \<in> fdom m"
+lemma lookup_fdom[simp]: "lookup m x \<noteq> \<bottom> \<Longrightarrow> x \<in> fdom m"
   by (auto iff:fdomIff)
 
 lemma fmap_eqI[intro]:
-  assumes "fdom a = fdom b"
-  and "\<And> x. x \<in> fdom a \<Longrightarrow> a f! x = b f! x"
+  assumes "\<And> x. a f! x = b f! x"
   shows "a = b"
 using assms
-proof(transfer)
-  fix a b :: "'a \<rightharpoonup> 'b"
-  assume d: "dom a = dom b"
-  assume eq: "\<And> x. x \<in> dom a \<Longrightarrow> the (a x) = the (b x)"
-  show "a = b"
-  proof
-    fix x
-    show "a x = b x"
-    proof(cases "a x")
-    case None
-      hence "x \<notin> dom a" by (simp add: dom_def)
-      hence "x \<notin> dom b" using d by simp
-      hence " b x = None"  by (simp add: dom_def)
-      thus ?thesis using None by simp
-    next
-    case (Some y)
-      hence d': "x \<in> dom ( a)" by (simp add: dom_def)
-      hence "the ( a x) = the ( b x)" using eq by auto
-      moreover
-      have "x \<in> dom ( b)" using Some d' d by simp
-      then obtain y' where " b x = Some y'" by (auto simp add: dom_def)
-      ultimately
-      show " a x =  b x" using Some by auto
-    qed
-  qed
-qed
+by(transfer) auto
 
 subsubsection {* Updates *}
 
 lift_definition
   fmap_upd :: "'key f\<rightharpoonup> 'value \<Rightarrow> 'key \<Rightarrow> 'value \<Rightarrow> 'key f\<rightharpoonup> 'value" ("_'(_ f\<mapsto> _')" [900,900]900)
-  is "\<lambda> m x v. m( x \<mapsto> v)"  by simp
+  is "\<lambda> m x v. m( x :=  v)"  by simp
 
-lemma fmap_upd_fdom[simp]: "fdom (h (x f\<mapsto> v)) = insert x (fdom h)"
+
+lemma fdom_fmap_upd_subset: "fdom (h (x f\<mapsto> v)) \<subseteq> insert x (fdom h)"
   by (transfer, auto)
 
-lemma lookup_fmap_upd[simp]: "lookup (h (x f\<mapsto> v)) x = Some v"
+lemma lookup_fmap_upd[simp]: "lookup (h (x f\<mapsto> v)) x = v"
   by (transfer, auto)
 
 lemma lookup_fmap_upd_other[simp]: "x' \<noteq> x \<Longrightarrow> lookup (h (x f\<mapsto> v)) x' = lookup h x'"
   by (transfer, auto)
 
-lemma lookup_fmap_upd_eq: "lookup (h (x f\<mapsto> v)) x' = (if x = x' then Some v else lookup h x')"
+lemma lookup_fmap_upd_eq: "lookup (h (x f\<mapsto> v)) x' = (if x = x' then v else lookup h x')"
   by (transfer, auto)
 
 lemma fmap_upd_overwrite[simp]: "f (x f\<mapsto> y) (x f\<mapsto> z) = f (x f\<mapsto> z)"
@@ -90,80 +64,80 @@ lemma fmap_upd_noop[simp]: "x \<in> fdom f \<Longrightarrow> y = f f! x \<Longri
 
 lemma fmap_upd_twist: "a \<noteq> c \<Longrightarrow> (m(a f\<mapsto> b))(c f\<mapsto> d) = (m(c f\<mapsto> d))(a f\<mapsto> b)"
   apply (rule fmap_eqI)
-  apply auto[1]
   apply (case_tac "x = a", auto)
   apply (case_tac "x = c", auto)
   done
 
 lemma fmap_upd_eqD1: "m(a f\<mapsto> x) = n(a f\<mapsto> y) \<Longrightarrow> x = y"
-  by transfer (rule map_upd_eqD1)
+  by transfer (metis fun_upd_same)
 
 subsubsection {* Restriction *}
 
-lift_definition fmap_restr :: "'a set \<Rightarrow> 'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b"
-  is "\<lambda> S m. restrict_map m S" by auto
+lift_definition fmap_restr :: "'a set \<Rightarrow> 'a f\<rightharpoonup> 'b::pcpo \<Rightarrow> 'a f\<rightharpoonup> 'b"
+  is "\<lambda> S m x. if x \<in> S then m x else \<bottom>"..
 
 abbreviation fmap_restr_rev  (infixl "f|`"  110) where "fmap_restr_rev m S \<equiv> fmap_restr S m"
 
 lemma fmap_restr_empty[simp]: "fdom m \<inter> S = {} \<Longrightarrow> m f|` S = f\<emptyset>"
   apply transfer
-  by (metis disjoint_iff_not_equal domIff restrict_in restrict_out)
+  by (metis (lifting, full_types) Int_Collect empty_iff inf_commute)
 
 lemma lookup_fmap_restr[simp]: "x \<in> S \<Longrightarrow> lookup (fmap_restr S m) x = lookup m x"
   by (transfer, auto)
 
-lemma lookup_fmap_restr_not_there[simp]: "x \<notin> S \<Longrightarrow> lookup (fmap_restr S m) x = None"
+lemma lookup_fmap_restr_not_there[simp]: "x \<notin> S \<Longrightarrow> lookup (fmap_restr S m) x = \<bottom>"
   by (transfer, auto)
 
-lemma lookup_fmap_restr_eq: "lookup (fmap_restr S m) x = (if x \<in> S then lookup m x else None)"
+lemma lookup_fmap_restr_eq: "m f|` S f! x = (if x \<in> S then m f! x else \<bottom>)"
   by (transfer, auto)
 
+(*
 lemma fdom_fmap_restr[simp]: "fdom (fmap_restr S m) = fdom m \<inter> S"
   by (transfer, simp)
-
+*)
 
 lemma fmap_restr_cong: "fdom m \<inter> S1 = fdom m \<inter> S2 \<Longrightarrow> m f|` S1 = m f|` S2"
   apply (rule fmap_eqI)
-  apply simp
-  apply (auto)
-  by (metis Int_iff lookup_fmap_restr)
+  apply (simp add: lookup_fmap_restr_eq)
+  by (metis Int_iff lookup_not_fdom)
 
 lemma fmap_restr_fmap_restr[simp]:
- "fmap_restr d1 (fmap_restr d2 x) = fmap_restr (d1 \<inter> d2) x"
+ "x f|` d2 f|` d1 = x f|` (d1 \<inter> d2)"
  by (transfer, auto simp add: restrict_map_def)
 
 lemma fmap_restr_fmap_restr_subset:
- "d1 \<subseteq> d2 \<Longrightarrow> fmap_restr d1 (fmap_restr d2 x) = fmap_restr d1 x"
+ "d1 \<subseteq> d2 \<Longrightarrow> x f|` d2 f|` d1 = x f|` d1"
  by (metis Int_absorb2 fmap_restr_fmap_restr)
 
-lemma fmap_restr_useless: "fdom m \<subseteq> S \<Longrightarrow> fmap_restr S m = m"
-  by (rule fmap_eqI, auto)
+lemma fmap_restr_useless: "fdom m \<subseteq> S \<Longrightarrow> m f|` S = m"
+  by (rule fmap_eqI) (auto simp add: lookup_fmap_restr_eq dest!: set_mp)
 
-lemma fmap_restr_fmap_upd[simp]: "x \<in> S \<Longrightarrow> fmap_restr S (m1(x f\<mapsto> v)) = (fmap_restr S m1)(x f\<mapsto> v)"
+lemma fmap_restr_UNIV[simp]: "m f|` UNIV = m"
+  by (rule fmap_restr_useless) simp
+
+lemma fmap_restr_fmap_upd[simp]: "x \<in> S \<Longrightarrow> m1(x f\<mapsto> v) f|` S = (m1 f|` S)(x f\<mapsto> v)"
   apply (rule fmap_eqI)
-  apply auto[1]
   apply (case_tac "xa = x")
-  apply auto
+  apply (auto simp add: lookup_fmap_restr_eq)
   done
 
-lemma fmap_restr_fmap_upd_other[simp]: "x \<notin> S \<Longrightarrow> fmap_restr S (m1(x f\<mapsto> v)) = (fmap_restr S m1)"
+lemma fmap_restr_fmap_upd_other[simp]: "x \<notin> S \<Longrightarrow> m1(x f\<mapsto> v) f|` S = m1 f|` S"
   apply (rule fmap_eqI)
-  apply auto[1]
   apply (case_tac "xa = x")
-  apply auto
+  apply (auto simp add: lookup_fmap_restr_eq)
   done
 
 subsubsection {* Deleting *}
 
-lift_definition fmap_delete :: "'a \<Rightarrow> 'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b"
-  is "\<lambda> x m. m(x := None)" by auto
+lift_definition fmap_delete :: "'a \<Rightarrow> 'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b::pcpo"
+  is "\<lambda> x m. m(x := \<bottom>)"..
 
 lemma lookup_fmap_delete[simp]:
-  "x' \<noteq> x \<Longrightarrow> lookup (fmap_delete x m) x' = lookup m x'"
+  "x' \<noteq> x \<Longrightarrow> fmap_delete x m f! x' = m f! x'"
   by (transfer, simp)
 
 lemma lookup_fmap_delete_None[simp]:
-  "fmap_delete x m f! x = the None"
+  "fmap_delete x m f! x = \<bottom>"
   by (transfer, simp)
 
 lemma fdom_fmap_delete[simp]:
@@ -192,57 +166,67 @@ lemma fmap_delete_noop[simp]:
 lemma fmap_upd_fmap_delete[simp]: "x \<in> fdom \<Gamma> \<Longrightarrow> (fmap_delete x \<Gamma>)(x f\<mapsto> \<Gamma> f! x) = \<Gamma>"
   by (transfer, auto)
 
-lemma fmap_restr_fmap_delete_other[simp]: "x \<notin> S \<Longrightarrow> fmap_restr S (fmap_delete x m) = (fmap_restr S m)"
-  by (rule fmap_eqI) auto
+lemma fmap_restr_fmap_delete_other[simp]: "x \<notin> S \<Longrightarrow> fmap_delete x m f|` S = m f|` S"
+  apply (rule fmap_eqI)
+  apply (auto simp add: lookup_fmap_restr_eq)
+  by (metis lookup_fmap_delete)
 
-subsubsection {* Deleting *}
-
- 
 subsubsection {* Addition (merging) of finite maps *}
 
-lift_definition fmap_add :: "'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b" (infixl "f++" 100) 
-  is "map_add" by auto
+lift_definition fmap_add :: "'a set \<Rightarrow> 'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b"  
+  is "\<lambda> S f1 f2 x. if x \<in> S then f2 x else f1 x"..
 
-lemma fmap_add_fempty[simp]: "f\<emptyset> f++ m = m" 
+abbreviation fmap_add_syn ("_ f++\<^bsub>_\<^esub> _" [100, 0, 100] 100) where "f1 f++\<^bsub>S\<^esub> f2 \<equiv> fmap_add S f1 f2"
+
+lemma fmap_add_fempty[simp]: "f\<emptyset> f++\<^bsub>S\<^esub> m = m f|` S" 
   by (transfer, simp)
 
-lemma fmap_add_fempty2[simp]: "m f++ f\<emptyset>= m" 
+lemma fmap_add_fempty2[simp]: "m f++\<^bsub>S\<^esub> f\<emptyset>= m f|` (-S)" 
+  by (transfer, auto)
+
+lemma fdom_fmap_add[simp]: "fdom (m1 f++\<^bsub>S\<^esub> m2) = (fdom m1 - S) \<union> (fdom m2 \<inter> S)"
+  by transfer auto
+
+lemma lookup_fmap_add1[simp]: "x \<in> S \<Longrightarrow> m1 f++\<^bsub>S\<^esub> m2 f! x = m2 f! x"
+  by (transfer, auto)
+
+lemma lookup_fmap_add2[simp]:  "x \<notin> S \<Longrightarrow>  m1 f++\<^bsub>S\<^esub> m2 f! x = m1 f! x"
   by (transfer, simp)
 
-lemma fdom_fmap_add[simp]: "fdom (m1 f++ m2) = fdom m1 \<union> fdom m2"
-  by (transfer, auto)
+lemma lookup_fmap_add_eq: " m1 f++\<^bsub>S\<^esub> m2 f! x = (if x \<in> S then m2 f! x else m1 f! x)"
+  by (cases "x \<notin> S") simp_all
 
-lemma lookup_fmap_add1[simp]: "x \<in> fdom m2 \<Longrightarrow> lookup (m1 f++ m2) x = lookup m2 x"
-  by (transfer, auto)
-
-lemma lookup_fmap_add2[simp]:  "x \<notin> fdom m2 \<Longrightarrow> lookup (m1 f++ m2) x = lookup m1 x"
-  apply transfer
-  by (metis map_add_dom_app_simps(3))
-
-lemma lookup_fmap_add_eq: "lookup (m1 f++ m2) x = (if x \<in> fdom m2 then lookup m2 x else  lookup m1 x)"
-  by (cases "x \<notin> fdom m2") simp_all
-
+(*
 lemma fmap_add_overwrite: "fdom m1 \<subseteq> fdom m2 \<Longrightarrow> m1 f++ m2 = m2"
   apply transfer
   apply rule
   apply (case_tac "x \<in> dom m2")
   apply (auto simp add: map_add_dom_app_simps(1))
   done
+*)
 
 lemma fmap_add_upd_swap: 
-  "x \<notin> fdom \<rho>' \<Longrightarrow> \<rho>(x f\<mapsto> z) f++ \<rho>' = (\<rho> f++ \<rho>')(x f\<mapsto> z)"
-  apply transfer
-  by (metis map_add_upd_left)
+  "x \<notin> S \<Longrightarrow> \<rho>(x f\<mapsto> z) f++\<^bsub>S\<^esub> \<rho>' = (\<rho> f++\<^bsub>S\<^esub> \<rho>')(x f\<mapsto> z)"
+  by transfer auto
 
 lemma fmap_add_upd: 
-  "\<rho> f++ (\<rho>'(x f\<mapsto> z)) = (\<rho> f++ \<rho>')(x f\<mapsto> z)"
+  "x \<in> S \<Longrightarrow> \<rho> f++\<^bsub>S\<^esub> (\<rho>'(x f\<mapsto> z)) = (\<rho> f++\<^bsub>S\<^esub> \<rho>')(x f\<mapsto> z)"
   apply transfer
-  by (metis map_add_upd)
+  apply rule
+  apply auto
+  done
 
-lemma fmap_restr_add: "fmap_restr S (m1 f++ m2) = fmap_restr S m1 f++ fmap_restr S m2"
+lemma fmap_restr_add: "fmap_restr S (m1 f++\<^bsub>S2\<^esub> m2) = fmap_restr S m1 f++\<^bsub>S2\<^esub> fmap_restr S m2"
   apply (rule fmap_eqI)
-  apply auto[1]
-  apply (case_tac "x \<in> fdom m2")
+  apply (case_tac "x \<in> S2")
+  apply (case_tac [!] "x \<in> S")
+  apply auto
+  done
+
+lemma fmap_delete_add: "fmap_delete x (m1 f++\<^bsub>S\<^esub> m2) = fmap_delete x m1 f++\<^bsub>S - {x}\<^esub> fmap_delete x m2"
+  apply (rule fmap_eqI)
+  apply (case_tac "xa = x")
+  apply (case_tac [!] "xa \<in> S")
   apply auto
   done
 
@@ -270,31 +254,33 @@ lemma lookup_fmap_copy_eq: "lookup (fmap_copy h x y) x' = (if y = x' then lookup
   by transfer simp
 
 lemma fmap_restrict_fmap_copy[simp]: "x \<notin> S \<Longrightarrow> fmap_restr S (fmap_copy \<Gamma> y x) = fmap_restr S \<Gamma>"
-  by transfer simp
+  by transfer auto
 
 lemma fmap_restrict_fmap_copy'[simp]: "x \<in> S \<Longrightarrow> y \<in> S \<Longrightarrow> fmap_restr S (fmap_copy \<Gamma> y x) = fmap_copy (fmap_restr S \<Gamma>) y x"
-  by transfer simp
+  by transfer auto
 
 subsubsection {* Map *}
 
-lift_definition fmap_map :: "('b \<Rightarrow> 'c) \<Rightarrow> 'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'c" is "\<lambda> f m. Option.map f \<circ> m"
-  by (auto simp add: dom_def)
+lift_definition fmap_map :: "('b \<Rightarrow> 'c) \<Rightarrow> 'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'c" is "\<lambda> f m x. f (m x)"..
 
 lemma fmap_map_id[simp]: "fmap_map (\<lambda> x. x) m = m" by transfer (simp add: Option.map.identity)
 
+(*
 lemma fdom_fmap_map[simp]: "fdom (fmap_map f m) = fdom m" by transfer (simp add: dom_def)
+*)
 
-lemma lookup_fmap_map[simp]: "lookup (fmap_map f m) x = Option.map f (lookup m x)" by transfer simp
+lemma lookup_fmap_map[simp]: "lookup (fmap_map f m) x = f (lookup m x)" by transfer simp
 
-lemma fmap_map_fmap_restr[simp]: "fmap_map f (fmap_restr S m) = fmap_restr S (fmap_map f m)"
-  by (rule fmap_eqI) auto
+lemma fmap_map_fmap_restr[simp]: "f \<bottom> = \<bottom> \<Longrightarrow> fmap_map f (fmap_restr S m) = fmap_restr S (fmap_map f m)"
+  by (rule fmap_eqI) (auto simp add: lookup_fmap_restr_eq)
 
 lemma fmap_map_fmap_upd[simp]: "fmap_map f (m(x f\<mapsto> v)) = (fmap_map f m)(x f\<mapsto> f v)"
-  by transfer simp
+  by transfer auto
 
 lemma fmap_map_fmap_copy [simp]: "fmap_map f (fmap_copy m x y) = fmap_copy (fmap_map f m) x y"
   by transfer auto
 
+(*
 subsubsection {* Conversion from associative lists *}
 
 lift_definition fmap_of :: "('a \<times> 'b) list \<Rightarrow> 'a f\<rightharpoonup> 'b"
@@ -316,7 +302,9 @@ lemma lookup_fmap_of[simp]:
 lemma fmap_delete_fmap_of[simp]:
   "fmap_delete x (fmap_of m) = fmap_of (AList.delete x m)"
   by (transfer, metis delete_conv')
+*)
 
+(*
 subsubsection {* Less-than-relation for extending finite maps *}
 
 instantiation fmap :: (type,type) order
@@ -450,11 +438,12 @@ proof-
       by simp
   qed
 qed
+*)
 
 subsection {* Lifting relations pointwise *}
 
-inductive fmap_lift_rel for P  where
-  fmap_lift_relI[intro]: "fdom m = fdom m' \<Longrightarrow> (\<And> x. x\<in>fdom m \<Longrightarrow> P (m f! x) (m' f! x)) \<Longrightarrow> fmap_lift_rel P m m'"
+inductive fmap_lift_rel for P where
+  fmap_lift_relI[intro]: "(\<And> x. P (m f! x) (m' f! x)) \<Longrightarrow> fmap_lift_rel P m m'"
 
 inductive_cases fmap_lift_relE[elim]:  "fmap_lift_rel P m m'" 
 

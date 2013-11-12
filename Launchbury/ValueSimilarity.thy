@@ -414,19 +414,16 @@ lemma fmap_similar_adm: "adm (\<lambda>x. fst x f\<triangleleft>\<triangleright>
   apply auto
   done
 
-lemma fmap_similar_fmap_bottom[simp]: "f\<emptyset>\<^bsub>[S]\<^esub> f\<triangleleft>\<triangleright> f\<emptyset>\<^bsub>[S]\<^esub>"
+lemma fmap_similar_fmap_bottom[simp]: "f\<emptyset> f\<triangleleft>\<triangleright> f\<emptyset>"
   by auto
 
 lemma fmap_similarE[elim]:
   assumes "m f\<triangleleft>\<triangleright> m'"
-  assumes "fdom m = fdom m' \<Longrightarrow> (\<And>x. (m f!\<^sub>\<bottom> x) \<triangleleft>\<triangleright> (m' f!\<^sub>\<bottom> x)\<cdot>C\<^sup>\<infinity>) \<Longrightarrow> Q"
+  assumes "(\<And>x. (m f! x) \<triangleleft>\<triangleright> (m' f! x)\<cdot>C\<^sup>\<infinity>) \<Longrightarrow> Q"
   shows Q
   apply (rule assms(2))
   using assms(1)
   apply auto[1]
-  apply (case_tac "x \<in> fdom m")
-  using assms(1)
-  apply auto
   done
 
 end

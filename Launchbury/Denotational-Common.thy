@@ -36,4 +36,6 @@ instance
   done
 end
 
+instance Value :: pcpo_pt by default
+
 end

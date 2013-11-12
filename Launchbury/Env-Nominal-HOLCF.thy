@@ -4,17 +4,14 @@ begin
 
 subsubsection {* Permutation of finite maps is continuous *}
 
-instance "fmap" :: (pt, cont_pt) cont_pt
+instance "fmap" :: (pt, pcpo_pt) cont_pt
 apply default
-proof(intro contI2 monofunI fmap_belowI)
+apply(intro contI2 monofunI fmap_belowI)
+apply transfer
+sorry
+(*
   fix \<pi> m1 m2
   assume "m1 \<sqsubseteq> (m2 :: 'a f\<rightharpoonup> 'b)"
-  hence "fdom m1 = fdom m2"
-    by (rule fmap_below_dom)
-
-  show "fdom (\<pi> \<bullet> m1) = fdom (\<pi> \<bullet> m2)"
-    using `fdom m1 = fdom m2`
-    by (metis fdom_perm_rev)
 
   fix x
   assume "x \<in> fdom (\<pi> \<bullet> m1)" and "x \<in> fdom (\<pi> \<bullet> m2)"
@@ -69,16 +66,13 @@ next
   have "\<pi> \<bullet> (\<Squnion> i. Y i) f! x = (\<Squnion> i. \<pi> \<bullet> Y i) f! x" .
   thus "\<pi> \<bullet> (\<Squnion> i. Y i) f! x \<sqsubseteq> (\<Squnion> i. \<pi> \<bullet> Y i) f! x" by auto
 qed
+*)
 
+(*
 subsubsection {* Equivariance lemmas *}
 
-lemma fmap_lookup_bot_eqvt[eqvt]:
-  fixes m :: "'a::{pt} f\<rightharpoonup> 'b::{cont_pt,pcpo}"
-  shows "\<pi> \<bullet> (m f!\<^sub>\<bottom> x) = \<pi> \<bullet> m f!\<^sub>\<bottom> \<pi> \<bullet> x"
-by transfer simp
-
 lemma fmap_expand_eqvt[eqvt]:
-  "\<pi> \<bullet> fmap_expand (m :: 'a::{pt} f\<rightharpoonup> 'b::{cont_pt,pcpo}) S = fmap_expand (\<pi> \<bullet> m) (\<pi> \<bullet> S)"
+  "\<pi> \<bullet> fmap_expand (m :: 'a::pt f\<rightharpoonup> 'b::pcpo_pt) S = fmap_expand (\<pi> \<bullet> m) (\<pi> \<bullet> S)"
   by (transfer, perm_simp, rule refl)
-
+*)
 end
