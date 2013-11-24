@@ -378,6 +378,14 @@ begin
       by (rule fmap_restr_below_subset[OF Un_upper1])
   qed
 
+  lemma HSem_fresh_cong:
+    assumes "\<rho> f|` ((S \<union> fv \<Gamma>) - heapVars \<Gamma>) = \<rho>' f|` ((S \<union> fv \<Gamma>) - heapVars \<Gamma>)"
+    shows "(\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` S = (\<lbrace>\<Gamma>\<rbrace>\<rho>') f|` S"
+  apply (rule below_antisym)
+  apply (rule HSem_fresh_cong_below[OF eq_imp_below[OF assms]])
+  apply (rule HSem_fresh_cong_below[OF eq_imp_below[OF assms[symmetric]]])
+  done
+
 subsubsection {* Adding a fresh variable to a heap does not affect its semantics *} 
 
   lemma HSem_add_fresh':

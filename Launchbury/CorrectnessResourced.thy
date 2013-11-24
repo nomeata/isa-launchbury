@@ -2,7 +2,6 @@ theory CorrectnessResourced
   imports "ResourcedDenotational" Launchbury
 begin
 
-
 theorem correctness:
   assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
   and     "distinctVars \<Gamma>"

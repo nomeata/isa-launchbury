@@ -251,12 +251,25 @@ lemma fmap_restr_belowD:
   shows "m1 f! x \<sqsubseteq> m2 f! x"
   using fmap_belowE[OF assms(1), where x = x] assms(2) by simp
 
+lemma fmap_restr_eqD:
+  assumes "m1 f|` S = m2 f|` S"
+  assumes "x \<in> S"
+  shows "m1 f! x = m2 f! x"
+  by (metis assms(1) assms(2) lookup_fmap_restr)
+
 lemma fmap_restr_below_subset:
   assumes "S \<subseteq> S'"
   and "m1 f|` S' \<sqsubseteq> m2 f|` S'"
   shows "m1 f|` S \<sqsubseteq> m2 f|` S"
 using assms
 by (auto intro!: fmap_restr_belowI dest: fmap_restr_belowD)
+
+lemma fmap_restr_eq_subset:
+  assumes "S \<subseteq> S'"
+  and "m1 f|` S' = m2 f|` S'"
+  shows "m1 f|` S = m2 f|` S"
+using assms
+by (metis fmap_restr_fmap_restr le_iff_inf)
 
 lemma  fmap_add_below_restrI:
   assumes " x f|` (-S) \<sqsubseteq> z f|` (-S)"
