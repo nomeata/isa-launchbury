@@ -209,10 +209,11 @@ lemma fmap_upd_belowI:
   done
 
 lemma fmap_upd_below_fmap_deleteI:
-  assumes "\<rho> \<sqsubseteq> fmap_delete x \<rho>'" 
+  assumes "fmap_delete x \<rho> \<sqsubseteq> fmap_delete x \<rho>'" 
   assumes "y \<sqsubseteq> \<rho>' f! x"
   shows  "\<rho>(x f\<mapsto> y) \<sqsubseteq> \<rho>'"
-  by (rule fmap_upd_belowI[OF below_trans[OF fmap_belowE[OF assms(1)] eq_imp_below] assms(2)], simp)
+  using assms
+  by (metis (hide_lams, no_types) Rep_fmap_inject fmap_delete_fmap_upd2 fmap_upd.rep_eq fmap_upd_mono fun_upd_triv lookup.rep_eq)
 
 lemma fmap_upd_belowI2:
   assumes "\<And> z . z \<noteq> x \<Longrightarrow> \<rho> f! z \<sqsubseteq> \<rho>' f! z" 
@@ -225,7 +226,7 @@ lemma fmap_upd_belowI2:
   done
 
 lemma fmap_restr_belowI:
-  assumes  "\<And> x. x \<in> S \<Longrightarrow> (fmap_restr S m1) f! x \<sqsubseteq> (fmap_restr S m2) f! x"
+  assumes  "\<And> x. x \<in> S \<Longrightarrow> m1 f|` S f! x \<sqsubseteq> m2 f|` S f! x"
   shows "m1 f|` S \<sqsubseteq> m2 f|` S"
   apply (rule fmap_belowI)
   by (metis assms below_bottom_iff lookup_fmap_restr_not_there)
@@ -242,6 +243,35 @@ lemma fmap_restr_cont:  "cont (fmap_restr S)"
   apply (case_tac "x \<in> S")
   apply (auto simp add: assms)
   done
+
+
+lemma fmap_restr_belowD:
+  assumes "m1 f|` S \<sqsubseteq> m2 f|` S"
+  assumes "x \<in> S"
+  shows "m1 f! x \<sqsubseteq> m2 f! x"
+  using fmap_belowE[OF assms(1), where x = x] assms(2) by simp
+
+lemma fmap_restr_below_subset:
+  assumes "S \<subseteq> S'"
+  and "m1 f|` S' \<sqsubseteq> m2 f|` S'"
+  shows "m1 f|` S \<sqsubseteq> m2 f|` S"
+using assms
+by (auto intro!: fmap_restr_belowI dest: fmap_restr_belowD)
+
+lemma  fmap_add_below_restrI:
+  assumes " x f|` (-S) \<sqsubseteq> z f|` (-S)"
+  and "y f|` S \<sqsubseteq> z f|` S"
+  shows  "x f++\<^bsub>S\<^esub> y \<sqsubseteq> z"
+using assms
+by (auto intro: fmap_add_belowI dest:fmap_restr_belowD)
+
+lemma  fmap_below_add_restrI:
+  assumes "x f|` (-S) \<sqsubseteq> y f|` (-S)"
+  and     "x f|` S \<sqsubseteq> z f|` S"
+  shows  "x \<sqsubseteq> y f++\<^bsub>S\<^esub> z"
+using assms
+by (auto intro!: fmap_belowI dest:fmap_restr_belowD simp add: lookup_fmap_add_eq)
+
 
 (*
 lemma fmap_restr_fdom_cont'[simp, cont2cont]:

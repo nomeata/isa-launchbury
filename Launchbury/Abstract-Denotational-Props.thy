@@ -30,7 +30,7 @@ next
      by (rule HSem_ignores_fresh_restr'[OF _ Let(1)])
   also
   have "\<lbrace>asToHeap as\<rbrace>(\<rho> f|` (fv as \<union> fv e)) = \<lbrace>asToHeap as\<rbrace>\<rho> f|` (fv as \<union> fv e - heapVars (asToHeap as))"
-    by (rule HSem_fresh_cong) (auto simp add: lookup_fmap_restr_eq)
+    by (rule HSem_restr_cong) (auto simp add: lookup_fmap_restr_eq)
   finally
   show ?case by simp
 qed
@@ -64,7 +64,7 @@ proof-
   have "\<lbrakk> Let as body \<rbrakk>\<^bsub>\<rho>\<^esub> = tick \<cdot> (\<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>(\<rho> f|` fv (Let as body))\<^esub>)" 
     by simp
   also have "\<lbrace>asToHeap as\<rbrace>(\<rho> f|` fv(Let as body)) = \<lbrace>asToHeap as\<rbrace>(\<rho> f|` (fv as \<union> fv body))" 
-    by (rule HSem_fresh_cong) (auto simp add: lookup_fmap_restr_eq)
+    by (rule HSem_restr_cong) (auto simp add: lookup_fmap_restr_eq)
   also have "\<dots> = (\<lbrace>asToHeap as\<rbrace>\<rho>) f|` (fv as \<union> fv body)"
     by (rule HSem_ignores_fresh_restr'[symmetric, OF subset_trans[OF fv_asToHeap Un_upper1] ESem_considers_fv])
   also have "\<lbrakk>body\<rbrakk>\<^bsub>\<dots>\<^esub> = \<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub>"

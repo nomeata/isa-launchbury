@@ -194,7 +194,8 @@ proof-
   from assms(1,2)
   have [simp]: "the (map_of \<Gamma> x) = e" by (metis distinctVars_map_of the.simps)
 
-  have [simp]: "x\<in> heapVars \<Gamma>" sorry
+  from assms(2)
+  have [simp]: "x \<in> heapVars \<Gamma>" by (metis heapVars_from_set)
 
   have "fmap_C_restr\<cdot>(Cpred\<cdot>?C)\<cdot>(\<N>\<lbrace>\<Gamma>\<rbrace>) \<sqsubseteq> (\<N>\<lbrace>delete x \<Gamma>\<rbrace>) \<and> \<N>\<lbrace>\<Gamma>\<rbrace> \<sqsubseteq> \<N>\<lbrace>\<Gamma>\<rbrace>"
     apply (rule HSem_ind) back back back back back back back back back
@@ -287,21 +288,25 @@ next
     thus ?thesis using Var by auto
   next
   case (App e' x)
+    have "finite (set S \<union> fv (\<Gamma>, e'))" by simp
+    from finite_list[OF this]
+    obtain S' where S': "set S' = set S \<union> fv (\<Gamma>, e')"..
+
     from Suc.prems[unfolded App]
     have prem: "((\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn  C_restr\<cdot>C\<^bsup>n\<^esup>\<cdot>(\<N>\<lbrace>\<Gamma>\<rbrace> f! x))\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by auto
     hence e'_not_bot: "(\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by auto
     from Suc.IH[OF this Suc.prems(2)]
-    obtain \<Delta> v where lhs': "\<Gamma> : e' \<Down>\<^bsub>x#S\<^esub> \<Delta> : v" by blast 
+    obtain \<Delta> v where lhs': "\<Gamma> : e' \<Down>\<^bsub>x#S'\<^esub> \<Delta> : v" by blast 
 
     from result_evaluated_fresh[OF lhs']
-    obtain y e'' where n': "v = (Lam [y]. e'')" and "atom y \<sharp> (\<Gamma>, e', x, S, \<Delta>)" by blast
+    obtain y e'' where n': "v = (Lam [y]. e'')" and "atom y \<sharp> (\<Gamma>, e', x, S', \<Delta>)" by blast
     with lhs'
-    have lhs: "\<Gamma> : e' \<Down>\<^bsub>x # S\<^esub> \<Delta> : Lam [y]. e''" by simp
+    have lhs: "\<Gamma> : e' \<Down>\<^bsub>x # S'\<^esub> \<Delta> : Lam [y]. e''" by simp
 
     from `atom y \<sharp> _` have "y \<notin> heapVars \<Delta>" by (metis (full_types) fresh_Pair heapVars_not_fresh)
    
-
-    from correctness[OF lhs `distinctVars \<Gamma>`, where \<rho> = "f\<emptyset>"]
+    have "fv (\<Gamma>, e') \<subseteq> set (x # S')" using S' by auto
+    from correctness_empty_env[OF lhs `distinctVars \<Gamma>` this]
     have correct1: "\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub> \<sqsubseteq> \<N>\<lbrakk>Lam [y]. e''\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>" and correct2: "\<N>\<lbrace>\<Gamma>\<rbrace> \<sqsubseteq> \<N>\<lbrace>\<Delta>\<rbrace>" by auto
 
     note e'_not_bot
@@ -328,10 +333,12 @@ next
     have "distinctVars \<Delta>"
       by (rule reds_pres_distinctVars[OF lhs' Suc.prems(2)])
     ultimately
-    obtain \<Theta> v' where rhs: "\<Delta> : e''[y::=x] \<Down>\<^bsub>S\<^esub> \<Theta> : v'" using Suc.IH by blast
+    obtain \<Theta> v' where rhs: "\<Delta> : e''[y::=x] \<Down>\<^bsub>S'\<^esub> \<Theta> : v'" using Suc.IH by blast
     
-    have "\<Gamma> : App e' x \<Down>\<^bsub>S\<^esub> \<Theta> : v'"
+    have "\<Gamma> : App e' x \<Down>\<^bsub>S'\<^esub> \<Theta> : v'"
       by (rule reds_ApplicationI[OF `atom y \<sharp> _` lhs rhs])
+    hence "\<Gamma> : App e' x \<Down>\<^bsub>S\<^esub> \<Theta> : v'"
+      apply (rule reds_smaller_L) using S' by auto
     thus ?thesis using App by auto
   next
   case (Lam v e')

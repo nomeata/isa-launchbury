@@ -141,6 +141,11 @@ case (Let as \<Gamma> L body \<Delta> z)
     by (rule Let.hyps(3)[OF `x \<in> set L`])
 qed
 
+lemma reds_avoids_live':
+ assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
+ shows "set L \<subseteq> - (heapVars \<Delta> - heapVars \<Gamma>)"
+using reds_avoids_live[OF assms] by auto
+
 text {*
 This is the same semantics with additional distinctiveness requirements. This
 is defined in order to obtain a more convenient induction rule.
@@ -295,6 +300,28 @@ case (Let as \<Gamma> L body \<Delta> z)
       using reds_doesnt_forget[OF Let.hyps(2)] by auto
     qed
 qed
+
+lemma reds_fresh_fv: "\<lbrakk> \<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z;
+   x \<in> fv (\<Delta>, z) \<and> (x \<notin> heapVars \<Delta> \<or>  x \<in> set L)
+  \<rbrakk> \<Longrightarrow> x \<in> fv (\<Gamma>, e)"
+using reds_fresh
+unfolding fv_def fresh_def
+by blast
+
+lemma new_vars_not_free:
+  assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
+  assumes "x \<in> heapVars \<Delta>"
+  assumes "x \<in> set L"
+  shows "x \<in> fv (\<Gamma>, e)"
+  apply (rule reds_fresh_fv[OF assms(1)])
+  using assms(2,3)
+  apply (auto dest: set_mp[OF heapVars_fv_subset])
+  done
+
+lemma new_free_vars_on_heap:
+  assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
+  shows "fv (\<Delta>, z) - heapVars \<Delta> \<subseteq> fv (\<Gamma>, e) - heapVars \<Gamma>"
+using reds_fresh_fv[OF assms(1)] reds_doesnt_forget[OF assms(1)] by auto
 
 text {*
 Reducing the set of variables to avoid is always possible.

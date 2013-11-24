@@ -287,6 +287,16 @@ proof-
   thus ?thesis by (auto simp add: fresh_def)
 qed
 
+lemma fv_subst_subset: "fv (e[y ::= x]) \<subseteq> (fv e - {y}) \<union> {x}"
+proof-
+  have "fv (e[y ::= x]) = {v. atom v \<in> supp (e[y ::= x])}" unfolding fv_def..
+  also have "\<dots> \<subseteq> {v. atom v \<in> ((supp e - {atom y}) \<union> supp x)}"
+    using supp_subst by auto
+  also have "\<dots> = (fv e - {y}) \<union> {x}"
+    using supp_subst by (auto simp add: fv_def supp_at_base)
+  finally show ?thesis.
+qed
+
 lemma let_binders_fresh[simp]: "set (bn as) \<sharp>* Terms.Let as body"
   by (metis Diff_iff exp_assn.supp(3) finite_supp fresh_finite_atom_set fresh_star_def fresh_star_set fresh_star_supp_conv supp_of_atom_list)
 

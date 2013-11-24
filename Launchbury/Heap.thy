@@ -50,6 +50,27 @@ by(rule distinctVars_appendI[OF distinctVars_asToHeap assms(1) fresh_assn_distin
 lemma set_delete_subset: "set (delete x l) \<subseteq> set l"
   by (induction l) auto
 
+lemma fv_delete_heap:
+  assumes "distinctVars \<Gamma>"
+  assumes "(x, e) \<in> set \<Gamma>"
+  shows "fv (delete x \<Gamma>, e) \<union> {x} = (fv (\<Gamma>, Var x) :: var set)"
+using assms
+proof(induction rule: distinctVars.induct)
+  case DistinctNil thus ?case by simp
+next
+  case (DistinctCons y \<Gamma> e')
+  show ?case
+  proof(cases "y = x")
+    case True
+    from DistinctCons[unfolded True]
+    have "e' = e" by (metis heapVars_from_set prod.inject set_ConsD)
+    note  `x \<notin> heapVars \<Gamma>`[simp]
+    show ?thesis unfolding `y = x` `e' = e` by (auto simp add: delete_no_there)
+  next
+    case False with DistinctCons show ?thesis by auto
+  qed
+qed
+
 lemma  True and [simp]:"(a, b) \<in> set (asToHeap as) \<Longrightarrow> size b < Suc (size as + size body)"
   by (induct and as rule:exp_assn.inducts, auto simp add: exp_assn.bn_defs fresh_star_insert dest: set_mp[OF set_delete_subset])
 
@@ -68,6 +89,9 @@ lemma fv_ACons[simp]: "fv (ACons x e as) = insert x (fv e \<union> fv as)"
 
 lemma finite_fv_exp[simp]: "finite (fv (e::exp) :: var set)" and finite_fv_as[simp]: "finite (fv (as::assn) :: var set)"
   by (induction e and as rule:exp_assn.inducts) auto
+
+lemma finite_fv_heap[simp]: "finite (fv (\<Gamma>::heap) :: var set)"
+  by (induction \<Gamma>) auto
 
 subsubsection {* Nicer induction rule for expressions *}
 

@@ -14,6 +14,10 @@ lemma fresh_delete:
 using assms
 by(induct \<Gamma>)(auto simp add: fresh_Cons)
 
+lemma fv_delete_subset:
+  "fv (delete v \<Gamma>) \<subseteq> fv \<Gamma>"
+  using fresh_delete unfolding fresh_def fv_def by auto
+
 lemma fresh_heap_expr:
   assumes "a \<sharp> \<Gamma>"
   and "(x,e) \<in> set \<Gamma>"

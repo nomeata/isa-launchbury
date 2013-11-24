@@ -171,6 +171,9 @@ lemma fmap_restr_fmap_delete_other[simp]: "x \<notin> S \<Longrightarrow> fmap_d
   apply (auto simp add: lookup_fmap_restr_eq)
   by (metis lookup_fmap_delete)
 
+lemma fmap_delete_restr: "fmap_delete x m = m f|` (-{x})"
+  by (auto simp add: lookup_fmap_restr_eq)
+
 subsubsection {* Addition (merging) of finite maps *}
 
 lift_definition fmap_add :: "'a set \<Rightarrow> 'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b"  

@@ -38,8 +38,8 @@ lemma heapVars_delete[simp]:
 subsubsection {* Junk-free associative lists *}
 
 inductive distinctVars  where
-  [simp]: "distinctVars []" |
-  [intro]:"x \<notin> heapVars \<Gamma> \<Longrightarrow> distinctVars \<Gamma> \<Longrightarrow> distinctVars ((x, e)  # \<Gamma>)"
+  DistinctNil[simp]: "distinctVars []" |
+  DistinctCons[intro]:"x \<notin> heapVars \<Gamma> \<Longrightarrow> distinctVars \<Gamma> \<Longrightarrow> distinctVars ((x, e)  # \<Gamma>)"
 
 lemma [simp]: "distinctVars [x]"
   by (cases x, auto)

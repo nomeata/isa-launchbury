@@ -44,7 +44,7 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
       show ?case
       by (rule fmap_add_belowI)
          (auto simp add: lookupHeapToEnv  below_trans[OF monofun_cfun_arg[OF `\<rho>' \<sqsubseteq> r`] h] rho)
-  qed  
+  qed
 
   lemma HSem_fempty_below:
     assumes h: "\<And>x. x \<in> heapVars h \<Longrightarrow> \<lbrakk>the (map_of h x)\<rbrakk>\<^bsub>r\<^esub> \<sqsubseteq> r f! x"
@@ -80,6 +80,13 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
     apply (subst HSem_eq)
     using assms by (simp add: lookupHeapToEnv)
 
+  lemma HSem_fdom_subset:  "fdom (\<lbrace>\<Gamma>\<rbrace>\<rho>) \<subseteq> fdom \<rho> \<union> heapVars \<Gamma>"
+    apply rule
+    unfolding fdomIff
+    apply (case_tac "x \<in> heapVars \<Gamma>")
+    apply (auto simp add: the_lookup_HSem_other)
+    done
+
   lemma fmap_restr_fmap_addI:"-S2 \<subseteq> S \<Longrightarrow> fmap_restr S \<rho>1 f++\<^bsub>S2\<^esub> \<rho>2 = \<rho>1 f++\<^bsub>S2\<^esub> \<rho>2"
     by rule (auto simp add: lookup_fmap_add_eq)
 
@@ -92,11 +99,16 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
     apply simp_all
     done
 
-  lemma HSem_fresh_cong:
+  lemma HSem_restr_cong:
     assumes "\<rho> f|` (- heapVars h) = \<rho>' f|` (- heapVars h)"
     shows "\<lbrace>h\<rbrace>\<rho> = \<lbrace>h\<rbrace>\<rho>'"
     apply (subst (1 2) HSem_restr[symmetric])
     by (simp add: assms)
+
+  lemma HSem_restr_cong_below:
+    assumes "\<rho> f|` (- heapVars h) \<sqsubseteq> \<rho>' f|` (- heapVars h)"
+    shows "\<lbrace>h\<rbrace>\<rho> \<sqsubseteq> \<lbrace>h\<rbrace>\<rho>'"
+    by (subst (1 2) HSem_restr[symmetric]) (rule monofun_cfun_arg[OF assms])
 
   lemma HSem_reorder:
     assumes "map_of \<Gamma> = map_of \<Delta>"
@@ -126,7 +138,7 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
 
  lemma fmap_restr_HSem:
     assumes "heapVars \<Gamma> \<inter> S = {}"
-    shows "fmap_restr S (\<lbrace>\<Gamma>\<rbrace>\<rho>) = fmap_restr S \<rho>"
+    shows "(\<lbrace> \<Gamma> \<rbrace>\<rho>) f|` S = \<rho> f|` S"
     apply rule
     using assms 
     apply (auto simp add: lookup_fmap_restr_eq)
@@ -136,7 +148,7 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
   
   lemma fmap_restr_HSem_noop:
     assumes "heapVars \<Gamma> \<inter> fdom \<rho> = {}"
-    shows "fmap_restr (fdom \<rho>) (\<lbrace>\<Gamma>\<rbrace>\<rho>) = \<rho>"
+    shows "(\<lbrace> \<Gamma> \<rbrace>\<rho>) f|` fdom \<rho> = \<rho>"
     by (simp add: fmap_restr_HSem[OF assms] fmap_restr_useless)
  
   (*
@@ -310,6 +322,11 @@ begin
     assumes "\<rho> f|` (fv e) = \<rho>' f|` (fv e)"
     shows "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>"
   by (metis assms ESem_considers_fv )
+
+  lemma ESem_fresh_cong_below:
+    assumes "\<rho> f|` (fv e) \<sqsubseteq> \<rho>' f|` (fv e)"
+    shows "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> \<sqsubseteq> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>"
+  by (metis assms ESem_considers_fv monofun_cfun_arg)
   
   lemma ESem_ignores_fresh_restr:
     assumes "atom ` S \<sharp>* e"
@@ -335,12 +352,30 @@ begin
     by (metis ESem_ignores_fresh_restr' fmap_less_restrict)  
   *)
 
+  lemma HSem_ignores_fresh_restr'':
+    assumes "fv \<Gamma> \<subseteq> S"
+    shows "(\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` S = \<lbrace>\<Gamma>\<rbrace>\<rho> f|` S"
+  by (rule HSem_ignores_fresh_restr'[OF assms(1) ESem_considers_fv])
+
   lemma HSem_ignores_fresh_restr:
     assumes "atom ` S \<sharp>* \<Gamma>"
     shows "(\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` (- S) = \<lbrace>\<Gamma>\<rbrace>\<rho> f|` (- S)"
   proof-
     from assms have "fv \<Gamma> \<subseteq> - S" by (auto simp add: fv_def fresh_star_def fresh_def)
-    thus ?thesis by (rule HSem_ignores_fresh_restr'[OF _ ESem_considers_fv])
+    thus ?thesis by (rule HSem_ignores_fresh_restr'')
+  qed
+
+  lemma HSem_fresh_cong_below:
+    assumes "\<rho> f|` ((S \<union> fv \<Gamma>) - heapVars \<Gamma>) \<sqsubseteq> \<rho>' f|` ((S \<union> fv \<Gamma>) - heapVars \<Gamma>)"
+    shows "(\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` S \<sqsubseteq> (\<lbrace>\<Gamma>\<rbrace>\<rho>') f|` S"
+  proof-
+    from assms
+    have "\<lbrace>\<Gamma>\<rbrace>(\<rho> f|` (S \<union> fv \<Gamma>)) \<sqsubseteq> \<lbrace>\<Gamma>\<rbrace>(\<rho>' f|` (S \<union> fv \<Gamma>))"
+      by (auto intro: HSem_restr_cong_below simp add: Diff_eq inf_commute)
+    hence "(\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` (S \<union> fv \<Gamma>) \<sqsubseteq> (\<lbrace>\<Gamma>\<rbrace>\<rho>') f|` (S \<union> fv \<Gamma>)"
+      by (subst (1 2) HSem_ignores_fresh_restr'') simp_all
+    thus ?thesis
+      by (rule fmap_restr_below_subset[OF Un_upper1])
   qed
 
 subsubsection {* Adding a fresh variable to a heap does not affect its semantics *} 
