@@ -73,6 +73,36 @@ instance fmap :: (type, pcpo) cpo
   apply default
   sorry
 
+instance fmap :: (type, pcpo) pcpo
+apply default
+apply (rule exI[where x = "f\<emptyset>"])
+apply auto
+(*done *)
+sorry
+
+lemma bot_is_fmap_empty [simp]: "\<bottom> = f\<emptyset>"
+  (* by (metis below_bottom_iff fmap_bottom_below) *)
+  sorry
+
+(*
+instantiation fmap :: (type, pcpo) subpcpo_partition
+begin
+  definition "to_bot x = f\<emptyset>"
+
+  lemma to_bot_vimage_cone:"to_bot -` {to_bot (x :: 'a f\<rightharpoonup> 'b)} = UNIV"
+    by (auto simp add:to_bot_fmap_def)
+
+  instance  
+  apply default
+  apply (subst to_bot_vimage_cone)
+  apply (rule subpcpo_UNIV)
+  apply (simp add: to_bot_fmap_def )
+  apply (simp add: to_bot_fmap_def)
+  done
+end
+*)
+
+
 subsubsection {* Continuity and finite maps *}
 
 (*
@@ -499,321 +529,87 @@ proof-
 qed
 *)
 
-(*
 locale iterative =
   fixes \<rho> :: "'a::type f\<rightharpoonup> 'b::pcpo"
-   and e1 :: "'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b"
-   and e2 :: "'a f\<rightharpoonup> 'b \<Rightarrow> 'b"
+   and e1 :: "'a f\<rightharpoonup> 'b \<rightarrow> 'a f\<rightharpoonup> 'b"
+   and e2 :: "'a f\<rightharpoonup> 'b \<rightarrow> 'b"
    and S :: "'a set" and x :: 'a
-   and D
-  defines "D \<equiv> insert x (fdom \<rho> \<union> S)"
-  assumes cont_e1 [simp]:"cont e1"
-  assumes cont_e2 [simp]:"cont e2"
-  assumes dom[simp]: "\<And> \<rho>. fdom (e1 \<rho>) = S"
   assumes ne:"x \<notin> S"
 begin
-  sublocale subpcpo "UNIV :: 'b set" by (rule subpcpo_UNIV)
+  abbreviation "L == (\<Lambda> \<rho>'. (\<rho> f++\<^bsub>S\<^esub> e1 \<cdot> \<rho>')(x f\<mapsto> e2 \<cdot> \<rho>'))"
+  abbreviation "H == (\<lambda> \<rho>'. \<Lambda> \<rho>''. \<rho>' f++\<^bsub>S\<^esub> e1 \<cdot> \<rho>'')"
+  abbreviation "R == (\<Lambda> \<rho>'. (\<rho> f++\<^bsub>S\<^esub> (fix \<cdot> (H \<rho>')))(x f\<mapsto> e2 \<cdot> \<rho>'))"
+  abbreviation "R' == (\<Lambda> \<rho>'. (\<rho> f++\<^bsub>S\<^esub> (fix \<cdot> (H \<rho>')))(x f\<mapsto> e2 \<cdot> (fix \<cdot> (H \<rho>'))))"
 
-  abbreviation "cpo \<equiv> UNIV :: 'b set"
+  lemma split_x:
+    fixes y
+    obtains "y = x" and "y \<notin> S" | "y \<in> S" and "y \<noteq> x" | "y \<notin> S" and "y \<noteq> x" using ne by blast
+  lemmas below = fmap_belowI[OF split_x, where y1 = "\<lambda>x. x"]
+  lemmas eq = fmap_eqI[OF split_x, where y1 = "\<lambda>x. x"]
 
-  abbreviation "L == (\<lambda> \<rho>'. (\<rho> f++ e1 \<rho>')(x f\<mapsto> e2 \<rho>'))"
-  abbreviation "H == (\<lambda> \<rho>' \<rho>''. \<rho>' f++ e1 \<rho>'')"
-  abbreviation "R == (\<lambda> \<rho>'. (\<rho> f++ fmap_restr S (fix_on' b (H \<rho>')))(x f\<mapsto> e2 \<rho>'))"
-  abbreviation "R' == (\<lambda> \<rho>'. (\<rho> f++ fmap_restr S (fix_on' b (H \<rho>')))(x f\<mapsto> e2 (fix_on' b (H \<rho>'))))"
+  lemma lookup_fix[simp]:
+    fixes y and F :: "'a f\<rightharpoonup> 'b \<rightarrow> 'a f\<rightharpoonup> 'b"
+    shows "fix \<cdot> F f! y = F \<cdot> (fix \<cdot> F) f! y"
+    by (subst fix_eq, rule)
 
-  lemma condL: "fix_on_cond cpo b L"
-    apply (rule fix_on_condI)
-    apply (rule subpcpo_cone_above)
-    apply (rule bottom_of_cone_above)
-    apply (rule closed_onI)
-      apply (simp add: D_def)
-    apply (rule cont_is_cont_on)
-      apply simp
-    done
-  lemmas [simp] = fdom_fix_on[OF condL]
+  lemma R_S: "\<And> y. y \<in> S \<Longrightarrow> (fix \<cdot> R) f! y =  e1\<cdot> (fix \<cdot> (H (fix \<cdot> R))) f! y"
+    by (case_tac y rule: split_x) simp_all
 
-  lemma condH: "\<And> \<rho>'. \<rho>' \<in> cpo \<Longrightarrow> fix_on_cond cpo b (H \<rho>')"
-    apply (rule fix_on_condI)
-    apply (rule subpcpo_cone_above)
-    apply (rule bottom_of_cone_above)
-    apply (rule closed_onI)
-      apply (auto simp add: D_def)[1]
-    apply (rule cont_is_cont_on)
-      apply simp
-    done
-  lemmas [simp] = fdom_fix_on[OF condH]
-  
-  lemma condR: "fix_on_cond cpo b R"
-    apply (rule fix_on_condI)
-    apply (rule subpcpo_cone_above)
-    apply (rule bottom_of_cone_above)
-    apply (rule closed_onI)
-      using fdom_fix_on[OF condH]  apply (auto simp add: D_def)[1]
-    apply (rule cont_comp_cont_on2[OF cont2cont_lambda[OF fmap_upd_cont[OF cont_id cont_const]]
-                fmap_upd_cont[OF cont_const cont_id]
-                _
-                cont_is_cont_on[OF cont_e2]])
-    apply (rule cont_comp_cont_on2[OF cont2cont_lambda[OF fmap_add_cont1]
-                fmap_add_cont2
-                cont_is_cont_on[OF cont_const]
-                ])
-    apply (rule cont_comp_cont_on[OF fmap_restr_cont])
-    apply (rule cont_onI2)
-      apply (rule monofun_onI)
-      apply (erule (1) fix_on_mono[OF condH condH])
-      apply (erule cont2monofunE[OF fmap_add_cont1])
+  lemma R'_S: "\<And> y. y \<in> S \<Longrightarrow> fix \<cdot> R' f! y = e1 \<cdot> (fix \<cdot> (H (fix \<cdot> R'))) f! y"
+    by (case_tac y rule: split_x) simp_all
 
-    apply (rule eq_imp_below)
-    apply (rule fix_on_cont[OF chain_on_is_chain condH[OF chain_on_is_on]])
-      apply assumption
-      apply assumption
-    apply (rule cont2cont_lambda[OF fmap_add_cont1])
-    done
-  lemmas [simp] = fdom_fix_on[OF condR]
+  lemma HR_is_R[simp]: "fix\<cdot>(H (fix \<cdot> R)) = fix \<cdot> R"
+    by (rule eq) simp_all
 
-  lemma cont_on_fix_H: "cont_on (\<lambda> \<rho>'. fix_on' b (H \<rho>'))"
-    apply (rule cont_onI2)
-      apply (rule monofun_onI)
-      apply (erule (1) fix_on_mono[OF condH condH])
-      apply (erule cont2monofunE[OF fmap_add_cont1])
+  lemma HR'_is_R'[simp]: "fix \<cdot> (H (fix \<cdot> R')) = fix \<cdot> R'"
+    by (rule eq) simp_all
 
-    apply (rule eq_imp_below)
-    apply (rule fix_on_cont[OF chain_on_is_chain condH[OF chain_on_is_on]])
-      apply assumption
-      apply assumption
-    apply (rule cont2cont_lambda[OF fmap_add_cont1])
-    done
-
-  lemma condR': "fix_on_cond cpo b R'"
-    apply (rule fix_on_condI)
-    apply (rule subpcpo_cone_above)
-    apply (rule bottom_of_cone_above)
-    apply (rule closed_onI)
-      using fdom_fix_on[OF condH]  apply (auto simp add: D_def)[1]
-    apply (rule cont_comp_cont_on2[OF cont2cont_lambda[OF fmap_upd_cont[OF cont_id cont_const]]
-                fmap_upd_cont[OF cont_const cont_id]
-                _
-                cont_comp_cont_on[OF cont_e2 cont_on_fix_H]])
-    apply (rule cont_comp_cont_on2[OF cont2cont_lambda[OF fmap_add_cont1]
-                fmap_add_cont2
-                cont_is_cont_on[OF cont_const]
-                ])
-    apply (rule cont_comp_cont_on[OF fmap_restr_cont cont_on_fix_H])
-    done
-  lemmas [simp] = fdom_fix_on[OF condR']
-
-  lemmas fix_eq_R = fix_on_eq[OF condR]
-  lemmas fix_eq_R' = fix_on_eq[OF condR']
-  lemmas fix_eq_L = fix_on_eq[OF condL]
-  lemmas fix_eq_HL = fix_on_eq[OF condH[OF fix_on_there[OF condL]]]
-  lemmas fix_eq_HR = fix_on_eq[OF condH[OF fix_on_there[OF condR]]]
-  lemmas fix_eq_HR' = fix_on_eq[OF condH[OF fix_on_there[OF condR']]]
-
-  lemma [simp]: "D \<inter> S = S" 
-      by (auto simp add: D_def)
-
-  lemma HR_not_S[simp]: "\<And> x. x \<notin> S \<Longrightarrow> lookup (fix_on' b (H (fix_on' b R))) x = lookup (fix_on' b R) x"
-      apply (subst fix_eq_HR) by simp
-  
-  lemma HR_S[simp]: "\<And> y. y \<in> S \<Longrightarrow> lookup (fix_on' b (H (fix_on' b R))) y = lookup (e1 (fix_on' b (H (fix_on' b R)))) y"
-    apply (subgoal_tac "y \<noteq> x")
-    apply (subst fix_eq_HR)
-    apply simp
-    using ne by metis
-
-  lemma L_S[simp]: "\<And> y. y \<in> S \<Longrightarrow> lookup (fix_on' b L) y = lookup (e1 (fix_on' b L)) y"
-    apply (subgoal_tac "y \<noteq> x")
-    apply (subst (1) fix_eq_L)
-    apply simp
-    using ne by metis
-
-  lemma L_x2[simp]: "(fix_on' b L) f! x = e2 (fix_on' b L)"
-    by (subst (1) fix_eq_L, simp)
-
-  lemma L_not_S_x2[simp]: "\<And> y. y \<notin> S \<Longrightarrow> y \<noteq> x \<Longrightarrow> lookup (fix_on' b L) y = lookup \<rho> y"
-    by (subst (1) fix_eq_L, simp)
-
-  lemma R_S[simp]: "\<And> y. y \<in> S \<Longrightarrow> lookup (fix_on' b R) y = lookup (e1 (fix_on' b (H (fix_on' b R)))) y"
-    apply (subgoal_tac "y \<noteq> x")
-    apply (subst fix_eq_R)
-    apply simp
-    using ne by metis
-
-  lemma R_x2[simp]: "(fix_on' b R) f! x = e2 (fix_on' b R)"
-    by (subst fix_eq_R, simp)
-
-  lemma R_not_S[simp]: "\<And> y. y \<notin> S \<Longrightarrow> y \<noteq> x \<Longrightarrow> lookup (fix_on' b R) y = lookup \<rho> y"
-    by (subst fix_eq_R, simp)
-
-  lemma HR_is_R[simp]: "fix_on' b (H (fix_on' b R)) = fix_on' b R"
-    apply (rule fmap_eqI)
-    apply simp
-    apply (case_tac "xa \<in> S")
-    apply simp_all
-    done
-
-  lemma HL_not_S[simp]: "\<And> x. x \<notin> S \<Longrightarrow> lookup (fix_on' b (H (fix_on' b L))) x = lookup (fix_on' b L) x"
-    apply (subst fix_eq_HL) by simp
-
-  lemma HR'_not_S[simp]: "\<And> x. x \<notin> S \<Longrightarrow> lookup (fix_on' b (H (fix_on' b R'))) x = lookup (fix_on' b R') x"
-    apply (subst fix_eq_HR') by simp
-
-  lemma HR'_S[simp]: "\<And> y. y \<in> S \<Longrightarrow> lookup (fix_on' b (H (fix_on' b R'))) y = lookup (e1 (fix_on' b (H (fix_on' b R')))) y"
-    apply (subgoal_tac "y \<noteq> x")
-    apply (subst fix_eq_HR')
-    apply simp
-    using ne by metis
-
-  lemma HL_S[simp]: "\<And> y. y \<in> S \<Longrightarrow> lookup (fix_on' b (H (fix_on' b L))) y = lookup (e1 (fix_on' b (H (fix_on' b L)))) y"
-    apply (subgoal_tac "y \<noteq> x")
-    apply (subst fix_eq_HL)
-    apply simp
-    using ne by metis
-
-  lemma R'_S[simp]: "\<And> y. y \<in> S \<Longrightarrow> lookup (fix_on' b R') y = lookup (e1 (fix_on' b (H (fix_on' b R')))) y"
-    apply (subgoal_tac "y \<noteq> x")
-    apply (subst fix_eq_R')
-    apply simp
-    using ne by metis
-
-  lemma R'_x2[simp]: "(fix_on' b R') f! x = e2 (fix_on' b (H (fix_on' b R')))"
-    by (subst fix_eq_R', simp)
-
-  lemma R'_not_S[simp]: "\<And> y. y \<notin> S \<Longrightarrow> y \<noteq> x \<Longrightarrow> lookup (fix_on' b R') y = lookup \<rho> y"
-    by (subst fix_eq_R', simp)
-
-  lemma HR'_is_R'[simp]: "fix_on' b (H (fix_on' b R')) = fix_on' b R'"
-    apply (rule fmap_eqI)
-    apply simp
-    apply (case_tac "xa \<in> S")
-    apply simp_all
-    done
-  
   lemma H_noop:
     fixes \<rho>' \<rho>''
-    assumes there: "(\<rho>' :: 'a f\<rightharpoonup> 'b) \<in> cpo"
-    assumes "\<And> x. x \<in> S \<Longrightarrow> (e1 \<rho>'') f! x \<sqsubseteq> \<rho>' f! x"
-    shows "H \<rho>' \<rho>'' \<sqsubseteq> \<rho>'"
+    assumes "\<And> y. y \<in> S \<Longrightarrow> y \<noteq> x \<Longrightarrow> (e1 \<cdot> \<rho>'') f! y \<sqsubseteq> \<rho>' f! y"
+    shows "H \<rho>' \<cdot> \<rho>'' \<sqsubseteq> \<rho>'"
       using assms
-      apply -
-      apply (rule fmap_belowI)
-      using there apply (auto simp add: D_def)[1]
-      apply (case_tac "x \<in> fdom (e1 \<rho>')")
-      apply simp
-      apply simp
-      done
+      by -(rule below, simp_all)
 
-  lemma HL_is_L[simp]: "fix_on' b (H (fix_on' b L)) = fix_on' b L"
+  lemma HL_is_L[simp]: "fix \<cdot> (H (fix \<cdot> L)) = fix \<cdot> L"
   proof (rule below_antisym)
-    show "fix_on' b (H (fix_on' b L)) \<sqsubseteq> fix_on' b L"
-      apply (rule fix_on_least_below[OF condH[OF fix_on_there[OF condL]] fix_on_there[OF condL]])
-      apply (rule H_noop[OF fix_on_there[OF condL]])
-      apply simp
-    done
+    show "fix \<cdot> (H (fix \<cdot> L)) \<sqsubseteq> fix \<cdot> L"
+      by (rule fix_least_below[OF H_noop]) simp
+    hence *: "e2 \<cdot> (fix \<cdot> (H (fix \<cdot> L))) \<sqsubseteq> e2 \<cdot> (fix \<cdot> L)" by (rule monofun_cfun_arg)
 
-    show "fix_on' b L \<sqsubseteq> fix_on' b (H (fix_on' b L))"
-    apply (rule fix_on_least_below[OF condL fix_on_there[OF condH[OF fix_on_there[OF condL]]]])
-    apply (rule fmap_upd_belowI)
-    apply simp apply (auto simp add: D_def)[1]
-    apply (case_tac "z \<in> S")
-    apply simp
-    apply simp
-    apply (simp add: ne)
-    apply (rule cont2monofunE[OF cont_e2])
-    apply fact
-    done
+    show "fix \<cdot> L \<sqsubseteq> fix \<cdot> (H (fix \<cdot> L))"
+      by (rule fix_least_below[OF below]) (simp_all add: ne *)
   qed
   
   lemma iterative_fmap_add:
-    shows "fix_on' b L = fix_on' b R"
+    shows "fix \<cdot> L = fix \<cdot> R"
   proof(rule below_antisym)
-    show "fix_on' b R \<sqsubseteq> fix_on' b L"
-    proof (rule fix_on_least_below[OF condR])
-      show "fix_on' b L \<in> cpo"
-        by simp
-      show "R (fix_on' b L) \<sqsubseteq> fix_on' b L"
-      proof(rule fmap_upd_belowI)
-        case goal1 show ?case by (simp, auto simp add: D_def)
-        show "e2 (fix_on' b L) \<sqsubseteq> (fix_on' b L) f! x"
-          by simp
-        case (goal2 y)
-        thus "\<rho> f++ fmap_restr S (fix_on' b (H (fix_on' b L))) f! y \<sqsubseteq> (fix_on' b L) f! y"
-          by(cases "y \<in> S", simp_all)
-      qed
-    qed
-  
-    show "fix_on' b L \<sqsubseteq> fix_on' b R"
-    proof (rule fix_on_least_below[OF condL])
-      show "fix_on' b R \<in> cpo"
-        by simp
-      show "L (fix_on' b R) \<sqsubseteq> fix_on' b R"
-        apply (rule  fmap_upd_belowI)
-        apply simp apply (auto simp add: D_def)[1]
-        apply (case_tac "z \<notin> S")
-        apply simp_all
+    show "fix \<cdot> R \<sqsubseteq> fix \<cdot> L"
+      by (rule fix_least_below[OF below]) simp_all
+
+    show "fix \<cdot> L \<sqsubseteq> fix \<cdot> R"
+      apply (rule fix_least_below[OF below])
+      apply simp
+      apply (simp del: lookup_fix add: R_S)
+      apply simp
       done
-    qed
   qed
 
   lemma iterative_fmap_add':
-    shows "fix_on' b L = fix_on' b R'"
+    shows "fix \<cdot> L = fix \<cdot>  R'"
   proof(rule below_antisym)
-    show "fix_on' b R' \<sqsubseteq> fix_on' b L"
-    proof (rule fix_on_least_below[OF condR'])
-      show "fix_on' b L \<in> cpo"
-        by simp
-      show "R' (fix_on' b L) \<sqsubseteq> fix_on' b L"
-      proof(rule fmap_upd_belowI)
-        case goal1 show ?case by (simp, auto simp add: D_def)
-        show "e2 (fix_on' b (H (fix_on' b L))) \<sqsubseteq> (fix_on' b L) f! x"
-          by simp
-        case (goal2 y)
-          thus "\<rho> f++ fmap_restr S (fix_on' b (H (fix_on' b L))) f! y \<sqsubseteq> fix_on' b L f! y"
-            by (cases "y \<in> S", simp_all)
-      qed
-    qed
+    show "fix \<cdot> R' \<sqsubseteq> fix \<cdot> L"
+      by (rule fix_least_below[OF below]) simp_all
   
-    show "fix_on' b L \<sqsubseteq> fix_on' b R'"
-    proof (rule fix_on_least_below[OF condL])
-      show "fix_on' b R' \<in> cpo"
-        by simp
-      show "L (fix_on' b R') \<sqsubseteq> fix_on' b R'"
-        apply (rule  fmap_upd_belowI)
-        apply simp apply (auto simp add: D_def)[1]
-        apply (case_tac "z \<notin> S")
-        apply simp_all
+    show "fix \<cdot> L \<sqsubseteq> fix \<cdot> R'"
+      apply (rule fix_least_below[OF below])
+      apply simp
+      apply (simp del: lookup_fix add: R'_S)
+      apply simp
       done
-    qed
   qed
 end
-*)
 
-subsubsection {* Finite maps can be partitioned in pcpo's *} 
-
-instance fmap :: (type, pcpo) pcpo
-apply default
-apply (rule exI[where x = "f\<emptyset>"])
-apply auto
-done
-
-lemma bot_is_fmap_empty [simp]: "\<bottom> = f\<emptyset>"
-  by (metis below_bottom_iff fmap_bottom_below)
-
-instantiation fmap :: (type, pcpo) subpcpo_partition
-begin
-  definition "to_bot x = f\<emptyset>"
-
-  lemma to_bot_vimage_cone:"to_bot -` {to_bot (x :: 'a f\<rightharpoonup> 'b)} = UNIV"
-    by (auto simp add:to_bot_fmap_def)
-
-  instance  
-  apply default
-  apply (subst to_bot_vimage_cone)
-  apply (rule subpcpo_UNIV)
-  apply (simp add: to_bot_fmap_def )
-  apply (simp add: to_bot_fmap_def)
-  done
-end
 
 subsection {* Mapping *}
 

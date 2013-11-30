@@ -71,7 +71,7 @@ lemma HSem_unfold_let:
   assumes distinct: "distinctVars ((x, body) # \<Gamma>)"
   assumes fresh: "set (bn as) \<sharp>* (x, Let as body, \<Gamma>)"
   shows "\<lbrace>(x, Let as body) # \<Gamma>\<rbrace> = (\<lbrace>(x, body) # asToHeap as @ \<Gamma>\<rbrace>)f|` (insert x (heapVars \<Gamma>))"
-sorry
+oops
 (*
 proof-
   from fresh
