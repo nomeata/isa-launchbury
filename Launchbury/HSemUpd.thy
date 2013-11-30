@@ -198,65 +198,52 @@ subsubsection {* Iterative definition of the heap semantics *}
   lemma iterative_HSem:
     assumes "x \<notin> heapVars \<Gamma>"
     shows "\<lbrace>(x,e) # \<Gamma>\<rbrace>\<rho> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
-  sorry
-  (*
   proof-
     interpret iterative
-      where e1 =  "\<lambda> \<rho>'. heapToEnv \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)"
-      and e2 = "\<lambda> \<rho>'. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>"
+      where e1 =  "\<Lambda> \<rho>'. heapToEnv \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)"
+      and e2 = "\<Lambda> \<rho>'. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>"
       and S = "heapVars \<Gamma>"
       and x = x
-      and D =  "insert x (fdom \<rho> \<union> heapVars \<Gamma>) "
       apply -
       apply unfold_locales
       using assms
       by (simp_all)
 
-    have "\<lbrace>(x,e) # \<Gamma>\<rbrace>\<rho> = fix_on' b L"
-      by (simp add: HSem_def' fmap_add_upd)
-    also have "\<dots> = fix_on' b R"
+    have "\<lbrace>(x,e) # \<Gamma>\<rbrace>\<rho> = fix \<cdot> L"
+      by (simp add: HSem_def' fmap_add_upd ne)
+    also have "\<dots> = fix \<cdot> R"
       by (rule iterative_fmap_add)
-    also have "\<dots> = fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars \<Gamma>)]\<^esub>)
-            (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
-      by (rule fix_on_cong[OF condR], simp add: HSem_def')
+    also have "\<dots> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
+      by (simp add: HSem_def')
     finally show ?thesis.
   qed
-  *)
 
   lemma iterative_HSem':
     assumes "x \<notin> heapVars \<Gamma>"
     shows "(\<mu> \<rho>'. (\<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))
          = (\<mu> \<rho>'. (\<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>'\<^esub>))"
-  sorry
-  (*
   proof-
     interpret iterative
-      where e1 =  "\<lambda> \<rho>'. heapToEnv \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)"
-      and e2 = "\<lambda> \<rho>'. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>"
+      where e1 =  "\<Lambda> \<rho>'. heapToEnv \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)"
+      and e2 = "\<Lambda> \<rho>'. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>"
       and S = "heapVars \<Gamma>"
       and x = x
-      and D =  "insert x (fdom \<rho> \<union> heapVars \<Gamma>) "
       apply -
       apply unfold_locales
       using assms
-      by simp_all
+      by (simp_all)
 
-    have "fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars \<Gamma>)]\<^esub>)
-            (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)) =
-          fix_on' b R"
-      by (rule fix_on_cong[symmetric, OF condR], simp add: HSem_def')
-    also have "\<dots> = fix_on' b L"
+    have "(\<mu> \<rho>'. (\<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)) = fix \<cdot> R"
+      by (simp add: HSem_def')
+    also have "\<dots> = fix \<cdot> L"
       by (rule iterative_fmap_add[symmetric])
-    also have "\<dots> = fix_on' b R'"
+    also have "\<dots> = fix \<cdot> R'"
       by (rule iterative_fmap_add')
-    also have "\<dots> = fix_on' (f\<emptyset>\<^bsub>[insert x (fdom \<rho> \<union> heapVars \<Gamma>)]\<^esub>)
-            (\<lambda> \<rho>'. (\<rho> f++ fmap_restr (heapVars \<Gamma>) (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>'\<^esub>))"
-      by (rule fix_on_cong[OF condR'], simp add: HSem_def')
+    also have "\<dots> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>'\<^esub>))"
+      by (simp add: HSem_def')
     finally
     show ?thesis.
   qed
-  *)
-
 end
 
 lemma HSem_cong[fundef_cong]:

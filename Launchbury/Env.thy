@@ -213,7 +213,7 @@ lemma fmap_add_upd_swap:
   by transfer auto
 
 lemma fmap_add_upd: 
-  "x \<in> S \<Longrightarrow> \<rho> f++\<^bsub>S\<^esub> (\<rho>'(x f\<mapsto> z)) = (\<rho> f++\<^bsub>S\<^esub> \<rho>')(x f\<mapsto> z)"
+  "x \<in> S \<Longrightarrow> \<rho> f++\<^bsub>S\<^esub> (\<rho>'(x f\<mapsto> z)) = (\<rho> f++\<^bsub>S - {x}\<^esub> \<rho>')(x f\<mapsto> z)"
   apply transfer
   apply rule
   apply auto
