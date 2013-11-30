@@ -39,7 +39,7 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
     shows "\<lbrace>h\<rbrace>\<rho> \<sqsubseteq> r"
   proof (rule HSem_ind)
     case goal1 show ?case by (auto intro: adm_is_adm_on)
-    case goal2 show ?case by (simp add: to_bot_fmap_def)
+    case goal2 show ?case by (simp)
     case (goal3 \<rho>')
       show ?case
       by (rule fmap_add_belowI)
@@ -517,7 +517,7 @@ subsubsection {* Substitution *}
   lemma HSem_subst_expr_below:
     assumes below: "\<lbrakk> e1 \<rbrakk>\<^bsub>\<lbrace>(x, e2) # \<Gamma>\<rbrace>\<rho>\<^esub> \<sqsubseteq> \<lbrakk> e2 \<rbrakk>\<^bsub>\<lbrace>(x, e2) # \<Gamma>\<rbrace>\<rho>\<^esub>"
     shows "\<lbrace>(x, e1) # \<Gamma>\<rbrace>\<rho> \<sqsubseteq> \<lbrace>(x, e2) # \<Gamma>\<rbrace>\<rho>"
-  by (rule HSem_below) (auto simp add: the_lookup_HSem_heap below to_bot_fmap_def the_lookup_HSem_other)
+  by (rule HSem_below) (auto simp add: the_lookup_HSem_heap below the_lookup_HSem_other)
 
   
   lemma HSem_subst_expr:
