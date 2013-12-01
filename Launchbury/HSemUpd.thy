@@ -30,7 +30,7 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
     assumes step: "\<And> y. P y \<Longrightarrow>  P (\<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>y\<^esub>)))"
     shows "P (\<lbrace>\<Gamma>\<rbrace>\<rho>)"
     unfolding HSem_def'
-    apply (rule fix_ind[OF assms(1,2)])
+    apply (rule fix_ind[OF assms(1), OF assms(2)])
     using step by simp
 
   lemma HSem_below:
@@ -38,8 +38,8 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
     assumes h: "\<And>x. x \<in> heapVars h \<Longrightarrow> \<lbrakk>the (map_of h x)\<rbrakk>\<^bsub>r\<^esub> \<sqsubseteq> r f! x"
     shows "\<lbrace>h\<rbrace>\<rho> \<sqsubseteq> r"
   proof (rule HSem_ind)
-    case goal1 show ?case by (auto intro: adm_is_adm_on)
-    case goal2 show ?case by (simp)
+    case goal1 show ?case by (auto)
+    case goal2 show ?case by (rule minimal)
     case (goal3 \<rho>')
       show ?case
       by (rule fmap_add_belowI)
@@ -48,7 +48,7 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
 
   lemma HSem_fempty_below:
     assumes h: "\<And>x. x \<in> heapVars h \<Longrightarrow> \<lbrakk>the (map_of h x)\<rbrakk>\<^bsub>r\<^esub> \<sqsubseteq> r f! x"
-    shows "\<lbrace>h\<rbrace>f\<emptyset> \<sqsubseteq> r"
+    shows "\<lbrace>h\<rbrace>\<bottom> \<sqsubseteq> r"
     using assms 
     by (metis HSem_below lookup_fempty minimal)
 
@@ -59,8 +59,7 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
       P (\<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>y\<^esub>))) (\<rho>2 f++\<^bsub>heapVars \<Gamma>2\<^esub> (heapToEnv \<Gamma>2 (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>z\<^esub>)))"
     shows "P (\<lbrace>\<Gamma>\<rbrace>\<rho>) (\<lbrace>\<Gamma>2\<rbrace>\<rho>2)"
     unfolding HSem_def'
-    find_theorems name:"fix" name:parallel
-    apply (rule parallel_fix_ind[OF assms(1,2)])
+    apply (rule parallel_fix_ind[OF assms(1), OF assms(2)])
     using step by simp
   
   lemma HSem_eq:
@@ -88,7 +87,7 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
     done
 
   lemma fmap_restr_fmap_addI:"-S2 \<subseteq> S \<Longrightarrow> fmap_restr S \<rho>1 f++\<^bsub>S2\<^esub> \<rho>2 = \<rho>1 f++\<^bsub>S2\<^esub> \<rho>2"
-    by rule (auto simp add: lookup_fmap_add_eq)
+    by (rule fmap_eqI) (auto simp add: lookup_fmap_add_eq )
 
   lemma HSem_restr:
     "\<lbrace>h\<rbrace>(\<rho> f|` (- heapVars h)) = \<lbrace>h\<rbrace>\<rho>"
@@ -139,7 +138,7 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
  lemma fmap_restr_HSem:
     assumes "heapVars \<Gamma> \<inter> S = {}"
     shows "(\<lbrace> \<Gamma> \<rbrace>\<rho>) f|` S = \<rho> f|` S"
-    apply rule
+    apply (rule fmap_eqI)
     using assms 
     apply (auto simp add: lookup_fmap_restr_eq)
     apply (subst the_lookup_HSem_other)
@@ -330,7 +329,7 @@ begin
     have "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> =  \<lbrakk> e \<rbrakk>\<^bsub>\<rho> f|` (- (fdom \<rho> - S))\<^esub>"
       by (rule ESem_ignores_fresh_restr[OF assms])
     also have "\<rho> f|` (- (fdom \<rho> - S)) = \<rho> f|` S" 
-      by rule (auto simp add: lookup_fmap_restr_eq dest: lookup_not_fdom)
+      by (rule fmap_eqI) (auto simp add: lookup_fmap_restr_eq dest: lookup_not_fdom)
     finally show ?thesis.
   qed
 
@@ -530,7 +529,7 @@ end
 
 lemma parallel_HSem_ind_different_ESem:
   assumes "adm (\<lambda>\<rho>'. P (fst \<rho>') (snd \<rho>'))"
-  assumes "P f\<emptyset> f\<emptyset>"
+  assumes "P \<bottom> \<bottom>"
   assumes "\<And>y z. P y z \<Longrightarrow> P (\<rho> f++\<^bsub>heapVars h\<^esub> heapToEnv h (\<lambda>e. ESem1 e $ y)) (\<rho>2 f++\<^bsub>heapVars h2\<^esub> heapToEnv h2 (\<lambda>e. ESem2 e $ z))"
   shows "P (has_ESem.HSem ESem1 h\<cdot>\<rho>) (has_ESem.HSem ESem2 h2\<cdot>\<rho>2)"
 proof-
@@ -540,7 +539,6 @@ proof-
   show ?thesis
     unfolding HSem1.HSem_def' HSem2.HSem_def'
     apply (rule parallel_fix_ind[OF assms(1)])
-    unfolding bot_is_fmap_empty
     apply (rule assms(2))
     apply simp
     apply (erule assms(3))

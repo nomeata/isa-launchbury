@@ -1,6 +1,6 @@
 theory "Nominal-HOLCF"
 imports
-  "Nominal/Nominal/Nominal2" "Nominal-Utils" "~~/src/HOL/HOLCF/HOLCF"
+  "Nominal/Nominal/Nominal2" "Nominal-Utils" "~~/src/HOL/HOLCF/HOLCF" "HOLCF-Utils"
 begin
 
 
@@ -63,12 +63,29 @@ lemma perm_bottom[simp,eqvt]: "\<pi> \<bullet> \<bottom> = (\<bottom>::'a::{cont
   thus "\<pi> \<bullet> \<bottom> = (\<bottom>::'a::{cont_pt,pcpo})" by simp
 qed
 
+lemma bot_supp[simp]: "supp (\<bottom> :: 'a :: pcpo_pt) = {}"
+  by (rule supp_fun_eqvt) (simp add: eqvt_def)
+
+lemma fempty_fresh[simp]: "a \<sharp> (\<bottom> :: 'a :: pcpo_pt)"
+  by (simp add: fresh_def)
+
+lemma fempty_fresh_star[simp]: "a \<sharp>* (\<bottom> :: 'a :: pcpo_pt)"
+  by (simp add: fresh_star_def)
+
 lemma below_eqvt [eqvt]:
     "\<pi> \<bullet> (x \<sqsubseteq> y) = (\<pi> \<bullet> x \<sqsubseteq> \<pi> \<bullet> (y::'a::cont_pt))" by (auto simp add: permute_pure)
 
 lemma lub_eqvt[simp]:
   "(\<exists> z. S <<| (z::'a::{cont_pt})) \<Longrightarrow> \<pi> \<bullet> lub S = lub (\<pi> \<bullet> S)"
   by (metis lub_eqI perm_is_lub_simp)
+
+lemma chain_eqvt[eqvt]:
+  fixes F :: "nat \<Rightarrow> 'a::cont_pt"
+  shows "chain F \<Longrightarrow> chain (\<pi> \<bullet> F)"
+  apply (rule chainI)
+  apply (drule_tac i = i in chainE)
+  apply (subst (asm) perm_cont_simp[symmetric, where \<pi> = \<pi>])
+  by (metis permute_fun_app_eq permute_pure)
 
 subsubsection {* Instance for @{type cfun} *}
 
@@ -103,13 +120,19 @@ lemma Abs_cfun_eqvt: "cont f \<Longrightarrow> (p \<bullet> Abs_cfun) f = Abs_cf
 instance "cfun" :: (cont_pt, cont_pt) cont_pt
   by (default,subst permute_cfun_eq, auto)
 
-lemma chain_eqvt[eqvt]:
-  fixes F :: "nat \<Rightarrow> 'a::cont_pt"
-  shows "chain F \<Longrightarrow> chain (\<pi> \<bullet> F)"
-  apply (rule chainI)
-  apply (drule_tac i = i in chainE)
-  apply (subst (asm) perm_cont_simp[symmetric, where \<pi> = \<pi>])
-  by (metis permute_fun_app_eq permute_pure)
+
+subsubsection {* Instance for @{type fun} *}
+
+lemma permute_fun_eq: "permute p = (\<lambda> f. (permute p) \<circ> f \<circ> (permute (-p)))"
+  by (rule, rule, metis comp_apply eqvt_lambda unpermute_def)
+
+instance "fun" :: (cont_pt, cont_pt) cont_pt
+  apply (default)
+  apply (rule cont2cont_lambda)
+  apply (subst permute_fun_def)
+  apply (rule perm_cont2cont)
+  apply (rule cont_fun)
+  done
 
 class pure_cpo = Nominal2_Base.pure + cpo
 

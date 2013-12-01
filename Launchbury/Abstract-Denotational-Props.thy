@@ -30,7 +30,7 @@ next
      by (rule HSem_ignores_fresh_restr'[OF _ Let(1)])
   also
   have "\<lbrace>asToHeap as\<rbrace>(\<rho> f|` (fv as \<union> fv e)) = \<lbrace>asToHeap as\<rbrace>\<rho> f|` (fv as \<union> fv e - heapVars (asToHeap as))"
-    by (rule HSem_restr_cong) (auto simp add: lookup_fmap_restr_eq)
+    by (rule HSem_restr_cong) (auto intro: fmap_eqI simp add: lookup_fmap_restr_eq)
   finally
   show ?case by simp
 qed
@@ -43,7 +43,7 @@ subsection {* Nicer equations for ESem, without freshness requirements *}
 lemma ESem_Lam[simp]: "\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub> = tick \<cdot> (Fn \<cdot> (\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>))"
 proof-
   have *: "\<And> v. ((\<rho> f|` (fv e - {x}))(x f\<mapsto> v)) f|` fv e = (\<rho>(x f\<mapsto> v)) f|` fv e"
-    by rule (auto simp add: lookup_fmap_restr_eq lookup_fmap_upd_eq)
+    by (rule fmap_eqI) (auto simp add: lookup_fmap_restr_eq lookup_fmap_upd_eq)
 
   have "\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>fmap_delete x \<rho>\<^esub>"
     by (rule ESem_fresh_cong) simp
@@ -64,11 +64,11 @@ proof-
   have "\<lbrakk> Let as body \<rbrakk>\<^bsub>\<rho>\<^esub> = tick \<cdot> (\<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>(\<rho> f|` fv (Let as body))\<^esub>)" 
     by simp
   also have "\<lbrace>asToHeap as\<rbrace>(\<rho> f|` fv(Let as body)) = \<lbrace>asToHeap as\<rbrace>(\<rho> f|` (fv as \<union> fv body))" 
-    by (rule HSem_restr_cong) (auto simp add: lookup_fmap_restr_eq)
+    by (rule HSem_restr_cong) (auto intro: fmap_eqI simp add: lookup_fmap_restr_eq)
   also have "\<dots> = (\<lbrace>asToHeap as\<rbrace>\<rho>) f|` (fv as \<union> fv body)"
     by (rule HSem_ignores_fresh_restr'[symmetric, OF subset_trans[OF fv_asToHeap Un_upper1] ESem_considers_fv])
   also have "\<lbrakk>body\<rbrakk>\<^bsub>\<dots>\<^esub> = \<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub>"
-    by (rule ESem_fresh_cong) (auto simp add: lookup_fmap_restr_eq)
+    by (rule ESem_fresh_cong) (auto intro: fmap_eqI simp add: lookup_fmap_restr_eq)
   finally show ?thesis.
 qed
 declare ESem.simps(4)[simp del]

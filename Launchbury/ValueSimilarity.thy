@@ -414,7 +414,7 @@ lemma fmap_similar_adm: "adm (\<lambda>x. fst x f\<triangleleft>\<triangleright>
   apply auto
   done
 
-lemma fmap_similar_fmap_bottom[simp]: "f\<emptyset> f\<triangleleft>\<triangleright> f\<emptyset>"
+lemma fmap_similar_fmap_bottom[simp]: "\<bottom> f\<triangleleft>\<triangleright> \<bottom>"
   by auto
 
 lemma fmap_similarE[elim]:

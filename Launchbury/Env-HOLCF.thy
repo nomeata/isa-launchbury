@@ -1,168 +1,41 @@
 theory "Env-HOLCF"
-  imports Env
+  imports Env "HOLCF-Utils"
 begin
-
-default_sort type
-
-lemma cont_compose2:
-  assumes "cont c"
-  assumes "\<And> x. cont (c x)"
-  assumes "cont f"
-  assumes "cont g"
-  shows "cont (\<lambda>x. c (f x) (g x))"
-proof-
-  have "monofun (\<lambda>x. c (f x) (g x))"
-    apply (rule monofunI)
-    apply (rule below_trans[OF cont2monofunE[OF assms(2) cont2monofunE[OF `cont g`]]], assumption)
-    apply (rule fun_belowD[OF cont2monofunE[OF `cont c` cont2monofunE[OF `cont f`]]], assumption)
-    done
-  thus ?thesis
-    apply (rule contI2)
-    apply (subst cont2contlubE[OF `cont f`], assumption)
-    apply (subst cont2contlubE[OF `cont g`], assumption)
-    apply (subst cont2contlubE[OF `cont c` ch2ch_cont[OF `cont f`]], assumption)
-    apply (subst lub_fun[OF ch2ch_cont[OF `cont c` ch2ch_cont[OF `cont f`]]], assumption)
-    apply (subst cont2contlubE[OF assms(2)ch2ch_cont[OF `cont g`]], assumption)
-    apply (subst diag_lub)
-    apply (rule ch2ch_fun[OF ch2ch_cont[OF `cont c` ch2ch_cont[OF `cont f`]]], assumption)
-    apply (rule ch2ch_cont[OF assms(2) ch2ch_cont[OF `cont g`]], assumption)
-    apply (rule below_refl)
-    done
-qed
 
 subsubsection {* A partial order on finite maps *}
-
-instantiation fmap :: (type, pcpo) po
-begin
-  lift_definition below_fmap :: "('a f\<rightharpoonup> 'b) \<Rightarrow> ('a f\<rightharpoonup> 'b) \<Rightarrow> bool" is "op \<sqsubseteq>"..
- 
-
-instance
-proof default
-  fix x :: "'a f\<rightharpoonup> 'b"
-  show "x \<sqsubseteq> x" by (auto simp add:below_fmap_def)
-next
-  fix x y z :: "'a f\<rightharpoonup> 'b"
-  assume "x \<sqsubseteq> y" "y \<sqsubseteq> z"
-  thus "x \<sqsubseteq> z"
-  apply (auto simp add: below_fmap_def)
-  by (metis rev_below_trans)
-next
-  fix x y :: "'a f\<rightharpoonup> 'b"
-  assume "x \<sqsubseteq> y" "y \<sqsubseteq> x"
-  thus "x = y"
-  by (metis Rep_fmap_inject below_fmap.rep_eq po_eq_conv)
-qed
-end
 
 lemma fmap_belowI:
   assumes "\<And> x. a f! x \<sqsubseteq> b f! x"
   shows "a \<sqsubseteq> b"
   using assms
-  by (transfer, metis fun_belowI)
+  by (metis fun_belowI lookup_def)
 
 lemma fmap_belowE:
   assumes "m1 \<sqsubseteq> m2"
   shows "m1 f! x \<sqsubseteq> m2 f! x"
   using assms
-  by (transfer, metis fun_belowD )
-
-subsubsection {* The order is chain-complete *}
-
-instance fmap :: (type, pcpo) cpo
-  apply default
-  sorry
-
-instance fmap :: (type, pcpo) pcpo
-apply default
-apply (rule exI[where x = "f\<emptyset>"])
-apply auto
-(*done *)
-sorry
-
-lemma bot_is_fmap_empty [simp]: "\<bottom> = f\<emptyset>"
-  (* by (metis below_bottom_iff fmap_bottom_below) *)
-  sorry
-
-(*
-instantiation fmap :: (type, pcpo) subpcpo_partition
-begin
-  definition "to_bot x = f\<emptyset>"
-
-  lemma to_bot_vimage_cone:"to_bot -` {to_bot (x :: 'a f\<rightharpoonup> 'b)} = UNIV"
-    by (auto simp add:to_bot_fmap_def)
-
-  instance  
-  apply default
-  apply (subst to_bot_vimage_cone)
-  apply (rule subpcpo_UNIV)
-  apply (simp add: to_bot_fmap_def )
-  apply (simp add: to_bot_fmap_def)
-  done
-end
-*)
+  by (metis fun_belowD lookup_def)
 
 
 subsubsection {* Continuity and finite maps *}
 
-(*
-lemma cont_if_fdom:
-  assumes "cont (\<lambda>x. k (f x))"
-  assumes "cont (\<lambda>x. k (g x))"
-  assumes "cont h"
-  shows "cont (\<lambda>x. k (if j (fdom (h x))  then f x else g x))"
-proof-
-  have "monofun (\<lambda>x. k (if j (fdom (h x)) then f x else g x))"
-    apply (rule monofunI)
-    apply (frule fmap_below_dom[OF cont2monofunE[OF `cont h`]])
-    apply (auto intro: cont2monofunE[OF assms(1)] cont2monofunE[OF assms(2)])
-    done
-  thus ?thesis
-    unfolding if_distrib
-    apply (rule contI2)
-    apply (subst cont2contlubE[OF `cont h`], assumption)
-    apply (subst chain_fdom(1)[OF ch2ch_cont[OF `cont h`]], assumption)
-    apply (subst chain_fdom(2)[OF ch2ch_cont[OF `cont h`]], assumption)
-    apply (subst cont2contlubE[OF cont_if[OF assms(1) assms(2)]], assumption)
-    apply (rule below_refl)
-    done
-qed
-*)
-
 lemma lookup_chain:
   assumes "chain (Y :: nat \<Rightarrow> 'a f\<rightharpoonup> 'b::pcpo)"
   shows "chain (\<lambda> i . (Y i) f! x)"
-sorry
-
-
-lemma lookup_cont:
-  assumes "chain (Y :: nat \<Rightarrow> 'a f\<rightharpoonup> 'b::pcpo)"
-  shows "(\<Squnion> i. Y i) f! x = (\<Squnion> i. (Y i) f! x)"
-sorry
+unfolding lookup_def
+using assms  by (rule ch2ch_fun)
 
 lemma cont2cont_lookup[simp,cont2cont]:
   fixes f :: "'a::cpo \<Rightarrow> 'b::type f\<rightharpoonup> 'c::pcpo"
   assumes "cont f"
   shows "cont (\<lambda>p. (f p) f! x)"
-sorry
+using assms unfolding lookup_def by (rule cont2cont_fun)
 
 lemma fmap_cont_via_lookupI:
   assumes "\<And> x. cont (\<lambda> \<rho> . f \<rho> f! x)"
   shows "cont f"
-proof-
-  have "monofun f"
-    apply (rule monofunI)
-    apply (rule fmap_belowI)
-    apply (erule cont2monofunE[OF assms(1)])
-    done
-  thus ?thesis
-    apply (rule contI2)
-    apply (rule fmap_belowI)
-    apply (subst cont2contlubE[OF assms(1)], assumption)
-    apply (subst lookup_cont, assumption)
-    apply (rule below_refl)
-    done
-qed
+using assms unfolding lookup_def
+by (rule cont2cont_lambda)
 
 lemma fmap_upd_mono:
   "\<rho>1 \<sqsubseteq> \<rho>2 \<Longrightarrow> v1 \<sqsubseteq> v2 \<Longrightarrow> \<rho>1(x f\<mapsto> v1) \<sqsubseteq> \<rho>2(x f\<mapsto> v2)"
@@ -207,13 +80,13 @@ lemma  fmap_add_belowI:
 lemma fmap_add_cont1: "cont (\<lambda> x. x f++\<^bsub>S\<^esub> m)"
   apply (rule fmap_cont_via_lookupI)
   apply (case_tac "x \<in> S")
-  apply (auto simp add: assms)
+  apply (auto simp add: assms lookup_def fmap_add_def cont_fun)
   done
 
 lemma fmap_add_cont2: "cont (\<lambda> x. m f++\<^bsub>S\<^esub> x)"
   apply (rule fmap_cont_via_lookupI)
   apply (subst lookup_fmap_add_eq)
-  apply simp_all
+  apply (auto simp add: assms lookup_def fmap_add_def cont_fun)
   done
 
 lemma fmap_add_cont2cont[simp, cont2cont]:
@@ -223,7 +96,7 @@ lemma fmap_add_cont2cont[simp, cont2cont]:
 by (rule cont_apply[OF assms(1) fmap_add_cont1 cont_compose[OF fmap_add_cont2 assms(2)]])
 
 lemma fmap_add_mono:
-  assumes "x1 \<sqsubseteq> x2"
+  assumes "x1 \<sqsubseteq> (x2 :: 'a\<Colon>type \<Rightarrow> 'b\<Colon>cpo)"
   assumes "y1 \<sqsubseteq> y2"
   shows "x1 f++\<^bsub>S\<^esub> y1 \<sqsubseteq> x2 f++\<^bsub>S\<^esub> y2"
 by (rule below_trans[OF cont2monofunE[OF fmap_add_cont1 assms(1)] cont2monofunE[OF fmap_add_cont2 assms(2)]])
@@ -243,7 +116,8 @@ lemma fmap_upd_below_fmap_deleteI:
   assumes "y \<sqsubseteq> \<rho>' f! x"
   shows  "\<rho>(x f\<mapsto> y) \<sqsubseteq> \<rho>'"
   using assms
-  by (metis (hide_lams, no_types) Rep_fmap_inject fmap_delete_fmap_upd2 fmap_upd.rep_eq fmap_upd_mono fun_upd_triv lookup.rep_eq)
+  apply (auto intro!: fmap_upd_belowI   simp add: fmap_delete_def lookup_def)
+  by (metis fmap_upd_def fun_belowD lookup_def lookup_fmap_upd_other)
 
 lemma fmap_upd_belowI2:
   assumes "\<And> z . z \<noteq> x \<Longrightarrow> \<rho> f! z \<sqsubseteq> \<rho>' f! z" 
@@ -354,6 +228,7 @@ lemma adm_less_fmap [simp]:
 *)
 
 lemma fmap_lift_rel_adm:
+  fixes P :: "'a::pcpo \<Rightarrow> 'b::pcpo \<Rightarrow> bool"
   assumes "adm (\<lambda> x. P (fst x) (snd x))"
   shows "adm (\<lambda> m. fmap_lift_rel P (fst m) (snd m))"
 proof (rule admI)
@@ -361,8 +236,7 @@ proof (rule admI)
     show ?case
     apply (rule fmap_lift_relI)
     apply (rule admD[OF adm_subst[where t = "\<lambda>p . (fst p f! x, snd p f! x)", standard, OF _ assms, simplified] `chain Y`])
-    apply (rule fmap_lift_rel.cases[OF spec[OF goal1(2)]])
-    by (metis  fmap_lift_rel.cases  goal1(2) )
+    by (metis fmap_lift_rel.cases  goal1(2) )
 qed 
 
 (*
@@ -484,10 +358,6 @@ lemma fmap_expand_less:
 
 subsubsection {* Bottoms *}
 *)
-
-lemma fmap_bottom_below[simp]:
-  "f\<emptyset> \<sqsubseteq> \<rho>"
- by(rule fmap_belowI, auto)
 
 (*
 lemma fmap_bottom_inj[iff]: "f\<emptyset>\<^bsub>[x]\<^esub> = f\<emptyset>\<^bsub>[y]\<^esub> \<longleftrightarrow> x = y"
@@ -625,18 +495,27 @@ lemma cont2cont_fmap_map [simp, cont2cont]:
   assumes "cont g"
   shows "cont (\<lambda> x. fmap_map (f x) (g x))"
   apply (rule fmap_cont_via_lookupI)
-  apply simp
-  apply (intro cont2cont  `cont g` `cont f` cont_compose2[OF assms(1,2)])
+  apply (simp)
+  apply (simp add: lookup_def)
+  apply (intro cont2cont  `cont g` `cont f` cont_compose2[OF assms(1,2)] cont2cont_fun)
   done
 
 definition fmap_cmap :: "('a::pcpo \<rightarrow> 'b::pcpo) \<rightarrow> 'c::type f\<rightharpoonup> 'a \<rightarrow> 'c::type f\<rightharpoonup> 'b" 
   where  "fmap_cmap = (\<Lambda> f \<rho>. fmap_map (\<lambda> x. f\<cdot>x) \<rho>)"
 
-
 lemma [simp]: "fmap_cmap\<cdot>f\<cdot>(\<rho>(x f\<mapsto> v)) = fmap_cmap\<cdot>f\<cdot>\<rho>(x f\<mapsto> f\<cdot>v)"
   unfolding fmap_cmap_def by simp
 
-lemma [simp]: "f\<cdot>\<bottom> = \<bottom> \<Longrightarrow> fmap_cmap\<cdot>f\<cdot>\<rho> f! x = f\<cdot>(\<rho> f! x )"
+lemma fmap_cmap_app[simp]: "f\<cdot>\<bottom> = \<bottom> \<Longrightarrow> fmap_cmap\<cdot>f\<cdot>\<rho> f! x = f\<cdot>(\<rho> f! x )"
   unfolding fmap_cmap_def by auto
+
+lemma [simp]: "f\<cdot>\<bottom> = \<bottom> \<Longrightarrow> (fmap_cmap\<cdot>f\<cdot>\<rho>) x = f\<cdot>(\<rho> x)"
+  using fmap_cmap_app [[show_sorts]]
+  unfolding  lookup_def
+  apply rule
+  apply assumption
+  apply rule
+  done
+
 
 end

@@ -106,7 +106,7 @@ case (Variable x e \<Gamma> L \<Delta> z)
   finally
   have "(\<lbrace>\<Gamma>\<rbrace>\<rho>)f|` (- ?new) = (...) f|` (- ?new)" by simp
   also have "\<dots> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>heapVars \<Delta>\<^esub> (\<lbrace>\<Delta>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>'\<^esub>)) f|` (- ?new)"
-  proof (induction rule: parallel_fix_ind)
+  proof (induction rule: parallel_fix_ind[where P ="\<lambda> x y. x f|` (- ?new) = y f|` (- ?new)"])
     case 1 show ?case by simp
   next
     case 2 show ?case ..

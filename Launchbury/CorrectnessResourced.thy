@@ -119,7 +119,7 @@ case (Variable x e \<Gamma> L \<Delta> z)
   finally
   have "(\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>)f|` (- ?new) \<sqsubseteq> (...) f|` (- ?new)" by (rule ssubst) (rule below_refl)
   also have "\<dots> \<sqsubseteq> (\<mu> \<rho>'. (\<rho> f++\<^bsub>heapVars \<Delta>\<^esub> (\<N>\<lbrace>\<Delta>\<rbrace>\<rho>'))( x f\<mapsto> \<N>\<lbrakk> z \<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<rho>'\<^esub>)) f|` (- ?new)"
-  proof (induction rule: parallel_fix_ind)
+  proof (induction rule: parallel_fix_ind[where P ="\<lambda> x y. x f|` (- ?new) \<sqsubseteq> y f|` (- ?new)"])
     case 1 show ?case by simp
   next
     case 2 show ?case ..
@@ -209,12 +209,12 @@ corollary correctness_empty_env:
   shows   "\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub> \<sqsubseteq> \<N>\<lbrakk>z\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>" and "\<N>\<lbrace>\<Gamma>\<rbrace> \<sqsubseteq> \<N>\<lbrace>\<Delta>\<rbrace>"
 proof-
   from assms(3) have "fv (\<Gamma>, e) - heapVars \<Gamma> \<subseteq> set L" by auto
-  note corr =  correctness[OF assms(1,2) this, where \<rho> = "f\<emptyset>"]
+  note corr =  correctness[OF assms(1,2) this, where \<rho> = "\<bottom>"]
 
   show "\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub> \<sqsubseteq> \<N>\<lbrakk> z \<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>" using corr(1).
 
   have "\<N>\<lbrace>\<Gamma>\<rbrace> = (\<N>\<lbrace>\<Gamma>\<rbrace>) f|` heapVars \<Gamma> "
-    using fmap_restr_useless[OF HSem_fdom_subset, where \<rho>1 = "f\<emptyset>"] by simp
+    using fmap_restr_useless[OF HSem_fdom_subset, where \<rho>1 = "\<bottom>"] by simp
   also have "\<dots> \<sqsubseteq> (\<N>\<lbrace>\<Delta>\<rbrace>) f|` heapVars \<Gamma>" using corr(2).
   also have "\<dots> \<sqsubseteq> \<N>\<lbrace>\<Delta>\<rbrace>" by (rule fmap_restr_below_itself)
   finally show "\<N>\<lbrace>\<Gamma>\<rbrace> \<sqsubseteq> \<N>\<lbrace>\<Delta>\<rbrace>".

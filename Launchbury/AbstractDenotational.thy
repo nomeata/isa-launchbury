@@ -106,7 +106,7 @@ sublocale has_ESem ESem.
 
 abbreviation ESem_syn' ("\<lbrakk>_\<rbrakk>\<^bsub>_\<^esub>"  [60,60] 60) where "\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub> \<equiv> ESem e \<cdot> \<rho>"
 abbreviation AHSem_syn ("\<lbrace>_\<rbrace>_"  [60,60] 60) where "\<lbrace>\<Gamma>\<rbrace>\<rho> \<equiv> HSem \<Gamma> \<cdot> \<rho>"
-abbreviation AHSem_fempty  ("\<lbrace>_\<rbrace>"  [60] 60) where "\<lbrace>\<Gamma>\<rbrace> \<equiv> \<lbrace>\<Gamma>\<rbrace>fempty"
+abbreviation AHSem_fempty  ("\<lbrace>_\<rbrace>"  [60] 60) where "\<lbrace>\<Gamma>\<rbrace> \<equiv> \<lbrace>\<Gamma>\<rbrace>\<bottom>"
 
 subsubsection {* Equivariance of the semantics *}
 

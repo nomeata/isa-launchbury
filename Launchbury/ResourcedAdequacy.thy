@@ -38,8 +38,9 @@ lemma fmap_C_restr_fmap_expand[simp]: "fmap_C_restr\<cdot>r\<cdot>(\<rho>\<^bsub
   done
 *)
 
-lemma fmap_C_restr_fempty[simp]: "fmap_C_restr\<cdot>r\<cdot>f\<emptyset> = f\<emptyset>"
-  unfolding fmap_C_restr_def by auto
+lemma fmap_C_restr_fempty[simp]: "fmap_C_restr\<cdot>r\<cdot>\<bottom> = \<bottom>"
+  unfolding fmap_C_restr_def
+  by auto
 
 lemma fmap_C_restr_restr_below[intro]: "fmap_C_restr\<cdot>r\<cdot>\<rho> \<sqsubseteq> \<rho>"
   by (auto intro: fmap_belowI)
@@ -117,7 +118,7 @@ next
     apply (rule has_ESem.parallel_HSem_ind)
     apply simp
     apply simp
-    apply (rule, simp)
+    apply (rule fmap_eqI, simp)
     apply (case_tac "x \<in> heapVars (asToHeap as)")
     apply (simp add: lookupHeapToEnv) 
     apply (subst (1 2) Let(1), assumption)
@@ -200,12 +201,12 @@ proof-
   have "fmap_C_restr\<cdot>(Cpred\<cdot>?C)\<cdot>(\<N>\<lbrace>\<Gamma>\<rbrace>) \<sqsubseteq> (\<N>\<lbrace>delete x \<Gamma>\<rbrace>) \<and> \<N>\<lbrace>\<Gamma>\<rbrace> \<sqsubseteq> \<N>\<lbrace>\<Gamma>\<rbrace>"
     apply (rule HSem_ind) back back back back back back back back back
     apply (intro adm_lemmas cont2cont)
-    apply simp
+    apply (simp del: app_strict)
     apply (erule conjE)
     apply rule
     apply (rule fmap_belowI)
     apply (case_tac "xa = x")
-    apply (simp add: lookupHeapToEnv the_lookup_HSem_other)
+    apply (simp add: lookupHeapToEnv the_lookup_HSem_other del: app_strict)
     apply (rule C_restr_bot_demand)
     apply (subst C_Cpred_id[OF demand_not_0])
     apply (erule demand_contravariant[OF monofun_cfun_arg])
@@ -218,7 +219,7 @@ proof-
     apply (erule below_trans[OF monofun_cfun_fun[OF monofun_cfun_arg[OF Cpred_below]]])
     apply (rule refl)
     
-    apply simp
+    apply (simp del: app_strict)
 
     apply (subst HSem_eq)
     apply (erule cont2monofunE[rotated])
@@ -275,11 +276,13 @@ next
   case (Var x)
     let ?e = "the (map_of \<Gamma> x)"
     from Suc.prems[unfolded Var]
-    have "x \<in> heapVars \<Gamma>" by (auto intro: ccontr simp add: the_lookup_HSem_other)
+    have "x \<in> heapVars \<Gamma>" 
+      by (auto intro: ccontr simp add: the_lookup_HSem_other simp del: app_strict)
+    find_theorems "\<bottom> = _"
     hence "(x, ?e) \<in> set \<Gamma>" by (induction \<Gamma>) auto
     moreover
     from Suc.prems[unfolded Var] `(x, ?e) \<in> set \<Gamma>` `x \<in> heapVars \<Gamma>`
-    have "(\<N>\<lbrakk>?e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (auto simp add: the_lookup_HSem_heap)
+    have "(\<N>\<lbrakk>?e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (auto simp add: the_lookup_HSem_heap  simp del: app_strict)
     hence "(\<N>\<lbrakk>?e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (rule add_BH[OF `distinctVars \<Gamma>` `(x, ?e) \<in> set \<Gamma>`])
     from Suc.IH[OF this distinctVars_delete[OF Suc.prems(2)]]
     obtain \<Delta> v where "delete x \<Gamma> : ?e \<Down>\<^bsub>x # S\<^esub> \<Delta> : v" by blast
@@ -293,7 +296,7 @@ next
     obtain S' where S': "set S' = set S \<union> fv (\<Gamma>, e')"..
 
     from Suc.prems[unfolded App]
-    have prem: "((\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn  C_restr\<cdot>C\<^bsup>n\<^esup>\<cdot>(\<N>\<lbrace>\<Gamma>\<rbrace> f! x))\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by auto
+    have prem: "((\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn  C_restr\<cdot>C\<^bsup>n\<^esup>\<cdot>(\<N>\<lbrace>\<Gamma>\<rbrace> f! x))\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (auto simp del: app_strict)
     hence e'_not_bot: "(\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by auto
     from Suc.IH[OF this Suc.prems(2)]
     obtain \<Delta> v where lhs': "\<Gamma> : e' \<Down>\<^bsub>x#S'\<^esub> \<Delta> : v" by blast 
@@ -349,7 +352,7 @@ next
     {
     from Suc.prems[unfolded Let] Let(1)
     have prem: "(\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>asToHeap as\<rbrace>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" 
-      by (simp add: fresh_star_Pair) 
+      by (simp add: fresh_star_Pair del: app_strict) 
     also have "\<N>\<lbrace>asToHeap as\<rbrace>\<N>\<lbrace>\<Gamma>\<rbrace> = \<N>\<lbrace>asToHeap as @ \<Gamma>\<rbrace>"
       apply (rule HSem_merge)
       using Let(1)

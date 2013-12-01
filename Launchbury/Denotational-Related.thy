@@ -52,6 +52,6 @@ qed
 
 theorem heaps_similar: "\<lbrace>\<Gamma>\<rbrace> f\<triangleleft>\<triangleright> \<N>\<lbrace>\<Gamma>\<rbrace>"
   by (rule parallel_HSem_ind_different_ESem[OF fmap_similar_adm])
-     (auto simp add: lookup_fmap_restr_eq lookupHeapToEnv denotational_semantics_similar)
+     (auto simp add: lookup_fmap_restr_eq lookupHeapToEnv denotational_semantics_similar simp del: app_strict)
 
 end

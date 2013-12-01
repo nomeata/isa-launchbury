@@ -6,9 +6,9 @@ default_sort type
 
 subsubsection {* Conversion from heaps to environments *} 
 
-function heapToEnv :: "('var \<times> 'exp) list \<Rightarrow> ('exp \<Rightarrow> 'value::pcpo) \<Rightarrow> 'var f\<rightharpoonup> 'value"
+function heapToEnv :: "('var \<times> 'exp) list \<Rightarrow> ('exp \<Rightarrow> 'value::{pure_cpo,pcpo}) \<Rightarrow> 'var f\<rightharpoonup> 'value"
 where
-  "heapToEnv [] _ = f\<emptyset>"
+  "heapToEnv [] _ = \<bottom>"
 | "heapToEnv ((x,e)#h) eval = (heapToEnv h eval) (x f\<mapsto> eval e)"
 by (pat_completeness, auto)
 termination by lexicographic_order
@@ -19,7 +19,7 @@ lemma cont2cont_heapToEnv[simp, cont2cont]:
 
 lemma heapToEnv_eqvt[eqvt]:
   "\<pi> \<bullet> heapToEnv h eval = heapToEnv (\<pi> \<bullet> h) (\<pi> \<bullet> eval)"
-  by (induct h eval rule:heapToEnv.induct, auto simp add: fmap_upd_eqvt)
+  by (induct h eval rule:heapToEnv.induct)(auto simp add: fmap_upd_eqvt lookup_def)
 
 lemma fdom_heapToEnv_subset:"fdom (heapToEnv h eval) \<subseteq> heapVars h"
   by (induct h eval rule:heapToEnv.induct) (auto dest:set_mp[OF fdom_fmap_upd_subset])
@@ -52,7 +52,7 @@ lemma lookupHeapToEnv_other[simp]:
 
 lemma fmap_restr_heapToEnv_noop:
   "heapVars h \<subseteq> S \<Longrightarrow> fmap_restr S (heapToEnv h eval) = heapToEnv h eval"
-  apply rule
+  apply (rule fmap_eqI)
   apply (case_tac "x \<in> S")
   apply (auto simp add: lookupHeapToEnv intro: lookupHeapToEnv_other)
   done
@@ -60,7 +60,7 @@ lemma fmap_restr_heapToEnv_noop:
 lemma heapToEnv_cong':
   "\<lbrakk> (\<And> x. x \<in> heapVars heap \<Longrightarrow> eval1 (the (map_of heap x)) = eval2 (the (map_of heap x))) \<rbrakk>
     \<Longrightarrow>  heapToEnv heap eval1 = heapToEnv heap eval2"
- apply rule
+ apply (rule fmap_eqI)
  apply (case_tac "x \<in> heapVars heap")
  apply (auto simp add: lookupHeapToEnv)
  done
