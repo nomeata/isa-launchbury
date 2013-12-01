@@ -1,5 +1,5 @@
 theory "Env-HOLCF"
-  imports Env  "HOLCF-Set"
+  imports Env
 begin
 
 default_sort type
