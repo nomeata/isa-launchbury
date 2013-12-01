@@ -196,7 +196,7 @@ subsubsection {* Iterative definition of the heap semantics *}
 
   lemma iterative_HSem:
     assumes "x \<notin> heapVars \<Gamma>"
-    shows "\<lbrace>(x,e) # \<Gamma>\<rbrace>\<rho> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
+    shows "\<lbrace>(x,e) # \<Gamma>\<rbrace>\<rho> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
   proof-
     interpret iterative
       where e1 =  "\<Lambda> \<rho>'. heapToEnv \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)"
@@ -212,15 +212,15 @@ subsubsection {* Iterative definition of the heap semantics *}
       by (simp add: HSem_def' fmap_add_upd ne)
     also have "\<dots> = fix \<cdot> R"
       by (rule iterative_fmap_add)
-    also have "\<dots> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
+    also have "\<dots> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
       by (simp add: HSem_def')
     finally show ?thesis.
   qed
 
   lemma iterative_HSem':
     assumes "x \<notin> heapVars \<Gamma>"
-    shows "(\<mu> \<rho>'. (\<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))
-         = (\<mu> \<rho>'. (\<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>'\<^esub>))"
+    shows "(\<mu> \<rho>'. (\<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))
+         = (\<mu> \<rho>'. (\<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>'\<^esub>))"
   proof-
     interpret iterative
       where e1 =  "\<Lambda> \<rho>'. heapToEnv \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)"
@@ -232,13 +232,13 @@ subsubsection {* Iterative definition of the heap semantics *}
       using assms
       by (simp_all)
 
-    have "(\<mu> \<rho>'. (\<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)) = fix \<cdot> R"
+    have "(\<mu> \<rho>'. (\<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)) = fix \<cdot> R"
       by (simp add: HSem_def')
     also have "\<dots> = fix \<cdot> L"
       by (rule iterative_fmap_add[symmetric])
     also have "\<dots> = fix \<cdot> R'"
       by (rule iterative_fmap_add')
-    also have "\<dots> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x f\<mapsto> \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>'\<^esub>))"
+    also have "\<dots> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>'\<^esub>))"
       by (simp add: HSem_def')
     finally
     show ?thesis.
@@ -254,7 +254,7 @@ lemma HSem_cong[fundef_cong]:
 subsubsection {* Equivariance *}
 
 lemma HSem_eqvt[eqvt]:
-  "\<pi> \<bullet> has_ESem.HSem ESem h = has_ESem.HSem (\<pi> \<bullet> ESem) (\<pi> \<bullet> h)"
+  "\<pi> \<bullet> has_ESem.HSem ESem \<Gamma> = has_ESem.HSem (\<pi> \<bullet> ESem) (\<pi> \<bullet> \<Gamma>)"
 proof-
   show ?thesis
    unfolding has_ESem.HSem_def

@@ -17,7 +17,7 @@ qed
 definition fmap_C_restr :: "C \<rightarrow> (var f\<rightharpoonup> (C \<rightarrow> 'a::pcpo)) \<rightarrow> (var f\<rightharpoonup> (C \<rightarrow> 'a))" where
   "fmap_C_restr = (\<Lambda> r f.  fmap_cmap\<cdot>(C_restr\<cdot>r)\<cdot>f)"
 
-lemma fmap_C_restr_upd[simp]: "fmap_C_restr\<cdot>r\<cdot>(\<rho>(x f\<mapsto> v)) = fmap_C_restr\<cdot>r\<cdot>\<rho>(x f\<mapsto> C_restr\<cdot>r\<cdot>v)"
+lemma fmap_C_restr_upd[simp]: "fmap_C_restr\<cdot>r\<cdot>(\<rho>(x := v)) = (fmap_C_restr\<cdot>r\<cdot>\<rho>)(x := C_restr\<cdot>r\<cdot>v)"
   unfolding fmap_C_restr_def by simp
 
 lemma fmap_C_restr_lookup[simp]: "fmap_C_restr\<cdot>r\<cdot>\<rho> f! v = C_restr\<cdot>r\<cdot>(\<rho> f! v)"
@@ -86,10 +86,10 @@ next
     apply simp
     apply (rule below_antisym)
     defer
-    apply (rule cont2monofunE[OF _ fmap_C_restr_restr_below], simp)
+    apply (rule cont2monofunE[OF _ fmap_C_restr_restr_below], simp del: fun_upd_apply)
     apply (subst Lam(1))
     apply simp
-    apply (intro monofun_cfun below_refl monofun_cfun_arg fmap_upd_mono Cpred_below )
+    apply (intro monofun_cfun below_refl monofun_cfun_arg fun_upd_mono Cpred_below )
     by (metis below_C rev_below_trans)
 next
   case (App e x)
@@ -245,7 +245,7 @@ qed
 
 lemma ESem_Lam_not_bot[simp]:
   assumes  "(\<N>\<lbrakk> Lam [z]. e \<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>c \<noteq> \<bottom>"
-  shows "(\<N>\<lbrakk> Lam [z]. e \<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>c \<sqsubseteq> CFn\<cdot>(\<Lambda> v. \<N>\<lbrakk>e\<rbrakk>\<^bsub>\<sigma>(z f\<mapsto> v)\<^esub>)"
+  shows "(\<N>\<lbrakk> Lam [z]. e \<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>c \<sqsubseteq> CFn\<cdot>(\<Lambda> v. \<N>\<lbrakk>e\<rbrakk>\<^bsub>\<sigma>(z := v)\<^esub>)"
 proof-
   from assms have "c \<noteq> \<bottom>" by auto
   then obtain c' where "c = C\<cdot>c'" by (cases c, auto)
@@ -323,9 +323,9 @@ next
       by (intro monofun_cfun_arg monofun_cfun_fun correct1)
     also have "\<dots> \<sqsubseteq> ((\<N>\<lbrakk>Lam [y]. e''\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn (\<N>\<lbrace>\<Delta>\<rbrace> f! x))\<cdot>C\<^bsup>n\<^esup>"
       by (intro monofun_cfun_arg monofun_cfun_fun fmap_belowE[OF correct2])
-    also have "\<dots> \<sqsubseteq> (CFn\<cdot>(\<Lambda> v. \<N>\<lbrakk>e''\<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>)(y f\<mapsto> v)\<^esub>) \<down>CFn (\<N>\<lbrace>\<Delta>\<rbrace> f! x))\<cdot>C\<^bsup>n\<^esup>"
+    also have "\<dots> \<sqsubseteq> (CFn\<cdot>(\<Lambda> v. \<N>\<lbrakk>e''\<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>)(y := v)\<^esub>) \<down>CFn (\<N>\<lbrace>\<Delta>\<rbrace> f! x))\<cdot>C\<^bsup>n\<^esup>"
       by (rule cont2monofunE[OF _ ESem_Lam_not_bot[OF lam_not_bot]]) simp
-    also have "\<dots> = (\<N>\<lbrakk>e''\<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>)(y f\<mapsto> (\<N>\<lbrace>\<Delta>\<rbrace> f! x))\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
+    also have "\<dots> = (\<N>\<lbrakk>e''\<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>)(y := (\<N>\<lbrace>\<Delta>\<rbrace> f! x))\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
       using  `y \<notin> heapVars \<Delta>` by simp
     also have "\<dots> = (\<N>\<lbrakk>e''[y::=x]\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
       apply (rule arg_cong[OF ESem_subst])

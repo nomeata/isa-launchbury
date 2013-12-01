@@ -40,20 +40,20 @@ sublocale has_ignore_fresh_ESem ESem
 
 subsection {* Nicer equations for ESem, without freshness requirements *}
 
-lemma ESem_Lam[simp]: "\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub> = tick \<cdot> (Fn \<cdot> (\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>))"
+lemma ESem_Lam[simp]: "\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub> = tick \<cdot> (Fn \<cdot> (\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x := v)\<^esub>))"
 proof-
-  have *: "\<And> v. ((\<rho> f|` (fv e - {x}))(x f\<mapsto> v)) f|` fv e = (\<rho>(x f\<mapsto> v)) f|` fv e"
-    by (rule fmap_eqI) (auto simp add: lookup_fmap_restr_eq lookup_fmap_upd_eq)
+  have *: "\<And> v. ((\<rho> f|` (fv e - {x}))(x := v)) f|` fv e = (\<rho>(x := v)) f|` fv e"
+    by (rule fmap_eqI) (auto simp add: lookup_fmap_restr_eq lookup_fun_upd_eq)
 
   have "\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>fmap_delete x \<rho>\<^esub>"
     by (rule ESem_fresh_cong) simp
-  also have "\<dots> = tick \<cdot> (Fn \<cdot> (\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>(\<rho> f|` (fv e - {x}))(x f\<mapsto> v)\<^esub>))"
+  also have "\<dots> = tick \<cdot> (Fn \<cdot> (\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>(\<rho> f|` (fv e - {x}))(x := v)\<^esub>))"
     by simp
-  also have "\<dots> = tick \<cdot> (Fn \<cdot> (\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>((\<rho> f|` (fv e - {x}))(x f\<mapsto> v)) f|` fv e\<^esub>))"
+  also have "\<dots> = tick \<cdot> (Fn \<cdot> (\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>((\<rho> f|` (fv e - {x}))(x := v)) f|` fv e\<^esub>))"
     by (subst  ESem_considers_fv, rule)
-  also have "\<dots> = tick \<cdot> (Fn \<cdot> (\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v) f|` fv e\<^esub>))"
+  also have "\<dots> = tick \<cdot> (Fn \<cdot> (\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x := v) f|` fv e\<^esub>))"
     unfolding *..
-  also have "\<dots> = tick \<cdot> (Fn \<cdot> (\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x f\<mapsto> v)\<^esub>))"
+  also have "\<dots> = tick \<cdot> (Fn \<cdot> (\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x := v)\<^esub>))"
     unfolding  ESem_considers_fv[symmetric]..
   finally show ?thesis.
 qed
@@ -116,9 +116,9 @@ case (Let as exp x y \<rho>)
 next
 case (Lam var exp x y \<rho>)
   from `\<rho> f! x = \<rho> f! y`
-  have "\<And>v. \<rho>(var f\<mapsto> v) f! x = \<rho>(var f\<mapsto> v) f! y"
+  have "\<And>v. \<rho>(var := v) f! x = \<rho>(var := v) f! y"
     using Lam(1,2) by (simp add: fresh_at_base)
-  hence "\<And> v. \<lbrakk>exp\<rbrakk>\<^bsub>\<rho>(var f\<mapsto> v)\<^esub> = \<lbrakk>exp[x::=y]\<rbrakk>\<^bsub>\<rho>(var f\<mapsto> v)\<^esub>"
+  hence "\<And> v. \<lbrakk>exp\<rbrakk>\<^bsub>\<rho>(var := v)\<^esub> = \<lbrakk>exp[x::=y]\<rbrakk>\<^bsub>\<rho>(var := v)\<^esub>"
     by (rule Lam)
   thus ?case using Lam(1,2) by simp
 next
@@ -131,11 +131,11 @@ qed
 
 lemma ESem_subst:
   assumes "x \<noteq> y"
-  shows "\<lbrakk> e \<rbrakk>\<^bsub>\<sigma>(x f\<mapsto> (\<sigma> f! y))\<^esub> = \<lbrakk> e[x::= y] \<rbrakk>\<^bsub>\<sigma>\<^esub>"
+  shows "\<lbrakk> e \<rbrakk>\<^bsub>\<sigma>(x := (\<sigma> f! y))\<^esub> = \<lbrakk> e[x::= y] \<rbrakk>\<^bsub>\<sigma>\<^esub>"
 proof-
   have [simp]: "x \<notin> fv e[x::=y]" using assms by (auto simp add: fv_def supp_subst supp_at_base dest: set_mp[OF supp_subst]) 
 
-  have "\<lbrakk> e \<rbrakk>\<^bsub>\<sigma>(x f\<mapsto> (\<sigma> f! y))\<^esub> = \<lbrakk> e[x::= y] \<rbrakk>\<^bsub>\<sigma>(x f\<mapsto> (\<sigma> f! y))\<^esub>"
+  have "\<lbrakk> e \<rbrakk>\<^bsub>\<sigma>(x := (\<sigma> f! y))\<^esub> = \<lbrakk> e[x::= y] \<rbrakk>\<^bsub>\<sigma>(x := (\<sigma> f! y))\<^esub>"
     using assms(1)
     by (auto intro: ESem_subst_same simp add: Rep_cfun_inverse)
   also have "\<dots> = \<lbrakk> e[x::= y] \<rbrakk>\<^bsub>\<sigma>\<^esub>"
@@ -177,8 +177,8 @@ case (App e x \<rho>)
 next
 case (Lam x e)
   from Lam(2)
-  have "\<And> v. op f!\<^sub>\<bottom> (\<rho>1(x f\<mapsto> v)) \<sqsubseteq> op f!\<^sub>\<bottom> (\<rho>2(x f\<mapsto> v))"
-    by (auto intro!: fun_belowI fun_belowD[OF  Lam(2)] simp add: fmap_lookup_bot_fmap_upd_eq Lam.prems)
+  have "\<And> v. op f!\<^sub>\<bottom> (\<rho>1(x := v)) \<sqsubseteq> op f!\<^sub>\<bottom> (\<rho>2(x := v))"
+    by (auto intro!: fun_belowI fun_belowD[OF  Lam(2)] simp add: fmap_lookup_bot_fun_upd_eq Lam.prems)
   from Lam.hyps(1)[OF this]
   show ?case
     by (auto intro!: cfun_belowI monofun_cfun_arg dest: fun_belowD)

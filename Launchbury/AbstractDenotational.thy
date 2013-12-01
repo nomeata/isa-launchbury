@@ -15,7 +15,7 @@ nominal_primrec
   ESem :: "exp \<Rightarrow> (var f\<rightharpoonup> 'Value) \<rightarrow> 'Value"
 where
   (* Restrict \<rho> to avoid having to demand atom x \<sharp> \<rho> *)
- "ESem (Lam [x]. e) = (\<Lambda> \<rho>. tick \<cdot> (Fn \<cdot> (\<Lambda> v. ESem e \<cdot> ((\<rho> f|` fv (Lam [x]. e))(x f\<mapsto> v)))))"
+ "ESem (Lam [x]. e) = (\<Lambda> \<rho>. tick \<cdot> (Fn \<cdot> (\<Lambda> v. ESem e \<cdot> ((\<rho> f|` fv (Lam [x]. e))(x := v)))))"
   (* Do not use \<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub>  in the rule for App; it costs an additional
      resource and makes the adequacy proof difficult. *)
 | "ESem (App e x) = (\<Lambda> \<rho>. tick \<cdot> (Fn_project \<cdot> (ESem e \<cdot> \<rho>) \<cdot> (\<rho> f! x)))"
@@ -49,15 +49,15 @@ case (goal4 x e x' e')
     hence "x \<notin> fv e'" unfolding fv_not_fresh.
 
     { fix xa \<rho>
-      have "ESem_sumC e \<cdot> ((\<rho> f|` fv (Lam [x]. e))(x f\<mapsto> xa)) = (x' \<leftrightarrow> x) \<bullet> ESem_sumC e \<cdot> ((\<rho> f|` fv (Lam [x]. e))(x f\<mapsto> xa))" by (simp add: permute_pure)
-      also have "\<dots> = ((x' \<leftrightarrow> x) \<bullet> ESem_sumC) e' \<cdot> ((((x' \<leftrightarrow> x) \<bullet> \<rho>) f|` (fv e' - {x'}))(x' f\<mapsto> xa))" by simp
+      have "ESem_sumC e \<cdot> ((\<rho> f|` fv (Lam [x]. e))(x := xa)) = (x' \<leftrightarrow> x) \<bullet> ESem_sumC e \<cdot> ((\<rho> f|` fv (Lam [x]. e))(x := xa))" by (simp add: permute_pure)
+      also have "\<dots> = ((x' \<leftrightarrow> x) \<bullet> ESem_sumC) e' \<cdot> ((((x' \<leftrightarrow> x) \<bullet> \<rho>) f|` (fv e' - {x'}))(x' := xa))" by simp
       also have "((x' \<leftrightarrow> x) \<bullet> ESem_sumC) e' = ESem_sumC e'"
         by (rule eqvt_at_apply[OF goal4(2)])
       also have "((x' \<leftrightarrow> x) \<bullet> \<rho>) f|` (fv e' - {x'}) = \<rho> f|` (fv e' - {x'})"
         by (rule fmap_restr_flip) (auto simp add: `x \<notin> fv e'`)
       also have "fv e' - {x'} = fv (Lam [x']. e')" by simp
       finally
-      have "ESem_sumC e\<cdot>((\<rho> f|` fv (Lam [x]. e))(x f\<mapsto> xa)) = ESem_sumC e'\<cdot>((\<rho> f|` fv (Lam [x']. e'))(x' f\<mapsto> xa))".
+      have "ESem_sumC e\<cdot>((\<rho> f|` fv (Lam [x]. e))(x := xa)) = ESem_sumC e'\<cdot>((\<rho> f|` fv (Lam [x']. e'))(x' := xa))".
     }
     thus ?thesis by simp
   qed simp
@@ -117,7 +117,7 @@ lemmas HSem_eqvt' = HSem_eqvt[of _ ESem, unfolded permute_ESem]
 
 lemmas asToHeap_fresh[simp] = eqvt_fresh_cong1[of asToHeap, OF asToHeap.eqvt]
  and   asToHeap_fresh_star[simp] = eqvt_fresh_star_cong1[of asToHeap, OF asToHeap.eqvt]
- and   fresh_fmap_upd[simp] = eqvt_fresh_cong3[of fmap_upd, OF fmap_upd_eqvt]
+(* and   fresh_fun_upd[simp] = eqvt_fresh_cong3[of fun_upd, OF fun_upd_eqvt] *)
 
 end
 

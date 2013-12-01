@@ -15,9 +15,9 @@ next
   { fix x y
     assume "x \<triangleleft>\<triangleright> y\<cdot>C\<^sup>\<infinity>"
     with `\<rho> f\<triangleleft>\<triangleright> \<sigma>`
-    have "\<rho>(v f\<mapsto> x) f\<triangleleft>\<triangleright> \<sigma>(v f\<mapsto> y)"
-      by (auto 1 4 simp add: lookup_fmap_upd_eq)
-    hence "\<lbrakk>e\<rbrakk>\<^bsub>\<rho>(v f\<mapsto> x)\<^esub> \<triangleleft>\<triangleright> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<sigma>(v f\<mapsto> y)\<^esub>)\<cdot>C\<^sup>\<infinity>"
+    have "\<rho>(v := x) f\<triangleleft>\<triangleright> \<sigma>(v := y)"
+      by (auto 1 4 simp add: lookup_fun_upd_eq)
+    hence "\<lbrakk>e\<rbrakk>\<^bsub>\<rho>(v := x)\<^esub> \<triangleleft>\<triangleright> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<sigma>(v := y)\<^esub>)\<cdot>C\<^sup>\<infinity>"
       by (rule Lam.hyps)
   }
   thus ?case by auto

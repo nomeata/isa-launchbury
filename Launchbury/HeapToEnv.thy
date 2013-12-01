@@ -9,7 +9,7 @@ subsubsection {* Conversion from heaps to environments *}
 function heapToEnv :: "('var \<times> 'exp) list \<Rightarrow> ('exp \<Rightarrow> 'value::{pure_cpo,pcpo}) \<Rightarrow> 'var f\<rightharpoonup> 'value"
 where
   "heapToEnv [] _ = \<bottom>"
-| "heapToEnv ((x,e)#h) eval = (heapToEnv h eval) (x f\<mapsto> eval e)"
+| "heapToEnv ((x,e)#h) eval = (heapToEnv h eval) (x := eval e)"
 by (pat_completeness, auto)
 termination by lexicographic_order
 
@@ -19,10 +19,10 @@ lemma cont2cont_heapToEnv[simp, cont2cont]:
 
 lemma heapToEnv_eqvt[eqvt]:
   "\<pi> \<bullet> heapToEnv h eval = heapToEnv (\<pi> \<bullet> h) (\<pi> \<bullet> eval)"
-  by (induct h eval rule:heapToEnv.induct)(auto simp add: fmap_upd_eqvt lookup_def)
+  by (induct h eval rule:heapToEnv.induct) (auto simp add:fun_upd_eqvt  lookup_def simp del: fun_upd_apply)
 
 lemma fdom_heapToEnv_subset:"fdom (heapToEnv h eval) \<subseteq> heapVars h"
-  by (induct h eval rule:heapToEnv.induct) (auto dest:set_mp[OF fdom_fmap_upd_subset])
+  by (induct h eval rule:heapToEnv.induct) (auto dest:set_mp[OF fdom_fun_upd_subset] simp del: fun_upd_apply)
 
 lemma heapToEnv_cong[fundef_cong]:
   "\<lbrakk> heap1 = heap2 ;  (\<And> e. e \<in> snd ` set heap2 \<Longrightarrow> eval1 e = eval2 e) \<rbrakk>

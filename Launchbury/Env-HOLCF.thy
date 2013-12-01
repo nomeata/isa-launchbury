@@ -37,17 +37,17 @@ lemma fmap_cont_via_lookupI:
 using assms unfolding lookup_def
 by (rule cont2cont_lambda)
 
-lemma fmap_upd_mono:
-  "\<rho>1 \<sqsubseteq> \<rho>2 \<Longrightarrow> v1 \<sqsubseteq> v2 \<Longrightarrow> \<rho>1(x f\<mapsto> v1) \<sqsubseteq> \<rho>2(x f\<mapsto> v2)"
+lemma fun_upd_mono:
+  "\<rho>1 \<sqsubseteq> \<rho>2 \<Longrightarrow> v1 \<sqsubseteq> v2 \<Longrightarrow> \<rho>1(x := v1) \<sqsubseteq> \<rho>2(x := v2)"
   apply (rule fmap_belowI)
   apply (case_tac "xa = x")
   apply simp
   apply (auto elim:fmap_belowE)
   done
 
-lemma fmap_upd_cont[simp,cont2cont]:
+lemma fun_upd_cont[simp,cont2cont]:
   assumes "cont f" and "cont h"
-  shows "cont (\<lambda> x. fmap_upd (f x) v (h x) :: 'a f\<rightharpoonup> 'b::pcpo)"
+  shows "cont (\<lambda> x. (f x)(v := h x) :: 'a f\<rightharpoonup> 'b::pcpo)"
   apply (rule fmap_cont_via_lookupI)
   apply (case_tac "x = v")
   apply (auto simp add: assms)
@@ -101,28 +101,28 @@ lemma fmap_add_mono:
   shows "x1 f++\<^bsub>S\<^esub> y1 \<sqsubseteq> x2 f++\<^bsub>S\<^esub> y2"
 by (rule below_trans[OF cont2monofunE[OF fmap_add_cont1 assms(1)] cont2monofunE[OF fmap_add_cont2 assms(2)]])
 
-lemma fmap_upd_belowI:
+lemma fun_upd_belowI:
   assumes "\<And> z . z \<noteq> x \<Longrightarrow> \<rho> f! z \<sqsubseteq> \<rho>' f! z" 
   assumes "y \<sqsubseteq> \<rho>' f! x"
-  shows  "\<rho>(x f\<mapsto> y) \<sqsubseteq> \<rho>'"
+  shows  "\<rho>(x := y) \<sqsubseteq> \<rho>'"
   apply (rule fmap_belowI)
   using assms
   apply (case_tac "xa = x")
   apply auto
   done
 
-lemma fmap_upd_below_fmap_deleteI:
+lemma fun_upd_below_fmap_deleteI:
   assumes "fmap_delete x \<rho> \<sqsubseteq> fmap_delete x \<rho>'" 
   assumes "y \<sqsubseteq> \<rho>' f! x"
-  shows  "\<rho>(x f\<mapsto> y) \<sqsubseteq> \<rho>'"
+  shows  "\<rho>(x := y) \<sqsubseteq> \<rho>'"
   using assms
-  apply (auto intro!: fmap_upd_belowI   simp add: fmap_delete_def lookup_def)
-  by (metis fmap_upd_def fun_belowD lookup_def lookup_fmap_upd_other)
+  apply (auto intro!: fun_upd_belowI   simp add: fmap_delete_def lookup_def)
+  by (metis fun_belowD lookup_def lookup_fun_upd_other)
 
-lemma fmap_upd_belowI2:
+lemma fun_upd_belowI2:
   assumes "\<And> z . z \<noteq> x \<Longrightarrow> \<rho> f! z \<sqsubseteq> \<rho>' f! z" 
   assumes "\<rho> f! x \<sqsubseteq> y"
-  shows  "\<rho> \<sqsubseteq> \<rho>'(x f\<mapsto> y)"
+  shows  "\<rho> \<sqsubseteq> \<rho>'(x := y)"
   apply (rule fmap_belowI)
   using assms
   apply (case_tac "xa = x")
@@ -340,11 +340,11 @@ lemma fmap_expand_cont:
 
 lemmas cont2cont_fmap_expand[simp, cont2cont] = cont_compose[OF fmap_expand_cont]
 
-lemma fmap_upd_expand:
+lemma fun_upd_expand:
   "x \<in> S \<Longrightarrow>
-   \<rho>(x f\<mapsto> y)\<^bsub>[S]\<^esub> = (\<rho>\<^bsub>[S - {x}]\<^esub>)(x f\<mapsto> y)"
+   \<rho>(x := y)\<^bsub>[S]\<^esub> = (\<rho>\<^bsub>[S - {x}]\<^esub>)(x := y)"
    apply (rule fmap_eqI, auto)
-   apply (case_tac "xa \<in> fdom (\<rho>(x f\<mapsto> y))", auto)
+   apply (case_tac "xa \<in> fdom (\<rho>(x := y))", auto)
    apply (case_tac "xa = x", auto)
    done
 
@@ -371,7 +371,7 @@ lemma fmap_restr_fmap_bottom[simp]:
   by auto
 
 lemma fmap_bottom_insert:
-  "f\<emptyset>\<^bsub>[insert x S]\<^esub> = (f\<emptyset>\<^bsub>[S]\<^esub>)(x f\<mapsto> \<bottom>)"
+  "f\<emptyset>\<^bsub>[insert x S]\<^esub> = (f\<emptyset>\<^bsub>[S]\<^esub>)(x := \<bottom>)"
   apply (rule fmap_eqI)
   apply auto[1]
   apply (case_tac "xa = x", auto)
@@ -406,10 +406,10 @@ locale iterative =
    and S :: "'a set" and x :: 'a
   assumes ne:"x \<notin> S"
 begin
-  abbreviation "L == (\<Lambda> \<rho>'. (\<rho> f++\<^bsub>S\<^esub> e1 \<cdot> \<rho>')(x f\<mapsto> e2 \<cdot> \<rho>'))"
+  abbreviation "L == (\<Lambda> \<rho>'. (\<rho> f++\<^bsub>S\<^esub> e1 \<cdot> \<rho>')(x := e2 \<cdot> \<rho>'))"
   abbreviation "H == (\<lambda> \<rho>'. \<Lambda> \<rho>''. \<rho>' f++\<^bsub>S\<^esub> e1 \<cdot> \<rho>'')"
-  abbreviation "R == (\<Lambda> \<rho>'. (\<rho> f++\<^bsub>S\<^esub> (fix \<cdot> (H \<rho>')))(x f\<mapsto> e2 \<cdot> \<rho>'))"
-  abbreviation "R' == (\<Lambda> \<rho>'. (\<rho> f++\<^bsub>S\<^esub> (fix \<cdot> (H \<rho>')))(x f\<mapsto> e2 \<cdot> (fix \<cdot> (H \<rho>'))))"
+  abbreviation "R == (\<Lambda> \<rho>'. (\<rho> f++\<^bsub>S\<^esub> (fix \<cdot> (H \<rho>')))(x := e2 \<cdot> \<rho>'))"
+  abbreviation "R' == (\<Lambda> \<rho>'. (\<rho> f++\<^bsub>S\<^esub> (fix \<cdot> (H \<rho>')))(x := e2 \<cdot> (fix \<cdot> (H \<rho>'))))"
 
   lemma split_x:
     fixes y
@@ -503,7 +503,7 @@ lemma cont2cont_fmap_map [simp, cont2cont]:
 definition fmap_cmap :: "('a::pcpo \<rightarrow> 'b::pcpo) \<rightarrow> 'c::type f\<rightharpoonup> 'a \<rightarrow> 'c::type f\<rightharpoonup> 'b" 
   where  "fmap_cmap = (\<Lambda> f \<rho>. fmap_map (\<lambda> x. f\<cdot>x) \<rho>)"
 
-lemma [simp]: "fmap_cmap\<cdot>f\<cdot>(\<rho>(x f\<mapsto> v)) = fmap_cmap\<cdot>f\<cdot>\<rho>(x f\<mapsto> f\<cdot>v)"
+lemma [simp]: "fmap_cmap\<cdot>f\<cdot>(\<rho>(x := v)) = (fmap_cmap\<cdot>f\<cdot>\<rho>)(x := f\<cdot>v)"
   unfolding fmap_cmap_def by simp
 
 lemma fmap_cmap_app[simp]: "f\<cdot>\<bottom> = \<bottom> \<Longrightarrow> fmap_cmap\<cdot>f\<cdot>\<rho> f! x = f\<cdot>(\<rho> f! x )"

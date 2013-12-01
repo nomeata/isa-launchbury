@@ -25,9 +25,6 @@ lemma mem_fdom_perm[simp]:
   shows "xa \<in> fdom (p \<bullet> \<rho>) \<longleftrightarrow> - p \<bullet> xa \<in> fdom \<rho>" 
   by (metis (mono_tags) fdom_perm_rev mem_Collect_eq permute_set_eq)
 
-lemma fmap_upd_eqvt[eqvt]: "p \<bullet> (fmap_upd f x y) = fmap_upd (p \<bullet> f) (p \<bullet> x) (p \<bullet> y)"
-  by (simp add: fmap_upd_def fun_upd_eqvt)
-
 lemma fmap_restr_eqvt[eqvt]:
   fixes m :: "'a::pt f\<rightharpoonup> 'b::{cont_pt,pcpo}"
   shows "\<pi> \<bullet> m f|` d = (\<pi> \<bullet> m) f|` (\<pi> \<bullet> d)"
