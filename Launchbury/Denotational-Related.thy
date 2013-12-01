@@ -8,7 +8,7 @@ theorem denotational_semantics_similar:
 using assms
 proof(induct e arbitrary: \<rho> \<sigma> rule:exp_induct)
   case (Var v)
-  hence "\<rho> f! v \<triangleleft>\<triangleright> (\<sigma> f! v)\<cdot>C\<^sup>\<infinity>" by cases auto
+  hence "\<rho> v \<triangleleft>\<triangleright> (\<sigma> v)\<cdot>C\<^sup>\<infinity>" by cases auto
   thus ?case by simp
 next
   case (Lam v e)
@@ -16,7 +16,7 @@ next
     assume "x \<triangleleft>\<triangleright> y\<cdot>C\<^sup>\<infinity>"
     with `\<rho> f\<triangleleft>\<triangleright> \<sigma>`
     have "\<rho>(v := x) f\<triangleleft>\<triangleright> \<sigma>(v := y)"
-      by (auto 1 4 simp add: lookup_fun_upd_eq)
+      by (auto 1 4)
     hence "\<lbrakk>e\<rbrakk>\<^bsub>\<rho>(v := x)\<^esub> \<triangleleft>\<triangleright> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<sigma>(v := y)\<^esub>)\<cdot>C\<^sup>\<infinity>"
       by (rule Lam.hyps)
   }
@@ -30,7 +30,7 @@ next
   next
     case (Fn f g)
     from `\<rho> f\<triangleleft>\<triangleright> \<sigma>`
-    have "\<rho> f! v \<triangleleft>\<triangleright> (\<sigma> f! v)\<cdot>C\<^sup>\<infinity>"  by auto
+    have "\<rho> v \<triangleleft>\<triangleright> (\<sigma> v)\<cdot>C\<^sup>\<infinity>"  by auto
     thus ?thesis using Fn App' by auto
   qed
 next
@@ -39,7 +39,7 @@ next
   proof (rule parallel_HSem_ind_different_ESem[OF fmap_similar_adm fmap_similar_fmap_bottom])
     case (goal1 \<rho>' \<sigma>')
     show ?case
-    proof(rule fmap_lift_relI)
+    proof(rule pointwiseI)
       case (goal1 x)
       show ?case using `\<rho> f\<triangleleft>\<triangleright> \<sigma>`
         by (auto simp add: lookup_fmap_add_eq lookupHeapToEnv elim: Let(1)[OF _  `\<rho>' f\<triangleleft>\<triangleright> \<sigma>'`] )

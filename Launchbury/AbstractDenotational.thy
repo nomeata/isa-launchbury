@@ -18,8 +18,8 @@ where
  "ESem (Lam [x]. e) = (\<Lambda> \<rho>. tick \<cdot> (Fn \<cdot> (\<Lambda> v. ESem e \<cdot> ((\<rho> f|` fv (Lam [x]. e))(x := v)))))"
   (* Do not use \<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub>  in the rule for App; it costs an additional
      resource and makes the adequacy proof difficult. *)
-| "ESem (App e x) = (\<Lambda> \<rho>. tick \<cdot> (Fn_project \<cdot> (ESem e \<cdot> \<rho>) \<cdot> (\<rho> f! x)))"
-| "ESem (Var x) = (\<Lambda> \<rho>. tick \<cdot> (\<rho> f! x))"
+| "ESem (App e x) = (\<Lambda> \<rho>. tick \<cdot> (Fn_project \<cdot> (ESem e \<cdot> \<rho>) \<cdot> (\<rho> x)))"
+| "ESem (Var x) = (\<Lambda> \<rho>. tick \<cdot> (\<rho> x))"
   (* Restrict \<rho> to avoid having to demand set (bn as) \<sharp>* \<rho> *)
 | "ESem (Let as body) = (\<Lambda> \<rho>. tick \<cdot> (ESem body \<cdot> (has_ESem.HSem ESem (asToHeap as) \<cdot>  (\<rho> f|` fv (Let as body)))))"
 proof-
@@ -29,7 +29,7 @@ case goal1 thus ?case
   unfolding eqvt_def ESem_graph_aux_def
   apply rule
   apply (perm_simp)
-  apply (simp add: Abs_cfun_eqvt)
+  apply (simp add: Abs_cfun_eqvt cont_fun)
   done
 next
 case (goal3 P x)

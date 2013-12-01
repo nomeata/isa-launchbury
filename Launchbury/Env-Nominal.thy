@@ -4,14 +4,12 @@ begin
 
 subsubsection {* Equivariance lemmas related to finite maps *}
 
-lemma lookup_eqvt[eqvt]:
-  "\<pi> \<bullet> lookup m x = lookup (\<pi> \<bullet> m) (\<pi> \<bullet> x)"
-  by (simp add: lookup_def)
-
-lemma the_lookup_perm[simp]:
+(*
+lemma lookup_perm[simp]:
   fixes \<rho> :: "'a::at_base f\<rightharpoonup> 'b::{pure,pcpo_pt}"
-  shows "((x' \<leftrightarrow> x) \<bullet> \<rho>) f! xa = \<rho> f! ((x' \<leftrightarrow> x) \<bullet> xa) " 
-  by (metis lookup_eqvt permute_flip_cancel permute_pure)
+  shows "((x' \<leftrightarrow> x) \<bullet> \<rho>) xa = \<rho> ((x' \<leftrightarrow> x) \<bullet> xa) " 
+  by (metis permute_flip_cancel permute_pure)
+*)
 
 lemma fdom_perm:
   fixes f :: "'a::pt f\<rightharpoonup> 'b::{pcpo_pt}"
@@ -28,12 +26,12 @@ lemma mem_fdom_perm[simp]:
 lemma fmap_restr_eqvt[eqvt]:
   fixes m :: "'a::pt f\<rightharpoonup> 'b::{cont_pt,pcpo}"
   shows "\<pi> \<bullet> m f|` d = (\<pi> \<bullet> m) f|` (\<pi> \<bullet> d)"
-  by (auto simp add: fmap_restr_def lookup_def )
+  by (auto simp add: fmap_restr_def)
 
 lemma fmap_delete_eqvt[eqvt]:
   fixes m :: "'a::pt f\<rightharpoonup> 'b::{cont_pt,pcpo}"
   shows "\<pi> \<bullet> fmap_delete x m = fmap_delete (\<pi> \<bullet> x) (\<pi> \<bullet> m)"
-  by (auto simp add: fmap_delete_def lookup_def )
+  by (auto simp add: fmap_delete_def)
 
 (*
 lemma fmap_copy_eqvt[eqvt]:
@@ -44,7 +42,7 @@ lemma fmap_copy_eqvt[eqvt]:
 lemma fmap_add_eqvt[eqvt]:
   fixes m1 m2 :: "'a::pt f\<rightharpoonup> 'b::{cont_pt,pcpo}"
   shows "\<pi> \<bullet> m1 f++\<^bsub>S\<^esub> m2 = (\<pi> \<bullet> m1) f++\<^bsub>\<pi> \<bullet> S\<^esub> (\<pi> \<bullet> m2)"
-  by (auto simp add: fmap_add_def lookup_def )
+  by (auto simp add: fmap_add_def )
 
 (*
 lemma fmap_of_eqvt[eqvt]:
@@ -66,11 +64,11 @@ lemma fmap_restr_perm:
   shows "(p \<bullet> \<rho>) f|` S = \<rho> f|` S"
 using assms
 apply -
-apply (rule fmap_eqI)
+apply (rule ext)
 apply (case_tac "x \<in> S")
 apply (simp)
 apply (subst permute_fun_def)
-apply (simp add: permute_pure lookup_def)
+apply (simp add: permute_pure)
 apply (subst perm_supp_eq)
 apply (auto simp add:perm_supp_eq supp_minus_perm fresh_star_def fresh_def supp_set_elem_finite)
 done
@@ -82,7 +80,7 @@ lemma fmap_restr_flip:
   using assms
   apply -
   apply rule
-  apply (auto  simp add: permute_flip_at lookup_def fmap_restr_def split:if_splits)
+  apply (auto  simp add: permute_flip_at fmap_restr_def split:if_splits)
   by (metis eqvt_lambda flip_at_base_simps(3) minus_flip permute_pure unpermute_def)
 
 end

@@ -4,6 +4,9 @@ begin
 
 default_sort type
 
+lemmas cont_fun[simp]
+lemmas cont2cont_fun[simp]
+
 lemma cont_compose2:
   assumes "cont c"
   assumes "\<And> x. cont (c x)"

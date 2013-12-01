@@ -18,7 +18,7 @@ proof(rule HSem_subst_expr)
   from fresh have [simp]: "n \<noteq> x" by (simp add: fresh_at_base)
   have ne: "(n,e) \<in> set ((x, App e y) # (n, e) # \<Gamma>)" by simp
 
-  have "\<lbrakk> Var n \<rbrakk>\<^bsub>\<lbrace>(x, App e y) # (n, e) # \<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrace>(x, App e y) # (n, e) # \<Gamma>\<rbrace>\<rho> f! n"
+  have "\<lbrakk> Var n \<rbrakk>\<^bsub>\<lbrace>(x, App e y) # (n, e) # \<Gamma>\<rbrace>\<rho>\<^esub> = (\<lbrace>(x, App e y) # (n, e) # \<Gamma>\<rbrace>\<rho>) n"
     by simp
   also have "... = \<lbrakk> e \<rbrakk>\<^bsub>(\<lbrace>(x, App e y) # (n, e) # \<Gamma>\<rbrace>\<rho>)\<^esub>"
     by (subst HSem_eq, simp)
@@ -26,7 +26,7 @@ proof(rule HSem_subst_expr)
   show "\<lbrakk> App (Var n) y \<rbrakk>\<^bsub>\<lbrace>(x, App e y) # (n, e) # \<Gamma>\<rbrace>\<rho>\<^esub> \<sqsubseteq> \<lbrakk> App e y \<rbrakk>\<^bsub>\<lbrace>(x, App e y) # (n, e) # \<Gamma>\<rbrace>\<rho>\<^esub>"
     by simp
 
- have "\<lbrakk> Var n \<rbrakk>\<^bsub>\<lbrace>(x, App (Var n) y) # (n, e) # \<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrace>(x, App (Var n) y) # (n, e) # \<Gamma>\<rbrace>\<rho> f! n"
+ have "\<lbrakk> Var n \<rbrakk>\<^bsub>\<lbrace>(x, App (Var n) y) # (n, e) # \<Gamma>\<rbrace>\<rho>\<^esub> = (\<lbrace>(x, App (Var n) y) # (n, e) # \<Gamma>\<rbrace>\<rho>) n"
     by simp
   also have "... = \<lbrakk> e \<rbrakk>\<^bsub>(\<lbrace>(x, App (Var n) y) # (n, e) # \<Gamma>\<rbrace>\<rho>)\<^esub>"
     by (subst HSem_eq, simp)
@@ -42,7 +42,7 @@ proof(rule HSem_subst_expr)
   from fresh have [simp]: "n \<noteq> x" by (simp add: fresh_at_base)
   have ne: "(n,e) \<in> set ((x, e) # (n, e) # \<Gamma>)" by simp
 
-  have "\<lbrakk> Var n \<rbrakk>\<^bsub>\<lbrace>(x, e) # (n, e) # \<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrace>(x, e) # (n, e) # \<Gamma>\<rbrace>\<rho> f! n"
+  have "\<lbrakk> Var n \<rbrakk>\<^bsub>\<lbrace>(x, e) # (n, e) # \<Gamma>\<rbrace>\<rho>\<^esub> = (\<lbrace>(x, e) # (n, e) # \<Gamma>\<rbrace>\<rho>) n"
     by simp
   also have "... = \<lbrakk> e \<rbrakk>\<^bsub>(\<lbrace>(x, e) # (n, e) # \<Gamma>\<rbrace>\<rho>)\<^esub>"
     by (subst HSem_eq, simp)
@@ -50,7 +50,7 @@ proof(rule HSem_subst_expr)
   show "\<lbrakk> Var n \<rbrakk>\<^bsub>\<lbrace>(x, e) # (n, e) # \<Gamma>\<rbrace>\<rho>\<^esub> \<sqsubseteq> \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>(x, e) # (n, e) # \<Gamma>\<rbrace>\<rho>\<^esub>"
     by simp
 
-  have "\<lbrakk> Var n \<rbrakk>\<^bsub>\<lbrace>(x, Var n) # (n, e) # \<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrace>(x, Var n) # (n, e) # \<Gamma>\<rbrace>\<rho> f! n"
+  have "\<lbrakk> Var n \<rbrakk>\<^bsub>\<lbrace>(x, Var n) # (n, e) # \<Gamma>\<rbrace>\<rho>\<^esub> = (\<lbrace>(x, Var n) # (n, e) # \<Gamma>\<rbrace>\<rho>) n"
     by simp
   also have "... = \<lbrakk> e \<rbrakk>\<^bsub>(\<lbrace>(x, Var n) # (n, e) # \<Gamma>\<rbrace>\<rho>)\<^esub>"
     by (subst HSem_eq, simp)
@@ -131,7 +131,7 @@ case goal1
         also have "... = \<lbrakk> body \<rbrakk>\<^bsub>\<lbrace>(x, body) # asToHeap as @ \<Gamma>\<rbrace>\<^esub>"
           by (rule arg_cong[OF HSem_reorder_head_append[OF x_not_as], symmetric])
         finally
-        show ?thesis using True x' by (simp add: the_lookup_HSem_heap)
+        show ?thesis using True x' by (simp add: lookup_HSem_heap)
       next
         case False thus ?thesis
         apply (subst (2) HSem_eq)
@@ -151,7 +151,7 @@ case goal1
       proof(cases "x' = x")
         assume "x' = x"
         thus ?thesis
-          by (simp add: the_lookup_HSem_other[OF x_not_as] the_lookup_HSem_heap)
+          by (simp add: lookup_HSem_other[OF x_not_as] lookup_HSem_heap)
       next
         have merged_r: "?r = \<lbrace>asToHeap as @ ((x, Let as body) # \<Gamma>)\<rbrace>"
           apply (rule HSem_merge)
@@ -170,7 +170,7 @@ case goal1
 
         show ?thesis
           unfolding merged_r
-          apply (subst the_lookup_HSem_heap)
+          apply (subst lookup_HSem_heap)
           using x' apply simp[1]
           unfolding map_of_reorder
           apply (rule below_refl)

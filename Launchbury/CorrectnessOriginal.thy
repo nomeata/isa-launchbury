@@ -39,27 +39,27 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e')
   with *
   have prem2: "fv (\<Delta>, e'[y::=x]) - heapVars \<Delta> \<subseteq> set L" by auto
   
-  have *: "\<lbrace>\<Gamma>\<rbrace>\<rho> f! x = \<lbrace>\<Delta>\<rbrace>\<rho> f! x"
+  have *: "(\<lbrace>\<Gamma>\<rbrace>\<rho>) x = (\<lbrace>\<Delta>\<rbrace>\<rho>) x"
   proof(cases "x \<in> heapVars \<Gamma>")
     case True
     from Application.hyps(10)[OF prem1, where \<rho> = \<rho>]
-    have "(\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` heapVars \<Gamma> f! x  = (\<lbrace>\<Delta>\<rbrace>\<rho>) f|` heapVars \<Gamma> f! x" by simp
+    have "((\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` heapVars \<Gamma>) x  = ((\<lbrace>\<Delta>\<rbrace>\<rho>) f|` heapVars \<Gamma>) x" by simp
     with True show ?thesis by simp
   next
     case False 
     from False reds_avoids_live[OF distinct_redsD1[OF Application.hyps(8)] _ False] 
-    show ?thesis by (simp add: the_lookup_HSem_other)
+    show ?thesis by (simp add: lookup_HSem_other)
   qed
 
-  have "\<lbrakk> App e x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = (\<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>) \<down>Fn (\<lbrace>\<Gamma>\<rbrace>\<rho> f! x)"
+  have "\<lbrakk> App e x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = (\<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>) \<down>Fn (\<lbrace>\<Gamma>\<rbrace>\<rho>) x"
     by simp
-  also have "\<dots> = (\<lbrakk> Lam [y]. e' \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>) \<down>Fn (\<lbrace>\<Gamma>\<rbrace>\<rho> f! x)"
+  also have "\<dots> = (\<lbrakk> Lam [y]. e' \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>) \<down>Fn (\<lbrace>\<Gamma>\<rbrace>\<rho>) x"
     using Application.hyps(9)[OF prem1] by simp
-  also have "\<dots> = (\<lbrakk> Lam [y]. e' \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>) \<down>Fn (\<lbrace>\<Delta>\<rbrace>\<rho> f! x)"
+  also have "\<dots> = (\<lbrakk> Lam [y]. e' \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>) \<down>Fn (\<lbrace>\<Delta>\<rbrace>\<rho>) x"
     unfolding *..
-  also have "\<dots> = (Fn \<cdot> (\<Lambda> v. \<lbrakk> e' \<rbrakk>\<^bsub>(\<lbrace>\<Delta>\<rbrace>\<rho>)(y := v)\<^esub>)) \<down>Fn (\<lbrace>\<Delta>\<rbrace>\<rho> f! x)"
+  also have "\<dots> = (Fn \<cdot> (\<Lambda> v. \<lbrakk> e' \<rbrakk>\<^bsub>(\<lbrace>\<Delta>\<rbrace>\<rho>)(y := v)\<^esub>)) \<down>Fn (\<lbrace>\<Delta>\<rbrace>\<rho>) x"
     by simp
-  also have "\<dots> = \<lbrakk> e' \<rbrakk>\<^bsub>(\<lbrace>\<Delta>\<rbrace>\<rho>)(y := \<lbrace>\<Delta>\<rbrace>\<rho> f! x)\<^esub>"
+  also have "\<dots> = \<lbrakk> e' \<rbrakk>\<^bsub>(\<lbrace>\<Delta>\<rbrace>\<rho>)(y := (\<lbrace>\<Delta>\<rbrace>\<rho>) x)\<^esub>"
     by simp
   also have "\<dots> = \<lbrakk> e'[y ::= x] \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>"
     by (rule arg_cong[OF ESem_subst[OF `y \<noteq> x`]])
@@ -120,7 +120,7 @@ case (Variable x e \<Gamma> L \<Delta> z)
        and "(\<lbrace>delete x \<Gamma>\<rbrace>\<sigma>) f|` heapVars (delete x \<Gamma>) = (\<lbrace>\<Delta>\<rbrace>\<sigma>') f|` heapVars (delete x \<Gamma>)".
     thus ?case
       using subset
-      by (auto intro!: fmap_eqI simp add: lookup_fmap_add_eq lookup_fun_upd_eq lookup_fmap_restr_eq dest: fmap_restr_eqD )
+      by (auto intro!: ext simp add: lookup_fmap_add_eq  lookup_fmap_restr_eq dest: fmap_restr_eqD )
   qed
   also have "\<dots> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>heapVars \<Delta>\<^esub> (\<lbrace>\<Delta>\<rbrace>\<rho>'))( x := \<lbrakk> z \<rbrakk>\<^bsub>\<rho>'\<^esub>)) f|` (-?new)"
     by (rule arg_cong[OF iterative_HSem'[symmetric], OF `x \<notin> heapVars \<Delta>`])
@@ -133,7 +133,7 @@ case (Variable x e \<Gamma> L \<Delta> z)
     using fmap_restr_eqD[OF le, where x = x]
     by simp
   also have "\<dots> = \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>(x, z) # \<Delta>\<rbrace>\<rho>\<^esub>"
-    by (auto simp add: the_lookup_HSem_heap)
+    by (auto simp add: lookup_HSem_heap)
   finally
   show "\<lbrakk> Var x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>(x, z) # \<Delta>\<rbrace>\<rho>\<^esub>".
 next
@@ -166,9 +166,9 @@ case (Let as \<Gamma> L body \<Delta> z)
   show ?case.
 
   have "(\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` (heapVars \<Gamma>) = (\<lbrace>asToHeap as\<rbrace>(\<lbrace>\<Gamma>\<rbrace>\<rho>)) f|` (heapVars \<Gamma>)"
-    apply (rule fmap_eqI)
+    apply (rule ext)
     apply (case_tac "x \<in> heapVars (asToHeap as)")
-    apply (auto simp add: the_lookup_HSem_other lookup_fmap_restr_eq *)
+    apply (auto simp add: lookup_HSem_other lookup_fmap_restr_eq *)
     done
   also have "\<dots> = (\<lbrace>asToHeap as @ \<Gamma>\<rbrace>\<rho>) f|` (heapVars \<Gamma>)"
     by (rule arg_cong[OF HSem_merge[OF f1]])

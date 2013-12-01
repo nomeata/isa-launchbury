@@ -406,10 +406,10 @@ by (metis assms similar_FnD)
 section {* The similarity relation lifted to finite maps *}
 
 abbreviation fmap_similar :: "('a f\<rightharpoonup> Value) \<Rightarrow> ('a f\<rightharpoonup> CValue) \<Rightarrow> bool"  (infix "f\<triangleleft>\<triangleright>" 50) where
-  "fmap_similar \<equiv> fmap_lift_rel (\<lambda>x y. x \<triangleleft>\<triangleright> y\<cdot>C\<^sup>\<infinity>)"
+  "fmap_similar \<equiv> pointwise (\<lambda>x y. x \<triangleleft>\<triangleright> y\<cdot>C\<^sup>\<infinity>)"
 
 lemma fmap_similar_adm: "adm (\<lambda>x. fst x f\<triangleleft>\<triangleright> snd x)"
-  apply (rule fmap_lift_rel_adm)
+  apply (rule pointwise_adm)
   apply (rule similar_admI)
   apply auto
   done
@@ -419,11 +419,10 @@ lemma fmap_similar_fmap_bottom[simp]: "\<bottom> f\<triangleleft>\<triangleright
 
 lemma fmap_similarE[elim]:
   assumes "m f\<triangleleft>\<triangleright> m'"
-  assumes "(\<And>x. (m f! x) \<triangleleft>\<triangleright> (m' f! x)\<cdot>C\<^sup>\<infinity>) \<Longrightarrow> Q"
+  assumes "(\<And>x. (m  x) \<triangleleft>\<triangleright> (m' x)\<cdot>C\<^sup>\<infinity>) \<Longrightarrow> Q"
   shows Q
   apply (rule assms(2))
-  using assms(1)
-  apply auto[1]
-  done
+  using assms(1) unfolding pointwise_def
+  by blast
 
 end
