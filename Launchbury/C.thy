@@ -6,11 +6,13 @@ default_sort cpo
 
 domain C = C (lazy "C")
 
-instantiation C :: pure_cpo
+instantiation C :: pure
 begin
   definition "p \<bullet> (c::C) = c"
 instance by default (auto simp add: permute_C_def)
 end
+instance C :: pcpo_pt
+  by default (simp add: pure_permute_id)
 
 fixrec Cpred :: "C \<rightarrow> C" where "Cpred\<cdot>(C\<cdot>r) = r"
 

@@ -6,7 +6,7 @@ begin
 subsubsection {* The denotational semantics for expressions *}
 
 locale semantic_domain =
-  fixes Fn :: "('Value \<rightarrow> 'Value) \<rightarrow> ('Value::{pcpo_pt,pure_cpo,Nonempty_Meet_cpo})"
+  fixes Fn :: "('Value \<rightarrow> 'Value) \<rightarrow> ('Value::{pcpo_pt,pure,Nonempty_Meet_cpo})"
   fixes Fn_project :: "'Value \<rightarrow> ('Value \<rightarrow> 'Value)"
   fixes tick :: "'Value \<rightarrow> 'Value"
 begin
@@ -29,7 +29,7 @@ case goal1 thus ?case
   unfolding eqvt_def ESem_graph_aux_def
   apply rule
   apply (perm_simp)
-  apply (simp add: Abs_cfun_eqvt cont_fun)
+  apply (simp add: Abs_cfun_eqvt)
   done
 next
 case (goal3 P x)

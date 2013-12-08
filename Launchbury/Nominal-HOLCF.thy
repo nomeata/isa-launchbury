@@ -134,17 +134,7 @@ instance "fun" :: (cont_pt, cont_pt) cont_pt
   apply (rule cont_fun)
   done
 
-class pure_cpo = Nominal2_Base.pure + cpo
-
-instance pure_cpo \<subseteq> cont_pt
-  apply default
-  proof-
-    fix p :: perm
-    have "permute p = ((\<lambda>x. x) :: 'a \<Rightarrow> 'a)" by(rule)(rule permute_pure)
-    thus "cont (permute p :: 'a \<Rightarrow> 'a)" by (auto)
-  qed
-
-instance "cfun" :: (pure_cpo, pure_cpo) pure_cpo
+instance "cfun" :: ("{pure,cont_pt}", "{pure,cont_pt}") pure
   apply default
   apply (auto  simp add: permute_cfun_def permute_pure Cfun.cfun.Rep_cfun_inverse)
   done

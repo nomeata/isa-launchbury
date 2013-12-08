@@ -6,7 +6,7 @@ default_sort type
 
 subsubsection {* Conversion from heaps to environments *} 
 
-function heapToEnv :: "('var \<times> 'exp) list \<Rightarrow> ('exp \<Rightarrow> 'value::{pure_cpo,pcpo}) \<Rightarrow> 'var f\<rightharpoonup> 'value"
+function heapToEnv :: "('var \<times> 'exp) list \<Rightarrow> ('exp \<Rightarrow> 'value::{pure,pcpo}) \<Rightarrow> 'var f\<rightharpoonup> 'value"
 where
   "heapToEnv [] _ = \<bottom>"
 | "heapToEnv ((x,e)#h) eval = (heapToEnv h eval) (x := eval e)"

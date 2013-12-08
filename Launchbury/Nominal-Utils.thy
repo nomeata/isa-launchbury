@@ -204,6 +204,10 @@ lemma fv_append[simp]: "fv (x @ y) = fv x \<union> fv y"
 lemma fv_at_base[simp]: "fv a = {a::'a::at_base}"
   by (auto simp add: fv_def supp_at_base)
 
+subsection {* Other useful lemmas *}
+
+lemma pure_permute_id: "permute p = (\<lambda> x. (x::'a::pure))"
+  by rule (simp add: permute_pure)
 
 lemma supp_set_elem_finite:
   assumes "finite S"

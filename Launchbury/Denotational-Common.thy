@@ -27,7 +27,7 @@ abbreviation Fn_project_abbr (infix "\<down>Fn" 55)
 
 type_synonym Env = "var f\<rightharpoonup> Value"
 
-instantiation Value :: pure_cpo
+instantiation Value :: pure
 begin
   definition "p \<bullet> (v::Value) = v"
 instance
@@ -36,6 +36,7 @@ instance
   done
 end
 
-instance Value :: pcpo_pt by default
+instance Value :: pcpo_pt
+  by default (simp add: pure_permute_id)
 
 end

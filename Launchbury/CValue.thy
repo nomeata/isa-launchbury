@@ -15,7 +15,7 @@ lemma CFn_project_strict[simp]:
   "\<bottom> \<down>CFn v = \<bottom>"
   by (fixrec_simp) 
 
-instantiation CValue' :: pure_cpo
+instantiation CValue' :: pure
 begin
   definition "p \<bullet> (v::CValue') = v"
 instance
@@ -24,8 +24,8 @@ instance
   done
 end
 
-instance CValue' :: pcpo_pt by default
-
+instance CValue' :: pcpo_pt
+  by default (simp add: pure_permute_id)
 
 instantiation cfun :: (cpo,"{bifinite,cont_binary_meet}") Finite_Meet_cpo begin
   fixrec cfun_meet :: "('a \<rightarrow> 'b) \<rightarrow> ('a \<rightarrow> 'b) \<rightarrow> ('a \<rightarrow> 'b)"
