@@ -12,7 +12,7 @@ instead of least upper bounds.
 context has_ESem
 begin
 
-definition HSem :: "('var \<times> 'exp) list \<Rightarrow> 'var f\<rightharpoonup> 'value \<rightarrow> 'var f\<rightharpoonup> 'value" 
+definition HSem :: "('var \<times> 'exp) list \<Rightarrow> ('var \<Rightarrow> 'value) \<rightarrow> ('var \<Rightarrow> 'value)"
   where
   "HSem \<Gamma> = (\<Lambda> \<rho> . (\<mu> \<rho>'. \<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> heapToEnv \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)))"
 

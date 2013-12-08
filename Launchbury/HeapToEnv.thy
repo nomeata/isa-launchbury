@@ -6,12 +6,10 @@ default_sort type
 
 subsubsection {* Conversion from heaps to environments *} 
 
-function heapToEnv :: "('var \<times> 'exp) list \<Rightarrow> ('exp \<Rightarrow> 'value::{pure,pcpo}) \<Rightarrow> 'var f\<rightharpoonup> 'value"
+fun heapToEnv :: "('var \<times> 'exp) list \<Rightarrow> ('exp \<Rightarrow> 'value::{pure,pcpo}) \<Rightarrow> 'var \<Rightarrow> 'value"
 where
   "heapToEnv [] _ = \<bottom>"
 | "heapToEnv ((x,e)#h) eval = (heapToEnv h eval) (x := eval e)"
-by (pat_completeness, auto)
-termination by lexicographic_order
 
 lemma cont2cont_heapToEnv[simp, cont2cont]:
   "(\<And> e . e \<in> snd ` set h \<Longrightarrow> cont (\<lambda>\<rho>. eval \<rho> e)) \<Longrightarrow> cont (\<lambda> \<rho>. heapToEnv h (eval \<rho>))"

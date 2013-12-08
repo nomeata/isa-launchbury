@@ -12,14 +12,14 @@ lemma lookup_perm[simp]:
 *)
 
 lemma fdom_perm:
-  fixes f :: "'a::pt f\<rightharpoonup> 'b::{pcpo_pt}"
+  fixes f :: "'a::pt \<Rightarrow> 'b::{pcpo_pt}"
   shows "fdom (\<pi> \<bullet> f) = \<pi> \<bullet> (fdom f)"
   by (simp add: fdom_def)
 
 lemmas fdom_perm_rev[simp,eqvt] = fdom_perm[symmetric]
 
 lemma mem_fdom_perm[simp]:
-  fixes \<rho> :: "'a::at_base f\<rightharpoonup> 'b::{pcpo_pt}"
+  fixes \<rho> :: "'a::at_base \<Rightarrow> 'b::{pcpo_pt}"
   shows "xa \<in> fdom (p \<bullet> \<rho>) \<longleftrightarrow> - p \<bullet> xa \<in> fdom \<rho>" 
   by (metis (mono_tags) fdom_perm_rev mem_Collect_eq permute_set_eq)
 

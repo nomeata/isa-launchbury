@@ -6,9 +6,7 @@ default_sort type
 
 subsubsection {* The type of finite maps *}
 
-type_synonym  ('a, 'b) fmap = "'a \<Rightarrow> 'b" (infixr "f\<rightharpoonup>" 1)
-
-definition fdom :: "'key f\<rightharpoonup> 'value::pcpo \<Rightarrow> 'key set" where "fdom m = {x. m x \<noteq> \<bottom>}"
+definition fdom :: "('key \<Rightarrow> 'value::pcpo) \<Rightarrow> 'key set" where "fdom m = {x. m x \<noteq> \<bottom>}"
 
 lemma fempty_fdom[simp]: "fdom \<bottom> = {}" by (simp add: fdom_def)
 
@@ -37,7 +35,7 @@ lemma fun_upd_eqD1: "m(a := x) = n(a := y) \<Longrightarrow> x = y"
 
 subsubsection {* Restriction *}
 
-definition fmap_restr :: "'a set \<Rightarrow> 'a f\<rightharpoonup> 'b::pcpo \<Rightarrow> 'a f\<rightharpoonup> 'b"
+definition fmap_restr :: "'a set \<Rightarrow> ('a \<Rightarrow> 'b::pcpo) \<Rightarrow> ('a \<Rightarrow> 'b)"
   where "fmap_restr S m = (\<lambda> x. if x \<in> S then m x else \<bottom>)"
 
 abbreviation fmap_restr_rev  (infixl "f|`"  110) where "fmap_restr_rev m S \<equiv> fmap_restr S m"
@@ -87,7 +85,7 @@ lemma fmap_restr_fun_upd_other[simp]: "x \<notin> S \<Longrightarrow> m1(x := v)
 
 subsubsection {* Deleting *}
 
-definition fmap_delete :: "'a \<Rightarrow> 'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b::pcpo"
+definition fmap_delete :: "'a \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> ('a \<Rightarrow> 'b::pcpo)"
   where "fmap_delete x m = m(x := \<bottom>)"
 
 lemma lookup_fmap_delete[simp]:
@@ -134,7 +132,7 @@ lemma fmap_delete_restr: "fmap_delete x m = m f|` (-{x})"
 
 subsubsection {* Addition (merging) of finite maps *}
 
-definition fmap_add :: "'a set \<Rightarrow> 'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b"  
+definition fmap_add :: "'a set \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> ('a \<Rightarrow> 'b)"
   where "fmap_add S f1 f2 = (\<lambda> x. if x \<in> S then f2 x else f1 x)"
 
 abbreviation fmap_add_syn ("_ f++\<^bsub>_\<^esub> _" [100, 0, 100] 100) where "f1 f++\<^bsub>S\<^esub> f2 \<equiv> fmap_add S f1 f2"

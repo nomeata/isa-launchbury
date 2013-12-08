@@ -132,9 +132,9 @@ subsubsection {* A setup for defining a fixed point of finite maps iteratively *
 
 
 locale iterative =
-  fixes \<rho> :: "'a::type f\<rightharpoonup> 'b::pcpo"
-   and e1 :: "'a f\<rightharpoonup> 'b \<rightarrow> 'a f\<rightharpoonup> 'b"
-   and e2 :: "'a f\<rightharpoonup> 'b \<rightarrow> 'b"
+  fixes \<rho> :: "'a::type \<Rightarrow> 'b::pcpo"
+   and e1 :: "('a \<Rightarrow> 'b) \<rightarrow> ('a \<Rightarrow> 'b)"
+   and e2 :: "('a \<Rightarrow> 'b) \<rightarrow> 'b"
    and S :: "'a set" and x :: 'a
   assumes ne:"x \<notin> S"
 begin
@@ -150,7 +150,7 @@ begin
   lemmas eq = ext[OF split_x, where y1 = "\<lambda>x. x"]
 
   lemma lookup_fix[simp]:
-    fixes y and F :: "'a f\<rightharpoonup> 'b \<rightarrow> 'a f\<rightharpoonup> 'b"
+    fixes y and F :: "('a \<Rightarrow> 'b) \<rightarrow> ('a \<Rightarrow> 'b)"
     shows "(fix \<cdot> F) y = (F \<cdot> (fix \<cdot> F)) y"
     by (subst fix_eq, rule)
 
