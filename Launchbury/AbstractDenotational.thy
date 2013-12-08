@@ -12,7 +12,7 @@ locale semantic_domain =
 begin
 
 nominal_primrec
-  ESem :: "exp \<Rightarrow> (var f\<rightharpoonup> 'Value) \<rightarrow> 'Value"
+  ESem :: "exp \<Rightarrow> (var \<Rightarrow> 'Value) \<rightarrow> 'Value"
 where
   (* Restrict \<rho> to avoid having to demand atom x \<sharp> \<rho> *)
  "ESem (Lam [x]. e) = (\<Lambda> \<rho>. tick \<cdot> (Fn \<cdot> (\<Lambda> v. ESem e \<cdot> ((\<rho> f|` fv (Lam [x]. e))(x := v)))))"

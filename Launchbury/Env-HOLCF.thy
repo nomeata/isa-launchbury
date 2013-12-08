@@ -77,7 +77,6 @@ lemma fmap_restr_cont:  "cont (fmap_restr S)"
   apply (auto simp add: assms)
   done
 
-
 lemma fmap_restr_belowD:
   assumes "m1 f|` S \<sqsubseteq> m2 f|` S"
   assumes "x \<in> S"

@@ -2,7 +2,7 @@ theory ResourcedDenotational
 imports "Abstract-Denotational-Props" CValue "C_restr"
 begin
 
-type_synonym CEnv = "var f\<rightharpoonup> CValue"
+type_synonym CEnv = "var \<Rightarrow> CValue"
 
 interpretation semantic_domain
   "\<Lambda> f . \<Lambda> r. CFn\<cdot>(\<Lambda> v. C_restr \<cdot> r \<cdot> (f\<cdot> (C_restr \<cdot> r \<cdot> v)))"
