@@ -212,31 +212,4 @@ begin
   qed
 end
 
-
-subsection {* Mapping *}
-
-lemma fmap_map_lookup_not_there[simp]: "v \<notin> fdom \<rho> \<Longrightarrow> (fmap_map f \<rho>) v = f \<bottom>"
-  by (simp add: lookup_not_fdom)
-
-lemma fmap_map_lookup_eq: "fmap_map f \<rho> v = (if v \<in> fdom \<rho> then f (\<rho> v) else f \<bottom>)"
-  by (auto simp add: lookup_not_fdom)
-
-lemma cont2cont_fmap_map [simp, cont2cont]:
-  assumes "cont f"
-  assumes "\<And> x. cont (f x)"
-  assumes "cont g"
-  shows "cont (\<lambda> x. fmap_map (f x) (g x))"
-  apply (rule cont2cont_lambda)
-  apply (simp)
-  apply (intro cont2cont  `cont g` `cont f` cont_compose2[OF assms(1,2)] cont2cont_fun)
-  done
-
-definition fmap_cmap :: "('a::pcpo \<rightarrow> 'b::pcpo) \<rightarrow> 'c::type f\<rightharpoonup> 'a \<rightarrow> 'c::type f\<rightharpoonup> 'b" 
-  where  "fmap_cmap = (\<Lambda> f \<rho>. fmap_map (\<lambda> x. f\<cdot>x) \<rho>)"
-
-lemma [simp]: "fmap_cmap\<cdot>f\<cdot>(\<rho>(x := v)) = (fmap_cmap\<cdot>f\<cdot>\<rho>)(x := f\<cdot>v)"
-  unfolding fmap_cmap_def by simp
-
-lemma fmap_cmap_app[simp]: "(fmap_cmap\<cdot>f\<cdot>\<rho>) x = f\<cdot>(\<rho> x)"
-  unfolding fmap_cmap_def by auto
 end

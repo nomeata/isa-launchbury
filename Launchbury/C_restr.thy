@@ -1,5 +1,5 @@
 theory C_restr
-imports C "Env-HOLCF" "C-Meet"
+imports C "C-Meet"
 begin
 
 subsection {* On C-ranged functions *}
@@ -178,7 +178,7 @@ lemma C_restr_C_case[simp]:
   done
 
 definition fmap_C_restr :: "C \<rightarrow> ('var::type \<Rightarrow> (C \<rightarrow> 'a::pcpo)) \<rightarrow> ('var \<Rightarrow> (C \<rightarrow> 'a))" where
-  "fmap_C_restr = (\<Lambda> r f.  fmap_cmap\<cdot>(C_restr\<cdot>r)\<cdot>f)"
+  "fmap_C_restr = (\<Lambda> r f.  cfun_comp\<cdot>(C_restr\<cdot>r)\<cdot>f)"
 
 lemma fmap_C_restr_upd[simp]: "fmap_C_restr\<cdot>r\<cdot>(\<rho>(x := v)) = (fmap_C_restr\<cdot>r\<cdot>\<rho>)(x := C_restr\<cdot>r\<cdot>v)"
   unfolding fmap_C_restr_def by simp

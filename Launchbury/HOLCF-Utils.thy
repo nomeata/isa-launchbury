@@ -59,4 +59,33 @@ lemma fun_upd_cont[simp,cont2cont]:
   by (rule cont2cont_lambda)(auto simp add: assms)
 
 
+subsection {* Composition of fun and cfun *}
+
+(*
+lemma comp_lookup_not_there[simp]: "v \<notin> fdom \<rho> \<Longrightarrow> (f \<circ> \<rho>) v = f \<bottom>"
+  by (simp add: lookup_not_fdom)
+
+lemma fmap_map_lookup_eq: "(f \<circ> \<rho>) v = (if v \<in> fdom \<rho> then f (\<rho> v) else f \<bottom>)"
+  by (auto simp add: lookup_not_fdom)
+*)
+
+lemma cont2cont_fmap_map [simp, cont2cont]:
+  assumes "cont f"
+  assumes "\<And> x. cont (f x)"
+  assumes "cont g"
+  shows "cont (\<lambda> x. (f x) \<circ> (g x))"
+  apply (rule cont2cont_lambda)
+  apply (simp)
+  apply (intro cont2cont  `cont g` `cont f` cont_compose2[OF assms(1,2)] cont2cont_fun)
+  done
+
+definition cfun_comp :: "('a::pcpo \<rightarrow> 'b::pcpo) \<rightarrow> ('c::type \<Rightarrow> 'a) \<rightarrow> ('c::type \<Rightarrow> 'b)"
+  where  "cfun_comp = (\<Lambda> f \<rho>. (\<lambda> x. f\<cdot>x) \<circ> \<rho>)"
+
+lemma [simp]: "cfun_comp\<cdot>f\<cdot>(\<rho>(x := v)) = (cfun_comp\<cdot>f\<cdot>\<rho>)(x := f\<cdot>v)"
+  unfolding cfun_comp_def by auto
+
+lemma cfun_comp_app[simp]: "(cfun_comp\<cdot>f\<cdot>\<rho>) x = f\<cdot>(\<rho> x)"
+  unfolding cfun_comp_def by auto
+
 end

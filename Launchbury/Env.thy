@@ -171,18 +171,4 @@ lemma fmap_restr_add: "fmap_restr S (m1 f++\<^bsub>S2\<^esub> m2) = fmap_restr S
 lemma fmap_delete_add: "fmap_delete x (m1 f++\<^bsub>S\<^esub> m2) = fmap_delete x m1 f++\<^bsub>S - {x}\<^esub> fmap_delete x m2"
   by (auto simp add: fmap_add_def  fdom_def fmap_restr_def fmap_delete_def)
 
-subsubsection {* Map *}
-
-definition fmap_map :: "('b \<Rightarrow> 'c) \<Rightarrow> 'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'c" where "fmap_map f m = (\<lambda> x. f (m x))"
-
-lemma fmap_map_id[simp]: "fmap_map (\<lambda> x. x) m = m" by (simp add: fmap_map_def)
-
-lemma lookup_fmap_map[simp]: "(fmap_map f m) x = f (m x)"  by (simp add: fmap_map_def)
-
-lemma fmap_map_fmap_restr[simp]: "f \<bottom> = \<bottom> \<Longrightarrow> fmap_map f (fmap_restr S m) = fmap_restr S (fmap_map f m)"
-  by (rule ext) (auto simp add: lookup_fmap_restr_eq)
-
-lemma fmap_map_fun_upd[simp]: "fmap_map f (m(x := v)) = (fmap_map f m)(x := f v)"
-  by (auto simp add: fmap_map_def  )
-
 end
