@@ -25,14 +25,6 @@ lemma fdom_fun_upd_subset: "fdom (h (x := v)) \<subseteq> insert x (fdom h)"
 
 declare fun_upd_same[simp] fun_upd_other[simp]
 
-(*
-lemma fun_upd_noop[simp]: "x \<in> fdom f \<Longrightarrow> y = f  x \<Longrightarrow> f (x := y) = f"
-  by (auto simp add: fdom_def )
-*)
-
-lemma fun_upd_eqD1: "m(a := x) = n(a := y) \<Longrightarrow> x = y"
-  by (metis fun_upd_same)
-
 subsubsection {* Restriction *}
 
 definition fmap_restr :: "'a set \<Rightarrow> ('a \<Rightarrow> 'b::pcpo) \<Rightarrow> ('a \<Rightarrow> 'b)"
