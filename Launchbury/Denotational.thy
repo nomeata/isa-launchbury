@@ -59,7 +59,7 @@ proof(rule HSem_subst_expr)
     by simp
 qed
 
-
+(*
 subsubsection {* The semantics of let only adds new bindings *}
 
 text {*
@@ -72,7 +72,6 @@ lemma HSem_unfold_let:
   assumes fresh: "set (bn as) \<sharp>* (x, Let as body, \<Gamma>)"
   shows "\<lbrace>(x, Let as body) # \<Gamma>\<rbrace> = (\<lbrace>(x, body) # asToHeap as @ \<Gamma>\<rbrace>)f|` (insert x (heapVars \<Gamma>))"
 oops
-(*
 proof-
   from fresh
   have fresh_Gamma: "atom ` heapVars (asToHeap as) \<sharp>* \<Gamma>"

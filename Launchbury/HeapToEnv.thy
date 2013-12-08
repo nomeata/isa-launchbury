@@ -1,5 +1,5 @@
 theory "HeapToEnv"
-  imports "DistinctVars" "Nominal-Utils" "Env-Nominal-HOLCF"
+  imports "DistinctVars"  "Env-Nominal" "Env-HOLCF"
 begin
 
 default_sort type

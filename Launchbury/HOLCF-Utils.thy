@@ -43,7 +43,20 @@ proof (rule admI)
     apply (rule pointwiseI)
     apply (rule admD[OF adm_subst[where t = "\<lambda>p . (fst p x, snd p x)", standard, OF _ assms, simplified] `chain Y`])
     using goal1(2) unfolding pointwise_def by auto
-qed 
+qed
+
+lemma fun_upd_mono:
+  "\<rho>1 \<sqsubseteq> \<rho>2 \<Longrightarrow> v1 \<sqsubseteq> v2 \<Longrightarrow> \<rho>1(x := v1) \<sqsubseteq> \<rho>2(x := v2)"
+  apply (rule fun_belowI)
+  apply (case_tac "xa = x")
+  apply simp
+  apply (auto elim:fun_belowD)
+  done
+
+lemma fun_upd_cont[simp,cont2cont]:
+  assumes "cont f" and "cont h"
+  shows "cont (\<lambda> x. (f x)(v := h x) :: 'a \<Rightarrow> 'b::pcpo)"
+  by (rule cont2cont_lambda)(auto simp add: assms)
 
 
 end

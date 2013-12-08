@@ -14,41 +14,6 @@ proof
   thus False by simp
 qed
 
-definition fmap_C_restr :: "C \<rightarrow> (var f\<rightharpoonup> (C \<rightarrow> 'a::pcpo)) \<rightarrow> (var f\<rightharpoonup> (C \<rightarrow> 'a))" where
-  "fmap_C_restr = (\<Lambda> r f.  fmap_cmap\<cdot>(C_restr\<cdot>r)\<cdot>f)"
-
-lemma fmap_C_restr_upd[simp]: "fmap_C_restr\<cdot>r\<cdot>(\<rho>(x := v)) = (fmap_C_restr\<cdot>r\<cdot>\<rho>)(x := C_restr\<cdot>r\<cdot>v)"
-  unfolding fmap_C_restr_def by simp
-
-lemma fmap_C_restr_lookup[simp]: "(fmap_C_restr\<cdot>r\<cdot>\<rho>) v = C_restr\<cdot>r\<cdot>(\<rho> v)"
-  unfolding fmap_C_restr_def by simp
-
-lemma fmap_C_restr_fempty[simp]: "fmap_C_restr\<cdot>r\<cdot>\<bottom> = \<bottom>"
-  unfolding fmap_C_restr_def
-  by auto
-
-lemma fmap_C_restr_restr_below[intro]: "fmap_C_restr\<cdot>r\<cdot>\<rho> \<sqsubseteq> \<rho>"
-  by (auto intro: fun_belowI)
-
-lemma C_restr_eq_Cpred: 
-  assumes "C_restr\<cdot>r\<cdot>x = C_restr\<cdot>r\<cdot>y"
-  shows "C_restr\<cdot>(Cpred\<cdot>r)\<cdot>x = C_restr\<cdot>(Cpred\<cdot>r)\<cdot>y"
-  apply (rule cfun_eqI) 
-  apply simp
-  by (metis C_restr_eqD[OF assms] Cpred_below meet_below2 meet_comm)
-
-lemma fmap_restr_eq_Cpred: 
-  assumes "fmap_C_restr\<cdot>r\<cdot>\<rho>1 = fmap_C_restr\<cdot>r\<cdot>\<rho>2"
-  shows "fmap_C_restr\<cdot>(Cpred\<cdot>r)\<cdot>\<rho>1 = fmap_C_restr\<cdot>(Cpred\<cdot>r)\<cdot>\<rho>2"
-proof(rule ext)
-next
-  fix x
-  from assms
-  have "(fmap_C_restr\<cdot>r\<cdot>\<rho>1) x = (fmap_C_restr\<cdot>r\<cdot>\<rho>2) x" by simp
-  thus "(fmap_C_restr\<cdot>(Cpred\<cdot>r)\<cdot>\<rho>1) x = (fmap_C_restr\<cdot>(Cpred\<cdot>r)\<cdot>\<rho>2) x"
-    by (auto intro: C_restr_eq_Cpred)
-qed
-
 lemma restr_can_restrict_heap: "C_restr\<cdot>r\<cdot>(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>) = C_restr\<cdot>r\<cdot>(\<N>\<lbrakk>e\<rbrakk>\<^bsub>fmap_C_restr\<cdot>(Cpred\<cdot>r)\<cdot>\<rho>\<^esub>)"
 proof(nominal_induct e arbitrary: \<rho> r rule: exp_strong_induct)
   case (Var x)
