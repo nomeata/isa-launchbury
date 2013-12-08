@@ -1,5 +1,5 @@
 theory Denotational
-  imports "Denotational-Common"  "HSemUpd" "Abstract-Denotational-Props"
+  imports "Abstract-Denotational-Props" Value
 begin
 
 interpretation semantic_domain Fn Fn_project "\<Lambda> x. x".

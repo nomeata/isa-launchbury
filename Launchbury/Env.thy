@@ -1,5 +1,5 @@
 theory Env
-  imports Main "~~/HOL/Library/Quotient_Option" "~~/src/HOL/Library/AList" HOLCF
+  imports Main HOLCF
 begin
 
 default_sort type
@@ -184,14 +184,5 @@ lemma fmap_map_fmap_restr[simp]: "f \<bottom> = \<bottom> \<Longrightarrow> fmap
 
 lemma fmap_map_fun_upd[simp]: "fmap_map f (m(x := v)) = (fmap_map f m)(x := f v)"
   by (auto simp add: fmap_map_def  )
-
-
-subsection {* Lifting relations pointwise *}
-
-definition pointwise where "pointwise P m m' = (\<forall> x. P (m x) (m' x))"
-lemma pointwiseI[intro]: "(\<And> x. P (m x) ( m' x)) \<Longrightarrow> pointwise P m m'" unfolding pointwise_def by blast
-(*
-inductive_cases fmap_lift_relE[elim]:  "fmap_lift_rel P m m'" 
-*)
 
 end

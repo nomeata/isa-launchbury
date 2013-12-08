@@ -1,5 +1,5 @@
 theory ValueSimilarity
-imports "Denotational-Common" CValue
+imports Value CValue
 begin
 
 section {* Utils (can go elsewhere) *}
@@ -405,7 +405,7 @@ by (metis assms similar_FnD)
 
 section {* The similarity relation lifted to finite maps *}
 
-abbreviation fmap_similar :: "('a f\<rightharpoonup> Value) \<Rightarrow> ('a f\<rightharpoonup> CValue) \<Rightarrow> bool"  (infix "f\<triangleleft>\<triangleright>" 50) where
+abbreviation fmap_similar :: "('a \<Rightarrow> Value) \<Rightarrow> ('a \<Rightarrow> CValue) \<Rightarrow> bool"  (infix "f\<triangleleft>\<triangleright>" 50) where
   "fmap_similar \<equiv> pointwise (\<lambda>x y. x \<triangleleft>\<triangleright> y\<cdot>C\<^sup>\<infinity>)"
 
 lemma fmap_similar_adm: "adm (\<lambda>x. fst x f\<triangleleft>\<triangleright> snd x)"

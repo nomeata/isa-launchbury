@@ -172,18 +172,6 @@ lemma fmap_delete_cont:  "cont (fmap_delete x)"
 lemmas fmap_delete_cont2cont[simp,cont2cont] = cont_compose[OF fmap_delete_cont]
 
 
-lemma pointwise_adm:
-  fixes P :: "'a::pcpo \<Rightarrow> 'b::pcpo \<Rightarrow> bool"
-  assumes "adm (\<lambda> x. P (fst x) (snd x))"
-  shows "adm (\<lambda> m. pointwise P (fst m) (snd m))"
-proof (rule admI)
-  case (goal1 Y)
-    show ?case
-    apply (rule pointwiseI)
-    apply (rule admD[OF adm_subst[where t = "\<lambda>p . (fst p x, snd p x)", standard, OF _ assms, simplified] `chain Y`])
-    using goal1(2) unfolding pointwise_def by auto
-qed 
-
 (*
 subsubsection {* Expanding the domain of finite maps *}
 

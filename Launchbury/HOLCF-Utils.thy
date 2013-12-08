@@ -1,5 +1,5 @@
 theory "HOLCF-Utils"
-  imports HOLCF
+  imports HOLCF Pointwise
 begin
 
 default_sort type
@@ -32,6 +32,18 @@ proof-
     apply (rule below_refl)
     done
 qed
+
+lemma pointwise_adm:
+  fixes P :: "'a::pcpo \<Rightarrow> 'b::pcpo \<Rightarrow> bool"
+  assumes "adm (\<lambda> x. P (fst x) (snd x))"
+  shows "adm (\<lambda> m. pointwise P (fst m) (snd m))"
+proof (rule admI)
+  case (goal1 Y)
+    show ?case
+    apply (rule pointwiseI)
+    apply (rule admD[OF adm_subst[where t = "\<lambda>p . (fst p x, snd p x)", standard, OF _ assms, simplified] `chain Y`])
+    using goal1(2) unfolding pointwise_def by auto
+qed 
 
 
 end

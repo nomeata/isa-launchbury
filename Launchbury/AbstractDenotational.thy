@@ -1,5 +1,5 @@
 theory AbstractDenotational
-imports "Denotational-Common" CValue "HSemUpd"
+imports Terms Heap "Vars-Nominal-HOLCF" "HSemUpd"
 begin
 
 

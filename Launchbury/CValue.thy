@@ -1,5 +1,5 @@
 theory CValue
-imports "Denotational-Common" C
+imports  C
 begin
 
 domain CValue' = CFn (lazy "(C \<rightarrow> CValue') \<rightarrow> (C \<rightarrow> CValue')")

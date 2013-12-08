@@ -188,5 +188,4 @@ lemma [cont2cont,simp]: "cont f \<Longrightarrow> cont g \<Longrightarrow> cont 
   apply (metis cont2cont_Pair)
   done
 
-
 end
