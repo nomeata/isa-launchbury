@@ -2,14 +2,7 @@ theory "Env-Nominal"
   imports Env "Nominal-Utils" "Nominal-HOLCF"
 begin
 
-subsubsection {* Equivariance lemmas related to finite maps *}
-
-(*
-lemma lookup_perm[simp]:
-  fixes \<rho> :: "'a::at_base f\<rightharpoonup> 'b::{pure,pcpo_pt}"
-  shows "((x' \<leftrightarrow> x) \<bullet> \<rho>) xa = \<rho> ((x' \<leftrightarrow> x) \<bullet> xa) " 
-  by (metis permute_flip_cancel permute_pure)
-*)
+subsubsection {* Equivariance lemmas  *}
 
 lemma fdom_perm:
   fixes f :: "'a::pt \<Rightarrow> 'b::{pcpo_pt}"
@@ -24,42 +17,24 @@ lemma mem_fdom_perm[simp]:
   by (metis (mono_tags) fdom_perm_rev mem_Collect_eq permute_set_eq)
 
 lemma fmap_restr_eqvt[eqvt]:
-  fixes m :: "'a::pt f\<rightharpoonup> 'b::{cont_pt,pcpo}"
+  fixes m :: "'a::pt \<Rightarrow> 'b::{cont_pt,pcpo}"
   shows "\<pi> \<bullet> m f|` d = (\<pi> \<bullet> m) f|` (\<pi> \<bullet> d)"
   by (auto simp add: fmap_restr_def)
 
 lemma fmap_delete_eqvt[eqvt]:
-  fixes m :: "'a::pt f\<rightharpoonup> 'b::{cont_pt,pcpo}"
+  fixes m :: "'a::pt \<Rightarrow> 'b::{cont_pt,pcpo}"
   shows "\<pi> \<bullet> fmap_delete x m = fmap_delete (\<pi> \<bullet> x) (\<pi> \<bullet> m)"
   by (auto simp add: fmap_delete_def)
 
-(*
-lemma fmap_copy_eqvt[eqvt]:
-  "\<pi> \<bullet> fmap_copy m a b = fmap_copy (\<pi> \<bullet> m) (\<pi> \<bullet> a) (\<pi> \<bullet> b)"
-  by transfer simp
-*)
-
 lemma fmap_add_eqvt[eqvt]:
-  fixes m1 m2 :: "'a::pt f\<rightharpoonup> 'b::{cont_pt,pcpo}"
+  fixes m1 m2 :: "'a::pt \<Rightarrow> 'b::{cont_pt,pcpo}"
   shows "\<pi> \<bullet> m1 f++\<^bsub>S\<^esub> m2 = (\<pi> \<bullet> m1) f++\<^bsub>\<pi> \<bullet> S\<^esub> (\<pi> \<bullet> m2)"
   by (auto simp add: fmap_add_def )
-
-(*
-lemma fmap_of_eqvt[eqvt]:
-  "\<pi> \<bullet> fmap_of l = fmap_of (\<pi> \<bullet> l)"
-  by transfer (rule map_of_eqvt)
-*)
-
-(*
-lemma fmap_map_eqvt[eqvt]:
-  "\<pi> \<bullet> fmap_map f m = fmap_map (\<pi> \<bullet> f) (\<pi> \<bullet> m)"
-by transfer simp
-*)
 
 subsubsection {* Permutation and restriction *}
 
 lemma fmap_restr_perm:
-  fixes \<rho> :: "'a::at_base f\<rightharpoonup> 'b::{pcpo_pt,pure}"
+  fixes \<rho> :: "'a::at_base \<Rightarrow> 'b::{pcpo_pt,pure}"
   assumes "supp p \<sharp>* S" and [simp]: "finite S"
   shows "(p \<bullet> \<rho>) f|` S = \<rho> f|` S"
 using assms
@@ -74,7 +49,7 @@ apply (auto simp add:perm_supp_eq supp_minus_perm fresh_star_def fresh_def supp_
 done
 
 lemma fmap_restr_flip:
-  fixes \<rho> :: "'a::at f\<rightharpoonup> 'b::{pcpo_pt,pure}"
+  fixes \<rho> :: "'a::at \<Rightarrow> 'b::{pcpo_pt,pure}"
   assumes "x \<notin> S" and "x' \<notin> S"
   shows "((x' \<leftrightarrow> x) \<bullet> \<rho>) f|` S = \<rho> f|` S"
   using assms

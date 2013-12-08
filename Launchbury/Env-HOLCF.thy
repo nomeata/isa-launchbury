@@ -97,13 +97,6 @@ lemma fmap_restr_below_subset:
 using assms
 by (auto intro!: fmap_restr_belowI dest: fmap_restr_belowD)
 
-lemma fmap_restr_eq_subset:
-  assumes "S \<subseteq> S'"
-  and "m1 f|` S' = m2 f|` S'"
-  shows "m1 f|` S = m2 f|` S"
-using assms
-by (metis fmap_restr_fmap_restr le_iff_inf)
-
 lemma  fmap_add_below_restrI:
   assumes " x f|` (-S) \<sqsubseteq> z f|` (-S)"
   and "y f|` S \<sqsubseteq> z f|` S"

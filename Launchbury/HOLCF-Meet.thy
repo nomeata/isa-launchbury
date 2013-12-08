@@ -6,7 +6,7 @@ subsubsection {* Towards meets: Lower bounds *}
 
 context po
 begin
-definition is_lb :: "'a set => 'a => bool" (infix ">|" 55) where
+definition is_lb :: "'a set \<Rightarrow> 'a \<Rightarrow> bool" (infix ">|" 55) where
   "S >| x <-> (\<forall>y\<in>S. x \<sqsubseteq> y)"
 
 lemma is_lbI: "(!!x. x \<in> S ==> l \<sqsubseteq> x) ==> S >| l"
@@ -26,10 +26,10 @@ lemma is_lb_downward: "[|S >| l; y \<sqsubseteq> l|] ==> S >| y"
 
 subsubsection {* Greatest lower bounds *}
 
-definition is_glb :: "'a set => 'a => bool" (infix ">>|" 55) where
+definition is_glb :: "'a set \<Rightarrow> 'a \<Rightarrow> bool" (infix ">>|" 55) where
   "S >>| x <-> S >| x \<and> (\<forall>u. S >| u --> u \<sqsubseteq> x)"
 
-definition glb :: "'a set => 'a" ("\<Sqinter>_" [60]60) where
+definition glb :: "'a set \<Rightarrow> 'a" ("\<Sqinter>_" [60]60) where
   "glb S = (THE x. S >>| x)" 
 
 text {* access to some definition as inference rule *}
@@ -110,7 +110,7 @@ begin
   done
 end
 
-definition meet :: "'a::cpo => 'a => 'a" (infix "\<sqinter>" 80) where
+definition meet :: "'a::cpo \<Rightarrow> 'a \<Rightarrow> 'a" (infix "\<sqinter>" 80) where
   "x \<sqinter> y = (if \<exists> z. {x, y} >>| z then glb {x, y} else x)"
 
 lemma meet_def': "(x::'a::Finite_Meet_cpo) \<sqinter> y = glb {x, y}"
@@ -157,6 +157,12 @@ lemma meet_assoc[simp]: "((x::'a::Finite_Meet_cpo) \<sqinter> y) \<sqinter> z = 
   apply (metis below_refl meet_below2)
   apply (metis meet_above_iff)
   done
+
+lemma meet_self[simp]: "r \<sqinter> r = (r::'a::Finite_Meet_cpo)"
+  by (metis below_refl is_meetI)
+
+lemma [simp]: "(r::'a::Finite_Meet_cpo) \<sqinter> (r \<sqinter> x) = r \<sqinter> x"
+  by (metis below_refl is_meetI meet_below1)
 
 lemma meet_monofun1:
   fixes y :: "'a :: Finite_Meet_cpo"

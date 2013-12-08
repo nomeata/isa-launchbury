@@ -88,4 +88,8 @@ lemma [simp]: "cfun_comp\<cdot>f\<cdot>(\<rho>(x := v)) = (cfun_comp\<cdot>f\<cd
 lemma cfun_comp_app[simp]: "(cfun_comp\<cdot>f\<cdot>\<rho>) x = f\<cdot>(\<rho> x)"
   unfolding cfun_comp_def by auto
 
+lemma not_bot_below_trans[trans]:
+  "a \<noteq> \<bottom> \<Longrightarrow> a \<sqsubseteq> b \<Longrightarrow> b \<noteq> \<bottom>"
+  by (metis below_bottom_iff)
+
 end

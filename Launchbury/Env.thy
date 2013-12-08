@@ -75,6 +75,13 @@ lemma fmap_restr_fun_upd_other[simp]: "x \<notin> S \<Longrightarrow> m1(x := v)
   apply (auto simp add: lookup_fmap_restr_eq)
   done
 
+lemma fmap_restr_eq_subset:
+  assumes "S \<subseteq> S'"
+  and "m1 f|` S' = m2 f|` S'"
+  shows "m1 f|` S = m2 f|` S"
+using assms
+by (metis fmap_restr_fmap_restr le_iff_inf)
+
 subsubsection {* Deleting *}
 
 definition fmap_delete :: "'a \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> ('a \<Rightarrow> 'b::pcpo)"

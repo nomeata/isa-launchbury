@@ -98,21 +98,25 @@ next
   finally show ?thesis.
 qed
 
+lemma demand_contravariant:
+  assumes "f \<sqsubseteq> g"
+  shows "demand g \<sqsubseteq> demand f"
+proof(cases "demand f" rule:C_cases)
+  fix n
+  assume "demand f = C\<^bsup>n\<^esup>"
+  hence "f\<cdot>(demand f) \<noteq> \<bottom>" by (metis demand_suffices')
+  also note monofun_cfun_fun[OF assms]
+  finally have "g\<cdot>(demand f) \<noteq> \<bottom>" .
+  thus "demand g \<sqsubseteq> demand f" unfolding not_bot_demand by auto
+qed auto
 
-lemma least_const_True[simp]: "(LEAST n. True) = (0::nat)"
-  by (metis gr0I not_less_Least)
+subsection {* Restricting C-valued functions *}
 
 fixrec C_restr :: "C \<rightarrow> (C \<rightarrow> 'a::pcpo) \<rightarrow> (C \<rightarrow> 'a)"
   where "C_restr\<cdot>r\<cdot>f\<cdot>r' = (f\<cdot>(r \<sqinter> r'))" 
 
 lemma [simp]: "C_restr\<cdot>r\<cdot>\<bottom> = \<bottom>" by fixrec_simp
 lemma [simp]: "f \<cdot> \<bottom> = \<bottom> \<Longrightarrow> C_restr\<cdot>\<bottom>\<cdot>f = \<bottom>"  by fixrec_simp
-
-lemma [simp]: "r \<sqinter> r = (r::C)"
-  by (metis below_refl is_meetI)
-
-lemma [simp]: "(r::C) \<sqinter> (r \<sqinter> x) = r \<sqinter> x"
-  by (metis below_refl is_meetI meet_below1)
 
 lemma [simp]: "C_restr\<cdot>r\<cdot>(C_restr\<cdot>r'\<cdot>v) = C_restr\<cdot>(r' \<sqinter> r)\<cdot>v"
   apply (rule cfun_eqI)
@@ -124,23 +128,6 @@ lemma C_restr_eqD:
   assumes "r' \<sqsubseteq> r"
   shows "f\<cdot>r' = g\<cdot>r'"
 by (metis C_restr.simps assms below_refl is_meetI)
-
-lemma [simp]: "C\<cdot>r \<sqinter> r = r"
-  by (auto intro: is_meetI simp add: below_C)
-
-lemma [simp]: "r \<sqinter> C\<cdot>r = r"
-  by (auto intro: is_meetI simp add: below_C)
-
-lemma Cpred_strict[simp]: "Cpred\<cdot>\<bottom> = \<bottom>" by fixrec_simp
-
-lemma Cpred_below: "Cpred\<cdot>r \<sqsubseteq> r"
-  by (cases r) (simp_all add: below_C)
-
-lemma [simp]: "(r \<sqinter> Cpred\<cdot>r) = Cpred \<cdot> r"
-  by (metis Cpred_below below_refl is_meetI)
-
-lemma [simp]: "(Cpred\<cdot>r \<sqinter> r) = Cpred \<cdot> r"
-  by (metis Cpred_below below_refl is_meetI)
 
 lemma C_restr_below[intro, simp]:
   "C_restr\<cdot>r\<cdot>x \<sqsubseteq> x"
@@ -160,14 +147,6 @@ lemma C_restr_cong:
   apply (intro below_antisym C_restr_below_cong )
   by (metis below_refl)+
 
-lemma [simp]: "C\<cdot>r \<sqinter> C\<cdot>r' = C\<cdot>(r \<sqinter> r')"
-  apply (rule is_meetI)
-  apply (metis below_refl meet_below1 monofun_cfun_arg)
-  apply (metis below_refl meet_below2 monofun_cfun_arg)
-  apply (case_tac a)
-  apply auto
-  by (metis meet_above_iff)
-
 lemma C_restr_C_case[simp]:
   "C_restr\<cdot>(C\<cdot>r)\<cdot>(C_case\<cdot>f) = C_case\<cdot>(C_restr\<cdot>r\<cdot>f)"
   apply (rule cfun_eqI)
@@ -176,6 +155,37 @@ lemma C_restr_C_case[simp]:
   apply simp
   apply simp
   done
+
+lemma C_restr_eq_Cpred: 
+  assumes "C_restr\<cdot>r\<cdot>x = C_restr\<cdot>r\<cdot>y"
+  shows "C_restr\<cdot>(Cpred\<cdot>r)\<cdot>x = C_restr\<cdot>(Cpred\<cdot>r)\<cdot>y"
+  apply (rule cfun_eqI) 
+  apply simp
+  by (metis C_restr_eqD[OF assms] Cpred_below meet_below2 meet_comm)
+
+lemma C_restr_bot_demand:
+  assumes "C\<cdot>r \<sqsubseteq> demand f"
+  shows "C_restr\<cdot>r\<cdot>f = \<bottom>"
+proof(rule cfun_eqI)
+  fix r'
+  have "f\<cdot>(r \<sqinter> r') = \<bottom>"
+  proof(rule classical)
+    have "r \<sqsubseteq> C \<cdot> r" by (rule below_C)
+    also
+    note assms
+    also
+    assume *: "f\<cdot>(r \<sqinter> r') \<noteq> \<bottom>"
+    hence "demand f \<sqsubseteq> (r \<sqinter> r')" unfolding not_bot_demand by auto
+    hence "demand f \<sqsubseteq> r"  by (metis below_refl meet_below1 below_trans)
+    finally have "r = demand f".
+    with assms
+    have "demand f = C\<^sup>\<infinity>" by (cases "demand f" rule:C_cases) (auto simp add: iterate_Suc[symmetric] simp del: iterate_Suc)
+    thus "f\<cdot>(r \<sqinter> r') = \<bottom>" by (metis not_bot_demand)
+  qed
+  thus "C_restr\<cdot>r\<cdot>f\<cdot>r' = \<bottom>\<cdot>r'" by simp
+qed
+
+subsection {* Restricting maps of C-valued functions *}
 
 definition fmap_C_restr :: "C \<rightarrow> ('var::type \<Rightarrow> (C \<rightarrow> 'a::pcpo)) \<rightarrow> ('var \<Rightarrow> (C \<rightarrow> 'a))" where
   "fmap_C_restr = (\<Lambda> r f.  cfun_comp\<cdot>(C_restr\<cdot>r)\<cdot>f)"
@@ -193,13 +203,6 @@ lemma fmap_C_restr_fempty[simp]: "fmap_C_restr\<cdot>r\<cdot>\<bottom> = \<botto
 lemma fmap_C_restr_restr_below[intro]: "fmap_C_restr\<cdot>r\<cdot>\<rho> \<sqsubseteq> \<rho>"
   by (auto intro: fun_belowI)
 
-lemma C_restr_eq_Cpred: 
-  assumes "C_restr\<cdot>r\<cdot>x = C_restr\<cdot>r\<cdot>y"
-  shows "C_restr\<cdot>(Cpred\<cdot>r)\<cdot>x = C_restr\<cdot>(Cpred\<cdot>r)\<cdot>y"
-  apply (rule cfun_eqI) 
-  apply simp
-  by (metis C_restr_eqD[OF assms] Cpred_below meet_below2 meet_comm)
-
 lemma fmap_restr_eq_Cpred: 
   assumes "fmap_C_restr\<cdot>r\<cdot>\<rho>1 = fmap_C_restr\<cdot>r\<cdot>\<rho>2"
   shows "fmap_C_restr\<cdot>(Cpred\<cdot>r)\<cdot>\<rho>1 = fmap_C_restr\<cdot>(Cpred\<cdot>r)\<cdot>\<rho>2"
@@ -211,6 +214,5 @@ next
   thus "(fmap_C_restr\<cdot>(Cpred\<cdot>r)\<cdot>\<rho>1) x = (fmap_C_restr\<cdot>(Cpred\<cdot>r)\<cdot>\<rho>2) x"
     by (auto intro: C_restr_eq_Cpred)
 qed
-
 
 end

@@ -14,8 +14,6 @@ end
 instance C :: pcpo_pt
   by default (simp add: pure_permute_id)
 
-fixrec Cpred :: "C \<rightarrow> C" where "Cpred\<cdot>(C\<cdot>r) = r"
-
 lemma below_C: "x \<sqsubseteq> C\<cdot>x"
   by (induct x) auto
 
@@ -60,4 +58,16 @@ lemma C_case_bot[simp]: "C_case \<cdot> \<bottom> = \<bottom>"
 lemma C_case_Cinf[simp]: "C_case \<cdot> f \<cdot> C\<^sup>\<infinity> = f \<cdot> C\<^sup>\<infinity>"
   unfolding Cinf_def
   by (subst fix_eq) simp
+
+fixrec Cpred :: "C \<rightarrow> C" where "Cpred\<cdot>(C\<cdot>r) = r"
+
+lemma Cpred_strict[simp]: "Cpred\<cdot>\<bottom> = \<bottom>" by fixrec_simp
+
+lemma Cpred_below: "Cpred\<cdot>r \<sqsubseteq> r"
+  by (cases r) (simp_all add: below_C)
+
+lemma C_Cpred_id[simp]:
+  "r \<noteq> \<bottom> \<Longrightarrow> C\<cdot>(Cpred\<cdot>r) = r"
+  by (cases r) auto
+
 end

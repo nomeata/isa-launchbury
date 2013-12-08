@@ -2,10 +2,6 @@ theory ResourcedAdequacy
 imports "ResourcedDenotational" "Launchbury" "DistinctVars" "CorrectnessResourced"
 begin
 
-lemma not_bot_below_trans[trans]:
-  "a \<noteq> \<bottom> \<Longrightarrow> a \<sqsubseteq> b \<Longrightarrow> b \<noteq> \<bottom>"
-  by (metis below_bottom_iff)
-
 lemma demand_not_0: "demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>) \<noteq> \<bottom>"
 proof
   assume "demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>) = \<bottom>"
@@ -94,44 +90,6 @@ qed
 lemma can_restrict_heap:
   "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r = (\<N>\<lbrakk>e\<rbrakk>\<^bsub>fmap_C_restr\<cdot>(Cpred\<cdot>r)\<cdot>\<rho>\<^esub>)\<cdot>r"
   by (rule C_restr_eqD[OF restr_can_restrict_heap below_refl])
-
-lemma C_restr_bot_demand:
-  assumes "C\<cdot>r \<sqsubseteq> demand f"
-  shows "C_restr\<cdot>r\<cdot>f = \<bottom>"
-proof(rule cfun_eqI)
-  fix r'
-  have "f\<cdot>(r \<sqinter> r') = \<bottom>"
-  proof(rule classical)
-    have "r \<sqsubseteq> C \<cdot> r" by (rule below_C)
-    also
-    note assms
-    also
-    assume *: "f\<cdot>(r \<sqinter> r') \<noteq> \<bottom>"
-    hence "demand f \<sqsubseteq> (r \<sqinter> r')" unfolding not_bot_demand by auto
-    hence "demand f \<sqsubseteq> r"  by (metis below_refl meet_below1 below_trans)
-    finally have "r = demand f".
-    with assms
-    have "demand f = C\<^sup>\<infinity>" by (cases "demand f" rule:C_cases) (auto simp add: iterate_Suc[symmetric] simp del: iterate_Suc)
-    thus "f\<cdot>(r \<sqinter> r') = \<bottom>" by (metis not_bot_demand)
-  qed
-  thus "C_restr\<cdot>r\<cdot>f\<cdot>r' = \<bottom>\<cdot>r'" by simp
-qed
-
-lemma C_Cpred_id[simp]:
-  "r \<noteq> \<bottom> \<Longrightarrow> C\<cdot>(Cpred\<cdot>r) = r"
-  by (cases r) auto
-
-lemma demand_contravariant:
-  assumes "f \<sqsubseteq> g"
-  shows "demand g \<sqsubseteq> demand f"
-proof(cases "demand f" rule:C_cases)
-  fix n
-  assume "demand f = C\<^bsup>n\<^esup>"
-  hence "f\<cdot>(demand f) \<noteq> \<bottom>" by (metis demand_suffices')
-  also note monofun_cfun_fun[OF assms]
-  finally have "g\<cdot>(demand f) \<noteq> \<bottom>" .
-  thus "demand g \<sqsubseteq> demand f" unfolding not_bot_demand by auto
-qed auto
 
 lemma add_BH:
   assumes "distinctVars \<Gamma>"

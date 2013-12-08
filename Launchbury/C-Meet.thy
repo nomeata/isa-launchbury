@@ -2,7 +2,6 @@ theory "C-Meet"
 imports C "HOLCF-Meet"
 begin
 
-
 lemma nat_mono_characterization:
   fixes f :: "nat \<Rightarrow> nat"
   assumes "mono f"
@@ -72,7 +71,6 @@ instantiation C :: Finite_Meet_cpo begin
     where "C_meet\<cdot>(C\<cdot>a)\<cdot>(C\<cdot>b) = C\<cdot>(C_meet\<cdot>a\<cdot>b)"
   
   lemma[simp]: "C_meet\<cdot>\<bottom>\<cdot>y = \<bottom>" "C_meet\<cdot>x\<cdot>\<bottom> = \<bottom>" by (fixrec_simp, cases x, fixrec_simp+)  
-  
 
   instance
   apply default
@@ -126,5 +124,25 @@ proof
   case goal1 thus ?case
     by (simp add: ch2ch_Rep_cfunR contlub_cfun_arg contlub_cfun_fun)
 qed
+
+lemma [simp]: "C\<cdot>r \<sqinter> r = r"
+  by (auto intro: is_meetI simp add: below_C)
+
+lemma [simp]: "r \<sqinter> C\<cdot>r = r"
+  by (auto intro: is_meetI simp add: below_C)
+
+lemma [simp]: "(r \<sqinter> Cpred\<cdot>r) = Cpred \<cdot> r"
+  by (metis Cpred_below below_refl is_meetI)
+
+lemma [simp]: "(Cpred\<cdot>r \<sqinter> r) = Cpred \<cdot> r"
+  by (metis Cpred_below below_refl is_meetI)
+
+lemma [simp]: "C\<cdot>r \<sqinter> C\<cdot>r' = C\<cdot>(r \<sqinter> r')"
+  apply (rule is_meetI)
+  apply (metis below_refl meet_below1 monofun_cfun_arg)
+  apply (metis below_refl meet_below2 monofun_cfun_arg)
+  apply (case_tac a)
+  apply auto
+  by (metis meet_above_iff)
 
 end
