@@ -6,7 +6,7 @@ begin
 subsubsection {* The denotational semantics for expressions *}
 
 locale semantic_domain =
-  fixes Fn :: "('Value \<rightarrow> 'Value) \<rightarrow> ('Value::{pcpo_pt,pure,Nonempty_Meet_cpo})"
+  fixes Fn :: "('Value \<rightarrow> 'Value) \<rightarrow> ('Value::{pcpo_pt,pure})"
   fixes Fn_project :: "'Value \<rightarrow> ('Value \<rightarrow> 'Value)"
   fixes tick :: "'Value \<rightarrow> 'Value"
 begin

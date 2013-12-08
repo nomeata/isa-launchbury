@@ -1,5 +1,5 @@
 theory "Value-Meet"
-  imports "HOLCF-Join"  "Denotational-Common"
+  imports "HOLCF-Meet" "Denotational-Common"
 begin
 
 subsubsection {* The binary meet of two values *}
@@ -39,7 +39,8 @@ proof(rule exI, intro conjI strip)
   thus "z \<sqsubseteq> value_meet\<cdot>x\<cdot>y" using * by auto
 qed
 
+(*
 instance Value :: Finite_Meet_bifinite_cpo by default
-
+*)
 
 end

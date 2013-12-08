@@ -1,5 +1,5 @@
 theory C
-imports "Nominal-Utils" "Nominal-HOLCF" "HOLCF-Join"
+imports "Nominal-Utils" "Nominal-HOLCF" "HOLCF-Meet"
 begin
 
 default_sort cpo
@@ -125,12 +125,12 @@ proof-
   qed
 qed
 
-
 instantiation C :: Finite_Meet_cpo begin
   fixrec C_meet :: "C \<rightarrow> C \<rightarrow> C"
     where "C_meet\<cdot>(C\<cdot>a)\<cdot>(C\<cdot>b) = C\<cdot>(C_meet\<cdot>a\<cdot>b)"
   
   lemma[simp]: "C_meet\<cdot>\<bottom>\<cdot>y = \<bottom>" "C_meet\<cdot>x\<cdot>\<bottom> = \<bottom>" by (fixrec_simp, cases x, fixrec_simp+)  
+  
 
   instance
   apply default
@@ -176,7 +176,6 @@ proof (induct z rule:C.take_induct)
   qed
 qed auto
 
-
 instance C :: cont_binary_meet
 proof
   have [simp]:"\<And> x y. x \<sqinter> y = C_meet\<cdot>x\<cdot>y"
@@ -186,9 +185,9 @@ proof
     by (simp add: ch2ch_Rep_cfunR contlub_cfun_arg contlub_cfun_fun)
 qed
 
-
+(*
 instance C :: Finite_Meet_bifinite_cpo by default
-
+*)
 
 subsection {* On C-ranged functions *}
 
