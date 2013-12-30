@@ -38,7 +38,7 @@ qed
 sublocale has_ignore_fresh_ESem ESem
   by default (rule fv_supp_exp, rule ESem_considers_fv')
 
-subsection {* Nicer equations for ESem, without freshness requirements *}
+subsubsection {* Nicer equations for ESem, without freshness requirements *}
 
 lemma ESem_Lam[simp]: "\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub> = tick \<cdot> (Fn \<cdot> (\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x := v)\<^esub>))"
 proof-

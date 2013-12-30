@@ -2,7 +2,7 @@ theory ValueSimilarity
 imports Value CValue
 begin
 
-section {* Utils (can go elsewhere) *}
+subsubsection {* Utils (can go elsewhere) *}
 
 lemma value_CValue_cases:
   obtains
@@ -67,9 +67,9 @@ proof-
   thus ?thesis by simp
 qed
 
-section {* Restricted similarity is defined recursively *}
+subsubsection {* Restricted similarity is defined recursively *}
 
-subsection {* The base case *}
+text {* The base case *}
 
 inductive similar'_base :: "Value \<Rightarrow> CValue' \<Rightarrow> bool" where
   bot_similar'_base[simp,intro]: "similar'_base \<bottom> \<bottom>"
@@ -77,7 +77,7 @@ inductive similar'_base :: "Value \<Rightarrow> CValue' \<Rightarrow> bool" wher
 inductive_cases [elim!]:
    "similar'_base x y"
 
-subsection {* The inductive case *}
+text {* The inductive case *}
 
 inductive similar'_step :: "(Value \<Rightarrow> CValue' \<Rightarrow> bool) \<Rightarrow> Value \<Rightarrow> CValue' \<Rightarrow> bool" for s where
   bot_similar'_step[intro!]: "similar'_step s \<bottom> \<bottom>" |
@@ -123,7 +123,7 @@ lemma similar'_bot[elim_format, elim!]:
     "y \<triangleleft>\<triangleright>\<^bsub>n\<^esub> \<bottom> \<Longrightarrow> y = \<bottom>"
 by (metis bot_or_not_bot')+
 
-subsection {* Moving up and down the similarity relations *}
+subsubsection {* Moving up and down the similarity relations *}
 
 lemma similar'_down: "d \<triangleleft>\<triangleright>\<^bsub>Suc n\<^esub> e \<Longrightarrow> Value_take n \<cdot> d \<triangleleft>\<triangleright>\<^bsub>n\<^esub> CValue'_take n\<cdot>e"
   and similar'_up: "d \<triangleleft>\<triangleright>\<^bsub>n\<^esub> e \<Longrightarrow> Value_take n \<cdot> d \<triangleleft>\<triangleright>\<^bsub>Suc n\<^esub> CValue'_take n\<cdot>e"
@@ -151,7 +151,7 @@ lemma similar'_take: "d \<triangleleft>\<triangleright>\<^bsub>n\<^esub> e \<Lon
   apply (simp add: Value.take_take CValue'.take_take)
   done
 
-subsection {* Admissibility *}
+subsubsection {* Admissibility *}
 
 lemma similar'_base_adm: "adm (\<lambda> x. similar'_base (fst x) (snd x))"
 proof (rule admI)
@@ -223,7 +223,7 @@ lemma similar'_adm: "adm (\<lambda>x. fst x \<triangleleft>\<triangleright>\<^bs
 lemma similar'_admI: "cont f \<Longrightarrow> cont g \<Longrightarrow> adm (\<lambda>x. f x \<triangleleft>\<triangleright>\<^bsub>n\<^esub> g x)"
   by (rule adm_subst[OF _ similar'_adm, where t = "\<lambda>x. (f x, g x)", simplified]) auto
 
-section {* The real similarity relation *}
+subsubsection {* The real similarity relation *}
 
 definition similar :: "Value \<Rightarrow> CValue' \<Rightarrow> bool" (infix "\<triangleleft>\<triangleright>" 50) where
   "x \<triangleleft>\<triangleright> y \<longleftrightarrow> (\<forall>n. Value_take n \<cdot> x \<triangleleft>\<triangleright>\<^bsub>n\<^esub> CValue'_take n \<cdot> y)"
@@ -403,7 +403,7 @@ lemma similar_FnE[elim!]:
   shows P
 by (metis assms similar_FnD)
 
-section {* The similarity relation lifted to finite maps *}
+subsubsection {* The similarity relation lifted to finite maps *}
 
 abbreviation fmap_similar :: "('a \<Rightarrow> Value) \<Rightarrow> ('a \<Rightarrow> CValue) \<Rightarrow> bool"  (infix "f\<triangleleft>\<triangleright>" 50) where
   "fmap_similar \<equiv> pointwise (\<lambda>x y. x \<triangleleft>\<triangleright> y\<cdot>C\<^sup>\<infinity>)"

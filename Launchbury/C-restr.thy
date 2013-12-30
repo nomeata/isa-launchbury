@@ -1,8 +1,8 @@
-theory C_restr
+theory "C-restr"
 imports C "C-Meet"
 begin
 
-subsection {* On C-ranged functions *}
+subsubsection {* On C-ranged functions *}
 
 definition demand :: "(C \<rightarrow> 'a::pcpo) \<Rightarrow> C" where
   "demand f = (if f\<cdot>C\<^sup>\<infinity> \<noteq> \<bottom> then C\<^bsup>(LEAST n. f\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>)\<^esup> else C\<^sup>\<infinity>)"
@@ -110,7 +110,7 @@ proof(cases "demand f" rule:C_cases)
   thus "demand g \<sqsubseteq> demand f" unfolding not_bot_demand by auto
 qed auto
 
-subsection {* Restricting C-valued functions *}
+subsubsection {* Restricting C-valued functions *}
 
 fixrec C_restr :: "C \<rightarrow> (C \<rightarrow> 'a::pcpo) \<rightarrow> (C \<rightarrow> 'a)"
   where "C_restr\<cdot>r\<cdot>f\<cdot>r' = (f\<cdot>(r \<sqinter> r'))" 
@@ -185,7 +185,7 @@ proof(rule cfun_eqI)
   thus "C_restr\<cdot>r\<cdot>f\<cdot>r' = \<bottom>\<cdot>r'" by simp
 qed
 
-subsection {* Restricting maps of C-valued functions *}
+subsubsection {* Restricting maps of C-valued functions *}
 
 definition fmap_C_restr :: "C \<rightarrow> ('var::type \<Rightarrow> (C \<rightarrow> 'a::pcpo)) \<rightarrow> ('var \<Rightarrow> (C \<rightarrow> 'a))" where
   "fmap_C_restr = (\<Lambda> r f.  cfun_comp\<cdot>(C_restr\<cdot>r)\<cdot>f)"

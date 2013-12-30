@@ -1,0 +1,199 @@
+\documentclass[11pt,a4paper,parskip=half]{scrartcl}
+\usepackage{isabelle,isabellesym}
+
+% further packages required for unusual symbols (see also
+% isabellesym.sty), use only when needed
+
+%\usepackage{amssymb}
+  %for \<leadsto>, \<box>, \<diamond>, \<sqsupset>, \<mho>, \<Join>,
+  %\<lhd>, \<lesssim>, \<greatersim>, \<lessapprox>, \<greaterapprox>,
+  %\<triangleq>, \<yen>, \<lozenge>
+
+%\usepackage[greek,english]{babel}
+  %option greek for \<euro>
+  %option english (default language) for \<guillemotleft>, \<guillemotright>
+
+\usepackage[only,bigsqcap]{stmaryrd}
+  %for \<Sqinter>
+
+%\usepackage{eufrak}
+  %for \<AA> ... \<ZZ>, \<aa> ... \<zz> (also included in amssymb)
+
+%\usepackagetcomp}
+  %for \<onequarter>, \<onehalf>, \<threequarters>, \<degree>, \<cent>,
+  %\<currency>
+
+% for uniform font size
+%\renewcommand{\isastyle}{\isastyleminor}
+
+% From src/HOL/HOLCF/document/root
+\newcommand{\isasymnotsqsubseteq}{\isamath{\not\sqsubseteq}}
+
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{mathpartir}
+\usepackage{calc}
+
+% this should be the last package used
+\usepackage{pdfsetup}
+
+% urls in roman style, theorys in math-similar italics
+\urlstyle{rm}
+\isabellestyle{it}
+
+% Isabelle does not like *} in a text {* ... *} block
+% Concrete implemenation thanks to http://www.mrunix.de/forums/showpost.php?p=235085&postcount=5
+\newenvironment{alignstar}{\csname align*\endcsname}{\csname endalign*\endcsname}
+\newenvironment{alignatstar}{\csname alignat*\endcsname}{\csname endalignat*\endcsname}
+
+
+\begin{document}
+
+\title{The Correctness and Adequacy of Launchbury's Natural Semantics for Lazy Evaluation}
+\author{Joachim Breitner\\
+Programming Paradigms Group\\
+Karlsruhe Institute for Technology\\
+\url{breitner@kit.edu}}
+\maketitle
+
+\begin{abstract}
+TODO
+\end{abstract}
+
+\tableofcontents
+
+\section{Introduction}
+
+Our contributions are:
+
+% \input{Everything.tex}
+
+\subsection{Related work}
+
+\begin{figure}
+\begin{center}
+\IfFileExists{session_graph.pdf}{
+  \includegraphics[width=.9\linewidth]{session_graph}
+}{Here, \texttt{session\_graph.pdf} would be shown.}
+\end{center}
+\caption{Theory Dependency Graph\label{theory-deps}}
+\end{figure}
+
+\subsection{Theory overview}
+
+\subsection{Acknowledgement}
+
+\clearpage
+\newcommand{\theory}[1]{\subsection{#1}\label{sec_#1}\input{#1.tex}}
+
+%\let\OldInput\input
+%\renewcommand{\input}[1]{{
+%        \chapter{#1}
+%        \OldInput{#1}
+%}}
+
+\section{Auxillary theories}
+\label{ch_aux}
+
+\theory{Pointwise}
+
+\theory{DistinctVars}
+
+\theory{Nominal-Utils}
+
+\theory{DistinctVars-Nominal}
+
+\theory{HOLCF-Utils}
+
+\theory{Nominal-HOLCF}
+
+\clearpage
+\section{Functions as environments}
+
+\theory{Env}
+
+\theory{Env-Nominal}
+
+\theory{Env-HOLCF}
+
+\theory{HeapToEnv}
+
+\clearpage
+\section{Launchbury's natural semantics}
+
+\theory{Vars}
+\theory{Vars-Nominal-HOLCF}
+\theory{Terms}
+\theory{Heap}
+
+\theory{Launchbury}
+
+\clearpage
+\section{Abstract denotational semantics for heaps}
+
+\theory{HasESem}
+
+\theory{Iterative}
+
+\theory{HSemUpd}
+
+\clearpage
+\section{Abstract denotational semantics for expressions}
+
+\theory{AbstractDenotational}
+
+\theory{Abstract-Denotational-Props}
+
+\clearpage
+\section{Denotational semantics}
+
+\theory{Value}
+
+\theory{Denotational}
+
+\clearpage
+\section{Correctness}
+
+
+\theory{CorrectnessOriginal}
+
+\clearpage
+\section{Resourced denotational semantics}
+
+\theory{C}
+
+\theory{CValue}
+
+\theory{HOLCF-Meet}
+
+\theory{C-Meet}
+
+\theory{C-restr}
+
+\theory{ResourcedDenotational}
+
+\clearpage
+\section{Adequacy with regard to the resourced semantics}
+
+\theory{CorrectnessResourced}
+
+\theory{ResourcedAdequacy}
+
+\clearpage
+\section{Adequacy}
+
+\theory{ValueSimilarity}
+
+\theory{Denotational-Related}
+
+\theory{Adequacy}
+
+\clearpage
+\bibliographystyle{abbrv}
+\bibliography{root}
+
+\end{document}

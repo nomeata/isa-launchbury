@@ -1,5 +1,5 @@
 theory ResourcedDenotational
-imports "Abstract-Denotational-Props" CValue "C_restr"
+imports "Abstract-Denotational-Props" CValue "C-restr"
 begin
 
 type_synonym CEnv = "var \<Rightarrow> CValue"
