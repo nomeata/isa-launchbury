@@ -51,24 +51,16 @@ lemma set_delete_subset: "set (delete x l) \<subseteq> set l"
   by (induction l) auto
 
 lemma fv_delete_heap:
-  assumes "distinctVars \<Gamma>"
-  assumes "(x, e) \<in> set \<Gamma>"
-  shows "fv (delete x \<Gamma>, e) \<union> {x} = (fv (\<Gamma>, Var x) :: var set)"
-using assms
-proof(induction rule: distinctVars.induct)
-  case DistinctNil thus ?case by simp
-next
-  case (DistinctCons y \<Gamma> e')
-  show ?case
-  proof(cases "y = x")
-    case True
-    from DistinctCons[unfolded True]
-    have "e' = e" by (metis heapVars_from_set prod.inject set_ConsD)
-    note  `x \<notin> heapVars \<Gamma>`[simp]
-    show ?thesis unfolding `y = x` `e' = e` by (auto simp add: delete_no_there)
-  next
-    case False with DistinctCons show ?thesis by auto
-  qed
+  assumes "map_of \<Gamma> x = Some e"
+  shows "fv (delete x \<Gamma>, e) \<union> {x} \<subseteq> (fv (\<Gamma>, Var x) :: var set)"
+proof-
+  have "fv (delete x \<Gamma>) \<subseteq> fv \<Gamma>" by (metis fv_delete_subset)
+  moreover
+  have "(x,e) \<in> set \<Gamma>" by (metis assms map_of_is_SomeD)
+  hence "fv e \<subseteq> fv \<Gamma>" by (metis assms heapVars_from_set map_of_fv_subset the.simps)
+  moreover
+  have "x \<in> fv (Var x)" by simp
+  ultimately show ?thesis by auto
 qed
 
 lemma  True and [simp]:"(a, b) \<in> set (asToHeap as) \<Longrightarrow> size b < Suc (size as + size body)"

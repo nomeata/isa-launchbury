@@ -92,21 +92,20 @@ lemma can_restrict_heap:
   by (rule C_restr_eqD[OF restr_can_restrict_heap below_refl])
 
 lemma add_BH:
-  assumes "distinctVars \<Gamma>"
-  assumes "(x, e) \<in> set \<Gamma>"
+  assumes "map_of \<Gamma> x = Some e"
   assumes  "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>"
   shows "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>"
 proof-
   let ?C = "demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)"
 
-  from  assms(3)
+  from  assms(2)
   have "?C \<sqsubseteq> C\<^bsup>n\<^esup>" unfolding not_bot_demand by simp
 
-  from assms(1,2)
-  have [simp]: "the (map_of \<Gamma> x) = e" by (metis distinctVars_map_of the.simps)
+  from assms(1)
+  have [simp]: "the (map_of \<Gamma> x) = e" by (metis the.simps)
 
-  from assms(2)
-  have [simp]: "x \<in> heapVars \<Gamma>" by (metis heapVars_from_set)
+  from assms(1)
+  have [simp]: "x \<in> heapVars \<Gamma>" by (metis domIff dom_map_of_conv_heapVars not_Some_eq)
 
   have "fmap_C_restr\<cdot>(Cpred\<cdot>?C)\<cdot>(\<N>\<lbrace>\<Gamma>\<rbrace>) \<sqsubseteq> (\<N>\<lbrace>delete x \<Gamma>\<rbrace>) \<and> \<N>\<lbrace>\<Gamma>\<rbrace> \<sqsubseteq> \<N>\<lbrace>\<Gamma>\<rbrace>"
     apply (rule HSem_ind) back back back back back back back back back
@@ -142,7 +141,7 @@ proof-
     done
   hence heaps: "fmap_C_restr\<cdot>(Cpred\<cdot>?C)\<cdot>(\<N>\<lbrace>\<Gamma>\<rbrace>) \<sqsubseteq> \<N>\<lbrace>delete x \<Gamma>\<rbrace>"..
 
-  from assms(3)
+  from assms(2)
   have "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>?C \<noteq> \<bottom>"
     by (rule demand_suffices[OF infinite_resources_suffice])
   also
@@ -177,7 +176,6 @@ qed
 
 lemma adequacy_finite:
   assumes "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>"
-  and "distinctVars \<Gamma>"
   shows "\<exists> \<Delta> v. \<Gamma> : e \<Down>\<^bsub>S\<^esub> \<Delta> : v"
 using assms
 proof(induction n arbitrary: \<Gamma> e S)
@@ -193,13 +191,12 @@ next
     from Suc.prems[unfolded Var]
     have "x \<in> heapVars \<Gamma>" 
       by (auto intro: ccontr simp add: lookup_HSem_other)
-    find_theorems "\<bottom> = _"
-    hence "(x, ?e) \<in> set \<Gamma>" by (induction \<Gamma>) auto
+    hence "map_of \<Gamma> x = Some ?e" by (induction \<Gamma>) auto
     moreover
-    from Suc.prems[unfolded Var] `(x, ?e) \<in> set \<Gamma>` `x \<in> heapVars \<Gamma>`
+    from Suc.prems[unfolded Var] `map_of \<Gamma> x = Some ?e` `x \<in> heapVars \<Gamma>`
     have "(\<N>\<lbrakk>?e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (auto simp add: lookup_HSem_heap  simp del: app_strict)
-    hence "(\<N>\<lbrakk>?e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (rule add_BH[OF `distinctVars \<Gamma>` `(x, ?e) \<in> set \<Gamma>`])
-    from Suc.IH[OF this distinctVars_delete[OF Suc.prems(2)]]
+    hence "(\<N>\<lbrakk>?e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (rule add_BH[OF `map_of \<Gamma> x = Some ?e`])
+    from Suc.IH[OF this]
     obtain \<Delta> v where "delete x \<Gamma> : ?e \<Down>\<^bsub>x # S\<^esub> \<Delta> : v" by blast
     ultimately
     have "\<Gamma> : (Var x) \<Down>\<^bsub>S\<^esub> (x,v) #  \<Delta> : v" by (rule Variable)
@@ -213,7 +210,7 @@ next
     from Suc.prems[unfolded App]
     have prem: "((\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn  C_restr\<cdot>C\<^bsup>n\<^esup>\<cdot>((\<N>\<lbrace>\<Gamma>\<rbrace>) x))\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (auto simp del: app_strict)
     hence e'_not_bot: "(\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by auto
-    from Suc.IH[OF this Suc.prems(2)]
+    from Suc.IH[OF this]
     obtain \<Delta> v where lhs': "\<Gamma> : e' \<Down>\<^bsub>x#S'\<^esub> \<Delta> : v" by blast 
 
     from result_evaluated_fresh[OF lhs']
@@ -224,7 +221,7 @@ next
     from `atom y \<sharp> _` have "y \<notin> heapVars \<Delta>" by (metis (full_types) fresh_Pair heapVars_not_fresh)
    
     have "fv (\<Gamma>, e') \<subseteq> set (x # S')" using S' by auto
-    from correctness_empty_env[OF lhs `distinctVars \<Gamma>` this]
+    from correctness_empty_env[OF lhs this]
     have correct1: "\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub> \<sqsubseteq> \<N>\<lbrakk>Lam [y]. e''\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>" and correct2: "\<N>\<lbrace>\<Gamma>\<rbrace> \<sqsubseteq> \<N>\<lbrace>\<Delta>\<rbrace>" by auto
 
     note e'_not_bot
@@ -247,10 +244,7 @@ next
       using `atom y \<sharp> _` by (simp_all add: fresh_Pair fresh_at_base)
     finally
     have "\<dots> \<noteq> \<bottom>" using prem by auto
-    moreover
-    have "distinctVars \<Delta>"
-      by (rule reds_pres_distinctVars[OF lhs' Suc.prems(2)])
-    ultimately
+    then
     obtain \<Theta> v' where rhs: "\<Delta> : e''[y::=x] \<Down>\<^bsub>S'\<^esub> \<Theta> : v'" using Suc.IH by blast
     
     have "\<Gamma> : App e' x \<Down>\<^bsub>S'\<^esub> \<Theta> : v'"
@@ -275,9 +269,7 @@ next
     finally 
     have "(\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>asToHeap as @ \<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>".
     }
-    moreover
-    have "distinctVars (asToHeap as @ \<Gamma>)" by (metis Let(1) Suc.prems(2) distinctVars_append_asToHeap fresh_star_Pair)
-    ultimately
+    then
     obtain \<Delta> v where "asToHeap as @ \<Gamma> : e' \<Down>\<^bsub>S\<^esub> \<Delta> : v" using Suc.IH by blast
     hence "\<Gamma> : Let as e' \<Down>\<^bsub>S\<^esub> \<Delta> : v"
       by (rule reds.Let[OF Let(1)])
@@ -287,9 +279,7 @@ qed
 
 theorem resourced_adequacy:
   assumes "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>r \<noteq> \<bottom>"
-  and "distinctVars \<Gamma>"
   shows "\<exists> \<Delta> v. \<Gamma> : e \<Down>\<^bsub>S\<^esub> \<Delta> : v"
   by (rule finite_resources_suffice[OF infinite_resources_suffice[OF assms(1)]])
-     (erule adequacy_finite[OF _ assms(2)])
-
+     (erule adequacy_finite)
 end

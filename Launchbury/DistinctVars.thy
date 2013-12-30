@@ -133,19 +133,10 @@ lemma distinctVars_set_delete_insert:
   apply auto
   done
 
-lemma distinctVars_map_of_delete_insert:
-  assumes "distinctVars \<Gamma>"
-  assumes "(x,e) \<in> set \<Gamma>"
+lemma map_of_delete_insert:
+  assumes "map_of \<Gamma> x = Some e"
   shows "map_of ((x,e) # delete x \<Gamma>) = map_of \<Gamma>"
-  using assms
-  apply (induct \<Gamma> rule:distinctVars.induct)
-  apply auto[1]
-  apply (case_tac "xa = x")
-  apply (auto simp add: heapVars_def)[1]
-    apply (metis fst_conv imageI)
-  apply auto
-    apply (metis fun_upd_twist)
-  done
+  using assms by (induct \<Gamma>) (auto split:prod.split)
 
 lemma map_add_heapVars[simp]: 
   "x \<in> heapVars \<Gamma> \<Longrightarrow> (map_of \<Delta> ++ map_of \<Gamma>) x = map_of \<Gamma> x"

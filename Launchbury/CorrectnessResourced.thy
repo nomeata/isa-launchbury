@@ -4,11 +4,10 @@ begin
 
 theorem correctness:
   assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
-  and     "distinctVars \<Gamma>"
   and     "fv (\<Gamma>, e) - heapVars \<Gamma> \<subseteq> set L"
   shows   "\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> \<sqsubseteq> \<N>\<lbrakk>z\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>" and "(\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` (heapVars \<Gamma>) \<sqsubseteq> (\<N>\<lbrace>\<Delta>\<rbrace>\<rho>) f|` (heapVars \<Gamma>)"
   using assms
-proof(nominal_induct arbitrary: \<rho> rule:reds_distinct_strong_ind)
+proof(nominal_induct arbitrary: \<rho> rule:reds.strong_induct)
 case Lambda
   case 1 show ?case..
   case 2 show ?case..
@@ -17,7 +16,7 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e')
   hence "y \<noteq> x" by (simp_all add: fresh_at_base)
 
   have Gamma_subset: "heapVars \<Gamma> \<subseteq> heapVars \<Delta>"
-    by (rule reds_doesnt_forget[OF distinct_redsD1[OF Application.hyps(8)]])
+    by (rule reds_doesnt_forget[OF Application.hyps(8)])
 
   case 1
   hence prem1: "fv (\<Gamma>, e) - heapVars \<Gamma> \<subseteq> set (x#L)" by auto
@@ -27,7 +26,7 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e')
   have "fv (\<Delta>, e'[y::=x]) - heapVars \<Delta> \<subseteq> (fv (\<Delta>, Lam [y]. e') - heapVars \<Delta>) \<union> {x}"
     by (auto dest!: set_mp[OF fv_subst_subset])
   also have "\<dots> \<subseteq> (fv (\<Gamma>, e) - heapVars \<Gamma>) \<union> {x}"
-    using new_free_vars_on_heap[OF distinct_redsD1[OF Application.hyps(8)]] by auto
+    using new_free_vars_on_heap[OF Application.hyps(8)] by auto
   also have "\<dots> \<subseteq> set L \<union> {x}" using prem1 by auto
   finally have "fv (\<Delta>, e'[y::=x]) - heapVars \<Delta> \<subseteq> set L \<union> {x}". 
   with *
@@ -41,7 +40,7 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e')
       by simp
   next
     case False 
-    from False reds_avoids_live[OF distinct_redsD1[OF Application.hyps(8)] _ False] 
+    from False reds_avoids_live[OF Application.hyps(8)]
     show ?thesis by (simp add: lookup_HSem_other)
   qed
 
@@ -86,32 +85,32 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e')
           fmap_restr_below_subset[OF Gamma_subset Application.hyps(13)[OF prem2]]
     by (rule below_trans)
 next
-case (Variable x e \<Gamma> L \<Delta> z)
+case (Variable \<Gamma> x e L \<Delta> z)
   hence [simp]:"x \<in> heapVars \<Gamma>"
-    by (metis heapVars_from_set)
+    by (metis heapVars_from_set map_of_is_SomeD)
 
   case 2
 
   have "x \<notin> heapVars \<Delta>"
-    by (rule reds_avoids_live[OF distinct_redsD1[OF Variable.hyps(2)]], simp_all)
+    by (rule reds_avoids_live[OF Variable.hyps(2)], simp_all)
 
   have subset: "heapVars (delete x \<Gamma>) \<subseteq> heapVars \<Delta>"
-    by (rule reds_doesnt_forget[OF distinct_redsD1[OF Variable.hyps(2)]])
+    by (rule reds_doesnt_forget[OF Variable.hyps(2)])
 
-  have "fv (delete x \<Gamma>, e) \<union> {x} = fv (\<Gamma>, Var x)"
-    by (rule fv_delete_heap[OF `distinctVars \<Gamma>` `(x,e)\<in>set \<Gamma>`])
+  have "fv (delete x \<Gamma>, e) \<union> {x} \<subseteq> fv (\<Gamma>, Var x)"
+    by (rule fv_delete_heap[OF `map_of \<Gamma> x = Some e`])
   hence prem: "fv (delete x \<Gamma>, e) - heapVars (delete x \<Gamma>) \<subseteq> set (x # L)" using 2 by auto
 
   have fv_subset: "fv (delete x \<Gamma>, e) - heapVars (delete x \<Gamma>) \<subseteq> - (heapVars \<Delta> - heapVars \<Gamma>)"
     apply (rule subset_trans[OF prem])
-    apply (rule subset_trans[OF reds_avoids_live'[OF distinct_redsD1[OF Variable.hyps(2)]]])
+    apply (rule subset_trans[OF reds_avoids_live'[OF Variable.hyps(2)]])
     by auto
 
   let "?new" = "heapVars \<Delta> - heapVars \<Gamma>"
   have "heapVars \<Gamma> \<subseteq> (-?new)" by auto
 
   have "\<N>\<lbrace>\<Gamma>\<rbrace>\<rho> = \<N>\<lbrace>(x,e) # delete x \<Gamma>\<rbrace>\<rho>"
-    by (rule HSem_reorder[OF distinctVars_map_of_delete_insert[symmetric, OF Variable(5,1)]])
+    by (rule HSem_reorder[OF map_of_delete_insert[symmetric, OF Variable(1)]])
   also have "\<dots> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>(heapVars (delete x \<Gamma>))\<^esub> (\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'))( x := \<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>))"
     by (rule iterative_HSem, simp)
   also have "\<dots> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>(heapVars (delete x \<Gamma>))\<^esub> (\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'))( x := \<N>\<lbrakk> e \<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'\<^esub>))"
@@ -204,12 +203,11 @@ qed
 
 corollary correctness_empty_env:
   assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
-  and     "distinctVars \<Gamma>"
   and     "fv (\<Gamma>, e) \<subseteq> set L"
   shows   "\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub> \<sqsubseteq> \<N>\<lbrakk>z\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>" and "\<N>\<lbrace>\<Gamma>\<rbrace> \<sqsubseteq> \<N>\<lbrace>\<Delta>\<rbrace>"
 proof-
-  from assms(3) have "fv (\<Gamma>, e) - heapVars \<Gamma> \<subseteq> set L" by auto
-  note corr =  correctness[OF assms(1,2) this, where \<rho> = "\<bottom>"]
+  from assms(2) have "fv (\<Gamma>, e) - heapVars \<Gamma> \<subseteq> set L" by auto
+  note corr =  correctness[OF assms(1) this, where \<rho> = "\<bottom>"]
 
   show "\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub> \<sqsubseteq> \<N>\<lbrakk> z \<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>" using corr(1).
 
