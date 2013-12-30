@@ -108,19 +108,6 @@ lemma heapToEnv_reorder_head_append:
   shows "heapToEnv ((x,e)#\<Gamma>@\<Delta>) eval = heapToEnv (\<Gamma> @ ((x,e)#\<Delta>)) eval"
   by (rule heapToEnv_reorder) (simp, metis assms dom_map_of_conv_heapVars map_add_upd_left)
 
-lemma heapToEnv_delete_insert:
-  assumes "distinctVars \<Gamma>"
-  assumes "(x,e) \<in> set \<Gamma>"
-  shows "heapToEnv \<Gamma> eval = heapToEnv ((x,e) # delete x \<Gamma>) eval"
-proof(rule heapToEnv_reorder)
-  show "map_of \<Gamma> = map_of ((x,e) # delete x \<Gamma>)"
-  proof
-    fix x'
-    show "map_of \<Gamma> x' = (map_of ((x,e) # delete x \<Gamma>)) x'"
-    by (cases "x' = x")(simp_all, metis assms distinctVarsE map_of_is_SomeD weak_map_of_SomeI)
-  qed
-qed
-
 lemma heapToEnv_subst_exp:
   assumes "eval e = eval e'"
   shows "heapToEnv ((x,e)#\<Gamma>) eval = heapToEnv ((x,e')#\<Gamma>) eval"
