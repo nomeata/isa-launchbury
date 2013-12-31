@@ -132,7 +132,7 @@ case (Variable \<Gamma> x e L \<Delta> z)
        and "(\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<sigma>) f|` domA (delete x \<Gamma>) \<sqsubseteq> (\<N>\<lbrace>\<Delta>\<rbrace>\<sigma>') f|` domA (delete x \<Gamma>)".
     thus ?case
       using subset
-      by (auto intro!: fun_belowI simp add: lookup_fmap_add_eq  lookup_fmap_restr_eq elim: fmap_restr_belowD)
+      by (auto intro!: fun_belowI simp add: lookup_fun_merge_eq  lookup_fmap_restr_eq elim: fmap_restr_belowD)
   qed
   also have "\<dots> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>domA \<Delta>\<^esub> (\<N>\<lbrace>\<Delta>\<rbrace>\<rho>'))( x := \<N>\<lbrakk> z \<rbrakk>\<^bsub>\<rho>'\<^esub>)) f|` (-?new)"
     by (rule arg_cong[OF iterative_HSem'[symmetric], OF `x \<notin> domA \<Delta>`])

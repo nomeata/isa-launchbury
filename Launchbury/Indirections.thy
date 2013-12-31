@@ -150,8 +150,8 @@ lemma resolveHeap'_fmap_upd[simp]: "x \<in> heapVars is \<Longrightarrow> (\<Gam
 lemma resolveHeap'_fmap_upd_other[simp]: "x \<notin> heapVars is \<Longrightarrow> (\<Gamma>(x f\<mapsto> e)) \<ominus>\<^sub>H is = (\<Gamma> \<ominus>\<^sub>H is)(x f\<mapsto> e \<ominus> is)"
   unfolding resolveHeap'_def by simp
 
-lemma resolveHeap'_fmap_add[simp]: "fdom \<Delta> \<inter> heapVars is = {} \<Longrightarrow> (\<Gamma> f++ \<Delta>) \<ominus>\<^sub>H is = (\<Gamma> \<ominus>\<^sub>H is) f++ (\<Delta> \<ominus>\<^sub>H is)"
-  by (induction \<Delta> rule:fmap_induct) (auto simp add: fmap_add_upd)
+lemma resolveHeap'_fun_merge[simp]: "fdom \<Delta> \<inter> heapVars is = {} \<Longrightarrow> (\<Gamma> f++ \<Delta>) \<ominus>\<^sub>H is = (\<Gamma> \<ominus>\<^sub>H is) f++ (\<Delta> \<ominus>\<^sub>H is)"
+  by (induction \<Delta> rule:fmap_induct) (auto simp add: fun_merge_upd)
 
 lemma resolveHeap'_fmap_copy[simp]: "x \<in> heapVars is \<Longrightarrow> (fmap_copy \<Gamma> y x) \<ominus>\<^sub>H is = \<Gamma> \<ominus>\<^sub>H is"
   unfolding resolveHeap'_def by simp

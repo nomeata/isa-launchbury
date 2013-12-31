@@ -81,7 +81,7 @@ lemma fmap_copy_eqvt[eqvt]:
   "\<pi> \<bullet> fmap_copy m a b = fmap_copy (\<pi> \<bullet> m) (\<pi> \<bullet> a) (\<pi> \<bullet> b)"
   by transfer simp
 
-lemma fmap_add_eqvt[eqvt]:
+lemma fun_merge_eqvt[eqvt]:
   "\<pi> \<bullet> m1 f++ m2 = (\<pi> \<bullet> m1) f++ (\<pi> \<bullet> m2)"
   by transfer simp
 

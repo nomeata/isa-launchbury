@@ -215,9 +215,9 @@ lemma fresh_fmap_copy_subset:
         dest: set_mp[OF supp_mono[OF iffD2[OF finite_insert, OF finite_fdom] fdom_fmap_copy_subset]]
         dest: set_mp[OF supp_mono[OF finite_fran fran_fmap_copy_subset]])
 
-lemma fresh_fmap_add_subset:
+lemma fresh_fun_merge_subset:
   "a \<sharp> (m1 :: 'a::at_base f\<rightharpoonup> 'b::fs) \<Longrightarrow> a \<sharp> m2 \<Longrightarrow> a \<sharp> m1 f++ m2"
   by (auto simp add: fresh_def supp_fmap supp_of_finite_insert supp_of_finite_union 
-      dest: set_mp[OF supp_mono[OF finite_UnI[OF finite_fran finite_fran] fran_fmap_add_subset]])
+      dest: set_mp[OF supp_mono[OF finite_UnI[OF finite_fran finite_fran] fran_fun_merge_subset]])
 
 end

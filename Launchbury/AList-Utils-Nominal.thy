@@ -32,36 +32,6 @@ lemma fresh_heap_expr':
   using assms
   by (induct \<Gamma>, auto simp add: fresh_Cons fresh_Pair)
 
-lemma supp_image:
-  fixes S :: "'a::fs set"
-  fixes f :: "'a::fs \<Rightarrow> 'b::fs"
-  assumes "finite S"
-  and "eqvt f"
-  shows "supp (f ` S) \<subseteq> supp S"
-proof
-  from assms(1) have "finite (f ` S)" by simp
-
-  fix a
-  assume "a \<in> supp (f ` S)"
-  then obtain y where "a \<in> supp y" and "y \<in> f ` S" 
-    unfolding supp_of_finite_sets[OF `finite (f \` S)`] by auto
-  then obtain x where "y = f x" and "x \<in> S" by auto
-  from this(1) `a \<in> supp y` supp_fun_app_eqvt[OF assms(2)]
-  have "a \<in> supp x" by auto
-  with `x \<in> S`
-  show "a \<in> supp S" unfolding supp_of_finite_sets[OF `finite S`] by auto
-qed
-
-lemma fresh_image:
-  fixes S :: "'a::fs set"
-  fixes f :: "'a::fs \<Rightarrow> 'b::fs"
-  assumes "atom a \<sharp> S"
-  and "finite S"
-  and "eqvt f"
-  shows "atom a \<sharp> f ` S"
-using assms by (metis fresh_def in_mono supp_image)
-
-
 lemma fresh_star_heap_expr':
   assumes "S \<sharp>* \<Gamma>"
   and "e \<in> snd ` set \<Gamma>"

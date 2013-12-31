@@ -37,7 +37,7 @@ lemma convert_stack_delete_not_there[simp]:
   shows "convert_stack (fmap_delete x \<Gamma>) S = convert_stack \<Gamma> S"
 using assms by (induction S) auto
 
-lemma convert_stack_fmap_add_not_there[simp]:
+lemma convert_stack_fun_merge_not_there[simp]:
   assumes "fdom m \<inter> set S = {}"
   shows "convert_stack (\<Gamma> f++ m) S = convert_stack \<Gamma> S"
 using assms by (induction S) auto

@@ -179,7 +179,7 @@ using assms
  apply (metis lookup_fmap_delete lookup_fmap_upd_eq)
  apply (metis lookup_fmap_upd_other)
  apply (metis lookup_fmap_upd_other)
- apply (metis Int_iff empty_iff lookup_fmap_add2 lookup_fmap_upd_other)
+ apply (metis Int_iff empty_iff lookup_fun_merge2 lookup_fmap_upd_other)
  done
 
 text {*
@@ -347,7 +347,7 @@ case (Let as \<Gamma> x S body i u b \<Delta> x')
     hence "atom x' \<notin> set (bn as)" by (auto simp add: set_bn_to_atom_fdom)
     with `atom x' \<sharp> \<Gamma>(x f\<mapsto> Terms.Let as body)`
     have "atom x' \<sharp> \<Gamma>(x f\<mapsto> body) f++ fmap_of (asToHeap as)"
-      by (simp add: fresh_fmap_upd_eq fresh_fmap_add_subset
+      by (simp add: fresh_fmap_upd_eq fresh_fun_merge_subset
               eqvt_fresh_cong1[where f = fmap_of, OF fmap_of_eqvt]
               fresh_fun_eqvt_app[OF asToHeap_eqvt])
     from Let(6)[OF this]

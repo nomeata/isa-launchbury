@@ -42,7 +42,7 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
     case goal2 show ?case by (rule minimal)
     case (goal3 \<rho>')
       show ?case
-      by (rule fmap_add_belowI)
+      by (rule fun_merge_belowI)
          (auto simp add: lookupHeapToEnv  below_trans[OF monofun_cfun_arg[OF `\<rho>' \<sqsubseteq> r`] h] rho)
   qed
 
@@ -86,15 +86,15 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
     apply (auto simp add: lookup_HSem_other)
     done
 
-  lemma fmap_restr_fmap_addI:"-S2 \<subseteq> S \<Longrightarrow> fmap_restr S \<rho>1 f++\<^bsub>S2\<^esub> \<rho>2 = \<rho>1 f++\<^bsub>S2\<^esub> \<rho>2"
-    by (rule ext) (auto simp add: lookup_fmap_add_eq )
+  lemma fmap_restr_fun_mergeI:"-S2 \<subseteq> S \<Longrightarrow> fmap_restr S \<rho>1 f++\<^bsub>S2\<^esub> \<rho>2 = \<rho>1 f++\<^bsub>S2\<^esub> \<rho>2"
+    by (rule ext) (auto simp add: lookup_fun_merge_eq )
 
   lemma HSem_restr:
     "\<lbrace>h\<rbrace>(\<rho> f|` (- domA h)) = \<lbrace>h\<rbrace>\<rho>"
     apply (rule parallel_HSem_ind)
     apply simp
     apply auto[1]
-    apply (subst fmap_restr_fmap_addI)
+    apply (subst fmap_restr_fun_mergeI)
     apply simp_all
     done
 
@@ -201,9 +201,9 @@ subsubsection {* Iterative definition of the heap semantics *}
       by (simp_all)
 
     have "\<lbrace>(x,e) # \<Gamma>\<rbrace>\<rho> = fix \<cdot> L"
-      by (simp add: HSem_def' fmap_add_upd ne)
+      by (simp add: HSem_def' fun_merge_upd ne)
     also have "\<dots> = fix \<cdot> R"
-      by (rule iterative_fmap_add)
+      by (rule iterative_fun_merge)
     also have "\<dots> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>domA \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
       by (simp add: HSem_def')
     finally show ?thesis.
@@ -227,9 +227,9 @@ subsubsection {* Iterative definition of the heap semantics *}
     have "(\<mu> \<rho>'. (\<rho> f++\<^bsub>domA \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)) = fix \<cdot> R"
       by (simp add: HSem_def')
     also have "\<dots> = fix \<cdot> L"
-      by (rule iterative_fmap_add[symmetric])
+      by (rule iterative_fun_merge[symmetric])
     also have "\<dots> = fix \<cdot> R'"
-      by (rule iterative_fmap_add')
+      by (rule iterative_fun_merge')
     also have "\<dots> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>domA \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>'\<^esub>))"
       by (simp add: HSem_def')
     finally

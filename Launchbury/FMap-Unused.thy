@@ -78,7 +78,7 @@ lemma fran_fmap_delete_subset:
 lemma fran_fmap_upd[simp]:
   "fran (m(x f\<mapsto> v)) = insert v (fran (fmap_delete x m))"
 by (transfer, auto simp add: ran_def)
-lemma fran_fmap_add_subset: "fran (m1 f++ m2) \<subseteq> fran m1 \<union> fran m2"
+lemma fran_fun_merge_subset: "fran (m1 f++ m2) \<subseteq> fran m1 \<union> fran m2"
   by (transfer, auto simp add: ran_def)
 lemma fran_fmap_copy_subset:
   "fran (fmap_copy m x y) \<subseteq> fran m"

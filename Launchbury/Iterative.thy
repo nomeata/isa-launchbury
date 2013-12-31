@@ -56,7 +56,7 @@ begin
       by (rule fix_least_below[OF below]) (simp_all add: ne *)
   qed
   
-  lemma iterative_fmap_add:
+  lemma iterative_fun_merge:
     shows "fix \<cdot> L = fix \<cdot> R"
   proof(rule below_antisym)
     show "fix \<cdot> R \<sqsubseteq> fix \<cdot> L"
@@ -70,7 +70,7 @@ begin
       done
   qed
 
-  lemma iterative_fmap_add':
+  lemma iterative_fun_merge':
     shows "fix \<cdot> L = fix \<cdot>  R'"
   proof(rule below_antisym)
     show "fix \<cdot> R' \<sqsubseteq> fix \<cdot> L"

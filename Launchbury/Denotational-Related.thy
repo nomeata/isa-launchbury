@@ -42,7 +42,7 @@ next
     proof(rule pointwiseI)
       case (goal1 x)
       show ?case using `\<rho> f\<triangleleft>\<triangleright> \<sigma>`
-        by (auto simp add: lookup_fmap_add_eq lookupHeapToEnv elim: Let(1)[OF _  `\<rho>' f\<triangleleft>\<triangleright> \<sigma>'`] )
+        by (auto simp add: lookup_fun_merge_eq lookupHeapToEnv elim: Let(1)[OF _  `\<rho>' f\<triangleleft>\<triangleright> \<sigma>'`] )
     qed
   qed
   with Let(2)

@@ -210,41 +210,41 @@ subsubsection {* Deleting *}
  
 subsubsection {* Addition (merging) of finite maps *}
 
-lift_definition fmap_add :: "'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b" (infixl "f++" 100) 
+lift_definition fun_merge :: "'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b \<Rightarrow> 'a f\<rightharpoonup> 'b" (infixl "f++" 100) 
   is "map_add" by auto
 
-lemma fmap_add_fempty[simp]: "f\<emptyset> f++ m = m" 
+lemma fun_merge_fempty[simp]: "f\<emptyset> f++ m = m" 
   by (transfer, simp)
 
-lemma fmap_add_fempty2[simp]: "m f++ f\<emptyset>= m" 
+lemma fun_merge_fempty2[simp]: "m f++ f\<emptyset>= m" 
   by (transfer, simp)
 
-lemma fdom_fmap_add[simp]: "fdom (m1 f++ m2) = fdom m1 \<union> fdom m2"
+lemma fdom_fun_merge[simp]: "fdom (m1 f++ m2) = fdom m1 \<union> fdom m2"
   by (transfer, auto)
 
-lemma lookup_fmap_add1[simp]: "x \<in> fdom m2 \<Longrightarrow> lookup (m1 f++ m2) x = lookup m2 x"
+lemma lookup_fun_merge1[simp]: "x \<in> fdom m2 \<Longrightarrow> lookup (m1 f++ m2) x = lookup m2 x"
   by (transfer, auto)
 
-lemma lookup_fmap_add2[simp]:  "x \<notin> fdom m2 \<Longrightarrow> lookup (m1 f++ m2) x = lookup m1 x"
+lemma lookup_fun_merge2[simp]:  "x \<notin> fdom m2 \<Longrightarrow> lookup (m1 f++ m2) x = lookup m1 x"
   apply transfer
   by (metis map_add_dom_app_simps(3))
 
-lemma lookup_fmap_add_eq: "lookup (m1 f++ m2) x = (if x \<in> fdom m2 then lookup m2 x else  lookup m1 x)"
+lemma lookup_fun_merge_eq: "lookup (m1 f++ m2) x = (if x \<in> fdom m2 then lookup m2 x else  lookup m1 x)"
   by (cases "x \<notin> fdom m2") simp_all
 
-lemma fmap_add_overwrite: "fdom m1 \<subseteq> fdom m2 \<Longrightarrow> m1 f++ m2 = m2"
+lemma fun_merge_overwrite: "fdom m1 \<subseteq> fdom m2 \<Longrightarrow> m1 f++ m2 = m2"
   apply transfer
   apply rule
   apply (case_tac "x \<in> dom m2")
   apply (auto simp add: map_add_dom_app_simps(1))
   done
 
-lemma fmap_add_upd_swap: 
+lemma fun_merge_upd_swap: 
   "x \<notin> fdom \<rho>' \<Longrightarrow> \<rho>(x f\<mapsto> z) f++ \<rho>' = (\<rho> f++ \<rho>')(x f\<mapsto> z)"
   apply transfer
   by (metis map_add_upd_left)
 
-lemma fmap_add_upd: 
+lemma fun_merge_upd: 
   "\<rho> f++ (\<rho>'(x f\<mapsto> z)) = (\<rho> f++ \<rho>')(x f\<mapsto> z)"
   apply transfer
   by (metis map_add_upd)
@@ -434,8 +434,8 @@ lemma fmap_update_less[simp, intro]:
   apply (auto dest: fmap_less_fdom)[1]
   apply (case_tac "x \<in> fdom \<rho>2")
   apply (auto dest: fmap_less_eqD fmap_less_fdom)
-  apply (metis fmap_less_eqD fmap_less_fdom lookup_fmap_add1 set_mp)
-  by (metis Diff_iff Diff_triv fmap_less_eqD lookup_fmap_add2)
+  apply (metis fmap_less_eqD fmap_less_fdom lookup_fun_merge1 set_mp)
+  by (metis Diff_iff Diff_triv fmap_less_eqD lookup_fun_merge2)
 
 lemma fmap_restr_le:
   assumes "\<rho>1 \<le> \<rho>2"

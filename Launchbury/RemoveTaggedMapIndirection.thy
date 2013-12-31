@@ -151,7 +151,7 @@ lemma ind_for_Cons_fresh[simp]: "atom x \<sharp> is \<Longrightarrow> ind_for is
   apply auto[1]
   by (metis fresh_heap_expr lookup_fmap_upd_other not_self_fresh)
 
-lemma ind_for_fmap_add_fresh[simp]: "atom ` fdom \<Delta> \<sharp>* is \<Longrightarrow> ind_for is (\<Gamma> f++ \<Delta>) \<longleftrightarrow> ind_for is \<Gamma>"
+lemma ind_for_fun_merge_fresh[simp]: "atom ` fdom \<Delta> \<sharp>* is \<Longrightarrow> ind_for is (\<Gamma> f++ \<Delta>) \<longleftrightarrow> ind_for is \<Gamma>"
 proof (induction \<Delta> rule: fmap_induct)
   case empty thus ?case by simp
 next
@@ -159,7 +159,7 @@ next
     from `atom \` fdom (\<Delta>(x f\<mapsto> e)) \<sharp>* is`  and `x \<notin> fdom \<Delta>`
     have "atom ` fdom \<Delta> \<sharp>* is" and "atom x \<sharp> is" by (auto simp add: fresh_star_def)
     from update.IH[OF this(1)] this(2)
-    show ?case by (simp add: fmap_add_upd)
+    show ?case by (simp add: fun_merge_upd)
 qed
 
 lemma ind_for_larger_set: "ind_for is \<Gamma> \<Longrightarrow> \<Gamma> \<le> \<Gamma>' \<Longrightarrow> ind_for is \<Gamma>'"

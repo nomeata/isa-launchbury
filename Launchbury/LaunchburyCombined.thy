@@ -246,7 +246,7 @@ case (Let as \<Gamma> L body \<Delta> z)
       show ?thesis
         apply(rule Let.IH)
         using Let.prems `atom x \<sharp> asToHeap as` False
-        by (auto simp add: fresh_Pair fresh_append fresh_fmap_add_subset eqvt_fresh_cong1[OF fmap_of_eqvt])
+        by (auto simp add: fresh_Pair fresh_append fresh_fun_merge_subset eqvt_fresh_cong1[OF fmap_of_eqvt])
     next
     case True
       hence "x \<in> fdom (fmap_of (asToHeap as))" 

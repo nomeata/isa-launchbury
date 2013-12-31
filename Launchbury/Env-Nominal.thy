@@ -26,10 +26,10 @@ lemma fmap_delete_eqvt[eqvt]:
   shows "\<pi> \<bullet> fmap_delete x m = fmap_delete (\<pi> \<bullet> x) (\<pi> \<bullet> m)"
   by (auto simp add: fmap_delete_def)
 
-lemma fmap_add_eqvt[eqvt]:
+lemma fun_merge_eqvt[eqvt]:
   fixes m1 m2 :: "'a::pt \<Rightarrow> 'b::{cont_pt,pcpo}"
   shows "\<pi> \<bullet> m1 f++\<^bsub>S\<^esub> m2 = (\<pi> \<bullet> m1) f++\<^bsub>\<pi> \<bullet> S\<^esub> (\<pi> \<bullet> m2)"
-  by (auto simp add: fmap_add_def )
+  by (auto simp add: fun_merge_def )
 
 subsubsection {* Permutation and restriction *}
 

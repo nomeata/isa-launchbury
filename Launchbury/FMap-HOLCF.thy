@@ -327,7 +327,7 @@ lemma fdom_adm_eq[simp]:
    "adm (\<lambda>\<rho>. fdom \<rho> = z)"
    by (rule fdom_adm)
 
-lemma  fmap_add_belowI:
+lemma  fun_merge_belowI:
   assumes "fdom x \<union> fdom y = fdom z"
   and "\<And> a. a \<in> fdom y \<Longrightarrow> y f! a \<sqsubseteq> z f! a"
   and "\<And> a. a \<in> fdom x \<Longrightarrow> a \<notin> fdom y \<Longrightarrow> x f! a \<sqsubseteq> z f! a"
@@ -336,34 +336,34 @@ lemma  fmap_add_belowI:
   apply -
   apply (rule fmap_belowI)
   apply auto[1]
-  by (metis fdomIff lookup_fmap_add1 lookup_fmap_add2)
+  by (metis fdomIff lookup_fun_merge1 lookup_fun_merge2)
 
-lemma fmap_add_cont1: "cont (\<lambda> x. x f++ m::('a::type f\<rightharpoonup> 'b::cpo))"
+lemma fun_merge_cont1: "cont (\<lambda> x. x f++ m::('a::type f\<rightharpoonup> 'b::cpo))"
   apply (rule fmap_cont_via_lookupI)
   apply (drule fmap_below_dom, simp)
   apply (case_tac "x \<in> fdom m")
   apply (auto simp add: assms)
   done
 
-lemma fmap_add_cont2: "cont (\<lambda> x. m f++ x::('a::type f\<rightharpoonup> 'b::cpo))"
+lemma fun_merge_cont2: "cont (\<lambda> x. m f++ x::('a::type f\<rightharpoonup> 'b::cpo))"
   apply (rule fmap_cont_via_lookupI)
   apply (drule fmap_below_dom, simp)
-  apply (subst lookup_fmap_add_eq)
+  apply (subst lookup_fun_merge_eq)
   apply (rule cont_if_fdom)
   apply simp_all
   done
 
-lemma fmap_add_cont2cont[simp, cont2cont]:
+lemma fun_merge_cont2cont[simp, cont2cont]:
   assumes "cont f"
   assumes "cont g"
   shows "cont (\<lambda> x. f x f++ (g x :: 'a f\<rightharpoonup> 'b::cpo))"
-by (rule cont_apply[OF assms(1) fmap_add_cont1 cont_compose[OF fmap_add_cont2 assms(2)]])
+by (rule cont_apply[OF assms(1) fun_merge_cont1 cont_compose[OF fun_merge_cont2 assms(2)]])
 
-lemma fmap_add_mono:
+lemma fun_merge_mono:
   assumes "x1 \<sqsubseteq> (x2 :: ('a::type f\<rightharpoonup> 'b::cpo))"
   assumes "y1 \<sqsubseteq> y2"
   shows "x1 f++ y1 \<sqsubseteq> x2 f++ y2"
-by (rule below_trans[OF cont2monofunE[OF fmap_add_cont1 assms(1)] cont2monofunE[OF fmap_add_cont2 assms(2)]])
+by (rule below_trans[OF cont2monofunE[OF fun_merge_cont1 assms(1)] cont2monofunE[OF fun_merge_cont2 assms(2)]])
 
 lemma fmap_upd_belowI:
   assumes "fdom \<rho>' = insert x (fdom \<rho>)"
@@ -478,7 +478,7 @@ lemma fmap_lookup_bot_fmap_upd_eq: "h (x f\<mapsto> v) f!\<^sub>\<bottom>  x' = 
 lemma fmap_lookup_bot_fmap_delete_other[simp]: "x' \<noteq> x \<Longrightarrow> (fmap_delete x h) f!\<^sub>\<bottom> x' = h f!\<^sub>\<bottom> x'"
   by (transfer, auto)
 
-lemma fmap_lookup_bot_fmap_add_other[simp]: "x \<notin> fdom \<rho>' \<Longrightarrow> (\<rho> f++ \<rho>') f!\<^sub>\<bottom> x = \<rho> f!\<^sub>\<bottom> x"
+lemma fmap_lookup_bot_fun_merge_other[simp]: "x \<notin> fdom \<rho>' \<Longrightarrow> (\<rho> f++ \<rho>') f!\<^sub>\<bottom> x = \<rho> f!\<^sub>\<bottom> x"
   by (transfer, auto split:option.split)
 
 lemma fmap_lookup_bot_fmap_restr[simp]: "x \<in> S \<Longrightarrow> m f|` S f!\<^sub>\<bottom> x = m f!\<^sub>\<bottom> x"
@@ -747,21 +747,21 @@ begin
                 fmap_upd_cont[OF cont_const cont_id]
                 _
                 cont_is_cont_on[OF cont_e2]])
-    apply (rule cont_comp_cont_on2[OF cont2cont_lambda[OF fmap_add_cont1]
-                fmap_add_cont2
+    apply (rule cont_comp_cont_on2[OF cont2cont_lambda[OF fun_merge_cont1]
+                fun_merge_cont2
                 cont_is_cont_on[OF cont_const]
                 ])
     apply (rule cont_comp_cont_on[OF fmap_restr_cont])
     apply (rule cont_onI2)
       apply (rule monofun_onI)
       apply (erule (1) fix_on_mono[OF condH condH])
-      apply (erule cont2monofunE[OF fmap_add_cont1])
+      apply (erule cont2monofunE[OF fun_merge_cont1])
 
     apply (rule eq_imp_below)
     apply (rule fix_on_cont[OF chain_on_is_chain condH[OF chain_on_is_on]])
       apply assumption
       apply assumption
-    apply (rule cont2cont_lambda[OF fmap_add_cont1])
+    apply (rule cont2cont_lambda[OF fun_merge_cont1])
     done
   lemmas [simp] = fdom_fix_on[OF condR]
 
@@ -769,13 +769,13 @@ begin
     apply (rule cont_onI2)
       apply (rule monofun_onI)
       apply (erule (1) fix_on_mono[OF condH condH])
-      apply (erule cont2monofunE[OF fmap_add_cont1])
+      apply (erule cont2monofunE[OF fun_merge_cont1])
 
     apply (rule eq_imp_below)
     apply (rule fix_on_cont[OF chain_on_is_chain condH[OF chain_on_is_on]])
       apply assumption
       apply assumption
-    apply (rule cont2cont_lambda[OF fmap_add_cont1])
+    apply (rule cont2cont_lambda[OF fun_merge_cont1])
     done
 
   lemma condR': "fix_on_cond cpo b R'"
@@ -788,8 +788,8 @@ begin
                 fmap_upd_cont[OF cont_const cont_id]
                 _
                 cont_comp_cont_on[OF cont_e2 cont_on_fix_H]])
-    apply (rule cont_comp_cont_on2[OF cont2cont_lambda[OF fmap_add_cont1]
-                fmap_add_cont2
+    apply (rule cont_comp_cont_on2[OF cont2cont_lambda[OF fun_merge_cont1]
+                fun_merge_cont2
                 cont_is_cont_on[OF cont_const]
                 ])
     apply (rule cont_comp_cont_on[OF fmap_restr_cont cont_on_fix_H])
@@ -918,7 +918,7 @@ begin
     done
   qed
   
-  lemma iterative_fmap_add:
+  lemma iterative_fun_merge:
     shows "fix_on' b L = fix_on' b R"
   proof(rule below_antisym)
     show "fix_on' b R \<sqsubseteq> fix_on' b L"
@@ -949,7 +949,7 @@ begin
     qed
   qed
 
-  lemma iterative_fmap_add':
+  lemma iterative_fun_merge':
     shows "fix_on' b L = fix_on' b R'"
   proof(rule below_antisym)
     show "fix_on' b R' \<sqsubseteq> fix_on' b L"
