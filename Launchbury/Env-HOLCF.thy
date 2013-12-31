@@ -2,7 +2,7 @@ theory "Env-HOLCF"
   imports Env "HOLCF-Utils"
 begin
 
-subsubsection {* Continuity and finite maps *}
+subsubsection {* Continuity and pcpo-valued functions *}
 
 lemma  fun_merge_belowI:
   assumes "\<And> a. a \<in> S \<Longrightarrow> y a \<sqsubseteq> z a"

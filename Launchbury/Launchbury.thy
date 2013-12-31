@@ -285,22 +285,17 @@ case (Let as \<Gamma>  L body \<Delta> z L')
     by (rule reds.Let[OF _ Let.hyps(4)[OF Let.prems]])
 qed
 
-text {* Things are evaluated to a lambda expression. *}
-
-lemma
-  assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
-  shows result_evaluated: "isLam z"
-using assms
- by (induct \<Gamma> e L \<Delta> z rule:reds.induct) (auto dest: reds_doesnt_forget)
+text {* Things are evaluated to a lambda expression, and the variable can be freely chose. *}
 
 lemma result_evaluated_fresh:
   assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
   obtains y e'
   where "z = (Lam [y]. e')" and "atom y \<sharp> (c::'a::fs)"
 proof-
-  from result_evaluated[OF assms]
-  have "isLam z" by simp 
-  hence "\<exists> y e'. z = Lam [y]. e' \<and>  atom y \<sharp> c"
+  from assms
+  have "\<exists> x e'. z = Lam [x]. e'"
+    by (induct \<Gamma> e L \<Delta> z rule:reds.induct) (auto dest: reds_doesnt_forget)
+  hence "\<exists> y e'. z = Lam [y]. e' \<and> atom y \<sharp> c"
     by (nominal_induct z avoiding: c rule:exp_assn.strong_induct(1)) auto
   thus thesis using that by blast
 qed

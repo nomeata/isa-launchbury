@@ -1,6 +1,38 @@
 theory Unused 
-imports CValue  "HOLCF-Meet-Classes" "AList-Utils"
+imports CValue  "HOLCF-Meet-Classes" "AList-Utils" Terms
 begin
+
+nominal_primrec isLam :: "exp \<Rightarrow> bool" where
+  "isLam (Var x) = False" |
+  "isLam (Lam [x]. e) = True" |
+  "isLam (App e x) = False" |
+  "isLam (Let as e) = False"
+  unfolding isLam_graph_aux_def eqvt_def
+  apply simp
+  apply simp
+  apply (metis exp_assn.exhaust(1))
+  apply auto
+  done
+termination (eqvt) by lexicographic_order
+
+
+lemma change_Lam_Variable:
+  assumes "atom y' \<sharp> e'" and "atom y' \<sharp> y"
+  shows   "Lam [y]. e' =  Lam [y']. ((y \<leftrightarrow> y') \<bullet> e')"
+proof-
+  from assms
+  have "(y \<leftrightarrow> y') \<bullet> (Lam [y]. e') = Lam [y]. e'"
+    by -(rule flip_fresh_fresh, (simp add: fresh_Pair)+)
+  moreover
+  have "(y \<leftrightarrow> y') \<bullet> (Lam [y]. e') = Lam [y']. ((y \<leftrightarrow> y') \<bullet> e')"
+    by simp
+  ultimately
+  show "Lam [y]. e' =  Lam [y']. ((y \<leftrightarrow> y') \<bullet> e')" by (simp add: fresh_Pair)
+qed
+
+lemma isLam_subst[simp]: "isLam e[x::=y] = isLam e"
+  by (nominal_induct e avoiding: x y rule:exp_assn.strong_induct(1))
+     (auto simp add: fresh_star_Pair)
 
 
 lemma the_map_of_snd:
