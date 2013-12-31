@@ -169,7 +169,7 @@ case (Let as \<Gamma> L body \<Delta> z)
 
   
   have "fv (asToHeap as @ \<Gamma>, body) - domA (asToHeap as @ \<Gamma>) \<subseteq>  fv (\<Gamma>, Let as body) - domA \<Gamma>"
-    by (auto dest: set_mp[OF fv_asToHeap])
+    by auto
   with 1 have prem: "fv (asToHeap as @ \<Gamma>, body) - domA (asToHeap as @ \<Gamma>) \<subseteq> set L" by auto
   
   have f1: "atom ` domA (asToHeap as) \<sharp>* \<Gamma>"

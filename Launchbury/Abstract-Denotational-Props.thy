@@ -66,7 +66,7 @@ proof-
   also have "\<lbrace>asToHeap as\<rbrace>(\<rho> f|` fv(Let as body)) = \<lbrace>asToHeap as\<rbrace>(\<rho> f|` (fv as \<union> fv body))" 
     by (rule HSem_restr_cong) (auto simp add: lookup_fmap_restr_eq)
   also have "\<dots> = (\<lbrace>asToHeap as\<rbrace>\<rho>) f|` (fv as \<union> fv body)"
-    by (rule HSem_ignores_fresh_restr'[symmetric, OF subset_trans[OF fv_asToHeap Un_upper1] ESem_considers_fv])
+    by (rule HSem_ignores_fresh_restr'[symmetric, OF _ ESem_considers_fv]) simp
   also have "\<lbrakk>body\<rbrakk>\<^bsub>\<dots>\<^esub> = \<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub>"
     by (rule ESem_fresh_cong) (auto simp add: lookup_fmap_restr_eq)
   finally show ?thesis.
