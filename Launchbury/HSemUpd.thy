@@ -14,12 +14,12 @@ begin
 
 definition HSem :: "('var \<times> 'exp) list \<Rightarrow> ('var \<Rightarrow> 'value) \<rightarrow> ('var \<Rightarrow> 'value)"
   where
-  "HSem \<Gamma> = (\<Lambda> \<rho> . (\<mu> \<rho>'. \<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> heapToEnv \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)))"
+  "HSem \<Gamma> = (\<Lambda> \<rho> . (\<mu> \<rho>'. \<rho> f++\<^bsub>domA \<Gamma>\<^esub> heapToEnv \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)))"
 
 abbreviation HSem_syn ("\<lbrace> _ \<rbrace>_"  [60,60] 60) where "\<lbrace>\<Gamma>\<rbrace>\<rho> \<equiv> HSem \<Gamma> \<cdot> \<rho>"
 
 lemma HSem_def':
-    "\<lbrace>\<Gamma>\<rbrace>\<rho> = (\<mu> \<rho>'. \<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> heapToEnv \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
+    "\<lbrace>\<Gamma>\<rbrace>\<rho> = (\<mu> \<rho>'. \<rho> f++\<^bsub>domA \<Gamma>\<^esub> heapToEnv \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
   unfolding HSem_def by simp
 
 subsubsection {* Induction and other lemmas about @{term HSem} *}
@@ -27,15 +27,15 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
   lemma HSem_ind:
     assumes "adm P"
     assumes "P \<bottom>"
-    assumes step: "\<And> y. P y \<Longrightarrow>  P (\<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>y\<^esub>)))"
+    assumes step: "\<And> y. P y \<Longrightarrow>  P (\<rho> f++\<^bsub>domA \<Gamma>\<^esub> (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>y\<^esub>)))"
     shows "P (\<lbrace>\<Gamma>\<rbrace>\<rho>)"
     unfolding HSem_def'
     apply (rule fix_ind[OF assms(1), OF assms(2)])
     using step by simp
 
   lemma HSem_below:
-    assumes rho: "\<And>x. x \<notin> heapVars h \<Longrightarrow> \<rho> x \<sqsubseteq> r x"
-    assumes h: "\<And>x. x \<in> heapVars h \<Longrightarrow> \<lbrakk>the (map_of h x)\<rbrakk>\<^bsub>r\<^esub> \<sqsubseteq> r x"
+    assumes rho: "\<And>x. x \<notin> domA h \<Longrightarrow> \<rho> x \<sqsubseteq> r x"
+    assumes h: "\<And>x. x \<in> domA h \<Longrightarrow> \<lbrakk>the (map_of h x)\<rbrakk>\<^bsub>r\<^esub> \<sqsubseteq> r x"
     shows "\<lbrace>h\<rbrace>\<rho> \<sqsubseteq> r"
   proof (rule HSem_ind)
     case goal1 show ?case by (auto)
@@ -47,7 +47,7 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
   qed
 
   lemma HSem_fempty_below:
-    assumes h: "\<And>x. x \<in> heapVars h \<Longrightarrow> \<lbrakk>the (map_of h x)\<rbrakk>\<^bsub>r\<^esub> \<sqsubseteq> r x"
+    assumes h: "\<And>x. x \<in> domA h \<Longrightarrow> \<lbrakk>the (map_of h x)\<rbrakk>\<^bsub>r\<^esub> \<sqsubseteq> r x"
     shows "\<lbrace>h\<rbrace>\<bottom> \<sqsubseteq> r"
     using assms 
   by (metis HSem_below fun_belowD minimal)
@@ -56,33 +56,33 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
     assumes "adm (\<lambda>\<rho>'. P (fst \<rho>') (snd \<rho>'))"
     assumes "P \<bottom> \<bottom>"
     assumes step: "\<And>y z. P y z \<Longrightarrow>
-      P (\<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>y\<^esub>))) (\<rho>2 f++\<^bsub>heapVars \<Gamma>2\<^esub> (heapToEnv \<Gamma>2 (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>z\<^esub>)))"
+      P (\<rho> f++\<^bsub>domA \<Gamma>\<^esub> (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>y\<^esub>))) (\<rho>2 f++\<^bsub>domA \<Gamma>2\<^esub> (heapToEnv \<Gamma>2 (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>z\<^esub>)))"
     shows "P (\<lbrace>\<Gamma>\<rbrace>\<rho>) (\<lbrace>\<Gamma>2\<rbrace>\<rho>2)"
     unfolding HSem_def'
     apply (rule parallel_fix_ind[OF assms(1), OF assms(2)])
     using step by simp
   
   lemma HSem_eq:
-    shows "\<lbrace>\<Gamma>\<rbrace>\<rho> = \<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>))"
+    shows "\<lbrace>\<Gamma>\<rbrace>\<rho> = \<rho> f++\<^bsub>domA \<Gamma>\<^esub> (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>))"
     unfolding HSem_def'
     by (subst fix_eq) simp
   
   lemma lookup_HSem_other:
-    assumes "y \<notin> heapVars h"
+    assumes "y \<notin> domA h"
     shows "(\<lbrace>h\<rbrace>\<rho>) y = \<rho> y"
     apply (subst HSem_eq)
     using assms by simp
 
   lemma lookup_HSem_heap:
-    assumes "y \<in> heapVars h"
+    assumes "y \<in> domA h"
     shows "(\<lbrace>h\<rbrace>\<rho>) y = \<lbrakk> the (map_of h y) \<rbrakk>\<^bsub>\<lbrace>h\<rbrace>\<rho>\<^esub>"
     apply (subst HSem_eq)
     using assms by (simp add: lookupHeapToEnv)
 
-  lemma HSem_fdom_subset:  "fdom (\<lbrace>\<Gamma>\<rbrace>\<rho>) \<subseteq> fdom \<rho> \<union> heapVars \<Gamma>"
+  lemma HSem_fdom_subset:  "fdom (\<lbrace>\<Gamma>\<rbrace>\<rho>) \<subseteq> fdom \<rho> \<union> domA \<Gamma>"
     apply rule
     unfolding fdomIff
-    apply (case_tac "x \<in> heapVars \<Gamma>")
+    apply (case_tac "x \<in> domA \<Gamma>")
     apply (auto simp add: lookup_HSem_other)
     done
 
@@ -90,7 +90,7 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
     by (rule ext) (auto simp add: lookup_fmap_add_eq )
 
   lemma HSem_restr:
-    "\<lbrace>h\<rbrace>(\<rho> f|` (- heapVars h)) = \<lbrace>h\<rbrace>\<rho>"
+    "\<lbrace>h\<rbrace>(\<rho> f|` (- domA h)) = \<lbrace>h\<rbrace>\<rho>"
     apply (rule parallel_HSem_ind)
     apply simp
     apply auto[1]
@@ -99,20 +99,20 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
     done
 
   lemma HSem_restr_cong:
-    assumes "\<rho> f|` (- heapVars h) = \<rho>' f|` (- heapVars h)"
+    assumes "\<rho> f|` (- domA h) = \<rho>' f|` (- domA h)"
     shows "\<lbrace>h\<rbrace>\<rho> = \<lbrace>h\<rbrace>\<rho>'"
     apply (subst (1 2) HSem_restr[symmetric])
     by (simp add: assms)
 
   lemma HSem_restr_cong_below:
-    assumes "\<rho> f|` (- heapVars h) \<sqsubseteq> \<rho>' f|` (- heapVars h)"
+    assumes "\<rho> f|` (- domA h) \<sqsubseteq> \<rho>' f|` (- domA h)"
     shows "\<lbrace>h\<rbrace>\<rho> \<sqsubseteq> \<lbrace>h\<rbrace>\<rho>'"
     by (subst (1 2) HSem_restr[symmetric]) (rule monofun_cfun_arg[OF assms])
 
   lemma HSem_reorder:
     assumes "map_of \<Gamma> = map_of \<Delta>"
     shows "\<lbrace>\<Gamma>\<rbrace>\<rho> = \<lbrace>\<Delta>\<rbrace>\<rho>"
-  by (simp add: HSem_def' heapToEnv_reorder[OF assms] assms dom_map_of_conv_heapVars[symmetric])
+  by (simp add: HSem_def' heapToEnv_reorder[OF assms] assms dom_map_of_conv_domA[symmetric])
   
   lemma HSem_reorder_head:
     assumes "x \<noteq> y"
@@ -122,11 +122,11 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
       by auto
     thus ?thesis      
       unfolding HSem_def heapToEnv_reorder_head[OF assms]
-      by (simp add: heapVars_def)
+      by (simp add: domA_def)
   qed
   
   lemma HSem_reorder_head_append:
-    assumes "x \<notin> heapVars \<Gamma>"
+    assumes "x \<notin> domA \<Gamma>"
     shows "\<lbrace>(x,e)#\<Gamma>@\<Delta>\<rbrace>\<rho> = \<lbrace>\<Gamma> @ ((x,e)#\<Delta>)\<rbrace>\<rho>"
   proof-
     have "set ((x,e)#\<Gamma>@\<Delta>) = set (\<Gamma> @ ((x,e)#\<Delta>))" by auto
@@ -136,7 +136,7 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
   qed  
 
  lemma fmap_restr_HSem:
-    assumes "heapVars \<Gamma> \<inter> S = {}"
+    assumes "domA \<Gamma> \<inter> S = {}"
     shows "(\<lbrace> \<Gamma> \<rbrace>\<rho>) f|` S = \<rho> f|` S"
     apply (rule ext)
     using assms 
@@ -146,7 +146,7 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
     done
   
   lemma fmap_restr_HSem_noop:
-    assumes "heapVars \<Gamma> \<inter> fdom \<rho> = {}"
+    assumes "domA \<Gamma> \<inter> fdom \<rho> = {}"
     shows "(\<lbrace> \<Gamma> \<rbrace>\<rho>) f|` fdom \<rho> = \<rho>"
     by (simp add: fmap_restr_HSem[OF assms] fmap_restr_useless)
  
@@ -156,7 +156,7 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
 subsubsection {* Re-calculating the semantics of the heap is idempotent *} 
 
   lemma HSem_redo:
-    shows "\<lbrace>\<Gamma>\<rbrace>(\<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>) f|` (fdom \<rho> \<union> heapVars \<Delta>) = \<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>" (is "?LHS = ?RHS")
+    shows "\<lbrace>\<Gamma>\<rbrace>(\<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>) f|` (fdom \<rho> \<union> domA \<Delta>) = \<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>" (is "?LHS = ?RHS")
   proof (rule below_antisym)
     show "?LHS \<sqsubseteq> ?RHS"
     by (rule HSem_below)
@@ -171,12 +171,12 @@ subsubsection {* Re-calculating the semantics of the heap is idempotent *}
     next
     case (goal2 x)
       thus ?case
-      proof(cases "x \<in> heapVars \<Gamma>")
+      proof(cases "x \<in> domA \<Gamma>")
       case True
         thus ?thesis by (auto simp add: lookup_HSem_heap)
       next
       case False
-        hence delta: "x \<in> heapVars \<Delta>" using goal2 by auto
+        hence delta: "x \<in> domA \<Delta>" using goal2 by auto
         with False  `?LHS \<sqsubseteq> ?RHS`
         show ?thesis by (auto simp add: lookup_HSem_other lookup_HSem_heap monofun_cfun_arg)
       qed
@@ -187,13 +187,13 @@ subsubsection {* Re-calculating the semantics of the heap is idempotent *}
 subsubsection {* Iterative definition of the heap semantics *}
 
   lemma iterative_HSem:
-    assumes "x \<notin> heapVars \<Gamma>"
-    shows "\<lbrace>(x,e) # \<Gamma>\<rbrace>\<rho> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
+    assumes "x \<notin> domA \<Gamma>"
+    shows "\<lbrace>(x,e) # \<Gamma>\<rbrace>\<rho> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>domA \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
   proof-
     interpret iterative
       where e1 =  "\<Lambda> \<rho>'. heapToEnv \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)"
       and e2 = "\<Lambda> \<rho>'. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>"
-      and S = "heapVars \<Gamma>"
+      and S = "domA \<Gamma>"
       and x = x
       apply -
       apply unfold_locales
@@ -204,33 +204,33 @@ subsubsection {* Iterative definition of the heap semantics *}
       by (simp add: HSem_def' fmap_add_upd ne)
     also have "\<dots> = fix \<cdot> R"
       by (rule iterative_fmap_add)
-    also have "\<dots> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
+    also have "\<dots> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>domA \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
       by (simp add: HSem_def')
     finally show ?thesis.
   qed
 
   lemma iterative_HSem':
-    assumes "x \<notin> heapVars \<Gamma>"
-    shows "(\<mu> \<rho>'. (\<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))
-         = (\<mu> \<rho>'. (\<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>'\<^esub>))"
+    assumes "x \<notin> domA \<Gamma>"
+    shows "(\<mu> \<rho>'. (\<rho> f++\<^bsub>domA \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))
+         = (\<mu> \<rho>'. (\<rho> f++\<^bsub>domA \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>'\<^esub>))"
   proof-
     interpret iterative
       where e1 =  "\<Lambda> \<rho>'. heapToEnv \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)"
       and e2 = "\<Lambda> \<rho>'. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>"
-      and S = "heapVars \<Gamma>"
+      and S = "domA \<Gamma>"
       and x = x
       apply -
       apply unfold_locales
       using assms
       by (simp_all)
 
-    have "(\<mu> \<rho>'. (\<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)) = fix \<cdot> R"
+    have "(\<mu> \<rho>'. (\<rho> f++\<^bsub>domA \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)) = fix \<cdot> R"
       by (simp add: HSem_def')
     also have "\<dots> = fix \<cdot> L"
       by (rule iterative_fmap_add[symmetric])
     also have "\<dots> = fix \<cdot> R'"
       by (rule iterative_fmap_add')
-    also have "\<dots> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>heapVars \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>'\<^esub>))"
+    also have "\<dots> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>domA \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>'\<^esub>))"
       by (simp add: HSem_def')
     finally
     show ?thesis.
@@ -262,7 +262,7 @@ context  has_ESem
 begin
   lemma HSem_ignores_fresh_restr':
     assumes "fv \<Gamma> \<subseteq> S"
-    assumes "\<And> x \<rho>. x \<in> heapVars \<Gamma> \<Longrightarrow> \<lbrakk> the (map_of \<Gamma> x) \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> the (map_of \<Gamma> x) \<rbrakk>\<^bsub>\<rho> f|` (fv (the (map_of \<Gamma> x)))\<^esub>"
+    assumes "\<And> x \<rho>. x \<in> domA \<Gamma> \<Longrightarrow> \<lbrakk> the (map_of \<Gamma> x) \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> the (map_of \<Gamma> x) \<rbrakk>\<^bsub>\<rho> f|` (fv (the (map_of \<Gamma> x)))\<^esub>"
     shows "(\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` S = \<lbrace>\<Gamma>\<rbrace>\<rho> f|` S"
   proof(induction rule: parallel_HSem_ind[case_names adm base step])
     case adm thus ?case by simp
@@ -274,18 +274,18 @@ begin
     have "heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>y\<^esub>) = heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>z\<^esub>)"
     proof(rule heapToEnv_cong')
       fix x
-      assume "x \<in> heapVars \<Gamma>"
+      assume "x \<in> domA \<Gamma>"
       hence "fv (the (map_of \<Gamma> x)) \<subseteq> fv \<Gamma>" by (rule map_of_fv_subset)
       with assms(1)
       have "fv (the (map_of \<Gamma> x)) \<inter> S = fv (the (map_of \<Gamma> x))" by auto
       with step
       have "y f|` fv (the (map_of \<Gamma> x)) = z f|` fv (the (map_of \<Gamma> x))" by auto
-      with `x \<in> heapVars \<Gamma>`
+      with `x \<in> domA \<Gamma>`
       show "\<lbrakk> the (map_of \<Gamma> x) \<rbrakk>\<^bsub>y\<^esub> = \<lbrakk> the (map_of \<Gamma> x) \<rbrakk>\<^bsub>z\<^esub>"
-        by (subst (1 2) assms(2)[OF `x \<in> heapVars \<Gamma>`]) simp
+        by (subst (1 2) assms(2)[OF `x \<in> domA \<Gamma>`]) simp
     qed
     moreover
-    have "heapVars \<Gamma> \<subseteq> S" using heapVars_fv_subset assms(1) by auto
+    have "domA \<Gamma> \<subseteq> S" using domA_fv_subset assms(1) by auto
     ultimately
     show ?case by (simp add: fmap_restr_add fmap_restr_heapToEnv_noop)
   qed
@@ -344,7 +344,7 @@ begin
   qed
 
   lemma HSem_fresh_cong_below:
-    assumes "\<rho> f|` ((S \<union> fv \<Gamma>) - heapVars \<Gamma>) \<sqsubseteq> \<rho>' f|` ((S \<union> fv \<Gamma>) - heapVars \<Gamma>)"
+    assumes "\<rho> f|` ((S \<union> fv \<Gamma>) - domA \<Gamma>) \<sqsubseteq> \<rho>' f|` ((S \<union> fv \<Gamma>) - domA \<Gamma>)"
     shows "(\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` S \<sqsubseteq> (\<lbrace>\<Gamma>\<rbrace>\<rho>') f|` S"
   proof-
     from assms
@@ -357,7 +357,7 @@ begin
   qed
 
   lemma HSem_fresh_cong:
-    assumes "\<rho> f|` ((S \<union> fv \<Gamma>) - heapVars \<Gamma>) = \<rho>' f|` ((S \<union> fv \<Gamma>) - heapVars \<Gamma>)"
+    assumes "\<rho> f|` ((S \<union> fv \<Gamma>) - domA \<Gamma>) = \<rho>' f|` ((S \<union> fv \<Gamma>) - domA \<Gamma>)"
     shows "(\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` S = (\<lbrace>\<Gamma>\<rbrace>\<rho>') f|` S"
   apply (rule below_antisym)
   apply (rule HSem_fresh_cong_below[OF eq_imp_below[OF assms]])
@@ -377,7 +377,7 @@ subsubsection {* Adding a fresh variable to a heap does not affect its semantics
   case (goal3 y z)
     have "fmap_delete x \<rho> = \<rho>" using `x \<notin> fdom \<rho>` by (rule fmap_delete_noop)
     moreover
-    from fresh have "x \<notin> heapVars \<Gamma>" by (metis heapVars_not_fresh)
+    from fresh have "x \<notin> domA \<Gamma>" by (metis domA_not_fresh)
     hence "fmap_delete x (heapToEnv ((x, e) # \<Gamma>) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>y\<^esub>)) = heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>y\<^esub>)"
       by (auto intro: fmap_delete_noop dest:  set_mp[OF fdom_heapToEnv_subset])
    moreover
@@ -386,7 +386,7 @@ subsubsection {* Adding a fresh variable to a heap does not affect its semantics
       apply (subst (1) step, assumption)
       using goal3(1) by auto
     ultimately
-    show ?case using `x \<notin> heapVars \<Gamma>`
+    show ?case using `x \<notin> domA \<Gamma>`
       by (simp add: fmap_delete_add)
   qed
 
@@ -407,48 +407,48 @@ subsubsection {* Adding a fresh variable to a heap does not affect its semantics
 subsubsection {* Binding more variables increases knowledge *}
 
   lemma HSem_subset_below:
-    assumes fresh: "atom ` heapVars \<Gamma> \<sharp>* \<Delta>" 
-    shows "\<lbrace>\<Delta>\<rbrace>(\<rho> f|` (- heapVars \<Gamma>)) \<sqsubseteq> (\<lbrace>\<Delta>@\<Gamma>\<rbrace>\<rho>)  f|` (- heapVars \<Gamma>)"
+    assumes fresh: "atom ` domA \<Gamma> \<sharp>* \<Delta>" 
+    shows "\<lbrace>\<Delta>\<rbrace>(\<rho> f|` (- domA \<Gamma>)) \<sqsubseteq> (\<lbrace>\<Delta>@\<Gamma>\<rbrace>\<rho>)  f|` (- domA \<Gamma>)"
   proof(rule HSem_below)
     fix x
-    assume [simp]: "x \<in> heapVars \<Delta>"
-    with assms have *: "atom ` heapVars \<Gamma> \<sharp>* the (map_of \<Delta> x)" by (metis fresh_star_map_of)
-    hence [simp]: "x \<notin> heapVars \<Gamma>" using fresh `x \<in> heapVars \<Delta>` by (metis fresh_star_def heapVars_not_fresh image_eqI)
-    show "\<lbrakk> the (map_of \<Delta> x) \<rbrakk>\<^bsub>(\<lbrace>\<Delta> @ \<Gamma>\<rbrace>\<rho>) f|` (- heapVars \<Gamma>)\<^esub> \<sqsubseteq> ((\<lbrace>\<Delta> @ \<Gamma>\<rbrace>\<rho>) f|` (- heapVars \<Gamma>)) x"
+    assume [simp]: "x \<in> domA \<Delta>"
+    with assms have *: "atom ` domA \<Gamma> \<sharp>* the (map_of \<Delta> x)" by (metis fresh_star_map_of)
+    hence [simp]: "x \<notin> domA \<Gamma>" using fresh `x \<in> domA \<Delta>` by (metis fresh_star_def domA_not_fresh image_eqI)
+    show "\<lbrakk> the (map_of \<Delta> x) \<rbrakk>\<^bsub>(\<lbrace>\<Delta> @ \<Gamma>\<rbrace>\<rho>) f|` (- domA \<Gamma>)\<^esub> \<sqsubseteq> ((\<lbrace>\<Delta> @ \<Gamma>\<rbrace>\<rho>) f|` (- domA \<Gamma>)) x"
       by (simp add: lookup_HSem_heap ESem_ignores_fresh_restr[OF *, symmetric])
    qed (simp add: lookup_HSem_other lookup_fmap_restr_eq)
 
   subsubsection {* Additional, fresh bindings in one or two steps *}  
 
   lemma HSem_merge:
-    assumes fresh: "atom ` heapVars \<Gamma> \<sharp>* \<Delta>"
+    assumes fresh: "atom ` domA \<Gamma> \<sharp>* \<Delta>"
     shows "\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho> = \<lbrace>\<Gamma>@\<Delta>\<rbrace>\<rho>"
   proof(rule below_antisym)
     have map_of_eq: "map_of (\<Delta> @ \<Gamma>) = map_of (\<Gamma> @ \<Delta>)"
     proof
       fix x
       show "map_of (\<Delta> @ \<Gamma>) x = map_of (\<Gamma> @ \<Delta>) x"
-      proof (cases "x \<in> heapVars \<Gamma>")
+      proof (cases "x \<in> domA \<Gamma>")
         case True
-        hence "x \<notin> heapVars \<Delta>" by (metis fresh_distinct fresh IntI equals0D)
+        hence "x \<notin> domA \<Delta>" by (metis fresh_distinct fresh IntI equals0D)
         thus "map_of (\<Delta> @ \<Gamma>) x = map_of (\<Gamma> @ \<Delta>) x"
-          by (simp add: map_add_dom_app_simps dom_map_of_conv_heapVars)
+          by (simp add: map_add_dom_app_simps dom_map_of_conv_domA)
       next
         case False
         thus "map_of (\<Delta> @ \<Gamma>) x = map_of (\<Gamma> @ \<Delta>) x"
-          by (simp add: map_add_dom_app_simps dom_map_of_conv_heapVars)
+          by (simp add: map_add_dom_app_simps dom_map_of_conv_domA)
       qed
     qed
 
     show "\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho> \<sqsubseteq> \<lbrace>\<Gamma>@\<Delta>\<rbrace>\<rho>"
     proof(rule HSem_below)
       fix x
-      assume [simp]:"x \<notin> heapVars \<Gamma>"
+      assume [simp]:"x \<notin> domA \<Gamma>"
 
-      have "(\<lbrace>\<Delta>\<rbrace>\<rho>) x = ((\<lbrace>\<Delta>\<rbrace>\<rho>) f|` (- heapVars \<Gamma>)) x" by simp
-      also have "\<dots> = (\<lbrace>\<Delta>\<rbrace>(\<rho> f|` (- heapVars \<Gamma>))) x"
+      have "(\<lbrace>\<Delta>\<rbrace>\<rho>) x = ((\<lbrace>\<Delta>\<rbrace>\<rho>) f|` (- domA \<Gamma>)) x" by simp
+      also have "\<dots> = (\<lbrace>\<Delta>\<rbrace>(\<rho> f|` (- domA \<Gamma>))) x"
         by (rule arg_cong[OF HSem_ignores_fresh_restr[OF fresh]])
-      also have "\<dots> \<sqsubseteq> ((\<lbrace>\<Delta>@\<Gamma>\<rbrace>\<rho>)  f|` (- heapVars \<Gamma>)) x"
+      also have "\<dots> \<sqsubseteq> ((\<lbrace>\<Delta>@\<Gamma>\<rbrace>\<rho>)  f|` (- domA \<Gamma>)) x"
         by (rule fun_belowD[OF HSem_subset_below[OF fresh]] )
       also have "\<dots> = (\<lbrace>\<Delta>@\<Gamma>\<rbrace>\<rho>) x" by simp
       also have "\<dots> = (\<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>) x" by (rule arg_cong[OF HSem_reorder[OF map_of_eq]])
@@ -456,20 +456,20 @@ subsubsection {* Binding more variables increases knowledge *}
       show "(\<lbrace>\<Delta>\<rbrace>\<rho>) x \<sqsubseteq> (\<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>) x".
     qed (auto simp add: lookup_HSem_heap lookup_fmap_restr_eq)
 
-     have *: "\<And> x. x \<in> heapVars \<Delta> \<Longrightarrow> x \<notin> heapVars \<Gamma>"
-      using fresh by (auto simp add: fresh_Pair fresh_star_def heapVars_not_fresh)
+     have *: "\<And> x. x \<in> domA \<Delta> \<Longrightarrow> x \<notin> domA \<Gamma>"
+      using fresh by (auto simp add: fresh_Pair fresh_star_def domA_not_fresh)
 
-    have foo: "fdom \<rho> \<union> heapVars \<Delta> \<union> heapVars \<Gamma> - (fdom \<rho> \<union> heapVars \<Delta> \<union> heapVars \<Gamma>) \<inter> - heapVars \<Gamma> = heapVars \<Gamma>" by auto
-    have foo2:"(fdom \<rho> \<union> heapVars \<Delta> - (fdom \<rho> \<union> heapVars \<Delta>) \<inter> - heapVars \<Gamma>) \<subseteq> heapVars \<Gamma>" by auto
+    have foo: "fdom \<rho> \<union> domA \<Delta> \<union> domA \<Gamma> - (fdom \<rho> \<union> domA \<Delta> \<union> domA \<Gamma>) \<inter> - domA \<Gamma> = domA \<Gamma>" by auto
+    have foo2:"(fdom \<rho> \<union> domA \<Delta> - (fdom \<rho> \<union> domA \<Delta>) \<inter> - domA \<Gamma>) \<subseteq> domA \<Gamma>" by auto
 
     { fix x
-      assume "x \<in> heapVars \<Delta>"
-      hence *: "atom ` heapVars \<Gamma> \<sharp>* the (map_of \<Delta> x)"
+      assume "x \<in> domA \<Delta>"
+      hence *: "atom ` domA \<Gamma> \<sharp>* the (map_of \<Delta> x)"
         by (rule  fresh_star_map_of[OF _ fresh])
 
-      have "\<lbrakk> the (map_of \<Delta> x) \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub> = \<lbrakk> the (map_of \<Delta> x) \<rbrakk>\<^bsub>(\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>) f|` (- heapVars \<Gamma>)\<^esub>"
+      have "\<lbrakk> the (map_of \<Delta> x) \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub> = \<lbrakk> the (map_of \<Delta> x) \<rbrakk>\<^bsub>(\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>) f|` (- domA \<Gamma>)\<^esub>"
         by (rule ESem_ignores_fresh_restr[OF *])
-      also have "(\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>) f|` (- heapVars \<Gamma>) = (\<lbrace>\<Delta>\<rbrace>\<rho>) f|` (- heapVars \<Gamma>)"
+      also have "(\<lbrace>\<Gamma>\<rbrace>\<lbrace>\<Delta>\<rbrace>\<rho>) f|` (- domA \<Gamma>) = (\<lbrace>\<Delta>\<rbrace>\<rho>) f|` (- domA \<Gamma>)"
         by (simp add: fmap_restr_HSem)
       also have "\<lbrakk> the (map_of \<Delta> x) \<rbrakk>\<^bsub>\<dots>\<^esub> = \<lbrakk> the (map_of \<Delta> x) \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>"
         by (rule ESem_ignores_fresh_restr[symmetric, OF *])
@@ -504,7 +504,7 @@ end
 lemma parallel_HSem_ind_different_ESem:
   assumes "adm (\<lambda>\<rho>'. P (fst \<rho>') (snd \<rho>'))"
   assumes "P \<bottom> \<bottom>"
-  assumes "\<And>y z. P y z \<Longrightarrow> P (\<rho> f++\<^bsub>heapVars h\<^esub> heapToEnv h (\<lambda>e. ESem1 e $ y)) (\<rho>2 f++\<^bsub>heapVars h2\<^esub> heapToEnv h2 (\<lambda>e. ESem2 e $ z))"
+  assumes "\<And>y z. P y z \<Longrightarrow> P (\<rho> f++\<^bsub>domA h\<^esub> heapToEnv h (\<lambda>e. ESem1 e $ y)) (\<rho>2 f++\<^bsub>domA h2\<^esub> heapToEnv h2 (\<lambda>e. ESem2 e $ z))"
   shows "P (has_ESem.HSem ESem1 h\<cdot>\<rho>) (has_ESem.HSem ESem2 h2\<cdot>\<rho>2)"
 proof-
   interpret HSem1: has_ESem ESem1.

@@ -1,6 +1,15 @@
 theory Unused 
-imports CValue  "HOLCF-Meet-Classes"
+imports CValue  "HOLCF-Meet-Classes" DistinctVars
 begin
+
+
+lemma the_map_of_snd:
+  "x\<in> domA \<Gamma> \<Longrightarrow> the (map_of \<Gamma> x) \<in> snd ` set \<Gamma>"
+  by (induct \<Gamma>, auto)
+
+lemma delete_no_there:
+  "x \<notin> domA \<Gamma> \<Longrightarrow> delete x \<Gamma> = \<Gamma>"
+  by (induct \<Gamma>, auto)
 
 
 fixrec CValue'_meet :: "CValue' \<rightarrow> CValue' \<rightarrow> CValue'"

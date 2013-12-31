@@ -4,8 +4,8 @@ begin
 
 subsubsection {* Freshness lemmas related to associative lists *}
 
-lemma heapVars_not_fresh:
-  "x \<in> heapVars \<Gamma> \<Longrightarrow> \<not>(atom x \<sharp> \<Gamma>)"
+lemma domA_not_fresh:
+  "x \<in> domA \<Gamma> \<Longrightarrow> \<not>(atom x \<sharp> \<Gamma>)"
   by (induct \<Gamma>, auto simp add: fresh_Cons fresh_Pair)
 
 lemma fresh_delete:
@@ -70,47 +70,47 @@ lemma fresh_star_heap_expr':
   by (metis fresh_star_def fresh_heap_expr')
 
 lemma fresh_map_of:
-  assumes "x \<in> heapVars \<Gamma>"
+  assumes "x \<in> domA \<Gamma>"
   assumes "a \<sharp> \<Gamma>"
   shows "a \<sharp> the (map_of \<Gamma> x)"
   using assms
   by (induct \<Gamma>)(auto simp add: fresh_Cons fresh_Pair)
 
 lemma fresh_star_map_of:
-  assumes "x \<in> heapVars \<Gamma>"
+  assumes "x \<in> domA \<Gamma>"
   assumes "a \<sharp>* \<Gamma>"
   shows "a \<sharp>* the (map_of \<Gamma> x)"
   using assms by (simp add: fresh_star_def fresh_map_of)
 
-lemma heapVars_fv_subset: "heapVars \<Gamma> \<subseteq> fv \<Gamma>"
+lemma domA_fv_subset: "domA \<Gamma> \<subseteq> fv \<Gamma>"
   by (induction \<Gamma>) auto
 
-lemma map_of_fv_subset: "x \<in> heapVars \<Gamma> \<Longrightarrow> fv (the (map_of \<Gamma> x)) \<subseteq> fv \<Gamma>"
+lemma map_of_fv_subset: "x \<in> domA \<Gamma> \<Longrightarrow> fv (the (map_of \<Gamma> x)) \<subseteq> fv \<Gamma>"
   by (induction \<Gamma>) auto
 
 subsubsection {* Equivariance lemmas *}
 
-lemma heapVars[eqvt]:
-  "\<pi> \<bullet> heapVars \<Gamma> = heapVars (\<pi> \<bullet> \<Gamma>)"
-  by (simp add: heapVars_def)
+lemma domA[eqvt]:
+  "\<pi> \<bullet> domA \<Gamma> = domA (\<pi> \<bullet> \<Gamma>)"
+  by (simp add: domA_def)
 
 subsubsection {* Freshness and distinctness *}
 
 lemma fresh_distinct:
  assumes "atom ` S \<sharp>* \<Gamma>"
- shows "S \<inter> heapVars \<Gamma> = {}"
+ shows "S \<inter> domA \<Gamma> = {}"
 proof-
   { fix x
     assume "x \<in> S"
     moreover
-    assume "x \<in> heapVars \<Gamma>"
+    assume "x \<in> domA \<Gamma>"
     hence "atom x \<in> supp \<Gamma>"
-      by (induct \<Gamma>)(auto simp add: supp_Cons heapVars_def supp_Pair supp_at_base)
+      by (induct \<Gamma>)(auto simp add: supp_Cons domA_def supp_Pair supp_at_base)
     ultimately
     have False
       using assms
       by (simp add: fresh_star_def fresh_def)
   }
-  thus "S \<inter> heapVars \<Gamma> = {}" by auto
+  thus "S \<inter> domA \<Gamma> = {}" by auto
 qed
 end

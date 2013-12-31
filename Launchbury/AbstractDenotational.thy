@@ -80,7 +80,7 @@ case (goal13 as body as' body')
 
   from this(1)
   have *: "supp p \<sharp>* (fv (Terms.Let as' body') :: var set)"
-    by (auto simp add: fresh_star_def fresh_def supp_finite_set_at_base supp_Pair fv_supp_exp fv_supp_as set_bn_to_atom_heapVars)
+    by (auto simp add: fresh_star_def fresh_def supp_finite_set_at_base supp_Pair fv_supp_exp fv_supp_as set_bn_to_atom_domA)
 
   { fix \<rho>
   have "ESem_sumC body \<cdot> (has_ESem.HSem ESem_sumC (asToHeap as) \<cdot> (\<rho> f|` fv (Let as body)))

@@ -29,7 +29,7 @@ next
   hence "(\<lbrace>asToHeap as\<rbrace>\<rho>) f|` (fv as \<union> fv e) = \<lbrace>asToHeap as\<rbrace>(\<rho> f|` (fv as \<union> fv e))"
      by (rule HSem_ignores_fresh_restr'[OF _ Let(1)])
   also
-  have "\<lbrace>asToHeap as\<rbrace>(\<rho> f|` (fv as \<union> fv e)) = \<lbrace>asToHeap as\<rbrace>\<rho> f|` (fv as \<union> fv e - heapVars (asToHeap as))"
+  have "\<lbrace>asToHeap as\<rbrace>(\<rho> f|` (fv as \<union> fv e)) = \<lbrace>asToHeap as\<rbrace>\<rho> f|` (fv as \<union> fv e - domA (asToHeap as))"
     by (rule HSem_restr_cong) (auto simp add: lookup_fmap_restr_eq)
   finally
   show ?case by simp
@@ -88,14 +88,14 @@ case App
 next
 case (Let as exp x y \<rho>)
   from `set (bn as) \<sharp>* x` `set (bn as) \<sharp>* y` 
-  have "x \<notin> heapVars (asToHeap as)" "y \<notin> heapVars (asToHeap as)"
+  have "x \<notin> domA (asToHeap as)" "y \<notin> domA (asToHeap as)"
     by (induct as rule: exp_assn.bn_inducts, auto simp add: exp_assn.bn_defs fresh_star_insert)
-  hence [simp]:"heapVars (asToHeap (as[x::a=y])) = heapVars (asToHeap as)" 
+  hence [simp]:"domA (asToHeap (as[x::a=y])) = domA (asToHeap as)" 
      by (induct as rule: exp_assn.bn_inducts, auto)
 
   from `\<rho> x = \<rho> y`
   have "(\<lbrace>asToHeap as\<rbrace>\<rho>) x = (\<lbrace>asToHeap as\<rbrace>\<rho>) y"
-    using `x \<notin> heapVars (asToHeap as)` `y \<notin> heapVars (asToHeap as)`
+    using `x \<notin> domA (asToHeap as)` `y \<notin> domA (asToHeap as)`
     by (simp add: lookup_HSem_other)
   hence "\<lbrakk>exp\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub> = \<lbrakk>exp[x::=y]\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub>"
     by (rule Let)
@@ -108,7 +108,7 @@ case (Let as exp x y \<rho>)
     apply simp
     apply simp
     apply (erule arg_cong[OF Let(3)])
-    using `x \<notin> heapVars (asToHeap as)` `y \<notin> heapVars (asToHeap as)`
+    using `x \<notin> domA (asToHeap as)` `y \<notin> domA (asToHeap as)`
     apply simp
     done
   ultimately

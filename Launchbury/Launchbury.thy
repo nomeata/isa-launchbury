@@ -89,22 +89,22 @@ Heap entries are never removed.
 *}
 
 lemma reds_doesnt_forget:
-  "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> heapVars \<Gamma> \<subseteq> heapVars \<Delta>"
+  "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> domA \<Gamma> \<subseteq> domA \<Delta>"
 proof(induct rule: reds.induct)
 case(Variable \<Gamma> v e L \<Delta> z)
   show ?case
   proof
     fix x
-    assume "x \<in> heapVars \<Gamma>"
-    show "x \<in> heapVars ((v, z) # \<Delta>)"
+    assume "x \<in> domA \<Gamma>"
+    show "x \<in> domA ((v, z) # \<Delta>)"
     proof(cases "x = v")
     case True 
       thus ?thesis by simp
     next
     case False
-      with `x \<in> heapVars \<Gamma>`
-      have "x \<in> heapVars (delete v \<Gamma>)" by simp
-      hence "x \<in> heapVars \<Delta>" using Variable.hyps(3) by auto
+      with `x \<in> domA \<Gamma>`
+      have "x \<in> domA (delete v \<Gamma>)" by simp
+      hence "x \<in> domA \<Delta>" using Variable.hyps(3) by auto
       thus ?thesis by simp
     qed
   qed
@@ -117,35 +117,35 @@ Live variables are not added to the heap.
 lemma reds_avoids_live:
   "\<lbrakk> \<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z;
    x \<in> set L;
-   x \<notin> heapVars \<Gamma>
-  \<rbrakk> \<Longrightarrow> x \<notin> heapVars \<Delta>"
+   x \<notin> domA \<Gamma>
+  \<rbrakk> \<Longrightarrow> x \<notin> domA \<Delta>"
 proof(induct rule:reds.induct)
 case (Lambda \<Gamma> x e L) thus ?case by auto
 next
 case (Application y \<Gamma> e x L \<Delta> \<Theta> z e') thus ?case by auto
 next
 case (Variable \<Gamma> x e L \<Delta> z)
-   from Variable(1) have "x \<in> heapVars \<Gamma>" by (metis heapVars_from_set map_of_is_SomeD)
+   from Variable(1) have "x \<in> domA \<Gamma>" by (metis domA_from_set map_of_is_SomeD)
    with Variable
    show ?case by auto
 next
 case (Let as \<Gamma> L body \<Delta> z)
-  have "x \<notin> heapVars \<Gamma>" by fact moreover
+  have "x \<notin> domA \<Gamma>" by fact moreover
   have "set (bn as) \<sharp>* L" using `set (bn as) \<sharp>* (\<Gamma>, L)` by (simp add: fresh_star_Pair)
-  hence "x \<notin> heapVars (asToHeap as)"
+  hence "x \<notin> domA (asToHeap as)"
     using `x \<in> set L`
     apply -
     apply (induct as rule: asToHeap.induct)
     apply (auto simp add: exp_assn.bn_defs fresh_star_insert fresh_star_Pair)
     by (metis finite_set fresh_finite_set_at_base fresh_set)  ultimately
-  have "x \<notin> heapVars (asToHeap as @ \<Gamma>)" by auto  
+  have "x \<notin> domA (asToHeap as @ \<Gamma>)" by auto  
   thus ?case
     by (rule Let.hyps(3)[OF `x \<in> set L`])
 qed
 
 lemma reds_avoids_live':
  assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
- shows "set L \<subseteq> - (heapVars \<Delta> - heapVars \<Gamma>)"
+ shows "set L \<subseteq> - (domA \<Delta> - domA \<Gamma>)"
 using reds_avoids_live[OF assms] by auto
 
 text {*
@@ -154,12 +154,12 @@ Fresh variables either stay fresh or are added to the heap.
 
 lemma reds_fresh:" \<lbrakk> \<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z;
    atom (x::var) \<sharp> (\<Gamma>, e)
-  \<rbrakk> \<Longrightarrow> atom x \<sharp> (\<Delta>, z) \<or> x \<in> (heapVars \<Delta> - set L)"
+  \<rbrakk> \<Longrightarrow> atom x \<sharp> (\<Delta>, z) \<or> x \<in> (domA \<Delta> - set L)"
 proof(induct rule: reds.induct)
 case (Lambda \<Gamma> x e) thus ?case by auto
 next
 case (Application y \<Gamma> e x' L \<Delta> \<Theta> z e')
-  hence "atom x \<sharp> (\<Delta>, Lam [y]. e') \<or> x \<in> heapVars \<Delta> - set (x' # L)" by (auto simp add: fresh_Pair)
+  hence "atom x \<sharp> (\<Delta>, Lam [y]. e') \<or> x \<in> domA \<Delta> - set (x' # L)" by (auto simp add: fresh_Pair)
 
   thus ?case
   proof
@@ -179,7 +179,7 @@ case (Application y \<Gamma> e x' L \<Delta> \<Theta> z e')
       thus ?thesis using Application.hyps(5) `atom x \<sharp> (\<Delta>, Lam [y]. e')` by auto
     qed
   next
-    assume "x \<in> heapVars \<Delta>  - set (x' # L)"
+    assume "x \<in> domA \<Delta>  - set (x' # L)"
     thus ?thesis using reds_doesnt_forget[OF Application.hyps(4)] by auto
   qed
 next
@@ -189,12 +189,12 @@ case(Variable \<Gamma> v e L \<Delta> z)
   from fresh_delete[OF this(1)]
   have "atom x \<sharp> delete v \<Gamma>".
   moreover
-  have "v \<in> heapVars \<Gamma>" using Variable.hyps(1) by (metis heapVars_from_set map_of_is_SomeD)
+  have "v \<in> domA \<Gamma>" using Variable.hyps(1) by (metis domA_from_set map_of_is_SomeD)
   from fresh_map_of[OF this  `atom x \<sharp> \<Gamma>`]
   have "atom x \<sharp> the (map_of \<Gamma> v)".
   hence "atom x \<sharp> e" using `map_of \<Gamma> v = Some e` by simp
   ultimately
-  have "atom x \<sharp> (\<Delta>, z) \<or> x \<in> heapVars \<Delta> - set (v # L)"  using Variable.hyps(3) by (auto simp add: fresh_Pair)
+  have "atom x \<sharp> (\<Delta>, z) \<or> x \<in> domA \<Delta> - set (v # L)"  using Variable.hyps(3) by (auto simp add: fresh_Pair)
   thus ?case using `atom x \<sharp> v` by (auto simp add: fresh_Pair fresh_Cons fresh_at_base)
 next
 
@@ -209,7 +209,7 @@ case (Let as \<Gamma> L body \<Delta> z)
         by (auto simp add: fresh_Pair fresh_append fresh_fun_eqvt_app[OF asToHeap_eqvt])
     next
     case True
-      hence "x \<in> heapVars (asToHeap as)" 
+      hence "x \<in> domA (asToHeap as)" 
         by(induct as rule:asToHeap.induct)(auto simp add: exp_assn.bn_defs)      
       moreover
       have "x \<notin> set L"
@@ -222,7 +222,7 @@ case (Let as \<Gamma> L body \<Delta> z)
 qed
 
 lemma reds_fresh_fv: "\<lbrakk> \<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z;
-   x \<in> fv (\<Delta>, z) \<and> (x \<notin> heapVars \<Delta> \<or>  x \<in> set L)
+   x \<in> fv (\<Delta>, z) \<and> (x \<notin> domA \<Delta> \<or>  x \<in> set L)
   \<rbrakk> \<Longrightarrow> x \<in> fv (\<Gamma>, e)"
 using reds_fresh
 unfolding fv_def fresh_def
@@ -230,17 +230,17 @@ by blast
 
 lemma new_vars_not_free:
   assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
-  assumes "x \<in> heapVars \<Delta>"
+  assumes "x \<in> domA \<Delta>"
   assumes "x \<in> set L"
   shows "x \<in> fv (\<Gamma>, e)"
   apply (rule reds_fresh_fv[OF assms(1)])
   using assms(2,3)
-  apply (auto dest: set_mp[OF heapVars_fv_subset])
+  apply (auto dest: set_mp[OF domA_fv_subset])
   done
 
 lemma new_free_vars_on_heap:
   assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
-  shows "fv (\<Delta>, z) - heapVars \<Delta> \<subseteq> fv (\<Gamma>, e) - heapVars \<Gamma>"
+  shows "fv (\<Delta>, z) - domA \<Delta> \<subseteq> fv (\<Gamma>, e) - domA \<Gamma>"
 using reds_fresh_fv[OF assms(1)] reds_doesnt_forget[OF assms(1)] by auto
 
 text {*

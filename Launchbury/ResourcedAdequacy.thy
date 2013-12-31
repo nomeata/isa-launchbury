@@ -67,7 +67,7 @@ next
     apply simp
     apply (rule ext)
     apply (subst (1 3) fmap_C_restr_lookup)
-    apply (case_tac "x \<in> heapVars (asToHeap as)")
+    apply (case_tac "x \<in> domA (asToHeap as)")
     apply (simp add: lookupHeapToEnv del: fmap_C_restr_lookup)
     apply (subst (1 2) Let(1), assumption)
     apply (drule fmap_restr_eq_Cpred)
@@ -105,7 +105,7 @@ proof-
   have [simp]: "the (map_of \<Gamma> x) = e" by (metis the.simps)
 
   from assms(1)
-  have [simp]: "x \<in> heapVars \<Gamma>" by (metis domIff dom_map_of_conv_heapVars not_Some_eq)
+  have [simp]: "x \<in> domA \<Gamma>" by (metis domIff dom_map_of_conv_domA not_Some_eq)
 
   have "fmap_C_restr\<cdot>(Cpred\<cdot>?C)\<cdot>(\<N>\<lbrace>\<Gamma>\<rbrace>) \<sqsubseteq> (\<N>\<lbrace>delete x \<Gamma>\<rbrace>) \<and> \<N>\<lbrace>\<Gamma>\<rbrace> \<sqsubseteq> \<N>\<lbrace>\<Gamma>\<rbrace>"
     apply (rule HSem_ind) back back back back back back back back back
@@ -123,7 +123,7 @@ proof-
     apply (subst C_Cpred_id[OF demand_not_0])
     apply (erule demand_contravariant[OF monofun_cfun_arg])
 
-    apply (case_tac "xa \<in> heapVars \<Gamma>")
+    apply (case_tac "xa \<in> domA \<Gamma>")
     apply (simp add: lookupHeapToEnv lookup_HSem_heap del: app_strict fmap_C_restr_lookup)
     apply (subst (1) fmap_C_restr_lookup)
     apply (simp add: lookupHeapToEnv lookup_HSem_heap del: app_strict fmap_C_restr_lookup)
@@ -189,11 +189,11 @@ next
   case (Var x)
     let ?e = "the (map_of \<Gamma> x)"
     from Suc.prems[unfolded Var]
-    have "x \<in> heapVars \<Gamma>" 
+    have "x \<in> domA \<Gamma>" 
       by (auto intro: ccontr simp add: lookup_HSem_other)
     hence "map_of \<Gamma> x = Some ?e" by (induction \<Gamma>) auto
     moreover
-    from Suc.prems[unfolded Var] `map_of \<Gamma> x = Some ?e` `x \<in> heapVars \<Gamma>`
+    from Suc.prems[unfolded Var] `map_of \<Gamma> x = Some ?e` `x \<in> domA \<Gamma>`
     have "(\<N>\<lbrakk>?e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (auto simp add: lookup_HSem_heap  simp del: app_strict)
     hence "(\<N>\<lbrakk>?e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (rule add_BH[OF `map_of \<Gamma> x = Some ?e`])
     from Suc.IH[OF this]
@@ -218,7 +218,7 @@ next
     with lhs'
     have lhs: "\<Gamma> : e' \<Down>\<^bsub>x # S'\<^esub> \<Delta> : Lam [y]. e''" by simp
 
-    from `atom y \<sharp> _` have "y \<notin> heapVars \<Delta>" by (metis (full_types) fresh_Pair heapVars_not_fresh)
+    from `atom y \<sharp> _` have "y \<notin> domA \<Delta>" by (metis (full_types) fresh_Pair domA_not_fresh)
    
     have "fv (\<Gamma>, e') \<subseteq> set (x # S')" using S' by auto
     from correctness_empty_env[OF lhs this]
@@ -238,7 +238,7 @@ next
     also have "\<dots> \<sqsubseteq> (CFn\<cdot>(\<Lambda> v. \<N>\<lbrakk>e''\<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>)(y := v)\<^esub>) \<down>CFn ((\<N>\<lbrace>\<Delta>\<rbrace>) x))\<cdot>C\<^bsup>n\<^esup>"
       by (rule cont2monofunE[OF _ ESem_Lam_not_bot[OF lam_not_bot]]) simp
     also have "\<dots> = (\<N>\<lbrakk>e''\<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>)(y := ((\<N>\<lbrace>\<Delta>\<rbrace>) x))\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
-      using  `y \<notin> heapVars \<Delta>` by simp
+      using  `y \<notin> domA \<Delta>` by simp
     also have "\<dots> = (\<N>\<lbrakk>e''[y::=x]\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
       apply (rule arg_cong[OF ESem_subst])
       using `atom y \<sharp> _` by (simp_all add: fresh_Pair fresh_at_base)
@@ -265,7 +265,7 @@ next
     also have "\<N>\<lbrace>asToHeap as\<rbrace>\<N>\<lbrace>\<Gamma>\<rbrace> = \<N>\<lbrace>asToHeap as @ \<Gamma>\<rbrace>"
       apply (rule HSem_merge)
       using Let(1)
-      by (auto simp add: fresh_star_Pair set_bn_to_atom_heapVars)
+      by (auto simp add: fresh_star_Pair set_bn_to_atom_domA)
     finally 
     have "(\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>asToHeap as @ \<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>".
     }

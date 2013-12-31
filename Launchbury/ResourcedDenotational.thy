@@ -25,7 +25,7 @@ lemma CESem_bot[simp]:"(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot
   by (nominal_induct e arbitrary: \<sigma> rule: exp_assn.strong_induct(1)) auto
 
 lemma CHSem_bot[simp]:"((\<N>\<lbrace> \<Gamma> \<rbrace>) x)\<cdot>\<bottom> = \<bottom>"
-  by (cases "x \<in> heapVars \<Gamma>") (auto simp add: lookup_HSem_heap lookup_HSem_other)
+  by (cases "x \<in> domA \<Gamma>") (auto simp add: lookup_HSem_heap lookup_HSem_other)
 
 end
 

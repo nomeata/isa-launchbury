@@ -26,8 +26,8 @@ lemma asToHeap_eqvt: "eqvt asToHeap"
   unfolding eqvt_def
   by (auto simp add: permute_fun_def asToHeap.eqvt)
 
-lemma set_bn_to_atom_heapVars:
-  "set (bn as) = atom ` heapVars (asToHeap as)"
+lemma set_bn_to_atom_domA:
+  "set (bn as) = atom ` domA (asToHeap as)"
    apply (induct as rule: asToHeap.induct)
    apply (auto simp add: exp_assn.bn_defs)
    done
@@ -42,7 +42,7 @@ proof-
   have "fv (delete x \<Gamma>) \<subseteq> fv \<Gamma>" by (metis fv_delete_subset)
   moreover
   have "(x,e) \<in> set \<Gamma>" by (metis assms map_of_is_SomeD)
-  hence "fv e \<subseteq> fv \<Gamma>" by (metis assms heapVars_from_set map_of_fv_subset the.simps)
+  hence "fv e \<subseteq> fv \<Gamma>" by (metis assms domA_from_set map_of_fv_subset the.simps)
   moreover
   have "x \<in> fv (Var x)" by simp
   ultimately show ?thesis by auto
@@ -56,8 +56,8 @@ lemma True and fv_asToHeap: "fv (asToHeap as) \<subseteq> fv as"
   apply (auto simp add: fv_def exp_assn.supp supp_Nil supp_at_base supp_Cons supp_Pair)
   by (metis (lifting) mem_Collect_eq set_delete_subset set_supp_mono subsetD)
 
-lemma fv_Let[simp]: "fv (Let as e) = (fv as \<union> fv e) - heapVars (asToHeap as)"
-  unfolding fv_def by (auto simp add: exp_assn.supp supp_at_base set_bn_to_atom_heapVars)
+lemma fv_Let[simp]: "fv (Let as e) = (fv as \<union> fv e) - domA (asToHeap as)"
+  unfolding fv_def by (auto simp add: exp_assn.supp supp_at_base set_bn_to_atom_domA)
 
 lemma fv_ANil[simp]: "fv ANil = {}"
   unfolding fv_def by (auto simp add: exp_assn.supp supp_at_base)
@@ -75,10 +75,10 @@ subsubsection {* Nicer induction rule for expressions *}
 lemma exp_induct[case_names Var App Let Lam]:
   assumes "\<And>var. P (Var var)"
   assumes "\<And>exp var. P exp \<Longrightarrow> P (App exp var)"
-  assumes "\<And>assn exp. (\<And> x. x \<in> heapVars (asToHeap assn) \<Longrightarrow>  P (the (map_of (asToHeap assn) x))) \<Longrightarrow> P exp \<Longrightarrow> P (Let assn exp)"
+  assumes "\<And>assn exp. (\<And> x. x \<in> domA (asToHeap assn) \<Longrightarrow>  P (the (map_of (asToHeap assn) x))) \<Longrightarrow> P exp \<Longrightarrow> P (Let assn exp)"
   assumes "\<And>var exp.  P exp \<Longrightarrow> P (Lam [var]. exp)"
   shows "P  exp"
-  apply (rule exp_assn.inducts(1)[of P "\<lambda> assn. (\<forall>x \<in> heapVars (asToHeap assn). P (the (map_of (asToHeap assn) x)))"])
+  apply (rule exp_assn.inducts(1)[of P "\<lambda> assn. (\<forall>x \<in> domA (asToHeap assn). P (the (map_of (asToHeap assn) x)))"])
   apply (metis assms(1))
   apply (metis assms(2))
   apply (metis assms(3))
@@ -90,10 +90,10 @@ lemma  exp_strong_induct[case_names Var App Let Lam]:
   assumes "\<And>var c. P c (Var var)"
   assumes "\<And>exp var c. (\<And>c. P c exp) \<Longrightarrow> P c (App exp var)"
   assumes "\<And>assn exp c.
-    set (bn assn) \<sharp>* c \<Longrightarrow> (\<And>c x. x \<in> heapVars (asToHeap assn) \<Longrightarrow>  P c (the (map_of (asToHeap assn) x))) \<Longrightarrow> (\<And>c. P c exp) \<Longrightarrow> P c (Terms.Let assn exp)"
+    set (bn assn) \<sharp>* c \<Longrightarrow> (\<And>c x. x \<in> domA (asToHeap assn) \<Longrightarrow>  P c (the (map_of (asToHeap assn) x))) \<Longrightarrow> (\<And>c. P c exp) \<Longrightarrow> P c (Terms.Let assn exp)"
   assumes "\<And>var exp c. {atom var} \<sharp>* c \<Longrightarrow> (\<And>c. P c exp) \<Longrightarrow> P c (Lam [var]. exp)"
   shows "P (c::'a::fs) exp"
-  apply (rule exp_assn.strong_induct(1)[of P "\<lambda> c assn. (\<forall>x \<in> heapVars (asToHeap assn). P c (the (map_of (asToHeap assn) x)))"])
+  apply (rule exp_assn.strong_induct(1)[of P "\<lambda> c assn. (\<forall>x \<in> domA (asToHeap assn). P c (the (map_of (asToHeap assn) x)))"])
   apply (metis assms(1))
   apply (metis assms(2))
   apply (metis assms(3))

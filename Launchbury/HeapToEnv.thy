@@ -19,7 +19,7 @@ lemma heapToEnv_eqvt[eqvt]:
   "\<pi> \<bullet> heapToEnv h eval = heapToEnv (\<pi> \<bullet> h) (\<pi> \<bullet> eval)"
   by (induct h eval rule:heapToEnv.induct) (auto simp add:fun_upd_eqvt  simp del: fun_upd_apply)
 
-lemma fdom_heapToEnv_subset:"fdom (heapToEnv h eval) \<subseteq> heapVars h"
+lemma fdom_heapToEnv_subset:"fdom (heapToEnv h eval) \<subseteq> domA h"
   by (induct h eval rule:heapToEnv.induct) (auto dest:set_mp[OF fdom_fun_upd_subset] simp del: fun_upd_apply)
 
 lemma heapToEnv_cong[fundef_cong]:
@@ -28,7 +28,7 @@ lemma heapToEnv_cong[fundef_cong]:
  by (induct heap2 eval2 arbitrary:heap1 rule:heapToEnv.induct, auto)
 
 lemma lookupHeapToEnv:
-  assumes "v \<in> heapVars h"
+  assumes "v \<in> domA h"
   shows "(heapToEnv h f) v = f (the (map_of h v))"
   using assms
   apply (induct h)
@@ -38,7 +38,7 @@ lemma lookupHeapToEnv:
   done
 
 lemma lookupHeapToEnv_other[simp]:
-  assumes "v \<notin> heapVars h"
+  assumes "v \<notin> domA h"
   shows "(heapToEnv h f) v = \<bottom>"
   using assms
   apply (induct h)
@@ -49,22 +49,22 @@ lemma lookupHeapToEnv_other[simp]:
 
 
 lemma fmap_restr_heapToEnv_noop:
-  "heapVars h \<subseteq> S \<Longrightarrow> fmap_restr S (heapToEnv h eval) = heapToEnv h eval"
+  "domA h \<subseteq> S \<Longrightarrow> fmap_restr S (heapToEnv h eval) = heapToEnv h eval"
   apply (rule ext)
   apply (case_tac "x \<in> S")
   apply (auto simp add: lookupHeapToEnv intro: lookupHeapToEnv_other)
   done
 
 lemma heapToEnv_cong':
-  "\<lbrakk> (\<And> x. x \<in> heapVars heap \<Longrightarrow> eval1 (the (map_of heap x)) = eval2 (the (map_of heap x))) \<rbrakk>
+  "\<lbrakk> (\<And> x. x \<in> domA heap \<Longrightarrow> eval1 (the (map_of heap x)) = eval2 (the (map_of heap x))) \<rbrakk>
     \<Longrightarrow>  heapToEnv heap eval1 = heapToEnv heap eval2"
  apply (rule ext)
- apply (case_tac "x \<in> heapVars heap")
+ apply (case_tac "x \<in> domA heap")
  apply (auto simp add: lookupHeapToEnv)
  done
 
 lemma lookupHeapToEnvNotAppend[simp]:
-  assumes "x \<notin> heapVars \<Gamma>"
+  assumes "x \<notin> domA \<Gamma>"
   shows "(heapToEnv (\<Gamma>@h) f) x = heapToEnv h f x"
   using assms by (induct \<Gamma>, auto)
 
@@ -72,11 +72,11 @@ lemma heapToEnv_delete[simp]: "heapToEnv (delete x \<Gamma>) eval = fmap_delete 
   by (induct \<Gamma>) auto
 
 lemma heapToEnv_mono:
-  "x \<notin> heapVars \<Gamma> \<Longrightarrow>
+  "x \<notin> domA \<Gamma> \<Longrightarrow>
   heapToEnv \<Gamma> eval \<sqsubseteq> heapToEnv ((x, e) # \<Gamma>) eval"
    apply simp
    apply (rule fun_belowI)
-   apply (case_tac "xa \<in> heapVars \<Gamma>")
+   apply (case_tac "xa \<in> domA \<Gamma>")
    apply (case_tac "xa = x")
    apply auto
    done
@@ -88,12 +88,12 @@ lemma heapToEnv_reorder:
   shows "heapToEnv \<Gamma> h = heapToEnv \<Delta> h"
 proof (rule ext)
   from assms
-  have *: "heapVars \<Gamma> = heapVars \<Delta>" by (metis dom_map_of_conv_heapVars)
+  have *: "domA \<Gamma> = domA \<Delta>" by (metis dom_map_of_conv_domA)
 
   fix x
   show "heapToEnv \<Gamma> h x = heapToEnv \<Delta> h x" 
     using assms(1) *
-    apply (cases "x \<in> heapVars \<Gamma>")
+    apply (cases "x \<in> domA \<Gamma>")
     apply (auto simp add: lookupHeapToEnv)
     done
 qed
@@ -104,9 +104,9 @@ lemma heapToEnv_reorder_head:
   by (rule heapToEnv_reorder) (simp add: fun_upd_twist[OF assms])
 
 lemma heapToEnv_reorder_head_append:
-  assumes "x \<notin> heapVars \<Gamma>"
+  assumes "x \<notin> domA \<Gamma>"
   shows "heapToEnv ((x,e)#\<Gamma>@\<Delta>) eval = heapToEnv (\<Gamma> @ ((x,e)#\<Delta>)) eval"
-  by (rule heapToEnv_reorder) (simp, metis assms dom_map_of_conv_heapVars map_add_upd_left)
+  by (rule heapToEnv_reorder) (simp, metis assms dom_map_of_conv_domA map_add_upd_left)
 
 lemma heapToEnv_subst_exp:
   assumes "eval e = eval e'"
