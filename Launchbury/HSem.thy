@@ -1,5 +1,5 @@
 theory HSem
-  imports "HeapToEnv" "DistinctVars-Nominal" "HOLCF-Fix-Join-Nominal" "FMap-Nominal-HOLCF" "HasESem" "FMap-Join"
+  imports "HeapToEnv" "AList-Utils-Nominal" "HOLCF-Fix-Join-Nominal" "FMap-Nominal-HOLCF" "HasESem" "FMap-Join"
 begin
 
 lemma fdom_fix_join_compat:

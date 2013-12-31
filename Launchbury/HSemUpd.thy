@@ -1,5 +1,5 @@
 theory HSemUpd
-  imports "HeapToEnv" "DistinctVars-Nominal" "HasESem" Iterative
+  imports "HeapToEnv" "AList-Utils-Nominal" "HasESem" Iterative
 begin
 
 subsubsection {* A locale for heap semantics, abstract in the expression semantics *}

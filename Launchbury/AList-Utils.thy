@@ -1,4 +1,4 @@
-theory DistinctVars
+theory "AList-Utils"
 imports Main "~~/src/HOL/Library/AList"
 begin
 

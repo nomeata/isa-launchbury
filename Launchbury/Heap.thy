@@ -1,5 +1,5 @@
 theory Heap
-imports Terms "DistinctVars-Nominal" "Nominal-Utils"
+imports Terms "AList-Utils-Nominal" "Nominal-Utils"
 begin
 
 subsubsection {* Conversion from assignments to heaps *}

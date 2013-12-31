@@ -1,5 +1,5 @@
 theory Indirections
-imports Terms "Nominal-Utils" "DistinctVars-Nominal" "FMap-Heap" "FMap-Nominal"
+imports Terms "Nominal-Utils" "AList-Utils-Nominal" "FMap-Heap" "FMap-Nominal"
 begin
 
 

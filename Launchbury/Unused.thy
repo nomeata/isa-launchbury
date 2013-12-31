@@ -1,5 +1,5 @@
 theory Unused 
-imports CValue  "HOLCF-Meet-Classes" DistinctVars
+imports CValue  "HOLCF-Meet-Classes" "AList-Utils"
 begin
 
 

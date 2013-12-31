@@ -1,5 +1,5 @@
-theory "DistinctVars-Nominal"
-imports DistinctVars "Nominal-Utils"
+theory "AList-Utils-Nominal"
+imports "AList-Utils" "Nominal-Utils"
 begin
 
 subsubsection {* Freshness lemmas related to associative lists *}
