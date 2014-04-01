@@ -143,6 +143,10 @@ proof-
   unfolding meet_def' by (simp add: glb_above)
 qed
 
+lemma meet_aboveI:
+  fixes x y z :: "'a :: Finite_Meet_cpo"
+  shows "z \<sqsubseteq> x \<Longrightarrow> z \<sqsubseteq> y \<Longrightarrow> z \<sqsubseteq> x \<sqinter> y" by (simp add: meet_above_iff)
+
 lemma is_meetI:
   fixes x y z :: "'a :: Finite_Meet_cpo"
   assumes "z \<sqsubseteq> x"
@@ -187,7 +191,7 @@ lemma meet_cont2:
   fixes x :: "'a :: cont_binary_meet"
   shows "cont (\<lambda>y. (x \<sqinter> y))" by (subst meet_comm, rule meet_cont1)
 
-lemma [cont2cont,simp]: "cont f \<Longrightarrow> cont g \<Longrightarrow> cont (\<lambda>x. (f x \<sqinter> (g x::'a::cont_binary_meet)))"
+lemma meet_cont[cont2cont,simp]:"cont f \<Longrightarrow> cont g \<Longrightarrow> cont (\<lambda>x. (f x \<sqinter> (g x::'a::cont_binary_meet)))"
   apply (rule cont2cont_prod_case[where g = "\<lambda> x. (f x, g x)" and f = "\<lambda> p x y . x \<sqinter> y", simplified])
   apply (rule meet_cont1)
   apply (rule meet_cont2)

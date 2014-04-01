@@ -155,11 +155,55 @@ proof (default)
   thus "\<exists>x. S >>| x"..
 qed
 
-instantiation cfun :: (cpo,"{bifinite,cont_binary_meet}") Finite_Meet_cpo begin
-  fixrec cfun_meet :: "('a \<rightarrow> 'b) \<rightarrow> ('a \<rightarrow> 'b) \<rightarrow> ('a \<rightarrow> 'b)"
-    where "cfun_meet\<cdot>f\<cdot>g\<cdot>x = (f\<cdot>x) \<sqinter> (g\<cdot>x)"
-  
-  lemma[simp]: "cfun_meet\<cdot>\<bottom>\<cdot>y = \<bottom>" "cfun_meet\<cdot>x\<cdot>\<bottom> = \<bottom>" by (fixrec_simp)+
+instantiation "fun" :: (type, cont_binary_meet) Finite_Meet_cpo
+begin
+  definition fun_meet :: "('a \<Rightarrow> 'b) \<rightarrow> ('a \<Rightarrow> 'b) \<rightarrow> ('a \<Rightarrow> 'b)"
+    where "fun_meet = (\<Lambda> f g . (\<lambda> x. (f x) \<sqinter> (g x)))"
+
+  lemma fun_meet_eq: "fun_meet \<cdot> f \<cdot> g = (\<lambda> x. (f x) \<sqinter> (g x))"
+    unfolding fun_meet_def
+      apply (subst beta_cfun, intro cont2cont cont2cont_lambda cont2cont_fun)+
+      ..
+
+  lemma [simp]: "(fun_meet\<cdot>f\<cdot>g) x = (f x) \<sqinter> (g x)"
+    unfolding fun_meet_eq..
+
+  instance
+  apply default
+  proof(intro exI conjI strip)
+    fix x y
+    show "fun_meet\<cdot>x\<cdot>y \<sqsubseteq> x"  by (auto simp add: fun_below_iff)
+    show "fun_meet\<cdot>x\<cdot>y \<sqsubseteq> y"  by (auto simp add: fun_below_iff)
+    fix z
+    assume "z \<sqsubseteq> x" and "z \<sqsubseteq> y"
+    thus "z \<sqsubseteq> fun_meet\<cdot>x\<cdot>y" by (auto simp add: fun_below_iff meet_above_iff)
+  qed
+end
+
+lemma fun_meet_simp[simp]: "(f \<sqinter> g) x = f x \<sqinter> (g x::'a::cont_binary_meet)"
+proof-
+  have "f \<sqinter> g = (\<lambda> x. f x \<sqinter> g x)"
+  by (rule is_meetI)(auto simp add: fun_below_iff meet_above_iff)
+  thus ?thesis by simp
+qed
+
+instance "fun" :: (type, cont_binary_meet) cont_binary_meet
+  apply default
+  apply (rule ext)
+  apply (simp add: lub_fun chain_meet1 fun_chain_iff meet_cont')
+  done
+
+instantiation cfun :: (cpo,cont_binary_meet) Finite_Meet_cpo begin
+  definition cfun_meet :: "('a \<rightarrow> 'b) \<rightarrow> ('a \<rightarrow> 'b) \<rightarrow> ('a \<rightarrow> 'b)"
+    where "cfun_meet = (\<Lambda> f g . (\<Lambda> x. (f \<cdot> x) \<sqinter> (g \<cdot> x)))"
+
+  lemma cfun_meet_eq: "cfun_meet \<cdot> f \<cdot> g = (\<Lambda> x. (f \<cdot> x) \<sqinter> (g \<cdot> x))"
+    unfolding cfun_meet_def
+      apply (subst beta_cfun, intro cont2cont cont2cont_lambda cont2cont_fun)+
+      ..
+
+  lemma [simp]: "cfun_meet\<cdot>f\<cdot>g\<cdot>x = (f \<cdot> x) \<sqinter> (g \<cdot> x)"
+    unfolding cfun_meet_eq by simp
 
   instance
   apply default
@@ -173,6 +217,17 @@ instantiation cfun :: (cpo,"{bifinite,cont_binary_meet}") Finite_Meet_cpo begin
   qed
 end
 
+lemma cfun_meet_simp[simp]: "(f \<sqinter> g) \<cdot> x = f \<cdot> x \<sqinter> (g  \<cdot> x::'a::cont_binary_meet)"
+proof-
+  have "f \<sqinter> g = (\<Lambda> x. f  \<cdot> x \<sqinter> g \<cdot> x)"
+  by (rule is_meetI) (auto simp add: cfun_below_iff meet_above_iff)
+  thus ?thesis by simp
+qed
 
+instance "cfun" :: (cpo, cont_binary_meet) cont_binary_meet
+  apply default
+  apply (rule cfun_eqI)
+  apply (simp add: lub_cfun chain_meet1  meet_cont')
+  done
 
 end

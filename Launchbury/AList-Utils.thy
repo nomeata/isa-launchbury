@@ -28,13 +28,29 @@ lemma finite_domA[simp]:
 
 lemma domA_delete[simp]:
   "domA (delete x \<Gamma>) = domA \<Gamma> - {x}"
-  by (induct \<Gamma>, auto)
+  by (induct \<Gamma>) auto
+
+lemma delete_not_domA[simp]:
+  "x \<notin> domA \<Gamma> \<Longrightarrow>  delete x \<Gamma> = \<Gamma>"
+  by (induct \<Gamma>) auto
 
 lemma dom_map_of_conv_domA:
   "dom (map_of \<Gamma>) = domA \<Gamma>"
   by (induct \<Gamma>) (auto simp add: dom_if)
 
 subsubsection {* Other lemmas about associative lists *}
+
+lemma delete_set_none: "(map_of l)(x := None) = map_of (delete x l)"
+proof (induct l)
+  case Nil thus ?case by simp
+  case (Cons l ls)
+  from this[symmetric]
+  show ?case
+  by (cases "fst l = x") auto
+qed
+     
+lemma list_size_delete[simp]: "list_size size (delete x l) < Suc (list_size size l)"
+  by (induct l) auto
 
 lemma delete_append[simp]: "delete x (l1 @ l2) = delete x l1 @ delete x l2"
   unfolding AList.delete_eq by simp
@@ -50,5 +66,11 @@ lemma map_add_domA[simp]:
     apply (metis dom_map_of_conv_domA map_add_dom_app_simps(1))
     apply (metis dom_map_of_conv_domA map_add_dom_app_simps(3))
     done
+
+lemma map_of_empty[simp]:
+  "Map.empty = map_of \<Delta> \<longleftrightarrow> \<Delta> = []"
+  apply (cases \<Delta>)
+  apply auto
+  by (metis fun_upd_same option.distinct(1))
 
 end
