@@ -6,7 +6,7 @@ subsubsection {* Binary Joins and compatibility *}
 
 context cpo
 begin
-definition join :: "'a => 'a => 'a" (infix "\<squnion>" 80) where
+definition join :: "'a => 'a => 'a" (infixl "\<squnion>" 80) where
   "x \<squnion> y = (if \<exists> z. {x, y} <<| z then lub {x, y} else x)"
 
 definition compatible :: "'a \<Rightarrow> 'a \<Rightarrow> bool"

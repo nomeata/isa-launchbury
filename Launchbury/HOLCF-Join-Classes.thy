@@ -126,4 +126,10 @@ proof-
   thus ?thesis by simp
 qed
 
+lemma cfun_join_below:
+  fixes f :: "('a::Finite_Join_cpo) \<rightarrow> ('b::Finite_Join_cpo)"
+  shows "f\<cdot>x \<squnion> f\<cdot>y \<sqsubseteq> f\<cdot>(x \<squnion> y)"
+  by (intro join_below monofun_cfun_arg join_above1 join_above2)
+  
+
 end

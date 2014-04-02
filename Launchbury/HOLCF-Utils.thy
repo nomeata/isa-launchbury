@@ -92,4 +92,8 @@ lemma not_bot_below_trans[trans]:
   "a \<noteq> \<bottom> \<Longrightarrow> a \<sqsubseteq> b \<Longrightarrow> b \<noteq> \<bottom>"
   by (metis below_bottom_iff)
 
+lemma fix_eq_fix:
+  "f\<cdot>(fix\<cdot>g) \<sqsubseteq> fix\<cdot>g \<Longrightarrow> g\<cdot>(fix\<cdot>f) \<sqsubseteq> fix\<cdot>f \<Longrightarrow> fix\<cdot>f = fix\<cdot>g"
+  by (metis fix_least_below below_antisym)
+
 end
