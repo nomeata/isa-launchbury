@@ -22,8 +22,10 @@ definition AE_singleton :: "var \<Rightarrow> Arity\<^sub>\<bottom> \<rightarrow
 lemma AE_singleton_bot[simp]: "AE_singleton x \<cdot> \<bottom> = \<bottom>"
   by (rule ext)(simp add: AE_singleton_def)
 
-lemma AE_singleton_simps[simp]: "(AE_singleton x \<cdot> n) x = n"
-  by (simp add: AE_singleton_def)
+lemma AE_singleton_simps[simp]:
+  "(AE_singleton x \<cdot> n) x = n"
+  "x' \<noteq> x \<Longrightarrow> (AE_singleton x \<cdot> n) x' = \<bottom>"
+  by (simp_all add: AE_singleton_def)
 
 lemma up_zero_top[simp]: "x \<sqsubseteq> up\<cdot>(0::Arity)"
   by (cases x) auto
@@ -83,44 +85,36 @@ next
   finally show "ae \<sqsubseteq> ABinds ((v, e) # \<Gamma>)\<cdot>ae".
 qed
 
-definition Afix ::  "heap \<Rightarrow> (AEnv \<rightarrow> AEnv) \<rightarrow> (AEnv \<rightarrow> AEnv)"
-  where "Afix \<Gamma> = (\<Lambda> F ae. (\<mu>  ae'. ae \<squnion> ((ABinds \<Gamma> \<cdot> ae') \<squnion> F \<cdot> ae')))"
+definition Afix ::  "heap \<Rightarrow> (AEnv \<rightarrow> AEnv)"
+  where "Afix \<Gamma> = (\<Lambda> ae. (\<mu>  ae'. ABinds \<Gamma> \<cdot> ae' \<squnion> ae))"
 
-lemma Afix_eq: "Afix \<Gamma> \<cdot> F \<cdot> ae = (\<mu>  ae'. ae \<squnion> ((ABinds \<Gamma> \<cdot> ae') \<squnion> F \<cdot> ae'))"
+lemma Afix_eq: "Afix \<Gamma> \<cdot> ae = (\<mu>  ae'. (ABinds \<Gamma> \<cdot> ae') \<squnion> ae)"
   unfolding Afix_def by simp
 
-definition Afix2 ::  "heap \<Rightarrow> (AEnv \<rightarrow> AEnv)"
-  where "Afix2 \<Gamma> = (\<Lambda> ae. (\<mu>  ae'. ABinds \<Gamma> \<cdot> ae' \<squnion> ae))"
-
-lemma Afix2_eq: "Afix2 \<Gamma> \<cdot> ae = (\<mu>  ae'. (ABinds \<Gamma> \<cdot> ae') \<squnion> ae)"
-  unfolding Afix2_def by simp
-
-lemma Afix2_strict[simp]: "Afix2 \<Gamma> \<cdot> \<bottom> = \<bottom>"
-  unfolding Afix2_eq
+lemma Afix_strict[simp]: "Afix \<Gamma> \<cdot> \<bottom> = \<bottom>"
+  unfolding Afix_eq
   by (rule fix_eqI) auto
 
-lemma Afix2_least_below: "ABinds \<Gamma> \<cdot> ae' \<sqsubseteq> ae' \<Longrightarrow> ae \<sqsubseteq> ae' \<Longrightarrow> Afix2 \<Gamma> \<cdot> ae \<sqsubseteq> ae'"
-  unfolding Afix2_eq
+lemma Afix_least_below: "ABinds \<Gamma> \<cdot> ae' \<sqsubseteq> ae' \<Longrightarrow> ae \<sqsubseteq> ae' \<Longrightarrow> Afix \<Gamma> \<cdot> ae \<sqsubseteq> ae'"
+  unfolding Afix_eq
   by (auto intro: fix_least_below)
 
-lemma Abinds_below_Afix2: "ABinds \<Delta> \<sqsubseteq> Afix2 \<Delta>"
+
+lemma Abinds_below_Afix: "ABinds \<Delta> \<sqsubseteq> Afix \<Delta>"
   apply (rule cfun_belowI)
-  apply (simp add: Afix2_eq)
+  apply (simp add: Afix_eq)
   apply (subst fix_eq, simp)
   apply (rule below_trans[OF _ join_above1])
   apply (rule monofun_cfun_arg)
   apply (subst fix_eq, simp)
   done
 
-lemma Afix2_above_arg: "ae \<sqsubseteq> Afix2 \<Gamma> \<cdot> ae"
-  by (metis (hide_lams, no_types) Abinds_below_Afix2 ArityAnalysis.ABinds_above_arg below_refl box_below monofun_cfun_fun)
+lemma Afix_above_arg: "ae \<sqsubseteq> Afix \<Gamma> \<cdot> ae"
+  by (metis (hide_lams, no_types) Abinds_below_Afix ArityAnalysis.ABinds_above_arg below_refl box_below monofun_cfun_fun)
 
-lemma join_self_below[iff]:
-  "x = x \<squnion> y \<longleftrightarrow> y \<sqsubseteq> (x::'a::Finite_Join_cpo)"
-  by (metis "HOLCF-Join-Classes.join_above2" larger_is_join1)
 
-lemma Abinds_Afix[simp]: "ABinds \<Gamma>\<cdot>(Afix2 \<Gamma>\<cdot>ae) = Afix2 \<Gamma>\<cdot>ae"
-  unfolding Afix2_eq
+lemma Abinds_Afix[simp]: "ABinds \<Gamma>\<cdot>(Afix \<Gamma>\<cdot>ae) = Afix \<Gamma>\<cdot>ae"
+  unfolding Afix_eq
   apply (subst fix_eq) back apply simp
   apply (rule below_trans[OF ABinds_above_arg monofun_cfun_arg])
   apply (subst fix_eq) apply simp

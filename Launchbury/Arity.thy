@@ -56,8 +56,6 @@ proof-
   thus "\<exists>x. range S <<| x" using `chain S`  by (metis lub_finch1)
 qed
 
-(* lemma cont_inc_Arity: "cont inc_Arity" sorry *)
-
 definition
   inc  :: "Arity -> Arity" where
   "inc = (\<Lambda> x. inc_Arity x)"

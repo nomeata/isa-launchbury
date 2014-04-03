@@ -131,5 +131,19 @@ lemma cfun_join_below:
   shows "f\<cdot>x \<squnion> f\<cdot>y \<sqsubseteq> f\<cdot>(x \<squnion> y)"
   by (intro join_below monofun_cfun_arg join_above1 join_above2)
   
+lemma join_self_below[iff]:
+  "x = x \<squnion> y \<longleftrightarrow> y \<sqsubseteq> (x::'a::Finite_Join_cpo)"
+  "x = y \<squnion> x \<longleftrightarrow> y \<sqsubseteq> (x::'a::Finite_Join_cpo)"
+  "x \<squnion> y = x \<longleftrightarrow> y \<sqsubseteq> (x::'a::Finite_Join_cpo)"
+  "y \<squnion> x = x \<longleftrightarrow> y \<sqsubseteq> (x::'a::Finite_Join_cpo)"
+  "x \<squnion> y \<sqsubseteq> x \<longleftrightarrow> y \<sqsubseteq> (x::'a::Finite_Join_cpo)"
+  "y \<squnion> x \<sqsubseteq> x \<longleftrightarrow> y \<sqsubseteq> (x::'a::Finite_Join_cpo)"
+  apply (metis join_above2 larger_is_join1)
+  apply (metis join_above1 larger_is_join2)
+  apply (metis join_above2 larger_is_join1)
+  apply (metis join_above1 larger_is_join2)
+  apply (metis join_above1 join_above2 below_antisym larger_is_join1)
+  apply (metis join_above2 join_above1 below_antisym larger_is_join2)
+  done
 
 end
