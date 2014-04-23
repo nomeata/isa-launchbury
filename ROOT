@@ -24,3 +24,8 @@ session LaunchburyComplete (AFP) in "Launchbury" = "HOLCF-Nominal2" +
   options [document_variants = newstuff, document = pdf, document_graph, document_output = "output", quick_and_dirty]
   theories
     "NewStuff"
+
+session Arity (AFP) in "Launchbury" = "HOLCF-Nominal2" +
+  options [document_variants = arity, document = pdf, document_graph, document_output = "output" ]
+  theories
+    "ArityCorrect"
