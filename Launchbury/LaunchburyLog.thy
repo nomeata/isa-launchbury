@@ -1,85 +1,56 @@
-theory Launchbury
-imports Terms Heap
+theory LaunchburyLog
+imports Terms Heap "Arity-Nominal"
 begin
 
-subsubsection {* The natural semantics *}
-
-text {* This is the semantics as in \cite{launchbury} with two exceptions:
-\begin{itemize}
-\item Explicit freshness requirements for bound variables in the application and the Let rule.
-\item An additional parameter that stores variables that have to be avoided, but do not occur
-in the judgement otherwise.
-\end{itemize}
-*}
+type_synonym CallLog = "(var \<times> Arity) list"
 
 inductive
-  reds :: "heap \<Rightarrow> exp \<Rightarrow> var list \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> bool"
-  ("_ : _ \<Down>\<^bsub>_\<^esub> _ : _" [50,50,50,50] 50)
+  reds :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<Rightarrow>  var list \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> CallLog \<Rightarrow> bool"
+  ("_ : _ \<Down>\<^bsub>_,_\<^esub> _ : _ (_)" [50,50,50,50,50,50] 50)
 where
   Lambda:
-    "\<Gamma> : (Lam [x]. e) \<Down>\<^bsub>L\<^esub> \<Gamma> : (Lam [x]. e)" 
+    "\<Gamma> : (Lam [x]. e) \<Down>\<^bsub>n,L\<^esub> \<Gamma> : (Lam [x]. e) []" 
  | Application: "\<lbrakk>
-    atom y \<sharp> (\<Gamma>,e,x,L,\<Delta>,\<Theta>,z) ;
-    \<Gamma> : e \<Down>\<^bsub>x#L\<^esub> \<Delta> : (Lam [y]. e');
-    \<Delta> : e'[y ::= x] \<Down>\<^bsub>L\<^esub> \<Theta> : z
+    atom y \<sharp> (\<Gamma>,e,x,L,\<Delta>,\<Theta>,z,c\<^sub>1,c\<^sub>2) ;
+    \<Gamma> : e \<Down>\<^bsub>inc\<cdot>n,x#L\<^esub> \<Delta> : (Lam [y]. e') c\<^sub>1;
+    \<Delta> : e'[y ::= x] \<Down>\<^bsub>n,L\<^esub> \<Theta> : z c\<^sub>2
   \<rbrakk>  \<Longrightarrow>
-    \<Gamma> : App e x \<Down>\<^bsub>L\<^esub> \<Theta> : z" 
+    \<Gamma> : App e x \<Down>\<^bsub>n,L\<^esub> \<Theta> : z c\<^sub>1@c\<^sub>2"
  | Variable: "\<lbrakk>
-    map_of \<Gamma> x = Some e; delete x \<Gamma> : e \<Down>\<^bsub>x#L\<^esub> \<Delta> : z
+    map_of \<Gamma> x = Some e;
+    delete x \<Gamma> : e \<Down>\<^bsub>n,x#L\<^esub> \<Delta> : z c
   \<rbrakk> \<Longrightarrow>
-    \<Gamma> : Var x \<Down>\<^bsub>L\<^esub> (x, z) # \<Delta> : z"
+    \<Gamma> : Var x \<Down>\<^bsub>n,L\<^esub> (x, z) # \<Delta> : z (x,n)#c"
  | Let: "\<lbrakk>
     set (bn as) \<sharp>* (\<Gamma>, L);
-    asToHeap as @ \<Gamma> : body \<Down>\<^bsub>L\<^esub> \<Delta> : z
+    asToHeap as @ \<Gamma> : body \<Down>\<^bsub>n,L\<^esub> \<Delta> : z c
   \<rbrakk> \<Longrightarrow>
-    \<Gamma> : Let as body \<Down>\<^bsub>L\<^esub> \<Delta> : z"
+    \<Gamma> : Let as body \<Down>\<^bsub>n,L\<^esub> \<Delta> : z c"
 
 equivariance reds
 
 nominal_inductive reds
   avoids Application: "y"
-  by (auto simp add: fresh_star_def fresh_Pair)
+  by (auto simp add: fresh_star_def fresh_append pure_fresh fresh_Pair)
 
 subsubsection {* Example evaluations *}
 
 lemma eval_test:
-  "[] : (Let (ACons x (Lam [y]. Var y) ANil) (Var x)) \<Down>\<^bsub>[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y)"
-apply(auto intro!: Lambda Application Variable Let
- simp add: fresh_Pair fresh_Cons fresh_Nil fresh_star_def)
-done
+  "[] : (Let (ACons x (Lam [y]. Var y) ANil) (Var x)) \<Down>\<^bsub>0,[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y) [(x,0)]"
+by(auto intro!: Lambda Application Variable Let
+ simp add: fresh_Pair fresh_Cons fresh_Nil fresh_star_def pure_fresh )
+
+lemma ApplicationI: "
+  atom y \<sharp> (\<Gamma>, e, x, L, \<Delta>, \<Theta>, z, c\<^sub>1, c\<^sub>2) \<Longrightarrow>
+  \<Gamma> : e \<Down>\<^bsub>inc\<cdot>n,x # L\<^esub> \<Delta> : Lam [y]. e' c\<^sub>1 \<Longrightarrow>
+  \<Delta> : e'[y::=x] \<Down>\<^bsub>n,L\<^esub> \<Theta> : z c\<^sub>2 \<Longrightarrow>
+  c\<^sub>1@c\<^sub>2 = c \<Longrightarrow>
+  \<Gamma> : App e x \<Down>\<^bsub>n,L\<^esub> \<Theta> : z c"
+by (metis Application)
 
 lemma eval_test2:
-  "y \<noteq> x \<Longrightarrow> n \<noteq> y \<Longrightarrow> n \<noteq> x \<Longrightarrow>[] : (Let (ACons x (Lam [y]. Var y) ANil) (App (Var x) x)) \<Down>\<^bsub>[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y)"
-  by (auto intro!: Lambda Application Variable Let simp add: fresh_Pair fresh_at_base fresh_Cons fresh_Nil fresh_star_def)
-
-subsubsection {* Better Introduction variables *}
-
-lemma reds_ApplicationI:
-  assumes "atom y \<sharp> x" (* Less freshness required here *)
-  assumes "\<Gamma> : e \<Down>\<^bsub>x # L\<^esub> \<Delta> : Lam [y]. e'"
-  assumes "\<Delta> : e'[y::=x] \<Down>\<^bsub>L\<^esub> \<Theta> : z"
-  shows "\<Gamma> : App e x \<Down>\<^bsub>L\<^esub> \<Theta> : z"
-proof-
-  obtain y' :: var where "atom y' \<sharp> (\<Gamma>, e, x, L, \<Delta>, \<Theta>, z, e')" by (rule obtain_fresh)
-
-  have a: "Lam [y']. ((y' \<leftrightarrow> y) \<bullet> e') = Lam [y]. e'"
-    using `atom y' \<sharp> _`
-    by (auto simp add: Abs1_eq_iff fresh_Pair fresh_at_base)
-
-  have [simp]: "(y' \<leftrightarrow> y) \<bullet> x = x" using `atom y \<sharp> _`  `atom y' \<sharp> _`
-      by (simp add: flip_fresh_fresh fresh_Pair fresh_at_base)
-
-  have "((y' \<leftrightarrow> y) \<bullet> e')[y'::=x] = (y' \<leftrightarrow> y) \<bullet> (e'[y::=x])" by simp
-  also have "\<dots> = e'[y::=x]"
-    using `atom y \<sharp> _`  `atom y' \<sharp> _`
-    by (simp add: flip_fresh_fresh fresh_Pair fresh_at_base subst_pres_fresh)
-  finally
-  have b: "((y' \<leftrightarrow> y) \<bullet> e')[y'::=x] = e'[y::=x]".
-
-  have "atom y' \<sharp> (\<Gamma>, e, x, L, \<Delta>, \<Theta>, z)" using  `atom y' \<sharp> _` by (simp add: fresh_Pair)
-  from  this assms(2,3)[folded a b]
-  show ?thesis ..
-qed
+  "y \<noteq> x \<Longrightarrow> n \<noteq> y \<Longrightarrow> n \<noteq> x \<Longrightarrow>[] : (Let (ACons x (Lam [y]. Var y) ANil) (App (Var x) x)) \<Down>\<^bsub>0,[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y) [(x,inc\<cdot>0),(x,0)]"
+  by (auto intro!: Lambda ApplicationI[where y = y and c\<^sub>2 = "[(x,0)]"] Variable Let simp add: fresh_Pair fresh_at_base fresh_Cons fresh_Nil fresh_star_def pure_fresh)
 
 
 subsubsection {* Properties of the semantics *}
@@ -89,9 +60,9 @@ Heap entries are never removed.
 *}
 
 lemma reds_doesnt_forget:
-  "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z \<Longrightarrow> domA \<Gamma> \<subseteq> domA \<Delta>"
+  "\<Gamma> : e \<Down>\<^bsub>n,L\<^esub> \<Delta> : z c \<Longrightarrow> domA \<Gamma> \<subseteq> domA \<Delta>"
 proof(induct rule: reds.induct)
-case(Variable \<Gamma> v e L \<Delta> z)
+case(Variable \<Gamma> v e n L \<Delta> z c)
   show ?case
   proof
     fix x
@@ -110,6 +81,46 @@ case(Variable \<Gamma> v e L \<Delta> z)
   qed
 qed (auto)
 
+subsubsection {* Log talks about heap *}
+
+lemma log_heap_subset:
+  assumes  "\<Gamma> : e \<Down>\<^bsub>n,L\<^esub> \<Delta> : v c"
+  shows "domA c \<subseteq> domA \<Delta>"
+using assms
+by (induction rule: reds.induct)(auto simp add: set_mp[OF reds_doesnt_forget])
+
+
+subsubsection {* Better Introduction variables *}
+
+lemma reds_ApplicationI:
+  assumes "atom y \<sharp> x" (* Less freshness required here *)
+  assumes "\<Gamma> : e \<Down>\<^bsub>inc\<cdot>n, x # L\<^esub> \<Delta> : Lam [y]. e' c\<^sub>1"
+  assumes "\<Delta> : e'[y::=x] \<Down>\<^bsub>n,L\<^esub> \<Theta> : z c\<^sub>2"
+  shows "\<Gamma> : App e x \<Down>\<^bsub>n,L\<^esub> \<Theta> : z (c\<^sub>1@c\<^sub>2)"
+proof-
+  obtain y' :: var where "atom y' \<sharp> (\<Gamma>, e, x, L, \<Delta>, \<Theta>, z, e',c\<^sub>1,c\<^sub>2)" by (rule obtain_fresh)
+
+  have a: "Lam [y']. ((y' \<leftrightarrow> y) \<bullet> e') = Lam [y]. e'"
+    using `atom y' \<sharp> _`
+    by (auto simp add: Abs1_eq_iff fresh_Pair fresh_at_base)
+
+  have [simp]: "(y' \<leftrightarrow> y) \<bullet> x = x" using `atom y \<sharp> _`  `atom y' \<sharp> _`
+      by (simp add: flip_fresh_fresh fresh_Pair fresh_at_base)
+
+  have "((y' \<leftrightarrow> y) \<bullet> e')[y'::=x] = (y' \<leftrightarrow> y) \<bullet> (e'[y::=x])" by simp
+  also have "\<dots> = e'[y::=x]"
+    using `atom y \<sharp> _`  `atom y' \<sharp> _`
+    by (simp add: flip_fresh_fresh fresh_Pair fresh_at_base subst_pres_fresh)
+  finally
+  have b: "((y' \<leftrightarrow> y) \<bullet> e')[y'::=x] = e'[y::=x]".
+
+
+  have "atom y' \<sharp> (\<Gamma>, e, x, L, \<Delta>, \<Theta>, z, c\<^sub>1, c\<^sub>2)" using  `atom y' \<sharp> _` by (simp add: fresh_Pair)
+  from  this assms(2,3)[folded a b]
+  show ?thesis ..
+qed
+
+(*
 text {*
 Live variables are not added to the heap.
 *}
@@ -300,6 +311,6 @@ proof-
   thus thesis using that by blast
 qed
 
-
+*)
 end
 

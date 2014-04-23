@@ -2,31 +2,25 @@ theory ArityCorrect
 imports ArityAnalysis Launchbury "Nominal-HOLCF" "Vars-Nominal-HOLCF"
 begin
 
-instantiation Arity :: pure
-begin
-  definition "p \<bullet> (a::Arity) = a"
-instance
-  apply default
-  apply (auto simp add: permute_Arity_def)
-  done
-end
+(* used?
 
 instance Arity :: cont_pt
   by default (simp add: pure_permute_id)
+*)
 
 locale CorrectArityAnalysis = ArityAnalysis +
   assumes Aexp_Var: "Aexp (Var x) \<cdot> n = AE_singleton x \<cdot> (up \<cdot> n)"
   assumes Aexp_subst_App_Lam: "Aexp (e'[y::=x]) \<sqsubseteq> Aexp (App (Lam [y]. e') x)"
   assumes Aexp_App: "Aexp (App e x) \<cdot> n = Aexp e \<cdot>(inc\<cdot>n) \<squnion> AE_singleton x \<cdot> (up\<cdot>0)"
-  assumes Aexp_Lam: "Afix (asToHeap as)\<cdot>(Aexp e\<cdot>n) \<sqsubseteq> Aexp (Let as e)\<cdot>n"
+  assumes Aexp_Let: "Afix (asToHeap as)\<cdot>(Aexp e\<cdot>n) \<sqsubseteq> Aexp (Let as e)\<cdot>n"
   assumes Aexp_lookup_fresh: "atom v \<sharp> e \<Longrightarrow> (Aexp e\<cdot>a) v = \<bottom>"
 begin
 
 lemma Aexp'_Var: "Aexp' (Var x) \<cdot> n = AE_singleton x \<cdot> n"
   by (cases n) (simp_all add: Aexp_Var)
 
-lemma Aexp'_Lam: "Afix (asToHeap as)\<cdot>(Aexp' e\<cdot>n) \<sqsubseteq> Aexp' (Let as e)\<cdot>n"
-  by (cases n) (simp_all add: Aexp_Lam)
+lemma Aexp'_Let: "Afix (asToHeap as)\<cdot>(Aexp' e\<cdot>n) \<sqsubseteq> Aexp' (Let as e)\<cdot>n"
+  by (cases n) (simp_all add: Aexp_Let)
 
 lemma Afix_reorder: "map_of \<Gamma> = map_of \<Delta> \<Longrightarrow> Afix \<Gamma> = Afix \<Delta>"
   by (intro cfun_eqI)(simp add: Afix_eq cong: Abinds_reorder)
@@ -146,6 +140,30 @@ next
   qed
 qed
 
+lemma Afix_e_to_heap:
+   "Afix (delete x \<Gamma>)\<cdot>(Aexp' e\<cdot>n \<squnion> ae) \<sqsubseteq> Afix ((x, e) # delete x \<Gamma>)\<cdot>(AE_singleton x\<cdot>n \<squnion> ae)"
+    apply (simp add: Afix_eq)
+    apply (rule fix_least_below, simp)
+    apply (intro join_below)
+    apply (subst fix_eq, simp) back apply (simp add: below_trans[OF _ join_above2])
+    apply (subst fix_eq, simp)
+    apply (rule below_trans[OF monofun_cfun_arg join_above1])
+    apply (subst fix_eq, simp)
+    apply (rule below_trans[OF _ join_above2])
+    apply (rule below_trans[OF _ join_above2])
+    apply simp
+    apply (subst fix_eq, simp)
+    apply (rule below_trans[OF _ join_above2])
+    apply (rule below_trans[OF _ join_above2])
+    apply (rule below_trans[OF _ join_above2])
+    apply simp
+    done
+
+lemma Afix_e_to_heap':
+   "Afix (delete x \<Gamma>)\<cdot>(Aexp e\<cdot>n) \<sqsubseteq> Afix ((x, e) # delete x \<Gamma>)\<cdot>(AE_singleton x\<cdot>(up\<cdot>n))"
+using Afix_e_to_heap[where ae = \<bottom> and n = "up\<cdot>n"] by simp
+
+
 lemma  reds_improves_arity':
        "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : v \<Longrightarrow>
         ae -` (-{\<bottom>}) \<subseteq> set L \<Longrightarrow> 
@@ -209,22 +227,7 @@ case (Variable \<Gamma> x e L \<Delta> z ae n)
   also have "\<dots> \<sqsubseteq> (\<mu> ae'. Afix ((x,e)#delete x \<Gamma>) \<cdot> (AE_singleton x \<cdot> (n \<squnion> ae' x) \<squnion> ae))"
     apply (rule monofun_cfun_arg)
     apply (rule cfun_belowI, simp)
-    apply (simp add: Afix_eq)
-    apply (rule fix_least_below, simp)
-    apply (intro join_below)
-    apply (subst fix_eq, simp) back back apply (simp add: below_trans[OF _ join_above2])
-    apply (subst fix_eq, simp)
-    apply (rule below_trans[OF monofun_cfun_arg join_above1])
-    apply (subst fix_eq, simp)
-    apply (rule below_trans[OF _ join_above2])
-    apply (rule below_trans[OF _ join_above2])
-    apply (rule join_mono[OF below_refl])
-    apply simp
-    apply (subst fix_eq, simp)
-    apply (rule below_trans[OF _ join_above2])
-    apply (rule below_trans[OF _ join_above2])
-    apply (rule below_trans[OF _ join_above2])
-    apply simp
+    apply (rule Afix_e_to_heap)
     done
   also have "\<dots> = Afix ((x,e)#delete x \<Gamma>) \<cdot> (AE_singleton x\<cdot>n \<squnion> ae)" by (rule Afix_repeat_singleton)
   also have "\<dots> = Afix ((x,e)#delete x \<Gamma>) \<cdot> (Aexp' (Var x) \<cdot> n \<squnion> ae)" by (rule arg_cong[OF Aexp'_Var[symmetric]])
@@ -270,10 +273,17 @@ case (Let as \<Gamma> L e \<Delta> z ae n)
   have "Afix \<Delta>\<cdot>(Aexp' z\<cdot>n \<squnion> ae) \<sqsubseteq> Afix (asToHeap as @ \<Gamma>)\<cdot>(Aexp' e\<cdot>n \<squnion> ae)" by (rule IH)
   also have "\<dots> = Afix \<Gamma>\<cdot>(Afix (asToHeap as)\<cdot>(Aexp' e\<cdot>n \<squnion> ae))" by (rule Afix_append_fresh[OF *])
   also have "\<dots> = Afix \<Gamma>\<cdot>(Afix (asToHeap as)\<cdot>(Aexp' e\<cdot>n) \<squnion> ae)" by (rule arg_cong[OF Afix_join_fresh[OF **]])
-  also have "\<dots> \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp' (Let as e)\<cdot>n \<squnion> ae)" by (intro monofun_cfun_arg join_mono below_refl Aexp'_Lam)
+  also have "\<dots> \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp' (Let as e)\<cdot>n \<squnion> ae)" by (intro monofun_cfun_arg join_mono below_refl Aexp'_Let)
   finally
   show "Afix \<Delta>\<cdot>(Aexp' z\<cdot>n \<squnion> ae) \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp' (Let as e)\<cdot>n \<squnion> ae)".
 qed
+
+corollary  reds_improves_arity'':
+       "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : v \<Longrightarrow>
+        ae -` (-{\<bottom>}) \<subseteq> set L \<Longrightarrow> 
+        Afix \<Delta> \<cdot> (Aexp v \<cdot> n \<squnion> ae) \<sqsubseteq> Afix \<Gamma> \<cdot> (Aexp e \<cdot> n \<squnion> ae)"
+using reds_improves_arity'[OF assms, where n = "up\<cdot>n", simplified].
+
 
 corollary  reds_improves_arity:
  assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : v"
@@ -282,6 +292,8 @@ proof-
   have simp: "\<bottom> -` (- {\<bottom>}) = {}" by auto
   show ?thesis by (rule reds_improves_arity'[where ae = \<bottom>, OF assms, simplified]) auto
 qed
+
+
 end
 
 end

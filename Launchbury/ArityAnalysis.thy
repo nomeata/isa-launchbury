@@ -1,8 +1,6 @@
 theory ArityAnalysis
-imports Terms Heap  "Arity"
+imports Terms Heap AEnv
 begin
-
-type_synonym AEnv = "var \<Rightarrow> Arity\<^sub>\<bottom>"
 
 locale ArityAnalysis =
   fixes Aexp :: "exp \<Rightarrow> Arity \<rightarrow> AEnv"

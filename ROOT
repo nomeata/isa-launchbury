@@ -28,4 +28,4 @@ session LaunchburyComplete (AFP) in "Launchbury" = "HOLCF-Nominal2" +
 session Arity (AFP) in "Launchbury" = "HOLCF-Nominal2" +
   options [document_variants = arity, document = pdf, document_graph, document_output = "output" ]
   theories
-    "ArityCorrect"
+    "ArityCorrect2"

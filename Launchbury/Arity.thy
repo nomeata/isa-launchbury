@@ -4,6 +4,7 @@ begin
 
 typedef Arity = "UNIV :: nat set" by auto
 
+
 setup_lifting type_definition_Arity
 
 (*
@@ -18,8 +19,8 @@ instance
 end
 *)
 
+
 lift_definition inc_Arity :: "Arity \<Rightarrow> Arity" is Suc.
-print_theorems
 
 instantiation Arity :: po
 begin

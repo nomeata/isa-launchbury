@@ -203,6 +203,8 @@ lemma fv_append[simp]: "fv (x @ y) = fv x \<union> fv y"
   by (auto simp add: fv_def supp_append)
 lemma fv_at_base[simp]: "fv a = {a::'a::at_base}"
   by (auto simp add: fv_def supp_at_base)
+lemma fv_pure[simp]: "fv (a::'a::pure) = {}"
+  by (auto simp add: fv_def pure_supp)
 
 subsection {* Other useful lemmas *}
 

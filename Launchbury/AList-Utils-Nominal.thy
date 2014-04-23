@@ -83,4 +83,23 @@ proof-
   }
   thus "S \<inter> domA \<Gamma> = {}" by auto
 qed
+
+subsection {* Pure domains *}
+
+lemma domA_fv_pure:
+  fixes \<Gamma> :: "('a::at_base \<times> 'b::pure) list"
+  shows  "fv \<Gamma> = domA \<Gamma>"
+  apply (induct \<Gamma>)
+  apply simp
+  apply (case_tac a)
+  apply (simp)
+  done
+
+lemma domA_fresh_pure:
+  fixes \<Gamma> :: "('a::at_base \<times> 'b::pure) list"
+  shows  "x \<in> domA \<Gamma> \<longleftrightarrow> \<not>(atom x \<sharp> \<Gamma>)"
+  unfolding domA_fv_pure[symmetric]
+  by (auto simp add: fv_def fresh_def)
+
+
 end
