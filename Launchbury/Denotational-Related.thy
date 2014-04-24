@@ -4,7 +4,7 @@ begin
 
 theorem denotational_semantics_similar: 
   assumes "\<rho> f\<triangleleft>\<triangleright> \<sigma>"
-  shows "\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub> \<triangleleft>\<triangleright> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>(C\<^sup>\<infinity>)"
+  shows "\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub> \<triangleleft>\<triangleright> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>C\<^sup>\<infinity>"
 using assms
 proof(induct e arbitrary: \<rho> \<sigma> rule:exp_induct)
   case (Var v)

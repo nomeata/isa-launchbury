@@ -61,23 +61,56 @@ Karlsruhe Institute for Technology\\
 \maketitle
 
 \begin{abstract}
-TODO
+In his seminal paper „Natural Semantics for Lazy Evaluation“ \cite{launchbury},
+John Launchbury proves his semantics correct with respect to a denotational
+semantics, and outlines an adequacy proof.
+We have formalized both semantics and machine-checked the correctness proof,
+clarifying some details.
+Furthermore, we provide a new and more direct adequacy proof that does not
+require intermediate operational semantics.
 \end{abstract}
 
 \tableofcontents
 
 \section{Introduction}
 
-Our contributions are:
+The Natural Semantics for Lazy Evaluation \cite{launchbury} created by John Launchbury in 1992 is often taken as the base for formal treatments of call-by-need evaluation, either to prove properties of lazy evaluation or as a base to describe extensions of the language or the implementation of the language. Therefore, assurance about the correctness and adequacy of the semantics is important in this field of research. Launchbury himself supports his semantics by defining a standard denotational semantics to prove both correctness and adequacy.
 
-% \input{Everything.tex}
+Although his proofs are already on the more rigorous side for pen-and-paper proofs, they have not yet been verified by transforming them to machine-checked proofs.
+The present work fills this gap by formalizing both semantics in the proof assistant Isabelle and proving both correctness and adequacy.
+
+Our correctness formal proof is very close to the original proof. This is possible if the operator $\sqcup$ is understood as a right-sided update. If we were to understand $\sqcup$ as the least upper bound, then Theorem 2 in \cite{launchbury}, which is the generalization of the correctness statement used for Launchbury's inductive proof, is wrong. The main correctness result still holds, but needs a different proof; this is discussed in greater detail in \cite{breitner2013}.
+
+Launchbury outlines an adequacy proof via an intermediate operational semantics and resourced denotational semantics. The alternative operational semantics  uses indirection instead of substiution for applicatoins, does not update variable results and does not perform blackholing during evaluation of a variable. The equivalence of these two operational semantics is hard and tricky to prove. We found a direct proof for the adequacy of the original operational semantics and the slightly resourced denotational semantics. This is, as far as we know, the first complete and rigorous proof of adequacy of Launchbury's semantics.
+
+Our contributions are:
+\begin{itemize}
+\item We define the natural and denotational semantics given by Launchbury in the theorem prover Isabelle.
+\item We demonstrate how to use both the Nominal package (to handle name binding) \cite{nominal} and the HOLCF \cite{holcf} package (for the domain-theoretic aspects) in the same development.
+\item We verify Launchbury's proof of correctness.
+\item We provide a new and more direct proof of adequacy.
+\end{itemize}
+
+%\input{map.tex}
+
+\input{EverythingAdequacy.tex}
 
 \subsection{Related work}
+
+TODO (complete):
+Comparison with \cite{breitner2013}\dots
+(results, finite maps)
+
+TODO (update):
+
+Lidia Sánchez-Gil, Mercedes Hidalgo-Herrero and Yolanda Ortega-Mallén have worked on formal aspects of Launchbury’s semantics as well. On the one hand, they identified a step in his adequacy proof relating the standard and the resourced denotational semantics that is not as trivial as it seems at first and worked out a detailed pen-and-paper proof \cite{functionspaces}. They also plan to prove the equivalency between Launchbury’s natural semantics and a variant thereof, which was used by Launchbury in his adequacy proof, in the theorem prover Coq. As one step in that direction, they address the naming issues and suggest a mixed representation, using de Bruijn indices for locally bound variables and names for free variables \cite{nameless}. This corresponds to our treatment of names, using the Nominal logic machinery locally but not for names bound in heaps.
+
+The same group extended Launchbury’s semantic for distributed lazy evaluation \cite{distributed}. In their modified natural semantics the heap retains the expression under evaluation with a special flag, marking them as blocked. Furthermore, the expression under evaluation has a name. Therefore the non-distributed subset of their semantics is very similar to our stacked semantics. This supports our claim that the stacked semantics is well suited for further proofs and extensions.
 
 \begin{figure}
 \begin{center}
 \IfFileExists{session_graph.pdf}{
-  \includegraphics[width=.9\linewidth]{session_graph}
+  \includegraphics[width=\textwidth]{session_graph}
 }{Here, \texttt{session\_graph.pdf} would be shown.}
 \end{center}
 \caption{Theory Dependency Graph\label{theory-deps}}
@@ -85,112 +118,135 @@ Our contributions are:
 
 \subsection{Theory overview}
 
+The following chapters contain the complete Isabelle theories, with one section per theory. Their interdependencies are visualized in Figure \ref{theory-deps}.
+
+Chapter \ref{ch_aux} contains auxiliary theories, not necessarily tied to Launchbury's semantics. The base theories are kept independent of Nominal and HOLCF where possible, the lemmas combining them are in theories of their own, creatively named by appending \isa{-Nominal}, \isa{-HOLCF} or both.  You will find these theories:
+\begin{itemize}
+\item A definition for lifting a relation point-wise (\isa{Pointwise}).
+\item A collection of definition related to associative lists (\isa{AList-Utils}, \isa{AList-Utils-Nominal}).
+\item General utility functions extending Nominal (\isa{Nominal-Utils}).
+\item General utility functions extending HOLCF (\isa{HOLCF-Utils}).
+\item Binary meets in the context of HOLCF (\isa{HOLCF-Meet}).
+\item A theory combining notions from HOLCF and Nominal, e.g.\ continuity of permutation (\isa{Nominal-HOLCF}).
+\item A theory for working with functions into a pcpo as environments (\isa{Env}, \isa{Env-Nominal}, \isa{Env-HOLCF}).
+\item A function \isa{heapToEnv} that converts between associative lists and functions. (\isa{HeapToEnv})
+\end{itemize}
+
+Chapter \ref{ch_natsem} defines the syntax and Launchbury's natural semantics.
+
+Chapter \ref{ch_dendom} sets the stage for the denotational semantics by defining a locale \isa{semantic-domain} for denotational domains, and an instantiation for the standard domain.
+
+Chapter \ref{ch_den} defines the denotational semantics. It also introduces the locale \isa{has-ESem} which abstracts over the value semantics when defining the semantics of heaps.
+
+Chapter \ref{ch_resden} defines the resourced denotational semantics.
+
+Chapter \ref{ch_correctness} proves the correctness of Launchbury's semantics with regard to both denotational semantics. We need the correctness with regard to the resourced semantics in the adequacy proof.
+
+Chapter \ref{ch_equiv} proves the denotational semantics related, which is used in
+
+Chapter \ref{ch_adequacy}, where finally the adequacy is proved.
+
+\subsection{Reusable components}
+
+Parts of this theory are independent of the actual semantics and may be of use to other users of Isabelle:
+
+TODO
+
+
 \subsection{Acknowledgement}
+
+%I’d like to thank Andreas Lochbihler for his gladly given and very effective help during the development of this theory. I’d also like to thank Brian Huffmann and Christian Urban for their help on HOLCF and Nominal, respectively. This work was supported by the Deutsche Telekom Stiftung.
+
+TODO
 
 \clearpage
 \newcommand{\theory}[1]{\subsection{#1}\label{sec_#1}\input{#1.tex}}
-
-%\let\OldInput\input
-%\renewcommand{\input}[1]{{
-%        \chapter{#1}
-%        \OldInput{#1}
-%}}
 
 \section{Auxillary theories}
 \label{ch_aux}
 
 \theory{Pointwise}
-
 \theory{AList-Utils}
 
 \theory{Nominal-Utils}
-
 \theory{AList-Utils-Nominal}
 
 \theory{HOLCF-Utils}
-
+\theory{HOLCF-Meet}
 \theory{Nominal-HOLCF}
 
-\clearpage
-\section{Functions as environments}
 
 \theory{Env}
-
 \theory{Env-Nominal}
-
 \theory{Env-HOLCF}
-
 \theory{HeapToEnv}
+
 
 \clearpage
 \section{Launchbury's natural semantics}
+\label{ch_natsem}
 
 \theory{Vars}
 \theory{Vars-Nominal-HOLCF}
 \theory{Terms}
 \theory{Heap}
-
 \theory{Launchbury}
 
-\clearpage
-\section{Abstract denotational semantics for heaps}
-
-\theory{HasESem}
-
-\theory{Iterative}
-
-\theory{HSemUpd}
-
-\clearpage
-\section{Abstract denotational semantics for expressions}
+\section{Denotational domain}
+\label{ch_dendom}
 
 \theory{AbstractDenotational}
-
 \theory{Abstract-Denotational-Props}
+\theory{Value}
+
 
 \clearpage
 \section{Denotational semantics}
+\label{ch_den}
 
-\theory{Value}
-
+\theory{HasESem}
+\theory{Iterative}
+\theory{HSemUpd}
 \theory{Denotational}
 
-\clearpage
-\section{Correctness}
-
-
-\theory{CorrectnessOriginal}
 
 \clearpage
-\section{Resourced denotational semantics}
+\section{Resourced denotational domain}
+\label{ch_resden}
 
 \theory{C}
-
-\theory{CValue}
-
-\theory{HOLCF-Meet}
-
 \theory{C-Meet}
-
 \theory{C-restr}
-
+\theory{CValue}
 \theory{ResourcedDenotational}
 
-\clearpage
-\section{Adequacy with regard to the resourced semantics}
 
+\clearpage
+\section{Correctness of the natural semantics}
+\label{ch_correctness}
+
+\theory{CorrectnessOriginal}
 \theory{CorrectnessResourced}
 
-\theory{ResourcedAdequacy}
+\clearpage
+\section{Equivalence of the denotational semantics}
+\label{ch_equiv}
+
+\theory{ValueSimilarity}
+\theory{Denotational-Related}
 
 \clearpage
 \section{Adequacy}
+\label{ch_adequacy}
 
-\theory{ValueSimilarity}
-
-\theory{Denotational-Related}
-
+\theory{ResourcedAdequacy}
 \theory{Adequacy}
+
+
+%\clearpage
+%\section{Conclusion}
+%
+%TODO
 
 \clearpage
 \bibliographystyle{abbrv}

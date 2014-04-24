@@ -75,18 +75,20 @@ next
 case (Variable \<Gamma> x e L \<Delta> z)
   hence [simp]:"x \<in> domA \<Gamma>" by (metis domA_from_set map_of_is_SomeD)
 
+  let ?\<Gamma> = "delete x \<Gamma>"
+
   case 2
   have "x \<notin> domA \<Delta>"
     by (rule reds_avoids_live[OF Variable.hyps(2)], simp_all)
 
-  have subset: "domA (delete x \<Gamma>) \<subseteq> domA \<Delta>"
+  have subset: "domA ?\<Gamma> \<subseteq> domA \<Delta>"
     by (rule reds_doesnt_forget[OF Variable.hyps(2)])
 
-  have "fv (delete x \<Gamma>, e) \<union> {x} \<subseteq> fv (\<Gamma>, Var x)"
+  have "fv (?\<Gamma>, e) \<union> {x} \<subseteq> fv (\<Gamma>, Var x)"
     by (rule fv_delete_heap[OF `map_of \<Gamma> x = Some e`])
-  hence prem: "fv (delete x \<Gamma>, e) - domA (delete x \<Gamma>) \<subseteq> set (x # L)" using 2 by auto
+  hence prem: "fv (?\<Gamma>, e) - domA ?\<Gamma> \<subseteq> set (x # L)" using 2 by auto
 
-  have fv_subset: "fv (delete x \<Gamma>, e) - domA (delete x \<Gamma>) \<subseteq> - (domA \<Delta> - domA \<Gamma>)"
+  have fv_subset: "fv (?\<Gamma>, e) - domA ?\<Gamma> \<subseteq> - (domA \<Delta> - domA \<Gamma>)"
     apply (rule subset_trans[OF prem])
     apply (rule subset_trans[OF reds_avoids_live'[OF Variable.hyps(2)]])
     by auto
@@ -94,11 +96,11 @@ case (Variable \<Gamma> x e L \<Delta> z)
   let "?new" = "domA \<Delta> - domA \<Gamma>"
   have "domA \<Gamma> \<subseteq> (-?new)" by auto
 
-  have "\<lbrace>\<Gamma>\<rbrace>\<rho> = \<lbrace>(x,e) # delete x \<Gamma>\<rbrace>\<rho>"
+  have "\<lbrace>\<Gamma>\<rbrace>\<rho> = \<lbrace>(x,e) # ?\<Gamma>\<rbrace>\<rho>"
     by (rule HSem_reorder[OF map_of_delete_insert[symmetric, OF Variable(1)]])
-  also have "\<dots> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>(domA (delete x \<Gamma>))\<^esub> (\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>))"
+  also have "\<dots> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>(domA ?\<Gamma>)\<^esub> (\<lbrace>?\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>))"
     by (rule iterative_HSem, simp)
-  also have "\<dots> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>(domA (delete x \<Gamma>))\<^esub> (\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>delete x \<Gamma>\<rbrace>\<rho>'\<^esub>))"
+  also have "\<dots> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>(domA ?\<Gamma>)\<^esub> (\<lbrace>?\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>?\<Gamma>\<rbrace>\<rho>'\<^esub>))"
     by (rule iterative_HSem', simp)
   finally
   have "(\<lbrace>\<Gamma>\<rbrace>\<rho>)f|` (- ?new) = (...) f|` (- ?new)" by simp
@@ -109,12 +111,12 @@ case (Variable \<Gamma> x e L \<Delta> z)
     case 2 show ?case ..
   next
     case (3 \<sigma> \<sigma>')
-    hence "\<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>delete x \<Gamma>\<rbrace>\<sigma>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>delete x \<Gamma>\<rbrace>\<sigma>'\<^esub>"
-      and "(\<lbrace>delete x \<Gamma>\<rbrace>\<sigma>) f|` domA (delete x \<Gamma>) = (\<lbrace>delete x \<Gamma>\<rbrace>\<sigma>') f|` domA (delete x \<Gamma>)"
+    hence "\<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>?\<Gamma>\<rbrace>\<sigma>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>?\<Gamma>\<rbrace>\<sigma>'\<^esub>"
+      and "(\<lbrace>?\<Gamma>\<rbrace>\<sigma>) f|` domA ?\<Gamma> = (\<lbrace>?\<Gamma>\<rbrace>\<sigma>') f|` domA ?\<Gamma>"
       using fv_subset by (auto intro: ESem_fresh_cong HSem_fresh_cong  fmap_restr_eq_subset[OF _ 3])
     from trans[OF this(1) Variable(3)[OF prem]] trans[OF this(2) Variable(4)[OF prem]]
-    have  "\<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>delete x \<Gamma>\<rbrace>\<sigma>\<^esub> = \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<sigma>'\<^esub>"
-       and "(\<lbrace>delete x \<Gamma>\<rbrace>\<sigma>) f|` domA (delete x \<Gamma>) = (\<lbrace>\<Delta>\<rbrace>\<sigma>') f|` domA (delete x \<Gamma>)".
+    have  "\<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>?\<Gamma>\<rbrace>\<sigma>\<^esub> = \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<sigma>'\<^esub>"
+       and "(\<lbrace>?\<Gamma>\<rbrace>\<sigma>) f|` domA ?\<Gamma> = (\<lbrace>\<Delta>\<rbrace>\<sigma>') f|` domA ?\<Gamma>".
     thus ?case
       using subset
       by (auto intro!: ext simp add: lookup_fun_merge_eq  lookup_fmap_restr_eq dest: fmap_restr_eqD )
