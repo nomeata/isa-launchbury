@@ -55,7 +55,6 @@ lemma eval_test2:
 subsubsection {* Better Introduction variables *}
 
 lemma reds_ApplicationI:
-  assumes "atom y \<sharp> x" (* Less freshness required here *)
   assumes "\<Gamma> : e \<Down>\<^bsub>x # L\<^esub> \<Delta> : Lam [y]. e'"
   assumes "\<Delta> : e'[y::=x] \<Down>\<^bsub>L\<^esub> \<Theta> : z"
   shows "\<Gamma> : App e x \<Down>\<^bsub>L\<^esub> \<Theta> : z"
@@ -66,21 +65,30 @@ proof-
     using `atom y' \<sharp> _`
     by (auto simp add: Abs1_eq_iff fresh_Pair fresh_at_base)
 
-  have [simp]: "(y' \<leftrightarrow> y) \<bullet> x = x" using `atom y \<sharp> _`  `atom y' \<sharp> _`
-      by (simp add: flip_fresh_fresh fresh_Pair fresh_at_base)
+  have b: "((y' \<leftrightarrow> y) \<bullet> e')[y'::=x] = e'[y::=x]"
+  proof(cases "x = y")
+    case True
+    have "atom y' \<sharp> e'" using `atom y' \<sharp> _` by simp
+    thus ?thesis
+      by (simp add: True subst_swap_same  subst_subst_back)
+  next
+    case False
+    hence "atom y \<sharp> x" by simp
 
-  have "((y' \<leftrightarrow> y) \<bullet> e')[y'::=x] = (y' \<leftrightarrow> y) \<bullet> (e'[y::=x])" by simp
-  also have "\<dots> = e'[y::=x]"
-    using `atom y \<sharp> _`  `atom y' \<sharp> _`
-    by (simp add: flip_fresh_fresh fresh_Pair fresh_at_base subst_pres_fresh)
-  finally
-  have b: "((y' \<leftrightarrow> y) \<bullet> e')[y'::=x] = e'[y::=x]".
+    have [simp]: "(y' \<leftrightarrow> y) \<bullet> x = x" using `atom y \<sharp> _`  `atom y' \<sharp> _`
+        by (simp add: flip_fresh_fresh fresh_Pair fresh_at_base)
 
+    have "((y' \<leftrightarrow> y) \<bullet> e')[y'::=x] = (y' \<leftrightarrow> y) \<bullet> (e'[y::=x])" by simp
+    also have "\<dots> = e'[y::=x]"
+      using `atom y \<sharp> _`  `atom y' \<sharp> _`
+      by (simp add: flip_fresh_fresh fresh_Pair fresh_at_base subst_pres_fresh)
+    finally
+    show ?thesis.
+  qed
   have "atom y' \<sharp> (\<Gamma>, e, x, L, \<Delta>, \<Theta>, z)" using  `atom y' \<sharp> _` by (simp add: fresh_Pair)
-  from  this assms(2,3)[folded a b]
+  from this assms[folded a b]
   show ?thesis ..
 qed
-
 
 subsubsection {* Properties of the semantics *}
 

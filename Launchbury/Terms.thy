@@ -290,4 +290,20 @@ proof-
     using supp_subst by (auto simp add: fv_def supp_at_base)
   finally show ?thesis.
 qed
+
+lemma fresh_star_at_base:
+  fixes x :: "'a :: at_base"
+  shows "S \<sharp>* x \<longleftrightarrow> atom x \<notin> S"
+  by (metis fresh_at_base(2) fresh_star_def)
+
+lemma subst_swap_same: "atom x \<sharp> e \<Longrightarrow>  (x \<leftrightarrow> y) \<bullet> e = e[y ::=x]"
+  and "atom x \<sharp> as \<Longrightarrow> set (bn as) \<sharp>* y \<Longrightarrow> (x \<leftrightarrow> y) \<bullet> as = as[y ::a= x]"
+by(nominal_induct  e and as avoiding: x y rule:exp_assn.strong_induct)
+  (auto simp add: fresh_star_Pair fresh_star_at_base exp_assn.bn_defs simp del: exp_assn.eq_iff)
+
+lemma subst_subst_back: "atom x \<sharp> e \<Longrightarrow>  e[y::=x][x::=y] = e" 
+  and "atom x \<sharp> as \<Longrightarrow> set (bn as) \<sharp>* y \<Longrightarrow> as[y::a=x][x::a=y] = as"
+by(nominal_induct  e and as avoiding: x y rule:exp_assn.strong_induct)
+  (auto simp add: fresh_star_Pair fresh_star_at_base  exp_assn.bn_defs simp del: exp_assn.eq_iff)
+
 end

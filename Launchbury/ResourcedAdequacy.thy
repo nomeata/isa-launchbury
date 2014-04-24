@@ -214,7 +214,7 @@ next
     obtain \<Delta> v where lhs': "\<Gamma> : e' \<Down>\<^bsub>x#S'\<^esub> \<Delta> : v" by blast 
 
     from result_evaluated_fresh[OF lhs']
-    obtain y e'' where n': "v = (Lam [y]. e'')" and "atom y \<sharp> (\<Gamma>, e', x, S', \<Delta>)" by blast
+    obtain y e'' where n': "v = (Lam [y]. e'')" and "atom y \<sharp> (x, \<Delta>)" by blast
     with lhs'
     have lhs: "\<Gamma> : e' \<Down>\<^bsub>x # S'\<^esub> \<Delta> : Lam [y]. e''" by simp
 
@@ -248,7 +248,7 @@ next
     obtain \<Theta> v' where rhs: "\<Delta> : e''[y::=x] \<Down>\<^bsub>S'\<^esub> \<Theta> : v'" using Suc.IH by blast
     
     have "\<Gamma> : App e' x \<Down>\<^bsub>S'\<^esub> \<Theta> : v'"
-      by (rule reds_ApplicationI[OF `atom y \<sharp> _` lhs rhs])
+      by (rule reds_ApplicationI[OF lhs rhs])
     hence "\<Gamma> : App e' x \<Down>\<^bsub>S\<^esub> \<Theta> : v'"
       apply (rule reds_smaller_L) using S' by auto
     thus ?thesis using App by auto
