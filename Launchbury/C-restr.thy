@@ -110,45 +110,46 @@ proof(cases "demand f" rule:C_cases)
   thus "demand g \<sqsubseteq> demand f" unfolding not_bot_demand by auto
 qed auto
 
-subsubsection {* Restricting C-valued functions *}
+subsubsection {* Restricting functions with domain C *}
 
 fixrec C_restr :: "C \<rightarrow> (C \<rightarrow> 'a::pcpo) \<rightarrow> (C \<rightarrow> 'a)"
   where "C_restr\<cdot>r\<cdot>f\<cdot>r' = (f\<cdot>(r \<sqinter> r'))" 
 
-lemma [simp]: "C_restr\<cdot>r\<cdot>\<bottom> = \<bottom>" by fixrec_simp
-lemma [simp]: "f \<cdot> \<bottom> = \<bottom> \<Longrightarrow> C_restr\<cdot>\<bottom>\<cdot>f = \<bottom>"  by fixrec_simp
+abbreviation C_restr_syn :: "(C \<rightarrow> 'a::pcpo) \<Rightarrow> C \<Rightarrow> (C \<rightarrow> 'a)" ( "_|\<^bsub>_\<^esub>" [111,110] 110)
+  where "f|\<^bsub>r\<^esub> \<equiv> C_restr\<cdot>r\<cdot>f"
 
-lemma [simp]: "C_restr\<cdot>r\<cdot>(C_restr\<cdot>r'\<cdot>v) = C_restr\<cdot>(r' \<sqinter> r)\<cdot>v"
-  apply (rule cfun_eqI)
-  apply simp
-  done
+lemma [simp]: "\<bottom>|\<^bsub>r\<^esub> = \<bottom>" by fixrec_simp
+lemma [simp]: "f\<cdot>\<bottom> = \<bottom> \<Longrightarrow> f|\<^bsub>\<bottom>\<^esub> = \<bottom>"  by fixrec_simp
+
+lemma [simp]: "(v|\<^bsub>r'\<^esub>)|\<^bsub>r\<^esub> = v|\<^bsub>(r' \<sqinter> r)\<^esub>"
+  by (rule cfun_eqI) simp
 
 lemma C_restr_eqD:
-  assumes "C_restr\<cdot>r\<cdot>f = C_restr\<cdot>r\<cdot>g"
+  assumes "f|\<^bsub>r\<^esub> = g|\<^bsub>r\<^esub>"
   assumes "r' \<sqsubseteq> r"
   shows "f\<cdot>r' = g\<cdot>r'"
 by (metis C_restr.simps assms below_refl is_meetI)
 
 lemma C_restr_below[intro, simp]:
-  "C_restr\<cdot>r\<cdot>x \<sqsubseteq> x"
+  "x|\<^bsub>r\<^esub> \<sqsubseteq> x"
   apply (rule cfun_belowI)
   apply simp
   by (metis below_refl meet_below2 monofun_cfun_arg)
   
 
 lemma C_restr_below_cong:
-  "(\<And> r'. r' \<sqsubseteq> r \<Longrightarrow> f \<cdot> r' \<sqsubseteq> g \<cdot> r') \<Longrightarrow> C_restr\<cdot>r\<cdot>f \<sqsubseteq> C_restr\<cdot>r\<cdot>g"
+  "(\<And> r'. r' \<sqsubseteq> r \<Longrightarrow> f \<cdot> r' \<sqsubseteq> g \<cdot> r') \<Longrightarrow> f|\<^bsub>r\<^esub> \<sqsubseteq> g|\<^bsub>r\<^esub>"
   apply (rule cfun_belowI)
   apply simp
   by (metis below_refl meet_below1)
 
 lemma C_restr_cong:
-  "(\<And> r'. r' \<sqsubseteq> r \<Longrightarrow> f \<cdot> r' = g \<cdot> r') \<Longrightarrow> C_restr\<cdot>r\<cdot>f = C_restr\<cdot>r\<cdot>g"
+  "(\<And> r'. r' \<sqsubseteq> r \<Longrightarrow> f \<cdot> r' = g \<cdot> r') \<Longrightarrow> f|\<^bsub>r\<^esub> = g|\<^bsub>r\<^esub>"
   apply (intro below_antisym C_restr_below_cong )
   by (metis below_refl)+
 
 lemma C_restr_C_case[simp]:
-  "C_restr\<cdot>(C\<cdot>r)\<cdot>(C_case\<cdot>f) = C_case\<cdot>(C_restr\<cdot>r\<cdot>f)"
+  "(C_case\<cdot>f)|\<^bsub>C\<cdot>r\<^esub> = C_case\<cdot>(f|\<^bsub>r\<^esub>)"
   apply (rule cfun_eqI)
   apply simp
   apply (case_tac x)
@@ -157,15 +158,15 @@ lemma C_restr_C_case[simp]:
   done
 
 lemma C_restr_eq_Cpred: 
-  assumes "C_restr\<cdot>r\<cdot>x = C_restr\<cdot>r\<cdot>y"
-  shows "C_restr\<cdot>(Cpred\<cdot>r)\<cdot>x = C_restr\<cdot>(Cpred\<cdot>r)\<cdot>y"
+  assumes "x|\<^bsub>r\<^esub> = y|\<^bsub>r\<^esub>"
+  shows "x|\<^bsub>Cpred\<cdot>r\<^esub> = y|\<^bsub>Cpred\<cdot>r\<^esub>"
   apply (rule cfun_eqI) 
   apply simp
   by (metis C_restr_eqD[OF assms] Cpred_below meet_below2 meet_comm)
 
 lemma C_restr_bot_demand:
   assumes "C\<cdot>r \<sqsubseteq> demand f"
-  shows "C_restr\<cdot>r\<cdot>f = \<bottom>"
+  shows "f|\<^bsub>r\<^esub> = \<bottom>"
 proof(rule cfun_eqI)
   fix r'
   have "f\<cdot>(r \<sqinter> r') = \<bottom>"
@@ -182,7 +183,7 @@ proof(rule cfun_eqI)
     have "demand f = C\<^sup>\<infinity>" by (cases "demand f" rule:C_cases) (auto simp add: iterate_Suc[symmetric] simp del: iterate_Suc)
     thus "f\<cdot>(r \<sqinter> r') = \<bottom>" by (metis not_bot_demand)
   qed
-  thus "C_restr\<cdot>r\<cdot>f\<cdot>r' = \<bottom>\<cdot>r'" by simp
+  thus "(f|\<^bsub>r\<^esub>)\<cdot>r' = \<bottom>\<cdot>r'" by simp
 qed
 
 subsubsection {* Restricting maps of C-valued functions *}
@@ -190,28 +191,31 @@ subsubsection {* Restricting maps of C-valued functions *}
 definition fmap_C_restr :: "C \<rightarrow> ('var::type \<Rightarrow> (C \<rightarrow> 'a::pcpo)) \<rightarrow> ('var \<Rightarrow> (C \<rightarrow> 'a))" where
   "fmap_C_restr = (\<Lambda> r f.  cfun_comp\<cdot>(C_restr\<cdot>r)\<cdot>f)"
 
-lemma fmap_C_restr_upd[simp]: "fmap_C_restr\<cdot>r\<cdot>(\<rho>(x := v)) = (fmap_C_restr\<cdot>r\<cdot>\<rho>)(x := C_restr\<cdot>r\<cdot>v)"
+abbreviation fmap_C_restr_syn :: "('var::type \<Rightarrow> (C \<rightarrow> 'a::pcpo)) \<Rightarrow> C \<Rightarrow>  ('var \<Rightarrow> (C \<rightarrow> 'a))" ( "_|\<^sup>\<circ>\<^bsub>_\<^esub>" [111,110] 110)
+  where "f|\<^sup>\<circ>\<^bsub>r\<^esub> \<equiv> fmap_C_restr\<cdot>r\<cdot>f"
+
+
+lemma fmap_C_restr_upd[simp]: "(\<rho>(x := v))|\<^sup>\<circ>\<^bsub>r\<^esub> = (\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>)(x := v|\<^bsub>r\<^esub>)"
   unfolding fmap_C_restr_def by simp
 
-lemma fmap_C_restr_lookup[simp]: "(fmap_C_restr\<cdot>r\<cdot>\<rho>) v = C_restr\<cdot>r\<cdot>(\<rho> v)"
+lemma fmap_C_restr_lookup[simp]: "(\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>) v = \<rho> v|\<^bsub>r\<^esub>"
   unfolding fmap_C_restr_def by simp
 
-lemma fmap_C_restr_fempty[simp]: "fmap_C_restr\<cdot>r\<cdot>\<bottom> = \<bottom>"
-  unfolding fmap_C_restr_def
-  by auto
+lemma fmap_C_restr_fempty[simp]: " \<bottom>|\<^sup>\<circ>\<^bsub>r\<^esub> = \<bottom>"
+  unfolding fmap_C_restr_def by auto
 
-lemma fmap_C_restr_restr_below[intro]: "fmap_C_restr\<cdot>r\<cdot>\<rho> \<sqsubseteq> \<rho>"
+lemma fmap_C_restr_restr_below[intro]: "\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub> \<sqsubseteq> \<rho>"
   by (auto intro: fun_belowI)
 
 lemma fmap_restr_eq_Cpred: 
-  assumes "fmap_C_restr\<cdot>r\<cdot>\<rho>1 = fmap_C_restr\<cdot>r\<cdot>\<rho>2"
-  shows "fmap_C_restr\<cdot>(Cpred\<cdot>r)\<cdot>\<rho>1 = fmap_C_restr\<cdot>(Cpred\<cdot>r)\<cdot>\<rho>2"
+  assumes "\<rho>1|\<^sup>\<circ>\<^bsub>r\<^esub> = \<rho>2|\<^sup>\<circ>\<^bsub>r\<^esub>"
+  shows "\<rho>1|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub> = \<rho>2|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>"
 proof(rule ext)
 next
   fix x
   from assms
-  have "(fmap_C_restr\<cdot>r\<cdot>\<rho>1) x = (fmap_C_restr\<cdot>r\<cdot>\<rho>2) x" by simp
-  thus "(fmap_C_restr\<cdot>(Cpred\<cdot>r)\<cdot>\<rho>1) x = (fmap_C_restr\<cdot>(Cpred\<cdot>r)\<cdot>\<rho>2) x"
+  have "(\<rho>1|\<^sup>\<circ>\<^bsub>r\<^esub>) x = (\<rho>2|\<^sup>\<circ>\<^bsub>r\<^esub>) x" by simp
+  thus "(\<rho>1|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>) x = (\<rho>2|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>) x"
     by (auto intro: C_restr_eq_Cpred)
 qed
 

@@ -5,8 +5,8 @@ begin
 type_synonym CEnv = "var \<Rightarrow> CValue"
 
 interpretation semantic_domain
-  "\<Lambda> f . \<Lambda> r. CFn\<cdot>(\<Lambda> v. C_restr \<cdot> r \<cdot> (f\<cdot> (C_restr \<cdot> r \<cdot> v)))"
-  "\<Lambda> x y. (\<Lambda> r. (x\<cdot>r \<down>CFn C_restr\<cdot>r\<cdot>y)\<cdot>r)"
+  "\<Lambda> f . \<Lambda> r. CFn\<cdot>(\<Lambda> v. (f\<cdot>(v|\<^bsub>r\<^esub>))|\<^bsub>r\<^esub>)"
+  "\<Lambda> x y. (\<Lambda> r. (x\<cdot>r \<down>CFn y|\<^bsub>r\<^esub>)\<cdot>r)"
   "\<Lambda> x. (\<Lambda> (C\<cdot>r). x \<cdot> r)".
 
 abbreviation ESem_syn'' ("\<N>\<lbrakk> _ \<rbrakk>\<^bsub>_\<^esub>"  [60,60] 60) where "\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> \<equiv> ESem e \<cdot> \<rho>"
@@ -15,8 +15,8 @@ abbreviation HSem_fempty  ("\<N>\<lbrace>_\<rbrace>"  [60] 60) where "\<N>\<lbra
 
 (* The same, but with some beta_cfun's and eta_cfuns resolved.*)
 lemma CESem_simps:
-  "\<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub> = (\<Lambda> (C\<cdot>r). (CFn\<cdot>(\<Lambda> v. C_restr\<cdot>r\<cdot>(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>(x := C_restr\<cdot>r\<cdot>v)\<^esub>))))"
-  "\<N>\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>\<^esub>    = (\<Lambda> (C\<cdot>r). ((\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r \<down>CFn C_restr\<cdot>r\<cdot>(\<rho> x))\<cdot>r)"
+  "\<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub> = (\<Lambda> (C\<cdot>r). CFn\<cdot>(\<Lambda> v. (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x := v|\<^bsub>r\<^esub>)\<^esub>)|\<^bsub>r\<^esub>))"
+  "\<N>\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>\<^esub>    = (\<Lambda> (C\<cdot>r). ((\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r \<down>CFn \<rho> x|\<^bsub>r\<^esub>)\<cdot>r)"
   "\<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub>      = (\<Lambda> (C\<cdot>r). (\<rho>  x) \<cdot> r)"
   "\<N>\<lbrakk> Let as body \<rbrakk>\<^bsub>\<rho>\<^esub> = (\<Lambda> (C \<cdot> r). (\<N>\<lbrakk>body\<rbrakk>\<^bsub>\<N>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub>) \<cdot> r)"
   by simp_all

@@ -44,16 +44,16 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e')
     show ?thesis by (simp add: lookup_HSem_other)
   qed
 
-  have "\<N>\<lbrakk> App e x \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = (\<Lambda> (C\<cdot>r). ((\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>) \<cdot> r \<down>CFn C_restr\<cdot>r\<cdot>((\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>) x)) \<cdot> r)"
+  have "\<N>\<lbrakk> App e x \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = (\<Lambda> (C\<cdot>r). ((\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>)\<cdot>r \<down>CFn (\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>) x|\<^bsub>r\<^esub>)\<cdot>r)"
     by simp
-  also have "\<dots> \<sqsubseteq> (\<Lambda> (C\<cdot>r). ((\<N>\<lbrakk> Lam [y]. e' \<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>) \<cdot> r \<down>CFn C_restr\<cdot>r\<cdot>((\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>)  x)) \<cdot> r)"
+  also have "\<dots> \<sqsubseteq> (\<Lambda> (C\<cdot>r). ((\<N>\<lbrakk> Lam [y]. e' \<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>)\<cdot>r \<down>CFn (\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>) x|\<^bsub>r\<^esub>)\<cdot>r)"
     using Application.hyps(9)[OF prem1]
     by (fastforce intro: monofun_cfun_arg monofun_cfun_fun monofun_LAM)
-  also have "\<dots> \<sqsubseteq> (\<Lambda> (C\<cdot>r). ((\<N>\<lbrakk> Lam [y]. e' \<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>) \<cdot> r \<down>CFn C_restr\<cdot>r\<cdot>((\<N>\<lbrace>\<Delta>\<rbrace>\<rho>) x)) \<cdot> r)"
+  also have "\<dots> \<sqsubseteq> (\<Lambda> (C\<cdot>r). ((\<N>\<lbrakk> Lam [y]. e' \<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>)\<cdot>r \<down>CFn (\<N>\<lbrace>\<Delta>\<rbrace>\<rho>) x|\<^bsub>r\<^esub>)\<cdot>r)"
     by (intro monofun_cfun_arg monofun_cfun_fun monofun_LAM *) simp_all
-  also have "\<dots> = (\<Lambda> (C\<cdot>r). (((\<Lambda> (C \<cdot> r). CFn \<cdot> (\<Lambda> v. C_restr\<cdot>r\<cdot>(\<N>\<lbrakk> e' \<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho>)(y := C_restr\<cdot>r\<cdot>v)\<^esub>)))) \<cdot> r \<down>CFn C_restr\<cdot>r\<cdot>((\<N>\<lbrace>\<Delta>\<rbrace>\<rho>) x)) \<cdot> r)"
+  also have "\<dots> = (\<Lambda> (C\<cdot>r). ((case r of C\<cdot>r \<Rightarrow> CFn\<cdot>(\<Lambda> v. (\<N>\<lbrakk> e' \<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho>)(y := v|\<^bsub>r\<^esub>)\<^esub>)|\<^bsub>r\<^esub>)) \<down>CFn (\<N>\<lbrace>\<Delta>\<rbrace>\<rho>) x|\<^bsub>r\<^esub>)\<cdot>r)"
     by simp
-  also have "\<dots> \<sqsubseteq> (\<Lambda> (C\<cdot>r). ((CFn \<cdot> (\<Lambda> v. C_restr\<cdot>r\<cdot>(\<N>\<lbrakk> e' \<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho>)(y := C_restr\<cdot>r\<cdot>v)\<^esub>))) \<down>CFn C_restr\<cdot>r\<cdot>((\<N>\<lbrace>\<Delta>\<rbrace>\<rho>) x)) \<cdot> r)"
+  also have "\<dots> \<sqsubseteq>  (\<Lambda> (C\<cdot>r). (CFn\<cdot>(\<Lambda> v. (\<N>\<lbrakk> e' \<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho>)(y := v|\<^bsub>r\<^esub>)\<^esub>)|\<^bsub>r\<^esub>) \<down>CFn (\<N>\<lbrace>\<Delta>\<rbrace>\<rho>) x|\<^bsub>r\<^esub>)\<cdot>r)"
     apply (rule cfun_belowI)
     apply (case_tac xa, simp)
     apply simp
@@ -62,7 +62,7 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e')
     apply (rule monofun_cfun[OF cont2monofunE[OF _ below_C] below_C])
     apply simp
     done
-  also have "\<dots> = (\<Lambda> (C\<cdot>r). (\<N>\<lbrakk> e' \<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho>)(y := C_restr\<cdot>r\<cdot>((\<N>\<lbrace>\<Delta>\<rbrace>\<rho>) x))\<^esub>) \<cdot> r)"
+  also have "\<dots> = (\<Lambda> (C\<cdot>r). (\<N>\<lbrakk> e' \<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho>)(y := (\<N>\<lbrace>\<Delta>\<rbrace>\<rho>) x|\<^bsub>r\<^esub>)\<^esub>)\<cdot>r)"
     by simp
   also have "\<dots> \<sqsubseteq> (\<Lambda> (C\<cdot>r). (\<N>\<lbrakk> e' \<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>\<rho>)(y := (\<N>\<lbrace>\<Delta>\<rbrace>\<rho>) x)\<^esub>) \<cdot> r)"
     apply (rule cont2monofunE[OF _ _]) back
@@ -175,7 +175,7 @@ case (Let as \<Gamma> L body \<Delta> z)
   have f1: "atom ` domA (asToHeap as) \<sharp>* \<Gamma>"
     using Let(1) by (simp add: set_bn_to_atom_domA)
 
-  have "\<N>\<lbrakk> Terms.Let as body \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> \<sqsubseteq> \<N>\<lbrakk> body \<rbrakk>\<^bsub>\<N>\<lbrace>asToHeap as\<rbrace>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
+  have "\<N>\<lbrakk> Let as body \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> \<sqsubseteq> \<N>\<lbrakk> body \<rbrakk>\<^bsub>\<N>\<lbrace>asToHeap as\<rbrace>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
     apply (rule cfun_belowI)
     apply (case_tac x)
     apply (simp_all add: monofun_cfun_arg[OF below_C])
