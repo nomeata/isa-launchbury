@@ -1,5 +1,5 @@
 theory AbstractDenotational
-imports Terms Heap "Vars-Nominal-HOLCF" "HSemUpd"
+imports Terms Heap "Vars-Nominal-HOLCF" "HeapSemantics"
 begin
 
 

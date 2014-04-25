@@ -1,13 +1,8 @@
-theory HSemUpd
+theory HeapSemantics
   imports "EvalHeap" "AList-Utils-Nominal" "HasESem" Iterative
 begin
 
 subsubsection {* A locale for heap semantics, abstract in the expression semantics *}
-
-text {*
-This theory follows closely the theory @{text HSem}, but uses right-sided updates of envrionments
-instead of least upper bounds. 
-*}
 
 context has_ESem
 begin
