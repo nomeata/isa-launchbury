@@ -186,7 +186,7 @@ proof(rule cfun_eqI)
   thus "(f|\<^bsub>r\<^esub>)\<cdot>r' = \<bottom>\<cdot>r'" by simp
 qed
 
-subsubsection {* Restricting maps of C-valued functions *}
+subsubsection {* Restricting maps of C-ranged functions *}
 
 definition fmap_C_restr :: "C \<rightarrow> ('var::type \<Rightarrow> (C \<rightarrow> 'a::pcpo)) \<rightarrow> ('var \<Rightarrow> (C \<rightarrow> 'a))" where
   "fmap_C_restr = (\<Lambda> r f.  cfun_comp\<cdot>(C_restr\<cdot>r)\<cdot>f)"

@@ -15,44 +15,11 @@ translations
 translations
   "a" <= "CONST atom a"
 
-lemma Terms:
-  "\<exists> x assn e'. (e = (Lam [x]. e') \<or> (e = Var x) \<or> (e = App e' x) \<or> (e = Let assn e'))"
-  by (metis Terms.exp_assn.exhaust(1))
-lemma expressions_grammar:
-"(\<forall> var. y = Var var \<longrightarrow> P) \<longrightarrow>
-(\<forall> exp var. y = App exp var \<longrightarrow> P) \<longrightarrow>
-(\<forall> assn exp. y = Terms.Let assn exp \<longrightarrow> P) \<longrightarrow> (\<forall> var exp. y = Lam [var]. exp \<longrightarrow> P) \<longrightarrow> P"
-  by (metis exp_assn.exhaust(1)) 
+abbreviation map_of_syntax :: "var \<Rightarrow> exp \<Rightarrow> heap \<Rightarrow> bool" ("'(_, _') \<in> _") 
+  where "map_of_syntax x e \<Gamma> \<equiv> map_of \<Gamma> x = Some e"
 
-abbreviation (Grammar output)
-  "grammar_imp"
-where
-  "grammar_imp \<equiv> op \<longrightarrow>"
-
-syntax (Grammar output)
-  "_grapats" :: "term \<Rightarrow> term \<Rightarrow> term" ("_ | _")
-  "_grafirst" :: "term \<Rightarrow> term \<Rightarrow> term" ("_ ::= _")
-  "_grarest" :: "term \<Rightarrow> term \<Rightarrow> term"
-  "_firsteq" :: "term \<Rightarrow> term \<Rightarrow> term"
-  "_resteq" :: "term \<Rightarrow> term \<Rightarrow> term"
-
-translations
-  "_grapats (_firsteq all) (_grarest (CONST grammar_imp rest1 rest2))" <= "CONST grammar_imp all (CONST grammar_imp rest1 rest2)"
-  "_grapats (_resteq all) (_grarest (CONST grammar_imp rest1 rest2))" <= "_grarest (CONST grammar_imp all (CONST grammar_imp rest1 rest2))"
-  "_resteq all" <= "_grarest (CONST grammar_imp all rest)"
-  "_resteq all" <= "_resteq (CONST grammar_imp all rest)"
-  "_firsteq all" <= "_firsteq (CONST grammar_imp all rest)"
-  "_firsteq imp" <= "_firsteq (ALL x. imp)"
-  "_resteq imp" <= "_resteq (ALL x. imp)"
-  "_grafirst x t" <= "_firsteq (x = t)"
-  "t" <= "_resteq (x = t)"
-
-(*
-thm expressions_grammar[no_vars]
-thm (Grammar) expressions_grammar[no_vars]
-thm (latex) expressions_grammar[no_vars]
-thm (latex Grammar) expressions_grammar[no_vars]
-*)
+abbreviation delete_syntax :: "heap \<Rightarrow> var \<Rightarrow> heap" ("_\\_") 
+  where "delete_syntax \<Gamma> x \<equiv> delete x \<Gamma>"
 
 declare [[names_short]]
 
