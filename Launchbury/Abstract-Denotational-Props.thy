@@ -78,7 +78,7 @@ subsubsection {* Denotation of Substitution *}
 
 lemma ESem_subst_same: "\<rho> x = \<rho> y \<Longrightarrow>  \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e[x::= y] \<rbrakk>\<^bsub>\<rho>\<^esub>"
   and 
-  "\<rho> x = \<rho> y  \<Longrightarrow>  evalHeap (asToHeap as) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>) = evalHeap (asToHeap as[x::a=y]) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>) "
+  "\<rho> x = \<rho> y  \<Longrightarrow>  (\<^bold>\<lbrakk> asToHeap as \<^bold>\<rbrakk>\<^bsub>\<rho>\<^esub>) = \<^bold>\<lbrakk> asToHeap as[x::a=y] \<^bold>\<rbrakk>\<^bsub>\<rho>\<^esub>"
 proof (nominal_induct e and as avoiding: x y arbitrary: \<rho> and \<rho> rule:exp_assn.strong_induct)
 case Var thus ?case by auto
 next

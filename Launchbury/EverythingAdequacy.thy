@@ -103,7 +103,7 @@ text {*
 The semantics @{term "Rep_cfun (Denotational.HSem \<Gamma>) \<rho>"}@{text "::"}@{typ "var \<Rightarrow> Value"} of a
 heap @{term "\<Gamma> :: heap"}@{text "::"}@{typ heap}
 in an environment @{term "\<rho>"}@{text "::"}@{typ "var \<Rightarrow> Value"} is  defined by the recursive equation
-\[ @{thm "HSem_eq"[no_vars]} \]
+\[ @{thm "Denotational.HSem_eq"[no_vars]} \]
 where @{term "DUMMY ++\<^bsub>DUMMY\<^esub> DUMMY"} combines 
 
 The semantics of the heap in the empty environment @{term "\<bottom>"} is abbreviated as @{abbrev "HSem_fempty \<Gamma>"}.

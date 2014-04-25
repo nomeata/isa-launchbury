@@ -7,14 +7,17 @@ subsubsection {* A locale for heap semantics, abstract in the expression semanti
 context has_ESem
 begin
 
+abbreviation EvalHeapSem_syn  ("\<^bold>\<lbrakk> _ \<^bold>\<rbrakk>\<^bsub>_\<^esub>"  [0,0] 110)
+  where "EvalHeapSem_syn \<Gamma> \<rho> \<equiv> evalHeap \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)"
+
 definition HSem :: "('var \<times> 'exp) list \<Rightarrow> ('var \<Rightarrow> 'value) \<rightarrow> ('var \<Rightarrow> 'value)"
   where
-  "HSem \<Gamma> = (\<Lambda> \<rho> . (\<mu> \<rho>'. \<rho> ++\<^bsub>domA \<Gamma>\<^esub> evalHeap \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)))"
+  "HSem \<Gamma> = (\<Lambda> \<rho> . (\<mu> \<rho>'. \<rho> ++\<^bsub>domA \<Gamma>\<^esub> \<^bold>\<lbrakk>\<Gamma>\<^bold>\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
 
-abbreviation HSem_syn ("\<lbrace> _ \<rbrace>_"  [60,60] 60) where "\<lbrace>\<Gamma>\<rbrace>\<rho> \<equiv> HSem \<Gamma> \<cdot> \<rho>"
+abbreviation HSem_syn ("\<lbrace> _ \<rbrace>_"  [0,60] 60) where "\<lbrace>\<Gamma>\<rbrace>\<rho> \<equiv> HSem \<Gamma> \<cdot> \<rho>"
 
 lemma HSem_def':
-    "\<lbrace>\<Gamma>\<rbrace>\<rho> = (\<mu> \<rho>'. \<rho> ++\<^bsub>domA \<Gamma>\<^esub> evalHeap \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
+    "\<lbrace>\<Gamma>\<rbrace>\<rho> = (\<mu> \<rho>'. \<rho> ++\<^bsub>domA \<Gamma>\<^esub> \<^bold>\<lbrakk>\<Gamma>\<^bold>\<rbrakk>\<^bsub>\<rho>'\<^esub>)"
   unfolding HSem_def by simp
 
 subsubsection {* Induction and other lemmas about @{term HSem} *}
@@ -22,7 +25,7 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
 lemma HSem_ind:
   assumes "adm P"
   assumes "P \<bottom>"
-  assumes step: "\<And> y. P y \<Longrightarrow>  P (\<rho> ++\<^bsub>domA \<Gamma>\<^esub> (evalHeap \<Gamma> (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>y\<^esub>)))"
+  assumes step: "\<And> \<rho>'. P \<rho>' \<Longrightarrow>  P (\<rho> ++\<^bsub>domA \<Gamma>\<^esub> \<^bold>\<lbrakk>\<Gamma>\<^bold>\<rbrakk>\<^bsub>\<rho>'\<^esub>)"
   shows "P (\<lbrace>\<Gamma>\<rbrace>\<rho>)"
   unfolding HSem_def'
   apply (rule fix_ind[OF assms(1), OF assms(2)])
@@ -51,14 +54,14 @@ lemma parallel_HSem_ind:
   assumes "adm (\<lambda>\<rho>'. P (fst \<rho>') (snd \<rho>'))"
   assumes "P \<bottom> \<bottom>"
   assumes step: "\<And>y z. P y z \<Longrightarrow>
-    P (\<rho> ++\<^bsub>domA \<Gamma>\<^esub> (evalHeap \<Gamma> (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>y\<^esub>))) (\<rho>2 ++\<^bsub>domA \<Gamma>2\<^esub> (evalHeap \<Gamma>2 (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>z\<^esub>)))"
-  shows "P (\<lbrace>\<Gamma>\<rbrace>\<rho>) (\<lbrace>\<Gamma>2\<rbrace>\<rho>2)"
+    P (\<rho>\<^sub>1 ++\<^bsub>domA \<Gamma>\<^sub>1\<^esub> \<^bold>\<lbrakk>\<Gamma>\<^sub>1\<^bold>\<rbrakk>\<^bsub>y\<^esub>) (\<rho>\<^sub>2 ++\<^bsub>domA \<Gamma>\<^sub>2\<^esub> \<^bold>\<lbrakk>\<Gamma>\<^sub>2\<^bold>\<rbrakk>\<^bsub>z\<^esub>)"
+  shows "P (\<lbrace>\<Gamma>\<^sub>1\<rbrace>\<rho>\<^sub>1) (\<lbrace>\<Gamma>\<^sub>2\<rbrace>\<rho>\<^sub>2)"
   unfolding HSem_def'
   apply (rule parallel_fix_ind[OF assms(1), OF assms(2)])
   using step by simp
 
 lemma HSem_eq:
-  shows "\<lbrace>\<Gamma>\<rbrace>\<rho> = \<rho> ++\<^bsub>domA \<Gamma>\<^esub> (evalHeap \<Gamma> (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>))"
+  shows "\<lbrace>\<Gamma>\<rbrace>\<rho> = \<rho> ++\<^bsub>domA \<Gamma>\<^esub> \<^bold>\<lbrakk>\<Gamma>\<^bold>\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
   unfolding HSem_def'
   by (subst fix_eq) simp
 
@@ -204,7 +207,7 @@ lemma iterative_HSem:
 proof-
   from assms
   interpret iterative
-    where e1 =  "\<Lambda> \<rho>'. evalHeap \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)"
+    where e1 =  "\<Lambda> \<rho>'. \<^bold>\<lbrakk>\<Gamma>\<^bold>\<rbrakk>\<^bsub>\<rho>'\<^esub>"
     and e2 = "\<Lambda> \<rho>'. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>"
     and S = "domA \<Gamma>"
     and x = x by unfold_locales
@@ -225,7 +228,7 @@ lemma iterative_HSem':
 proof-
   from assms
   interpret iterative
-    where e1 =  "\<Lambda> \<rho>'. evalHeap \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)"
+    where e1 =  "\<Lambda> \<rho>'. \<^bold>\<lbrakk>\<Gamma>\<^bold>\<rbrakk>\<^bsub>\<rho>'\<^esub>"
     and e2 = "\<Lambda> \<rho>'. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>"
     and S = "domA \<Gamma>"
     and x = x by unfold_locales
@@ -255,7 +258,7 @@ next
     show ?case by simp
 next
   case (step y z)
-  have "evalHeap \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>y\<^esub>) = evalHeap \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>z\<^esub>)"
+  have "\<^bold>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>y\<^esub> = \<^bold>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>z\<^esub>"
   proof(rule evalHeap_cong')
     fix x
     assume "x \<in> domA \<Gamma>"
@@ -356,10 +359,10 @@ case (goal3 y z)
   have "fmap_delete x \<rho> = \<rho>" using `x \<notin> fdom \<rho>` by (rule fmap_delete_noop)
   moreover
   from fresh have "x \<notin> domA \<Gamma>" by (metis domA_not_fresh)
-  hence "fmap_delete x (evalHeap ((x, e) # \<Gamma>) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>y\<^esub>)) = evalHeap \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>y\<^esub>)"
+  hence "fmap_delete x (\<^bold>\<lbrakk> (x, e) # \<Gamma> \<^bold>\<rbrakk>\<^bsub>y\<^esub>) = \<^bold>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>y\<^esub>"
     by (auto intro: fmap_delete_noop dest:  set_mp[OF fdom_evalHeap_subset])
- moreover
-  have "evalHeap \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>y\<^esub>) = evalHeap \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>z\<^esub>)"
+  moreover
+  have "\<dots> = \<^bold>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>z\<^esub>"
     apply (rule evalHeap_cong[OF refl])
     apply (subst (1) step, assumption)
     using goal3(1) by auto
@@ -464,7 +467,7 @@ subsubsection {* Parallel induction *}
 lemma parallel_HSem_ind_different_ESem:
   assumes "adm (\<lambda>\<rho>'. P (fst \<rho>') (snd \<rho>'))"
   assumes "P \<bottom> \<bottom>"
-  assumes "\<And>y z. P y z \<Longrightarrow> P (\<rho> ++\<^bsub>domA h\<^esub> evalHeap h (\<lambda>e. ESem1 e $ y)) (\<rho>2 ++\<^bsub>domA h2\<^esub> evalHeap h2 (\<lambda>e. ESem2 e $ z))"
+  assumes "\<And>y z. P y z \<Longrightarrow> P (\<rho> ++\<^bsub>domA h\<^esub> evalHeap h (\<lambda>e. ESem1 e \<cdot> y)) (\<rho>2 ++\<^bsub>domA h2\<^esub> evalHeap h2 (\<lambda>e. ESem2 e \<cdot> z))"
   shows "P (has_ESem.HSem ESem1 h\<cdot>\<rho>) (has_ESem.HSem ESem2 h2\<cdot>\<rho>2)"
 proof-
   interpret HSem1: has_ESem ESem1.
