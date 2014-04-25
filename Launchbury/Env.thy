@@ -131,41 +131,36 @@ lemma fmap_delete_restr: "fmap_delete x m = m f|` (-{x})"
 
 subsubsection {* Merging of two functions *}
 
-definition fun_merge :: "'a set \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> ('a \<Rightarrow> 'b)"
-  where "fun_merge S f1 f2 = (\<lambda> x. if x \<in> S then f2 x else f1 x)"
+text {*
+We'd like to have some nice syntax for @{term "override_on"}.
+*}
 
-abbreviation fun_merge_syn ("_ f++\<^bsub>_\<^esub> _" [100, 0, 100] 100) where "f1 f++\<^bsub>S\<^esub> f2 \<equiv> fun_merge S f1 f2"
+abbreviation override_on_syn ("_ ++\<^bsub>_\<^esub> _" [100, 0, 100] 100) where "f1 ++\<^bsub>S\<^esub> f2 \<equiv> override_on f1 f2 S"
 
-lemma fun_merge_fempty[simp]: "\<bottom> f++\<^bsub>S\<^esub> m = m f|` S" 
-  by (auto simp add: fun_merge_def fmap_restr_def)
+lemma override_on_fempty[simp]: "\<bottom> ++\<^bsub>S\<^esub> m = m f|` S" 
+  by (auto simp add: override_on_def fmap_restr_def)
 
-lemma fun_merge_fempty2[simp]: "m f++\<^bsub>S\<^esub> \<bottom> = m f|` (-S)" 
-  by (auto simp add: fun_merge_def fmap_restr_def)
+lemma override_on_fempty2[simp]: "m ++\<^bsub>S\<^esub> \<bottom> = m f|` (-S)" 
+  by (auto simp add: override_on_def fmap_restr_def)
 
-lemma fdom_fun_merge[simp]: "fdom (m1 f++\<^bsub>S\<^esub> m2) = (fdom m1 - S) \<union> (fdom m2 \<inter> S)"
-  by (auto simp add: fun_merge_def fdom_def)
+lemma fdom_override_on[simp]: "fdom (m1 ++\<^bsub>S\<^esub> m2) = (fdom m1 - S) \<union> (fdom m2 \<inter> S)"
+  by (auto simp add: override_on_def fdom_def)
 
-lemma lookup_fun_merge1[simp]: "x \<in> S \<Longrightarrow> (m1 f++\<^bsub>S\<^esub> m2) x = m2 x"
-  by (auto simp add: fun_merge_def fdom_def)
-
-lemma lookup_fun_merge2[simp]:  "x \<notin> S \<Longrightarrow> (m1 f++\<^bsub>S\<^esub> m2) x = m1 x"
-  by (auto simp add: fun_merge_def fdom_def)
-
-lemma lookup_fun_merge_eq: "(m1 f++\<^bsub>S\<^esub> m2) x = (if x \<in> S then m2 x else m1 x)"
+lemma lookup_override_on_eq: "(m1 ++\<^bsub>S\<^esub> m2) x = (if x \<in> S then m2 x else m1 x)"
   by (cases "x \<notin> S") simp_all
 
-lemma fun_merge_upd_swap: 
-  "x \<notin> S \<Longrightarrow> \<rho>(x := z) f++\<^bsub>S\<^esub> \<rho>' = (\<rho> f++\<^bsub>S\<^esub> \<rho>')(x := z)"
-  by (auto simp add: fun_merge_def  fdom_def)
+lemma override_on_upd_swap: 
+  "x \<notin> S \<Longrightarrow> \<rho>(x := z) ++\<^bsub>S\<^esub> \<rho>' = (\<rho> ++\<^bsub>S\<^esub> \<rho>')(x := z)"
+  by (auto simp add: override_on_def  fdom_def)
 
-lemma fun_merge_upd: 
-  "x \<in> S \<Longrightarrow> \<rho> f++\<^bsub>S\<^esub> (\<rho>'(x := z)) = (\<rho> f++\<^bsub>S - {x}\<^esub> \<rho>')(x := z)"
-  by (auto simp add: fun_merge_def  fdom_def)
+lemma override_on_upd: 
+  "x \<in> S \<Longrightarrow> \<rho> ++\<^bsub>S\<^esub> (\<rho>'(x := z)) = (\<rho> ++\<^bsub>S - {x}\<^esub> \<rho>')(x := z)"
+  by (auto simp add: override_on_def  fdom_def)
 
-lemma fmap_restr_add: "(m1 f++\<^bsub>S2\<^esub> m2) f|` S = m1 f|` S f++\<^bsub>S2\<^esub> m2 f|` S"
-  by (auto simp add: fun_merge_def  fdom_def fmap_restr_def)
+lemma fmap_restr_add: "(m1 ++\<^bsub>S2\<^esub> m2) f|` S = m1 f|` S ++\<^bsub>S2\<^esub> m2 f|` S"
+  by (auto simp add: override_on_def  fdom_def fmap_restr_def)
 
-lemma fmap_delete_add: "fmap_delete x (m1 f++\<^bsub>S\<^esub> m2) = fmap_delete x m1 f++\<^bsub>S - {x}\<^esub> fmap_delete x m2"
-  by (auto simp add: fun_merge_def  fdom_def fmap_restr_def fmap_delete_def)
+lemma fmap_delete_add: "fmap_delete x (m1 ++\<^bsub>S\<^esub> m2) = fmap_delete x m1 ++\<^bsub>S - {x}\<^esub> fmap_delete x m2"
+  by (auto simp add: override_on_def  fdom_def fmap_restr_def fmap_delete_def)
 
 end

@@ -4,10 +4,10 @@ begin
 
 subsubsection {* Continuity and pcpo-valued functions *}
 
-lemma  fun_merge_belowI:
+lemma  override_on_belowI:
   assumes "\<And> a. a \<in> S \<Longrightarrow> y a \<sqsubseteq> z a"
   and "\<And> a. a \<notin> S \<Longrightarrow> x a \<sqsubseteq> z a"
-  shows  "x f++\<^bsub>S\<^esub> y \<sqsubseteq> z"
+  shows  "x ++\<^bsub>S\<^esub> y \<sqsubseteq> z"
   using assms 
   apply -
   apply (rule fun_belowI)
@@ -15,23 +15,23 @@ lemma  fun_merge_belowI:
   apply auto
   done
 
-lemma fun_merge_cont1: "cont (\<lambda> x. x f++\<^bsub>S\<^esub> m)"
-  by (rule cont2cont_lambda) (auto simp add: fun_merge_def)
+lemma override_on_cont1: "cont (\<lambda> x. x ++\<^bsub>S\<^esub> m)"
+  by (rule cont2cont_lambda) (auto simp add: override_on_def)
 
-lemma fun_merge_cont2: "cont (\<lambda> x. m f++\<^bsub>S\<^esub> x)"
-  by (rule cont2cont_lambda) (auto simp add: fun_merge_def)
+lemma override_on_cont2: "cont (\<lambda> x. m ++\<^bsub>S\<^esub> x)"
+  by (rule cont2cont_lambda) (auto simp add: override_on_def)
 
-lemma fun_merge_cont2cont[simp, cont2cont]:
+lemma override_on_cont2cont[simp, cont2cont]:
   assumes "cont f"
   assumes "cont g"
-  shows "cont (\<lambda> x. f x f++\<^bsub>S\<^esub> g x)"
-by (rule cont_apply[OF assms(1) fun_merge_cont1 cont_compose[OF fun_merge_cont2 assms(2)]])
+  shows "cont (\<lambda> x. f x ++\<^bsub>S\<^esub> g x)"
+by (rule cont_apply[OF assms(1) override_on_cont1 cont_compose[OF override_on_cont2 assms(2)]])
 
-lemma fun_merge_mono:
+lemma override_on_mono:
   assumes "x1 \<sqsubseteq> (x2 :: 'a\<Colon>type \<Rightarrow> 'b\<Colon>cpo)"
   assumes "y1 \<sqsubseteq> y2"
-  shows "x1 f++\<^bsub>S\<^esub> y1 \<sqsubseteq> x2 f++\<^bsub>S\<^esub> y2"
-by (rule below_trans[OF cont2monofunE[OF fun_merge_cont1 assms(1)] cont2monofunE[OF fun_merge_cont2 assms(2)]])
+  shows "x1 ++\<^bsub>S\<^esub> y1 \<sqsubseteq> x2 ++\<^bsub>S\<^esub> y2"
+by (rule below_trans[OF cont2monofunE[OF override_on_cont1 assms(1)] cont2monofunE[OF override_on_cont2 assms(2)]])
 
 lemma fun_upd_belowI:
   assumes "\<And> z . z \<noteq> x \<Longrightarrow> \<rho> z \<sqsubseteq> \<rho>' z" 
@@ -96,19 +96,19 @@ lemma fmap_restr_below_subset:
 using assms
 by (auto intro!: fmap_restr_belowI dest: fmap_restr_belowD)
 
-lemma  fun_merge_below_restrI:
+lemma  override_on_below_restrI:
   assumes " x f|` (-S) \<sqsubseteq> z f|` (-S)"
   and "y f|` S \<sqsubseteq> z f|` S"
-  shows  "x f++\<^bsub>S\<^esub> y \<sqsubseteq> z"
+  shows  "x ++\<^bsub>S\<^esub> y \<sqsubseteq> z"
 using assms
-by (auto intro: fun_merge_belowI dest:fmap_restr_belowD)
+by (auto intro: override_on_belowI dest:fmap_restr_belowD)
 
 lemma  fmap_below_add_restrI:
   assumes "x f|` (-S) \<sqsubseteq> y f|` (-S)"
   and     "x f|` S \<sqsubseteq> z f|` S"
-  shows  "x \<sqsubseteq> y f++\<^bsub>S\<^esub> z"
+  shows  "x \<sqsubseteq> y ++\<^bsub>S\<^esub> z"
 using assms
-by (auto intro!: fun_belowI dest:fmap_restr_belowD simp add: lookup_fun_merge_eq)
+by (auto intro!: fun_belowI dest:fmap_restr_belowD simp add: lookup_override_on_eq)
 
 lemmas fmap_restr_cont2cont[simp,cont2cont] = cont_compose[OF fmap_restr_cont]
 

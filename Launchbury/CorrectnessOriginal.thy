@@ -98,13 +98,13 @@ case (Variable \<Gamma> x e L \<Delta> z)
 
   have "\<lbrace>\<Gamma>\<rbrace>\<rho> = \<lbrace>(x,e) # ?\<Gamma>\<rbrace>\<rho>"
     by (rule HSem_reorder[OF map_of_delete_insert[symmetric, OF Variable(1)]])
-  also have "\<dots> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>(domA ?\<Gamma>)\<^esub> (\<lbrace>?\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>))"
+  also have "\<dots> = (\<mu> \<rho>'. (\<rho> ++\<^bsub>(domA ?\<Gamma>)\<^esub> (\<lbrace>?\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>))"
     by (rule iterative_HSem, simp)
-  also have "\<dots> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>(domA ?\<Gamma>)\<^esub> (\<lbrace>?\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>?\<Gamma>\<rbrace>\<rho>'\<^esub>))"
+  also have "\<dots> = (\<mu> \<rho>'. (\<rho> ++\<^bsub>(domA ?\<Gamma>)\<^esub> (\<lbrace>?\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>?\<Gamma>\<rbrace>\<rho>'\<^esub>))"
     by (rule iterative_HSem', simp)
   finally
   have "(\<lbrace>\<Gamma>\<rbrace>\<rho>)f|` (- ?new) = (...) f|` (- ?new)" by simp
-  also have "\<dots> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>domA \<Delta>\<^esub> (\<lbrace>\<Delta>\<rbrace>\<rho>'))( x := \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>'\<^esub>)) f|` (- ?new)"
+  also have "\<dots> = (\<mu> \<rho>'. (\<rho> ++\<^bsub>domA \<Delta>\<^esub> (\<lbrace>\<Delta>\<rbrace>\<rho>'))( x := \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>'\<^esub>)) f|` (- ?new)"
   proof (induction rule: parallel_fix_ind[where P ="\<lambda> x y. x f|` (- ?new) = y f|` (- ?new)"])
     case 1 show ?case by simp
   next
@@ -119,9 +119,9 @@ case (Variable \<Gamma> x e L \<Delta> z)
        and "(\<lbrace>?\<Gamma>\<rbrace>\<sigma>) f|` domA ?\<Gamma> = (\<lbrace>\<Delta>\<rbrace>\<sigma>') f|` domA ?\<Gamma>".
     thus ?case
       using subset
-      by (auto intro!: ext simp add: lookup_fun_merge_eq  lookup_fmap_restr_eq dest: fmap_restr_eqD )
+      by (auto intro!: ext simp add: lookup_override_on_eq  lookup_fmap_restr_eq dest: fmap_restr_eqD )
   qed
-  also have "\<dots> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>domA \<Delta>\<^esub> (\<lbrace>\<Delta>\<rbrace>\<rho>'))( x := \<lbrakk> z \<rbrakk>\<^bsub>\<rho>'\<^esub>)) f|` (-?new)"
+  also have "\<dots> = (\<mu> \<rho>'. (\<rho> ++\<^bsub>domA \<Delta>\<^esub> (\<lbrace>\<Delta>\<rbrace>\<rho>'))( x := \<lbrakk> z \<rbrakk>\<^bsub>\<rho>'\<^esub>)) f|` (-?new)"
     by (rule arg_cong[OF iterative_HSem'[symmetric], OF `x \<notin> domA \<Delta>`])
   also have "\<dots> = (\<lbrace>(x,z) # \<Delta>\<rbrace>\<rho>)  f|` (-?new)"
     by (rule arg_cong[OF iterative_HSem[symmetric], OF `x \<notin> domA \<Delta>`])

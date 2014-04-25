@@ -129,7 +129,7 @@ Chapter \ref{ch_aux} contains auxiliary theories, not necessarily tied to Launch
 \item Binary meets in the context of HOLCF (\isa{HOLCF-Meet}).
 \item A theory combining notions from HOLCF and Nominal, e.g.\ continuity of permutation (\isa{Nominal-HOLCF}).
 \item A theory for working with functions into a pcpo as environments (\isa{Env}, \isa{Env-Nominal}, \isa{Env-HOLCF}).
-\item A function \isa{heapToEnv} that converts between associative lists and functions. (\isa{HeapToEnv})
+\item A function \isa{evalHeap} that converts between associative lists and functions. (\isa{EvalHeap})
 \end{itemize}
 
 Chapter \ref{ch_natsem} defines the syntax and Launchbury's natural semantics.
@@ -179,7 +179,7 @@ TODO
 \theory{Env}
 \theory{Env-Nominal}
 \theory{Env-HOLCF}
-\theory{HeapToEnv}
+\theory{EvalHeap}
 
 
 \clearpage
@@ -250,6 +250,6 @@ TODO
 
 \clearpage
 \bibliographystyle{abbrv}
-\bibliography{root}
+\bibliography{root_adequacy}
 
 \end{document}

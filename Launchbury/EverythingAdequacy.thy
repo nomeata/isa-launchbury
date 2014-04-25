@@ -92,20 +92,21 @@ The type of semantic environments is  @{typ "var \<Rightarrow> Value"}.
 The semantics of an expression @{term_type "e :: exp"} in an environment @{term "\<rho>"}@{text "::"}@{typ "var \<Rightarrow> Value"} is 
 written \mbox{@{term_type "Rep_cfun (Denotational.ESem e) \<rho>"}} and defined by the following equations:
 \begin{alignstar}
-@{thm (lhs) Denotational.ESem.simps(1)[no_vars]} & = @{thm (rhs) Denotational.ESem.simps(1)[no_vars]} \\
-@{thm (lhs) Denotational.ESem.simps(2)[no_vars]} & = @{thm (rhs) Denotational.ESem.simps(2)[no_vars]} \\
-@{thm (lhs) Denotational.ESem.simps(3)[no_vars]} & = @{thm (rhs) Denotational.ESem.simps(3)[no_vars]} \\
-@{thm (lhs) Denotational.ESem.simps(4)[no_vars]} & = @{thm (rhs) Denotational.ESem.simps(4)[no_vars]}.
+@{thm (lhs) Denotational.ESem_simps(1)[no_vars]} & = @{thm (rhs) Denotational.ESem_simps(1)[no_vars]} \\
+@{thm (lhs) Denotational.ESem_simps(2)[no_vars]} & = @{thm (rhs) Denotational.ESem_simps(2)[no_vars]} \\
+@{thm (lhs) Denotational.ESem_simps(3)[no_vars]} & = @{thm (rhs) Denotational.ESem_simps(3)[no_vars]} \\
+@{thm (lhs) Denotational.ESem_simps(4)[no_vars]} & = @{thm (rhs) Denotational.ESem_simps(4)[no_vars]}.
 \end{alignstar}
 *}
 
 text {*
 The semantics @{term "Rep_cfun (Denotational.HSem \<Gamma>) \<rho>"}@{text "::"}@{typ "var \<Rightarrow> Value"} of a
 heap @{term "\<Gamma> :: heap"}@{text "::"}@{typ heap}
-in an environment @{term "\<rho>"}@{text "::"}@{typ "var \<Rightarrow> Value"}  defined by the recursive equation
-\[ @ {thm "Denotational-PropsUpd.UHSem_eq"[no_vars]}. \]
+in an environment @{term "\<rho>"}@{text "::"}@{typ "var \<Rightarrow> Value"} is  defined by the recursive equation
+\[ @{thm "HSem_eq"[no_vars]} \]
+where @{term "DUMMY ++\<^bsub>DUMMY\<^esub> DUMMY"} combines 
 
-The semantics of the heap in the empty environment @{term "fempty"} is abbreviated as @{abbrev "HSem_fempty \<Gamma>"}.
+The semantics of the heap in the empty environment @{term "\<bottom>"} is abbreviated as @{abbrev "HSem_fempty \<Gamma>"}.
 
 *}
 

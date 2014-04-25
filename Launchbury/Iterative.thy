@@ -11,10 +11,10 @@ locale iterative =
    and S :: "'a set" and x :: 'a
   assumes ne:"x \<notin> S"
 begin
-  abbreviation "L == (\<Lambda> \<rho>'. (\<rho> f++\<^bsub>S\<^esub> e1 \<cdot> \<rho>')(x := e2 \<cdot> \<rho>'))"
-  abbreviation "H == (\<lambda> \<rho>'. \<Lambda> \<rho>''. \<rho>' f++\<^bsub>S\<^esub> e1 \<cdot> \<rho>'')"
-  abbreviation "R == (\<Lambda> \<rho>'. (\<rho> f++\<^bsub>S\<^esub> (fix \<cdot> (H \<rho>')))(x := e2 \<cdot> \<rho>'))"
-  abbreviation "R' == (\<Lambda> \<rho>'. (\<rho> f++\<^bsub>S\<^esub> (fix \<cdot> (H \<rho>')))(x := e2 \<cdot> (fix \<cdot> (H \<rho>'))))"
+  abbreviation "L == (\<Lambda> \<rho>'. (\<rho> ++\<^bsub>S\<^esub> e1 \<cdot> \<rho>')(x := e2 \<cdot> \<rho>'))"
+  abbreviation "H == (\<lambda> \<rho>'. \<Lambda> \<rho>''. \<rho>' ++\<^bsub>S\<^esub> e1 \<cdot> \<rho>'')"
+  abbreviation "R == (\<Lambda> \<rho>'. (\<rho> ++\<^bsub>S\<^esub> (fix \<cdot> (H \<rho>')))(x := e2 \<cdot> \<rho>'))"
+  abbreviation "R' == (\<Lambda> \<rho>'. (\<rho> ++\<^bsub>S\<^esub> (fix \<cdot> (H \<rho>')))(x := e2 \<cdot> (fix \<cdot> (H \<rho>'))))"
 
   lemma split_x:
     fixes y
@@ -56,7 +56,7 @@ begin
       by (rule fix_least_below[OF below]) (simp_all add: ne *)
   qed
   
-  lemma iterative_fun_merge:
+  lemma iterative_override_on:
     shows "fix \<cdot> L = fix \<cdot> R"
   proof(rule below_antisym)
     show "fix \<cdot> R \<sqsubseteq> fix \<cdot> L"
@@ -70,7 +70,7 @@ begin
       done
   qed
 
-  lemma iterative_fun_merge':
+  lemma iterative_override_on':
     shows "fix \<cdot> L = fix \<cdot>  R'"
   proof(rule below_antisym)
     show "fix \<cdot> R' \<sqsubseteq> fix \<cdot> L"

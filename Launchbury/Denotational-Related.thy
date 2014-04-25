@@ -42,7 +42,7 @@ next
     proof(rule pointwiseI)
       case (goal1 x)
       show ?case using `\<rho> f\<triangleleft>\<triangleright> \<sigma>`
-        by (auto simp add: lookup_fun_merge_eq lookupHeapToEnv elim: Let(1)[OF _  `\<rho>' f\<triangleleft>\<triangleright> \<sigma>'`] )
+        by (auto simp add: lookup_override_on_eq lookupEvalHeap elim: Let(1)[OF _  `\<rho>' f\<triangleleft>\<triangleright> \<sigma>'`] )
     qed
   qed
   with Let(2)
@@ -52,6 +52,6 @@ qed
 
 theorem heaps_similar: "\<lbrace>\<Gamma>\<rbrace> f\<triangleleft>\<triangleright> \<N>\<lbrace>\<Gamma>\<rbrace>"
   by (rule parallel_HSem_ind_different_ESem[OF fmap_similar_adm])
-     (auto simp add: lookup_fmap_restr_eq lookupHeapToEnv denotational_semantics_similar simp del: app_strict)
+     (auto simp add: lookup_fmap_restr_eq lookupEvalHeap denotational_semantics_similar simp del: app_strict)
 
 end

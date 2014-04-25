@@ -1,5 +1,5 @@
 theory HSemUpd
-  imports "HeapToEnv" "AList-Utils-Nominal" "HasESem" Iterative
+  imports "EvalHeap" "AList-Utils-Nominal" "HasESem" Iterative
 begin
 
 subsubsection {* A locale for heap semantics, abstract in the expression semantics *}
@@ -14,12 +14,12 @@ begin
 
 definition HSem :: "('var \<times> 'exp) list \<Rightarrow> ('var \<Rightarrow> 'value) \<rightarrow> ('var \<Rightarrow> 'value)"
   where
-  "HSem \<Gamma> = (\<Lambda> \<rho> . (\<mu> \<rho>'. \<rho> f++\<^bsub>domA \<Gamma>\<^esub> heapToEnv \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)))"
+  "HSem \<Gamma> = (\<Lambda> \<rho> . (\<mu> \<rho>'. \<rho> ++\<^bsub>domA \<Gamma>\<^esub> evalHeap \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)))"
 
 abbreviation HSem_syn ("\<lbrace> _ \<rbrace>_"  [60,60] 60) where "\<lbrace>\<Gamma>\<rbrace>\<rho> \<equiv> HSem \<Gamma> \<cdot> \<rho>"
 
 lemma HSem_def':
-    "\<lbrace>\<Gamma>\<rbrace>\<rho> = (\<mu> \<rho>'. \<rho> f++\<^bsub>domA \<Gamma>\<^esub> heapToEnv \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
+    "\<lbrace>\<Gamma>\<rbrace>\<rho> = (\<mu> \<rho>'. \<rho> ++\<^bsub>domA \<Gamma>\<^esub> evalHeap \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
   unfolding HSem_def by simp
 
 subsubsection {* Induction and other lemmas about @{term HSem} *}
@@ -27,7 +27,7 @@ subsubsection {* Induction and other lemmas about @{term HSem} *}
 lemma HSem_ind:
   assumes "adm P"
   assumes "P \<bottom>"
-  assumes step: "\<And> y. P y \<Longrightarrow>  P (\<rho> f++\<^bsub>domA \<Gamma>\<^esub> (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>y\<^esub>)))"
+  assumes step: "\<And> y. P y \<Longrightarrow>  P (\<rho> ++\<^bsub>domA \<Gamma>\<^esub> (evalHeap \<Gamma> (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>y\<^esub>)))"
   shows "P (\<lbrace>\<Gamma>\<rbrace>\<rho>)"
   unfolding HSem_def'
   apply (rule fix_ind[OF assms(1), OF assms(2)])
@@ -42,8 +42,8 @@ proof (rule HSem_ind)
   case goal2 show ?case by (rule minimal)
   case (goal3 \<rho>')
     show ?case
-    by (rule fun_merge_belowI)
-       (auto simp add: lookupHeapToEnv  below_trans[OF monofun_cfun_arg[OF `\<rho>' \<sqsubseteq> r`] h] rho)
+    by (rule override_on_belowI)
+       (auto simp add: lookupEvalHeap  below_trans[OF monofun_cfun_arg[OF `\<rho>' \<sqsubseteq> r`] h] rho)
 qed
 
 lemma HSem_fempty_below:
@@ -56,14 +56,14 @@ lemma parallel_HSem_ind:
   assumes "adm (\<lambda>\<rho>'. P (fst \<rho>') (snd \<rho>'))"
   assumes "P \<bottom> \<bottom>"
   assumes step: "\<And>y z. P y z \<Longrightarrow>
-    P (\<rho> f++\<^bsub>domA \<Gamma>\<^esub> (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>y\<^esub>))) (\<rho>2 f++\<^bsub>domA \<Gamma>2\<^esub> (heapToEnv \<Gamma>2 (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>z\<^esub>)))"
+    P (\<rho> ++\<^bsub>domA \<Gamma>\<^esub> (evalHeap \<Gamma> (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>y\<^esub>))) (\<rho>2 ++\<^bsub>domA \<Gamma>2\<^esub> (evalHeap \<Gamma>2 (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>z\<^esub>)))"
   shows "P (\<lbrace>\<Gamma>\<rbrace>\<rho>) (\<lbrace>\<Gamma>2\<rbrace>\<rho>2)"
   unfolding HSem_def'
   apply (rule parallel_fix_ind[OF assms(1), OF assms(2)])
   using step by simp
 
 lemma HSem_eq:
-  shows "\<lbrace>\<Gamma>\<rbrace>\<rho> = \<rho> f++\<^bsub>domA \<Gamma>\<^esub> (heapToEnv \<Gamma> (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>))"
+  shows "\<lbrace>\<Gamma>\<rbrace>\<rho> = \<rho> ++\<^bsub>domA \<Gamma>\<^esub> (evalHeap \<Gamma> (\<lambda>e. \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>))"
   unfolding HSem_def'
   by (subst fix_eq) simp
 
@@ -77,7 +77,7 @@ lemma lookup_HSem_heap:
   assumes "y \<in> domA h"
   shows "(\<lbrace>h\<rbrace>\<rho>) y = \<lbrakk> the (map_of h y) \<rbrakk>\<^bsub>\<lbrace>h\<rbrace>\<rho>\<^esub>"
   apply (subst HSem_eq)
-  using assms by (simp add: lookupHeapToEnv)
+  using assms by (simp add: lookupEvalHeap)
 
 lemma HSem_fdom_subset:  "fdom (\<lbrace>\<Gamma>\<rbrace>\<rho>) \<subseteq> fdom \<rho> \<union> domA \<Gamma>"
   apply rule
@@ -86,15 +86,15 @@ lemma HSem_fdom_subset:  "fdom (\<lbrace>\<Gamma>\<rbrace>\<rho>) \<subseteq> fd
   apply (auto simp add: lookup_HSem_other)
   done
 
-lemma fmap_restr_fun_mergeI:"-S2 \<subseteq> S \<Longrightarrow> fmap_restr S \<rho>1 f++\<^bsub>S2\<^esub> \<rho>2 = \<rho>1 f++\<^bsub>S2\<^esub> \<rho>2"
-  by (rule ext) (auto simp add: lookup_fun_merge_eq )
+lemma fmap_restr_override_onI:"-S2 \<subseteq> S \<Longrightarrow> fmap_restr S \<rho>1 ++\<^bsub>S2\<^esub> \<rho>2 = \<rho>1 ++\<^bsub>S2\<^esub> \<rho>2"
+  by (rule ext) (auto simp add: lookup_override_on_eq )
 
 lemma HSem_restr:
   "\<lbrace>h\<rbrace>(\<rho> f|` (- domA h)) = \<lbrace>h\<rbrace>\<rho>"
   apply (rule parallel_HSem_ind)
   apply simp
   apply auto[1]
-  apply (subst fmap_restr_fun_mergeI)
+  apply (subst fmap_restr_override_onI)
   apply simp_all
   done
 
@@ -112,7 +112,7 @@ lemma HSem_restr_cong_below:
 lemma HSem_reorder:
   assumes "map_of \<Gamma> = map_of \<Delta>"
   shows "\<lbrace>\<Gamma>\<rbrace>\<rho> = \<lbrace>\<Delta>\<rbrace>\<rho>"
-by (simp add: HSem_def' heapToEnv_reorder[OF assms] assms dom_map_of_conv_domA[symmetric])
+by (simp add: HSem_def' evalHeap_reorder[OF assms] assms dom_map_of_conv_domA[symmetric])
 
 lemma HSem_reorder_head:
   assumes "x \<noteq> y"
@@ -121,7 +121,7 @@ proof-
   have "set ((x,e1)#(y,e2)#\<Gamma>) = set ((y,e2)#(x,e1)#\<Gamma>)"
     by auto
   thus ?thesis      
-    unfolding HSem_def heapToEnv_reorder_head[OF assms]
+    unfolding HSem_def evalHeap_reorder_head[OF assms]
     by (simp add: domA_def)
 qed
 
@@ -131,7 +131,7 @@ lemma HSem_reorder_head_append:
 proof-
   have "set ((x,e)#\<Gamma>@\<Delta>) = set (\<Gamma> @ ((x,e)#\<Delta>))" by auto
   thus ?thesis
-    unfolding HSem_def  heapToEnv_reorder_head_append[OF assms]
+    unfolding HSem_def  evalHeap_reorder_head_append[OF assms]
     by simp
 qed  
 
@@ -158,7 +158,7 @@ subsubsection {* Substitution *}
 lemma HSem_subst_exp:
   assumes "\<And>\<rho>'. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub> = \<lbrakk> e' \<rbrakk>\<^bsub>\<rho>'\<^esub>"
   shows "\<lbrace>(x, e) # \<Gamma>\<rbrace>\<rho> = \<lbrace>(x, e') # \<Gamma>\<rbrace>\<rho>"
-  by (rule parallel_HSem_ind) (auto simp add: assms heapToEnv_subst_exp)
+  by (rule parallel_HSem_ind) (auto simp add: assms evalHeap_subst_exp)
 
 lemma HSem_subst_expr_below:
   assumes below: "\<lbrakk> e1 \<rbrakk>\<^bsub>\<lbrace>(x, e2) # \<Gamma>\<rbrace>\<rho>\<^esub> \<sqsubseteq> \<lbrakk> e2 \<rbrakk>\<^bsub>\<lbrace>(x, e2) # \<Gamma>\<rbrace>\<rho>\<^esub>"
@@ -205,49 +205,43 @@ subsubsection {* Iterative definition of the heap semantics *}
 
 lemma iterative_HSem:
   assumes "x \<notin> domA \<Gamma>"
-  shows "\<lbrace>(x,e) # \<Gamma>\<rbrace>\<rho> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>domA \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
+  shows "\<lbrace>(x,e) # \<Gamma>\<rbrace>\<rho> = (\<mu> \<rho>'. (\<rho> ++\<^bsub>domA \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
 proof-
+  from assms
   interpret iterative
-    where e1 =  "\<Lambda> \<rho>'. heapToEnv \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)"
+    where e1 =  "\<Lambda> \<rho>'. evalHeap \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)"
     and e2 = "\<Lambda> \<rho>'. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>"
     and S = "domA \<Gamma>"
-    and x = x
-    apply -
-    apply unfold_locales
-    using assms
-    by (simp_all)
+    and x = x by unfold_locales
 
   have "\<lbrace>(x,e) # \<Gamma>\<rbrace>\<rho> = fix \<cdot> L"
-    by (simp add: HSem_def' fun_merge_upd ne)
+    by (simp add: HSem_def' override_on_upd ne)
   also have "\<dots> = fix \<cdot> R"
-    by (rule iterative_fun_merge)
-  also have "\<dots> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>domA \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
+    by (rule iterative_override_on)
+  also have "\<dots> = (\<mu> \<rho>'. (\<rho> ++\<^bsub>domA \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))"
     by (simp add: HSem_def')
   finally show ?thesis.
 qed
 
 lemma iterative_HSem':
   assumes "x \<notin> domA \<Gamma>"
-  shows "(\<mu> \<rho>'. (\<rho> f++\<^bsub>domA \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))
-       = (\<mu> \<rho>'. (\<rho> f++\<^bsub>domA \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>'\<^esub>))"
+  shows "(\<mu> \<rho>'. (\<rho> ++\<^bsub>domA \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>))
+       = (\<mu> \<rho>'. (\<rho> ++\<^bsub>domA \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>'\<^esub>))"
 proof-
+  from assms
   interpret iterative
-    where e1 =  "\<Lambda> \<rho>'. heapToEnv \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)"
+    where e1 =  "\<Lambda> \<rho>'. evalHeap \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)"
     and e2 = "\<Lambda> \<rho>'. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>"
     and S = "domA \<Gamma>"
-    and x = x
-    apply -
-    apply unfold_locales
-    using assms
-    by (simp_all)
+    and x = x by unfold_locales
 
-  have "(\<mu> \<rho>'. (\<rho> f++\<^bsub>domA \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)) = fix \<cdot> R"
+  have "(\<mu> \<rho>'. (\<rho> ++\<^bsub>domA \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<rho>'\<^esub>)) = fix \<cdot> R"
     by (simp add: HSem_def')
   also have "\<dots> = fix \<cdot> L"
-    by (rule iterative_fun_merge[symmetric])
+    by (rule iterative_override_on[symmetric])
   also have "\<dots> = fix \<cdot> R'"
-    by (rule iterative_fun_merge')
-  also have "\<dots> = (\<mu> \<rho>'. (\<rho> f++\<^bsub>domA \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>'\<^esub>))"
+    by (rule iterative_override_on')
+  also have "\<dots> = (\<mu> \<rho>'. (\<rho> ++\<^bsub>domA \<Gamma>\<^esub> (\<lbrace>\<Gamma>\<rbrace>\<rho>'))( x := \<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>'\<^esub>))"
     by (simp add: HSem_def')
   finally
   show ?thesis.
@@ -266,8 +260,8 @@ next
     show ?case by simp
 next
   case (step y z)
-  have "heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>y\<^esub>) = heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>z\<^esub>)"
-  proof(rule heapToEnv_cong')
+  have "evalHeap \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>y\<^esub>) = evalHeap \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>z\<^esub>)"
+  proof(rule evalHeap_cong')
     fix x
     assume "x \<in> domA \<Gamma>"
     hence "fv (the (map_of \<Gamma> x)) \<subseteq> fv \<Gamma>" by (rule map_of_fv_subset)
@@ -282,7 +276,7 @@ next
   moreover
   have "domA \<Gamma> \<subseteq> S" using domA_fv_subset assms(1) by auto
   ultimately
-  show ?case by (simp add: fmap_restr_add fmap_restr_heapToEnv_noop)
+  show ?case by (simp add: fmap_restr_add fmap_restr_evalHeap_noop)
 qed
 end
 
@@ -367,11 +361,11 @@ case (goal3 y z)
   have "fmap_delete x \<rho> = \<rho>" using `x \<notin> fdom \<rho>` by (rule fmap_delete_noop)
   moreover
   from fresh have "x \<notin> domA \<Gamma>" by (metis domA_not_fresh)
-  hence "fmap_delete x (heapToEnv ((x, e) # \<Gamma>) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>y\<^esub>)) = heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>y\<^esub>)"
-    by (auto intro: fmap_delete_noop dest:  set_mp[OF fdom_heapToEnv_subset])
+  hence "fmap_delete x (evalHeap ((x, e) # \<Gamma>) (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>y\<^esub>)) = evalHeap \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>y\<^esub>)"
+    by (auto intro: fmap_delete_noop dest:  set_mp[OF fdom_evalHeap_subset])
  moreover
-  have "heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>y\<^esub>) = heapToEnv \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>z\<^esub>)"
-    apply (rule heapToEnv_cong[OF refl])
+  have "evalHeap \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>y\<^esub>) = evalHeap \<Gamma> (\<lambda>e. \<lbrakk> e \<rbrakk>\<^bsub>z\<^esub>)"
+    apply (rule evalHeap_cong[OF refl])
     apply (subst (1) step, assumption)
     using goal3(1) by auto
   ultimately
@@ -475,7 +469,7 @@ subsubsection {* Parallel induction *}
 lemma parallel_HSem_ind_different_ESem:
   assumes "adm (\<lambda>\<rho>'. P (fst \<rho>') (snd \<rho>'))"
   assumes "P \<bottom> \<bottom>"
-  assumes "\<And>y z. P y z \<Longrightarrow> P (\<rho> f++\<^bsub>domA h\<^esub> heapToEnv h (\<lambda>e. ESem1 e $ y)) (\<rho>2 f++\<^bsub>domA h2\<^esub> heapToEnv h2 (\<lambda>e. ESem2 e $ z))"
+  assumes "\<And>y z. P y z \<Longrightarrow> P (\<rho> ++\<^bsub>domA h\<^esub> evalHeap h (\<lambda>e. ESem1 e $ y)) (\<rho>2 ++\<^bsub>domA h2\<^esub> evalHeap h2 (\<lambda>e. ESem2 e $ z))"
   shows "P (has_ESem.HSem ESem1 h\<cdot>\<rho>) (has_ESem.HSem ESem2 h2\<cdot>\<rho>2)"
 proof-
   interpret HSem1: has_ESem ESem1.
@@ -496,7 +490,7 @@ lemma HSem_cong[fundef_cong]:
   "\<lbrakk> (\<And> e. e \<in> snd ` set heap2 \<Longrightarrow> ESem1 e = ESem2 e); heap1 = heap2  \<rbrakk>
       \<Longrightarrow> has_ESem.HSem ESem1 heap1 = has_ESem.HSem ESem2 heap2"
   unfolding has_ESem.HSem_def
-  by (auto cong:heapToEnv_cong)
+  by (auto cong:evalHeap_cong)
 
 subsubsection {* Equivariance of the heap semantics *}
 
