@@ -120,27 +120,24 @@ lemma Abs_cfun_eqvt: "cont f \<Longrightarrow> (p \<bullet> Abs_cfun) f = Abs_cf
 instance "cfun" :: (cont_pt, cont_pt) cont_pt
   by (default,subst permute_cfun_eq, auto)
 
+instance "cfun" :: ("{pure,cont_pt}", "{pure,cont_pt}") pure
+  by default (auto  simp add: permute_cfun_def permute_pure Cfun.cfun.Rep_cfun_inverse)
+
+instance "cfun" :: (cont_pt, pcpo_pt) pcpo_pt
+  by (default)
 
 subsubsection {* Instance for @{type fun} *}
 
 lemma permute_fun_eq: "permute p = (\<lambda> f. (permute p) \<circ> f \<circ> (permute (-p)))"
   by (rule, rule, metis comp_apply eqvt_lambda unpermute_def)
 
-instance "fun" :: (cont_pt, cont_pt) cont_pt
+instance "fun" :: (pt, cont_pt) cont_pt
   apply (default)
   apply (rule cont2cont_lambda)
   apply (subst permute_fun_def)
   apply (rule perm_cont2cont)
   apply (rule cont_fun)
   done
-
-instance "cfun" :: ("{pure,cont_pt}", "{pure,cont_pt}") pure
-  apply default
-  apply (auto  simp add: permute_cfun_def permute_pure Cfun.cfun.Rep_cfun_inverse)
-  done
-
-instance "cfun" :: (cont_pt, pcpo_pt) pcpo_pt
-  by (default)
 
 
 lemma adm_subst2: "cont f \<Longrightarrow> cont g \<Longrightarrow> adm (\<lambda>x. f (fst x) = g (snd x))"

@@ -2,7 +2,7 @@ theory ValueSimilarity
 imports Value CValue
 begin
 
-subsubsection {* Utils (can go elsewhere) *}
+subsubsection {* Working with @{typ Value} and @{typ CValue} *}
 
 lemma value_CValue_cases:
   obtains
@@ -11,47 +11,6 @@ lemma value_CValue_cases:
   g where "x = \<bottom>" "y = CFn \<cdot> g" |
   f g where "x = Fn\<cdot>f" "y = CFn \<cdot> g"
 by (metis CValue'.exhaust Value.exhaust)
-
-lemma [simp]: "\<bottom> \<down>Fn x = \<bottom>" by (fixrec_simp)
-
-lemma Value_chainE:
-  assumes "chain Y"
-  obtains "Y = (\<lambda> _ . \<bottom>)" |
-          n Y' where "Y = (\<lambda> m. (if m < n then \<bottom> else Fn\<cdot>(Y' (m-n))))" "chain Y'"
-proof(cases "Y = (\<lambda> _ . \<bottom>)")
-  case True
-  thus ?thesis by (rule that(1))
-next
-  case False
-  hence "\<exists> i. Y i \<noteq> \<bottom>" by auto
-  hence "\<exists> n. Y n \<noteq> \<bottom> \<and> (\<forall>m. Y m \<noteq> \<bottom> \<longrightarrow> m \<ge> n)"
-    by (rule exE)(rule ex_has_least_nat)
-  then obtain n where "Y n \<noteq> \<bottom>" and "\<forall>m. m < n \<longrightarrow> Y m = \<bottom>" by fastforce
-  then obtain f where "Y n = Fn \<cdot> f" by (metis Value.exhaust)
-  {
-    fix i
-    from `chain Y` have "Y n \<sqsubseteq> Y (i+n)" by (metis chain_mono le_add2)  
-    with `Y n = _`
-    have "\<exists> g. (Y (i+n) = Fn \<cdot> g)" by (metis (full_types) Value.exhaust minimal po_eq_conv)
-  }
-  then obtain Y' where Y': "\<And> i. Y (i + n) = Fn \<cdot> (Y' i)" by metis 
-
-  have "Y = (\<lambda>m. if m < n then \<bottom> else Fn\<cdot>(Y' (m - n)))"
-      using `\<forall>m. _` Y' by (metis add_diff_inverse nat_add_commute)
-  moreover
-  have"chain Y'" using `chain Y`
-    by (auto intro!:chainI elim: chainE  simp add: Value.inverts[symmetric] Y'[symmetric] simp del: Value.inverts)
-  ultimately
-  show ?thesis by (rule that(2))
-qed
-
-abbreviation CValue_take where "CValue_take n \<equiv> cfun_map\<cdot>ID\<cdot>(CValue'_take n)"
-
-lemma CValue_chain_take: "chain CValue_take"
-  by (auto intro: chainI cfun_belowI chainE[OF CValue'.chain_take] monofun_cfun_fun)
-
-lemma CValue_reach: "(\<Squnion> n. CValue_take n\<cdot>x) = x"
-  by (auto intro:  cfun_eqI simp add: contlub_cfun_fun[OF ch2ch_Rep_cfunL[OF CValue_chain_take]]  CValue'.reach)
 
 lemma Value_CValue_take_induct:
   assumes "adm (split P)"
@@ -287,11 +246,6 @@ lemma similar_adm: "adm (\<lambda>x. fst x \<triangleleft>\<triangleright> snd x
 lemma similar_admI: "cont f \<Longrightarrow> cont g \<Longrightarrow> adm (\<lambda>x. f x \<triangleleft>\<triangleright> g x)"
   by (rule adm_subst[OF _ similar_adm, where t = "\<lambda>x. (f x, g x)", simplified]) auto
 
-lemma adm_prod_case':
-  assumes "adm (\<lambda>x. P (fst (f x)) (snd (f x)))"
-  shows "adm (\<lambda>x. case f x of (a, b) \<Rightarrow> P a b)"
-unfolding prod_case_beta using assms .
-
 lemma admD2:
   assumes "adm (\<lambda>x. P (fst x) (snd x))"
   assumes "chain Y1"
@@ -403,16 +357,13 @@ lemma similar_FnE[elim!]:
   shows P
 by (metis assms similar_FnD)
 
-subsubsection {* The similarity relation lifted to finite maps *}
+subsubsection {* The similarity relation lifted to function *}
 
-abbreviation fmap_similar :: "('a \<Rightarrow> Value) \<Rightarrow> ('a \<Rightarrow> CValue) \<Rightarrow> bool"  (infix "f\<triangleleft>\<triangleright>" 50) where
+abbreviation fmap_similar :: "('a::type \<Rightarrow> Value) \<Rightarrow> ('a \<Rightarrow> CValue) \<Rightarrow> bool"  (infix "f\<triangleleft>\<triangleright>" 50) where
   "fmap_similar \<equiv> pointwise (\<lambda>x y. x \<triangleleft>\<triangleright> y\<cdot>C\<^sup>\<infinity>)"
 
 lemma fmap_similar_adm: "adm (\<lambda>x. fst x f\<triangleleft>\<triangleright> snd x)"
-  apply (rule pointwise_adm)
-  apply (rule similar_admI)
-  apply auto
-  done
+  by (intro pointwise_adm similar_admI) auto
 
 lemma fmap_similar_fmap_bottom[simp]: "\<bottom> f\<triangleleft>\<triangleright> \<bottom>"
   by auto
