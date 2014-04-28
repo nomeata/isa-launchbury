@@ -9,7 +9,13 @@ abbreviation EvalHeapSem_syn''  ("\<^bold>\<lbrakk> _ \<^bold>\<rbrakk>\<^bsub>_
 abbreviation HSem_syn' ("\<lbrace>_\<rbrace>_"  [60,60] 60) where "\<lbrace>\<Gamma>\<rbrace>\<rho> \<equiv> HSem \<Gamma> \<cdot> \<rho>"
 abbreviation HSem_fempty  ("\<lbrace>_\<rbrace>"  [60] 60) where "\<lbrace>\<Gamma>\<rbrace> \<equiv> \<lbrace>\<Gamma>\<rbrace>\<bottom>"
 
-(* The same, but with some beta_cfun's and eta_cfuns resolved.*)
+lemma ESem_simps_as_defined:
+  "\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub> =  Fn\<cdot>(\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>(\<rho> f|` (fv (Lam [x].e)))(x := v)\<^esub>)"
+  "\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>\<^esub>    =  \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> \<down>Fn \<rho> x"
+  "\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub>      =  \<rho>  x"
+  "\<lbrakk> Let as body \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>(\<rho> f|` fv (Let as body))\<^esub>"
+  by (simp_all del: ESem_Lam ESem_Let add: ESem.simps(1,4) )
+
 lemma ESem_simps:
   "\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub> =  Fn\<cdot>(\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x := v)\<^esub>)"
   "\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>\<^esub>    =  \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> \<down>Fn \<rho> x"
