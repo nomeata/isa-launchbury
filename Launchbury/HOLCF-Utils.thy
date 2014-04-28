@@ -59,7 +59,7 @@ lemma fun_upd_cont[simp,cont2cont]:
   by (rule cont2cont_lambda)(auto simp add: assms)
 
 
-subsection {* Composition of fun and cfun *}
+subsubsection {* Composition of fun and cfun *}
 
 (*
 lemma comp_lookup_not_there[simp]: "v \<notin> fdom \<rho> \<Longrightarrow> (f \<circ> \<rho>) v = f \<bottom>"

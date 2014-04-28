@@ -206,7 +206,7 @@ lemma fv_at_base[simp]: "fv a = {a::'a::at_base}"
 lemma fv_pure[simp]: "fv (a::'a::pure) = {}"
   by (auto simp add: fv_def pure_supp)
 
-subsection {* Other useful lemmas *}
+subsubsection {* Other useful lemmas *}
 
 lemma pure_permute_id: "permute p = (\<lambda> x. (x::'a::pure))"
   by rule (simp add: permute_pure)

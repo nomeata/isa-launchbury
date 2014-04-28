@@ -84,7 +84,7 @@ proof-
   thus "S \<inter> domA \<Gamma> = {}" by auto
 qed
 
-subsection {* Pure domains *}
+subsubsection {* Pure domains *}
 
 lemma domA_fv_pure:
   fixes \<Gamma> :: "('a::at_base \<times> 'b::pure) list"
