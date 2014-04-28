@@ -32,6 +32,8 @@ definition fmap_restr :: "'a set \<Rightarrow> ('a \<Rightarrow> 'b::pcpo) \<Rig
 
 abbreviation fmap_restr_rev  (infixl "f|`"  110) where "fmap_restr_rev m S \<equiv> fmap_restr S m"
 
+notation (latex output) fmap_restr_rev ("_|\<^bsub>_\<^esub>")
+
 lemma fmap_restr_empty[simp]: "fdom m \<inter> S = {} \<Longrightarrow> m f|` S = \<bottom>"
   by (fastforce simp add: fdom_def fmap_restr_def)
 

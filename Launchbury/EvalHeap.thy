@@ -50,22 +50,19 @@ lemma lookupEvalHeap:
   assumes "v \<in> domA h"
   shows "(evalHeap h f) v = f (the (map_of h v))"
   using assms
-  apply (induct h)
-  apply simp
-  apply (case_tac a)
-  apply auto
-  done
+  by (induct h f rule: evalHeap.induct) auto
+
+lemma lookupEvalHeap':
+  assumes "map_of \<Gamma> v = Some e"
+  shows "(evalHeap \<Gamma> f) v = f e"
+  using assms
+  by (induct \<Gamma> f rule: evalHeap.induct) auto
 
 lemma lookupEvalHeap_other[simp]:
-  assumes "v \<notin> domA h"
-  shows "(evalHeap h f) v = \<bottom>"
+  assumes "v \<notin> domA \<Gamma>"
+  shows "(evalHeap \<Gamma> f) v = \<bottom>"
   using assms
-  apply (induct h)
-  apply simp
-  apply (case_tac a)
-  apply auto
-  done
-
+  by (induct \<Gamma> f rule: evalHeap.induct) auto
 
 lemma fmap_restr_evalHeap_noop:
   "domA h \<subseteq> S \<Longrightarrow> fmap_restr S (evalHeap h eval) = evalHeap h eval"
