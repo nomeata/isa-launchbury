@@ -18,7 +18,7 @@ where "bn ANil = []" | "bn (ACons x t as) = (atom x) # (bn as)"
 notation (latex output) Terms.Var ("_")
 notation (latex output) Terms.App ("_ _")
 notation (latex output) Terms.Let ("\<^raw:\textrm{\textsf{let}}> _ \<^raw:\textrm{\textsf{in}}> _")
-notation (latex output) Terms.Lam ("\<lambda>_. _")
+notation (latex output) Terms.Lam ("\<lambda>_. _"  [100, 100] 100)
 
 abbreviation
   LetBe :: "var\<Rightarrow>exp\<Rightarrow>exp\<Rightarrow>exp" ("let _ be _ in _ " [100,100,100] 100)

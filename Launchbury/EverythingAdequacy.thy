@@ -53,7 +53,7 @@ Expressions of type @{typ exp} are given by the following grammar:
 \mid {} & @{term "Var x"} && \text{variable} \\
 \mid {} & @{term "Let as e"} && \text{recursive let}
 \end{alignatstar}
-In the introduction we pretty-print expressions to match the notation in \cite{launchbury} and omit
+In the introduction we pretty-print expressions to resemble the notation in \cite{launchbury} and omit
 the constructor names @{term Var}, @{term App}, @{text Lam} and @{term Let}. In the actual theories, these are visible.
 These expressions are, due to the machinery of the Nominal package, actually alpha-equivalency classes, so @{thm alpha_test} holds provably. This differs from Launchbury's original definition, which expects distinctly-named expressions and performs explicit alpha-renaming in the semantics.
 
@@ -157,15 +157,13 @@ text {* The statement of adequacy reads:
 \]
 *}
 
-subsection {* Related work *}
-
-subsubsection {* Our earlier work *}
+subsection {* Differences to our pervious work *}
 
 text {*
 We have previously published \cite{breitner2013} of which the present work is a continuation. They differ in scope and focus:
 
 In \cite{breitner2013}, the question of the precise meaning of $\sqcup$ is discussed in detail. The
-original paper is not clear whether this operator is denotes the least upper bound, or the
+original paper is not clear about whether this operator denotes the least upper bound, or the
 right-sided override operator. A lemmas stated in \cite{launchbury} only holds for right-sided
 updates, but with that definition, Launchbury's Theorem 2 is false; a counter-example is given in
 \cite{breitner2013}. We came up with an alternative operational semantics that keeps more of the
@@ -183,7 +181,7 @@ Another difference is the choice of types for environments, which map variables 
 A naive choice is @{typ "var \<Rightarrow> Value"}, but this causes problems when defining the value semantics,
 for which
 \[
-@{thm Denotational.ESem_simps}
+@{thm Denotational.ESem_simps(1)}
 \]
 is a defining equation. The argument on the left hand side is the representative of an equivalence class
 (defined using the Nominal package), so this is only allowed if the right hand side is indeed independent
@@ -203,41 +201,73 @@ The introduction of @{text "fmap"} had further consequences. The main type class
 which we use to define domains and continuous functions on them, is the class @{class cpo}, of chain-complete
 partial orders. With the usual ordering on partial functions, @{text "(var, Value) fmap"} cannot be
 a member of this class. The fix here is to use a different ordering and only let elements be compareable
-that have the same domain. In our formalisation, the domain is alway well-known (e.g. all variables
+that have the same domain. In our formalisation, the domain is alway known (e.g.\ all variables
 bound on some heap), so this worked out.
 
 But not without causing yet another issue: With this ordering, @{text "(var, Value) fmap"} is a
-@{class cpo}, but one without a bottom element, i.e. no @{class pcpo}, and HOLCF's built-in operator
-@{term "\<mu> DUMMY. DUMMY"} for expression least fixed-points, as they occur in the semantics of heaps
-is not available. Furthermore, @{text "\<squnion>"} is not a total function, i.e. defined only on a subset of
+@{class cpo}, but lacks a bottom element, i.e.\ no it is no @{class pcpo}, and HOLCF's built-in operator
+@{term "\<mu> DUMMY. DUMMY"} for expressing least fixed-points, as they occur in the semantics of heaps,
+is not available. Furthermore, @{text "\<squnion>"} is not a total function, i.e.\ defined only on a subset of
 all possible arguments. The solution was a rather convoluted set of theories that formalize functions that
 are continuous on a specific set, fixed-points on such sets etc.
 
-In the present work, these problems are solved in a much more elegant way. The right-sided updated
+In the present work, these problems are solved in a much more elegant way. The right-sided update
 that is used instead of @{text "\<squnion>"} is a total and everywhere continous function, which is easier to
 work with. And with a small trick we defined the semantics functions so that
 \[
-@{thm Denotational.ESem_simps}
+@{thm Denotational.ESem_simps(1)}
 \]
 holds unconditionally. The actual, technical definition is
 \[
-@{thm Denotational.ESem_simps_as_defined}
+@{thm Denotational.ESem_simps_as_defined(1)}
 \]
 where the right-hand-side can be shown to be invariant of the choice of @{text x}, as
-@{term "x \<notin> fv (Lam [x]. e)"}. Later, after establishing that the semantics of @{text e} depends only
-the value of @{text e}'s free variables in the envionment, the desired equality follows as a lemma.
+@{term "x \<notin> fv (Lam [x]. e)"}. Once the function is defined, the equality
+@{thm Denotational.ESem_considers_fv'} can be proved. With that, the desired equation for
+@{thm (lhs) Denotational.ESem_simps(1)} follows. The same trick is applied to the equation for
+@{thm (lhs) Denotational.ESem_simps(4)}.
+
+This allows us to use the type @{typ "var \<Rightarrow> Value"} for the semantic envionments and considerably
+simplifies the formalization compared to \cite{breitner2013}.
+
+In short, the notable changes in this work over \cite{breitner2013} are:
+\begin{itemize}
+\item We consider @{text "\<squnion>"} to be a right-sided update and do discuss neither the problem with
+@{text "\<squnion>"} denoting the least uppper bound, nor possible solutions.
+\item This, and a simpler choice for the type of semantic environments, considerably simplifies the
+work.
+\item Most importantly, this work contians an adequacy proof.
+\end{itemize}
 *}
 
+text{*
+\subsection{Related work}
 
-text {*
-(results, finite maps)
+Lidia Sánchez-Gil, Mercedes Hidalgo-Herrero and Yolanda Ortega-Mallén have worked on formal aspects
+of Launchbury’s semantics as well.
 
-TODO (update):
+They identified a step in his adequacy proof
+relating the standard and the resourced denotational semantics that is not as trivial as it seems at
+first and worked out a detailed pen-and-paper proof \cite{functionspaces}, where they first 
+construct a similarity relation @{term "DUMMY \<triangleleft>\<triangleright> DUMMY"} between the standard semantic domain
+(@{type Value}) and the resourced domain (@{type CValue}) and show that the denotation semantics yield
+similar results (@{thm denotational_semantics_similar}), which is one step in the adequacy proof.
+We formalized this (Sections \ref{sec_ValueSimilarity} and \ref{sec_Denotational-Related}), identifying
+and fixing a mistake in the paper (Lemma 2.3(3) does not hold; the problem can be fixed by applying
+an extra round of take-induction in the proof of Proposition 9).
 
-Lidia Sánchez-Gil, Mercedes Hidalgo-Herrero and Yolanda Ortega-Mallén have worked on formal aspects of Launchbury’s semantics as well. On the one hand, they identified a step in his adequacy proof relating the standard and the resourced denotational semantics that is not as trivial as it seems at first and worked out a detailed pen-and-paper proof \cite{functionspaces}. They also plan to prove the equivalency between Launchbury’s natural semantics and a variant thereof, which was used by Launchbury in his adequacy proof, in the theorem prover Coq. As one step in that direction, they address the naming issues and suggest a mixed representation, using de Bruijn indices for locally bound variables and names for free variables \cite{nameless}. This corresponds to our treatment of names, using the Nominal logic machinery locally but not for names bound in heaps.
+Currently, they are working on completing the adequacy proof as outlined by Launchbury, i.e. by going
+via the alternative natural semantics given in \cite{launchbury}, which differs from the semantics
+above in that the application rule works with an indirection on the heap instead of a substitution
+and that the variable rule has no blackholing and no update. In \cite{indirections}, they related
+the original semantics with one where indirections have been introduced. The next step, modifying
+the variable rule, is under development. Once that is done they can close the loop and have
+completed Launchbury’s work.
 
-The same group extended Launchbury’s semantic for distributed lazy evaluation \cite{distributed}. In their modified natural semantics the heap retains the expression under evaluation with a special flag, marking them as blocked. Furthermore, the expression under evaluation has a name. Therefore the non-distributed subset of their semantics is very similar to our stacked semantics. This supports our claim that the stacked semantics is well suited for further proofs and extensions.
-*}
+This work proves the adequacy as stated by Launchbury as well, but in contrast to his proof outline no
+alternative operational semantics is introduced. The problems of indirection vs. substitution and
+of blackholing is solved on the denotational side instead.
+ *}
 
 (*<*)
 
