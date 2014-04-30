@@ -3,7 +3,7 @@ imports "Denotational" "ResourcedDenotational" ValueSimilarity
 begin
 
 theorem denotational_semantics_similar: 
-  assumes "\<rho> f\<triangleleft>\<triangleright> \<sigma>"
+  assumes "\<rho> \<triangleleft>\<triangleright>\<^sup>* \<sigma>"
   shows "\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub> \<triangleleft>\<triangleright> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>C\<^sup>\<infinity>"
 using assms
 proof(induct e arbitrary: \<rho> \<sigma> rule:exp_induct)
@@ -14,8 +14,8 @@ next
   case (Lam v e)
   { fix x y
     assume "x \<triangleleft>\<triangleright> y\<cdot>C\<^sup>\<infinity>"
-    with `\<rho> f\<triangleleft>\<triangleright> \<sigma>`
-    have "\<rho>(v := x) f\<triangleleft>\<triangleright> \<sigma>(v := y)"
+    with `\<rho> \<triangleleft>\<triangleright>\<^sup>* \<sigma>`
+    have "\<rho>(v := x) \<triangleleft>\<triangleright>\<^sup>* \<sigma>(v := y)"
       by (auto 1 4)
     hence "\<lbrakk>e\<rbrakk>\<^bsub>\<rho>(v := x)\<^esub> \<triangleleft>\<triangleright> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<sigma>(v := y)\<^esub>)\<cdot>C\<^sup>\<infinity>"
       by (rule Lam.hyps)
@@ -29,20 +29,20 @@ next
     case bot thus ?thesis by auto
   next
     case (Fn f g)
-    from `\<rho> f\<triangleleft>\<triangleright> \<sigma>`
+    from `\<rho> \<triangleleft>\<triangleright>\<^sup>* \<sigma>`
     have "\<rho> v \<triangleleft>\<triangleright> (\<sigma> v)\<cdot>C\<^sup>\<infinity>"  by auto
     thus ?thesis using Fn App' by auto
   qed
 next
   case (Let as e \<rho> \<sigma>)
-  have "\<lbrace>asToHeap as\<rbrace>\<rho> f\<triangleleft>\<triangleright> \<N>\<lbrace>asToHeap as\<rbrace>\<sigma>"
-  proof (rule parallel_HSem_ind_different_ESem[OF fmap_similar_adm fmap_similar_fmap_bottom])
+  have "\<lbrace>asToHeap as\<rbrace>\<rho> \<triangleleft>\<triangleright>\<^sup>* \<N>\<lbrace>asToHeap as\<rbrace>\<sigma>"
+  proof (rule parallel_HSem_ind_different_ESem[OF fun_similar_adm fun_similar_fmap_bottom])
     case (goal1 \<rho>' \<sigma>')
     show ?case
     proof(rule pointwiseI)
       case (goal1 x)
-      show ?case using `\<rho> f\<triangleleft>\<triangleright> \<sigma>`
-        by (auto simp add: lookup_override_on_eq lookupEvalHeap elim: Let(1)[OF _  `\<rho>' f\<triangleleft>\<triangleright> \<sigma>'`] )
+      show ?case using `\<rho> \<triangleleft>\<triangleright>\<^sup>* \<sigma>`
+        by (auto simp add: lookup_override_on_eq lookupEvalHeap elim: Let(1)[OF _  `\<rho>' \<triangleleft>\<triangleright>\<^sup>* \<sigma>'`] )
     qed
   qed
   with Let(2)
@@ -50,8 +50,8 @@ next
   thus ?case by simp
 qed
 
-theorem heaps_similar: "\<lbrace>\<Gamma>\<rbrace> f\<triangleleft>\<triangleright> \<N>\<lbrace>\<Gamma>\<rbrace>"
-  by (rule parallel_HSem_ind_different_ESem[OF fmap_similar_adm])
+theorem heaps_similar: "\<lbrace>\<Gamma>\<rbrace> \<triangleleft>\<triangleright>\<^sup>* \<N>\<lbrace>\<Gamma>\<rbrace>"
+  by (rule parallel_HSem_ind_different_ESem[OF fun_similar_adm])
      (auto simp add: lookup_fmap_restr_eq lookupEvalHeap denotational_semantics_similar simp del: app_strict)
 
 end

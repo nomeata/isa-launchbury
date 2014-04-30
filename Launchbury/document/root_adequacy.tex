@@ -51,6 +51,9 @@
 \newenvironment{alignatstar}{\csname alignat*\endcsname}{\csname endalignat*\endcsname}
 
 
+% Entering \ in Isabelle/jEdit has unwanted consequences
+\catcode`\|=0 %
+
 \begin{document}
 
 \title{The Correctness and Adequacy of Launchbury's Natural Semantics for Lazy Evaluation}
