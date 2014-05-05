@@ -11,8 +11,6 @@ notation (latex output) "Denotational-PropsUpd.HSem_syn" ("\<lbrace>_\<rbrace>\<
 translations
   "xs" <= "CONST set xs"
 translations
-  "xs" <= "CONST asToHeap xs"
-translations
   "a" <= "CONST atom a"
 
 abbreviation map_of_syntax :: "'a::type \<Rightarrow> 'b::type \<Rightarrow> ('a \<times> 'b) list \<Rightarrow> bool" ("'(_, _') \<in> _") 

@@ -22,14 +22,17 @@ next
 next
   case (Let as e)
 
-  have "\<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub> = \<lbrakk>e\<rbrakk>\<^bsub>(\<lbrace>asToHeap as\<rbrace>\<rho>) f|` (fv as \<union> fv e)\<^esub>"
-    by (subst (1 2) Let(2)) (simp add: sup_commute)
+  have "\<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>as\<rbrace>\<rho>\<^esub> = \<lbrakk>e\<rbrakk>\<^bsub>(\<lbrace>as\<rbrace>\<rho>) f|` (fv as \<union> fv e)\<^esub>"
+    apply (subst (1 2) Let(2))
+    apply simp
+    apply (metis inf_sup_absorb sup_commute)
+    done
   also
-  have "fv (asToHeap as) \<subseteq> fv as \<union> fv e" using fv_asToHeap by auto
-  hence "(\<lbrace>asToHeap as\<rbrace>\<rho>) f|` (fv as \<union> fv e) = \<lbrace>asToHeap as\<rbrace>(\<rho> f|` (fv as \<union> fv e))"
+  have "fv as \<subseteq> fv as \<union> fv e" by (rule inf_sup_ord(3))
+  hence "(\<lbrace>as\<rbrace>\<rho>) f|` (fv as \<union> fv e) = \<lbrace>as\<rbrace>(\<rho> f|` (fv as \<union> fv e))"
      by (rule HSem_ignores_fresh_restr'[OF _ Let(1)])
   also
-  have "\<lbrace>asToHeap as\<rbrace>(\<rho> f|` (fv as \<union> fv e)) = \<lbrace>asToHeap as\<rbrace>\<rho> f|` (fv as \<union> fv e - domA (asToHeap as))"
+  have "\<lbrace>as\<rbrace>(\<rho> f|` (fv as \<union> fv e)) = \<lbrace>as\<rbrace>\<rho> f|` (fv as \<union> fv e - domA as)"
     by (rule HSem_restr_cong) (auto simp add: lookup_fmap_restr_eq)
   finally
   show ?case by simp
@@ -59,15 +62,15 @@ proof-
 qed
 declare ESem.simps(1)[simp del]
 
-lemma ESem_Let[simp]: "\<lbrakk>Let as body\<rbrakk>\<^bsub>\<rho>\<^esub> = tick \<cdot> (\<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub>)"
+lemma ESem_Let[simp]: "\<lbrakk>Let as body\<rbrakk>\<^bsub>\<rho>\<^esub> = tick \<cdot> (\<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>as\<rbrace>\<rho>\<^esub>)"
 proof-
-  have "\<lbrakk> Let as body \<rbrakk>\<^bsub>\<rho>\<^esub> = tick \<cdot> (\<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>(\<rho> f|` fv (Let as body))\<^esub>)" 
+  have "\<lbrakk> Let as body \<rbrakk>\<^bsub>\<rho>\<^esub> = tick \<cdot> (\<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>as\<rbrace>(\<rho> f|` fv (Let as body))\<^esub>)" 
     by simp
-  also have "\<lbrace>asToHeap as\<rbrace>(\<rho> f|` fv(Let as body)) = \<lbrace>asToHeap as\<rbrace>(\<rho> f|` (fv as \<union> fv body))" 
+  also have "\<lbrace>as\<rbrace>(\<rho> f|` fv(Let as body)) = \<lbrace>as\<rbrace>(\<rho> f|` (fv as \<union> fv body))" 
     by (rule HSem_restr_cong) (auto simp add: lookup_fmap_restr_eq)
-  also have "\<dots> = (\<lbrace>asToHeap as\<rbrace>\<rho>) f|` (fv as \<union> fv body)"
+  also have "\<dots> = (\<lbrace>as\<rbrace>\<rho>) f|` (fv as \<union> fv body)"
     by (rule HSem_ignores_fresh_restr'[symmetric, OF _ ESem_considers_fv]) simp
-  also have "\<lbrakk>body\<rbrakk>\<^bsub>\<dots>\<^esub> = \<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub>"
+  also have "\<lbrakk>body\<rbrakk>\<^bsub>\<dots>\<^esub> = \<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>as\<rbrace>\<rho>\<^esub>"
     by (rule ESem_fresh_cong) (auto simp add: lookup_fmap_restr_eq)
   finally show ?thesis.
 qed
@@ -78,8 +81,8 @@ subsubsection {* Denotation of Substitution *}
 
 lemma ESem_subst_same: "\<rho> x = \<rho> y \<Longrightarrow>  \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e[x::= y] \<rbrakk>\<^bsub>\<rho>\<^esub>"
   and 
-  "\<rho> x = \<rho> y  \<Longrightarrow>  (\<^bold>\<lbrakk> asToHeap as \<^bold>\<rbrakk>\<^bsub>\<rho>\<^esub>) = \<^bold>\<lbrakk> asToHeap as[x::a=y] \<^bold>\<rbrakk>\<^bsub>\<rho>\<^esub>"
-proof (nominal_induct e and as avoiding: x y arbitrary: \<rho> and \<rho> rule:exp_assn.strong_induct)
+  "\<rho> x = \<rho> y  \<Longrightarrow>  (\<^bold>\<lbrakk> as \<^bold>\<rbrakk>\<^bsub>\<rho>\<^esub>) = \<^bold>\<lbrakk> as[x::h=y] \<^bold>\<rbrakk>\<^bsub>\<rho>\<^esub>"
+proof (nominal_induct e and as avoiding: x y arbitrary: \<rho> and \<rho> rule:exp_heap_strong_induct)
 case Var thus ?case by auto
 next
 case App
@@ -87,28 +90,28 @@ case App
   show ?case by auto
 next
 case (Let as exp x y \<rho>)
-  from `set (bn as) \<sharp>* x` `set (bn as) \<sharp>* y` 
-  have "x \<notin> domA (asToHeap as)" "y \<notin> domA (asToHeap as)"
-    by (induct as rule: exp_assn.bn_inducts, auto simp add: exp_assn.bn_defs fresh_star_insert)
-  hence [simp]:"domA (asToHeap (as[x::a=y])) = domA (asToHeap as)" 
-     by (induct as rule: exp_assn.bn_inducts, auto)
+  from `atom \` domA as \<sharp>* x` `atom \` domA as  \<sharp>* y` 
+  have "x \<notin> domA as" "y \<notin> domA as"
+    by (metis fresh_star_at_base imageI)+
+  hence [simp]:"domA (as[x::h=y]) = domA as" 
+    by (metis bn_subst)
 
   from `\<rho> x = \<rho> y`
-  have "(\<lbrace>asToHeap as\<rbrace>\<rho>) x = (\<lbrace>asToHeap as\<rbrace>\<rho>) y"
-    using `x \<notin> domA (asToHeap as)` `y \<notin> domA (asToHeap as)`
+  have "(\<lbrace>as\<rbrace>\<rho>) x = (\<lbrace>as\<rbrace>\<rho>) y"
+    using `x \<notin> domA as` `y \<notin> domA as`
     by (simp add: lookup_HSem_other)
-  hence "\<lbrakk>exp\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub> = \<lbrakk>exp[x::=y]\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub>"
+  hence "\<lbrakk>exp\<rbrakk>\<^bsub>\<lbrace>as\<rbrace>\<rho>\<^esub> = \<lbrakk>exp[x::=y]\<rbrakk>\<^bsub>\<lbrace>as\<rbrace>\<rho>\<^esub>"
     by (rule Let)
   moreover
   from `\<rho> x = \<rho> y`
-  have "\<lbrace>asToHeap as\<rbrace>\<rho> = \<lbrace>asToHeap as[x::a=y]\<rbrace>\<rho>" and "(\<lbrace>asToHeap as\<rbrace>\<rho>) x = (\<lbrace>asToHeap as[x::a=y]\<rbrace>\<rho>) y"
+  have "\<lbrace>as\<rbrace>\<rho> = \<lbrace>as[x::h=y]\<rbrace>\<rho>" and "(\<lbrace>as\<rbrace>\<rho>) x = (\<lbrace>as[x::h=y]\<rbrace>\<rho>) y"
     apply (induction rule: parallel_HSem_ind)
     apply (intro adm_lemmas cont2cont cont2cont_fun)
     apply simp
     apply simp
     apply simp
     apply (erule arg_cong[OF Let(3)])
-    using `x \<notin> domA (asToHeap as)` `y \<notin> domA (asToHeap as)`
+    using `x \<notin> domA as` `y \<notin> domA as`
     apply simp
     done
   ultimately
@@ -122,10 +125,10 @@ case (Lam var exp x y \<rho>)
     by (rule Lam)
   thus ?case using Lam(1,2) by simp
 next
-case ANil thus ?case by auto
+case Nil thus ?case by auto
 next
-case ACons
-  from ACons(1,2)[OF ACons(3)] ACons(3)
+case Cons
+  from Cons(1,2)[OF Cons(3)] Cons(3)
   show ?case by auto
 qed
 

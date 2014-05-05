@@ -159,40 +159,40 @@ next
 case (Let as \<Gamma> L body \<Delta> z)
   case 1
   { fix a
-    assume a: "a \<in> domA (asToHeap as)"
+    assume a: "a \<in> domA as"
     have "atom a \<sharp> \<Gamma>" 
-      by (rule Let(1)[unfolded fresh_star_def set_bn_to_atom_domA, rule_format, OF imageI[OF a]])
+      by (rule Let(1)[unfolded fresh_star_def, rule_format, OF imageI[OF a]])
     hence "a \<notin> domA \<Gamma>"
       by (metis domA_not_fresh)
   }
   note * = this
 
   
-  have "fv (asToHeap as @ \<Gamma>, body) - domA (asToHeap as @ \<Gamma>) \<subseteq>  fv (\<Gamma>, Let as body) - domA \<Gamma>"
+  have "fv (as @ \<Gamma>, body) - domA (as @ \<Gamma>) \<subseteq>  fv (\<Gamma>, Let as body) - domA \<Gamma>"
     by auto
-  with 1 have prem: "fv (asToHeap as @ \<Gamma>, body) - domA (asToHeap as @ \<Gamma>) \<subseteq> set L" by auto
+  with 1 have prem: "fv (as @ \<Gamma>, body) - domA (as @ \<Gamma>) \<subseteq> set L" by auto
   
-  have f1: "atom ` domA (asToHeap as) \<sharp>* \<Gamma>"
+  have f1: "atom ` domA as \<sharp>* \<Gamma>"
     using Let(1) by (simp add: set_bn_to_atom_domA)
 
-  have "\<N>\<lbrakk> Let as body \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> \<sqsubseteq> \<N>\<lbrakk> body \<rbrakk>\<^bsub>\<N>\<lbrace>asToHeap as\<rbrace>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
+  have "\<N>\<lbrakk> Let as body \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> \<sqsubseteq> \<N>\<lbrakk> body \<rbrakk>\<^bsub>\<N>\<lbrace>as\<rbrace>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
     apply (rule cfun_belowI)
     apply (case_tac x)
     apply (simp_all add: monofun_cfun_arg[OF below_C])
     done
-  also have "\<dots> =  \<N>\<lbrakk> body \<rbrakk>\<^bsub>\<N>\<lbrace>asToHeap as @ \<Gamma>\<rbrace>\<rho>\<^esub>"
+  also have "\<dots> =  \<N>\<lbrakk> body \<rbrakk>\<^bsub>\<N>\<lbrace>as @ \<Gamma>\<rbrace>\<rho>\<^esub>"
     by (rule arg_cong[OF HSem_merge[OF f1]])
   also have "\<dots> \<sqsubseteq>  \<N>\<lbrakk> z \<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>"
     by (rule Let.hyps(4)[OF prem])
   finally
   show ?case.
 
-  have "(\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` (domA \<Gamma>) \<sqsubseteq> (\<N>\<lbrace>asToHeap as\<rbrace>(\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>)) f|` (domA \<Gamma>)"
+  have "(\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` (domA \<Gamma>) \<sqsubseteq> (\<N>\<lbrace>as\<rbrace>(\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>)) f|` (domA \<Gamma>)"
     apply (rule fun_belowI)
-    apply (case_tac "x \<in> domA (asToHeap as)")
+    apply (case_tac "x \<in> domA as")
     apply (auto simp add: lookup_HSem_other lookup_fmap_restr_eq *)
     done
-  also have "\<dots> = (\<N>\<lbrace>asToHeap as @ \<Gamma>\<rbrace>\<rho>) f|` (domA \<Gamma>)"
+  also have "\<dots> = (\<N>\<lbrace>as @ \<Gamma>\<rbrace>\<rho>) f|` (domA \<Gamma>)"
     by (rule arg_cong[OF HSem_merge[OF f1]])
   also have "\<dots> \<sqsubseteq> (\<N>\<lbrace>\<Delta>\<rbrace>\<rho>) f|` (domA \<Gamma>)"
     by (rule fmap_restr_below_subset[OF _ Let.hyps(5)[OF prem]]) simp

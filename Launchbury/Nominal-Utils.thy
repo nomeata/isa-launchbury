@@ -219,4 +219,6 @@ lemma supp_set_elem_finite:
   using assms supp_of_finite_sets
   by auto
 
+lemmas fresh_star_Cons = fresh_star_list(2)
+
 end

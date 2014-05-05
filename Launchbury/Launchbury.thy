@@ -29,8 +29,8 @@ where
   \<rbrakk> \<Longrightarrow>
     \<Gamma> : Var x \<Down>\<^bsub>L\<^esub> (x, z) # \<Delta> : z"
  | Let: "\<lbrakk>
-    set (bn as) \<sharp>* (\<Gamma>, L);
-    asToHeap as @ \<Gamma> : body \<Down>\<^bsub>L\<^esub> \<Delta> : z
+    atom ` domA as \<sharp>* (\<Gamma>, L);
+    as @ \<Gamma> : body \<Down>\<^bsub>L\<^esub> \<Delta> : z
   \<rbrakk> \<Longrightarrow>
     \<Gamma> : Let as body \<Down>\<^bsub>L\<^esub> \<Delta> : z"
 
@@ -43,13 +43,13 @@ nominal_inductive reds
 subsubsection {* Example evaluations *}
 
 lemma eval_test:
-  "[] : (Let (ACons x (Lam [y]. Var y) ANil) (Var x)) \<Down>\<^bsub>[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y)"
+  "[] : (Let [(x, Lam [y]. Var y)] (Var x)) \<Down>\<^bsub>[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y)"
 apply(auto intro!: Lambda Application Variable Let
  simp add: fresh_Pair fresh_Cons fresh_Nil fresh_star_def)
 done
 
 lemma eval_test2:
-  "y \<noteq> x \<Longrightarrow> n \<noteq> y \<Longrightarrow> n \<noteq> x \<Longrightarrow>[] : (Let (ACons x (Lam [y]. Var y) ANil) (App (Var x) x)) \<Down>\<^bsub>[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y)"
+  "y \<noteq> x \<Longrightarrow> n \<noteq> y \<Longrightarrow> n \<noteq> x \<Longrightarrow>[] : (Let [(x, Lam [y]. Var y)] (App (Var x) x)) \<Down>\<^bsub>[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y)"
   by (auto intro!: Lambda Application Variable Let simp add: fresh_Pair fresh_at_base fresh_Cons fresh_Nil fresh_star_def)
 
 subsubsection {* Better Introduction variables *}
@@ -139,14 +139,12 @@ case (Variable \<Gamma> x e L \<Delta> z)
 next
 case (Let as \<Gamma> L body \<Delta> z)
   have "x \<notin> domA \<Gamma>" by fact moreover
-  have "set (bn as) \<sharp>* L" using `set (bn as) \<sharp>* (\<Gamma>, L)` by (simp add: fresh_star_Pair)
-  hence "x \<notin> domA (asToHeap as)"
+  have "atom ` domA as \<sharp>* L" using `atom \` domA as \<sharp>* (\<Gamma>, L)` by (simp add: fresh_star_Pair)
+  hence "x \<notin> domA as"
     using `x \<in> set L`
-    apply -
-    apply (induct as rule: asToHeap.induct)
-    apply (auto simp add: exp_assn.bn_defs fresh_star_insert fresh_star_Pair)
-    by (metis finite_set fresh_finite_set_at_base fresh_set)  ultimately
-  have "x \<notin> domA (asToHeap as @ \<Gamma>)" by auto  
+    by (metis fresh_star_def imageI set_not_fresh)
+  ultimately
+  have "x \<notin> domA (as @ \<Gamma>)" by auto  
   thus ?case
     by (rule Let.hyps(3)[OF `x \<in> set L`])
 qed
@@ -208,7 +206,7 @@ next
 
 case (Let as \<Gamma> L body \<Delta> z)
   show ?case
-    proof (cases "atom x \<in> set(bn as)")
+    proof (cases "x \<in> domA as")
     case False
       hence "atom x \<sharp> as" using Let.prems by(auto simp add: fresh_Pair)      
       show ?thesis
@@ -217,13 +215,10 @@ case (Let as \<Gamma> L body \<Delta> z)
         by (auto simp add: fresh_Pair fresh_append fresh_fun_eqvt_app[OF asToHeap_eqvt])
     next
     case True
-      hence "x \<in> domA (asToHeap as)" 
-        by(induct as rule:asToHeap.induct)(auto simp add: exp_assn.bn_defs)      
-      moreover
-      have "x \<notin> set L"
+      hence "x \<notin> set L"
         using Let(1)
-        by (metis True fresh_list_elem fresh_star_Pair fresh_star_def not_self_fresh)
-      ultimately
+        by (metis fresh_PairD(2) fresh_star_def image_eqI set_not_fresh)
+      with True
       show ?thesis
       using reds_doesnt_forget[OF Let.hyps(2)] by auto
     qed
@@ -286,7 +281,7 @@ case (Variable \<Gamma> xa e L \<Delta> z L')
     by (rule reds.Variable[OF Variable(1) Variable.hyps(3)])
 next
 case (Let as \<Gamma>  L body \<Delta> z L')
-  have "set (bn as) \<sharp>* (\<Gamma>, L')"
+  have "atom ` domA as \<sharp>* (\<Gamma>, L')"
     using Let(1-3) Let.prems
     by (auto simp add: fresh_star_Pair  fresh_star_set_subset)
   thus ?case
@@ -308,6 +303,4 @@ proof-
   thus thesis using that by blast
 qed
 
-
 end
-

@@ -61,13 +61,13 @@ next
 next
   case (Let as e)
 
-  have *: "\<And> r.  (\<N>\<lbrace>asToHeap as\<rbrace>\<rho>)|\<^sup>\<circ>\<^bsub>r\<^esub> = (\<N>\<lbrace>asToHeap as\<rbrace>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>)|\<^sup>\<circ>\<^bsub>r\<^esub>"
+  have *: "\<And> r.  (\<N>\<lbrace>as\<rbrace>\<rho>)|\<^sup>\<circ>\<^bsub>r\<^esub> = (\<N>\<lbrace>as\<rbrace>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>)|\<^sup>\<circ>\<^bsub>r\<^esub>"
     apply (rule has_ESem.parallel_HSem_ind)
     apply simp
     apply simp
     apply (rule ext)
     apply (subst (1 3) fmap_C_restr_lookup)
-    apply (case_tac "x \<in> domA (asToHeap as)")
+    apply (case_tac "x \<in> domA as")
     apply (simp add: lookupEvalHeap del: fmap_C_restr_lookup)
     apply (subst (1 2) Let(1), assumption)
     apply (drule fmap_restr_eq_Cpred)
@@ -185,7 +185,7 @@ proof(induction n arbitrary: \<Gamma> e S)
 next
   case (Suc n)
   show ?case
-  proof(cases e rule:exp_assn.strong_exhaust(1)[where c = "(\<Gamma>,S)", case_names Var App Let Lam])
+  proof(cases e rule:exp_strong_exhaust(1)[where c = "(\<Gamma>,S)", case_names Var App Let Lam])
   case (Var x)
     let ?e = "the (map_of \<Gamma> x)"
     from Suc.prems[unfolded Var]
@@ -260,17 +260,17 @@ next
   case (Let as e')
     {
     from Suc.prems[unfolded Let] Let(1)
-    have prem: "(\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>asToHeap as\<rbrace>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" 
+    have prem: "(\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>as\<rbrace>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" 
       by (simp add: fresh_star_Pair del: app_strict) 
-    also have "\<N>\<lbrace>asToHeap as\<rbrace>\<N>\<lbrace>\<Gamma>\<rbrace> = \<N>\<lbrace>asToHeap as @ \<Gamma>\<rbrace>"
+    also have "\<N>\<lbrace>as\<rbrace>\<N>\<lbrace>\<Gamma>\<rbrace> = \<N>\<lbrace>as @ \<Gamma>\<rbrace>"
       apply (rule HSem_merge)
       using Let(1)
       by (auto simp add: fresh_star_Pair set_bn_to_atom_domA)
     finally 
-    have "(\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>asToHeap as @ \<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>".
+    have "(\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>as @ \<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>".
     }
     then
-    obtain \<Delta> v where "asToHeap as @ \<Gamma> : e' \<Down>\<^bsub>S\<^esub> \<Delta> : v" using Suc.IH by blast
+    obtain \<Delta> v where "as @ \<Gamma> : e' \<Down>\<^bsub>S\<^esub> \<Delta> : v" using Suc.IH by blast
     hence "\<Gamma> : Let as e' \<Down>\<^bsub>S\<^esub> \<Delta> : v"
       by (rule reds.Let[OF Let(1)])
     thus ?thesis using Let by auto

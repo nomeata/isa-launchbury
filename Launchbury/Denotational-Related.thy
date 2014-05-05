@@ -41,18 +41,18 @@ next
   qed
 next
   case (Let as e \<rho> \<sigma>)
-  have "\<lbrace>asToHeap as\<rbrace>\<rho> \<triangleleft>\<triangleright>\<^sup>* \<N>\<lbrace>asToHeap as\<rbrace>\<sigma>"
+  have "\<lbrace>as\<rbrace>\<rho> \<triangleleft>\<triangleright>\<^sup>* \<N>\<lbrace>as\<rbrace>\<sigma>"
   proof (rule parallel_HSem_ind_different_ESem[OF fun_similar_adm fun_similar_fmap_bottom])
     fix \<rho>' :: "var \<Rightarrow> Value" and \<sigma>' :: "var \<Rightarrow> CValue"
     assume "\<rho>' \<triangleleft>\<triangleright>\<^sup>* \<sigma>'"
-    show "\<rho> ++\<^bsub>domA (asToHeap as)\<^esub> \<^bold>\<lbrakk> asToHeap as \<^bold>\<rbrakk>\<^bsub>\<rho>'\<^esub> \<triangleleft>\<triangleright>\<^sup>* \<sigma> ++\<^bsub>domA (asToHeap as)\<^esub> evalHeap (asToHeap as) (\<lambda>e. \<N>\<lbrakk> e \<rbrakk>\<^bsub>\<sigma>'\<^esub>)"
+    show "\<rho> ++\<^bsub>domA as\<^esub> \<^bold>\<lbrakk> as \<^bold>\<rbrakk>\<^bsub>\<rho>'\<^esub> \<triangleleft>\<triangleright>\<^sup>* \<sigma> ++\<^bsub>domA as\<^esub> evalHeap as (\<lambda>e. \<N>\<lbrakk> e \<rbrakk>\<^bsub>\<sigma>'\<^esub>)"
     proof(rule pointwiseI)
       case (goal1 x)
       show ?case using `\<rho> \<triangleleft>\<triangleright>\<^sup>* \<sigma>`
         by (auto simp add: lookup_override_on_eq lookupEvalHeap elim: Let(1)[OF _  `\<rho>' \<triangleleft>\<triangleright>\<^sup>* \<sigma>'`] )
     qed
   qed
-  hence "\<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>asToHeap as\<rbrace>\<rho>\<^esub> \<triangleleft>\<triangleright> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>asToHeap as\<rbrace>\<sigma>\<^esub>)\<cdot>C\<^sup>\<infinity>" by (rule Let(2))
+  hence "\<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>as\<rbrace>\<rho>\<^esub> \<triangleleft>\<triangleright> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>as\<rbrace>\<sigma>\<^esub>)\<cdot>C\<^sup>\<infinity>" by (rule Let(2))
   thus ?case by simp
 qed
 
