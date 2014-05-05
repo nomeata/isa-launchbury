@@ -1,5 +1,5 @@
 theory Launchbury
-imports Terms Heap
+imports Terms
 begin
 
 subsubsection {* The natural semantics *}

@@ -1,5 +1,5 @@
 theory AbstractDenotational
-imports Terms Heap "HeapSemantics"
+imports Terms "HeapSemantics"
 begin
 
 
