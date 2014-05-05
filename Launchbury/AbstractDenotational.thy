@@ -116,10 +116,6 @@ lemma permute_ESem: "\<pi> \<bullet> ESem = ESem"
 
 lemmas HSem_eqvt' = HSem_eqvt[of _ ESem, unfolded permute_ESem]
 
-lemmas asToHeap_fresh[simp] = eqvt_fresh_cong1[of asToHeap, OF asToHeap.eqvt]
- and   asToHeap_fresh_star[simp] = eqvt_fresh_star_cong1[of asToHeap, OF asToHeap.eqvt]
-(* and   fresh_fun_upd[simp] = eqvt_fresh_cong3[of fun_upd, OF fun_upd_eqvt] *)
-
 end
 
 end

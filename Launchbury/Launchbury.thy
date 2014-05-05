@@ -212,7 +212,7 @@ case (Let as \<Gamma> L body \<Delta> z)
       show ?thesis
         apply(rule Let.hyps(3))
         using Let.prems `atom x \<sharp> as` False
-        by (auto simp add: fresh_Pair fresh_append fresh_fun_eqvt_app[OF asToHeap_eqvt])
+        by (auto simp add: fresh_Pair fresh_append)
     next
     case True
       hence "x \<notin> set L"
