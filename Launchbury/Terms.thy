@@ -4,6 +4,17 @@ begin
 
 subsubsection {* Expressions *}
 
+text {*
+This is the main data type of the development; our minimal lambda calculus with recursive let-bindings.
+It is created using the nominal\_datatype command, which creates alpha-equivalence classes.
+
+The package does not support nested recursion, so the bindings of the let cannot simply be of type
+@{text "(var, exp) list"}. Instead, the definition of lists have to be inlined here, as the custom type
+@{text "assn"}. Later we create conversion functions between these two types, define a properly typed @{text let} 
+and redo the various lemmas in terms of that, so that afterwards, the type {@text "assn"} is no longer
+referenced.
+*}
+
 nominal_datatype exp =
   Var "var"
 | App "exp" "var"
@@ -17,31 +28,16 @@ where "bn ANil = []" | "bn (ACons x t as) = (atom x) # (bn as)"
 
 notation (latex output) Terms.Var ("_")
 notation (latex output) Terms.App ("_ _")
-notation (latex output) Terms.LetA ("\<^raw:\textrm{\textsf{let}}> _ \<^raw:\textrm{\textsf{in}}> _")
 notation (latex output) Terms.Lam ("\<lambda>_. _"  [100, 100] 100)
-
-abbreviation
-  LetBe :: "var\<Rightarrow>exp\<Rightarrow>exp\<Rightarrow>exp" ("let _ be _ in _ " [100,100,100] 100)
-where
-  "let x be t1 in t2 \<equiv> LetA (ACons x t1 ANil) t2"
 
 type_synonym heap = "(var \<times> exp) list"
 
 subsubsection {* Rewriting in terms of heaps *}
 
 text {*
-The nominal package does not allow nested data types, hence the type @{type assn} above. But
-@{type assn} is isomorphic to @{type heap}, so at least now it should be possible to re-proof
-all resulting lemmas in terms of {@type heap}.
+We now work towards using @{type heap} instead of {@type assn}. All this
+could be skipped if Nominal supported nested recursion.
 *}
-
-subsubsection {* Conversion from assignments to heaps *}
-
-text {* The type @{typ assn} is the data type used in the let expression. It 
-is isomorphic to @{typ "(var \<times> exp) list"}, but since Nominal does not
-support nested data type, this redundancy was introduced. The following
-function converts between them. Once Nominal supports nested data types, this
-could be simplified. *}
 
 text {*
 Conversion from @{typ assn} to @{typ heap}.
@@ -58,7 +54,6 @@ apply(case_tac x rule: exp_assn.exhaust(2))
 apply auto
 done
 termination(eqvt) by lexicographic_order
-print_theorems
 
 lemma asToHeap_eqvt: "eqvt asToHeap"
   unfolding eqvt_def
@@ -102,6 +97,10 @@ lemma heapToAssn_inject[simp]:
   "heapToAssn x = heapToAssn y \<longleftrightarrow> x = y"
   by (metis asToHeap_heapToAssn)
 
+text {*
+They are transparent to varios notions from the Nominal package.
+*}
+
 lemma supp_heapToAssn: "supp (heapToAssn \<Gamma>) = supp \<Gamma>"
   by (induct rule: heapToAssn.induct)
      (simp_all add: heapToAssn.simps  exp_assn.supp supp_Nil supp_Cons supp_Pair sup_assoc)
@@ -120,17 +119,24 @@ lemma [simp]: "size (heapToAssn \<Gamma>) = list_size (\<lambda> (v,e) . size e)
   by (induct rule: heapToAssn.induct)
      (simp_all add: heapToAssn.simps)
 
-text {* The Let constructor that we are interested in. *}
+text {* Now we define the Let constructor in the form that we actually want. *}
 
-definition Let where "Let \<Gamma> e = LetA (heapToAssn \<Gamma>) e"
+definition Let :: "heap \<Rightarrow> exp \<Rightarrow> exp"
+  where "Let \<Gamma> e = LetA (heapToAssn \<Gamma>) e"
 notation (latex output) Terms.Let ("\<^raw:\textrm{\textsf{let}}> _ \<^raw:\textrm{\textsf{in}}> _")
+
+abbreviation
+  LetBe :: "var\<Rightarrow>exp\<Rightarrow>exp\<Rightarrow>exp" ("let _ be _ in _ " [100,100,100] 100)
+where
+  "let x be t1 in t2 \<equiv> Let [(x,t1)] t2"
+
+text {*
+We rewrite all (relevant) lemmas about @{term LetA} in terms of @{term Let}.
+*}
 
 lemma size_Let[simp]: "size (Let \<Gamma> e) = list_size (\<lambda>p. size (snd p)) \<Gamma> + size e + Suc 0"
   unfolding Let_def by (auto simp add: split_beta')
 
-text {*
-Now rewrite all (relevant) lemmas about @{term LetA} in terms of @{term LetB}.
-*}
 lemma Let_distinct[simp]:
   "Var v \<noteq> Let \<Gamma> e"
   "Let \<Gamma> e \<noteq> Var v"
@@ -158,7 +164,6 @@ lemma Abs_eq_cong:
   assumes "supp y' = supp x'"
   shows "([a]lst. x = [a']lst. x') \<longleftrightarrow> ([a]lst. y = [a']lst. y')"
   by (simp add: Abs_eq_iff alpha_lst assms)
-
 
 lemma Let_eq_iff[simp]:
   "(Let \<Gamma> e = Let \<Gamma>' e') = ([map (\<lambda>x. atom (fst x)) \<Gamma> ]lst. (e, \<Gamma>) = [map (\<lambda>x. atom (fst x)) \<Gamma>']lst. (e',\<Gamma>'))"
@@ -273,16 +278,15 @@ lemma alpha_test:
 
 lemma alpha_test2:
   shows "let x be (Var x) in (Var x) = let y be (Var y) in (Var y)"
-  by (simp add: exp_assn.bn_defs Abs1_eq_iff fresh_Pair add: fresh_at_base)
+  by (simp add: fresh_Cons fresh_Nil Abs1_eq_iff fresh_Pair add: fresh_at_base)
 
 lemma alpha_test3:
   shows "
     Let [(x, Var y), (y, Var x)] (Var x)
     =
     Let [(y, Var x), (x, Var y)] (Var y)" (is "Let ?la ?lb = _")
-  apply (simp add: bn_heapToAssn Abs1_eq_iff fresh_Pair fresh_at_base)
-  apply (simp add: Abs_swap2[of "atom x" "(?lb, [(x, Var y), (y, Var x)])" "[atom x, atom y]" "atom y"])
-done
+  by (simp add: bn_heapToAssn Abs1_eq_iff fresh_Pair fresh_at_base
+                Abs_swap2[of "atom x" "(?lb, [(x, Var y), (y, Var x)])" "[atom x, atom y]" "atom y"])
 
 subsubsection {* Free variables *}
 
@@ -321,257 +325,5 @@ proof-
   have "x \<in> fv (Var x)" by simp
   ultimately show ?thesis by auto
 qed
-
-subsubsection {* Substitution *}
-
-fun subst_var :: "var \<Rightarrow> var \<Rightarrow> var \<Rightarrow> var" ("_[_::v=_]" [1000,100,100] 1000)
-where "x[y ::v= z] = (if x = y then z else x)"
-
-lemma subst_var_eqvts[eqvt]:
- fixes \<pi>::perm
- shows "\<pi> \<bullet> (subst_var x y z) = subst_var (\<pi> \<bullet> x) (\<pi> \<bullet> y) (\<pi> \<bullet> z)"
-by auto
-
-
-lemma set_delete_subset: "set (delete x l) \<subseteq> set l"
-  by (induction l) auto
-
-(*
-lemma [simp]:"(a, b) \<in> set (\<Gamma>::heap) \<Longrightarrow> size b < Suc (list_size size \<Gamma> + size body)"
-  apply (induct \<Gamma> rule:heapToAssn.induct)
-  apply (auto simp add: exp_assn.bn_defs fresh_star_insert dest: set_mp[OF set_delete_subset])
-*)
-
-(* Helper lemmas provided by Christian Urban *)
-
-
-lemma Projl_permute:
-  assumes a: "\<exists>y. f = Inl y"
-  shows "(p \<bullet> (Sum_Type.Projl f)) = Sum_Type.Projl (p \<bullet> f)"
-using a by auto
-
-lemma Projr_permute:
-  assumes a: "\<exists>y. f = Inr y"
-  shows "(p \<bullet> (Sum_Type.Projr f)) = Sum_Type.Projr (p \<bullet> f)"
-using a by auto
-
-nominal_primrec  (default "sum_case (\<lambda>x. Inl undefined) (\<lambda>x. Inr undefined)",
-                  invariant "\<lambda> a r . (\<forall> as y z . ((a = Inr (as, y, z) \<and> atom ` domA as \<sharp>* (y, z)) \<longrightarrow> map (\<lambda>x . atom (fst x))  (Sum_Type.Projr r) = map (\<lambda>x . atom (fst x)) as))")
-  subst :: "exp \<Rightarrow> var \<Rightarrow> var \<Rightarrow> exp" ("_[_::=_]" [1000,100,100] 1000)
-and
-  subst_heap :: "heap \<Rightarrow> var \<Rightarrow> var \<Rightarrow> heap" ("_[_::h=_]" [1000,100,100] 1000)
-where
-  "(Var x)[y ::= z] = Var (x[y ::v= z])"
- |"(App e v)[y ::= z] = App (e[y ::= z]) (v[y ::v= z])"
- |"atom ` domA as \<sharp>* (y,z) \<Longrightarrow> (Let as body)[y ::= z] = Let (as[y ::h= z]) (body[y ::= z])" 
- |"atom x \<sharp> (y,z) \<Longrightarrow> (Lam [x].e)[y ::= z] = Lam [x].(e[y::=z])"
- |"[][y ::h= z] = []"
- |"((v,e)# as)[y ::h= z] = (v, e[y ::= z])# (as[y ::h= z])"
-proof-
-
-have eqvt_at_subst: "\<And> e y z . eqvt_at subst_subst_heap_sumC (Inl (e, y, z)) \<Longrightarrow> eqvt_at (\<lambda>(a, b, c). subst a b c) (e, y, z)"
-  apply(simp add: eqvt_at_def subst_def)
-  apply(rule)
-  apply(subst Projl_permute)
-  apply(thin_tac "?X")+
-  apply (simp add: subst_subst_heap_sumC_def)
-  apply (simp add: THE_default_def)
-  apply (case_tac "Ex1 (subst_subst_heap_graph (Inl (e, y, z)))")
-  apply(simp)
-  apply(auto)[1]
-  apply (erule_tac x="x" in allE)
-  apply simp
-  apply(cases rule: subst_subst_heap_graph.cases)
-  apply(assumption)
-  apply(rule_tac x="Sum_Type.Projl x" in exI)
-  apply(clarify)
-  apply (rule the1_equality)
-  apply blast 
-  apply(simp (no_asm) only: Projl.simps)
-  apply(rule_tac x="Sum_Type.Projl x" in exI)
-  apply(clarify)
-  apply (rule the1_equality)
-  apply blast 
-  apply(simp (no_asm) only: Projl.simps)
-  apply(rule_tac x="Sum_Type.Projl x" in exI)
-  apply(clarify)
-  apply (rule the1_equality)
-  apply blast 
-  apply(simp (no_asm) only: Projl.simps)
-  apply(rule_tac x="Sum_Type.Projl x" in exI)
-  apply(clarify)
-  apply (rule the1_equality)
-  apply blast 
-  apply(simp (no_asm) only: Projl.simps)
-  apply (metis Inr_not_Inl)
-  apply (metis Inr_not_Inl)
-  apply(simp)
-  apply(perm_simp)
-  apply(simp)
-done
-
-have eqvt_at_subst_heap: "\<And> as y z . eqvt_at subst_subst_heap_sumC (Inr (as, y, z)) \<Longrightarrow> eqvt_at (\<lambda>(a, b, c). subst_heap a b c) (as, y, z)"
-  apply(simp add: eqvt_at_def subst_heap_def)
-  apply(rule)
-  apply(subst Projr_permute)
-  apply(thin_tac "?X")+
-  apply (simp add: subst_subst_heap_sumC_def)
-  apply (simp add: THE_default_def)
-  apply (case_tac "Ex1 (subst_subst_heap_graph (Inr (as, y, z)))")
-  apply(simp)
-  apply(auto)[1]
-  apply (erule_tac x="x" in allE)
-  apply simp
-  apply(cases rule: subst_subst_heap_graph.cases)
-  apply(assumption)
-  apply (metis (mono_tags) Inr_not_Inl)+
-  apply(rule_tac x="Sum_Type.Projr x" in exI)
-  apply(clarify)
-  apply (rule the1_equality)
-  apply auto[1]
-  apply(simp (no_asm) only: Projr.simps)
-  
-  apply(rule_tac x="Sum_Type.Projr x" in exI)
-  apply(clarify)
-  apply (rule the1_equality)
-  apply auto[1]
-  apply(simp (no_asm) only: Projr.simps)
-  
-  apply(simp)
-  apply(perm_simp)
-  apply(simp)
-done
-
-{
-(* Equivariance of the graph *)
-case goal1 thus ?case
-  unfolding eqvt_def subst_subst_heap_graph_aux_def
-  by simp
-
-(* The invariant *)
-next case goal2 thus ?case
-  by (induct rule: subst_subst_heap_graph.induct)(auto simp add: exp_assn.bn_defs fresh_star_insert)
-
-(* Exhaustiveness *)
-next case (goal3 P x) show ?case
-  proof(cases x)
-  case (Inl a) thus P
-    proof(cases a)
-    case (fields a1 a2 a3)
-    thus P using Inl goal3
-      apply (rule_tac y ="a1" and c ="(a2, a3)" in exp_strong_exhaust)
-      apply (auto simp add: fresh_star_def)
-      apply metis
-    done
-  qed
-  next
-  case (Inr a) thus P
-    proof (cases a)
-    case (fields a1 a2 a3)
-    thus P using Inr goal3
-      by (metis heapToAssn.cases)
-  qed
-qed
-
-next case (goal15 e y2 z2 as e2 y z as2) thus ?case
-  apply -
-  apply (drule eqvt_at_subst)+
-  apply (drule eqvt_at_subst_heap)+
-  apply (simp only: meta_eq_to_obj_eq[OF subst_def, symmetric, unfolded fun_eq_iff]
-    meta_eq_to_obj_eq[OF subst_heap_def, symmetric, unfolded fun_eq_iff])
-  (* No _sum any more at this point! *)
-  apply (auto simp add: Abs_fresh_iff)
-  apply (drule_tac
-    c = "(y, z)" and
-    as = "(map (\<lambda>x. atom (fst x)) e)" and
-    bs = "(map (\<lambda>x. atom (fst x)) e2)" and
-    f = "\<lambda> a b c . [a]lst. (subst (fst b) y z, subst_heap (snd b) y z )" in Abs_lst_fcb2)
-  apply (simp add: perm_supp_eq fresh_Pair fresh_star_def Abs_fresh_iff)
-  apply (metis domA_def image_image image_set)
-  apply (metis domA_def image_image image_set)
-  apply (simp add: eqvt_at_def, simp add: fresh_star_Pair perm_supp_eq)
-  apply (simp add: eqvt_at_def, simp add: fresh_star_Pair perm_supp_eq)
-  apply (simp add: eqvt_at_def)
-  done
-
-next case (goal19 x2 y2 z2 e2 x y z e) thus ?case
-  apply -
-  apply (drule eqvt_at_subst)+
-  apply (simp only: Abs_fresh_iff meta_eq_to_obj_eq[OF subst_def, symmetric, unfolded fun_eq_iff])
-  (* No _sum any more at this point! *)
-  apply (simp add: eqvt_at_def)
-  apply rule
-  apply (erule_tac x = "(x2 \<leftrightarrow> c)" in allE)
-  apply (erule_tac x = "(x \<leftrightarrow> c)" in allE)
-  apply auto
-  done
-}
-qed(auto)
-
-termination (eqvt) by lexicographic_order
-
-lemma shows
-  True and bn_subst[simp]: "domA (subst_heap as y z) = domA as"
-by(induct rule:subst_subst_heap.induct)
-  (auto simp add: exp_assn.bn_defs fresh_star_insert)
-
-lemma subst_noop[simp]:
-shows "e[y ::= y] = e" and "as[y::h=y]= as"
-by(induct e y y and as y y rule:subst_subst_heap.induct)
-  (auto simp add:fresh_star_Pair exp_assn.bn_defs)
-
-lemma subst_is_fresh[simp]:
-assumes "atom y \<sharp> z"
-shows
-  "atom y \<sharp> e[y ::= z]"
-and
- "atom ` domA as \<sharp>* y \<Longrightarrow> atom y \<sharp> as[y::h=z]"
-using assms
-by(induct e y z and as y z rule:subst_subst_heap.induct)
-  (auto simp add:fresh_at_base fresh_star_Pair fresh_star_insert fresh_Nil fresh_Cons)
-
-lemma
- subst_pres_fresh: "x \<sharp> e \<Longrightarrow> x \<sharp> z \<Longrightarrow> x \<sharp> e[y ::= z]"
-and
- "x \<sharp> \<Gamma> \<Longrightarrow> x \<sharp> z \<Longrightarrow> x \<notin> atom ` domA \<Gamma> \<Longrightarrow> x \<sharp> (\<Gamma>[y ::h= z])"
-by(induct e y z and \<Gamma> y z rule:subst_subst_heap.induct)
-  (auto simp add:fresh_star_Pair exp_assn.bn_defs fresh_Cons)
-
-lemma subst_fresh_noop: "atom x \<sharp> e \<Longrightarrow> e[x ::= y] = e"
-  and subst_heap_fresh_noop: "atom x \<sharp> \<Gamma> \<Longrightarrow>  \<Gamma>[x ::h= y] = \<Gamma>"
-by (nominal_induct  e and \<Gamma> avoiding: x y rule:exp_heap_strong_induct)
-  (auto simp add: fresh_star_def fresh_Pair fresh_at_base fresh_Cons simp del: exp_assn.eq_iff)
-
-lemma supp_subst: "supp (e[y::=x]) \<subseteq> (supp e - {atom y}) \<union> supp x"
-proof-
-  have "\<And> a. (a \<sharp> e \<or> a = atom y) \<Longrightarrow> a \<sharp> x \<Longrightarrow> a \<sharp> e[y::=x]"
-    by (auto intro: subst_pres_fresh)
-  thus ?thesis by (auto simp add: fresh_def)
-qed
-
-lemma fv_subst_subset: "fv (e[y ::= x]) \<subseteq> (fv e - {y}) \<union> {x}"
-proof-
-  have "fv (e[y ::= x]) = {v. atom v \<in> supp (e[y ::= x])}" unfolding fv_def..
-  also have "\<dots> \<subseteq> {v. atom v \<in> ((supp e - {atom y}) \<union> supp x)}"
-    using supp_subst by auto
-  also have "\<dots> = (fv e - {y}) \<union> {x}"
-    using supp_subst by (auto simp add: fv_def supp_at_base)
-  finally show ?thesis.
-qed
-
-lemma fresh_star_at_base:
-  fixes x :: "'a :: at_base"
-  shows "S \<sharp>* x \<longleftrightarrow> atom x \<notin> S"
-  by (metis fresh_at_base(2) fresh_star_def)
-
-lemma subst_swap_same: "atom x \<sharp> e \<Longrightarrow>  (x \<leftrightarrow> y) \<bullet> e = e[y ::=x]"
-  and "atom x \<sharp> \<Gamma> \<Longrightarrow> atom `domA \<Gamma> \<sharp>* y \<Longrightarrow> (x \<leftrightarrow> y) \<bullet> \<Gamma> = \<Gamma>[y ::h= x]"
-by(nominal_induct  e and \<Gamma> avoiding: x y rule:exp_heap_strong_induct)
-  (auto simp add: fresh_star_Pair fresh_star_at_base fresh_Cons simp del: exp_assn.eq_iff)
-
-lemma subst_subst_back: "atom x \<sharp> e \<Longrightarrow>  e[y::=x][x::=y] = e" 
-  and "atom x \<sharp> \<Gamma> \<Longrightarrow> atom `domA \<Gamma> \<sharp>* y  \<Longrightarrow> \<Gamma>[y::h=x][x::h=y] = \<Gamma>"
-by(nominal_induct  e and \<Gamma> avoiding: x y rule:exp_heap_strong_induct)
-  (auto simp add: fresh_star_Pair fresh_star_at_base fresh_star_Cons fresh_Cons  exp_assn.bn_defs simp del: exp_assn.eq_iff)
 
 end

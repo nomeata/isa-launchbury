@@ -1,5 +1,5 @@
 theory Launchbury
-imports Terms
+imports Terms Substitution
 begin
 
 subsubsection {* The natural semantics *}
