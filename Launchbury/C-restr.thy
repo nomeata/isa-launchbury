@@ -1,5 +1,5 @@
 theory "C-restr"
-imports C "C-Meet"
+imports C "C-Meet" "HOLCF-Utils"
 begin
 
 subsubsection {* On C-ranged functions *}

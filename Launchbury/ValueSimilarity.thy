@@ -1,5 +1,5 @@
 theory ValueSimilarity
-imports Value CValue
+imports Value CValue Pointwise
 begin
 
 text {*
@@ -437,9 +437,6 @@ subsubsection {* The similarity relation lifted pointwise to functions. *}
 
 abbreviation fun_similar :: "('a::type \<Rightarrow> Value) \<Rightarrow> ('a \<Rightarrow> CValue) \<Rightarrow> bool"  (infix "\<triangleleft>\<triangleright>\<^sup>*" 50) where
   "fun_similar \<equiv> pointwise (\<lambda>x y. x \<triangleleft>\<triangleright> y\<cdot>C\<^sup>\<infinity>)"
-
-lemma fun_similar_adm: "adm (\<lambda>x. fst x \<triangleleft>\<triangleright>\<^sup>* snd x)"
-  by (intro pointwise_adm similar_admI) auto
 
 lemma fun_similar_fmap_bottom[simp]: "\<bottom> \<triangleleft>\<triangleright>\<^sup>* \<bottom>"
   by auto

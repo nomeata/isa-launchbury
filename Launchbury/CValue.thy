@@ -1,5 +1,5 @@
 theory CValue
-imports  C
+imports C
 begin
 
 domain CValue' = CFn (lazy "(C \<rightarrow> CValue') \<rightarrow> (C \<rightarrow> CValue')")
@@ -26,16 +26,5 @@ lemma CValue_chain_take: "chain CValue_take"
 lemma CValue_reach: "(\<Squnion> n. CValue_take n\<cdot>x) = x"
   by (auto intro:  cfun_eqI simp add: contlub_cfun_fun[OF ch2ch_Rep_cfunL[OF CValue_chain_take]]  CValue'.reach)
 
-instantiation CValue' :: pure
-begin
-  definition "p \<bullet> (v::CValue') = v"
-instance
-  apply default
-  apply (auto simp add: permute_CValue'_def)
-  done
-end
-
-instance CValue' :: pcpo_pt
-  by default (simp add: pure_permute_id)
 
 end

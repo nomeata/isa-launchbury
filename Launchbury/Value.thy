@@ -1,5 +1,5 @@
 theory "Value"
-  imports Vars "Nominal-Utils" "Nominal-HOLCF"
+  imports HOLCF
 begin
 
 subsubsection {* The semantic domain for values and environments *}
@@ -50,19 +50,5 @@ next
   ultimately
   show ?thesis by (rule that(2))
 qed
-
-text {* Values are pure, i.e. contain no variables. *}
-
-instantiation Value :: pure
-begin
-  definition "p \<bullet> (v::Value) = v"
-instance
-  apply default
-  apply (auto simp add: permute_Value_def)
-  done
-end
-
-instance Value :: pcpo_pt
-  by default (simp add: pure_permute_id)
 
 end

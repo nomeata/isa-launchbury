@@ -155,27 +155,35 @@ text {* The statement of adequacy reads:
 \]
 *}
 
-subsection {* Differences to our pervious work *}
+subsection {* Differences to our previous work *}
 
 text {*
 We have previously published \cite{breitner2013} of which the present work is a continuation. They differ in scope and focus:
 
+\subsubsection{The treatment of $\sqcup$}
+
 In \cite{breitner2013}, the question of the precise meaning of $\sqcup$ is discussed in detail. The
 original paper is not clear about whether this operator denotes the least upper bound, or the
-right-sided override operator. A lemmas stated in \cite{launchbury} only holds for right-sided
-updates, but with that definition, Launchbury's Theorem 2 is false; a counter-example is given in
-\cite{breitner2013}. We came up with an alternative operational semantics that keeps more of the
+right-sided override operator. A lemma stated in \cite{launchbury} only holds if $\sqcup$ is the least upper bound,
+but with that definition, Launchbury's Theorem 2 -- the generalized correctness theorem -- is false;
+a counter-example is given in \cite{breitner2013}.
+
+We came up with an alternative operational semantics that keeps more of the
 evaluation context in the judgments and allows the correctness theorem to be proved inductively
-without extra generalization; this avoids the problem of the original proof.
+without the problematic generalization. We proved the two operational semantics equivalent and thus
+obtained the (non-generalized) correctness of Launchbury's semantics.
 
 We also showed that if one takes $\sqcup$ to be the update operator, Theorem 2 holds and the proof
 goes through as it is. Furthermore, we showed that the resulting denotational semantics are
 identical for expressions, and can differ only for heaps. Therefore, the question of the precise
 meaning of $\sqcup$ can be considered of little importance and for the present work we soley work
-with right sided updates and avoid the ambiguos syntax $\sqcup$. We also do not include the
-alternative operational semantics here.
+with right sided updates. We also avoid the ambiguos syntax $\sqcup$ and write
+@{term "DUMMY ++\<^bsub>DUMMY\<^esub> DUMMY"} instead (the index indicates on what set the function on the right
+overrides the function on the left). The alternative operational semantics is not included in this work.
 
-Another difference is the choice of types for environments, which map variables to semantics values.
+\subsubsection{The types of environments}
+
+Another difference is the choice of the type for environments, which map variables to semantics values.
 A naive choice is @{typ "var \<Rightarrow> Value"}, but this causes problems when defining the value semantics,
 for which
 \[
@@ -183,13 +191,13 @@ for which
 \]
 is a defining equation. The argument on the left hand side is the representative of an equivalence class
 (defined using the Nominal package), so this is only allowed if the right hand side is indeed independent
- of the actual choice of @{text "x"}. This is shown most easily if @{text x} is fresh in all the
-other arguments (@{term "x \<sharp> \<rho>"}), and indeed the Nominal package allows us to specify this as a side
+ of the actual choice of @{text "x"}. This is shown most commonly and easily if @{text x} is fresh in all the
+other arguments (@{term "atom x \<sharp> \<rho>"}), and indeed the Nominal package allows us to specify this as a side
 condition to the defining equation, which is what we did in \cite{breitner2013}.
 
 But this convenience comes as a price: Such side-conditions are
 only allowed if the argument has finite support (otherwise there might not no variable fulfilling
-@{term "x \<sharp> \<rho>"}). More precisely: The type of the argument must be a member of the @{class fs} typeclass
+@{term "atom x \<sharp> \<rho>"}). More precisely: The type of the argument must be a member of the @{class fs} typeclass
 provided by the Nominal package. The type @{typ "var \<Rightarrow> Value"} cannot be made a member of this class,
 as there obviously are elements that have infinite support. The fix here was to introduce a new type
  constructor, @{text "fmap"}, for partial functions with finite domain. This is fine: Only functions
@@ -203,15 +211,14 @@ that have the same domain. In our formalisation, the domain is alway known (e.g.
 bound on some heap), so this worked out.
 
 But not without causing yet another issue: With this ordering, @{text "(var, Value) fmap"} is a
-@{class cpo}, but lacks a bottom element, i.e.\ no it is no @{class pcpo}, and HOLCF's built-in operator
-@{term "\<mu> DUMMY. DUMMY"} for expressing least fixed-points, as they occur in the semantics of heaps,
+@{class cpo}, but lacks a bottom element, i.e.\ now it is no @{class pcpo}, and HOLCF's built-in operator
+@{term "\<mu> x. f x"} for expressing least fixed-points, as they occur in the semantics of heaps,
 is not available. Furthermore, @{text "\<squnion>"} is not a total function, i.e.\ defined only on a subset of
 all possible arguments. The solution was a rather convoluted set of theories that formalize functions that
 are continuous on a specific set, fixed-points on such sets etc.
 
-In the present work, these problems are solved in a much more elegant way. The right-sided update
-that is used instead of @{text "\<squnion>"} is a total and everywhere continous function, which is easier to
-work with. And with a small trick we defined the semantics functions so that
+In the present work, this problems is solved in a much more elegant way. Using a small trick we defined
+the semantics functions so that
 \[
 @{thm Denotational.ESem_simps(1)}
 \]
@@ -228,13 +235,27 @@ where the right-hand-side can be shown to be invariant of the choice of @{text x
 This allows us to use the type @{typ "var \<Rightarrow> Value"} for the semantic envionments and considerably
 simplifies the formalization compared to \cite{breitner2013}.
 
+\subsubsection{No type @{type assn}}
+
+The nominal package provides means to define types that are alpha-equivalence classes, and we use that
+to define our type @{type exp}, which contains a constructor @{term "Let binds expr"}. The desired type
+of the parameter for the binding is @{typ "(var \<times> exp) list"}, but the Nominal package does not support
+such nested recursion, and requires a mutual recursive definition with a custom type (@{type assn})
+with constructors @{term ANil} and @{term ACons} that is isomorphic to @{typ "(var \<times> exp) list"}.
+In \cite{breitner2013}, this type and conversion functions from and to @{typ "(var \<times> exp) list"}
+cluttered the whole development. In the present work we improved this by defining the type with
+a ``temporary'' constructor @{term_type LetA}. Afterwards we define conversions functions and
+the desired constructor @{term_type Let}, and re-state all lemmas produced by the Nominal package
+(such as type exhaustiveness, distinctiveness of constructors and the induction rules) with that
+constructor. From that point on, the development is free of the crutch @{typ assn}.
+
 In short, the notable changes in this work over \cite{breitner2013} are:
 \begin{itemize}
 \item We consider @{text "\<squnion>"} to be a right-sided update and do discuss neither the problem with
 @{text "\<squnion>"} denoting the least uppper bound, nor possible solutions.
-\item This, and a simpler choice for the type of semantic environments, considerably simplifies the
+\item This, a simpler choice for the type of semantic environments and a better definition of the type for terms, considerably simplifies the
 work.
-\item Most importantly, this work contians an adequacy proof.
+\item Most importantly, this work contains a complete and formal proof of the adequacy of Launchbury's semantics.
 \end{itemize}
 *}
 
@@ -257,14 +278,15 @@ an extra round of take-induction in the proof of Proposition 9).
 Currently, they are working on completing the adequacy proof as outlined by Launchbury, i.e. by going
 via the alternative natural semantics given in \cite{launchbury}, which differs from the semantics
 above in that the application rule works with an indirection on the heap instead of a substitution
-and that the variable rule has no blackholing and no update. In \cite{indirections}, they related
+and that the variable rule has no blackholing and no update. In \cite{indirections}, they relate
 the original semantics with one where indirections have been introduced. The next step, modifying
 the variable rule, is under development. Once that is done they can close the loop and have
 completed Launchbury’s work.
 
 This work proves the adequacy as stated by Launchbury as well, but in contrast to his proof outline no
 alternative operational semantics is introduced. The problems of indirection vs. substitution and
-of blackholing is solved on the denotational side instead.
+of blackholing is solved on the denotational side instead, which turned out to be much easier than
+proving the various operational semantics equivalent.
  *}
 
 (*<*)

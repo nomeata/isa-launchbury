@@ -1,5 +1,5 @@
 theory "EvalHeap"
-  imports "AList-Utils"  "Env-Nominal" "Env-HOLCF"
+  imports "AList-Utils" "Env" "Nominal2" "Env" "HOLCF-Utils"
 begin
 
 default_sort type

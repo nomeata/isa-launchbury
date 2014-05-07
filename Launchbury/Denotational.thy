@@ -1,5 +1,5 @@
 theory Denotational
-  imports "Abstract-Denotational-Props" Value
+  imports "Abstract-Denotational-Props" "Value-Nominal"
 begin
 
 interpretation semantic_domain Fn Fn_project "\<Lambda> x. x".

@@ -1,18 +1,14 @@
 theory C
-imports "Nominal-Utils" "Nominal-HOLCF"
+imports HOLCF "Mono-Nat-Fun"
 begin
 
 default_sort cpo
 
-domain C = C (lazy "C")
+text {*
+The initial solution to the domain equation $C = C_\bot$, i.e. the completion of the natural numbers.
+*}
 
-instantiation C :: pure
-begin
-  definition "p \<bullet> (c::C) = c"
-instance by default (auto simp add: permute_C_def)
-end
-instance C :: pcpo_pt
-  by default (simp add: pure_permute_id)
+domain C = C (lazy "C")
 
 lemma below_C: "x \<sqsubseteq> C\<cdot>x"
   by (induct x) auto
@@ -54,6 +50,49 @@ lemma C_case_bot[simp]: "C_case \<cdot> \<bottom> = \<bottom>"
   apply (subst eq_bottom_iff)
   apply (rule C_case_below)
   done
+
+
+lemma C_cases:
+  obtains n where "r = C\<^bsup>n\<^esup>" | "r = C\<^sup>\<infinity>"
+proof-
+  { fix m
+    have "\<exists> n. C_take m \<cdot> r = C\<^bsup>n\<^esup> "
+    proof (rule C.finite_induct)
+      have "\<bottom> = C\<^bsup>0\<^esup>" by simp
+      thus "\<exists>n. \<bottom> = C\<^bsup>n\<^esup>"..
+    next
+      fix r
+      show "\<exists>n. r = C\<^bsup>n\<^esup> \<Longrightarrow> \<exists>n. C\<cdot>r = C\<^bsup>n\<^esup>"
+        by (auto simp del: iterate_Suc simp add: iterate_Suc[symmetric])
+    qed
+  }
+  then obtain f where take: "\<And> m. C_take m \<cdot> r = C\<^bsup>f m\<^esup>" by metis
+  have "chain (\<lambda> m. C\<^bsup>f m\<^esup>)" using ch2ch_Rep_cfunL[OF C.chain_take, where x=r, unfolded take].
+  hence "mono f" by (auto simp add: mono_iff_le_Suc chain_def elim!:chainE)
+  have r: "r = (\<Squnion> m. C\<^bsup>f m\<^esup>)"  by (metis (lifting) take C.reach lub_eq)
+  from `mono f`
+  show thesis
+  proof(rule nat_mono_characterization)
+    fix n
+    assume n: "\<And> m. n \<le> m ==> f n = f m"
+    have "max_in_chain n (\<lambda> m. C\<^bsup>f m\<^esup>)"
+      apply (rule max_in_chainI)
+      apply simp
+      apply (erule n)
+      done
+    hence "(\<Squnion> m. C\<^bsup>f m\<^esup>) = C\<^bsup>f n\<^esup>" unfolding  maxinch_is_thelub[OF `chain _`].
+    thus ?thesis using that unfolding r by blast
+  next
+    assume "\<And>m. \<exists>n. m \<le> f n"
+    hence "\<And> n. C\<^bsup>n\<^esup> \<sqsubseteq> r" unfolding r by (fastforce intro: below_lub[OF `chain _`])
+    hence "(\<Squnion> n. C\<^bsup>n\<^esup>) \<sqsubseteq> r" 
+      by (rule lub_below[OF chain_iterate])
+    hence "C\<^sup>\<infinity> \<sqsubseteq> r" unfolding Cinf_def fix_def2.
+    hence "C\<^sup>\<infinity> = r" using below_Cinf by (metis below_antisym)
+    thus thesis using that by blast
+  qed
+qed
+
 
 lemma C_case_Cinf[simp]: "C_case \<cdot> f \<cdot> C\<^sup>\<infinity> = f \<cdot> C\<^sup>\<infinity>"
   unfolding Cinf_def

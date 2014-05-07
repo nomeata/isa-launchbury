@@ -30,6 +30,7 @@
 \newcommand{\isasymnotsqsubseteq}{\isamath{\not\sqsubseteq}}
 
 \usepackage{amsmath}
+\usepackage{amsfonts}
 \usepackage{mathtools}
 \usepackage{graphicx}
 \usepackage{tikz}
@@ -37,6 +38,9 @@
 \usepackage[utf8]{inputenc}
 \usepackage{mathpartir}
 \usepackage{calc}
+
+\usepackage{floatpag}
+\floatpagestyle{empty}
 
 % this should be the last package used
 \usepackage{pdfsetup}
@@ -102,7 +106,7 @@ Our contributions are:
 \begin{figure}
 \begin{center}
 \IfFileExists{session_graph.pdf}{
-  \includegraphics[width=.8\textwidth]{session_graph}
+  \includegraphics[width=\textwidth]{session_graph}
 }{Here, \texttt{session\_graph.pdf} would be shown.}
 \end{center}
 \caption{Theory Dependency Graph\label{theory-deps}}
@@ -116,6 +120,7 @@ Chapter \ref{ch_aux} contains auxiliary theories, not necessarily tied to Launch
 \begin{itemize}
 \item A definition for lifting a relation point-wise (\isa{Pointwise}).
 \item A collection of definition related to associative lists (\isa{AList-Utils}, \isa{AList-Utils-Nominal}).
+\item A characterization of monotonous functions $\mathbb N \to \mathbb N$ (\isa{Mono-Nat-Fun}).
 \item General utility functions extending Nominal (\isa{Nominal-Utils}).
 \item General utility functions extending HOLCF (\isa{HOLCF-Utils}).
 \item Binary meets in the context of HOLCF (\isa{HOLCF-Meet}).
@@ -148,7 +153,8 @@ Chapter \ref{ch_adequacy}, where finally the adequacy is proved.
 
 %I’d like to thank Andreas Lochbihler for his gladly given and very effective help during the development of this theory. I’d also like to thank Brian Huffmann and Christian Urban for their help on HOLCF and Nominal, respectively. This work was supported by the Deutsche Telekom Stiftung.
 
-I’d like to thank Lidia Sánchez-Gil, Mercedes Hidalgo-Herrero and Yolanda Ortega-Mallén for inviting me to Madrid to discuss our respective approaches. This work was supported by the Deutsche Telekom Stiftung.
+I’d like to thank Lidia Sánchez-Gil, Mercedes Hidalgo-Herrero and Yolanda Ortega-Mallén for inviting me to Madrid to discuss our respective approaches.\\
+This work was supported by the Deutsche Telekom Stiftung.
 
 \clearpage
 \newcommand{\theory}[1]{\subsection{#1}\label{sec_#1}\input{#1.tex}}
@@ -188,6 +194,7 @@ I’d like to thank Lidia Sánchez-Gil, Mercedes Hidalgo-Herrero and Yolanda Ort
 \theory{AbstractDenotational}
 \theory{Abstract-Denotational-Props}
 \theory{Value}
+\theory{Value-Nominal}
 
 
 \clearpage
@@ -208,6 +215,7 @@ I’d like to thank Lidia Sánchez-Gil, Mercedes Hidalgo-Herrero and Yolanda Ort
 \theory{C-Meet}
 \theory{C-restr}
 \theory{CValue}
+\theory{CValue-Nominal}
 \theory{ResourcedDenotational}
 
 

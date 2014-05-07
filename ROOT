@@ -1,13 +1,19 @@
-session "HOLCF-Nominal2" in "Nominal2-Isabelle2013-1/Nominal" = HOLCF +
+session "HOLCF+Library" = HOLCF +
+  options [document = false]
+  theories
+    "~~/src/HOL/Library/Quotient_Option"
+    "~~/src/HOL/Library/AList"
+    "~~/src/HOL/Library/FuncSet"
+    "~~/src/HOL/Library/Permutation"
+    "~~/src/HOL/Library/LaTeXsugar"
+    "~~/src/HOL/Library/Infinite_Set"
+
+session "HOLCF-Nominal2" in "Nominal2-Isabelle2013-1/Nominal" = "HOLCF+Library" +
   options [document = false]
   theories
     "Nominal2"
     "Atoms"
     "Eqvt"
-    "~~/src/HOL/Library/Quotient_Option"
-    "~~/src/HOL/Library/AList"
-    "~~/src/HOL/Library/FuncSet"
-    "~~/src/HOL/Library/Permutation"
 
 session Launchbury (AFP) in "Launchbury" = "HOLCF-Nominal2" +
   options [document = pdf, document_graph, document_output = "output"]
