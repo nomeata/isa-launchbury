@@ -13,9 +13,9 @@ subsubsection {* The domain of a pcpo-valued function *}
 
 definition edom :: "('key \<Rightarrow> 'value::pcpo) \<Rightarrow> 'key set" where "edom m = {x. m x \<noteq> \<bottom>}"
 
-lemma fempty_edom[simp]: "edom \<bottom> = {}" by (simp add: edom_def)
+lemma bot_edom[simp]: "edom \<bottom> = {}" by (simp add: edom_def)
 
-lemma fempty_edom2[simp]: "edom (\<lambda>_ . \<bottom>) = {}" by (simp add: edom_def)
+lemma bot_edom2[simp]: "edom (\<lambda>_ . \<bottom>) = {}" by (simp add: edom_def)
 
 lemma edomIff: "(a \<in> edom m) = (m a \<noteq> \<bottom>)" by (simp add: edom_def)
 

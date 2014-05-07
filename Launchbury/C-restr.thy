@@ -202,23 +202,23 @@ qed
 
 subsubsection {* Restricting maps of C-ranged functions *}
 
-definition fmap_C_restr :: "C \<rightarrow> ('var::type \<Rightarrow> (C \<rightarrow> 'a::pcpo)) \<rightarrow> ('var \<Rightarrow> (C \<rightarrow> 'a))" where
-  "fmap_C_restr = (\<Lambda> r f.  cfun_comp\<cdot>(C_restr\<cdot>r)\<cdot>f)"
+definition env_C_restr :: "C \<rightarrow> ('var::type \<Rightarrow> (C \<rightarrow> 'a::pcpo)) \<rightarrow> ('var \<Rightarrow> (C \<rightarrow> 'a))" where
+  "env_C_restr = (\<Lambda> r f.  cfun_comp\<cdot>(C_restr\<cdot>r)\<cdot>f)"
 
-abbreviation fmap_C_restr_syn :: "('var::type \<Rightarrow> (C \<rightarrow> 'a::pcpo)) \<Rightarrow> C \<Rightarrow>  ('var \<Rightarrow> (C \<rightarrow> 'a))" ( "_|\<^sup>\<circ>\<^bsub>_\<^esub>" [111,110] 110)
-  where "f|\<^sup>\<circ>\<^bsub>r\<^esub> \<equiv> fmap_C_restr\<cdot>r\<cdot>f"
+abbreviation env_C_restr_syn :: "('var::type \<Rightarrow> (C \<rightarrow> 'a::pcpo)) \<Rightarrow> C \<Rightarrow>  ('var \<Rightarrow> (C \<rightarrow> 'a))" ( "_|\<^sup>\<circ>\<^bsub>_\<^esub>" [111,110] 110)
+  where "f|\<^sup>\<circ>\<^bsub>r\<^esub> \<equiv> env_C_restr\<cdot>r\<cdot>f"
 
 
-lemma fmap_C_restr_upd[simp]: "(\<rho>(x := v))|\<^sup>\<circ>\<^bsub>r\<^esub> = (\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>)(x := v|\<^bsub>r\<^esub>)"
-  unfolding fmap_C_restr_def by simp
+lemma env_C_restr_upd[simp]: "(\<rho>(x := v))|\<^sup>\<circ>\<^bsub>r\<^esub> = (\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>)(x := v|\<^bsub>r\<^esub>)"
+  unfolding env_C_restr_def by simp
 
-lemma fmap_C_restr_lookup[simp]: "(\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>) v = \<rho> v|\<^bsub>r\<^esub>"
-  unfolding fmap_C_restr_def by simp
+lemma env_C_restr_lookup[simp]: "(\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>) v = \<rho> v|\<^bsub>r\<^esub>"
+  unfolding env_C_restr_def by simp
 
-lemma fmap_C_restr_fempty[simp]: " \<bottom>|\<^sup>\<circ>\<^bsub>r\<^esub> = \<bottom>"
-  unfolding fmap_C_restr_def by auto
+lemma env_C_restr_bot[simp]: " \<bottom>|\<^sup>\<circ>\<^bsub>r\<^esub> = \<bottom>"
+  unfolding env_C_restr_def by auto
 
-lemma fmap_C_restr_restr_below[intro]: "\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub> \<sqsubseteq> \<rho>"
+lemma env_C_restr_restr_below[intro]: "\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub> \<sqsubseteq> \<rho>"
   by (auto intro: fun_belowI)
 
 lemma env_restr_eq_Cpred: 

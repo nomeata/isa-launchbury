@@ -16,7 +16,7 @@ proof(nominal_induct e arbitrary: \<rho> r rule: exp_strong_induct)
   show ?case
     apply (rule below_antisym)
     defer
-    apply (rule cont2monofunE[OF _ fmap_C_restr_restr_below], simp)
+    apply (rule cont2monofunE[OF _ env_C_restr_restr_below], simp)
     apply (simp)
     apply (cases r)
     apply (simp_all add: Rep_cfun_inverse)
@@ -24,7 +24,7 @@ proof(nominal_induct e arbitrary: \<rho> r rule: exp_strong_induct)
 next
   case (Lam x e)
   show ?case
-    apply (simp del: fmap_C_restr_lookup)
+    apply (simp del: env_C_restr_lookup)
     apply (rule C_restr_cong)
     apply (case_tac r', simp)
     apply simp
@@ -32,7 +32,7 @@ next
     apply simp
     apply (rule below_antisym)
     defer
-    apply (rule cont2monofunE[OF _ fmap_C_restr_restr_below])
+    apply (rule cont2monofunE[OF _ env_C_restr_restr_below])
     apply (simp del: fun_upd_apply)
     apply (subst Lam(1))
     apply simp
@@ -49,9 +49,9 @@ next
   show ?case
     apply (rule below_antisym)
     defer
-    apply (intro monofun_cfun_arg monofun_cfun_arg fmap_C_restr_restr_below )
+    apply (intro monofun_cfun_arg monofun_cfun_arg env_C_restr_restr_below )
     apply (cases r, simp)
-    apply (simp del: C_restr.simps fmap_C_restr_lookup)
+    apply (simp del: C_restr.simps env_C_restr_lookup)
     apply (rule monofun_cfun_arg)
     apply (rule cfun_belowI)
     apply (simp)
@@ -66,9 +66,9 @@ next
     apply simp
     apply simp
     apply (rule ext)
-    apply (subst (1 3) fmap_C_restr_lookup)
+    apply (subst (1 3) env_C_restr_lookup)
     apply (case_tac "x \<in> domA as")
-    apply (simp add: lookupEvalHeap del: fmap_C_restr_lookup)
+    apply (simp add: lookupEvalHeap del: env_C_restr_lookup)
     apply (subst (1 2) Let(1), assumption)
     apply (drule env_restr_eq_Cpred)
     apply simp
@@ -77,9 +77,9 @@ next
 
   show ?case
     apply (rule below_antisym)
-    defer apply (rule cont2monofunE[OF _ fmap_C_restr_restr_below], simp)
-    apply (cases r, simp  del: fmap_C_restr_lookup)
-    apply (simp  del: fmap_C_restr_lookup)
+    defer apply (rule cont2monofunE[OF _ env_C_restr_restr_below], simp)
+    apply (cases r, simp  del: env_C_restr_lookup)
+    apply (simp  del: env_C_restr_lookup)
     apply (subst (1 4) Rep_cfun_inverse) (* Be careful not to destroy the locale parameters *)
     apply (subst (1 2) Let(2))
     apply (subst *)
@@ -110,23 +110,23 @@ proof-
   have "(\<N>\<lbrace>\<Gamma>\<rbrace>)|\<^sup>\<circ>\<^bsub>Cpred\<cdot>?C\<^esub> \<sqsubseteq> \<N>\<lbrace>delete x \<Gamma>\<rbrace> \<and> \<N>\<lbrace>\<Gamma>\<rbrace> \<sqsubseteq> \<N>\<lbrace>\<Gamma>\<rbrace>"
     apply (rule HSem_ind) back back back back back back back back back
     apply (intro adm_lemmas cont2cont)
-    apply (simp del: app_strict  del: fmap_C_restr_lookup)
+    apply (simp del: app_strict  del: env_C_restr_lookup)
     apply (erule conjE)
     apply rule
     apply (rule fun_belowI)
     apply (case_tac "xa = x")
-    apply (subst (1) fmap_C_restr_lookup)
-    apply (simp add: lookupEvalHeap lookup_HSem_other del: app_strict fmap_C_restr_lookup)
+    apply (subst (1) env_C_restr_lookup)
+    apply (simp add: lookupEvalHeap lookup_HSem_other del: app_strict env_C_restr_lookup)
     apply (subst app_strict)
-    apply (simp del: app_strict fmap_C_restr_lookup)
+    apply (simp del: app_strict env_C_restr_lookup)
     apply (rule C_restr_bot_demand)
     apply (subst C_Cpred_id[OF demand_not_0])
     apply (erule demand_contravariant[OF monofun_cfun_arg])
 
     apply (case_tac "xa \<in> domA \<Gamma>")
-    apply (simp add: lookupEvalHeap lookup_HSem_heap del: app_strict fmap_C_restr_lookup)
-    apply (subst (1) fmap_C_restr_lookup)
-    apply (simp add: lookupEvalHeap lookup_HSem_heap del: app_strict fmap_C_restr_lookup)
+    apply (simp add: lookupEvalHeap lookup_HSem_heap del: app_strict env_C_restr_lookup)
+    apply (subst (1) env_C_restr_lookup)
+    apply (simp add: lookupEvalHeap lookup_HSem_heap del: app_strict env_C_restr_lookup)
     apply (subst restr_can_restrict_heap)
     apply (rule below_trans[OF C_restr_below])
     apply (rule below_trans[OF monofun_cfun_arg eq_imp_below])

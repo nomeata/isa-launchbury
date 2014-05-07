@@ -126,7 +126,7 @@ where
 @{thm (lhs) override_on_apply_in} & = @{thm (rhs) override_on_apply_in}  && \text{if } @{thm (prem 1) override_on_apply_in}.
 \end{alignstar}
 
-The semantics of the heap in the empty environment @{term "\<bottom>"} is abbreviated as @{abbrev "Denotational.HSem_fempty \<Gamma>"}.
+The semantics of the heap in the empty environment @{term "\<bottom>"} is abbreviated as @{abbrev "Denotational.HSem_bot \<Gamma>"}.
 *}
 
 subsubsection {* Correctness and Adequacy *}

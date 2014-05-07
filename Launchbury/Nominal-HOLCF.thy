@@ -65,10 +65,10 @@ qed
 lemma bot_supp[simp]: "supp (\<bottom> :: 'a :: pcpo_pt) = {}"
   by (rule supp_fun_eqvt) (simp add: eqvt_def)
 
-lemma fempty_fresh[simp]: "a \<sharp> (\<bottom> :: 'a :: pcpo_pt)"
+lemma bot_fresh[simp]: "a \<sharp> (\<bottom> :: 'a :: pcpo_pt)"
   by (simp add: fresh_def)
 
-lemma fempty_fresh_star[simp]: "a \<sharp>* (\<bottom> :: 'a :: pcpo_pt)"
+lemma bot_fresh_star[simp]: "a \<sharp>* (\<bottom> :: 'a :: pcpo_pt)"
   by (simp add: fresh_star_def)
 
 lemma below_eqvt [eqvt]:

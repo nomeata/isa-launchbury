@@ -44,7 +44,7 @@ proof (rule HSem_ind)
        (auto simp add: lookupEvalHeap  below_trans[OF monofun_cfun_arg[OF `\<rho>' \<sqsubseteq> r`] h] rho)
 qed
 
-lemma HSem_fempty_below:
+lemma HSem_bot_below:
   assumes h: "\<And>x. x \<in> domA h \<Longrightarrow> \<lbrakk>the (map_of h x)\<rbrakk>\<^bsub>r\<^esub> \<sqsubseteq> r x"
   shows "\<lbrace>h\<rbrace>\<bottom> \<sqsubseteq> r"
   using assms 
