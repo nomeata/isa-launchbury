@@ -62,11 +62,11 @@ lemma fun_upd_cont[simp,cont2cont]:
 subsubsection {* Composition of fun and cfun *}
 
 (*
-lemma comp_lookup_not_there[simp]: "v \<notin> fdom \<rho> \<Longrightarrow> (f \<circ> \<rho>) v = f \<bottom>"
-  by (simp add: lookup_not_fdom)
+lemma comp_lookup_not_there[simp]: "v \<notin> edom \<rho> \<Longrightarrow> (f \<circ> \<rho>) v = f \<bottom>"
+  by (simp add: lookup_not_edom)
 
-lemma fmap_map_lookup_eq: "(f \<circ> \<rho>) v = (if v \<in> fdom \<rho> then f (\<rho> v) else f \<bottom>)"
-  by (auto simp add: lookup_not_fdom)
+lemma fmap_map_lookup_eq: "(f \<circ> \<rho>) v = (if v \<in> edom \<rho> then f (\<rho> v) else f \<bottom>)"
+  by (auto simp add: lookup_not_edom)
 *)
 
 lemma cont2cont_fmap_map [simp, cont2cont]:

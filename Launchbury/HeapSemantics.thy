@@ -77,9 +77,9 @@ lemma lookup_HSem_heap:
   apply (subst HSem_eq)
   using assms by (simp add: lookupEvalHeap)
 
-lemma HSem_fdom_subset:  "fdom (\<lbrace>\<Gamma>\<rbrace>\<rho>) \<subseteq> fdom \<rho> \<union> domA \<Gamma>"
+lemma HSem_edom_subset:  "edom (\<lbrace>\<Gamma>\<rbrace>\<rho>) \<subseteq> edom \<rho> \<union> domA \<Gamma>"
   apply rule
-  unfolding fdomIff
+  unfolding edomIff
   apply (case_tac "x \<in> domA \<Gamma>")
   apply (auto simp add: lookup_HSem_other)
   done
@@ -144,8 +144,8 @@ lemma env_restr_HSem:
   done
 
 lemma env_restr_HSem_noop:
-  assumes "domA \<Gamma> \<inter> fdom \<rho> = {}"
-  shows "(\<lbrace> \<Gamma> \<rbrace>\<rho>) f|` fdom \<rho> = \<rho>"
+  assumes "domA \<Gamma> \<inter> edom \<rho> = {}"
+  shows "(\<lbrace> \<Gamma> \<rbrace>\<rho>) f|` edom \<rho> = \<rho>"
   by (simp add: env_restr_HSem[OF assms] env_restr_useless)
 
 lemma HSem_Nil[simp]: "\<lbrace>[]\<rbrace>\<rho> = \<rho>"
@@ -172,7 +172,7 @@ lemma HSem_subst_expr:
 subsubsection {* Re-calculating the semantics of the heap is idempotent *} 
 
 lemma HSem_redo:
-  shows "\<lbrace>\<Gamma>\<rbrace>(\<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>) f|` (fdom \<rho> \<union> domA \<Delta>) = \<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>" (is "?LHS = ?RHS")
+  shows "\<lbrace>\<Gamma>\<rbrace>(\<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>) f|` (edom \<rho> \<union> domA \<Delta>) = \<lbrace>\<Gamma> @ \<Delta>\<rbrace>\<rho>" (is "?LHS = ?RHS")
 proof (rule below_antisym)
   show "?LHS \<sqsubseteq> ?RHS"
   by (rule HSem_below)
@@ -183,7 +183,7 @@ proof (rule below_antisym)
   proof(rule HSem_below)
   case goal1
     thus ?case
-    by (case_tac "x \<notin> fdom \<rho>") (auto simp add: lookup_HSem_other dest:lookup_not_fdom)
+    by (case_tac "x \<notin> edom \<rho>") (auto simp add: lookup_HSem_other dest:lookup_not_edom)
   next
   case (goal2 x)
     thus ?case
@@ -301,13 +301,13 @@ proof-
 qed
 
 lemma ESem_ignores_fresh_restr':
-  assumes "atom ` (fdom \<rho> - S) \<sharp>* e"
+  assumes "atom ` (edom \<rho> - S) \<sharp>* e"
   shows "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho> f|` S\<^esub>"
 proof-
-  have "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> =  \<lbrakk> e \<rbrakk>\<^bsub>\<rho> f|` (- (fdom \<rho> - S))\<^esub>"
+  have "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> =  \<lbrakk> e \<rbrakk>\<^bsub>\<rho> f|` (- (edom \<rho> - S))\<^esub>"
     by (rule ESem_ignores_fresh_restr[OF assms])
-  also have "\<rho> f|` (- (fdom \<rho> - S)) = \<rho> f|` S" 
-    by (rule ext) (auto simp add: lookup_env_restr_eq dest: lookup_not_fdom)
+  also have "\<rho> f|` (- (edom \<rho> - S)) = \<rho> f|` S" 
+    by (rule ext) (auto simp add: lookup_env_restr_eq dest: lookup_not_edom)
   finally show ?thesis.
 qed
 
@@ -349,18 +349,18 @@ subsubsection {* Adding a fresh variable to a heap does not affect its semantics
 
 lemma HSem_add_fresh':
   assumes fresh: "atom x \<sharp> \<Gamma>"
-  assumes "x \<notin> fdom \<rho>"
+  assumes "x \<notin> edom \<rho>"
   assumes step: "\<And>e \<rho>'. e \<in> snd ` set \<Gamma> \<Longrightarrow> \<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>env_delete x \<rho>'\<^esub>"
   shows  "env_delete x (\<lbrace>(x, e) # \<Gamma>\<rbrace>\<rho>) = \<lbrace>\<Gamma>\<rbrace>\<rho>"
 proof (rule parallel_HSem_ind)
 case goal1 show ?case by simp
 case goal2 show ?case by auto
 case (goal3 y z)
-  have "env_delete x \<rho> = \<rho>" using `x \<notin> fdom \<rho>` by (rule env_delete_noop)
+  have "env_delete x \<rho> = \<rho>" using `x \<notin> edom \<rho>` by (rule env_delete_noop)
   moreover
   from fresh have "x \<notin> domA \<Gamma>" by (metis domA_not_fresh)
   hence "env_delete x (\<^bold>\<lbrakk> (x, e) # \<Gamma> \<^bold>\<rbrakk>\<^bsub>y\<^esub>) = \<^bold>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>y\<^esub>"
-    by (auto intro: env_delete_noop dest:  set_mp[OF fdom_evalHeap_subset])
+    by (auto intro: env_delete_noop dest:  set_mp[OF edom_evalHeap_subset])
   moreover
   have "\<dots> = \<^bold>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>z\<^esub>"
     apply (rule evalHeap_cong[OF refl])
@@ -373,7 +373,7 @@ qed
 
 lemma HSem_add_fresh:
   assumes "atom x \<sharp> \<Gamma>"
-  assumes "x \<notin> fdom \<rho>"
+  assumes "x \<notin> edom \<rho>"
   shows  "env_delete x (\<lbrace>(x, e) # \<Gamma>\<rbrace>\<rho>) = \<lbrace>\<Gamma>\<rbrace>\<rho>"
 proof(rule HSem_add_fresh'[OF assms])
 case (goal1 e \<rho>')
@@ -440,8 +440,8 @@ proof(rule below_antisym)
    have *: "\<And> x. x \<in> domA \<Delta> \<Longrightarrow> x \<notin> domA \<Gamma>"
     using fresh by (auto simp add: fresh_Pair fresh_star_def domA_not_fresh)
 
-  have foo: "fdom \<rho> \<union> domA \<Delta> \<union> domA \<Gamma> - (fdom \<rho> \<union> domA \<Delta> \<union> domA \<Gamma>) \<inter> - domA \<Gamma> = domA \<Gamma>" by auto
-  have foo2:"(fdom \<rho> \<union> domA \<Delta> - (fdom \<rho> \<union> domA \<Delta>) \<inter> - domA \<Gamma>) \<subseteq> domA \<Gamma>" by auto
+  have foo: "edom \<rho> \<union> domA \<Delta> \<union> domA \<Gamma> - (edom \<rho> \<union> domA \<Delta> \<union> domA \<Gamma>) \<inter> - domA \<Gamma> = domA \<Gamma>" by auto
+  have foo2:"(edom \<rho> \<union> domA \<Delta> - (edom \<rho> \<union> domA \<Delta>) \<inter> - domA \<Gamma>) \<subseteq> domA \<Gamma>" by auto
 
   { fix x
     assume "x \<in> domA \<Delta>"

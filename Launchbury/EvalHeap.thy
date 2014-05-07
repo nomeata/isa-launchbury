@@ -2,16 +2,14 @@ theory "EvalHeap"
   imports "AList-Utils" "Env" "Nominal2" "Env" "HOLCF-Utils"
 begin
 
-default_sort type
-
 subsubsection {* Conversion from heaps to environments *} 
 
 fun evalHeap :: "('var \<times> 'exp) list \<Rightarrow> ('exp \<Rightarrow> 'value::{pure,pcpo}) \<Rightarrow> 'var \<Rightarrow> 'value"
 where
   "evalHeap [] _ = \<bottom>"
 | "evalHeap ((x,e)#h) eval = (evalHeap h eval) (x := eval e)"
-
 (*
+
 syntax
   "_map_evalHeap" :: "['var \<Rightarrow> 'value, 'value, pttrn, ('var \<times> 'exp) list] => ('var \<Rightarrow> 'value)"    ("(2_[x := _ | '(x , _') \<in> _])" [1000,0,0,0] 900)
 
@@ -38,8 +36,8 @@ lemma evalHeap_eqvt[eqvt]:
   "\<pi> \<bullet> evalHeap h eval = evalHeap (\<pi> \<bullet> h) (\<pi> \<bullet> eval)"
   by (induct h eval rule:evalHeap.induct) (auto simp add:fun_upd_eqvt  simp del: fun_upd_apply)
 
-lemma fdom_evalHeap_subset:"fdom (evalHeap h eval) \<subseteq> domA h"
-  by (induct h eval rule:evalHeap.induct) (auto dest:set_mp[OF fdom_fun_upd_subset] simp del: fun_upd_apply)
+lemma edom_evalHeap_subset:"edom (evalHeap h eval) \<subseteq> domA h"
+  by (induct h eval rule:evalHeap.induct) (auto dest:set_mp[OF edom_fun_upd_subset] simp del: fun_upd_apply)
 
 lemma evalHeap_cong[fundef_cong]:
   "\<lbrakk> heap1 = heap2 ;  (\<And> e. e \<in> snd ` set heap2 \<Longrightarrow> eval1 e = eval2 e) \<rbrakk>
@@ -128,4 +126,5 @@ lemma evalHeap_subst_exp:
   assumes "eval e = eval e'"
   shows "evalHeap ((x,e)#\<Gamma>) eval = evalHeap ((x,e')#\<Gamma>) eval"
   by (simp add: assms)
+
 end

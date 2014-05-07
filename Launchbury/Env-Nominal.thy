@@ -4,17 +4,17 @@ begin
 
 subsubsection {* Equivariance lemmas  *}
 
-lemma fdom_perm:
+lemma edom_perm:
   fixes f :: "'a::pt \<Rightarrow> 'b::{pcpo_pt}"
-  shows "fdom (\<pi> \<bullet> f) = \<pi> \<bullet> (fdom f)"
-  by (simp add: fdom_def)
+  shows "edom (\<pi> \<bullet> f) = \<pi> \<bullet> (edom f)"
+  by (simp add: edom_def)
 
-lemmas fdom_perm_rev[simp,eqvt] = fdom_perm[symmetric]
+lemmas edom_perm_rev[simp,eqvt] = edom_perm[symmetric]
 
-lemma mem_fdom_perm[simp]:
+lemma mem_edom_perm[simp]:
   fixes \<rho> :: "'a::at_base \<Rightarrow> 'b::{pcpo_pt}"
-  shows "xa \<in> fdom (p \<bullet> \<rho>) \<longleftrightarrow> - p \<bullet> xa \<in> fdom \<rho>" 
-  by (metis (mono_tags) fdom_perm_rev mem_Collect_eq permute_set_eq)
+  shows "xa \<in> edom (p \<bullet> \<rho>) \<longleftrightarrow> - p \<bullet> xa \<in> edom \<rho>" 
+  by (metis (mono_tags) edom_perm_rev mem_Collect_eq permute_set_eq)
 
 lemma env_restr_eqvt[eqvt]:
   fixes m :: "'a::pt \<Rightarrow> 'b::{cont_pt,pcpo}"

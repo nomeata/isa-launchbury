@@ -4,7 +4,7 @@ begin
 
 subsubsection {* The natural semantics *}
 
-text {* This is the semantics as in \cite{launchbury} with two exceptions:
+text {* This is the semantics as in \cite{launchbury}, with two differences:
 \begin{itemize}
 \item Explicit freshness requirements for bound variables in the application and the Let rule.
 \item An additional parameter that stores variables that have to be avoided, but do not occur

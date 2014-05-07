@@ -212,7 +212,7 @@ proof-
   show "\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub> \<sqsubseteq> \<N>\<lbrakk> z \<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>" using corr(1).
 
   have "\<N>\<lbrace>\<Gamma>\<rbrace> = (\<N>\<lbrace>\<Gamma>\<rbrace>) f|` domA \<Gamma> "
-    using env_restr_useless[OF HSem_fdom_subset, where \<rho>1 = "\<bottom>"] by simp
+    using env_restr_useless[OF HSem_edom_subset, where \<rho>1 = "\<bottom>"] by simp
   also have "\<dots> \<sqsubseteq> (\<N>\<lbrace>\<Delta>\<rbrace>) f|` domA \<Gamma>" using corr(2).
   also have "\<dots> \<sqsubseteq> \<N>\<lbrace>\<Delta>\<rbrace>" by (rule env_restr_below_itself)
   finally show "\<N>\<lbrace>\<Gamma>\<rbrace> \<sqsubseteq> \<N>\<lbrace>\<Delta>\<rbrace>".

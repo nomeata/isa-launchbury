@@ -6,7 +6,7 @@ text {*
 This is the main correctness theorem, Theorem 2 from \cite{launchbury}.
 *}
 
-(* Another possible invariant seems to be: "fdom \<rho> - domA \<Gamma> \<subseteq> set L" *)
+(* Another possible invariant seems to be: "edom \<rho> - domA \<Gamma> \<subseteq> set L" *)
 
 theorem correctness:
   assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"

@@ -11,22 +11,22 @@ related definitions.
 
 subsubsection {* The domain of a pcpo-valued function *}
 
-definition fdom :: "('key \<Rightarrow> 'value::pcpo) \<Rightarrow> 'key set" where "fdom m = {x. m x \<noteq> \<bottom>}"
+definition edom :: "('key \<Rightarrow> 'value::pcpo) \<Rightarrow> 'key set" where "edom m = {x. m x \<noteq> \<bottom>}"
 
-lemma fempty_fdom[simp]: "fdom \<bottom> = {}" by (simp add: fdom_def)
+lemma fempty_edom[simp]: "edom \<bottom> = {}" by (simp add: edom_def)
 
-lemma fempty_fdom2[simp]: "fdom (\<lambda>_ . \<bottom>) = {}" by (simp add: fdom_def)
+lemma fempty_edom2[simp]: "edom (\<lambda>_ . \<bottom>) = {}" by (simp add: edom_def)
 
-lemma fdomIff: "(a \<in> fdom m) = (m a \<noteq> \<bottom>)" by (simp add: fdom_def)
+lemma edomIff: "(a \<in> edom m) = (m a \<noteq> \<bottom>)" by (simp add: edom_def)
 
-lemma lookup_not_fdom: "x \<notin> fdom m \<Longrightarrow> m x = \<bottom>"  by (auto iff:fdomIff)
+lemma lookup_not_edom: "x \<notin> edom m \<Longrightarrow> m x = \<bottom>"  by (auto iff:edomIff)
 
-lemma lookup_fdom[simp]: "m x \<noteq> \<bottom> \<Longrightarrow> x \<in> fdom m"  by (auto iff:fdomIff)
+lemma lookup_edom[simp]: "m x \<noteq> \<bottom> \<Longrightarrow> x \<in> edom m"  by (auto iff:edomIff)
 
 subsubsection {* Updates *}
 
-lemma fdom_fun_upd_subset: "fdom (h (x := v)) \<subseteq> insert x (fdom h)"
-  by (auto simp add: fdom_def)
+lemma edom_fun_upd_subset: "edom (h (x := v)) \<subseteq> insert x (edom h)"
+  by (auto simp add: edom_def)
 
 declare fun_upd_same[simp] fun_upd_other[simp]
 
@@ -39,8 +39,8 @@ abbreviation env_restr_rev  (infixl "f|`"  110) where "env_restr_rev m S \<equiv
 
 notation (latex output) env_restr_rev ("_|\<^bsub>_\<^esub>")
 
-lemma env_restr_empty[simp]: "fdom m \<inter> S = {} \<Longrightarrow> m f|` S = \<bottom>"
-  by (fastforce simp add: fdom_def env_restr_def)
+lemma env_restr_empty[simp]: "edom m \<inter> S = {} \<Longrightarrow> m f|` S = \<bottom>"
+  by (fastforce simp add: edom_def env_restr_def)
 
 lemma lookup_env_restr[simp]: "x \<in> S \<Longrightarrow> (env_restr S m) x = m x"
   by (fastforce simp add: env_restr_def)
@@ -51,10 +51,10 @@ lemma lookup_env_restr_not_there[simp]: "x \<notin> S \<Longrightarrow> (env_res
 lemma lookup_env_restr_eq: "(m f|` S) x = (if x \<in> S then m x else \<bottom>)"
   by simp
 
-lemma env_restr_cong: "fdom m \<inter> S1 = fdom m \<inter> S2 \<Longrightarrow> m f|` S1 = m f|` S2"
+lemma env_restr_cong: "edom m \<inter> S1 = edom m \<inter> S2 \<Longrightarrow> m f|` S1 = m f|` S2"
   apply (rule ext)
   apply (simp add: lookup_env_restr_eq)
-  by (metis Int_iff lookup_not_fdom)
+  by (metis Int_iff lookup_not_edom)
 
 lemma env_restr_env_restr[simp]:
  "x f|` d2 f|` d1 = x f|` (d1 \<inter> d2)"
@@ -64,7 +64,7 @@ lemma env_restr_env_restr_subset:
  "d1 \<subseteq> d2 \<Longrightarrow> x f|` d2 f|` d1 = x f|` d1"
  by (metis Int_absorb2 env_restr_env_restr)
 
-lemma env_restr_useless: "fdom m \<subseteq> S \<Longrightarrow> m f|` S = m"
+lemma env_restr_useless: "edom m \<subseteq> S \<Longrightarrow> m f|` S = m"
   by (rule ext) (auto simp add: lookup_env_restr_eq dest!: set_mp)
 
 lemma env_restr_UNIV[simp]: "m f|` UNIV = m"
@@ -102,12 +102,12 @@ lemma lookup_env_delete_None[simp]:
   "env_delete x m x = \<bottom>"
   by (simp add: env_delete_def)
 
-lemma fdom_env_delete[simp]:
-  "fdom (env_delete x m) = fdom m - {x}"
-  by (auto simp add: env_delete_def fdom_def)
+lemma edom_env_delete[simp]:
+  "edom (env_delete x m) = edom m - {x}"
+  by (auto simp add: env_delete_def edom_def)
 
-lemma fdom_env_delete_subset:
-  "fdom (env_delete x m) \<subseteq> fdom m" by auto
+lemma edom_env_delete_subset:
+  "edom (env_delete x m) \<subseteq> edom m" by auto
 
 lemma env_delete_fun_upd[simp]:
   "env_delete x (m(x := v)) = env_delete x m"
@@ -122,10 +122,10 @@ lemma env_delete_fun_upd3[simp]:
   by (auto simp add: env_delete_def)
 
 lemma env_delete_noop[simp]:
-  "x \<notin> fdom m \<Longrightarrow> env_delete x m = m"
-  by (auto simp add: env_delete_def fdom_def)
+  "x \<notin> edom m \<Longrightarrow> env_delete x m = m"
+  by (auto simp add: env_delete_def edom_def)
 
-lemma fun_upd_env_delete[simp]: "x \<in> fdom \<Gamma> \<Longrightarrow> (env_delete x \<Gamma>)(x := \<Gamma> x) = \<Gamma>"
+lemma fun_upd_env_delete[simp]: "x \<in> edom \<Gamma> \<Longrightarrow> (env_delete x \<Gamma>)(x := \<Gamma> x) = \<Gamma>"
   by (auto)
 
 lemma env_restr_env_delete_other[simp]: "x \<notin> S \<Longrightarrow> env_delete x m f|` S = m f|` S"
@@ -149,24 +149,24 @@ lemma override_on_bot[simp]:
   "m ++\<^bsub>S\<^esub> \<bottom> = m f|` (-S)" 
   by (auto simp add: override_on_def env_restr_def)
 
-lemma fdom_override_on[simp]: "fdom (m1 ++\<^bsub>S\<^esub> m2) = (fdom m1 - S) \<union> (fdom m2 \<inter> S)"
-  by (auto simp add: override_on_def fdom_def)
+lemma edom_override_on[simp]: "edom (m1 ++\<^bsub>S\<^esub> m2) = (edom m1 - S) \<union> (edom m2 \<inter> S)"
+  by (auto simp add: override_on_def edom_def)
 
 lemma lookup_override_on_eq: "(m1 ++\<^bsub>S\<^esub> m2) x = (if x \<in> S then m2 x else m1 x)"
   by (cases "x \<notin> S") simp_all
 
 lemma override_on_upd_swap: 
   "x \<notin> S \<Longrightarrow> \<rho>(x := z) ++\<^bsub>S\<^esub> \<rho>' = (\<rho> ++\<^bsub>S\<^esub> \<rho>')(x := z)"
-  by (auto simp add: override_on_def  fdom_def)
+  by (auto simp add: override_on_def  edom_def)
 
 lemma override_on_upd: 
   "x \<in> S \<Longrightarrow> \<rho> ++\<^bsub>S\<^esub> (\<rho>'(x := z)) = (\<rho> ++\<^bsub>S - {x}\<^esub> \<rho>')(x := z)"
-  by (auto simp add: override_on_def  fdom_def)
+  by (auto simp add: override_on_def  edom_def)
 
 lemma env_restr_add: "(m1 ++\<^bsub>S2\<^esub> m2) f|` S = m1 f|` S ++\<^bsub>S2\<^esub> m2 f|` S"
-  by (auto simp add: override_on_def  fdom_def env_restr_def)
+  by (auto simp add: override_on_def  edom_def env_restr_def)
 
 lemma env_delete_add: "env_delete x (m1 ++\<^bsub>S\<^esub> m2) = env_delete x m1 ++\<^bsub>S - {x}\<^esub> env_delete x m2"
-  by (auto simp add: override_on_def  fdom_def env_restr_def env_delete_def)
+  by (auto simp add: override_on_def  edom_def env_restr_def env_delete_def)
 
 end

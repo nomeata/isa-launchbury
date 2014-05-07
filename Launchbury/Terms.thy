@@ -11,7 +11,7 @@ It is created using the nominal\_datatype command, which creates alpha-equivalen
 The package does not support nested recursion, so the bindings of the let cannot simply be of type
 @{text "(var, exp) list"}. Instead, the definition of lists have to be inlined here, as the custom type
 @{text "assn"}. Later we create conversion functions between these two types, define a properly typed @{text let} 
-and redo the various lemmas in terms of that, so that afterwards, the type {@text "assn"} is no longer
+and redo the various lemmas in terms of that, so that afterwards, the type @{text "assn"} is no longer
 referenced.
 *}
 
@@ -35,7 +35,7 @@ type_synonym heap = "(var \<times> exp) list"
 subsubsection {* Rewriting in terms of heaps *}
 
 text {*
-We now work towards using @{type heap} instead of {@type assn}. All this
+We now work towards using @{type heap} instead of @@type assn}. All this
 could be skipped if Nominal supported nested recursion.
 *}
 
@@ -123,6 +123,7 @@ text {* Now we define the Let constructor in the form that we actually want. *}
 
 definition Let :: "heap \<Rightarrow> exp \<Rightarrow> exp"
   where "Let \<Gamma> e = LetA (heapToAssn \<Gamma>) e"
+
 notation (latex output) Terms.Let ("\<^raw:\textrm{\textsf{let}}> _ \<^raw:\textrm{\textsf{in}}> _")
 
 abbreviation
