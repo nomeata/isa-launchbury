@@ -10,58 +10,81 @@ proof
   thus False by simp
 qed
 
-lemma restr_can_restrict_heap: "(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>)|\<^bsub>r\<^esub> = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)|\<^bsub>r\<^esub>"
-proof(nominal_induct e arbitrary: \<rho> r rule: exp_strong_induct)
+text {*
+The semantics of an expression, given only @{term r} resources, will only use values from the
+environment with less resources.
+*}
+
+lemma restr_can_restrict_env: "(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>)|\<^bsub>r\<^esub> = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)|\<^bsub>r\<^esub>"
+proof(induction e arbitrary: \<rho> r rule: exp_induct)
   case (Var x)
   show ?case
-    apply (rule below_antisym)
-    defer
-    apply (rule cont2monofunE[OF _ env_C_restr_restr_below], simp)
-    apply (simp)
-    apply (cases r)
-    apply (simp_all add: Rep_cfun_inverse)
-    done
+  proof(rule C_restr_cong)
+    fix r'
+    assume "r' \<sqsubseteq> r"
+    {
+      fix r''
+      assume "r' = C\<cdot>r''" with `r' \<sqsubseteq> r`
+      have "(Cpred\<cdot>r \<sqinter> r'') = r''"
+        by (metis Cpred.simps below_refl is_meetI monofun_cfun_arg)
+      hence "\<rho> x\<cdot>r'' = (\<rho> x|\<^bsub>Cpred\<cdot>r\<^esub>)\<cdot>r''" by simp
+    }
+    thus "(\<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r' = (\<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)\<cdot>r'"
+      unfolding CESem_simps
+      by -(rule C_case_cong, simp)
+  qed
 next
   case (Lam x e)
   show ?case
-    apply (simp del: env_C_restr_lookup)
-    apply (rule C_restr_cong)
-    apply (case_tac r', simp)
-    apply simp
-    apply (rule cfun_eqI)
-    apply simp
-    apply (rule below_antisym)
-    defer
-    apply (rule cont2monofunE[OF _ env_C_restr_restr_below])
-    apply (simp del: fun_upd_apply)
-    apply (subst Lam(1))
-    apply simp
-    apply (intro monofun_cfun below_refl monofun_cfun_arg fun_upd_mono Cpred_below )
-    by (metis below_C rev_below_trans)
+  proof(rule C_restr_cong)
+    fix r'
+    assume "r' \<sqsubseteq> r"
+    {
+      fix r''
+      fix v
+      assume "r' = C\<cdot>r''"
+      with `r' \<sqsubseteq> r`
+      have [simp]: "r'' \<sqinter> Cpred\<cdot>r = r''"
+        by (metis C.inverts C_Cpred_id below_refl is_meetI meet_above_iff meet_bot2)
+
+      have "r'' \<sqsubseteq> r" by (metis `r' = C\<cdot>r''` `r' \<sqsubseteq> r` below_C below_trans)
+      hence "(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x := v|\<^bsub>r''\<^esub>)\<^esub>)|\<^bsub>r''\<^esub> = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>(\<rho>(x := v|\<^bsub>r''\<^esub>))|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)|\<^bsub>r''\<^esub>"
+        by (rule C_restr_eq_lower[OF Lam])
+      also have "(\<rho>(x := v|\<^bsub>r''\<^esub>))|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub> = (\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>)(x := v|\<^bsub>r''\<^esub>)"  by simp
+      finally
+      have "(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x := v|\<^bsub>r''\<^esub>)\<^esub>)|\<^bsub>r''\<^esub> = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>(\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>)(x := v|\<^bsub>r''\<^esub>)\<^esub>)|\<^bsub>r''\<^esub>".
+    }
+    thus "(\<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r' = (\<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)\<cdot>r'"
+      unfolding CESem_simps
+      by -(rule C_case_cong, simp)
+  qed
 next
   case (App e x)
-  { fix r r'
-    from App[where r = r and \<rho> = \<rho>]
-    have "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>(r \<sqinter> r') = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)\<cdot>(r \<sqinter> r')"
-      apply (rule C_restr_eqD)
-      by (metis below_refl meet_below1)
-  } note * = this
   show ?case
-    apply (rule below_antisym)
-    defer
-    apply (intro monofun_cfun_arg monofun_cfun_arg env_C_restr_restr_below )
-    apply (cases r, simp)
-    apply (simp del: C_restr.simps env_C_restr_lookup)
-    apply (rule monofun_cfun_arg)
-    apply (rule cfun_belowI)
-    apply (simp)
-    apply (subst *)
-    apply (intro monofun_cfun_fun monofun_cfun_arg Cpred_below )
-    done
+  proof (rule C_restr_cong)
+    fix r'
+    assume "r' \<sqsubseteq> r"
+    {
+      fix r''
+      assume "r' = C\<cdot>r''" with `r' \<sqsubseteq> r`
+      have ** : "(Cpred\<cdot>r \<sqinter> r'') = r''"
+        by (metis Cpred.simps below_refl is_meetI monofun_cfun_arg)
+
+      have "r'' \<sqsubseteq> r" by (metis `r' = C\<cdot>r''` `r' \<sqsubseteq> r` below_C below_trans)
+      hence *: "(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r'' = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)\<cdot>r''"
+        by (rule C_restr_eqD[OF App])
+
+      note * **
+    }
+    thus "(\<N>\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r' = (\<N>\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)\<cdot>r'"
+      unfolding CESem_simps
+      by -(rule C_case_cong, simp)
+  qed
 next
   case (Let as e)
 
-  have *: "\<And> r.  (\<N>\<lbrace>as\<rbrace>\<rho>)|\<^sup>\<circ>\<^bsub>r\<^esub> = (\<N>\<lbrace>as\<rbrace>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>)|\<^sup>\<circ>\<^bsub>r\<^esub>"
+  txt {* The lemma, lifted to heaps *}
+  have restr_can_restrict_env_heap : "\<And> r.  (\<N>\<lbrace>as\<rbrace>\<rho>)|\<^sup>\<circ>\<^bsub>r\<^esub> = (\<N>\<lbrace>as\<rbrace>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>)|\<^sup>\<circ>\<^bsub>r\<^esub>"
     apply (rule has_ESem.parallel_HSem_ind)
     apply simp
     apply simp
@@ -76,20 +99,31 @@ next
     done
 
   show ?case
-    apply (rule below_antisym)
-    defer apply (rule cont2monofunE[OF _ env_C_restr_restr_below], simp)
-    apply (cases r, simp  del: env_C_restr_lookup)
-    apply (simp  del: env_C_restr_lookup)
-    apply (subst (1 4) Rep_cfun_inverse) (* Be careful not to destroy the locale parameters *)
-    apply (subst (1 2) Let(2))
-    apply (subst *)
-    apply (rule cont2monofunE[OF _ Cpred_below], simp)
-    done
+  proof (rule C_restr_cong)
+    fix r'
+    assume "r' \<sqsubseteq> r"
+    {
+      fix r''
+      assume "r' = C\<cdot>r''" with `r' \<sqsubseteq> r`
+      have ** : "(Cpred\<cdot>r \<sqinter> r'') = r''"
+        by (metis Cpred.simps below_refl is_meetI monofun_cfun_arg)
+
+      have "r'' \<sqsubseteq> r" by (metis `r' = C\<cdot>r''` `r' \<sqsubseteq> r` below_C below_trans)
+
+      have "(\<N>\<lbrace>as\<rbrace>\<rho>)|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub> = (\<N>\<lbrace>as\<rbrace>(\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>))|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>"
+        by (rule restr_can_restrict_env_heap)
+      hence "(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<N>\<lbrace>as\<rbrace>\<rho>\<^esub>)\<cdot>r'' = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<N>\<lbrace>as\<rbrace>\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)\<cdot>r''"
+        by (subst (1 2)  C_restr_eqD[OF Let(2) `r'' \<sqsubseteq> r`]) simp
+    }
+    thus " (\<N>\<lbrakk> Let as e \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r' = (\<N>\<lbrakk> Let as e \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)\<cdot>r'"
+      unfolding CESem_simps
+      by -(rule C_case_cong, simp)
+  qed
 qed
 
-lemma can_restrict_heap:
+lemma can_restrict_env:
   "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r =  (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)\<cdot>r"
-  by (rule C_restr_eqD[OF restr_can_restrict_heap below_refl])
+  by (rule C_restr_eqD[OF restr_can_restrict_env below_refl])
 
 lemma add_BH:
   assumes "map_of \<Gamma> x = Some e"
@@ -127,7 +161,7 @@ proof-
     apply (simp add: lookupEvalHeap lookup_HSem_heap del: app_strict env_C_restr_lookup)
     apply (subst (1) env_C_restr_lookup)
     apply (simp add: lookupEvalHeap lookup_HSem_heap del: app_strict env_C_restr_lookup)
-    apply (subst restr_can_restrict_heap)
+    apply (subst restr_can_restrict_env)
     apply (rule below_trans[OF C_restr_below])
     apply (rule below_trans[OF monofun_cfun_arg eq_imp_below])
     apply (erule below_trans[OF monofun_cfun_fun[OF monofun_cfun_arg[OF Cpred_below]]])
@@ -146,7 +180,7 @@ proof-
     by (rule demand_suffices[OF infinite_resources_suffice])
   also
   have "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>?C = (\<N>\<lbrakk>e\<rbrakk>\<^bsub>(\<N>\<lbrace>\<Gamma>\<rbrace>)|\<^sup>\<circ>\<^bsub>Cpred\<cdot>?C\<^esub>\<^esub>)\<cdot>?C"
-    by (rule can_restrict_heap)
+    by (rule can_restrict_env)
   also
   have "\<dots> \<sqsubseteq> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)\<cdot>?C"
     by (intro monofun_cfun_arg monofun_cfun_fun heaps )

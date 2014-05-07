@@ -51,6 +51,11 @@ lemma C_case_bot[simp]: "C_case \<cdot> \<bottom> = \<bottom>"
   apply (rule C_case_below)
   done
 
+lemma C_case_cong:
+  assumes "\<And> r'. r = C\<cdot>r' \<Longrightarrow> f\<cdot>r' = g\<cdot>r'"
+  shows "C_case\<cdot>f\<cdot>r = C_case\<cdot>g\<cdot>r"
+using assms by (cases r) auto
+
 
 lemma C_cases:
   obtains n where "r = C\<^bsup>n\<^esup>" | "r = C\<^sup>\<infinity>"

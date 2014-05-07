@@ -135,7 +135,7 @@ abbreviation C_restr_syn :: "(C \<rightarrow> 'a::pcpo) \<Rightarrow> C \<Righta
 lemma [simp]: "\<bottom>|\<^bsub>r\<^esub> = \<bottom>" by fixrec_simp
 lemma [simp]: "f\<cdot>\<bottom> = \<bottom> \<Longrightarrow> f|\<^bsub>\<bottom>\<^esub> = \<bottom>"  by fixrec_simp
 
-lemma [simp]: "(v|\<^bsub>r'\<^esub>)|\<^bsub>r\<^esub> = v|\<^bsub>(r' \<sqinter> r)\<^esub>"
+lemma C_restr_C_restr[simp]: "(v|\<^bsub>r'\<^esub>)|\<^bsub>r\<^esub> = v|\<^bsub>(r' \<sqinter> r)\<^esub>"
   by (rule cfun_eqI) simp
 
 lemma C_restr_eqD:
@@ -143,6 +143,12 @@ lemma C_restr_eqD:
   assumes "r' \<sqsubseteq> r"
   shows "f\<cdot>r' = g\<cdot>r'"
 by (metis C_restr.simps assms below_refl is_meetI)
+
+lemma C_restr_eq_lower:
+  assumes "f|\<^bsub>r\<^esub> = g|\<^bsub>r\<^esub>"
+  assumes "r' \<sqsubseteq> r"
+  shows "f|\<^bsub>r'\<^esub> = g|\<^bsub>r'\<^esub>"
+by (metis C_restr_C_restr assms below_refl is_meetI)
 
 lemma C_restr_below[intro, simp]:
   "x|\<^bsub>r\<^esub> \<sqsubseteq> x"
@@ -220,6 +226,10 @@ lemma env_C_restr_bot[simp]: " \<bottom>|\<^sup>\<circ>\<^bsub>r\<^esub> = \<bot
 
 lemma env_C_restr_restr_below[intro]: "\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub> \<sqsubseteq> \<rho>"
   by (auto intro: fun_belowI)
+
+lemma env_C_restr_env_C_restr[simp]: "(v|\<^sup>\<circ>\<^bsub>r'\<^esub>)|\<^sup>\<circ>\<^bsub>r\<^esub> = v|\<^sup>\<circ>\<^bsub>(r' \<sqinter> r)\<^esub>"
+  unfolding env_C_restr_def by auto
+
 
 lemma env_restr_eq_Cpred: 
   assumes "\<rho>1|\<^sup>\<circ>\<^bsub>r\<^esub> = \<rho>2|\<^sup>\<circ>\<^bsub>r\<^esub>"
