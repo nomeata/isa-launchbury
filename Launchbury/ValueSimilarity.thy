@@ -194,7 +194,7 @@ lemma similar'_take: "d \<triangleleft>\<triangleright>\<^bsub>n\<^esub> e \<Lon
 subsubsection {* Admissibility *}
 
 text {*
-A technical prerequisite for induction is admissibility of the predicate, i.e. that the predicate
+A technical prerequisite for induction is admissibility of the predicate, i.e.\ that the predicate
 holds for the limit of a chain, given that it holds for all elements.
 *}
 
