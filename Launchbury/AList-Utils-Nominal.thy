@@ -84,7 +84,7 @@ proof-
   thus "S \<inter> domA \<Gamma> = {}" by auto
 qed
 
-subsubsection {* Pure domains *}
+subsubsection {* Pure codomains *}
 
 lemma domA_fv_pure:
   fixes \<Gamma> :: "('a::at_base \<times> 'b::pure) list"
@@ -100,6 +100,5 @@ lemma domA_fresh_pure:
   shows  "x \<in> domA \<Gamma> \<longleftrightarrow> \<not>(atom x \<sharp> \<Gamma>)"
   unfolding domA_fv_pure[symmetric]
   by (auto simp add: fv_def fresh_def)
-
 
 end

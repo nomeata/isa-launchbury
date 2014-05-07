@@ -70,7 +70,7 @@ next
     apply (case_tac "x \<in> domA as")
     apply (simp add: lookupEvalHeap del: fmap_C_restr_lookup)
     apply (subst (1 2) Let(1), assumption)
-    apply (drule fmap_restr_eq_Cpred)
+    apply (drule env_restr_eq_Cpred)
     apply simp
     apply simp
     done

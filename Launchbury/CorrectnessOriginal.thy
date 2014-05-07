@@ -69,7 +69,7 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e')
   
   show "(\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` domA \<Gamma> = (\<lbrace>\<Theta>\<rbrace>\<rho>) f|` domA \<Gamma>"
     using Application.hyps(10)[OF prem1]
-          fmap_restr_eq_subset[OF Gamma_subset Application.hyps(13)[OF prem2]]
+          env_restr_eq_subset[OF Gamma_subset Application.hyps(13)[OF prem2]]
     by (rule trans)
 next
 case (Variable \<Gamma> x e L \<Delta> z)
@@ -113,23 +113,23 @@ case (Variable \<Gamma> x e L \<Delta> z)
     case (3 \<sigma> \<sigma>')
     hence "\<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>?\<Gamma>\<rbrace>\<sigma>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>?\<Gamma>\<rbrace>\<sigma>'\<^esub>"
       and "(\<lbrace>?\<Gamma>\<rbrace>\<sigma>) f|` domA ?\<Gamma> = (\<lbrace>?\<Gamma>\<rbrace>\<sigma>') f|` domA ?\<Gamma>"
-      using fv_subset by (auto intro: ESem_fresh_cong HSem_fresh_cong  fmap_restr_eq_subset[OF _ 3])
+      using fv_subset by (auto intro: ESem_fresh_cong HSem_fresh_cong  env_restr_eq_subset[OF _ 3])
     from trans[OF this(1) Variable(3)[OF prem]] trans[OF this(2) Variable(4)[OF prem]]
     have  "\<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>?\<Gamma>\<rbrace>\<sigma>\<^esub> = \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<sigma>'\<^esub>"
        and "(\<lbrace>?\<Gamma>\<rbrace>\<sigma>) f|` domA ?\<Gamma> = (\<lbrace>\<Delta>\<rbrace>\<sigma>') f|` domA ?\<Gamma>".
     thus ?case
       using subset
-      by (auto intro!: ext simp add: lookup_override_on_eq  lookup_fmap_restr_eq dest: fmap_restr_eqD )
+      by (auto intro!: ext simp add: lookup_override_on_eq  lookup_env_restr_eq dest: env_restr_eqD )
   qed
   also have "\<dots> = (\<mu> \<rho>'. (\<rho> ++\<^bsub>domA \<Delta>\<^esub> (\<lbrace>\<Delta>\<rbrace>\<rho>'))( x := \<lbrakk> z \<rbrakk>\<^bsub>\<rho>'\<^esub>)) f|` (-?new)"
     by (rule arg_cong[OF iterative_HSem'[symmetric], OF `x \<notin> domA \<Delta>`])
   also have "\<dots> = (\<lbrace>(x,z) # \<Delta>\<rbrace>\<rho>)  f|` (-?new)"
     by (rule arg_cong[OF iterative_HSem[symmetric], OF `x \<notin> domA \<Delta>`])
   finally
-  show le: ?case by (rule fmap_restr_eq_subset[OF `domA \<Gamma> \<subseteq> (-?new)`])
+  show le: ?case by (rule env_restr_eq_subset[OF `domA \<Gamma> \<subseteq> (-?new)`])
 
   have "\<lbrakk> Var x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk> Var x \<rbrakk>\<^bsub>\<lbrace>(x, z) # \<Delta>\<rbrace>\<rho>\<^esub>"
-    using fmap_restr_eqD[OF le, where x = x]
+    using env_restr_eqD[OF le, where x = x]
     by simp
   also have "\<dots> = \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>(x, z) # \<Delta>\<rbrace>\<rho>\<^esub>"
     by (auto simp add: lookup_HSem_heap)
@@ -167,12 +167,12 @@ case (Let as \<Gamma> L body \<Delta> z)
   have "(\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` (domA \<Gamma>) = (\<lbrace>as\<rbrace>(\<lbrace>\<Gamma>\<rbrace>\<rho>)) f|` (domA \<Gamma>)"
     apply (rule ext)
     apply (case_tac "x \<in> domA as")
-    apply (auto simp add: lookup_HSem_other lookup_fmap_restr_eq *)
+    apply (auto simp add: lookup_HSem_other lookup_env_restr_eq *)
     done
   also have "\<dots> = (\<lbrace>as @ \<Gamma>\<rbrace>\<rho>) f|` (domA \<Gamma>)"
     by (rule arg_cong[OF HSem_merge[OF f1]])
   also have "\<dots> = (\<lbrace>\<Delta>\<rbrace>\<rho>) f|` (domA \<Gamma>)"
-    by (rule fmap_restr_eq_subset[OF _ Let.hyps(5)[OF prem]]) simp
+    by (rule env_restr_eq_subset[OF _ Let.hyps(5)[OF prem]]) simp
   finally
   show "(\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` domA \<Gamma> = (\<lbrace>\<Delta>\<rbrace>\<rho>) f|` domA \<Gamma>".
 qed

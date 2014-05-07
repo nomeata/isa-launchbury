@@ -33,7 +33,7 @@ next
      by (rule HSem_ignores_fresh_restr'[OF _ Let(1)])
   also
   have "\<lbrace>as\<rbrace>(\<rho> f|` (fv as \<union> fv e)) = \<lbrace>as\<rbrace>\<rho> f|` (fv as \<union> fv e - domA as)"
-    by (rule HSem_restr_cong) (auto simp add: lookup_fmap_restr_eq)
+    by (rule HSem_restr_cong) (auto simp add: lookup_env_restr_eq)
   finally
   show ?case by simp
 qed
@@ -46,9 +46,9 @@ subsubsection {* Nicer equations for ESem, without freshness requirements *}
 lemma ESem_Lam[simp]: "\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub> = tick \<cdot> (Fn \<cdot> (\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x := v)\<^esub>))"
 proof-
   have *: "\<And> v. ((\<rho> f|` (fv e - {x}))(x := v)) f|` fv e = (\<rho>(x := v)) f|` fv e"
-    by (rule ext) (auto simp add: lookup_fmap_restr_eq)
+    by (rule ext) (auto simp add: lookup_env_restr_eq)
 
-  have "\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>fmap_delete x \<rho>\<^esub>"
+  have "\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>env_delete x \<rho>\<^esub>"
     by (rule ESem_fresh_cong) simp
   also have "\<dots> = tick \<cdot> (Fn \<cdot> (\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>(\<rho> f|` (fv e - {x}))(x := v)\<^esub>))"
     by simp
@@ -67,11 +67,11 @@ proof-
   have "\<lbrakk> Let as body \<rbrakk>\<^bsub>\<rho>\<^esub> = tick \<cdot> (\<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>as\<rbrace>(\<rho> f|` fv (Let as body))\<^esub>)" 
     by simp
   also have "\<lbrace>as\<rbrace>(\<rho> f|` fv(Let as body)) = \<lbrace>as\<rbrace>(\<rho> f|` (fv as \<union> fv body))" 
-    by (rule HSem_restr_cong) (auto simp add: lookup_fmap_restr_eq)
+    by (rule HSem_restr_cong) (auto simp add: lookup_env_restr_eq)
   also have "\<dots> = (\<lbrace>as\<rbrace>\<rho>) f|` (fv as \<union> fv body)"
     by (rule HSem_ignores_fresh_restr'[symmetric, OF _ ESem_considers_fv]) simp
   also have "\<lbrakk>body\<rbrakk>\<^bsub>\<dots>\<^esub> = \<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>as\<rbrace>\<rho>\<^esub>"
-    by (rule ESem_fresh_cong) (auto simp add: lookup_fmap_restr_eq)
+    by (rule ESem_fresh_cong) (auto simp add: lookup_env_restr_eq)
   finally show ?thesis.
 qed
 declare ESem.simps(4)[simp del]

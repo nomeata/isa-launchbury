@@ -207,7 +207,7 @@ lemma fmap_C_restr_fempty[simp]: " \<bottom>|\<^sup>\<circ>\<^bsub>r\<^esub> = \
 lemma fmap_C_restr_restr_below[intro]: "\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub> \<sqsubseteq> \<rho>"
   by (auto intro: fun_belowI)
 
-lemma fmap_restr_eq_Cpred: 
+lemma env_restr_eq_Cpred: 
   assumes "\<rho>1|\<^sup>\<circ>\<^bsub>r\<^esub> = \<rho>2|\<^sup>\<circ>\<^bsub>r\<^esub>"
   shows "\<rho>1|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub> = \<rho>2|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>"
 proof(rule ext)

@@ -58,6 +58,6 @@ qed
 
 theorem heaps_similar: "\<lbrace>\<Gamma>\<rbrace> \<triangleleft>\<triangleright>\<^sup>* \<N>\<lbrace>\<Gamma>\<rbrace>"
   by (rule parallel_HSem_ind_different_ESem[OF pointwise_adm[OF similar_admI]])
-     (auto simp add: lookup_fmap_restr_eq lookupEvalHeap denotational_semantics_similar simp del: app_strict)
+     (auto simp add: lookup_env_restr_eq lookupEvalHeap denotational_semantics_similar simp del: app_strict)
 
 end

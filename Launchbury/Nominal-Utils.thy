@@ -186,7 +186,7 @@ lemma fresh_star_set_subset:
   "x \<sharp>* (B :: 'a::at_base list) \<Longrightarrow> set A \<subseteq> set B \<Longrightarrow> x \<sharp>* A"
   by (metis fresh_star_set fresh_star_subset[OF finite_set])
 
-subsection {* A locale for things with atoms of one type *}
+subsubsection {* The set of free variables of an expression *}
 
 definition fv :: "'a::pt \<Rightarrow> 'b::at_base set" where "fv e = {v. atom v \<in> supp e}"
 

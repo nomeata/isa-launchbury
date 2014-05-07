@@ -2,6 +2,11 @@ theory "HOLCF-Meet"
 imports "HOLCF"
 begin
 
+text {*
+This theory defines the $\sqcap$ operator on HOLCF domains, and introduces a type class for domains
+where all finite meets exist.
+*}
+
 subsubsection {* Towards meets: Lower bounds *}
 
 context po
@@ -32,7 +37,7 @@ definition is_glb :: "'a set \<Rightarrow> 'a \<Rightarrow> bool" (infix ">>|" 5
 definition glb :: "'a set \<Rightarrow> 'a" ("\<Sqinter>_" [60]60) where
   "glb S = (THE x. S >>| x)" 
 
-text {* access to some definition as inference rule *}
+text {* Access to the definition as inference rule *}
 
 lemma is_glbD1: "S >>| x ==> S >| x"
   unfolding is_glb_def by fast

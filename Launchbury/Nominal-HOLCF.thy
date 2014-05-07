@@ -3,7 +3,6 @@ imports
   "Nominal2" "Nominal-Utils" "HOLCF-Utils"
 begin
 
-
 subsubsection {* Type class of continous permutations and variations thereof *}
 
 class cont_pt = 
@@ -156,43 +155,5 @@ apply simp
 apply (rule parallel_fix_ind[OF adm_subst2])
 apply (auto simp add: permute_self)
 done
-
-subsubsection {* Instance for @{type u} *}
-
-instantiation "u" :: (cont_pt) pt
-begin
-  definition "p \<bullet> (x :: 'a\<^sub>\<bottom>) = fup\<cdot>(\<Lambda> x. up\<cdot>(p \<bullet> x))\<cdot>x"
-
-  instance
-  apply(default)
-  apply (simp add: permute_u_def eta_cfun)
-  apply (case_tac x)
-  apply (simp add: permute_u_def cfun_eqI minus_add)
-  apply (simp add: permute_u_def cfun_eqI minus_add)
-  done
-end
-
-
-lemma permute_u_eq: "permute p = (\<lambda> u. fup\<cdot>(\<Lambda> x. up\<cdot>(p \<bullet> x))\<cdot>u)"
-  by (rule, auto simp add: permute_u_def)
-
-(*
-lemma Cfun_app_eqvt[eqvt]:
-  "\<pi> \<bullet> (f \<cdot> x) = (\<pi> \<bullet> f) \<cdot> (\<pi> \<bullet> x)"
-  unfolding permute_cfun_def
-  by auto
-
-lemma permute_Lam: "cont f \<Longrightarrow> p \<bullet> (\<Lambda> x. f x) = (\<Lambda> x. (p \<bullet> f) x)"
-  apply (rule cfun_eqI)
-  unfolding permute_cfun_def
-  by (metis Abs_cfun_inverse2 eqvt_lambda unpermute_def )
-
-lemma Abs_cfun_eqvt: "cont f \<Longrightarrow> (p \<bullet> Abs_cfun) f = Abs_cfun f"
-  apply (subst permute_fun_def)
-  by (metis permute_Lam perm_still_cont permute_minus_cancel(1))
-*)
-
-instance "u" :: (cont_pt) cont_pt
-  by default (subst permute_u_eq, simp)
 
 end

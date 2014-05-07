@@ -82,7 +82,7 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e')
   
   show "(\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` (domA \<Gamma>) \<sqsubseteq> (\<N>\<lbrace>\<Theta>\<rbrace>\<rho>)  f|` (domA \<Gamma>)"
     using Application.hyps(10)[OF prem1]
-          fmap_restr_below_subset[OF Gamma_subset Application.hyps(13)[OF prem2]]
+          env_restr_below_subset[OF Gamma_subset Application.hyps(13)[OF prem2]]
     by (rule below_trans)
 next
 case (Variable \<Gamma> x e L \<Delta> z)
@@ -126,20 +126,20 @@ case (Variable \<Gamma> x e L \<Delta> z)
     case (3 \<sigma> \<sigma>')
     hence "\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<sigma>\<^esub> \<sqsubseteq> \<N>\<lbrakk> e \<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<sigma>'\<^esub>"
       and "(\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<sigma>) f|` domA (delete x \<Gamma>) \<sqsubseteq> (\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<sigma>') f|` domA (delete x \<Gamma>)"
-      using fv_subset by (auto intro: ESem_fresh_cong_below HSem_fresh_cong_below  fmap_restr_below_subset[OF _ 3])
+      using fv_subset by (auto intro: ESem_fresh_cong_below HSem_fresh_cong_below  env_restr_below_subset[OF _ 3])
     from below_trans[OF this(1) Variable(3)[OF prem]] below_trans[OF this(2) Variable(4)[OF prem]]
     have  "\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<sigma>\<^esub> \<sqsubseteq> \<N>\<lbrakk> z \<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<sigma>'\<^esub>"
        and "(\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<sigma>) f|` domA (delete x \<Gamma>) \<sqsubseteq> (\<N>\<lbrace>\<Delta>\<rbrace>\<sigma>') f|` domA (delete x \<Gamma>)".
     thus ?case
       using subset
-      by (auto intro!: fun_belowI simp add: lookup_override_on_eq  lookup_fmap_restr_eq elim: fmap_restr_belowD)
+      by (auto intro!: fun_belowI simp add: lookup_override_on_eq  lookup_env_restr_eq elim: env_restr_belowD)
   qed
   also have "\<dots> = (\<mu> \<rho>'. (\<rho> ++\<^bsub>domA \<Delta>\<^esub> (\<N>\<lbrace>\<Delta>\<rbrace>\<rho>'))( x := \<N>\<lbrakk> z \<rbrakk>\<^bsub>\<rho>'\<^esub>)) f|` (-?new)"
     by (rule arg_cong[OF iterative_HSem'[symmetric], OF `x \<notin> domA \<Delta>`])
   also have "\<dots> = (\<N>\<lbrace>(x,z) # \<Delta>\<rbrace>\<rho>)  f|` (-?new)"
     by (rule arg_cong[OF iterative_HSem[symmetric], OF `x \<notin> domA \<Delta>`])
   finally
-  show le: ?case by (rule fmap_restr_below_subset[OF `domA \<Gamma> \<subseteq> (-?new)`])
+  show le: ?case by (rule env_restr_below_subset[OF `domA \<Gamma> \<subseteq> (-?new)`])
 
   have "\<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> \<sqsubseteq> \<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<N>\<lbrace>(x, z) # \<Delta>\<rbrace>\<rho>\<^esub>"
     apply (rule cfun_belowI)
@@ -190,12 +190,12 @@ case (Let as \<Gamma> L body \<Delta> z)
   have "(\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` (domA \<Gamma>) \<sqsubseteq> (\<N>\<lbrace>as\<rbrace>(\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>)) f|` (domA \<Gamma>)"
     apply (rule fun_belowI)
     apply (case_tac "x \<in> domA as")
-    apply (auto simp add: lookup_HSem_other lookup_fmap_restr_eq *)
+    apply (auto simp add: lookup_HSem_other lookup_env_restr_eq *)
     done
   also have "\<dots> = (\<N>\<lbrace>as @ \<Gamma>\<rbrace>\<rho>) f|` (domA \<Gamma>)"
     by (rule arg_cong[OF HSem_merge[OF f1]])
   also have "\<dots> \<sqsubseteq> (\<N>\<lbrace>\<Delta>\<rbrace>\<rho>) f|` (domA \<Gamma>)"
-    by (rule fmap_restr_below_subset[OF _ Let.hyps(5)[OF prem]]) simp
+    by (rule env_restr_below_subset[OF _ Let.hyps(5)[OF prem]]) simp
   finally
   show "(\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` domA \<Gamma> \<sqsubseteq> (\<N>\<lbrace>\<Delta>\<rbrace>\<rho>) f|` domA \<Gamma>".
 qed
@@ -212,9 +212,9 @@ proof-
   show "\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub> \<sqsubseteq> \<N>\<lbrakk> z \<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>" using corr(1).
 
   have "\<N>\<lbrace>\<Gamma>\<rbrace> = (\<N>\<lbrace>\<Gamma>\<rbrace>) f|` domA \<Gamma> "
-    using fmap_restr_useless[OF HSem_fdom_subset, where \<rho>1 = "\<bottom>"] by simp
+    using env_restr_useless[OF HSem_fdom_subset, where \<rho>1 = "\<bottom>"] by simp
   also have "\<dots> \<sqsubseteq> (\<N>\<lbrace>\<Delta>\<rbrace>) f|` domA \<Gamma>" using corr(2).
-  also have "\<dots> \<sqsubseteq> \<N>\<lbrace>\<Delta>\<rbrace>" by (rule fmap_restr_below_itself)
+  also have "\<dots> \<sqsubseteq> \<N>\<lbrace>\<Delta>\<rbrace>" by (rule env_restr_below_itself)
   finally show "\<N>\<lbrace>\<Gamma>\<rbrace> \<sqsubseteq> \<N>\<lbrace>\<Delta>\<rbrace>".
 qed
 

@@ -54,7 +54,7 @@ case (goal4 x e x' e')
       also have "((x' \<leftrightarrow> x) \<bullet> ESem_sumC) e' = ESem_sumC e'"
         by (rule eqvt_at_apply[OF goal4(2)])
       also have "((x' \<leftrightarrow> x) \<bullet> \<rho>) f|` (fv e' - {x'}) = \<rho> f|` (fv e' - {x'})"
-        by (rule fmap_restr_flip) (auto simp add: `x \<notin> fv e'`)
+        by (rule env_restr_flip) (auto simp add: `x \<notin> fv e'`)
       also have "fv e' - {x'} = fv (Lam [x']. e')" by simp
       finally
       have "ESem_sumC e\<cdot>((\<rho> f|` fv (Lam [x]. e))(x := xa)) = ESem_sumC e'\<cdot>((\<rho> f|` fv (Lam [x']. e'))(x' := xa))".
@@ -91,7 +91,7 @@ case (goal13 as body as' body')
   also have "has_ESem.HSem (p \<bullet> ESem_sumC) as' = has_ESem.HSem ESem_sumC as'"
     by (rule HSem_cong[OF eqvt_at_apply[OF eqvt3] refl])
   also have "(p \<bullet> \<rho>) f|` fv (Let as' body') = \<rho> f|`  fv (Let as' body')"
-    by (rule fmap_restr_perm[OF *], simp)
+    by (rule env_restr_perm[OF *], simp)
   also have "(p \<bullet> ESem_sumC) body' = ESem_sumC body'"
     by (rule eqvt_at_apply[OF eqvt4])
   finally

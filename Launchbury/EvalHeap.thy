@@ -64,8 +64,8 @@ lemma lookupEvalHeap_other[simp]:
   using assms
   by (induct \<Gamma> f rule: evalHeap.induct) auto
 
-lemma fmap_restr_evalHeap_noop:
-  "domA h \<subseteq> S \<Longrightarrow> fmap_restr S (evalHeap h eval) = evalHeap h eval"
+lemma env_restr_evalHeap_noop:
+  "domA h \<subseteq> S \<Longrightarrow> env_restr S (evalHeap h eval) = evalHeap h eval"
   apply (rule ext)
   apply (case_tac "x \<in> S")
   apply (auto simp add: lookupEvalHeap intro: lookupEvalHeap_other)
@@ -84,7 +84,7 @@ lemma lookupEvalHeapNotAppend[simp]:
   shows "(evalHeap (\<Gamma>@h) f) x = evalHeap h f x"
   using assms by (induct \<Gamma>, auto)
 
-lemma evalHeap_delete[simp]: "evalHeap (delete x \<Gamma>) eval = fmap_delete x (evalHeap \<Gamma> eval)"
+lemma evalHeap_delete[simp]: "evalHeap (delete x \<Gamma>) eval = env_delete x (evalHeap \<Gamma> eval)"
   by (induct \<Gamma>) auto
 
 lemma evalHeap_mono:

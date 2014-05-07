@@ -82,4 +82,26 @@ proof
 qed
 
 
+subsubsection {* Instance for @{type u} *}
+
+instantiation "u" :: (cont_pt) pt
+begin
+  definition "p \<bullet> (x :: 'a\<^sub>\<bottom>) = fup\<cdot>(\<Lambda> x. up\<cdot>(p \<bullet> x))\<cdot>x"
+
+  instance
+  apply(default)
+  apply (simp add: permute_u_def eta_cfun)
+  apply (case_tac x)
+  apply (simp add: permute_u_def cfun_eqI minus_add)
+  apply (simp add: permute_u_def cfun_eqI minus_add)
+  done
+end
+
+lemma permute_u_eq: "permute p = (\<lambda> u. fup\<cdot>(\<Lambda> x. up\<cdot>(p \<bullet> x))\<cdot>u)"
+  by (rule, auto simp add: permute_u_def)
+
+instance "u" :: (cont_pt) cont_pt
+  by default (subst permute_u_eq, simp)
+
+
 end
