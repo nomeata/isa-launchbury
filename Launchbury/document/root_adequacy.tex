@@ -45,6 +45,12 @@
 % this should be the last package used
 \usepackage{pdfsetup}
 
+% silence the KOMA script warnings
+\def\bf{\normalfont\bfseries}
+\def\it{\normalfont\itshape}
+\def\rm{\normalfont\rmfamily}
+
+
 % urls in roman style, theorys in math-similar italics
 \urlstyle{rm}
 \isabellestyle{it}
@@ -191,8 +197,6 @@ This work was supported by the Deutsche Telekom Stiftung.
 \section{Denotational domain}
 \label{ch_dendom}
 
-\theory{AbstractDenotational}
-\theory{Abstract-Denotational-Props}
 \theory{Value}
 \theory{Value-Nominal}
 
@@ -201,9 +205,11 @@ This work was supported by the Deutsche Telekom Stiftung.
 \section{Denotational semantics}
 \label{ch_den}
 
-\theory{HasESem}
 \theory{Iterative}
+\theory{HasESem}
 \theory{HeapSemantics}
+\theory{AbstractDenotational}
+\theory{Abstract-Denotational-Props}
 \theory{Denotational}
 
 

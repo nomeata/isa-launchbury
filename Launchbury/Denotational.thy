@@ -2,6 +2,10 @@ theory Denotational
   imports "Abstract-Denotational-Props" "Value-Nominal"
 begin
 
+text {*
+This is the actual denotational semantics as found in \cite{launchbury}.
+*}
+
 interpretation semantic_domain Fn Fn_project "\<Lambda> x. x".
 
 abbreviation ESem_syn'' ("\<lbrakk> _ \<rbrakk>\<^bsub>_\<^esub>"  [60,60] 60) where "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> \<equiv> ESem e \<cdot> \<rho>"

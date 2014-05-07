@@ -2,8 +2,11 @@ theory AbstractDenotational
 imports Terms "HeapSemantics"
 begin
 
-
 subsubsection {* The denotational semantics for expressions *}
+
+text {*
+Because we need to define two semantics later on, we are abstract in the actual domain.
+*}
 
 locale semantic_domain =
   fixes Fn :: "('Value \<rightarrow> 'Value) \<rightarrow> ('Value::{pcpo_pt,pure})"

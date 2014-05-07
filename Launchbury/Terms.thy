@@ -35,7 +35,7 @@ type_synonym heap = "(var \<times> exp) list"
 subsubsection {* Rewriting in terms of heaps *}
 
 text {*
-We now work towards using @{type heap} instead of @@type assn}. All this
+We now work towards using @{type heap} instead of @{type assn}. All this
 could be skipped if Nominal supported nested recursion.
 *}
 

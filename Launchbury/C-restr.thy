@@ -2,10 +2,19 @@ theory "C-restr"
 imports C "C-Meet" "HOLCF-Utils"
 begin
 
-subsubsection {* On C-ranged functions *}
+subsubsection {* The demand of a $C$-function *}
+
+text {*
+The demand is the least amount of resources required to produce a non-bottom element,
+if at all.
+*}
 
 definition demand :: "(C \<rightarrow> 'a::pcpo) \<Rightarrow> C" where
   "demand f = (if f\<cdot>C\<^sup>\<infinity> \<noteq> \<bottom> then C\<^bsup>(LEAST n. f\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>)\<^esup> else C\<^sup>\<infinity>)"
+
+text {*
+Because of continuity, a non-bottom value can always be obtained with finite resources.
+*}
 
 lemma finite_resources_suffice:
   assumes "f\<cdot>C\<^sup>\<infinity> \<noteq> \<bottom>"
@@ -20,6 +29,11 @@ proof-
   }
   thus ?thesis using that by blast
 qed
+
+text {*
+Because of monotonicity, a non-bottom value can always be obtained with more resources.
+*}
+
 
 lemma more_resources_suffice:
   assumes "f\<cdot>r \<noteq> \<bottom>" and "r \<sqsubseteq> r'"

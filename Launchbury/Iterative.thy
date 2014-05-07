@@ -2,7 +2,9 @@ theory Iterative
 imports "Env-HOLCF"
 begin
 
-subsubsection {* A setup for defining a fixed point of finite maps iteratively *}
+text {*
+A setup for defining a fixed point of mutual recursive environments iteratively
+*}
 
 locale iterative =
   fixes \<rho> :: "'a::type \<Rightarrow> 'b::pcpo"
