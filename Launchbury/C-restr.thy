@@ -230,6 +230,10 @@ lemma env_C_restr_restr_below[intro]: "\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub> \<
 lemma env_C_restr_env_C_restr[simp]: "(v|\<^sup>\<circ>\<^bsub>r'\<^esub>)|\<^sup>\<circ>\<^bsub>r\<^esub> = v|\<^sup>\<circ>\<^bsub>(r' \<sqinter> r)\<^esub>"
   unfolding env_C_restr_def by auto
 
+lemma env_C_restr_cong:
+  "(\<And> x r'. r' \<sqsubseteq> r \<Longrightarrow> f x \<cdot> r' = g x \<cdot> r') \<Longrightarrow> f|\<^sup>\<circ>\<^bsub>r\<^esub> = g|\<^sup>\<circ>\<^bsub>r\<^esub>"
+  unfolding env_C_restr_def
+  by (rule ext) (auto intro: C_restr_cong)
 
 lemma env_restr_eq_Cpred: 
   assumes "\<rho>1|\<^sup>\<circ>\<^bsub>r\<^esub> = \<rho>2|\<^sup>\<circ>\<^bsub>r\<^esub>"

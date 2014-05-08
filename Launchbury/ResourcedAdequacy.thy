@@ -84,19 +84,35 @@ next
   case (Let as e)
 
   txt {* The lemma, lifted to heaps *}
-  have restr_can_restrict_env_heap : "\<And> r.  (\<N>\<lbrace>as\<rbrace>\<rho>)|\<^sup>\<circ>\<^bsub>r\<^esub> = (\<N>\<lbrace>as\<rbrace>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>)|\<^sup>\<circ>\<^bsub>r\<^esub>"
-    apply (rule has_ESem.parallel_HSem_ind)
-    apply simp
-    apply simp
-    apply (rule ext)
-    apply (subst (1 3) env_C_restr_lookup)
-    apply (case_tac "x \<in> domA as")
-    apply (simp add: lookupEvalHeap del: env_C_restr_lookup)
-    apply (subst (1 2) Let(1), assumption)
-    apply (drule env_restr_eq_Cpred)
-    apply simp
-    apply simp
-    done
+  have restr_can_restrict_env_heap : "\<And> r. (\<N>\<lbrace>as\<rbrace>\<rho>)|\<^sup>\<circ>\<^bsub>r\<^esub> = (\<N>\<lbrace>as\<rbrace>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>)|\<^sup>\<circ>\<^bsub>r\<^esub>"
+  proof(rule has_ESem.parallel_HSem_ind)
+    fix \<rho>\<^sub>1 \<rho>\<^sub>2 :: CEnv and r :: C
+    assume "\<rho>\<^sub>1|\<^sup>\<circ>\<^bsub>r\<^esub> = \<rho>\<^sub>2|\<^sup>\<circ>\<^bsub>r\<^esub>"
+    hence "\<rho>\<^sub>1|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub> = \<rho>\<^sub>2|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>" by (metis env_restr_eq_Cpred)
+
+    show " (\<rho> ++\<^bsub>domA as\<^esub> \<^bold>\<N>\<lbrakk> as \<^bold>\<rbrakk>\<^bsub>\<rho>\<^sub>1\<^esub>)|\<^sup>\<circ>\<^bsub>r\<^esub> = (\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub> ++\<^bsub>domA as\<^esub> \<^bold>\<N>\<lbrakk> as \<^bold>\<rbrakk>\<^bsub>\<rho>\<^sub>2\<^esub>)|\<^sup>\<circ>\<^bsub>r\<^esub>"
+    proof(rule env_C_restr_cong)
+      fix x and r'
+      assume "r' \<sqsubseteq> r"
+
+      show "(\<rho> ++\<^bsub>domA as\<^esub> \<^bold>\<N>\<lbrakk> as \<^bold>\<rbrakk>\<^bsub>\<rho>\<^sub>1\<^esub>) x\<cdot>r' = (\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub> ++\<^bsub>domA as\<^esub> \<^bold>\<N>\<lbrakk> as \<^bold>\<rbrakk>\<^bsub>\<rho>\<^sub>2\<^esub>) x\<cdot>r'"
+      proof(cases "x \<in> domA as")
+        case True
+        have "(\<N>\<lbrakk> the (map_of as x) \<rbrakk>\<^bsub>\<rho>\<^sub>1\<^esub>)\<cdot>r' = (\<N>\<lbrakk> the (map_of as x) \<rbrakk>\<^bsub>\<rho>\<^sub>1|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)\<cdot>r'"
+          by (rule C_restr_eqD[OF Let(1)[OF True] `r' \<sqsubseteq> r`])
+        also have "\<dots> = (\<N>\<lbrakk> the (map_of as x) \<rbrakk>\<^bsub>\<rho>\<^sub>2|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)\<cdot>r'"
+          unfolding `\<rho>\<^sub>1|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub> = \<rho>\<^sub>2|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>`..
+        also have "\<dots>   = (\<N>\<lbrakk> the (map_of as x) \<rbrakk>\<^bsub>\<rho>\<^sub>2\<^esub>)\<cdot>r'"
+          by (rule C_restr_eqD[OF Let(1)[OF True] `r' \<sqsubseteq> r`, symmetric])
+        finally
+        show ?thesis using True by (simp add: lookupEvalHeap)
+      next
+        case False
+        from `r' \<sqsubseteq> r` have "(r \<sqinter> r') = r'" by (metis below_refl is_meetI)
+        thus ?thesis using False by simp
+      qed
+    qed
+  qed simp_all
 
   show ?case
   proof (rule C_restr_cong)
