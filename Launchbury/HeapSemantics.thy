@@ -50,6 +50,16 @@ lemma HSem_bot_below:
   using assms 
 by (metis HSem_below fun_belowD minimal)
 
+lemma HSem_bot_ind:
+  assumes "adm P"
+  assumes "P \<bottom>"
+  assumes step: "\<And> \<rho>'. P \<rho>' \<Longrightarrow> P (\<^bold>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>\<rho>'\<^esub>)"
+  shows "P (\<lbrace>\<Gamma>\<rbrace>\<bottom>)"
+  apply (rule HSem_ind[OF assms(1,2)])
+  apply (drule assms(3))
+  apply simp
+  done
+  
 lemma parallel_HSem_ind:
   assumes "adm (\<lambda>\<rho>'. P (fst \<rho>') (snd \<rho>'))"
   assumes "P \<bottom> \<bottom>"
@@ -64,6 +74,10 @@ lemma HSem_eq:
   shows "\<lbrace>\<Gamma>\<rbrace>\<rho> = \<rho> ++\<^bsub>domA \<Gamma>\<^esub> \<^bold>\<lbrakk>\<Gamma>\<^bold>\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>"
   unfolding HSem_def'
   by (subst fix_eq) simp
+
+lemma HSem_bot_eq:
+  shows "\<lbrace>\<Gamma>\<rbrace>\<bottom> = \<^bold>\<lbrakk>\<Gamma>\<^bold>\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<bottom>\<^esub>"
+  by (subst HSem_eq) simp
 
 lemma lookup_HSem_other:
   assumes "y \<notin> domA h"

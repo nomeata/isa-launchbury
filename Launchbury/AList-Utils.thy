@@ -38,6 +38,10 @@ lemma dom_map_of_conv_domA:
   "dom (map_of \<Gamma>) = domA \<Gamma>"
   by (induct \<Gamma>) (auto simp add: dom_if)
 
+lemma domA_map_of_Some_the:
+  "x \<in> domA \<Gamma> \<Longrightarrow> map_of \<Gamma> x = Some (the (map_of \<Gamma> x))"
+  by (induct \<Gamma>) (auto simp add: dom_if)
+
 subsubsection {* Other lemmas about associative lists *}
 
 lemma delete_set_none: "(map_of l)(x := None) = map_of (delete x l)"

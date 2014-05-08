@@ -96,4 +96,10 @@ lemma fix_eq_fix:
   "f\<cdot>(fix\<cdot>g) \<sqsubseteq> fix\<cdot>g \<Longrightarrow> g\<cdot>(fix\<cdot>f) \<sqsubseteq> fix\<cdot>f \<Longrightarrow> fix\<cdot>f = fix\<cdot>g"
   by (metis fix_least_below below_antisym)
 
+subsection {* Additional transitivity rules *}
+
+lemma cfun_below_arg_trans[trans]:
+  "a \<sqsubseteq> f \<cdot> b \<Longrightarrow> b \<sqsubseteq> c \<Longrightarrow> a \<sqsubseteq> f \<cdot> c"
+  by (metis below_refl box_below monofun_cfun_arg)
+
 end

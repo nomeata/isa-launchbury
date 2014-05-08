@@ -69,6 +69,10 @@ lemma env_restr_evalHeap_noop:
   apply (auto simp add: lookupEvalHeap intro: lookupEvalHeap_other)
   done
 
+lemma env_restr_evalHeap_same[simp]:
+  "env_restr (domA h) (evalHeap h eval) = evalHeap h eval"
+  by (simp add: env_restr_evalHeap_noop)
+
 lemma evalHeap_cong':
   "\<lbrakk> (\<And> x. x \<in> domA heap \<Longrightarrow> eval1 (the (map_of heap x)) = eval2 (the (map_of heap x))) \<rbrakk>
     \<Longrightarrow>  evalHeap heap eval1 = evalHeap heap eval2"

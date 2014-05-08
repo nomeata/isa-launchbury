@@ -138,18 +138,24 @@ next
 qed
 
 lemma can_restrict_env:
-  "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r =  (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)\<cdot>r"
+  "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)\<cdot>r"
   by (rule C_restr_eqD[OF restr_can_restrict_env below_refl])
+
+text {*
+When an expression @{term e} terminates, then we can remove such an expression from the heap and it
+still terminates. This is the curcial trick to handle black-holing in the resourced semantics.
+*}
 
 lemma add_BH:
   assumes "map_of \<Gamma> x = Some e"
   assumes  "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>"
   shows "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>"
 proof-
-  let ?C = "demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)"
+  def r \<equiv> "demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)"
+  have "r \<noteq> \<bottom>" unfolding r_def by (rule demand_not_0)
 
   from  assms(2)
-  have "?C \<sqsubseteq> C\<^bsup>n\<^esup>" unfolding not_bot_demand by simp
+  have "r \<sqsubseteq> C\<^bsup>n\<^esup>" unfolding r_def not_bot_demand by simp
 
   from assms(1)
   have [simp]: "the (map_of \<Gamma> x) = e" by (metis the.simps)
@@ -157,55 +163,85 @@ proof-
   from assms(1)
   have [simp]: "x \<in> domA \<Gamma>" by (metis domIff dom_map_of_conv_domA not_Some_eq)
 
-  have "(\<N>\<lbrace>\<Gamma>\<rbrace>)|\<^sup>\<circ>\<^bsub>Cpred\<cdot>?C\<^esub> \<sqsubseteq> \<N>\<lbrace>delete x \<Gamma>\<rbrace> \<and> \<N>\<lbrace>\<Gamma>\<rbrace> \<sqsubseteq> \<N>\<lbrace>\<Gamma>\<rbrace>"
-    apply (rule HSem_ind) back back back back back back back back back
-    apply (intro adm_lemmas cont2cont)
-    apply (simp del: app_strict  del: env_C_restr_lookup)
-    apply (erule conjE)
-    apply rule
-    apply (rule fun_belowI)
-    apply (case_tac "xa = x")
-    apply (subst (1) env_C_restr_lookup)
-    apply (simp add: lookupEvalHeap lookup_HSem_other del: app_strict env_C_restr_lookup)
-    apply (subst app_strict)
-    apply (simp del: app_strict env_C_restr_lookup)
-    apply (rule C_restr_bot_demand)
-    apply (subst C_Cpred_id[OF demand_not_0])
-    apply (erule demand_contravariant[OF monofun_cfun_arg])
+  def ub \<equiv> "\<N>\<lbrace>\<Gamma>\<rbrace>" -- "An upper bound for the induction"
 
-    apply (case_tac "xa \<in> domA \<Gamma>")
-    apply (simp add: lookupEvalHeap lookup_HSem_heap del: app_strict env_C_restr_lookup)
-    apply (subst (1) env_C_restr_lookup)
-    apply (simp add: lookupEvalHeap lookup_HSem_heap del: app_strict env_C_restr_lookup)
-    apply (subst restr_can_restrict_env)
-    apply (rule below_trans[OF C_restr_below])
-    apply (rule below_trans[OF monofun_cfun_arg eq_imp_below])
-    apply (erule below_trans[OF monofun_cfun_fun[OF monofun_cfun_arg[OF Cpred_below]]])
-    apply (rule refl)
-    
-    apply (simp del: app_strict)
+  have heaps: "(\<N>\<lbrace>\<Gamma>\<rbrace>)|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub> \<sqsubseteq> \<N>\<lbrace>delete x \<Gamma>\<rbrace>" and "\<N>\<lbrace>\<Gamma>\<rbrace> \<sqsubseteq> ub"
+  proof (induction rule: HSem_bot_ind) 
+    fix \<rho>'
+    assume "\<rho>'|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub> \<sqsubseteq> \<N>\<lbrace>delete x \<Gamma>\<rbrace>"
+    assume "\<rho>' \<sqsubseteq> ub"
 
-    apply (subst HSem_eq)
-    apply (erule cont2monofunE[rotated])
-    apply simp
-    done
-  hence heaps: "(\<N>\<lbrace>\<Gamma>\<rbrace>)|\<^sup>\<circ>\<^bsub>Cpred\<cdot>?C\<^esub> \<sqsubseteq> \<N>\<lbrace>delete x \<Gamma>\<rbrace>"..
+    show "(\<^bold>\<N>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>\<rho>'\<^esub>)|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub> \<sqsubseteq> \<N>\<lbrace>delete x \<Gamma>\<rbrace>"
+    proof (rule fun_belowI)
+      fix y
+      show "((\<^bold>\<N>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>\<rho>'\<^esub>)|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>) y \<sqsubseteq> (\<N>\<lbrace>delete x \<Gamma>\<rbrace>) y"
+      proof (cases "y = x")
+        case True
+        have "((\<^bold>\<N>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>\<rho>'\<^esub>)|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>) x = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)|\<^bsub>Cpred\<cdot>r\<^esub>"
+          by (simp add: lookupEvalHeap)
+        also have "\<dots> \<sqsubseteq> (\<N>\<lbrakk> e \<rbrakk>\<^bsub>ub\<^esub>)|\<^bsub>Cpred\<cdot>r\<^esub>"
+          using `\<rho>' \<sqsubseteq> ub` by (intro monofun_cfun_arg)
+        also have "\<dots> = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)|\<^bsub>Cpred\<cdot>(demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>))\<^esub>"
+          unfolding ub_def r_def..
+        also have "\<dots> = \<bottom>"
+          by (rule C_restr_bot_demand) (simp add:  demand_not_0)
+        also have "\<dots> =  (\<N>\<lbrace>delete x \<Gamma>\<rbrace>) x"
+          by (simp add: lookup_HSem_other)
+        finally
+        show ?thesis unfolding True.
+      next
+        case False
+        show ?thesis
+        proof (cases "y \<in> domA \<Gamma>")
+          case True
+          have "(\<N>\<lbrakk> the (map_of \<Gamma> y) \<rbrakk>\<^bsub>\<rho>'\<^esub>)|\<^bsub>Cpred\<cdot>r\<^esub> = (\<N>\<lbrakk> the (map_of \<Gamma> y) \<rbrakk>\<^bsub>\<rho>'|\<^sup>\<circ>\<^bsub>Cpred\<cdot>(Cpred\<cdot>r)\<^esub>\<^esub>)|\<^bsub>Cpred\<cdot>r\<^esub>"
+            by (rule restr_can_restrict_env)
+          also have "\<dots> \<sqsubseteq> \<N>\<lbrakk> the (map_of \<Gamma> y) \<rbrakk>\<^bsub>\<rho>'|\<^sup>\<circ>\<^bsub>Cpred\<cdot>(Cpred\<cdot>r)\<^esub>\<^esub>"
+            by (rule C_restr_below)
+          also have "\<rho>'|\<^sup>\<circ>\<^bsub>Cpred\<cdot>(Cpred\<cdot>r)\<^esub> \<sqsubseteq> \<rho>'|\<^sup>\<circ>\<^bsub>(Cpred\<cdot>r)\<^esub>"
+            by (intro monofun_cfun_arg monofun_cfun_fun Cpred_below)
+          also note `\<dots> \<sqsubseteq> \<N>\<lbrace>delete x \<Gamma>\<rbrace>`
+          finally
+          show ?thesis
+            using `y \<in> domA \<Gamma>` `y \<noteq> x`
+            by (simp add: lookupEvalHeap lookup_HSem_heap)
+        next
+          case False
+          thus ?thesis by simp
+        qed
+      qed
+    qed
+
+    from `\<rho>' \<sqsubseteq> ub`
+    have "(\<^bold>\<N>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>\<rho>'\<^esub>) \<sqsubseteq> (\<^bold>\<N>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>ub\<^esub>)" 
+      by (rule cont2monofunE[rotated]) simp
+    also have "\<dots> = ub"
+      unfolding ub_def HSem_bot_eq[symmetric]..
+    finally     
+    show "(\<^bold>\<N>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>\<rho>'\<^esub>) \<sqsubseteq> ub".
+  qed simp_all
 
   from assms(2)
-  have "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>?C \<noteq> \<bottom>"
+  have "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>r \<noteq> \<bottom>"
+    unfolding r_def
     by (rule demand_suffices[OF infinite_resources_suffice])
   also
-  have "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>?C = (\<N>\<lbrakk>e\<rbrakk>\<^bsub>(\<N>\<lbrace>\<Gamma>\<rbrace>)|\<^sup>\<circ>\<^bsub>Cpred\<cdot>?C\<^esub>\<^esub>)\<cdot>?C"
+  have "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>r = (\<N>\<lbrakk>e\<rbrakk>\<^bsub>(\<N>\<lbrace>\<Gamma>\<rbrace>)|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)\<cdot>r"
     by (rule can_restrict_env)
   also
-  have "\<dots> \<sqsubseteq> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)\<cdot>?C"
+  have "\<dots> \<sqsubseteq> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)\<cdot>r"
     by (intro monofun_cfun_arg monofun_cfun_fun heaps )
   also
   have "\<dots> \<sqsubseteq> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
-    using `?C \<sqsubseteq> C\<^bsup>n\<^esup>` by (rule monofun_cfun_arg)
+    using `r \<sqsubseteq> C\<^bsup>n\<^esup>` by (rule monofun_cfun_arg)
   finally
   show ?thesis.
 qed
+
+text {*
+When the semantics of a lambda expression is not bottom, then
+it is below the non-resource-constraint semantics.
+*}
 
 lemma ESem_Lam_not_bot[simp]:
   assumes  "(\<N>\<lbrakk> Lam [z]. e \<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>c \<noteq> \<bottom>"
@@ -218,11 +254,15 @@ proof-
     apply (rule cfun_belowI)
     apply simp
     apply (rule below_trans[OF C_restr_below])
+    apply (rule monofun_cfun_arg)
     apply (rule cont2monofunE[OF _ C_restr_below])
     apply simp
     done
 qed
 
+text {*
+If we get an result with finitely many resources, we can perform induction on that numbers.
+*}
 
 lemma adequacy_finite:
   assumes "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>"
@@ -241,7 +281,7 @@ next
     from Suc.prems[unfolded Var]
     have "x \<in> domA \<Gamma>" 
       by (auto intro: ccontr simp add: lookup_HSem_other)
-    hence "map_of \<Gamma> x = Some ?e" by (induction \<Gamma>) auto
+    hence "map_of \<Gamma> x = Some ?e" by (rule domA_map_of_Some_the)
     moreover
     from Suc.prems[unfolded Var] `map_of \<Gamma> x = Some ?e` `x \<in> domA \<Gamma>`
     have "(\<N>\<lbrakk>?e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (auto simp add: lookup_HSem_heap  simp del: app_strict)
@@ -269,6 +309,7 @@ next
     have lhs: "\<Gamma> : e' \<Down>\<^bsub>x # S'\<^esub> \<Delta> : Lam [y]. e''" by simp
 
     from `atom y \<sharp> _` have "y \<notin> domA \<Delta>" by (metis (full_types) fresh_Pair domA_not_fresh)
+    from `atom y \<sharp> _` have "y \<noteq> x" by (metis (full_types) fresh_Pair fresh_at_base(2))
    
     have "fv (\<Gamma>, e') \<subseteq> set (x # S')" using S' by auto
     from correctness_empty_env[OF lhs this]
@@ -281,7 +322,7 @@ next
     have "((\<N>\<lbrakk> e' \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn (\<N>\<lbrace>\<Gamma>\<rbrace>) x|\<^bsub>C\<^bsup>n\<^esup>\<^esub>)\<cdot>C\<^bsup>n\<^esup>
           \<sqsubseteq> ((\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn ((\<N>\<lbrace>\<Gamma>\<rbrace>) x))\<cdot>C\<^bsup>n\<^esup>"
           by (rule cont2monofunE[OF _ C_restr_below], simp)
-    also have "\<dots>  \<sqsubseteq> ((\<N>\<lbrakk>Lam [y]. e''\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn ((\<N>\<lbrace>\<Gamma>\<rbrace>) x))\<cdot>C\<^bsup>n\<^esup>"
+    also have "\<dots> \<sqsubseteq> ((\<N>\<lbrakk>Lam [y]. e''\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn ((\<N>\<lbrace>\<Gamma>\<rbrace>) x))\<cdot>C\<^bsup>n\<^esup>"
       by (intro monofun_cfun_arg monofun_cfun_fun correct1)
     also have "\<dots> \<sqsubseteq> ((\<N>\<lbrakk>Lam [y]. e''\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn ((\<N>\<lbrace>\<Delta>\<rbrace>) x))\<cdot>C\<^bsup>n\<^esup>"
       by (intro monofun_cfun_arg monofun_cfun_fun fun_belowD[OF correct2])
@@ -290,8 +331,7 @@ next
     also have "\<dots> = (\<N>\<lbrakk>e''\<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>)(y := ((\<N>\<lbrace>\<Delta>\<rbrace>) x))\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
       using  `y \<notin> domA \<Delta>` by simp
     also have "\<dots> = (\<N>\<lbrakk>e''[y::=x]\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
-      apply (rule arg_cong[OF ESem_subst])
-      using `atom y \<sharp> _` by (simp_all add: fresh_Pair fresh_at_base)
+      unfolding ESem_subst[OF `y \<noteq> x`]..
     finally
     have "\<dots> \<noteq> \<bottom>" using prem by auto
     then
@@ -308,17 +348,14 @@ next
     thus ?thesis using Lam by blast
   next
   case (Let as e')
-    {
-    from Suc.prems[unfolded Let] Let(1)
+    from Suc.prems[unfolded Let(2)]
     have prem: "(\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>as\<rbrace>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" 
-      by (simp add: fresh_star_Pair del: app_strict) 
-    also have "\<N>\<lbrace>as\<rbrace>\<N>\<lbrace>\<Gamma>\<rbrace> = \<N>\<lbrace>as @ \<Gamma>\<rbrace>"
-      apply (rule HSem_merge)
-      using Let(1)
-      by (auto simp add: fresh_star_Pair set_bn_to_atom_domA)
+      by (simp  del: app_strict)
+    also
+      have "atom ` domA as \<sharp>* \<Gamma>" using Let(1) by (simp add: fresh_star_Pair)
+      hence "\<N>\<lbrace>as\<rbrace>\<N>\<lbrace>\<Gamma>\<rbrace> = \<N>\<lbrace>as @ \<Gamma>\<rbrace>" by (rule HSem_merge)
     finally 
     have "(\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>as @ \<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>".
-    }
     then
     obtain \<Delta> v where "as @ \<Gamma> : e' \<Down>\<^bsub>S\<^esub> \<Delta> : v" using Suc.IH by blast
     hence "\<Gamma> : Let as e' \<Down>\<^bsub>S\<^esub> \<Delta> : v"

@@ -56,8 +56,13 @@ next
   thus ?case by simp
 qed
 
+corollary evalHeap_similar:
+  "\<And>y z. y \<triangleleft>\<triangleright>\<^sup>* z \<Longrightarrow> \<^bold>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>y\<^esub> \<triangleleft>\<triangleright>\<^sup>* \<^bold>\<N>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>z\<^esub>"
+  by (rule pointwiseI)
+     (case_tac "x \<in> domA \<Gamma>", auto simp add: lookupEvalHeap denotational_semantics_similar)
+
 theorem heaps_similar: "\<lbrace>\<Gamma>\<rbrace> \<triangleleft>\<triangleright>\<^sup>* \<N>\<lbrace>\<Gamma>\<rbrace>"
   by (rule parallel_HSem_ind_different_ESem[OF pointwise_adm[OF similar_admI]])
-     (auto simp add: lookup_env_restr_eq lookupEvalHeap denotational_semantics_similar simp del: app_strict)
+     (auto simp add: evalHeap_similar)
 
 end
