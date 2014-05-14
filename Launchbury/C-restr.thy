@@ -198,7 +198,7 @@ proof(rule cfun_eqI)
     assume *: "f\<cdot>(r \<sqinter> r') \<noteq> \<bottom>"
     hence "demand f \<sqsubseteq> (r \<sqinter> r')" unfolding not_bot_demand by auto
     hence "demand f \<sqsubseteq> r"  by (metis below_refl meet_below1 below_trans)
-    finally have "r = demand f".
+    finally (below_antisym) have "r = demand f" by this (intro cont2cont)
     with assms
     have "demand f = C\<^sup>\<infinity>" by (cases "demand f" rule:C_cases) (auto simp add: iterate_Suc[symmetric] simp del: iterate_Suc)
     thus "f\<cdot>(r \<sqinter> r') = \<bottom>" by (metis not_bot_demand)

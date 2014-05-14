@@ -60,7 +60,7 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e')
   also have "\<dots> \<sqsubseteq> \<N>\<lbrakk> z \<rbrakk>\<^bsub>\<N>\<lbrace>\<Theta>\<rbrace>\<rho>\<^esub>"
     using Application.hyps(12)[OF prem2].
   finally
-  have "(\<N>\<lbrakk> App e x \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>)\<cdot>r \<sqsubseteq> (\<N>\<lbrakk> z \<rbrakk>\<^bsub>\<N>\<lbrace>\<Theta>\<rbrace>\<rho>\<^esub>)\<cdot>r".
+  have "(\<N>\<lbrakk> App e x \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>)\<cdot>r \<sqsubseteq> (\<N>\<lbrakk> z \<rbrakk>\<^bsub>\<N>\<lbrace>\<Theta>\<rbrace>\<rho>\<^esub>)\<cdot>r" by this (intro cont2cont)+
   }
   thus ?case by (rule cfun_belowI)
   
@@ -123,7 +123,7 @@ case (Variable \<Gamma> x e L \<Delta> z)
   also have "\<dots> = (\<N>\<lbrace>(x,z) # \<Delta>\<rbrace>\<rho>)  f|` (-?new)"
     by (rule arg_cong[OF iterative_HSem[symmetric], OF `x \<notin> domA \<Delta>`])
   finally
-  show le: ?case by (rule env_restr_below_subset[OF `domA \<Gamma> \<subseteq> (-?new)`])
+  show le: ?case by (rule env_restr_below_subset[OF `domA \<Gamma> \<subseteq> (-?new)`]) (intro cont2cont)+
 
   have "\<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> \<sqsubseteq> (\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>) x" by (rule CESem_simps_no_tick)
   also have "\<dots> \<sqsubseteq> (\<N>\<lbrace>(x, z) # \<Delta>\<rbrace>\<rho>) x"
@@ -131,7 +131,7 @@ case (Variable \<Gamma> x e L \<Delta> z)
   also have "\<dots> = \<N>\<lbrakk> z \<rbrakk>\<^bsub>\<N>\<lbrace>(x, z) # \<Delta>\<rbrace>\<rho>\<^esub>"
     by (simp add: lookup_HSem_heap)
   finally
-  show "\<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> \<sqsubseteq> \<N>\<lbrakk> z \<rbrakk>\<^bsub>\<N>\<lbrace>(x, z) # \<Delta>\<rbrace>\<rho>\<^esub>".
+  show "\<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> \<sqsubseteq> \<N>\<lbrakk> z \<rbrakk>\<^bsub>\<N>\<lbrace>(x, z) # \<Delta>\<rbrace>\<rho>\<^esub>"  by this (intro cont2cont)+
 next
 case (Let as \<Gamma> L body \<Delta> z)
   case 1
@@ -151,7 +151,7 @@ case (Let as \<Gamma> L body \<Delta> z)
   also have "\<dots> \<sqsubseteq>  \<N>\<lbrakk> z \<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>"
     by (rule Let.hyps(4)[OF prem])
   finally
-  show ?case.
+  show ?case  by this (intro cont2cont)+
 
   have "(\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` (domA \<Gamma>) = (\<N>\<lbrace>as\<rbrace>(\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>)) f|` (domA \<Gamma>)"
     unfolding env_restr_HSem[OF *]..
@@ -170,7 +170,7 @@ corollary correctness_empty_env:
   shows   "\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub> \<sqsubseteq> \<N>\<lbrakk>z\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>" and "\<N>\<lbrace>\<Gamma>\<rbrace> \<sqsubseteq> \<N>\<lbrace>\<Delta>\<rbrace>"
 proof-
   from assms(2) have "fv (\<Gamma>, e) - domA \<Gamma> \<subseteq> set L" by auto
-  note corr =  correctness[OF assms(1) this, where \<rho> = "\<bottom>"]
+  note corr = correctness[OF assms(1) this, where \<rho> = "\<bottom>"]
 
   show "\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub> \<sqsubseteq> \<N>\<lbrakk> z \<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>" using corr(1).
 
@@ -178,7 +178,7 @@ proof-
     using env_restr_useless[OF HSem_edom_subset, where \<rho>1 = "\<bottom>"] by simp
   also have "\<dots> \<sqsubseteq> (\<N>\<lbrace>\<Delta>\<rbrace>) f|` domA \<Gamma>" using corr(2).
   also have "\<dots> \<sqsubseteq> \<N>\<lbrace>\<Delta>\<rbrace>" by (rule env_restr_below_itself)
-  finally show "\<N>\<lbrace>\<Gamma>\<rbrace> \<sqsubseteq> \<N>\<lbrace>\<Delta>\<rbrace>".
+  finally show "\<N>\<lbrace>\<Gamma>\<rbrace> \<sqsubseteq> \<N>\<lbrace>\<Delta>\<rbrace>" by this (intro cont2cont)+
 qed
 
 end

@@ -52,14 +52,14 @@ proof-
   have "(\<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r \<sqsubseteq> CFn\<cdot>(\<Lambda> v. (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x := v|\<^bsub>r\<^esub>)\<^esub>)|\<^bsub>r\<^esub>)" by (rule CESem_simps_no_tick)
   also have "\<dots> \<sqsubseteq> CFn\<cdot>(\<Lambda> v. (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x := v)\<^esub>))"
     by (intro cont2cont monofun_LAM below_trans[OF C_restr_below] monofun_cfun_arg below_refl fun_upd_mono)
-  finally show ?thesis.
+  finally show ?thesis by this (intro cont2cont)
 qed
 
 lemma CEApp_no_restr: "(\<N>\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r    \<sqsubseteq> ((\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r \<down>CFn \<rho> x)\<cdot>r"
 proof-
   have "(\<N>\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r  \<sqsubseteq> ((\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r \<down>CFn \<rho> x|\<^bsub>r\<^esub>)\<cdot>r" by (rule CESem_simps_no_tick)
   also have "\<rho> x|\<^bsub>r\<^esub> \<sqsubseteq> \<rho> x" by (rule C_restr_below)
-  finally show ?thesis.
+  finally show ?thesis by this (intro cont2cont)
 qed
 
 end

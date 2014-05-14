@@ -71,22 +71,8 @@ lemma not_bot_below_trans[trans]:
   "a \<noteq> \<bottom> \<Longrightarrow> a \<sqsubseteq> b \<Longrightarrow> b \<noteq> \<bottom>"
   by (metis below_bottom_iff)
 
-lemma [trans]:  "a \<sqsubseteq> f \<cdot> b \<Longrightarrow> b \<sqsubseteq> c \<Longrightarrow> a \<sqsubseteq> f \<cdot> c"
-  by (erule below_trans) (intro monofun_cfun_fun monofun_cfun_arg)
-lemma [trans]:  "a \<sqsubseteq> f \<cdot> b \<Longrightarrow> f \<sqsubseteq> g \<Longrightarrow> a \<sqsubseteq> g \<cdot> b"
-  by (erule below_trans) (intro monofun_cfun_fun monofun_cfun_arg)
-lemma [trans]: "a \<sqsubseteq> f \<cdot> b \<cdot> c \<cdot> d \<Longrightarrow> b \<sqsubseteq> b' \<Longrightarrow> a \<sqsubseteq> f \<cdot> b' \<cdot> c \<cdot> d"
-  by (erule below_trans) (intro monofun_cfun_fun monofun_cfun_arg)
-lemma [trans]:  "a \<sqsubseteq> f \<cdot> b \<cdot> c \<cdot> d \<Longrightarrow> c \<sqsubseteq> c' \<Longrightarrow> a \<sqsubseteq> f \<cdot> b \<cdot> c' \<cdot> d"
-  by (erule below_trans) (intro monofun_cfun_fun monofun_cfun_arg)
-lemma [trans]:  "a \<sqsubseteq> f \<cdot> (g \<cdot> b) \<cdot> c \<cdot> d \<Longrightarrow> g \<sqsubseteq> g' \<Longrightarrow> a \<sqsubseteq> f \<cdot> (g' \<cdot> b) \<cdot> c \<cdot> d"
-  by (erule below_trans) (intro monofun_cfun_fun monofun_cfun_arg)
-lemma [trans]:  "a \<sqsubseteq> f \<cdot> b \<cdot> (g \<cdot> c \<cdot> d) \<cdot> e \<Longrightarrow> d \<sqsubseteq> d' \<Longrightarrow> a \<sqsubseteq> f \<cdot> b \<cdot> (g \<cdot> c \<cdot> d') \<cdot> e"
-  by (erule below_trans) (intro monofun_cfun_fun monofun_cfun_arg)
-
-(* Works, but is annoying due to many cont side conditions dragged along:
-lemma strong_trans[trans]:
-  "a \<sqsubseteq> f x \<Longrightarrow> x \<sqsubseteq> y \<Longrightarrow> cont f \<Longrightarrow> a \<sqsubseteq> f y " sorry
-*)
+lemma below_trans_cong[trans]:
+  "a \<sqsubseteq> f x \<Longrightarrow> x \<sqsubseteq> y \<Longrightarrow> cont f \<Longrightarrow> a \<sqsubseteq> f y "
+by (metis below_trans cont2monofunE)
 
 end
