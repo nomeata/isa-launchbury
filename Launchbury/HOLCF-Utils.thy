@@ -13,25 +13,7 @@ lemma cont_compose2:
   assumes "cont f"
   assumes "cont g"
   shows "cont (\<lambda>x. c (f x) (g x))"
-proof-
-  have "monofun (\<lambda>x. c (f x) (g x))"
-    apply (rule monofunI)
-    apply (rule below_trans[OF cont2monofunE[OF assms(2) cont2monofunE[OF `cont g`]]], assumption)
-    apply (rule fun_belowD[OF cont2monofunE[OF `cont c` cont2monofunE[OF `cont f`]]], assumption)
-    done
-  thus ?thesis
-    apply (rule contI2)
-    apply (subst cont2contlubE[OF `cont f`], assumption)
-    apply (subst cont2contlubE[OF `cont g`], assumption)
-    apply (subst cont2contlubE[OF `cont c` ch2ch_cont[OF `cont f`]], assumption)
-    apply (subst lub_fun[OF ch2ch_cont[OF `cont c` ch2ch_cont[OF `cont f`]]], assumption)
-    apply (subst cont2contlubE[OF assms(2)ch2ch_cont[OF `cont g`]], assumption)
-    apply (subst diag_lub)
-    apply (rule ch2ch_fun[OF ch2ch_cont[OF `cont c` ch2ch_cont[OF `cont f`]]], assumption)
-    apply (rule ch2ch_cont[OF assms(2) ch2ch_cont[OF `cont g`]], assumption)
-    apply (rule below_refl)
-    done
-qed
+  by (rule cont_apply[OF assms(4) assms(2) cont2cont_fun[OF cont_compose[OF assms(1) assms(3)]]])
 
 lemma pointwise_adm:
   fixes P :: "'a::pcpo \<Rightarrow> 'b::pcpo \<Rightarrow> bool"
@@ -61,23 +43,14 @@ lemma fun_upd_cont[simp,cont2cont]:
 
 subsubsection {* Composition of fun and cfun *}
 
-(*
-lemma comp_lookup_not_there[simp]: "v \<notin> edom \<rho> \<Longrightarrow> (f \<circ> \<rho>) v = f \<bottom>"
-  by (simp add: lookup_not_edom)
-
-lemma fmap_map_lookup_eq: "(f \<circ> \<rho>) v = (if v \<in> edom \<rho> then f (\<rho> v) else f \<bottom>)"
-  by (auto simp add: lookup_not_edom)
-*)
-
-lemma cont2cont_fmap_map [simp, cont2cont]:
+lemma cont2cont_comp [simp, cont2cont]:
   assumes "cont f"
   assumes "\<And> x. cont (f x)"
   assumes "cont g"
   shows "cont (\<lambda> x. (f x) \<circ> (g x))"
-  apply (rule cont2cont_lambda)
-  apply (simp)
-  apply (intro cont2cont  `cont g` `cont f` cont_compose2[OF assms(1,2)] cont2cont_fun)
-  done
+  unfolding comp_def
+  by (rule cont2cont_lambda)
+     (intro cont2cont  `cont g` `cont f` cont_compose2[OF assms(1,2)] cont2cont_fun)
 
 definition cfun_comp :: "('a::pcpo \<rightarrow> 'b::pcpo) \<rightarrow> ('c::type \<Rightarrow> 'a) \<rightarrow> ('c::type \<Rightarrow> 'b)"
   where  "cfun_comp = (\<Lambda> f \<rho>. (\<lambda> x. f\<cdot>x) \<circ> \<rho>)"
@@ -88,18 +61,32 @@ lemma [simp]: "cfun_comp\<cdot>f\<cdot>(\<rho>(x := v)) = (cfun_comp\<cdot>f\<cd
 lemma cfun_comp_app[simp]: "(cfun_comp\<cdot>f\<cdot>\<rho>) x = f\<cdot>(\<rho> x)"
   unfolding cfun_comp_def by auto
 
-lemma not_bot_below_trans[trans]:
-  "a \<noteq> \<bottom> \<Longrightarrow> a \<sqsubseteq> b \<Longrightarrow> b \<noteq> \<bottom>"
-  by (metis below_bottom_iff)
-
 lemma fix_eq_fix:
   "f\<cdot>(fix\<cdot>g) \<sqsubseteq> fix\<cdot>g \<Longrightarrow> g\<cdot>(fix\<cdot>f) \<sqsubseteq> fix\<cdot>f \<Longrightarrow> fix\<cdot>f = fix\<cdot>g"
   by (metis fix_least_below below_antisym)
 
 subsection {* Additional transitivity rules *}
 
-lemma cfun_below_arg_trans[trans]:
-  "a \<sqsubseteq> f \<cdot> b \<Longrightarrow> b \<sqsubseteq> c \<Longrightarrow> a \<sqsubseteq> f \<cdot> c"
-  by (metis below_refl box_below monofun_cfun_arg)
+lemma not_bot_below_trans[trans]:
+  "a \<noteq> \<bottom> \<Longrightarrow> a \<sqsubseteq> b \<Longrightarrow> b \<noteq> \<bottom>"
+  by (metis below_bottom_iff)
+
+lemma [trans]:  "a \<sqsubseteq> f \<cdot> b \<Longrightarrow> b \<sqsubseteq> c \<Longrightarrow> a \<sqsubseteq> f \<cdot> c"
+  by (erule below_trans) (intro monofun_cfun_fun monofun_cfun_arg)
+lemma [trans]:  "a \<sqsubseteq> f \<cdot> b \<Longrightarrow> f \<sqsubseteq> g \<Longrightarrow> a \<sqsubseteq> g \<cdot> b"
+  by (erule below_trans) (intro monofun_cfun_fun monofun_cfun_arg)
+lemma [trans]: "a \<sqsubseteq> f \<cdot> b \<cdot> c \<cdot> d \<Longrightarrow> b \<sqsubseteq> b' \<Longrightarrow> a \<sqsubseteq> f \<cdot> b' \<cdot> c \<cdot> d"
+  by (erule below_trans) (intro monofun_cfun_fun monofun_cfun_arg)
+lemma [trans]:  "a \<sqsubseteq> f \<cdot> b \<cdot> c \<cdot> d \<Longrightarrow> c \<sqsubseteq> c' \<Longrightarrow> a \<sqsubseteq> f \<cdot> b \<cdot> c' \<cdot> d"
+  by (erule below_trans) (intro monofun_cfun_fun monofun_cfun_arg)
+lemma [trans]:  "a \<sqsubseteq> f \<cdot> (g \<cdot> b) \<cdot> c \<cdot> d \<Longrightarrow> g \<sqsubseteq> g' \<Longrightarrow> a \<sqsubseteq> f \<cdot> (g' \<cdot> b) \<cdot> c \<cdot> d"
+  by (erule below_trans) (intro monofun_cfun_fun monofun_cfun_arg)
+lemma [trans]:  "a \<sqsubseteq> f \<cdot> b \<cdot> (g \<cdot> c \<cdot> d) \<cdot> e \<Longrightarrow> d \<sqsubseteq> d' \<Longrightarrow> a \<sqsubseteq> f \<cdot> b \<cdot> (g \<cdot> c \<cdot> d') \<cdot> e"
+  by (erule below_trans) (intro monofun_cfun_fun monofun_cfun_arg)
+
+(* Works, but is annoying due to many cont side conditions dragged along:
+lemma strong_trans[trans]:
+  "a \<sqsubseteq> f x \<Longrightarrow> x \<sqsubseteq> y \<Longrightarrow> cont f \<Longrightarrow> a \<sqsubseteq> f y " sorry
+*)
 
 end

@@ -34,7 +34,7 @@ lemma cont2cont_evalHeap[simp, cont2cont]:
 
 lemma evalHeap_eqvt[eqvt]:
   "\<pi> \<bullet> evalHeap h eval = evalHeap (\<pi> \<bullet> h) (\<pi> \<bullet> eval)"
-  by (induct h eval rule:evalHeap.induct) (auto simp add:fun_upd_eqvt  simp del: fun_upd_apply)
+  by (induct h) (auto simp add:fun_upd_eqvt  simp del: fun_upd_apply)
 
 lemma edom_evalHeap_subset:"edom (evalHeap h eval) \<subseteq> domA h"
   by (induct h eval rule:evalHeap.induct) (auto dest:set_mp[OF edom_fun_upd_subset] simp del: fun_upd_apply)

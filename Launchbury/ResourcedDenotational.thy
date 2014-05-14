@@ -28,5 +28,32 @@ lemma CESem_bot[simp]:"(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot
 lemma CHSem_bot[simp]:"((\<N>\<lbrace> \<Gamma> \<rbrace>) x)\<cdot>\<bottom> = \<bottom>"
   by (cases "x \<in> domA \<Gamma>") (auto simp add: lookup_HSem_heap lookup_HSem_other)
 
+lemma CESem_simps_no_tick:
+  "(\<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r \<sqsubseteq> CFn\<cdot>(\<Lambda> v. (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x := v|\<^bsub>r\<^esub>)\<^esub>)|\<^bsub>r\<^esub>)"
+  "(\<N>\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r    \<sqsubseteq> ((\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r \<down>CFn \<rho> x|\<^bsub>r\<^esub>)\<cdot>r"
+  "\<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub>         \<sqsubseteq> \<rho> x"
+  "\<N>\<lbrakk> Let as body \<rbrakk>\<^bsub>\<rho>\<^esub>   \<sqsubseteq>  \<N>\<lbrakk>body\<rbrakk>\<^bsub>\<N>\<lbrace>as\<rbrace>\<rho>\<^esub>"
+  apply -
+  apply (rule below_trans[OF monofun_cfun_arg[OF below_C]], simp)
+  apply (rule below_trans[OF monofun_cfun_arg[OF below_C]], simp)
+  apply (rule cfun_belowI, rule below_trans[OF monofun_cfun_arg[OF below_C]], simp)
+  apply (rule cfun_belowI, rule below_trans[OF monofun_cfun_arg[OF below_C]], simp)
+  done
+
+lemma CELam_no_restr: "(\<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r \<sqsubseteq> CFn\<cdot>(\<Lambda> v. (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x := v)\<^esub>))"
+proof-
+  have "(\<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r \<sqsubseteq> CFn\<cdot>(\<Lambda> v. (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x := v|\<^bsub>r\<^esub>)\<^esub>)|\<^bsub>r\<^esub>)" by (rule CESem_simps_no_tick)
+  also have "\<dots> \<sqsubseteq> CFn\<cdot>(\<Lambda> v. (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x := v)\<^esub>))"
+    by (intro cont2cont monofun_LAM below_trans[OF C_restr_below] monofun_cfun_arg below_refl fun_upd_mono)
+  finally show ?thesis.
+qed
+
+lemma CEApp_no_restr: "(\<N>\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r    \<sqsubseteq> ((\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r \<down>CFn \<rho> x)\<cdot>r"
+proof-
+  have "(\<N>\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r  \<sqsubseteq> ((\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r \<down>CFn \<rho> x|\<^bsub>r\<^esub>)\<cdot>r" by (rule CESem_simps_no_tick)
+  also have "\<rho> x|\<^bsub>r\<^esub> \<sqsubseteq> \<rho> x" by (rule C_restr_below)
+  finally show ?thesis.
+qed
+
 end
 
