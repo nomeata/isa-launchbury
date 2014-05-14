@@ -51,10 +51,8 @@ lemma lookup_env_restr_not_there[simp]: "x \<notin> S \<Longrightarrow> (env_res
 lemma lookup_env_restr_eq: "(m f|` S) x = (if x \<in> S then m x else \<bottom>)"
   by simp
 
-lemma env_restr_cong: "edom m \<inter> S1 = edom m \<inter> S2 \<Longrightarrow> m f|` S1 = m f|` S2"
-  apply (rule ext)
-  apply (simp add: lookup_env_restr_eq)
-  by (metis Int_iff lookup_not_edom)
+lemma env_restr_eqI: "(\<And>x. x \<in> S \<Longrightarrow> m\<^sub>1 x = m\<^sub>2 x) \<Longrightarrow> m\<^sub>1 f|` S = m\<^sub>2 f|` S"
+  by (auto simp add: lookup_env_restr_eq)
 
 lemma env_restr_env_restr[simp]:
  "x f|` d2 f|` d1 = x f|` (d1 \<inter> d2)"

@@ -150,12 +150,13 @@ qed
 lemma env_restr_HSem:
   assumes "domA \<Gamma> \<inter> S = {}"
   shows "(\<lbrace> \<Gamma> \<rbrace>\<rho>) f|` S = \<rho> f|` S"
-  apply (rule ext)
-  using assms 
-  apply (auto simp add: lookup_env_restr_eq)
-  apply (subst lookup_HSem_other)
-  apply auto
-  done
+proof (rule env_restr_eqI)
+  fix x
+  assume "x \<in> S"
+  hence "x \<notin> domA \<Gamma>" using assms by auto
+  thus "(\<lbrace> \<Gamma> \<rbrace>\<rho>) x = \<rho> x"
+    by (rule lookup_HSem_other)
+qed
 
 lemma env_restr_HSem_noop:
   assumes "domA \<Gamma> \<inter> edom \<rho> = {}"
