@@ -1,5 +1,5 @@
 theory AbstractDenotational
-imports Terms "HeapSemantics"
+imports "HeapSemantics" Terms
 begin
 
 subsubsection {* The denotational semantics for expressions *}
@@ -98,8 +98,8 @@ case (goal13 as body as' body')
   also have "(p \<bullet> ESem_sumC) body' = ESem_sumC body'"
     by (rule eqvt_at_apply[OF eqvt4])
   finally
-  have "ESem_sumC body\<cdot>(has_ESem.HSem ESem_sumC as\<cdot>(\<rho> f|` fv (Terms.Let as body))) =
-        ESem_sumC body'\<cdot>(has_ESem.HSem ESem_sumC as'\<cdot>(\<rho> f|` fv (Terms.Let as' body')))".
+  have "ESem_sumC body\<cdot>(has_ESem.HSem ESem_sumC as\<cdot>(\<rho> f|` fv (Let as body))) =
+        ESem_sumC body'\<cdot>(has_ESem.HSem ESem_sumC as'\<cdot>(\<rho> f|` fv (Let as' body')))".
   }
   thus ?case  by simp
 qed auto

@@ -121,10 +121,11 @@ lemma [simp]: "size (heapToAssn \<Gamma>) = list_size (\<lambda> (v,e) . size e)
 
 text {* Now we define the Let constructor in the form that we actually want. *}
 
+hide_const HOL.Let
 definition Let :: "heap \<Rightarrow> exp \<Rightarrow> exp"
   where "Let \<Gamma> e = LetA (heapToAssn \<Gamma>) e"
 
-notation (latex output) Terms.Let ("\<^raw:\textrm{\textsf{let}}> _ \<^raw:\textrm{\textsf{in}}> _")
+notation (latex output) Let ("\<^raw:\textrm{\textsf{let}}> _ \<^raw:\textrm{\textsf{in}}> _")
 
 abbreviation
   LetBe :: "var\<Rightarrow>exp\<Rightarrow>exp\<Rightarrow>exp" ("let _ be _ in _ " [100,100,100] 100)
