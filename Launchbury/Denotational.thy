@@ -26,7 +26,11 @@ lemma ESem_simps:
   "\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub>      =  \<rho>  x"
   "\<lbrakk> Let as body \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>as\<rbrace>\<rho>\<^esub>"
   by simp_all
+(*<*)
 
+text {*
+Excluded from the document, as these are unused in the current development.
+*}
 
 subsubsection {* Replacing subexpressions by variables *}
 
@@ -77,5 +81,7 @@ proof(rule HSem_subst_expr)
   show "\<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>(x, Var n) # (n, e) # \<Gamma>\<rbrace>\<rho>\<^esub> \<sqsubseteq> \<lbrakk> Var n \<rbrakk>\<^bsub>\<lbrace>(x, Var n) # (n, e) # \<Gamma>\<rbrace>\<rho>\<^esub>"
     by simp
 qed
+(*>*)
+
 
 end
