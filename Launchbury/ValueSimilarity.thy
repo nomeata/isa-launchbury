@@ -40,7 +40,7 @@ Lemma (2) is a generalisation of (3) to the resourced semantics, so the counter-
 *}
 
 lemma counter_example:
-  assumes lemma_3: "\<And> n d d'. \<psi>\<^sup>D\<^bsub>n\<^esub>\<cdot>(d \<down>Fn d') = \<psi>\<^sup>D\<^bsub>Suc n\<^esub>\<cdot>d \<down>Fn \<psi>\<^sup>D\<^bsub>n\<^esub>\<cdot>d'"
+  assumes "Equation (3)": "\<And> n d d'. \<psi>\<^sup>D\<^bsub>n\<^esub>\<cdot>(d \<down>Fn d') = \<psi>\<^sup>D\<^bsub>Suc n\<^esub>\<cdot>d \<down>Fn \<psi>\<^sup>D\<^bsub>n\<^esub>\<cdot>d'"
   shows "False"
 proof-
   def n == "1::nat"
@@ -50,7 +50,7 @@ proof-
     by (simp add: d_def d'_def n_def cfun_map_def)
   also
   have "\<dots> = \<psi>\<^sup>D\<^bsub>Suc n\<^esub>\<cdot>d \<down>Fn \<psi>\<^sup>D\<^bsub>n\<^esub>\<cdot>d'"
-    by (rule lemma_3)
+    using "Equation (3)".
   also have "\<dots> = \<bottom>"
     by (simp add: d_def d'_def n_def)
   finally show False by simp
@@ -61,7 +61,7 @@ which in our setting becomes the following (note the extra invocation of @{term 
 the left hand side):
 *}
 
-lemma abramsky_4_3_5_1:
+lemma "Abramsky 4,3,5 (1)":
   "\<psi>\<^sup>D\<^bsub>n\<^esub>\<cdot>(d \<down>Fn \<psi>\<^sup>D\<^bsub>n\<^esub>\<cdot>d') = \<psi>\<^sup>D\<^bsub>Suc n\<^esub>\<cdot>d \<down>Fn \<psi>\<^sup>D\<^bsub>n\<^esub>\<cdot>d'"
   by (cases d)(auto simp add: Value.take_take)
 
