@@ -235,7 +235,7 @@ proof-
   have "\<dots> \<sqsubseteq> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
     using `r \<sqsubseteq> C\<^bsup>n\<^esup>` by (rule monofun_cfun_arg)
   finally
-  show ?thesis.
+  show ?thesis by this (intro cont2cont)+
 qed
 
 text {*
@@ -293,21 +293,18 @@ next
     from correctness_empty_env[OF lhs this]
     have correct1: "\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub> \<sqsubseteq> \<N>\<lbrakk>Lam [y]. e''\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>" and correct2: "\<N>\<lbrace>\<Gamma>\<rbrace> \<sqsubseteq> \<N>\<lbrace>\<Delta>\<rbrace>" by auto
 
-    have "((\<N>\<lbrakk> e' \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn (\<N>\<lbrace>\<Gamma>\<rbrace>) x|\<^bsub>C\<^bsup>n\<^esup>\<^esub>)\<cdot>C\<^bsup>n\<^esup>
-          \<sqsubseteq> ((\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn ((\<N>\<lbrace>\<Gamma>\<rbrace>) x))\<cdot>C\<^bsup>n\<^esup>"
-          by (rule cont2monofunE[OF _ C_restr_below], simp)
-    also have "\<dots> \<sqsubseteq> ((\<N>\<lbrakk>Lam [y]. e''\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn ((\<N>\<lbrace>\<Gamma>\<rbrace>) x))\<cdot>C\<^bsup>n\<^esup>"
-      by (intro monofun_cfun_arg monofun_cfun_fun correct1)
-    also have "\<dots> \<sqsubseteq> ((\<N>\<lbrakk>Lam [y]. e''\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn ((\<N>\<lbrace>\<Delta>\<rbrace>) x))\<cdot>C\<^bsup>n\<^esup>"
-      by (intro monofun_cfun_arg monofun_cfun_fun fun_belowD[OF correct2])
-    also have "\<dots> \<sqsubseteq> (CFn\<cdot>(\<Lambda> v. \<N>\<lbrakk>e''\<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>)(y := v)\<^esub>) \<down>CFn ((\<N>\<lbrace>\<Delta>\<rbrace>) x))\<cdot>C\<^bsup>n\<^esup>"
-      by (rule cont2monofunE[OF _ CELam_no_restr]) simp
-    also have "\<dots> = (\<N>\<lbrakk>e''\<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>)(y := ((\<N>\<lbrace>\<Delta>\<rbrace>) x))\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
-      using  `y \<notin> domA \<Delta>` by simp
+    have "((\<N>\<lbrakk> e' \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn (\<N>\<lbrace>\<Gamma>\<rbrace>) x|\<^bsub>C\<^bsup>n\<^esup>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" using prem.
+    also have "(\<N>\<lbrace>\<Gamma>\<rbrace>) x|\<^bsub>C\<^bsup>n\<^esup>\<^esub> \<sqsubseteq> (\<N>\<lbrace>\<Gamma>\<rbrace>) x" by (rule C_restr_below)
+    also note `\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub> \<sqsubseteq> \<N>\<lbrakk>Lam [y]. e''\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>`
+    also note `(\<N>\<lbrace>\<Gamma>\<rbrace>) \<sqsubseteq> (\<N>\<lbrace>\<Delta>\<rbrace>)`
+    also have "(\<N>\<lbrakk> Lam [y]. e'' \<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<sqsubseteq> CFn\<cdot>(\<Lambda> v. \<N>\<lbrakk>e''\<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>)(y := v)\<^esub>)"
+      by (rule CELam_no_restr)
+    also have "(\<dots> \<down>CFn (\<N>\<lbrace>\<Delta>\<rbrace>) x)\<cdot>C\<^bsup>n\<^esup> = (\<N>\<lbrakk>e''\<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>)(y := ((\<N>\<lbrace>\<Delta>\<rbrace>) x))\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
+      using `y \<notin> domA \<Delta>` by simp
     also have "\<dots> = (\<N>\<lbrakk>e''[y::=x]\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
       unfolding ESem_subst[OF `y \<noteq> x`]..
     finally
-    have "\<dots> \<noteq> \<bottom>" using prem by auto
+    have "\<dots> \<noteq> \<bottom>" by this (intro cont2cont cont_fun)+
     then
     obtain \<Theta> v' where rhs: "\<Delta> : e''[y::=x] \<Down>\<^bsub>S'\<^esub> \<Theta> : v'" using Suc.IH by blast
     

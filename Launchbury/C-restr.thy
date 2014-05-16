@@ -120,7 +120,7 @@ proof(cases "demand f" rule:C_cases)
   assume "demand f = C\<^bsup>n\<^esup>"
   hence "f\<cdot>(demand f) \<noteq> \<bottom>" by (metis demand_suffices')
   also note monofun_cfun_fun[OF assms]
-  finally have "g\<cdot>(demand f) \<noteq> \<bottom>" .
+  finally have "g\<cdot>(demand f) \<noteq> \<bottom>" by this (intro cont2cont)
   thus "demand g \<sqsubseteq> demand f" unfolding not_bot_demand by auto
 qed auto
 

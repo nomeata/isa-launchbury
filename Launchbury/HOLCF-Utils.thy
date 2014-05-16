@@ -67,12 +67,17 @@ lemma fix_eq_fix:
 
 subsection {* Additional transitivity rules *}
 
+lemma below_trans_cong[trans]:
+  "a \<sqsubseteq> f x \<Longrightarrow> x \<sqsubseteq> y \<Longrightarrow> cont f \<Longrightarrow> a \<sqsubseteq> f y "
+by (metis below_trans cont2monofunE)
+
+
 lemma not_bot_below_trans[trans]:
   "a \<noteq> \<bottom> \<Longrightarrow> a \<sqsubseteq> b \<Longrightarrow> b \<noteq> \<bottom>"
   by (metis below_bottom_iff)
 
-lemma below_trans_cong[trans]:
-  "a \<sqsubseteq> f x \<Longrightarrow> x \<sqsubseteq> y \<Longrightarrow> cont f \<Longrightarrow> a \<sqsubseteq> f y "
-by (metis below_trans cont2monofunE)
+lemma not_bot_below_trans_cong[trans]:
+  "f a \<noteq> \<bottom> \<Longrightarrow> a \<sqsubseteq> b \<Longrightarrow> cont f \<Longrightarrow> f b \<noteq> \<bottom>"
+  by (metis below_bottom_iff cont2monofunE)
 
 end
