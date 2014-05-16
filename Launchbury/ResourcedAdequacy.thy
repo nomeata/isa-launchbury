@@ -239,7 +239,7 @@ proof-
 qed
 
 text {*
-If we get an result with finitely many resources, we can perform induction on that numbers.
+If we get a result with finitely many resources, we can perform induction on that numbers.
 *}
 
 lemma adequacy_finite:

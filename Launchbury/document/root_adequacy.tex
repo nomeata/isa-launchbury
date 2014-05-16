@@ -94,7 +94,7 @@ The present work fills this gap by formalizing both semantics in the proof assis
 
 Our correctness formal proof is very close to the original proof. This is possible if the operator $\sqcup$ is understood as a right-sided update. If we were to understand $\sqcup$ as the least upper bound, then Theorem 2 in \cite{launchbury}, which is the generalization of the correctness statement used for Launchbury's inductive proof, is wrong. The main correctness result still holds, but needs a different proof; this is discussed in greater detail in \cite{breitner2013}.
 
-Launchbury outlines an adequacy proof via an intermediate operational semantics and resourced denotational semantics. The alternative operational semantics  uses indirection instead of substiution for applicatoins, does not update variable results and does not perform blackholing during evaluation of a variable. The equivalence of these two operational semantics is hard and tricky to prove. We found a direct proof for the adequacy of the original operational semantics and the slightly resourced denotational semantics. This is, as far as we know, the first complete and rigorous proof of adequacy of Launchbury's semantics.
+Launchbury outlines an adequacy proof via an intermediate operational semantics and resourced denotational semantics. The alternative operational semantics  uses indirection instead of substitution for applications, does not update variable results and does not perform blackholing during evaluation of a variable. The equivalence of these two operational semantics is hard and tricky to prove. We found a direct proof for the adequacy of the original operational semantics and the (slightly modified) resourced denotational semantics. This is, as far as we know, the first complete and rigorous proof of adequacy of Launchbury's semantics.
 
 Our contributions are:
 \begin{itemize}
@@ -123,7 +123,7 @@ Our contributions are:
 
 The following chapters contain the complete Isabelle theories, with one section per theory. Their interdependencies are visualized in Figure \ref{theory-deps}.
 
-Chapter \ref{ch_aux} contains auxiliary theories, not necessarily tied to Launchbury's semantics. The base theories are kept independent of Nominal and HOLCF where possible, the lemmas combining them are in theories of their own, creatively named by appending \isa{-Nominal}, \isa{-HOLCF} or both.  You will find these theories:
+Chapter \ref{ch_aux} contains auxiliary theories, not necessarily tied to Launchbury's semantics. The base theories are kept independent of Nominal and HOLCF where possible, the lemmas combining them are in theories of their own, creatively named by appending \isa{-Nominal} resp.\ \isa{-HOLCF}.  You will find these theories:
 \begin{itemize}
 \item A definition for lifting a relation point-wise (\isa{Pointwise}).
 \item A collection of definition related to associative lists (\isa{AList-Utils}, \isa{AList-Utils-Nominal}).
@@ -146,7 +146,7 @@ Chapter \ref{ch_resden} defines the resourced denotational semantics.
 
 Chapter \ref{ch_correctness} proves the correctness of Launchbury's semantics with regard to both denotational semantics. We need the correctness with regard to the resourced semantics in the adequacy proof.
 
-Chapter \ref{ch_equiv} proves the denotational semantics related, which is used in
+Chapter \ref{ch_equiv} proves the two denotational semantics related, which is used in
 
 Chapter \ref{ch_adequacy}, where finally the adequacy is proved.
 
@@ -156,7 +156,7 @@ Chapter \ref{ch_adequacy}, where finally the adequacy is proved.
 %
 %TODO
 
-\subsection{Acknowledgement}
+\subsection{Acknowledgements}
 
 %I’d like to thank Andreas Lochbihler for his gladly given and very effective help during the development of this theory. I’d also like to thank Brian Huffmann and Christian Urban for their help on HOLCF and Nominal, respectively. This work was supported by the Deutsche Telekom Stiftung.
 

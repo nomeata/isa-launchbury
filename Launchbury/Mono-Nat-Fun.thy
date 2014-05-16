@@ -3,7 +3,7 @@ imports "Library/Infinite_Set"
 begin
 
 text {*
-The following lemma proofs a monotonous from and the natural numbers are either eventually
+The following lemma proves that a monotonous function from and the natural numbers is either eventually
 constant or unbounded.
 *}
 
@@ -16,7 +16,7 @@ proof (cases "finite (range f)")
   from Max_in[OF True]
   obtain n where Max: "f n = Max (range f)" by auto
   show thesis
-  proof(rule that)
+  proof(rule that(1))
     fix m
     assume "n \<le> m"
     hence "f n \<le> f m" using `mono f` by (metis monoD)

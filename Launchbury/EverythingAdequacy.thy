@@ -12,6 +12,8 @@ translations
   "xs" <= "CONST set xs"
 translations
   "a" <= "CONST atom a"
+translations
+  "a" <= "CONST image (CONST atom) a"
 
 abbreviation map_of_syntax :: "'a::type \<Rightarrow> 'b::type \<Rightarrow> ('a \<times> 'b) list \<Rightarrow> bool" ("'(_, _') \<in> _") 
   where "map_of_syntax x e \<Gamma> \<equiv> map_of \<Gamma> x = Some e"
@@ -69,7 +71,7 @@ text_raw {*
 *}
 
 text {*
-Launchbury's original semantics, extended with some technical overhead related to name binding,
+Launchbury's original semantics, extended with some technical overhead related to name binding (following \cite{sestoft}),
 is defined as follows:\\
 %\begin{center}
 \parbox[t]{\rulelen}{\centering@{thm[mode=Axiom] Launchbury.reds.Lambda}}~{\sc Lambda}\\[2ex]
@@ -103,8 +105,8 @@ written \mbox{@{term_type "Rep_cfun (Denotational.ESem e) \<rho>"}} and defined 
 *}
 
 text{*
-The expression @{term "Denotational.EvalHeapSem_syn'' \<Gamma> \<rho>"} lifts
-maps the evaluation function over a heap, returning a function of type @{typ "var \<Rightarrow> Value"}:
+The expression @{term "Denotational.EvalHeapSem_syn'' \<Gamma> \<rho>"} 
+maps the evaluation function over a heap, returning an environment:
 \begin{alignstar}
 @{thm (lhs) lookupEvalHeap'[where f = "(\<lambda> e. Denotational.ESem_syn e \<rho>)"]}
   & = @{thm (rhs) lookupEvalHeap'[where f = "(\<lambda> e. Denotational.ESem_syn e \<rho>)"]}
@@ -196,7 +198,7 @@ other arguments (@{term "atom x \<sharp> \<rho>"}), and indeed the Nominal packa
 condition to the defining equation, which is what we did in \cite{breitner2013}.
 
 But this convenience comes as a price: Such side-conditions are
-only allowed if the argument has finite support (otherwise there might not no variable fulfilling
+only allowed if the argument has finite support (otherwise there might no variable fulfilling
 @{term "atom x \<sharp> \<rho>"}). More precisely: The type of the argument must be a member of the @{class fs} typeclass
 provided by the Nominal package. The type @{typ "var \<Rightarrow> Value"} cannot be made a member of this class,
 as there obviously are elements that have infinite support. The fix here was to introduce a new type
@@ -275,7 +277,7 @@ We formalized this (Sections \ref{sec_ValueSimilarity} and \ref{sec_Denotational
 and fixing a mistake in the paper (Lemma 2.3(3) does not hold; the problem can be fixed by applying
 an extra round of take-induction in the proof of Proposition 9).
 
-Currently, they are working on completing the adequacy proof as outlined by Launchbury, i.e. by going
+Currently, they are working on completing the adequacy proof as outlined by Launchbury, i.e.\ by going
 via the alternative natural semantics given in \cite{launchbury}, which differs from the semantics
 above in that the application rule works with an indirection on the heap instead of a substitution
 and that the variable rule has no blackholing and no update. In \cite{indirections}, they relate
@@ -286,7 +288,7 @@ completed Launchbury’s work.
 This work proves the adequacy as stated by Launchbury as well, but in contrast to his proof outline no
 alternative operational semantics is introduced. The problems of indirection vs. substitution and
 of blackholing is solved on the denotational side instead, which turned out to be much easier than
-proving the various operational semantics equivalent.
+proving the various operational semantics to be equivalent.
  *}
 
 (*<*)

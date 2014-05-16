@@ -67,10 +67,14 @@ lemma fix_eq_fix:
 
 subsection {* Additional transitivity rules *}
 
+text {*
+These collect side-conditions of the form @{term "cont f"}, so the usual way to discharge them
+is to write @{text[source] "by this (intro cont2cont)+"} at the end.
+*}
+
 lemma below_trans_cong[trans]:
   "a \<sqsubseteq> f x \<Longrightarrow> x \<sqsubseteq> y \<Longrightarrow> cont f \<Longrightarrow> a \<sqsubseteq> f y "
 by (metis below_trans cont2monofunE)
-
 
 lemma not_bot_below_trans[trans]:
   "a \<noteq> \<bottom> \<Longrightarrow> a \<sqsubseteq> b \<Longrightarrow> b \<noteq> \<bottom>"

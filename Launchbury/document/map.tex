@@ -12,16 +12,16 @@ The following picture gives an overview of the different semantics. Elements pri
 };
 
 \small
-\draw[gray,<->,double, shorten <=.5ex, shorten >= .5ex]  (on) -- (mn) node[midway,below] {stated};
-\draw[gray,->,double, shorten <=.5ex, shorten >= .5ex]  (rd) -- (mn) node[midway,right] {proof outlined};
-\draw[gray,<->,double, shorten <=.5ex, shorten >= .5ex]  (rd) -- (jd) node[midway,above] {stated} 
+\draw[gray,<->,double, shorten <=.5ex, shorten >= .5ex]  (on) -- (mn) node[midway,below] {(stated)};
+\draw[gray,->,double, shorten <=.5ex, shorten >= .5ex]  (rd) -- (mn) node[midway,right] {(outlined)};
+\draw[gray,<->,double, shorten <=.5ex, shorten >= .5ex]  (rd) -- (jd) node[midway,above] {(stated)} 
                                                             node[midway,below] {later proved in\\\cite{functionspaces}};
-\draw[transform canvas={xshift=2mm},->,double, shorten <=.5ex, shorten >= .5ex] (on) -- (jd) node[midway,right] {proved};
-\draw[transform canvas={xshift=-2mm},gray,->,double, shorten <=.5ex, shorten >= .5ex] (on) -- (jd) node[midway,left] {proved};
-\draw[<-,double, shorten <=.5ex, shorten >= .5ex]  (on) -- (sn) node[sloped,midway,above] {formally proved};
-\draw[<->,double, shorten <=.5ex, shorten >= .5ex] (sn) -- (jd.east) node[sloped,midway,above] {formally proved};
+\draw[transform canvas={xshift=2mm},->,double, shorten <=.5ex, shorten >= .5ex] (on) -- (jd) node[midway,right] {};
+\draw[transform canvas={xshift=-2mm},gray,->,double, shorten <=.5ex, shorten >= .5ex] (on) -- (jd) node[midway,left] {};
+\draw[<-,double, shorten <=.5ex, shorten >= .5ex]  (on) -- (sn) node[sloped,midway,above] {};
+\draw[<->,double, shorten <=.5ex, shorten >= .5ex] (sn) -- (jd.east) node[sloped,midway,above] {};
 %\draw[->,double, shorten <=.5ex, shorten >= .5ex] (on) -- (ud) node[sloped,midway,above] {Proof};
-%\draw[<->,double, shorten <=.5ex, shorten >= .5ex]  (jd) -- (ud) node[midway,below] {formally proved};
+%\draw[<->,double, shorten <=.5ex, shorten >= .5ex]  (jd) -- (ud) node[midway,below] {};
 \node[gray] at (barycentric cs:on=1,mn=1,rd=1,jd=1) {\cite{launchbury}};
 \end{tikzpicture}
 \end{center}
