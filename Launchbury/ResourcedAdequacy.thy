@@ -239,28 +239,6 @@ proof-
 qed
 
 text {*
-When the semantics of a lambda expression is not bottom, then
-it is below the non-resource-constraint semantics.
-*}
-
-lemma ESem_Lam_not_bot[simp]:
-  assumes  "(\<N>\<lbrakk> Lam [z]. e \<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>c \<noteq> \<bottom>"
-  shows "(\<N>\<lbrakk> Lam [z]. e \<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>c \<sqsubseteq> CFn\<cdot>(\<Lambda> v. \<N>\<lbrakk>e\<rbrakk>\<^bsub>\<sigma>(z := v)\<^esub>)"
-proof-
-  from assms have "c \<noteq> \<bottom>" by auto
-  then obtain c' where "c = C\<cdot>c'" by (cases c, auto)
-  then show ?thesis
-    apply auto
-    apply (rule cfun_belowI)
-    apply simp
-    apply (rule below_trans[OF C_restr_below])
-    apply (rule monofun_cfun_arg)
-    apply (rule cont2monofunE[OF _ C_restr_below])
-    apply simp
-    done
-qed
-
-text {*
 If we get an result with finitely many resources, we can perform induction on that numbers.
 *}
 
@@ -299,7 +277,7 @@ next
 
     from Suc.prems[unfolded App]
     have prem: "((\<N>\<lbrakk> e' \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn (\<N>\<lbrace>\<Gamma>\<rbrace>) x|\<^bsub>C\<^bsup>n\<^esup>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (auto simp del: app_strict)
-    hence e'_not_bot: "(\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by auto
+    hence "(\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by auto
     from Suc.IH[OF this]
     obtain \<Delta> v where lhs': "\<Gamma> : e' \<Down>\<^bsub>x#S'\<^esub> \<Delta> : v" by blast 
 
@@ -315,10 +293,6 @@ next
     from correctness_empty_env[OF lhs this]
     have correct1: "\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub> \<sqsubseteq> \<N>\<lbrakk>Lam [y]. e''\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>" and correct2: "\<N>\<lbrace>\<Gamma>\<rbrace> \<sqsubseteq> \<N>\<lbrace>\<Delta>\<rbrace>" by auto
 
-    note e'_not_bot
-    also note monofun_cfun_fun[OF correct1]
-    finally have lam_not_bot: "(\<N>\<lbrakk>Lam [y]. e''\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>".
-
     have "((\<N>\<lbrakk> e' \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn (\<N>\<lbrace>\<Gamma>\<rbrace>) x|\<^bsub>C\<^bsup>n\<^esup>\<^esub>)\<cdot>C\<^bsup>n\<^esup>
           \<sqsubseteq> ((\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn ((\<N>\<lbrace>\<Gamma>\<rbrace>) x))\<cdot>C\<^bsup>n\<^esup>"
           by (rule cont2monofunE[OF _ C_restr_below], simp)
@@ -327,7 +301,7 @@ next
     also have "\<dots> \<sqsubseteq> ((\<N>\<lbrakk>Lam [y]. e''\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn ((\<N>\<lbrace>\<Delta>\<rbrace>) x))\<cdot>C\<^bsup>n\<^esup>"
       by (intro monofun_cfun_arg monofun_cfun_fun fun_belowD[OF correct2])
     also have "\<dots> \<sqsubseteq> (CFn\<cdot>(\<Lambda> v. \<N>\<lbrakk>e''\<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>)(y := v)\<^esub>) \<down>CFn ((\<N>\<lbrace>\<Delta>\<rbrace>) x))\<cdot>C\<^bsup>n\<^esup>"
-      by (rule cont2monofunE[OF _ ESem_Lam_not_bot[OF lam_not_bot]]) simp
+      by (rule cont2monofunE[OF _ CELam_no_restr]) simp
     also have "\<dots> = (\<N>\<lbrakk>e''\<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>)(y := ((\<N>\<lbrace>\<Delta>\<rbrace>) x))\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
       using  `y \<notin> domA \<Delta>` by simp
     also have "\<dots> = (\<N>\<lbrakk>e''[y::=x]\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
