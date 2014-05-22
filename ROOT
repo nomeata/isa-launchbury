@@ -34,3 +34,30 @@ session Arity (AFP) in "Launchbury" = "HOLCF-Nominal2" +
   options [document_variants = arity, document = pdf, document_graph, document_output = "output" ]
   theories
     "ArityCorrect2"
+
+session Nominal2013_1 in "Nominal2-Isabelle2013-1/Nominal" = HOL +
+  theories
+    "Nominal2"
+
+session Nominal2013_1_Orig in "Nominal2-Isabelle2013-1.orig/Nominal" = HOL +
+  theories
+    "Nominal2"
+
+session Nominal_Deve in "Nominal-Devel" = HOL +
+  theories
+    "Nominal2"
+
+session LocaleBug = Nominal2013_1 +
+  options [quick_and_dirty]
+  theories
+    "LocaleBug"
+
+session LocaleBug_Orig = Nominal2013_1_Orig +
+  options [quick_and_dirty]
+  theories
+    "LocaleBug"
+
+session LocaleBug_Devel = Nominal2013_1_Orig +
+  options [quick_and_dirty]
+  theories
+    "LocaleBug"
