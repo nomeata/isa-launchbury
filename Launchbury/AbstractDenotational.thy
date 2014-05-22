@@ -103,8 +103,8 @@ case (goal13 as body as' body')
   }
   thus ?case  by simp
 qed auto
-(* [eqvt] attributes do not surive instantiation, so we pass (no_eqvt) here.
-   If that is fixed then permute_ESem below can be proved by perm_simp *)
+(* [eqvt] attributes do not surive instantiation, so we pass (no_eqvt) here. We don't need it
+   anyways\<dots> *)
 termination (in semantic_domain) (no_eqvt) by lexicographic_order
 
 sublocale has_ESem ESem.
@@ -114,17 +114,6 @@ abbreviation EvalHeapSem_syn'  ("\<^bold>\<lbrakk> _ \<^bold>\<rbrakk>\<^bsub>_\
 abbreviation AHSem_syn ("\<lbrace>_\<rbrace>_"  [60,60] 60) where "\<lbrace>\<Gamma>\<rbrace>\<rho> \<equiv> HSem \<Gamma> \<cdot> \<rho>"
 abbreviation AHSem_bot ("\<lbrace>_\<rbrace>"  [60] 60) where "\<lbrace>\<Gamma>\<rbrace> \<equiv> \<lbrace>\<Gamma>\<rbrace>\<bottom>"
 
-subsubsection {* Equivariance of the semantics *}
-
-lemma permute_ESem: "\<pi> \<bullet> ESem = ESem"
-  apply (subst eqvt_lambda)
-  apply (subst ESem.eqvt)
-  apply simp
-  done
-
-lemmas HSem_eqvt' = HSem_eqvt[of _ ESem, unfolded permute_ESem]
-
 end
-
 end
 
