@@ -8,7 +8,7 @@ session "HOLCF+Library" = HOLCF +
     "~~/src/HOL/Library/LaTeXsugar"
     "~~/src/HOL/Library/Infinite_Set"
 
-session "HOLCF-Nominal2" in "Nominal2-Isabelle2013-1/Nominal" = "HOLCF+Library" +
+session "HOLCF-Nominal2" in "Nominal2-Isabelle2013-1.orig/Nominal" = "HOLCF+Library" +
   options [document = false]
   theories
     "Nominal2"

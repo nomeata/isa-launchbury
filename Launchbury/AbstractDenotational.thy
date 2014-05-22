@@ -103,7 +103,9 @@ case (goal13 as body as' body')
   }
   thus ?case  by simp
 qed auto
-termination (in semantic_domain) (eqvt) by lexicographic_order
+(* [eqvt] attributes do not surive instantiation, so we pass (no_eqvt) here.
+   If that is fixed then permute_ESem below can be proved by perm_simp *)
+termination (in semantic_domain) (no_eqvt) by lexicographic_order
 
 sublocale has_ESem ESem.
 
@@ -115,7 +117,10 @@ abbreviation AHSem_bot ("\<lbrace>_\<rbrace>"  [60] 60) where "\<lbrace>\<Gamma>
 subsubsection {* Equivariance of the semantics *}
 
 lemma permute_ESem: "\<pi> \<bullet> ESem = ESem"
-  by (perm_simp, rule)
+  apply (subst eqvt_lambda)
+  apply (subst ESem.eqvt)
+  apply simp
+  done
 
 lemmas HSem_eqvt' = HSem_eqvt[of _ ESem, unfolded permute_ESem]
 
