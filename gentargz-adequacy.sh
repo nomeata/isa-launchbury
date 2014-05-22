@@ -1,4 +1,4 @@
-tar cvzhf \
+tar czhf \
 	Launchbury.tar.gz \
 	--transform 's,-Submission-Adequacy,,' \
 	Launchbury/Pointwise.thy \
@@ -41,7 +41,6 @@ tar cvzhf \
 	Launchbury/document/root_adequacy.tex \
 	Launchbury/document/root_adequacy.bib \
 	Launchbury/document/map.tex \
-	Nominal2-Isabelle2013-1/Nominal/*.ML \
-	Nominal2-Isabelle2013-1/Nominal/*.thy \
-	Nominal2-Isabelle2013-1-localization.patch \
-	ROOT-Submission-Adequacy
+	Launchbury/ROOT-Submission-Adequacy
+
+tar tzf Launchbury.tar.gz
