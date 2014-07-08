@@ -1,5 +1,5 @@
 theory LaunchburyLog
-imports Terms Heap "Arity-Nominal"
+imports Terms Substitution "Arity-Nominal"
 begin
 
 type_synonym CallLog = "(var \<times> Arity) list"
@@ -22,10 +22,10 @@ where
   \<rbrakk> \<Longrightarrow>
     \<Gamma> : Var x \<Down>\<^bsub>n,L\<^esub> (x, z) # \<Delta> : z (x,n)#c"
  | Let: "\<lbrakk>
-    set (bn as) \<sharp>* (\<Gamma>, L);
-    asToHeap as @ \<Gamma> : body \<Down>\<^bsub>n,L\<^esub> \<Delta> : z c
+    atom ` domA as \<sharp>* (\<Gamma>, L);
+    as @ \<Gamma> : body \<Down>\<^bsub>n,L\<^esub> \<Delta> : z c
   \<rbrakk> \<Longrightarrow>
-    \<Gamma> : Let as body \<Down>\<^bsub>n,L\<^esub> \<Delta> : z c"
+    \<Gamma> : Terms.Let as body \<Down>\<^bsub>n,L\<^esub> \<Delta> : z c"
 
 equivariance reds
 
@@ -36,7 +36,7 @@ nominal_inductive reds
 subsubsection {* Example evaluations *}
 
 lemma eval_test:
-  "[] : (Let (ACons x (Lam [y]. Var y) ANil) (Var x)) \<Down>\<^bsub>0,[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y) [(x,0)]"
+  "[] : (Terms.Let [(x, Lam [y]. Var y)] (Var x)) \<Down>\<^bsub>0,[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y) [(x,0)]"
 by(auto intro!: Lambda Application Variable Let
  simp add: fresh_Pair fresh_Cons fresh_Nil fresh_star_def pure_fresh )
 
@@ -49,7 +49,7 @@ lemma ApplicationI: "
 by (metis Application)
 
 lemma eval_test2:
-  "y \<noteq> x \<Longrightarrow> n \<noteq> y \<Longrightarrow> n \<noteq> x \<Longrightarrow>[] : (Let (ACons x (Lam [y]. Var y) ANil) (App (Var x) x)) \<Down>\<^bsub>0,[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y) [(x,inc\<cdot>0),(x,0)]"
+  "y \<noteq> x \<Longrightarrow> n \<noteq> y \<Longrightarrow> n \<noteq> x \<Longrightarrow>[] : (Terms.Let [(x, Lam [y]. Var y)] (App (Var x) x)) \<Down>\<^bsub>0,[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y) [(x,inc\<cdot>0),(x,0)]"
   by (auto intro!: Lambda ApplicationI[where y = y and c\<^sub>2 = "[(x,0)]"] Variable Let simp add: fresh_Pair fresh_at_base fresh_Cons fresh_Nil fresh_star_def pure_fresh)
 
 

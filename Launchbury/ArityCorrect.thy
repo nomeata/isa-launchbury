@@ -1,5 +1,5 @@
 theory ArityCorrect
-imports ArityAnalysis Launchbury "Nominal-HOLCF" "Vars-Nominal-HOLCF"
+imports ArityAnalysis Launchbury "Nominal-HOLCF" (* "Vars-Nominal-HOLCF" *)
 begin
 
 (* used?
@@ -12,14 +12,14 @@ locale CorrectArityAnalysis = ArityAnalysis +
   assumes Aexp_Var: "Aexp (Var x) \<cdot> n = AE_singleton x \<cdot> (up \<cdot> n)"
   assumes Aexp_subst_App_Lam: "Aexp (e'[y::=x]) \<sqsubseteq> Aexp (App (Lam [y]. e') x)"
   assumes Aexp_App: "Aexp (App e x) \<cdot> n = Aexp e \<cdot>(inc\<cdot>n) \<squnion> AE_singleton x \<cdot> (up\<cdot>0)"
-  assumes Aexp_Let: "Afix (asToHeap as)\<cdot>(Aexp e\<cdot>n) \<sqsubseteq> Aexp (Let as e)\<cdot>n"
+  assumes Aexp_Let: "Afix as\<cdot>(Aexp e\<cdot>n) \<sqsubseteq> Aexp (Terms.Let as e)\<cdot>n"
   assumes Aexp_lookup_fresh: "atom v \<sharp> e \<Longrightarrow> (Aexp e\<cdot>a) v = \<bottom>"
 begin
 
 lemma Aexp'_Var: "Aexp' (Var x) \<cdot> n = AE_singleton x \<cdot> n"
   by (cases n) (simp_all add: Aexp_Var)
 
-lemma Aexp'_Let: "Afix (asToHeap as)\<cdot>(Aexp' e\<cdot>n) \<sqsubseteq> Aexp' (Let as e)\<cdot>n"
+lemma Aexp'_Let: "Afix as\<cdot>(Aexp' e\<cdot>n) \<sqsubseteq> Aexp' (Terms.Let as e)\<cdot>n"
   by (cases n) (simp_all add: Aexp_Let)
 
 lemma Afix_reorder: "map_of \<Gamma> = map_of \<Delta> \<Longrightarrow> Afix \<Gamma> = Afix \<Delta>"
@@ -232,7 +232,7 @@ case (Variable \<Gamma> x e L \<Delta> z ae n)
   also have "\<dots> = Afix ((x,e)#delete x \<Gamma>) \<cdot> (AE_singleton x\<cdot>n \<squnion> ae)" by (rule Afix_repeat_singleton)
   also have "\<dots> = Afix ((x,e)#delete x \<Gamma>) \<cdot> (Aexp' (Var x) \<cdot> n \<squnion> ae)" by (rule arg_cong[OF Aexp'_Var[symmetric]])
   also have "\<dots> = Afix \<Gamma> \<cdot> (Aexp' (Var x)\<cdot>n \<squnion> ae)" by (rule arg_cong[OF Afix_reorder[OF reorder]])
-  finally show ?case.
+  finally show ?case by this simp_all
 next
 case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' ae n)
   note prem1 =  `ae -\` (- {\<bottom>}) \<subseteq> set L`
@@ -260,22 +260,22 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' ae n)
   qed
 next
 case (Let as \<Gamma> L e \<Delta> z ae n)
-  hence *: "atom ` domA (asToHeap as) \<sharp>* \<Gamma>" by (metis fresh_star_Pair set_bn_to_atom_domA) 
+  hence *: "atom ` domA as \<sharp>* \<Gamma>" by (metis fresh_star_Pair) 
   note prem = `ae -\` (-{\<bottom>}) \<subseteq> set L`
   note IH = Let(3)[OF prem]
 
-  from `set (bn as) \<sharp>* (\<Gamma>, L)`
-  have "atom ` domA (asToHeap as) \<sharp>* set L" by (auto simp add: fresh_star_Pair set_bn_to_atom_domA fresh_star_set)
-  hence "domA (asToHeap as) \<inter> set L = {}" by (metis Int_commute disjoint_iff_not_equal fresh_list_elem fresh_set fresh_star_def image_eqI not_self_fresh)
+  from `atom \` domA as \<sharp>* (\<Gamma>, L)`
+  have "atom ` domA as \<sharp>* set L" by (auto simp add: fresh_star_Pair set_bn_to_atom_domA fresh_star_set)
+  hence "domA as \<inter> set L = {}" by (metis Int_commute disjoint_iff_not_equal fresh_list_elem fresh_set fresh_star_def image_eqI not_self_fresh)
   with prem
-  have **: "ae ` domA (asToHeap as) \<subseteq> {\<bottom>}" by auto 
+  have **: "ae ` domA as \<subseteq> {\<bottom>}" by auto 
 
-  have "Afix \<Delta>\<cdot>(Aexp' z\<cdot>n \<squnion> ae) \<sqsubseteq> Afix (asToHeap as @ \<Gamma>)\<cdot>(Aexp' e\<cdot>n \<squnion> ae)" by (rule IH)
-  also have "\<dots> = Afix \<Gamma>\<cdot>(Afix (asToHeap as)\<cdot>(Aexp' e\<cdot>n \<squnion> ae))" by (rule Afix_append_fresh[OF *])
-  also have "\<dots> = Afix \<Gamma>\<cdot>(Afix (asToHeap as)\<cdot>(Aexp' e\<cdot>n) \<squnion> ae)" by (rule arg_cong[OF Afix_join_fresh[OF **]])
-  also have "\<dots> \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp' (Let as e)\<cdot>n \<squnion> ae)" by (intro monofun_cfun_arg join_mono below_refl Aexp'_Let)
+  have "Afix \<Delta>\<cdot>(Aexp' z\<cdot>n \<squnion> ae) \<sqsubseteq> Afix (as @ \<Gamma>)\<cdot>(Aexp' e\<cdot>n \<squnion> ae)" by (rule IH)
+  also have "\<dots> = Afix \<Gamma>\<cdot>(Afix as\<cdot>(Aexp' e\<cdot>n \<squnion> ae))" by (rule Afix_append_fresh[OF *])
+  also have "\<dots> = Afix \<Gamma>\<cdot>(Afix as\<cdot>(Aexp' e\<cdot>n) \<squnion> ae)" by (rule arg_cong[OF Afix_join_fresh[OF **]])
+  also have "\<dots> \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp' (Terms.Let as e)\<cdot>n \<squnion> ae)" by (intro monofun_cfun_arg join_mono below_refl Aexp'_Let)
   finally
-  show "Afix \<Delta>\<cdot>(Aexp' z\<cdot>n \<squnion> ae) \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp' (Let as e)\<cdot>n \<squnion> ae)".
+  show "Afix \<Delta>\<cdot>(Aexp' z\<cdot>n \<squnion> ae) \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp' (Terms.Let as e)\<cdot>n \<squnion> ae)" by this simp_all
 qed
 
 corollary  reds_improves_arity'':

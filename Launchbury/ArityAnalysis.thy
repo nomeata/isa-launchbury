@@ -1,5 +1,5 @@
 theory ArityAnalysis
-imports Terms Heap AEnv
+imports Terms AEnv
 begin
 
 locale ArityAnalysis =

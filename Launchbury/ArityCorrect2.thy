@@ -29,7 +29,7 @@ next
     also have "Afix \<Gamma>\<cdot>(Aexp e\<cdot>(inc\<cdot>n)) \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp (App e x)\<cdot>n)"
       unfolding Aexp_App by (intro monofun_cfun_arg join_above1)
     finally
-    have "Alog c\<^sub>1 \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp (App e x)\<cdot>n)".
+    have "Alog c\<^sub>1 \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp (App e x)\<cdot>n)" by this simp_all
   }
   moreover
   {
@@ -43,7 +43,7 @@ next
     also have "\<dots> \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp (App e x)\<cdot>n)"
       unfolding Aexp_App by (intro monofun_cfun below_refl)
     finally
-    have "Alog c\<^sub>2 \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp (App e x)\<cdot>n)".
+    have "Alog c\<^sub>2 \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp (App e x)\<cdot>n)" by this simp_all
   }
   ultimately
   show ?case by (simp del: fun_meet_simp)
@@ -62,18 +62,18 @@ case (Variable \<Gamma> x e n L \<Delta> z c)
     also have "\<dots> \<sqsubseteq> Afix ((x,e)#delete x \<Gamma>)\<cdot>(Aexp (Var x)\<cdot>n)" unfolding Aexp_Var..
     also have "\<dots> = Afix \<Gamma>\<cdot>(Aexp (Var x)\<cdot>n)" unfolding Afix_reorder[OF reorder]..
     finally
-    have "Alog c \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp (Var x)\<cdot>n)".
+    have "Alog c \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp (Var x)\<cdot>n)" by this simp_all
   }
   ultimately
   show ?case by (simp del: fun_meet_simp)
 next
 case (Let as \<Gamma> L body n \<Delta> z c)
-  hence *: "atom ` domA (asToHeap as) \<sharp>* \<Gamma>" by (metis fresh_star_Pair set_bn_to_atom_domA) 
+  hence *: "atom ` domA as \<sharp>* \<Gamma>" by (metis fresh_star_Pair) 
 
-  have "Alog c \<sqsubseteq> Afix (asToHeap as @ \<Gamma>)\<cdot>(Aexp body\<cdot>n)" using Let.IH.
-  also have "\<dots> = Afix \<Gamma>\<cdot>(Afix (asToHeap as)\<cdot>(Aexp body\<cdot>n))" unfolding Afix_append_fresh[OF *]..
-  also have "\<dots> \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp (Let as body)\<cdot>n)" by (intro monofun_cfun below_refl Aexp_Let)
-  finally show ?case.
+  have "Alog c \<sqsubseteq> Afix (as @ \<Gamma>)\<cdot>(Aexp body\<cdot>n)" using Let.IH.
+  also have "\<dots> = Afix \<Gamma>\<cdot>(Afix as\<cdot>(Aexp body\<cdot>n))" unfolding Afix_append_fresh[OF *]..
+  also have "\<dots> \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp (Terms.Let as body)\<cdot>n)" by (intro monofun_cfun below_refl Aexp_Let)
+  finally show ?case by this simp_all
 qed
 
 end

@@ -98,7 +98,7 @@ lemma heapToAssn_inject[simp]:
   by (metis asToHeap_heapToAssn)
 
 text {*
-They are transparent to varios notions from the Nominal package.
+They are transparent to various notions from the Nominal package.
 *}
 
 lemma supp_heapToAssn: "supp (heapToAssn \<Gamma>) = supp \<Gamma>"

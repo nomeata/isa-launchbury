@@ -33,7 +33,7 @@ lemma join_cont2:
   unfolding join_comm by (rule join_cont1)
 
 lemma join_cont[cont2cont,simp]:"cont f \<Longrightarrow> cont g \<Longrightarrow> cont (\<lambda>x. (f x \<squnion> (g x::'a::Finite_Join_cpo)))"
-  apply (rule cont2cont_prod_case[where g = "\<lambda> x. (f x, g x)" and f = "\<lambda> p x y . x \<squnion> y", simplified])
+  apply (rule cont2cont_case_prod[where g = "\<lambda> x. (f x, g x)" and f = "\<lambda> p x y . x \<squnion> y", simplified])
   apply (rule join_cont1)
   apply (rule join_cont2)
   apply (metis cont2cont_Pair)
