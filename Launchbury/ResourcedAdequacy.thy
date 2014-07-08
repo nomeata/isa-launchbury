@@ -143,7 +143,7 @@ lemma can_restrict_env:
 
 text {*
 When an expression @{term e} terminates, then we can remove such an expression from the heap and it
-still terminates. This is the curcial trick to handle black-holing in the resourced semantics.
+still terminates. This is the crucial trick to handle black-holing in the resourced semantics.
 *}
 
 lemma add_BH:
@@ -158,7 +158,7 @@ proof-
   have "r \<sqsubseteq> C\<^bsup>n\<^esup>" unfolding r_def not_bot_demand by simp
 
   from assms(1)
-  have [simp]: "the (map_of \<Gamma> x) = e" by (metis the.simps)
+  have [simp]: "the (map_of \<Gamma> x) = e" by (metis option.sel)
 
   from assms(1)
   have [simp]: "x \<in> domA \<Gamma>" by (metis domIff dom_map_of_conv_domA not_Some_eq)

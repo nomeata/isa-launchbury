@@ -52,8 +52,8 @@ proof (induct l)
   show ?case
   by (cases "fst l = x") auto
 qed
-     
-lemma list_size_delete[simp]: "list_size size (delete x l) < Suc (list_size size l)"
+
+lemma list_size_delete[simp]: "size_list size (delete x l) < Suc (size_list size l)"
   by (induct l) auto
 
 lemma delete_append[simp]: "delete x (l1 @ l2) = delete x l1 @ delete x l2"
