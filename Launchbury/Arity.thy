@@ -21,6 +21,7 @@ end
 
 
 lift_definition inc_Arity :: "Arity \<Rightarrow> Arity" is Suc.
+lift_definition pred_Arity :: "Arity \<Rightarrow> Arity" is "(\<lambda> x . x - 1)".
 
 instantiation Arity :: po
 begin
@@ -61,6 +62,11 @@ definition
   inc  :: "Arity -> Arity" where
   "inc = (\<Lambda> x. inc_Arity x)"
 
+definition
+  pred  :: "Arity -> Arity" where
+  "pred = (\<Lambda> x. pred_Arity x)"
+
+
 
 instance Arity :: Finite_Join_cpo
 proof default
@@ -77,5 +83,16 @@ end
 
 lemma Arity_zero_top[simp]: "(x :: Arity) \<sqsubseteq> 0"
   by transfer simp
+
+lemma Arity_zero_join[simp]: "(x :: Arity) \<squnion> 0 = 0"
+  by transfer simp
+lemma Arity_zero_join2[simp]: "0 \<squnion> (x :: Arity) = 0"
+  by transfer simp
+
+lemma Arity_up_zero_join[simp]: "(x :: Arity\<^sub>\<bottom>) \<squnion> up\<cdot>0 = up\<cdot>0"
+  by (cases x) auto
+lemma Arity_up_zero_join2[simp]: "up\<cdot>0 \<squnion> (x :: Arity\<^sub>\<bottom>) = up\<cdot>0"
+  by (cases x) auto
+
 
 end

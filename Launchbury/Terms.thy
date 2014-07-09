@@ -328,4 +328,51 @@ proof-
   ultimately show ?thesis by auto
 qed
 
+subsubsection {* Lemmas helping with nominal definitions *}
+
+lemma eqvt_lam_case:
+  assumes "Lam [x]. e = Lam [x']. e'"
+  assumes "\<And> \<pi> . supp (-\<pi>) \<sharp>* (fv (Lam [x]. e) :: var set) \<Longrightarrow> F (\<pi> \<bullet> e) (\<pi> \<bullet> x) (Lam [x]. e) = F e x (Lam [x]. e)"
+  shows "F e x (Lam [x]. e) = F e' x' (Lam [x']. e')"
+proof-
+
+  from assms(1)
+  have "[[atom x]]lst. (e, x) = [[atom x']]lst. (e', x')" by auto
+  then obtain p
+    where "(supp (e, x) - {atom x}) \<sharp>* p"
+    and [simp]: "p \<bullet> x = x'"
+    and [simp]: "p \<bullet> e = e'"
+    unfolding  Abs_eq_iff(3) alpha_lst.simps by auto
+
+  from this(1)
+  have *: "supp (-p) \<sharp>* (fv (Lam [x]. e) :: var set)"
+    by (auto simp add: fresh_star_def fresh_def supp_finite_set_at_base supp_Pair fv_supp_exp fv_supp_heap supp_minus_perm)
+
+  have "F e x (Lam [x]. e) =  F (p \<bullet> e) (p \<bullet> x) (Lam [x]. e)" by (rule assms(2)[OF *, symmetric])
+  also have "\<dots> = F e' x' (Lam [x']. e')" by (simp add: assms(1))
+  finally show ?thesis.
+qed
+
+lemma eqvt_let_case:
+  assumes "Let as body = Let as' body'"
+  assumes "\<And> \<pi> . supp (-\<pi>) \<sharp>* (fv (Let as body) :: var set) \<Longrightarrow> F (\<pi> \<bullet> as) (\<pi> \<bullet> body) (Let as body) = F as body (Let as body)"
+  shows "F as body (Let as body) = F as' body' (Let as' body')"
+proof-
+  from assms(1)
+  have "[map (\<lambda> p. atom (fst p)) as]lst. (body, as) = [map (\<lambda> p. atom (fst p)) as']lst. (body', as')" by auto
+  then obtain p
+    where "(supp (body, as) - atom ` domA as) \<sharp>* p"
+    and [simp]: "p \<bullet> body = body'"
+    and [simp]: "p \<bullet> as = as'"
+    unfolding  Abs_eq_iff(3) alpha_lst.simps by (auto simp add: domA_def image_image)
+
+  from this(1)
+  have *: "supp (-p) \<sharp>* (fv (Terms.Let as body) :: var set)"
+    by (auto simp add: fresh_star_def fresh_def supp_finite_set_at_base supp_Pair fv_supp_exp fv_supp_heap supp_minus_perm)
+
+  have "F as body (Let as body) =  F (p \<bullet> as) (p \<bullet> body) (Let as body)" by (rule assms(2)[OF *, symmetric])
+  also have "\<dots> = F as' body' (Let as' body')" by (simp add: assms(1))
+  finally show ?thesis.
+qed
+
 end

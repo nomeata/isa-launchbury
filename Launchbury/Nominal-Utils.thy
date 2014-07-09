@@ -25,6 +25,12 @@ lemma eqvt_at_apply':
   shows "p \<bullet> f x = f (p \<bullet> x)"
 by (metis (hide_lams, no_types) assms eqvt_at_def)
 
+lemma eqvt_at_apply'':
+  assumes "eqvt_at f x"
+  shows "(p \<bullet> f) (p \<bullet> x) = f (p \<bullet> x)"
+by (metis (hide_lams, no_types) assms eqvt_at_def permute_fun_def permute_minus_cancel(1))
+
+
 subsubsection {* Freshness via equivariance *}
 
 lemma eqvt_fresh_cong1: "(\<And>p x. p \<bullet> (f x) = f (p \<bullet> x)) \<Longrightarrow> a \<sharp> x \<Longrightarrow> a \<sharp> f x "
@@ -206,6 +212,9 @@ lemma fv_at_base[simp]: "fv a = {a::'a::at_base}"
 lemma fv_pure[simp]: "fv (a::'a::pure) = {}"
   by (auto simp add: fv_def pure_supp)
 
+lemma flip_not_fv: "a \<notin> fv x \<Longrightarrow> b \<notin> fv x \<Longrightarrow> (a \<leftrightarrow> b) \<bullet> x = x"
+  by (metis flip_def fresh_def fv_def mem_Collect_eq swap_fresh_fresh)
+
 subsubsection {* Other useful lemmas *}
 
 lemma pure_permute_id: "permute p = (\<lambda> x. (x::'a::pure))"
@@ -220,5 +229,17 @@ lemma supp_set_elem_finite:
   by auto
 
 lemmas fresh_star_Cons = fresh_star_list(2)
+
+lemma mem_permute_set: 
+  fixes x :: "'a :: at_base"
+  shows "x \<in> p \<bullet> S \<longleftrightarrow> (- p \<bullet> x) \<in> S"
+  by (metis mem_permute_iff permute_minus_cancel(2))
+
+lemma flip_set_both_not_in:
+  assumes "x \<notin> S" and "x' \<notin> S"
+  shows "((x' \<leftrightarrow> x) \<bullet> S) = S"
+  unfolding permute_set_def
+  by (auto) (metis assms flip_at_base_simps(3))+
+
 
 end

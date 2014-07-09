@@ -87,6 +87,10 @@ lemma env_restr_eq_subset:
 using assms
 by (metis env_restr_env_restr le_iff_inf)
 
+lemma edom_env[simp]:
+  "edom (m f|` S) = edom m \<inter> S"
+  unfolding edom_def env_restr_def by auto
+
 subsubsection {* Deleting *}
 
 definition env_delete :: "'a \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> ('a \<Rightarrow> 'b::pcpo)"
