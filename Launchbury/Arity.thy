@@ -19,10 +19,6 @@ instance
 end
 *)
 
-
-lift_definition inc_Arity :: "Arity \<Rightarrow> Arity" is Suc.
-lift_definition pred_Arity :: "Arity \<Rightarrow> Arity" is "(\<lambda> x . x - 1)".
-
 instantiation Arity :: po
 begin
 
@@ -34,12 +30,10 @@ apply ((transfer, auto)+)
 done
 end
 
-instance Arity :: cpo
-apply default
-proof-
+instance Arity :: chfin
+proof default
   fix S  :: "nat \<Rightarrow> Arity"
   assume "chain S"
-
   have "LeastM Rep_Arity (\<lambda>x. x \<in> range S) \<in> range S"
     by (rule LeastM_natI) auto
   then obtain n where n: "S n = LeastM Rep_Arity (\<lambda>x. x \<in> range S)" by auto
@@ -55,8 +49,26 @@ proof-
     finally  
     show "S n = S j".
   qed
-  thus "\<exists>x. range S <<| x" using `chain S`  by (metis lub_finch1)
+  thus "\<exists>n. max_in_chain n S"..
 qed
+
+instance Arity :: cpo by default
+
+lift_definition inc_Arity :: "Arity \<Rightarrow> Arity" is Suc.
+lift_definition pred_Arity :: "Arity \<Rightarrow> Arity" is "(\<lambda> x . x - 1)".
+
+
+lemma inc_Arity_cont[simp]: "cont inc_Arity"
+  apply (rule chfindom_monofun2cont)
+  apply (rule monofunI)
+  apply (transfer, simp)
+  done
+
+lemma pred_Arity_cont[simp]: "cont pred_Arity"
+  apply (rule chfindom_monofun2cont)
+  apply (rule monofunI)
+  apply (transfer, simp)
+  done
 
 definition
   inc  :: "Arity -> Arity" where
@@ -66,7 +78,11 @@ definition
   pred  :: "Arity -> Arity" where
   "pred = (\<Lambda> x. pred_Arity x)"
 
-
+lemma pred_inc[simp]: "pred\<cdot>(inc\<cdot>n) = n" 
+  apply (simp add: inc_def pred_def)
+  apply transfer
+  apply simp  
+  done
 
 instance Arity :: Finite_Join_cpo
 proof default
