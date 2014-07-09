@@ -1,6 +1,12 @@
 theory AEnv
-imports Arity Vars "Env"
+imports "Arity-Nominal" Vars "Env" "Nominal-HOLCF"
 begin
+
+instantiation var :: discrete_cpo
+begin
+  definition  [simp]: "(x::var) \<sqsubseteq> y \<longleftrightarrow> x = y"
+  instance by default simp
+end
 
 type_synonym AEnv = "var \<Rightarrow> Arity\<^sub>\<bottom>"
 
@@ -23,5 +29,14 @@ lemma AE_singleton_below_iff[simp]: "AE_singleton x \<cdot> a \<sqsubseteq> ae  
 
 lemma edom_AE_singleton_up[simp]: "edom (AE_singleton x \<cdot> (up \<cdot> n)) = {x}"
   unfolding edom_def AE_singleton_def by auto
+
+lemma AE_singleton_eqvt[eqvt]: "\<pi> \<bullet> (AE_singleton x) = AE_singleton (\<pi> \<bullet> x)"
+  unfolding AE_singleton_def
+  apply perm_simp
+  apply (simp add: Abs_cfun_eqvt)
+  done
+
+lemma join_eqvt[eqvt]: "\<pi> \<bullet> (x \<squnion> (y :: 'a :: {Finite_Join_cpo, cont_pt})) = (\<pi> \<bullet> x) \<squnion> (\<pi> \<bullet> y)"
+  by (rule is_joinI[symmetric]) (auto simp add: perm_below_to_right)
 
 end

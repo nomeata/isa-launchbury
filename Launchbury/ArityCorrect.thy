@@ -1,12 +1,6 @@
 theory ArityCorrect
-imports ArityAnalysis Launchbury "Nominal-HOLCF" (* "Vars-Nominal-HOLCF" *)
+imports ArityAnalysis Launchbury (* "Vars-Nominal-HOLCF" *)
 begin
-
-(* used?
-
-instance Arity :: cont_pt
-  by default (simp add: pure_permute_id)
-*)
 
 locale CorrectArityAnalysis = ArityAnalysis +
   assumes Aexp_Var: "Aexp (Var x) \<cdot> n = AE_singleton x \<cdot> (up \<cdot> n)"
@@ -260,7 +254,7 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' ae n)
   qed
 next
 case (Let as \<Gamma> L e \<Delta> z ae n)
-  hence *: "atom ` domA as \<sharp>* \<Gamma>" by (metis fresh_star_Pair) 
+  have *: "atom ` domA as \<sharp>* \<Gamma>" using Let(1) by (metis fresh_star_Pair)
   note prem = `ae -\` (-{\<bottom>}) \<subseteq> set L`
   note IH = Let(3)[OF prem]
 

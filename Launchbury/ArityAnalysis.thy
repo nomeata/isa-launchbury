@@ -1,5 +1,5 @@
 theory ArityAnalysis
-imports Terms AEnv
+imports Terms AEnv "Arity-Nominal" "Nominal-HOLCF" 
 begin
 
 locale ArityAnalysis =
@@ -63,7 +63,7 @@ next
   fix v e \<Gamma>
   assume assm: "ae \<sqsubseteq> ABinds (delete v \<Gamma>)\<cdot>ae"
   also have "\<dots> \<sqsubseteq> ABinds ((v, e) # \<Gamma>)\<cdot>ae"  by auto
-  finally show "ae \<sqsubseteq> ABinds ((v, e) # \<Gamma>)\<cdot>ae".
+  finally show "ae \<sqsubseteq> ABinds ((v, e) # \<Gamma>)\<cdot>ae" by this simp
 qed
 
 definition Afix ::  "heap \<Rightarrow> (AEnv \<rightarrow> AEnv)"
@@ -71,6 +71,7 @@ definition Afix ::  "heap \<Rightarrow> (AEnv \<rightarrow> AEnv)"
 
 lemma Afix_eq: "Afix \<Gamma> \<cdot> ae = (\<mu>  ae'. (ABinds \<Gamma> \<cdot> ae') \<squnion> ae)"
   unfolding Afix_def by simp
+
 
 lemma Afix_strict[simp]: "Afix \<Gamma> \<cdot> \<bottom> = \<bottom>"
   unfolding Afix_eq
@@ -110,9 +111,49 @@ lemma inc_bot_simps[simp]:
   "inc\<^sub>\<bottom>\<cdot>\<bottom>=\<bottom>"
   "inc\<^sub>\<bottom>\<cdot>(up\<cdot>n)=up\<cdot>(inc\<cdot>n)"
   unfolding inc_bot_def by simp_all
-
-
 end
+
+
+lemma Aexp'_eqvt[eqvt]: "\<pi> \<bullet> (ArityAnalysis.Aexp' Aexp e) = ArityAnalysis.Aexp' (\<pi> \<bullet> Aexp) (\<pi> \<bullet> e)"
+  unfolding ArityAnalysis.Aexp'_def
+  by perm_simp rule
+
+lemma ABind_eqvt[eqvt]: "\<pi> \<bullet> (ArityAnalysis.ABind Aexp v e) = ArityAnalysis.ABind (\<pi> \<bullet> Aexp) (\<pi> \<bullet> v) (\<pi> \<bullet> e)"
+  unfolding ArityAnalysis.ABind_def
+  by perm_simp (simp add: Abs_cfun_eqvt)
+
+lemma ABinds_eqvt[eqvt]: "\<pi> \<bullet> (ArityAnalysis.ABinds Aexp \<Gamma>) = ArityAnalysis.ABinds (\<pi> \<bullet> Aexp) (\<pi> \<bullet> \<Gamma>)"
+  apply (induction \<Gamma> rule: ArityAnalysis.ABinds.induct)
+  apply (simp add: ArityAnalysis.ABinds.simps)
+  apply (simp add: ArityAnalysis.ABinds.simps)
+  apply perm_simp
+  apply simp
+  done
+
+lemma Afix_eqvt[eqvt]: "\<pi> \<bullet> (ArityAnalysis.Afix Aexp \<Gamma>) = ArityAnalysis.Afix  (\<pi> \<bullet> Aexp) (\<pi> \<bullet> \<Gamma>)"
+  unfolding ArityAnalysis.Afix_def
+  by perm_simp (simp add: Abs_cfun_eqvt)
+
+lemma Abinds_cong[fundef_cong]:
+  "\<lbrakk> (\<And> e. e \<in> snd ` set heap2 \<Longrightarrow> aexp1 e = aexp2 e) ; heap1 = heap2 \<rbrakk>
+      \<Longrightarrow> ArityAnalysis.ABinds aexp1 heap1 = ArityAnalysis.ABinds aexp2 heap2"    
+proof (induction heap1 arbitrary:heap2 rule:ArityAnalysis.ABinds.induct)
+case goal1 thus ?case by (auto simp add: ArityAnalysis.ABinds.simps)
+next
+case (goal2  v e as heap2)
+  have "snd ` set (delete v as) \<subseteq> snd ` set as" by (rule dom_delete_subset)
+  also have "\<dots> \<subseteq> snd `set ((v, e) # as)" by auto
+  also note goal2(3)
+  finally
+  have "(\<And>e. e \<in> snd ` set (delete v as) \<Longrightarrow> aexp1 e = aexp2 e)" by -(rule goal2, auto)
+  note goal2(1)[OF this refl] with goal2
+  show ?case by (auto simp add: ArityAnalysis.ABinds.simps ArityAnalysis.ABind_def ArityAnalysis.Aexp'_def)
+qed
+
+lemma Afix_cong[fundef_cong]:
+  "\<lbrakk> (\<And> e. e \<in> snd ` set heap2 \<Longrightarrow> aexp1 e = aexp2 e); heap1 = heap2 \<rbrakk>
+      \<Longrightarrow> ArityAnalysis.Afix aexp1 heap1 = ArityAnalysis.Afix aexp2 heap2"
+   unfolding ArityAnalysis.Afix_def by (metis Abinds_cong)
 
 
 end

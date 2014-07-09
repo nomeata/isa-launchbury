@@ -3,7 +3,7 @@ imports
   "Nominal2" "Nominal-Utils" "HOLCF-Utils"
 begin
 
-subsubsection {* Type class of continous permutations and variations thereof *}
+subsubsection {* Type class of continuous permutations and variations thereof *}
 
 class cont_pt = 
   cpo + 
@@ -30,6 +30,9 @@ lemma (in cont_pt) perm_cont_simp[simp]: "\<pi> \<bullet> x \<sqsubseteq> \<pi> 
   apply (erule cont2monofunE[OF perm_cont, of _ _ "\<pi>"])
   done
 
+lemma (in cont_pt) perm_below_to_right: "\<pi> \<bullet> x \<sqsubseteq> y \<longleftrightarrow> x \<sqsubseteq> - \<pi> \<bullet>  y"
+  by (metis perm_cont_simp pt_class.permute_minus_cancel(2))
+ 
 lemma perm_is_ub_simp[simp]: "\<pi> \<bullet> S <| \<pi> \<bullet> (x::'a::cont_pt) \<longleftrightarrow> S <| x"
   by (auto simp add: is_ub_def permute_set_def)
 
@@ -116,6 +119,12 @@ lemma Abs_cfun_eqvt: "cont f \<Longrightarrow> (p \<bullet> Abs_cfun) f = Abs_cf
   apply (subst permute_fun_def)
   by (metis permute_Lam perm_still_cont permute_minus_cancel(1))
 
+lemma ID_eqvt[eqvt]: "\<pi> \<bullet> ID = ID"
+  unfolding ID_def
+  apply perm_simp
+  apply (simp add: Abs_cfun_eqvt)
+  done
+
 instance "cfun" :: (cont_pt, cont_pt) cont_pt
   by (default,subst permute_cfun_eq, auto)
 
@@ -155,5 +164,65 @@ apply simp
 apply (rule parallel_fix_ind[OF adm_subst2])
 apply (auto simp add: permute_self)
 done
+
+subsubsection {* Instance for @{type u} *}
+
+(* Everything very pure. Does this work?
+instantiation u :: (cpo) pt
+begin
+  definition "p \<bullet> (x :: 'a u) = x"
+  instance by default (auto simp add: permute_u_def)
+end
+instance u :: (cpo) pure by default (simp add: permute_u_def)
+instance u :: (cpo) cont_pt by default (simp add: pure_permute_id)
+instance u :: (cpo) pcpo_pt by default
+*)
+
+
+instantiation u :: (cont_pt) pt
+begin
+  definition "p \<bullet> (x :: 'a u) = fup\<cdot>(\<Lambda> x. up\<cdot>(p \<bullet> x))\<cdot>x"
+  instance
+  apply default
+  apply (case_tac x) apply (auto simp add: permute_u_def)
+  apply (case_tac x) apply (auto simp add: permute_u_def)
+  done
+end
+
+instance u :: (cont_pt) cont_pt
+proof default
+  fix p
+  (* Fighting eta contraction... *)
+  have "permute p = (\<lambda> x. fup\<cdot>(\<Lambda> x. up\<cdot>(p \<bullet> x))\<cdot>(x:: 'a u))" 
+    by (rule ext, rule permute_u_def)
+  moreover have "cont (\<lambda> x. fup\<cdot>(\<Lambda> x. up\<cdot>(p \<bullet> x))\<cdot>(x:: 'a u))" by simp
+  ultimately show "cont (permute p :: 'a u \<Rightarrow> 'a u)" by simp
+qed
+
+instance u :: (cont_pt) pcpo_pt by default
+
+class pure_cont_pt = pure + cont_pt
+
+instance u :: (pure_cont_pt) pure
+  apply default
+  apply (case_tac x) apply (auto simp add: permute_u_def permute_pure)
+  done  
+
+
+lemma up_eqvt[eqvt]: "\<pi> \<bullet> up = up"
+  apply (rule cfun_eqI)
+  apply (subst permute_cfun_def, simp)
+  apply (simp add: permute_u_def)
+  done
+
+lemma fup_eqvt[eqvt]: "\<pi> \<bullet> fup = fup"
+  apply (rule cfun_eqI)
+  apply (rule cfun_eqI)
+  apply (subst permute_cfun_def, simp)
+  apply (subst permute_cfun_def, simp)
+  apply (case_tac xa)
+  apply simp
+  apply (simp add: permute_self)
+  done
 
 end

@@ -1,5 +1,5 @@
 theory "Arity-Nominal"
-imports Arity Nominal2
+imports Arity "Nominal-HOLCF"
 begin
 
 instantiation Arity :: pure
@@ -10,5 +10,9 @@ instance
   apply (auto simp add: permute_Arity_def)
   done
 end
+
+
+instance Arity :: cont_pt by default (simp add: pure_permute_id)
+instance Arity :: pure_cont_pt by default
 
 end
