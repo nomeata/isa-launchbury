@@ -42,7 +42,7 @@ notation (latex output) env_restr_rev ("_|\<^bsub>_\<^esub>")
 lemma env_restr_empty[simp]: "edom m \<inter> S = {} \<Longrightarrow> m f|` S = \<bottom>"
   by (fastforce simp add: edom_def env_restr_def)
 
-lemma lookup_env_restr[simp]: "x \<in> S \<Longrightarrow> (env_restr S m) x = m x"
+lemma lookup_env_restr[simp]: "x \<in> S \<Longrightarrow> (m f|` S) x = m x"
   by (fastforce simp add: env_restr_def)
 
 lemma lookup_env_restr_not_there[simp]: "x \<notin> S \<Longrightarrow> (env_restr S m) x = \<bottom>"
@@ -53,6 +53,15 @@ lemma lookup_env_restr_eq: "(m f|` S) x = (if x \<in> S then m x else \<bottom>)
 
 lemma env_restr_eqI: "(\<And>x. x \<in> S \<Longrightarrow> m\<^sub>1 x = m\<^sub>2 x) \<Longrightarrow> m\<^sub>1 f|` S = m\<^sub>2 f|` S"
   by (auto simp add: lookup_env_restr_eq)
+
+lemma env_restr_eqD: "m\<^sub>1 f|` S = m\<^sub>2 f|` S \<Longrightarrow> x \<in> S \<Longrightarrow> m\<^sub>1 x = m\<^sub>2 x"
+  by (auto dest!: fun_cong[where x = x])
+
+lemma env_restr_belowI: "(\<And>x. x \<in> S \<Longrightarrow> m\<^sub>1 x \<sqsubseteq> m\<^sub>2 x) \<Longrightarrow> m\<^sub>1 f|` S \<sqsubseteq> m\<^sub>2 f|` S"
+  by (auto intro: fun_belowI simp add: lookup_env_restr_eq)
+
+lemma env_restr_belowD: "m\<^sub>1 f|` S \<sqsubseteq> m\<^sub>2 f|` S \<Longrightarrow> x \<in> S \<Longrightarrow> m\<^sub>1 x \<sqsubseteq> m\<^sub>2 x"
+  by (auto dest!: fun_belowD[where x = x])
 
 lemma env_restr_env_restr[simp]:
  "x f|` d2 f|` d1 = x f|` (d1 \<inter> d2)"
@@ -87,9 +96,34 @@ lemma env_restr_eq_subset:
 using assms
 by (metis env_restr_env_restr le_iff_inf)
 
+lemma env_restr_below_subset:
+  assumes "S \<subseteq> S'"
+  and "m1 f|` S' \<sqsubseteq> m2 f|` S'"
+  shows "m1 f|` S \<sqsubseteq> m2 f|` S"
+using assms
+by (auto intro!: env_restr_belowI dest!: env_restr_belowD)
+
 lemma edom_env[simp]:
   "edom (m f|` S) = edom m \<inter> S"
   unfolding edom_def env_restr_def by auto
+
+lemma env_restr_below_self: "f f|` S \<sqsubseteq> f"
+  by (rule fun_belowI) (auto simp add: env_restr_def)
+
+lemma env_restr_below_trans:
+  "m1 f|` S1 \<sqsubseteq> m2 f|` S1 \<Longrightarrow> m2 f|` S2 \<sqsubseteq> m3 f|` S2 \<Longrightarrow> m1 f|` (S1 \<inter> S2) \<sqsubseteq> m3 f|` (S1 \<inter> S2)"
+by (auto intro!: env_restr_belowI dest!: env_restr_belowD elim: below_trans)
+
+lemma env_restr_cont: "cont (env_restr S)"
+  apply (rule cont2cont_lambda)
+  unfolding env_restr_def
+  apply (intro cont2cont cont_fun)
+  done
+
+lemma env_restr_mono: "m1 \<sqsubseteq> m2 \<Longrightarrow>  m1 f|` S \<sqsubseteq> m2 f|` S"
+  by (metis env_restr_belowI fun_belowD)
+
+lemmas cont_compose[OF env_restr_cont, cont2cont, simp]
 
 subsubsection {* Deleting *}
 

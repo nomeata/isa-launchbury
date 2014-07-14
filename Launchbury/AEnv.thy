@@ -39,4 +39,8 @@ lemma AE_singleton_eqvt[eqvt]: "\<pi> \<bullet> (AE_singleton x) = AE_singleton 
 lemma join_eqvt[eqvt]: "\<pi> \<bullet> (x \<squnion> (y :: 'a :: {Finite_Join_cpo, cont_pt})) = (\<pi> \<bullet> x) \<squnion> (\<pi> \<bullet> y)"
   by (rule is_joinI[symmetric]) (auto simp add: perm_below_to_right)
 
+(* Move to somewhere? *)
+lemma edom_join[simp]: "edom (f \<squnion> (g::('a::type \<Rightarrow> 'b::{Finite_Join_cpo,pcpo}))) = edom f \<union> edom g"
+  unfolding edom_def by auto
+
 end

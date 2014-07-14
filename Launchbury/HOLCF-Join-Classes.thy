@@ -146,4 +146,8 @@ lemma join_self_below[iff]:
   apply (metis join_above2 join_above1 below_antisym larger_is_join2)
   done
 
+lemma join_bottom_iff[iff]:
+  "x \<squnion> y = \<bottom> \<longleftrightarrow> x = \<bottom> \<and> (y::'a::{Finite_Join_cpo,pcpo}) = \<bottom>"
+  by (metis all_compatible join_bottom(2) join_comm join_idem)
+
 end
