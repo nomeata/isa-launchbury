@@ -6,57 +6,15 @@ locale CorrectArityAnalysis = ArityAnalysis +
   assumes Aexp_Var: "Aexp (Var x) \<cdot> n = AE_singleton x \<cdot> (up \<cdot> n)"
   assumes Aexp_subst_App_Lam: "Aexp (e[y::=x]) \<sqsubseteq> Aexp (App (Lam [y]. e) x)"
   assumes Aexp_App: "Aexp (App e x) \<cdot> n = Aexp e \<cdot>(inc\<cdot>n) \<squnion> AE_singleton x \<cdot> (up\<cdot>0)"
-  assumes Aexp_Let: "Afix as\<cdot>(Aexp e\<cdot>n) \<sqsubseteq> Aexp (Terms.Let as e)\<cdot>n"
+  assumes Aexp_Let: "Afix as\<cdot>(Aexp e\<cdot>n) f|` (- domA as) \<sqsubseteq> Aexp (Terms.Let as e)\<cdot>n"
   assumes Aexp_lookup_fresh: "atom v \<sharp> e \<Longrightarrow> (Aexp e\<cdot>a) v = \<bottom>"
 begin
 
 lemma Aexp'_Var: "Aexp' (Var x) \<cdot> n = AE_singleton x \<cdot> n"
   by (cases n) (simp_all add: Aexp_Var)
 
-lemma Aexp'_Let: "Afix as\<cdot>(Aexp' e\<cdot>n) \<sqsubseteq> Aexp' (Terms.Let as e)\<cdot>n"
+lemma Aexp'_Let: "Afix as\<cdot>(Aexp' e\<cdot>n) f|` (- domA as) \<sqsubseteq> Aexp' (Terms.Let as e)\<cdot>n"
   by (cases n) (simp_all add: Aexp_Let)
-
-lemma Afix_reorder: "map_of \<Gamma> = map_of \<Delta> \<Longrightarrow> Afix \<Gamma> = Afix \<Delta>"
-  by (intro cfun_eqI)(simp add: Afix_eq cong: Abinds_reorder)
-
-lemma Afix_repeat_singleton: "(\<mu> xa. Afix \<Gamma>\<cdot>(AE_singleton x\<cdot>(n \<squnion> xa x) \<squnion> ae)) = Afix \<Gamma>\<cdot>(AE_singleton x\<cdot>n \<squnion> ae)"
-  apply (rule below_antisym)
-  defer
-  apply (subst fix_eq, simp)
-  apply (intro monofun_cfun_arg join_mono below_refl join_above1)
-
-  apply (rule fix_least_below, simp)
-  apply (rule Afix_least_below, simp)
-  apply (intro join_below below_refl iffD2[OF AE_singleton_below_iff] below_trans[OF _ fun_belowD[OF Afix_above_arg]]  below_trans[OF _ Afix_above_arg] join_above2)
-  apply simp
-  done
-
-lemma Abinds_join_fresh: "ae' ` (domA \<Delta>) \<subseteq> {\<bottom>} \<Longrightarrow>  ABinds \<Delta>\<cdot>(ae \<squnion> ae') = (ABinds \<Delta>\<cdot>ae) \<squnion> ae'"
-proof (induct \<Delta> rule: ABinds.induct)
-  case 1 thus ?case by simp
-next
-  case (2 v e \<Delta>)
-  from 2(2)
-  have "ae' v = \<bottom>" by auto
-  moreover
-  from 2(2) have  "ae' ` domA (delete v \<Delta>) \<subseteq> {\<bottom>}" by auto
-  hence "ABinds (delete v \<Delta>)\<cdot>(ae \<squnion> ae') = ABinds (delete v \<Delta>)\<cdot>ae \<squnion> ae'" by (rule 2)
-  ultimately
-  show "ABinds ((v, e) # \<Delta>)\<cdot>(ae \<squnion> ae') = ABinds ((v, e) # \<Delta>)\<cdot>ae \<squnion> ae'"
-    by simp
-qed  
-
-lemma Afix_join_fresh: "ae' ` (domA \<Delta>) \<subseteq> {\<bottom>}  \<Longrightarrow>  Afix \<Delta>\<cdot>(ae \<squnion> ae') = (Afix \<Delta>\<cdot>ae) \<squnion> ae'"
-  apply (rule below_antisym)
-  apply (rule Afix_least_below)
-  apply (simp add: Abinds_join_fresh)
-  apply (rule join_below)
-  apply (rule below_trans[OF Afix_above_arg join_above1])
-  apply (rule join_above2)
-  apply (rule join_below[OF monofun_cfun_arg [OF join_above1]])
-  apply (rule below_trans[OF join_above2 Afix_above_arg])
-  done
-
 
 lemma Aexp'_lookup_fresh: "atom v \<sharp> e \<Longrightarrow> (Aexp' e\<cdot>a) v = \<bottom>"
   by (cases a) (auto simp add: Aexp_lookup_fresh)
@@ -294,9 +252,19 @@ case (Let as \<Gamma> L e \<Delta> z ae n)
   with prem
   have **: "ae ` domA as \<subseteq> {\<bottom>}" by (auto simp add: edom_def)
 
+  have [simp]: "ae f|` (-domA as) = ae" apply (rule env_restr_useless) using prem `domA as \<inter> set L = {}` by auto
+
+  from `atom \` domA as \<sharp>* \<Gamma>` have "domA as \<inter> domA \<Gamma> = {}" by (metis fresh_distinct)
+  moreover from reds_doesnt_forget[OF Let(2)] have "domA as \<subseteq> domA \<Delta>" by auto
+  ultimately have ***: "((- domA \<Delta> \<union> domA \<Gamma>) \<inter> - domA as) = (- domA \<Delta> \<union> domA \<Gamma>)" by auto
+
   have "Afix \<Delta>\<cdot>(Aexp' z\<cdot>n \<squnion> ae)  f|` (- (domA \<Delta> - domA \<Gamma>)) \<sqsubseteq> Afix (as @ \<Gamma>)\<cdot>(Aexp' e\<cdot>n \<squnion> ae)  f|` (- (domA \<Delta> - domA \<Gamma>))" by (rule IH)
   also have "\<dots> = Afix \<Gamma>\<cdot>(Afix as\<cdot>(Aexp' e\<cdot>n \<squnion> ae))  f|` (- (domA \<Delta> - domA \<Gamma>))" by (rule arg_cong[OF Afix_append_fresh[OF *]])
   also have "\<dots> = Afix \<Gamma>\<cdot>(Afix as\<cdot>(Aexp' e\<cdot>n) \<squnion> ae)  f|` (- (domA \<Delta> - domA \<Gamma>))" by (rule arg_cong[OF Afix_join_fresh[OF **]])
+  also have "\<dots> = Afix \<Gamma>\<cdot>(Afix as\<cdot>(Aexp' e\<cdot>n) \<squnion> ae) f|` (- (domA as)) f|` (- (domA \<Delta> - domA \<Gamma>))" by (simp add: ***)
+  also have "\<dots> = Afix \<Gamma>\<cdot>((Afix as\<cdot>(Aexp' e\<cdot>n) \<squnion> ae) f|` (- (domA as))) f|` (- (domA as)) f|` (- (domA \<Delta> - domA \<Gamma>))" by (rule arg_cong[OF Afix_restr_fresh[OF *]])
+  also have "\<dots> = Afix \<Gamma>\<cdot>((Afix as\<cdot>(Aexp' e\<cdot>n) \<squnion> ae) f|` (- (domA as))) f|` (- (domA \<Delta> - domA \<Gamma>))" by (simp add: ***)
+  also have "\<dots> = Afix \<Gamma>\<cdot>((Afix as\<cdot>(Aexp' e\<cdot>n)  f|` (- (domA as))) \<squnion> ae) f|` (- (domA \<Delta> - domA \<Gamma>))" by (simp add: env_restr_join)
   also have "\<dots> \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp' (Terms.Let as e)\<cdot>n \<squnion> ae) f|` (- (domA \<Delta> - domA \<Gamma>))" by (intro monofun_cfun_arg join_mono env_restr_mono below_refl Aexp'_Let)
   finally
   show "Afix \<Delta>\<cdot>(Aexp' z\<cdot>n \<squnion> ae) f|` (- (domA \<Delta> - domA \<Gamma>)) \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp' (Terms.Let as e)\<cdot>n \<squnion> ae) f|` (- (domA \<Delta> - domA \<Gamma>))" by this simp_all

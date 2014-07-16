@@ -78,8 +78,22 @@ interpretation ArityAnalysis Aexp.
 lemma Aexp_edom: "edom (Aexp e\<cdot>a) \<subseteq> fv e"
   by (nominal_induct arbitrary: a rule: exp_strong_induct) auto
 
+lemma Aexp'_edom: "edom (Aexp' e\<cdot>a) \<subseteq> fv e"
+  by (cases a) (auto dest:set_mp[OF Aexp_edom])
+
+lemma ABinds_edom: "edom (ABinds \<Gamma> \<cdot> ae) \<subseteq> fv \<Gamma> \<union> edom ae"
+  apply (induct rule: ABinds.induct)
+  apply simp
+  apply (auto dest: set_mp[OF Aexp'_edom] simp del: fun_meet_simp)
+  apply (drule (1) set_mp)
+  apply (auto dest: set_mp[OF fv_delete_subset])
+  done
+  
+
 lemma Afix_edom: "edom (Afix \<Gamma> \<cdot> ae) \<subseteq> fv \<Gamma> \<union> edom ae"
-  sorry
+  unfolding Afix_eq
+  by (rule fix_ind[where P = "\<lambda> ae' . edom ae' \<subseteq> fv \<Gamma> \<union> edom ae"] )
+     (auto dest: set_mp[OF ABinds_edom])
 
 lemma Aexp_lam_simp[simp]: "Aexp (Lam [x]. e) \<cdot> n = env_delete x (Aexp e \<cdot> (pred \<cdot> n))"
 proof-
@@ -148,10 +162,10 @@ next
   
   note this[simp] Let(1,2)[simp]
 
-
   have "Aexp (Terms.Let \<Gamma> e)[y::=x]\<cdot>n \<sqsubseteq> Afix \<Gamma>[y::h=x]\<cdot>(Aexp e[y::=x]\<cdot>n) f|` ( - domA \<Gamma>)" by (simp add: fresh_star_Pair)
   also have "(Aexp e[y::=x]\<cdot>n) \<sqsubseteq> (Aexp e\<cdot>n)(y := \<bottom>, x := up\<cdot>0)" by fact
-  also have "Afix \<Gamma>[y::h=x]\<cdot>((Aexp e\<cdot>n)(y := \<bottom>, x := up\<cdot>0)) \<sqsubseteq> (Afix \<Gamma>\<cdot>(Aexp e\<cdot>n))(y := \<bottom>, x := up\<cdot>0)" sorry
+  also have "Afix \<Gamma>[y::h=x]\<cdot>((Aexp e\<cdot>n)(y := \<bottom>, x := up\<cdot>0)) \<sqsubseteq> (Afix \<Gamma>\<cdot>(Aexp e\<cdot>n))(y := \<bottom>, x := up\<cdot>0)"
+    by (rule Afix_subst_approx[OF Let(3) `x \<notin> domA \<Gamma>` `y \<notin> domA \<Gamma>`])
   also have "(Afix \<Gamma>\<cdot>(Aexp e\<cdot>n))(y := \<bottom>, x := up\<cdot>0) f|` (- domA \<Gamma>) = (Afix \<Gamma>\<cdot>(Aexp e\<cdot>n) f|` (- domA \<Gamma>)) (y := \<bottom>, x := up\<cdot>0)" by auto
   also have "(Afix \<Gamma>\<cdot>(Aexp e\<cdot>n) f|` (- domA \<Gamma>)) = Aexp (Terms.Let \<Gamma> e)\<cdot>n" by simp
   finally show ?case by this simp_all
@@ -166,12 +180,6 @@ proof default
     apply (rule fun_belowI)
     apply auto
     done
-next
-  fix as e n
-  show "ArityAnalysis.Afix Aexp as\<cdot>(Aexp e\<cdot>n) \<sqsubseteq> Aexp (Terms.Let as e)\<cdot>n"
-  apply simp
-  
-
 qed simp_all
 
 end

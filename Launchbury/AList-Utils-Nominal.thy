@@ -9,10 +9,15 @@ lemma domA_not_fresh:
   by (induct \<Gamma>, auto simp add: fresh_Cons fresh_Pair)
 
 lemma fresh_delete:
-  assumes "atom x \<sharp> \<Gamma>"
-  shows "atom x \<sharp> (delete v \<Gamma>)"
+  assumes "a \<sharp> \<Gamma>"
+  shows "a \<sharp> delete v \<Gamma>"
 using assms
 by(induct \<Gamma>)(auto simp add: fresh_Cons)
+
+lemma fresh_star_delete:
+  assumes "S \<sharp>* \<Gamma>"
+  shows "S \<sharp>* delete v \<Gamma>"
+  using assms fresh_delete unfolding fresh_star_def by fastforce
 
 lemma fv_delete_subset:
   "fv (delete v \<Gamma>) \<subseteq> fv \<Gamma>"

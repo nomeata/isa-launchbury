@@ -23,6 +23,23 @@ lemma lookup_not_edom: "x \<notin> edom m \<Longrightarrow> m x = \<bottom>"  by
 
 lemma lookup_edom[simp]: "m x \<noteq> \<bottom> \<Longrightarrow> x \<in> edom m"  by (auto iff:edomIff)
 
+lemma edom_subset_adm[simp]:
+  "adm (\<lambda>ae'. edom ae' \<subseteq> S)"
+  apply (rule admI)
+  apply rule
+  apply (subst (asm) edom_def) back
+  apply simp
+  apply (subst (asm) lub_fun) apply assumption
+  apply (subst (asm) lub_eq_bottom_iff)
+  apply (erule ch2ch_fun)
+  unfolding not_all
+  apply (erule exE)
+  apply (rule set_mp)
+  apply (rule allE) apply assumption apply assumption
+  unfolding edom_def
+  apply simp
+  done
+
 subsubsection {* Updates *}
 
 lemma edom_fun_upd_subset: "edom (h (x := v)) \<subseteq> insert x (edom h)"

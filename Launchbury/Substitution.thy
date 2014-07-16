@@ -238,5 +238,7 @@ lemma subst_subst_back: "atom x \<sharp> e \<Longrightarrow>  e[y::=x][x::=y] = 
 by(nominal_induct  e and \<Gamma> avoiding: x y rule:exp_heap_strong_induct)
   (auto simp add: fresh_star_Pair fresh_star_at_base fresh_star_Cons fresh_Cons  exp_assn.bn_defs simp del: exp_assn.eq_iff)
 
+lemma subst_heap_delete[simp]: "(delete x \<Gamma>)[y ::h= z] = delete x (\<Gamma>[y ::h= z])"
+  by (induction \<Gamma>) auto
 
 end

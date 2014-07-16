@@ -119,6 +119,9 @@ proof-
   thus ?thesis by simp
 qed
 
+lemma fun_upd_meet_simp[simp]: "(f \<squnion> g) (x := y) = f (x := y)  \<squnion> g (x := y::'a::Finite_Join_cpo)"
+  by auto
+
 lemma cfun_meet_simp[simp]: "(f \<squnion> g) \<cdot> x = f \<cdot> x \<squnion> (g \<cdot> x::'a::Finite_Join_cpo)"
 proof-
   have "f \<squnion> g = (\<Lambda> x. f \<cdot> x \<squnion> g \<cdot> x)"
