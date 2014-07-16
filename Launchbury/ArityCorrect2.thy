@@ -66,14 +66,14 @@ case (Variable \<Gamma> x e n L \<Delta> z c)
 
   {
     have "AE_singleton x\<cdot>(up\<cdot>n) \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp (Var x)\<cdot>n)"
-      unfolding Aexp_Var by (rule Afix_above_arg)
+      by (rule below_trans[OF Aexp_Var_singleton Afix_above_arg])
     hence "AE_singleton x\<cdot>(up\<cdot>n) f|` ?S  \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp (Var x)\<cdot>n) f|` ?S " by (rule env_restr_mono)
   }
   moreover
   {
     note env_restr_below_subset[OF subset Variable.IH]
     also have "Afix (delete x \<Gamma>)\<cdot>(Aexp e\<cdot>n) \<sqsubseteq> Afix ((x,e)#delete x \<Gamma>)\<cdot>(AE_singleton x\<cdot>(up\<cdot>n))" using Afix_e_to_heap'.
-    also have "\<dots> \<sqsubseteq> Afix ((x,e)#delete x \<Gamma>)\<cdot>(Aexp (Var x)\<cdot>n)" unfolding Aexp_Var..
+    also have "\<dots> \<sqsubseteq> Afix ((x,e)#delete x \<Gamma>)\<cdot>(Aexp (Var x)\<cdot>n)" by (intro monofun_cfun_arg Aexp_Var_singleton)
     also have "\<dots> = Afix \<Gamma>\<cdot>(Aexp (Var x)\<cdot>n)" unfolding Afix_reorder[OF reorder]..
     finally
     have "Alog c f|` ?S \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp (Var x)\<cdot>n) f|` ?S" by this simp_all
