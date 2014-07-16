@@ -215,9 +215,9 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' ae n)
   have subset1: " (- (domA \<Theta> - domA \<Gamma>)) \<subseteq> (- (domA \<Theta> - domA \<Delta>))"
     and subset2: "(- (domA \<Theta> - domA \<Gamma>)) \<subseteq> (- (domA \<Delta> - domA \<Gamma>))"
     using reds_doesnt_forget[OF Application(2)]  reds_doesnt_forget[OF Application(4)] by auto
-  thm env_restr_below_subset
+  let "?S" = " (- (domA \<Theta> - domA \<Gamma>))"
 
-  show "Afix \<Theta>\<cdot>(Aexp' z\<cdot>n \<squnion> ae) f|` (- (domA \<Theta> - domA \<Gamma>)) \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp' (App e x)\<cdot>n \<squnion> ae)  f|` (- (domA \<Theta> - domA \<Gamma>))"
+  show "Afix \<Theta>\<cdot>(Aexp' z\<cdot>n \<squnion> ae) f|` ?S \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp' (App e x)\<cdot>n \<squnion> ae)  f|` ?S"
   proof(cases n)
     case bottom
     from env_restr_below_trans[OF env_restr_below_subset[OF subset1 Application(5)[OF prem1, where n = "\<bottom>"], simplified]
@@ -227,13 +227,13 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' ae n)
     case (up n')
     note IH1 = env_restr_below_subset[OF subset2 Application(3)[OF prem3, where n = "inc\<^sub>\<bottom>\<cdot>n"], unfolded up Aexp'_simps inc_bot_simps] 
     note IH2 = env_restr_below_subset[OF subset1 Application(5)[OF prem1, where n = n], unfolded up Aexp'_simps]
-    have "Afix \<Theta>\<cdot>(Aexp z\<cdot>n' \<squnion> ae)  f|` (- (domA \<Theta> - domA \<Gamma>)) \<sqsubseteq> Afix \<Delta>\<cdot>(Aexp e'[y::=x]\<cdot>n' \<squnion> ae)  f|` (- (domA \<Theta> - domA \<Gamma>))" by (rule IH2)
-    also have "\<dots> \<sqsubseteq> Afix \<Delta>\<cdot>(Aexp (App (Lam [y]. e') x)\<cdot>n' \<squnion> ae) f|` (- (domA \<Theta> - domA \<Gamma>))" by (intro monofun_cfun_arg monofun_cfun_fun env_restr_mono Aexp_subst_App_Lam join_mono below_refl)
-    also have "\<dots> = Afix \<Delta>\<cdot>(Aexp (Lam [y]. e')\<cdot>(inc\<cdot>n') \<squnion> AE_singleton x \<cdot> (up\<cdot>0) \<squnion> ae)  f|` (- (domA \<Theta> - domA \<Gamma>))"  by (rule arg_cong[OF Aexp_App])
-    also have "\<dots> = Afix \<Delta>\<cdot>(Aexp (Lam [y]. e')\<cdot>(inc\<cdot>n') \<squnion> (AE_singleton x\<cdot>(up\<cdot>0) \<squnion> ae))  f|` (- (domA \<Theta> - domA \<Gamma>))"  by simp
-    also have "\<dots> \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp e\<cdot>(inc\<cdot>n') \<squnion> (AE_singleton x\<cdot>(up\<cdot>0) \<squnion> ae))  f|` (- (domA \<Theta> - domA \<Gamma>))" by (rule IH1)
-    also have "\<dots> = Afix \<Gamma>\<cdot>(Aexp e\<cdot>(inc\<cdot>n') \<squnion> AE_singleton x\<cdot>(up\<cdot>0) \<squnion> ae)  f|` (- (domA \<Theta> - domA \<Gamma>))" by simp
-    also have "\<dots> = Afix \<Gamma>\<cdot>(Aexp (App e x)\<cdot>n' \<squnion> ae)  f|` (- (domA \<Theta> - domA \<Gamma>))" by (rule arg_cong[OF Aexp_App[symmetric]])
+    have "Afix \<Theta>\<cdot>(Aexp z\<cdot>n' \<squnion> ae)  f|` ?S  \<sqsubseteq> Afix \<Delta>\<cdot>(Aexp e'[y::=x]\<cdot>n' \<squnion> ae)  f|` ?S" by (rule IH2)
+    also have "\<dots> \<sqsubseteq> Afix \<Delta>\<cdot>(Aexp (App (Lam [y]. e') x)\<cdot>n' \<squnion> ae) f|` ?S" by (intro monofun_cfun_arg monofun_cfun_fun env_restr_mono Aexp_subst_App_Lam join_mono below_refl)
+    also have "\<dots> = Afix \<Delta>\<cdot>(Aexp (Lam [y]. e')\<cdot>(inc\<cdot>n') \<squnion> AE_singleton x \<cdot> (up\<cdot>0) \<squnion> ae)  f|` ?S"  by (rule arg_cong[OF Aexp_App])
+    also have "\<dots> = Afix \<Delta>\<cdot>(Aexp (Lam [y]. e')\<cdot>(inc\<cdot>n') \<squnion> (AE_singleton x\<cdot>(up\<cdot>0) \<squnion> ae))  f|` ?S"  by simp
+    also have "\<dots> \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp e\<cdot>(inc\<cdot>n') \<squnion> (AE_singleton x\<cdot>(up\<cdot>0) \<squnion> ae)) f|` ?S" by (rule IH1)
+    also have "\<dots> = Afix \<Gamma>\<cdot>(Aexp e\<cdot>(inc\<cdot>n') \<squnion> AE_singleton x\<cdot>(up\<cdot>0) \<squnion> ae)  f|` ?S" by simp
+    also have "\<dots> = Afix \<Gamma>\<cdot>(Aexp (App e x)\<cdot>n' \<squnion> ae)  f|` ?S" by (rule arg_cong[OF Aexp_App[symmetric]])
     finally
     show ?thesis unfolding up by simp
   qed
@@ -241,7 +241,8 @@ next
 case (Let as \<Gamma> L e \<Delta> z ae n)
   have *: "atom ` domA as \<sharp>* \<Gamma>" using Let(1) by (metis fresh_star_Pair)
 
-  have subset: "(- (domA \<Delta> - domA \<Gamma>)) \<subseteq>  (- (domA \<Delta> - domA (as @ \<Gamma>)))" by auto
+  let ?S = "(- (domA \<Delta> - domA \<Gamma>))"
+  have subset: "?S \<subseteq>  (- (domA \<Delta> - domA (as @ \<Gamma>)))" by auto
 
   note prem = `edom ae \<subseteq> set L`
   note IH = env_restr_below_subset[OF subset Let(3)[OF prem]]
@@ -258,16 +259,16 @@ case (Let as \<Gamma> L e \<Delta> z ae n)
   moreover from reds_doesnt_forget[OF Let(2)] have "domA as \<subseteq> domA \<Delta>" by auto
   ultimately have ***: "((- domA \<Delta> \<union> domA \<Gamma>) \<inter> - domA as) = (- domA \<Delta> \<union> domA \<Gamma>)" by auto
 
-  have "Afix \<Delta>\<cdot>(Aexp' z\<cdot>n \<squnion> ae)  f|` (- (domA \<Delta> - domA \<Gamma>)) \<sqsubseteq> Afix (as @ \<Gamma>)\<cdot>(Aexp' e\<cdot>n \<squnion> ae)  f|` (- (domA \<Delta> - domA \<Gamma>))" by (rule IH)
-  also have "\<dots> = Afix \<Gamma>\<cdot>(Afix as\<cdot>(Aexp' e\<cdot>n \<squnion> ae))  f|` (- (domA \<Delta> - domA \<Gamma>))" by (rule arg_cong[OF Afix_append_fresh[OF *]])
-  also have "\<dots> = Afix \<Gamma>\<cdot>(Afix as\<cdot>(Aexp' e\<cdot>n) \<squnion> ae)  f|` (- (domA \<Delta> - domA \<Gamma>))" by (rule arg_cong[OF Afix_join_fresh[OF **]])
-  also have "\<dots> = Afix \<Gamma>\<cdot>(Afix as\<cdot>(Aexp' e\<cdot>n) \<squnion> ae) f|` (- (domA as)) f|` (- (domA \<Delta> - domA \<Gamma>))" by (simp add: ***)
-  also have "\<dots> = Afix \<Gamma>\<cdot>((Afix as\<cdot>(Aexp' e\<cdot>n) \<squnion> ae) f|` (- (domA as))) f|` (- (domA as)) f|` (- (domA \<Delta> - domA \<Gamma>))" by (rule arg_cong[OF Afix_restr_fresh[OF *]])
-  also have "\<dots> = Afix \<Gamma>\<cdot>((Afix as\<cdot>(Aexp' e\<cdot>n) \<squnion> ae) f|` (- (domA as))) f|` (- (domA \<Delta> - domA \<Gamma>))" by (simp add: ***)
-  also have "\<dots> = Afix \<Gamma>\<cdot>((Afix as\<cdot>(Aexp' e\<cdot>n)  f|` (- (domA as))) \<squnion> ae) f|` (- (domA \<Delta> - domA \<Gamma>))" by (simp add: env_restr_join)
-  also have "\<dots> \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp' (Terms.Let as e)\<cdot>n \<squnion> ae) f|` (- (domA \<Delta> - domA \<Gamma>))" by (intro monofun_cfun_arg join_mono env_restr_mono below_refl Aexp'_Let)
+  have "Afix \<Delta>\<cdot>(Aexp' z\<cdot>n \<squnion> ae)  f|` ?S \<sqsubseteq> Afix (as @ \<Gamma>)\<cdot>(Aexp' e\<cdot>n \<squnion> ae)  f|` ?S" by (rule IH)
+  also have "\<dots> = Afix \<Gamma>\<cdot>(Afix as\<cdot>(Aexp' e\<cdot>n \<squnion> ae))  f|` ?S" by (rule arg_cong[OF Afix_append_fresh[OF *]])
+  also have "\<dots> = Afix \<Gamma>\<cdot>(Afix as\<cdot>(Aexp' e\<cdot>n) \<squnion> ae)  f|` ?S" by (rule arg_cong[OF Afix_join_fresh[OF **]])
+  also have "\<dots> = Afix \<Gamma>\<cdot>(Afix as\<cdot>(Aexp' e\<cdot>n) \<squnion> ae) f|` (- (domA as)) f|` ?S" by (simp add: ***)
+  also have "\<dots> = Afix \<Gamma>\<cdot>((Afix as\<cdot>(Aexp' e\<cdot>n) \<squnion> ae) f|` (- (domA as))) f|` (- (domA as)) f|` ?S" by (rule arg_cong[OF Afix_restr_fresh[OF *]])
+  also have "\<dots> = Afix \<Gamma>\<cdot>((Afix as\<cdot>(Aexp' e\<cdot>n) \<squnion> ae) f|` (- (domA as))) f|` ?S" by (simp add: ***)
+  also have "\<dots> = Afix \<Gamma>\<cdot>((Afix as\<cdot>(Aexp' e\<cdot>n)  f|` (- (domA as))) \<squnion> ae) f|` ?S" by (simp add: env_restr_join)
+  also have "\<dots> \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp' (Terms.Let as e)\<cdot>n \<squnion> ae) f|` ?S" by (intro monofun_cfun_arg join_mono env_restr_mono below_refl Aexp'_Let)
   finally
-  show "Afix \<Delta>\<cdot>(Aexp' z\<cdot>n \<squnion> ae) f|` (- (domA \<Delta> - domA \<Gamma>)) \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp' (Terms.Let as e)\<cdot>n \<squnion> ae) f|` (- (domA \<Delta> - domA \<Gamma>))" by this simp_all
+  show "Afix \<Delta>\<cdot>(Aexp' z\<cdot>n \<squnion> ae) f|` ?S \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp' (Terms.Let as e)\<cdot>n \<squnion> ae) f|` ?S" by this simp_all
 qed
 
 corollary  reds_improves_arity'':
