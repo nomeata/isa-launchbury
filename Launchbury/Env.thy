@@ -140,6 +140,10 @@ lemma env_restr_cont: "cont (env_restr S)"
 lemma env_restr_mono: "m1 \<sqsubseteq> m2 \<Longrightarrow>  m1 f|` S \<sqsubseteq> m2 f|` S"
   by (metis env_restr_belowI fun_belowD)
 
+lemma env_restr_mono2: "S2 \<subseteq> S1  \<Longrightarrow> m f|` S2 \<sqsubseteq> m f|` S1"
+  by (metis env_restr_below_self env_restr_env_restr_subset)
+
+
 lemmas cont_compose[OF env_restr_cont, cont2cont, simp]
 
 subsubsection {* Deleting *}

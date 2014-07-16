@@ -2,16 +2,6 @@ theory ArityAnalysisImpl
 imports ArityCorrect "Arity-Nominal" "Nominal-HOLCF" "Env-Nominal" "Env-HOLCF"
 begin
 
-(*
-locale CorrectArityAnalysis = ArityAnalysis +
-  assumes Aexp_Var: "Aexp (Var x) \<cdot> n = AE_singleton x \<cdot> (up \<cdot> n)"
-  assumes Aexp_subst_App_Lam: "Aexp (e'[y::=x]) \<sqsubseteq> Aexp (App (Lam [y]. e') x)"
-  assumes Aexp_App: "Aexp (App e x) \<cdot> n = Aexp e \<cdot>(inc\<cdot>n) \<squnion> AE_singleton x \<cdot> (up\<cdot>0)"
-  assumes Aexp_Let: "Afix as\<cdot>(Aexp e\<cdot>n) \<sqsubseteq> Aexp (Terms.Let as e)\<cdot>n"
-  assumes Aexp_lookup_fresh: "atom v \<sharp> e \<Longrightarrow> (Aexp e\<cdot>a) v = \<bottom>"
-begin
-*)
-
 nominal_function
   Aexp :: "exp \<Rightarrow> (Arity \<rightarrow> AEnv)"
 where
@@ -75,25 +65,10 @@ nominal_termination by lexicographic_order
 
 interpretation ArityAnalysis Aexp.
 
-lemma Aexp_edom: "edom (Aexp e\<cdot>a) \<subseteq> fv e"
+lemma Aexp_edom': "edom (Aexp e\<cdot>a) \<subseteq> fv e"
   by (nominal_induct arbitrary: a rule: exp_strong_induct) auto
 
-lemma Aexp'_edom: "edom (Aexp' e\<cdot>a) \<subseteq> fv e"
-  by (cases a) (auto dest:set_mp[OF Aexp_edom])
-
-lemma ABinds_edom: "edom (ABinds \<Gamma> \<cdot> ae) \<subseteq> fv \<Gamma> \<union> edom ae"
-  apply (induct rule: ABinds.induct)
-  apply simp
-  apply (auto dest: set_mp[OF Aexp'_edom] simp del: fun_meet_simp)
-  apply (drule (1) set_mp)
-  apply (auto dest: set_mp[OF fv_delete_subset])
-  done
-  
-
-lemma Afix_edom: "edom (Afix \<Gamma> \<cdot> ae) \<subseteq> fv \<Gamma> \<union> edom ae"
-  unfolding Afix_eq
-  by (rule fix_ind[where P = "\<lambda> ae' . edom ae' \<subseteq> fv \<Gamma> \<union> edom ae"] )
-     (auto dest: set_mp[OF ABinds_edom])
+interpretation EdomArityAnalysis Aexp by default (rule Aexp_edom')
 
 lemma Aexp_lam_simp[simp]: "Aexp (Lam [x]. e) \<cdot> n = env_delete x (Aexp e \<cdot> (pred \<cdot> n))"
 proof-
