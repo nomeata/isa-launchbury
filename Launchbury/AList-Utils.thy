@@ -81,4 +81,18 @@ lemma map_of_empty[simp]:
 lemma dom_delete_subset: "snd ` set (delete k al) \<subseteq> snd ` set al"
   by (auto simp add: delete_eq)
 
+(*
+lemma ran_map_cong[fundef_cong]:
+  "\<lbrakk> list_all2 (\<lambda> x y. fst x = fst y \<and> f1 (fst x) (snd x) = f2 (fst y) (snd y)) m1 m2 \<rbrakk>
+      \<Longrightarrow> map_ran f1 m1 = map_ran f2 m2"    
+  by (induction rule: list_all2_induct) auto
+*)
+lemma ran_map_cong[fundef_cong]:
+  "\<lbrakk> \<And> x . x \<in> set m1 \<Longrightarrow> f1 (fst x) (snd x) = f2 (fst x) (snd x) ; m1 = m2 \<rbrakk>
+      \<Longrightarrow> map_ran f1 m1 = map_ran f2 m2"    
+  by (induction m1 arbitrary: m2) auto
+
+lemma domA_map_ran[simp]: "domA (map_ran f m) = domA m"
+  unfolding domA_def by (rule dom_map_ran)
+
 end

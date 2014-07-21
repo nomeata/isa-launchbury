@@ -206,22 +206,21 @@ lemma subst_fresh_noop: "atom x \<sharp> e \<Longrightarrow> e[x ::= y] = e"
 by (nominal_induct  e and \<Gamma> avoiding: x y rule:exp_heap_strong_induct)
   (auto simp add: fresh_star_def fresh_Pair fresh_at_base fresh_Cons simp del: exp_assn.eq_iff)
 
-lemma supp_subst: "supp (e[y::=x]) \<subseteq> (supp e - {atom y}) \<union> supp x"
-proof-
-  have "\<And> a. (a \<sharp> e \<or> a = atom y) \<Longrightarrow> a \<sharp> x \<Longrightarrow> a \<sharp> e[y::=x]"
-    by (auto intro: subst_pres_fresh)
-  thus ?thesis by (auto simp add: fresh_def)
-qed
+lemma supp_subst_eq: "supp (e[y::=x]) = (supp e - {atom y}) \<union> (if atom y \<in> supp e then {atom x} else {})"
+  and  "atom ` domA \<Gamma> \<sharp>* y \<Longrightarrow> supp (\<Gamma>[y::h=x]) = (supp \<Gamma> - {atom y}) \<union> (if atom y \<in> supp \<Gamma> then {atom x} else {})"
+by (nominal_induct  e  and \<Gamma> avoiding: x y rule:exp_heap_strong_induct)
+   (auto simp add: fresh_star_def fresh_Pair supp_Nil supp_Cons supp_Pair fresh_Cons exp_assn.supp Let_supp supp_at_base simp del: exp_assn.eq_iff)
+
+lemma supp_subst: "supp (e[y::=x]) \<subseteq> (supp e - {atom y}) \<union> {atom x}"
+  using supp_subst_eq by auto
+
+lemma fv_subst_eq: "fv (e[y::=x]) = (fv e - {y}) \<union> (if y \<in> fv e then {x} else {})"
+  and  "atom ` domA \<Gamma> \<sharp>* y \<Longrightarrow> fv (\<Gamma>[y::h=x]) = (fv \<Gamma> - {y}) \<union> (if y \<in> fv \<Gamma> then {x} else {})"
+by (nominal_induct  e  and \<Gamma> avoiding: x y rule:exp_heap_strong_induct)
+   (auto simp add: fresh_star_def fresh_Pair supp_Nil supp_Cons supp_Pair fresh_Cons exp_assn.supp Let_supp supp_at_base simp del: exp_assn.eq_iff)
 
 lemma fv_subst_subset: "fv (e[y ::= x]) \<subseteq> (fv e - {y}) \<union> {x}"
-proof-
-  have "fv (e[y ::= x]) = {v. atom v \<in> supp (e[y ::= x])}" unfolding fv_def..
-  also have "\<dots> \<subseteq> {v. atom v \<in> ((supp e - {atom y}) \<union> supp x)}"
-    using supp_subst by auto
-  also have "\<dots> = (fv e - {y}) \<union> {x}"
-    using supp_subst by (auto simp add: fv_def supp_at_base)
-  finally show ?thesis.
-qed
+  using fv_subst_eq by auto
 
 lemma fresh_star_at_base:
   fixes x :: "'a :: at_base"

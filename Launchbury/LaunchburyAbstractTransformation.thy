@@ -34,7 +34,7 @@ locale rel_app_cong = reds_rel +
 
 locale rel_app_case = reds_rel_fresh + rel_lambda_cong + rel_app_cong +
   assumes rel_app_apply: "(\<Gamma>, App e x) \<triangleright>\<^bsub>L\<^esub> (\<Gamma>', App e'' x) \<Longrightarrow> (\<Gamma>, e) \<triangleright>\<^bsub>x # L\<^esub> (\<Gamma>', e'')"
-  assumes rel_lam_subst: "(\<Delta>, Lam [y]. body) \<triangleright>\<^bsub>x # L\<^esub> (\<Delta>', Lam [y]. body') \<Longrightarrow> (\<Delta>, body[y::=x]) \<triangleright>\<^bsub>L\<^esub> (\<Delta>', body'[y::=x])"
+  assumes rel_lam_subst: "(\<Gamma>, Lam [y]. body) \<triangleright>\<^bsub>x # L\<^esub> (\<Gamma>', Lam [y]. body') \<Longrightarrow> (\<Gamma>, body[y::=x]) \<triangleright>\<^bsub>L\<^esub> (\<Gamma>', body'[y::=x])"
 begin
 lemma app_case:
   fixes y \<Gamma> e x L \<Delta> \<Theta> z body
@@ -116,11 +116,16 @@ end
 
 locale rel_let_cong = reds_rel +
   fixes \<Gamma> as body
-  assumes rel_let_cong: "(\<Gamma>, Let as body) \<triangleright>\<^bsub>L\<^esub> (\<Gamma>', let') \<Longrightarrow> (\<And>as' body'. let' = Let as' body' \<Longrightarrow> thesis) \<Longrightarrow> thesis"
+  assumes rel_let_cong: "(\<Gamma>, Let as body) \<triangleright>\<^bsub>L\<^esub> (\<Gamma>', let') \<Longrightarrow> (\<And>as' body'. let' = Let as' body' \<Longrightarrow> map fst as = map fst as' \<Longrightarrow> thesis) \<Longrightarrow> thesis"
 
 locale rel_let_case = rel_let_cong + reds_rel_fresh + 
-  assumes rel_let: " (\<Gamma>, Let as body) \<triangleright>\<^bsub>L\<^esub> (\<Gamma>', Let as' body') \<Longrightarrow> (as @ \<Gamma>, body) \<triangleright>\<^bsub>L\<^esub> (as' @ \<Gamma>', body')"
-  assumes rel_heap_subset: " (\<Gamma>, e) \<triangleright>\<^bsub>L\<^esub> (\<Gamma>', e'') \<Longrightarrow> domA as' \<subseteq> domA as"
+  assumes rel_let:
+    "(\<Gamma>, Let as body) \<triangleright>\<^bsub>L\<^esub> (\<Gamma>', Let as' body') \<Longrightarrow>
+     map fst as = map fst as' \<Longrightarrow>
+     atom ` domA as \<sharp>* \<Gamma> \<Longrightarrow>  
+     atom ` domA as \<sharp>* L \<Longrightarrow>  
+     (as @ \<Gamma>, body) \<triangleright>\<^bsub>L\<^esub> (as' @ \<Gamma>', body')"
+  (*  assumes rel_heap_subset: " (\<Gamma>, e) \<triangleright>\<^bsub>L\<^esub> (\<Gamma>', e'') \<Longrightarrow> domA as' \<subseteq> domA as" *)
 begin
 lemma let_case:
   fixes L \<Delta> z \<Gamma>' let'
@@ -132,15 +137,15 @@ lemma let_case:
   shows "\<exists>\<Delta>'' z'. (\<Delta>, z) \<triangleright>\<^bsub>L\<^esub> (\<Delta>'', z') \<and> \<Gamma>' : let' \<Down>\<^bsub>L\<^esub> \<Delta>'' : z'"
 proof-
   from `(\<Gamma>, Let as body) \<triangleright>\<^bsub>L\<^esub> (\<Gamma>', let')`
-  obtain as' body' where "let' = Let as' body'"  by (rule rel_let_cong)
+  obtain as' body' where "let' = Let as' body'" and "map fst as = map fst as'"   by (rule rel_let_cong)
 
-  from `(\<Gamma>, Let as body) \<triangleright>\<^bsub>L\<^esub> (\<Gamma>', let')`[unfolded `let' = _`]
+  from `(\<Gamma>, Let as body) \<triangleright>\<^bsub>L\<^esub> (\<Gamma>', let')`[unfolded `let' = _`] `map _ _ = _` assms(1,2)
   have "(as@\<Gamma>, body) \<triangleright>\<^bsub>L\<^esub> (as'@\<Gamma>', body')" by (rule rel_let)
   from assms(4)[OF this]
   obtain \<Delta>' z' where "(\<Delta>, z) \<triangleright>\<^bsub>L\<^esub> (\<Delta>', z')" and "as' @ \<Gamma>' : body' \<Down>\<^bsub>L\<^esub> \<Delta>' : z'" by blast
 
-  from `(\<Gamma>, Let as body) \<triangleright>\<^bsub>L\<^esub> (\<Gamma>', let')`[unfolded `let' = _`]
-  have "domA as' \<subseteq> domA as" by (rule rel_heap_subset)
+  (* from `(\<Gamma>, Let as body) \<triangleright>\<^bsub>L\<^esub> (\<Gamma>', let')`[unfolded `let' = _`] *)
+  have "domA as' \<subseteq> domA as" using `map fst as = map fst as'` unfolding domA_def by (metis list.set_map order_refl)
   hence "atom ` domA as' \<sharp>* (\<Gamma>', L)"
     using assms(1-2) `(\<Gamma>, Let as body) \<triangleright>\<^bsub>L\<^esub> (\<Gamma>', let')`
     by (auto simp add: fresh_Pair fresh_star_def)

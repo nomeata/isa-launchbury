@@ -129,6 +129,10 @@ lemma delete_eqvt[eqvt]:
   "\<pi> \<bullet> AList.delete x \<Gamma> = AList.delete (\<pi> \<bullet> x) (\<pi> \<bullet> \<Gamma>)"
 by (induct \<Gamma>, auto)
 
+lemma map_ran_eqvt[eqvt]:
+  "\<pi> \<bullet> map_ran f \<Gamma> = map_ran (\<pi> \<bullet> f) (\<pi> \<bullet> \<Gamma>)"
+by (induct \<Gamma>, auto)
+
 lemma dom_perm:
   "dom (\<pi> \<bullet> f) = \<pi> \<bullet> (dom f)"
   unfolding dom_def by (perm_simp) (simp)
@@ -152,6 +156,9 @@ lemma map_of_eqvt[eqvt]:
   apply perm_simp
   apply auto
   done
+
+lemma concat_eqvt[eqvt]: "\<pi> \<bullet> concat l = concat (\<pi> \<bullet> l)"
+  by (induction l)(auto simp add: append_eqvt)
 
 subsubsection {* Freshness lemmas *}
 

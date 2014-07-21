@@ -1,5 +1,5 @@
 theory DeadCodeRemoval
-imports Terms
+imports Terms Substitution
 begin
 
 nominal_function
@@ -10,7 +10,7 @@ where
 | "remove_dead_code (Var x) = Var x"
 | "remove_dead_code (Let as e) =
     (if domA as \<inter> fv e = {} then remove_dead_code e
-                           else Let as (remove_dead_code e))"
+                           else Let (map_ran (\<lambda> _ e. remove_dead_code e) as) (remove_dead_code e))"
 proof-
 case goal1 thus ?case
   unfolding remove_dead_code_graph_aux_def eqvt_def 
@@ -38,28 +38,33 @@ case (goal4 x e x' e')
   qed
 next
 case (goal13 as body as' body')
-  from goal13(9)
+  from goal13(13)
   show ?case
   proof (rule eqvt_let_case)
     fix \<pi> :: perm
   
-    from goal13(1,2) have eqvt_at: "eqvt_at remove_dead_code_sumC body" by auto
+    from goal13(1,3) have eqvt_at1: "eqvt_at remove_dead_code_sumC body" by auto
 
-    assume "supp \<pi> \<sharp>* Let as body"
-    hence *: "supp \<pi> \<sharp>* Let as (remove_dead_code_sumC body)"
-      by (auto simp add:  fresh_star_def fresh_eqvt_at[OF eqvt_at] exp_assn.fsupp)
+    assume assm: "supp \<pi> \<sharp>* Let as body"
 
-
-    show "(if domA (\<pi> \<bullet> as) \<inter> fv (\<pi> \<bullet> body) = {} then remove_dead_code_sumC (\<pi> \<bullet> body) else Let (\<pi> \<bullet> as) (remove_dead_code_sumC (\<pi> \<bullet> body))) =
-         (if domA as \<inter> fv body = {} then remove_dead_code_sumC body else Let as (remove_dead_code_sumC body))"
+    show "(if domA (\<pi> \<bullet> as) \<inter> fv (\<pi> \<bullet> body) = {} then remove_dead_code_sumC (\<pi> \<bullet> body) else Let (map_ran (\<lambda>_. remove_dead_code_sumC) (\<pi> \<bullet> as)) (remove_dead_code_sumC (\<pi> \<bullet> body))) =
+         (if domA as \<inter> fv body = {} then remove_dead_code_sumC body else Let (map_ran (\<lambda>_. remove_dead_code_sumC) as) (remove_dead_code_sumC body))"
     proof(rule if_cong)
       show cond_eqvt: "domA (\<pi> \<bullet> as) \<inter> fv (\<pi> \<bullet> body) = {} \<longleftrightarrow> domA as \<inter> fv body = {}" 
         by (metis empty_eqvt permute_eq_iff inter_eqvt fv_eqvt domA)
     next
-      have "Let (\<pi> \<bullet> as) (remove_dead_code_sumC (\<pi> \<bullet> body)) = \<pi> \<bullet> Let as (remove_dead_code_sumC body)"
-          by (simp add: eqvt_at_apply'[OF eqvt_at])
-      also have "\<dots> = Let as (remove_dead_code_sumC body)" by (rule perm_supp_eq[OF *])
-      finally show "Let (\<pi> \<bullet> as) (remove_dead_code_sumC (\<pi> \<bullet> body)) = Let as (remove_dead_code_sumC body)" .
+      assume "domA as \<inter> fv body \<noteq> {}"
+      from goal13(2)[OF this]
+      have eqvt_at2: "eqvt_at (map_ran (\<lambda>_. remove_dead_code_sumC)) as" by (induction as) (fastforce simp add: eqvt_at_def)+
+
+      have *: "supp \<pi> \<sharp>* Let (map_ran (\<lambda>_. remove_dead_code_sumC) as) (remove_dead_code_sumC body)" using assm
+        by (auto simp add:  fresh_star_def fresh_eqvt_at[OF eqvt_at1] fresh_eqvt_at[OF eqvt_at2] finite_supp)
+
+
+      have "Let  (map_ran (\<lambda>_. remove_dead_code_sumC) (\<pi> \<bullet> as)) (remove_dead_code_sumC (\<pi> \<bullet> body)) = \<pi> \<bullet> Let (map_ran (\<lambda>_. remove_dead_code_sumC) as) (remove_dead_code_sumC body)"
+          by (simp add: eqvt_at_apply'[OF eqvt_at1]  eqvt_at_apply'[OF eqvt_at2])
+      also have "\<dots> = Let (map_ran (\<lambda>_. remove_dead_code_sumC) as) (remove_dead_code_sumC body)" by (rule perm_supp_eq[OF *])
+      finally show  "Let (map_ran (\<lambda>_. remove_dead_code_sumC) (\<pi> \<bullet> as)) (remove_dead_code_sumC (\<pi> \<bullet> body)) =  Let (map_ran (\<lambda>_. remove_dead_code_sumC) as) (remove_dead_code_sumC body)" .
     next
       assume "domA as \<inter> fv body = {}"
       with `supp \<pi> \<sharp>* Let as body`
@@ -69,6 +74,14 @@ case (goal13 as body as' body')
     qed
   qed
 qed auto
-nominal_termination by lexicographic_order
+nominal_termination (eqvt) by lexicographic_order
+
+lemma subst_remove_dead_code: "(remove_dead_code e)[y::=x] = remove_dead_code (e [y::=x])"
+  and "(map_ran (\<lambda> _ e. remove_dead_code e) \<Gamma>)[y::h=x] = map_ran (\<lambda> _ e. remove_dead_code e) (\<Gamma>[y::h=x])"
+proof (nominal_induct e and \<Gamma>  avoiding: y x rule:exp_heap_strong_induct)
+case (Let \<Gamma> e y x)
+  thus ?case
+  by (cases "domA \<Gamma> \<inter> fv e = {}") (auto simp add: fresh_star_at_base fv_subst_eq fresh_star_Pair )
+qed auto
 
 end
