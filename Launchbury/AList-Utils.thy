@@ -6,6 +6,7 @@ text {* We want to have @{text delete} and @{text update} back in the namespace.
 
 abbreviation delete where "delete \<equiv> AList.delete"
 abbreviation update where "update \<equiv> AList.update"
+abbreviation restrictA where "restrictA \<equiv> AList.restrict"
 
 subsubsection {* The domain of an associative list *}
 

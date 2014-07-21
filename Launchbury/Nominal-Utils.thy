@@ -215,6 +215,14 @@ lemma fv_pure[simp]: "fv (a::'a::pure) = {}"
 lemma flip_not_fv: "a \<notin> fv x \<Longrightarrow> b \<notin> fv x \<Longrightarrow> (a \<leftrightarrow> b) \<bullet> x = x"
   by (metis flip_def fresh_def fv_def mem_Collect_eq swap_fresh_fresh)
 
+lemma fv_not_fresh: "atom x \<sharp> e \<longleftrightarrow> x \<notin> fv e"
+  unfolding fv_def fresh_def by blast
+
+lemma fresh_fv: "finite (fv e :: 'a set) \<Longrightarrow>  atom (x :: ('a::at_base)) \<sharp> (fv e :: 'a set) \<longleftrightarrow> atom x \<sharp> e"
+  unfolding fv_def fresh_def
+  by (auto simp add: supp_finite_set_at_base)
+
+
 subsubsection {* Other useful lemmas *}
 
 lemma pure_permute_id: "permute p = (\<lambda> x. (x::'a::pure))"
