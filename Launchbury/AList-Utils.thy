@@ -7,6 +7,7 @@ text {* We want to have @{text delete} and @{text update} back in the namespace.
 abbreviation delete where "delete \<equiv> AList.delete"
 abbreviation update where "update \<equiv> AList.update"
 abbreviation restrictA where "restrictA \<equiv> AList.restrict"
+abbreviation clearjunk where "clearjunk \<equiv> AList.clearjunk"
 
 subsubsection {* The domain of an associative list *}
 
@@ -31,6 +32,10 @@ lemma domA_delete[simp]:
   "domA (delete x \<Gamma>) = domA \<Gamma> - {x}"
   by (induct \<Gamma>) auto
 
+lemma domA_restrictA[simp]:
+  "domA (restrictA S \<Gamma>) = domA \<Gamma> \<inter> S"
+  by (induct \<Gamma>) auto
+
 lemma delete_not_domA[simp]:
   "x \<notin> domA \<Gamma> \<Longrightarrow>  delete x \<Gamma> = \<Gamma>"
   by (induct \<Gamma>) auto
@@ -42,6 +47,9 @@ lemma dom_map_of_conv_domA:
 lemma domA_map_of_Some_the:
   "x \<in> domA \<Gamma> \<Longrightarrow> map_of \<Gamma> x = Some (the (map_of \<Gamma> x))"
   by (induct \<Gamma>) (auto simp add: dom_if)
+
+lemma domA_clearjunk[simp]: "domA (clearjunk \<Gamma>) = domA \<Gamma>"
+  unfolding domA_def using dom_clearjunk.
 
 subsubsection {* Other lemmas about associative lists *}
 

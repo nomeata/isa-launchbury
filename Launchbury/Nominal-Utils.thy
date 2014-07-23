@@ -129,6 +129,14 @@ lemma delete_eqvt[eqvt]:
   "\<pi> \<bullet> AList.delete x \<Gamma> = AList.delete (\<pi> \<bullet> x) (\<pi> \<bullet> \<Gamma>)"
 by (induct \<Gamma>, auto)
 
+lemma restrict_eqvt[eqvt]:
+  "\<pi> \<bullet> AList.restrict S \<Gamma> = AList.restrict (\<pi> \<bullet> S) (\<pi> \<bullet> \<Gamma>)"
+unfolding restrict_eq by perm_simp rule
+
+lemma clearjunk_eqvt[eqvt]:
+  "\<pi> \<bullet> AList.clearjunk \<Gamma> = AList.clearjunk (\<pi> \<bullet> \<Gamma>)"
+  by (induction \<Gamma> rule: clearjunk.induct) auto
+
 lemma map_ran_eqvt[eqvt]:
   "\<pi> \<bullet> map_ran f \<Gamma> = map_ran (\<pi> \<bullet> f) (\<pi> \<bullet> \<Gamma>)"
 by (induct \<Gamma>, auto)
@@ -159,6 +167,12 @@ lemma map_of_eqvt[eqvt]:
 
 lemma concat_eqvt[eqvt]: "\<pi> \<bullet> concat l = concat (\<pi> \<bullet> l)"
   by (induction l)(auto simp add: append_eqvt)
+
+lemma tranclp_eqvt[eqvt]: "\<pi> \<bullet> tranclp P v\<^sub>1 v\<^sub>2 = tranclp (\<pi> \<bullet> P) (\<pi> \<bullet> v\<^sub>1) (\<pi> \<bullet> v\<^sub>2)" 
+  unfolding tranclp_def by perm_simp rule
+
+lemma rtranclp_eqvt[eqvt]: "\<pi> \<bullet> rtranclp P v\<^sub>1 v\<^sub>2 = rtranclp (\<pi> \<bullet> P) (\<pi> \<bullet> v\<^sub>1) (\<pi> \<bullet> v\<^sub>2)" 
+  unfolding rtranclp_def by perm_simp rule
 
 subsubsection {* Freshness lemmas *}
 
@@ -256,5 +270,20 @@ lemma flip_set_both_not_in:
   unfolding permute_set_def
   by (auto) (metis assms flip_at_base_simps(3))+
 
+lemma inj_atom: "inj atom" by (metis atom_eq_iff injI)
 
+lemmas image_Int[OF inj_atom, simp]
+
+lemma eqvt_uncurry: "eqvt f \<Longrightarrow> eqvt (split f)"
+  unfolding eqvt_def
+  by perm_simp simp
+
+lemma supp_fun_app_eqvt2:
+  assumes a: "eqvt f"
+  shows "supp (f x y) \<subseteq> supp x \<union> supp y"
+proof-
+  from supp_fun_app_eqvt[OF eqvt_uncurry [OF a]]
+  have "supp (split f (x,y)) \<subseteq> supp (x,y)".
+  thus ?thesis by (simp add: supp_Pair)
+qed
 end
