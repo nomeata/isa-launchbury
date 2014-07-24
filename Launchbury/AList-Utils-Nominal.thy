@@ -89,6 +89,13 @@ proof-
   thus "S \<inter> domA \<Gamma> = {}" by auto
 qed
 
+lemma fresh_distinct_list:
+ assumes "atom ` S \<sharp>* l"
+ shows "S \<inter> set l = {}"
+ using assms
+ by (metis disjoint_iff_not_equal fresh_list_elem fresh_star_def image_eqI not_self_fresh)
+
+
 subsubsection {* Pure codomains *}
 
 lemma domA_fv_pure:

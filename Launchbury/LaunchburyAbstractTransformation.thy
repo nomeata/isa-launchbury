@@ -84,7 +84,7 @@ locale rel_var_cong = reds_rel +
 
 locale rel_var_case = rel_var_cong +
   assumes rel_lookup: "(\<Gamma>, Var x) \<triangleright>\<^bsub>L\<^esub> (\<Gamma>', Var x) \<Longrightarrow> map_of \<Gamma> x = Some e \<Longrightarrow> (\<And>e'. map_of \<Gamma>' x = Some e' \<Longrightarrow> (delete x \<Gamma>, e) \<triangleright>\<^bsub>x # L\<^esub> (delete x \<Gamma>', e') \<Longrightarrow> thesis) \<Longrightarrow>  thesis"
-  assumes rel_add_binding: "(\<Delta>, z) \<triangleright>\<^bsub>x # L\<^esub> (\<Delta>'', z') \<Longrightarrow> ((x, z) # \<Delta>, z) \<triangleright>\<^bsub>L\<^esub> ((x, z') # \<Delta>'', z')"
+  assumes rel_add_binding: " x \<notin> domA \<Delta> \<Longrightarrow> (\<Delta>, z) \<triangleright>\<^bsub>x # L\<^esub> (\<Delta>'', z') \<Longrightarrow> ((x, z) # \<Delta>, z) \<triangleright>\<^bsub>L\<^esub> ((x, z') # \<Delta>'', z')"
 begin
 lemma var_case:
   fixes \<Gamma> x e L \<Delta> z \<Gamma>' var
@@ -103,9 +103,10 @@ lemma var_case:
     from assms(3)[OF this(2)]
     obtain \<Delta>'' z'
     where "(\<Delta>, z) \<triangleright>\<^bsub>x # L\<^esub> (\<Delta>'', z')" and "delete x \<Gamma>' : e' \<Down>\<^bsub>x # L\<^esub> \<Delta>'' : z'" by blast
-  
-    from `(\<Delta>, z) \<triangleright>\<^bsub>x # L\<^esub> (\<Delta>'', z')`
-    have "((x,z)#\<Delta>, z) \<triangleright>\<^bsub>L\<^esub> ((x,z')#\<Delta>'', z')" by (rule rel_add_binding)
+
+    have "x \<notin> domA \<Delta>" by (rule reds_avoids_live[OF assms(2)]) simp_all
+    with `(\<Delta>, z) \<triangleright>\<^bsub>x # L\<^esub> (\<Delta>'', z')`
+    have "((x,z)#\<Delta>, z) \<triangleright>\<^bsub>L\<^esub> ((x,z')#\<Delta>'', z')" by (rule rel_add_binding[rotated])
     moreover
     from  `map_of \<Gamma>' x = Some e'` and `delete x \<Gamma>' : e' \<Down>\<^bsub>x # L\<^esub> \<Delta>'' : z'`
     have "\<Gamma>' : (Var x) \<Down>\<^bsub>L\<^esub> (x,z')#\<Delta>'' : z'"..

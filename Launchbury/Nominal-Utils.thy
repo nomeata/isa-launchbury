@@ -233,6 +233,9 @@ lemma fv_at_base[simp]: "fv a = {a::'a::at_base}"
 lemma fv_pure[simp]: "fv (a::'a::pure) = {}"
   by (auto simp add: fv_def pure_supp)
 
+lemma fv_set_at_base[simp]: "fv (l :: ('a :: at_base) list) = set l"
+  by (induction l) auto
+
 lemma flip_not_fv: "a \<notin> fv x \<Longrightarrow> b \<notin> fv x \<Longrightarrow> (a \<leftrightarrow> b) \<bullet> x = x"
   by (metis flip_def fresh_def fv_def mem_Collect_eq swap_fresh_fresh)
 
