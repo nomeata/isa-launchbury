@@ -48,6 +48,9 @@ lemma rdcH_append[simp]: "domA as \<inter> domA \<Gamma> = {} \<Longrightarrow> 
 lemma restrict_is_nil[simp]: "restrictA S \<Gamma> = [] \<longleftrightarrow> S \<inter> domA \<Gamma> = {}"
   by (induction \<Gamma>) auto
 
+lemma rdcH_nil[simp]: "rdcH S [] = []"
+  by (auto simp add: rdcH_def)
+
 lemma rdcH_is_nil: "domA \<Gamma> \<subseteq> S \<Longrightarrow> rdcH S \<Gamma> = []"
   by (auto simp add: rdcH_def)
 
@@ -258,6 +261,17 @@ case (Let as \<Gamma> L body \<Delta> z \<Gamma>' let')
     using Let(1,2) by (auto simp add: fresh_star_def fresh_Pair)
   with `(\<Delta>, z) \<triangleright>\<^bsub>L\<^esub> (\<Delta>', z')`
   show ?case  by auto
+qed
+
+
+corollary
+  assumes "[] : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
+   shows  "\<exists> \<Delta>' z'. [] : remove_dead_code e \<Down>\<^bsub>L\<^esub> \<Delta>' : z'"
+proof-
+  have "([], e) \<triangleright>\<^bsub>L\<^esub> (rdcH {} [], remove_dead_code e)" by (rule dc_rel.intros) auto
+  hence "([], e) \<triangleright>\<^bsub>L\<^esub> ([], remove_dead_code e)" by simp
+  from DeadCodeRemovalCorrect[OF assms this]
+  show ?thesis by auto
 qed
 
 end

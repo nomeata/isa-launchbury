@@ -17,6 +17,9 @@ lemma delete_rdcH[simp]: "delete x (rdcH S \<Gamma>) = rdcH S (delete x \<Gamma>
 lemma rdcH_append[simp]: "rdcH S (as @ \<Gamma>) = rdcH S as @ rdcH S \<Gamma>"
   unfolding rdcH_def by simp
 
+lemma rdcH_nil[simp]: "rdcH S [] = []"
+  unfolding rdcH_def by simp
+
 lemma rdcH_is_nil: "domA \<Gamma> \<subseteq> S \<Longrightarrow>  rdcH S \<Gamma> = []"
   by (induction \<Gamma>) (auto simp add: rdcH_def split: if_splits)
 
@@ -234,6 +237,16 @@ case (Let as \<Gamma> L body \<Delta> z \<Gamma>' let')
     interpret let_not_removed as body apply default using False.
     show ?thesis using Let by (rule let_case)
   qed
+qed
+
+corollary
+  assumes "[] : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
+   shows  "\<exists> \<Delta>' z'. [] : remove_dead_code e \<Down>\<^bsub>L\<^esub> \<Delta>' : z'"
+proof-
+  have "([], e) \<triangleright>\<^bsub>L\<^esub> (rdcH {} [], remove_dead_code e)" by (rule dc_rel.intros) auto
+  hence "([], e) \<triangleright>\<^bsub>L\<^esub> ([], remove_dead_code e)" by simp
+  from DeadCodeRemovalCorrect[OF assms this]
+  show ?thesis by auto
 qed
 
 end
