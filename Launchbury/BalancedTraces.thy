@@ -2,7 +2,7 @@ theory BalancedTraces
 imports Main
 begin
 
-locale trace = 
+locale traces = 
   fixes step :: "'c => 'c => bool"  (infix "\<Rightarrow>" 50) 
 begin
 
@@ -74,7 +74,7 @@ lemma extends_append[simp]: "S \<lesssim> L @ S" unfolding extends_def by auto
 lemma extends_not_cons[simp]: "\<not> (x # S) \<lesssim> S" unfolding extends_def by auto
 lemma extends_trans[trans]: "S \<lesssim> S' \<Longrightarrow> S' \<lesssim> S'' \<Longrightarrow> S \<lesssim> S''" unfolding extends_def by auto
 
-locale balance_trace = trace + 
+locale balance_trace = traces + 
   fixes stack :: "'a \<Rightarrow> 's list"
   assumes one_step_only: "c \<Rightarrow> c' \<Longrightarrow> (stack c) = (stack c') \<or> (\<exists> x.  stack c' = x # stack c) \<or>  (\<exists> x. stack c = x # stack c')"
 begin
@@ -83,6 +83,12 @@ inductive bal :: "'a \<Rightarrow> 'a list \<Rightarrow> 'a \<Rightarrow> bool" 
   balI[intro]: "trace c T c' \<Longrightarrow> list_all (\<lambda>c'. stack c \<lesssim> stack c') T \<Longrightarrow> stack c' = stack c \<Longrightarrow> bal c T c'"
 
 inductive_cases balE: "bal c T c'"
+
+lemma bal_nil[simp]: "bal c [] c' \<longleftrightarrow> c = c'"
+  by (auto elim: balE trace.cases)
+  
+
+lemma bal_stackD: "bal c T c' \<Longrightarrow> stack c' = stack c" by (auto dest: balE)
 
 lemma stack_passes_lower_bound:
   assumes "c\<^sub>3 \<Rightarrow> c\<^sub>4" 
@@ -132,7 +138,7 @@ lemma bal_consE:
   assumes "bal c\<^sub>1 (c\<^sub>2 # T) c\<^sub>5"
   and c\<^sub>2: "stack c\<^sub>2 = s # stack c\<^sub>1"
   obtains T\<^sub>1 c\<^sub>3 c\<^sub>4 T\<^sub>2
-  where "T = T\<^sub>1 @ c\<^sub>4 # T\<^sub>2" and  "bal c\<^sub>2 T\<^sub>1 c\<^sub>3" and "c\<^sub>3 \<Rightarrow> c\<^sub>4" and "bal c\<^sub>4 T\<^sub>2 c\<^sub>5"
+  where "T = T\<^sub>1 @ c\<^sub>4 # T\<^sub>2" and  "bal c\<^sub>2 T\<^sub>1 c\<^sub>3" and "c\<^sub>3 \<Rightarrow> c\<^sub>4" "bal c\<^sub>4 T\<^sub>2 c\<^sub>5"
 using assms(1)
 proof(rule balE)
   
