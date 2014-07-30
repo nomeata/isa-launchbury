@@ -95,6 +95,12 @@ lemma fresh_distinct_list:
  using assms
  by (metis disjoint_iff_not_equal fresh_list_elem fresh_star_def image_eqI not_self_fresh)
 
+lemma fresh_distinct_fv:
+ assumes "atom ` S \<sharp>* l"
+ shows "S \<inter> fv l = {}"
+ using assms
+ by (metis disjoint_iff_not_equal fresh_star_def fv_not_fresh image_eqI)
+
 
 subsubsection {* Pure codomains *}
 

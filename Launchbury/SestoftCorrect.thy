@@ -7,14 +7,17 @@ fun ap :: "stack \<Rightarrow> var set" where
   "ap [] = {}"
 | "ap (Arg x # S) = insert x (ap S)"
 | "ap (Upd x # S) = ap S"
+| "ap (Dummy x # S) = ap S"
 fun upds :: "stack \<Rightarrow> var set" where
   "upds [] = {}"
 | "upds (Upd x # S) = insert x (upds S)"
 | "upds (Arg x # S) = upds S"
+| "upds (Dummy x # S) = upds S"
 fun flattn :: "stack \<Rightarrow> var list" where
   "flattn [] = []"
 | "flattn (Upd x # S) = x # flattn S"
 | "flattn (Arg x # S) = x # flattn S"
+| "flattn (Dummy x # S) = x # flattn S"
   
 
 lemma fresh_flattn[simp]: "a \<sharp> flattn S \<longleftrightarrow> a \<sharp> S"
@@ -48,17 +51,19 @@ case (Variable \<Gamma> x e L \<Delta> z S)
     thus ?thesis by simp
   qed
 
+  have "x \<notin> domA \<Delta>" by (rule reds_avoids_live[OF Variable(2), where x = x]) simp_all
+
   note `L = flattn S`[simp]
 
   from `map_of \<Gamma> x = Some e`
   have "(\<Gamma>, Var x, S) \<Rightarrow> (delete x \<Gamma>, e, Upd x # S)"..
   also have "\<dots> \<Rightarrow>\<^sup>* (\<Delta>, z, Upd x # S)" by (rule Variable) simp
-  also have "\<dots> \<Rightarrow> ((x,z)#\<Delta>, z, S)" using `isLam z` by (rule var\<^sub>2)
+  also have "\<dots> \<Rightarrow> ((x,z)#\<Delta>, z, S)" using `x \<notin> domA \<Delta>` `isLam z` by (rule var\<^sub>2)
   finally show ?case.
 next
 case (Let as \<Gamma> L body \<Delta> z S)
   from Let(1) Let(4)
-  have "atom ` domA as \<sharp>* (\<Gamma>, S)" by (simp add: fresh_star_Pair)
+  have "atom ` domA as \<sharp>* \<Gamma>" and "atom ` domA as \<sharp>* S" by (auto simp add: fresh_star_Pair)
   hence "(\<Gamma>, Terms.Let as body, S) \<Rightarrow> (as@\<Gamma>, body, S)"..
   also have "\<dots> \<Rightarrow>\<^sup>* (\<Delta>, z, S)" by (rule Let) fact
   finally show ?case.
@@ -182,12 +187,37 @@ proof(induction T arbitrary: \<Gamma> e S \<Delta> z rule: measure_induct_rule[w
       ultimately
       have "as @ \<Gamma> : e \<Down>\<^bsub>flattn S\<^esub> \<Delta> : z" by (rule less)
       moreover
-      from `atom \` domA as \<sharp>* (\<Gamma>, S)`
+      from `atom \` domA as \<sharp>* \<Gamma>`  `atom \` domA as \<sharp>* S`
       have "atom ` domA as \<sharp>* (\<Gamma>, flattn S)" by (auto simp add: fresh_star_Pair)
       ultimately
       show ?thesis unfolding let\<^sub>1  by (rule reds.Let[rotated])
     qed
   qed
+qed
+
+lemma dummy_stack_extended:
+  "set S \<subseteq>  Dummy ` UNIV \<Longrightarrow> x \<notin> Dummy ` UNIV \<Longrightarrow> (S \<lesssim> x # S') \<longleftrightarrow>  S \<lesssim> S'"
+  apply (auto simp add: extends_def)
+  apply (case_tac S'')
+  apply auto
+  done
+
+lemma[simp]: "Arg x \<notin> range Dummy"  "Upd x \<notin> range Dummy" by auto
+
+lemma dummy_stack_balanced:
+  assumes "set S \<subseteq> Dummy ` UNIV"
+  assumes "(\<Gamma>, e, S) \<Rightarrow>\<^sup>* (\<Delta>, z, S)"
+  obtains T where "bal (\<Gamma>, e, S) T (\<Delta>, z, S)"
+proof-
+  from build_trace[OF assms(2)]
+  obtain T where "trace (\<Gamma>, e, S) T (\<Delta>, z, S)"..
+  moreover
+  hence "list_all (\<lambda>c'. stack (\<Gamma>, e, S) \<lesssim> stack c') T"
+    by(rule conjunct1[OF traces_list_all]) (auto elim: step.cases simp add: dummy_stack_extended[OF `set S \<subseteq> Dummy \` UNIV`])
+  ultimately
+  have "bal (\<Gamma>, e, S) T (\<Delta>, z, S)"
+    by (rule balI) simp
+  thus ?thesis by (rule that)
 qed
 
 end

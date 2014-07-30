@@ -119,6 +119,9 @@ lemma [simp]: "size (heapToAssn \<Gamma>) = size_list (\<lambda> (v,e) . size e)
   by (induct rule: heapToAssn.induct)
      (simp_all add: heapToAssn.simps)
 
+lemma Lam_eq_same_var[simp]: "Lam [y]. e = Lam [y]. e' \<longleftrightarrow>  e = e'"
+  by auto (metis fresh_PairD(2) obtain_fresh)
+
 text {* Now we define the Let constructor in the form that we actually want. *}
 
 hide_const HOL.Let

@@ -251,4 +251,5 @@ case (Let \<Gamma> e y x)
   by (auto simp add: fresh_star_at_base fv_subst_eq fresh_star_Pair simp del: Let_eq_iff)
 qed auto
 
+
 end

@@ -9,10 +9,14 @@ begin
 abbreviation steps (infix "\<Rightarrow>\<^sup>*" 50) where "steps \<equiv> step\<^sup>*\<^sup>*"
 
 inductive trace :: "'c \<Rightarrow> 'c list \<Rightarrow> 'c \<Rightarrow> bool"  where
-  trace_nil[iff]: "trace conf [] conf"
-| trace_cons[intro]: "trace conf' T end \<Longrightarrow> conf \<Rightarrow> conf' \<Longrightarrow> trace conf (conf'#T) end"
+  trace_nil[iff]: "trace final [] final"
+| trace_cons[intro]: "trace conf' T final \<Longrightarrow> conf \<Rightarrow> conf' \<Longrightarrow> trace conf (conf'#T) final"
 
-inductive_cases trace_consE: "trace conf (conf'#T) end"
+inductive_cases trace_consE: "trace conf (conf'#T) final"
+
+lemma trace_induct_final[consumes 1, case_names trace_nil trace_cons]:
+  "trace x1 x2 final \<Longrightarrow> P final [] final \<Longrightarrow> (\<And>conf' T  conf. trace conf' T final \<Longrightarrow> P conf' T final \<Longrightarrow> conf \<Rightarrow> conf' \<Longrightarrow> P conf (conf' # T) final) \<Longrightarrow> P x1 x2 final"
+  by (induction rule:trace.induct) auto
 
 lemma build_trace:
   "c \<Rightarrow>\<^sup>* c' \<Longrightarrow> \<exists> T. trace c T c'"
@@ -61,6 +65,11 @@ proof-
   qed
   thus ?thesis by (auto intro: that)
 qed
+
+lemma traces_list_all:
+  "trace c T c' \<Longrightarrow> P c' \<Longrightarrow> (\<And> c c'. c \<Rightarrow> c' \<Longrightarrow> P c' \<Longrightarrow> P c) \<Longrightarrow> (list_all P T \<and> P c)"
+  by (induction rule:trace.induct) auto
+
 
   
 end
