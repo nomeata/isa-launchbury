@@ -22,7 +22,7 @@ nominal_function maybeVar :: "exp \<Rightarrow> var option" where
 nominal_termination (eqvt) by lexicographic_order
 
 fun conf_arities :: "conf \<Rightarrow> AEnv"
-  where "conf_arities (\<Gamma>,e,S) = (case maybeVar e of Some x \<Rightarrow> AE_singleton x \<cdot> (up\<cdot>(stack_arity S)) | None \<Rightarrow> \<bottom>)"
+  where "conf_arities (\<Gamma>,e,S) = (case maybeVar e of Some x \<Rightarrow> (AE_singleton x) \<cdot> (up\<cdot>(stack_arity S)) | None \<Rightarrow> \<bottom>)"
 
 fun trace_arities :: "conf list \<Rightarrow> AEnv"
   where
@@ -33,24 +33,29 @@ fun trace_arities :: "conf list \<Rightarrow> AEnv"
 context CorrectArityAnalysis
 begin
 
+fun  conf_analysis :: "conf \<Rightarrow> AEnv"
+where "conf_analysis (\<Gamma>,e,S) =  Afix \<Gamma>\<cdot>(Aexp e\<cdot>(stack_arity S))" 
+lemmas conf_analysis.simps[simp del]
+
 lemma arity_preservation:
   assumes "(\<Gamma>, e, S) \<Rightarrow> (\<Gamma>', e', S')"
-  shows "Afix \<Gamma>'\<cdot>(Aexp e'\<cdot>(stack_arity S')) \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp e\<cdot>(stack_arity S))" sorry
+  shows "conf_analysis (\<Gamma>', e', S') \<sqsubseteq> conf_analysis (\<Gamma>, e, S)"
+sorry
 
 lemma arity_correct_now:
-  shows "conf_arities (\<Gamma>, e, S) \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp e\<cdot>(stack_arity S))"
+  shows "conf_arities (\<Gamma>, e, S) \<sqsubseteq> conf_analysis (\<Gamma>, e, S)"
 proof(cases e rule: maybeVar.cases)
 case goal1
   have "up\<cdot>(stack_arity S) \<sqsubseteq> (Aexp (Var x)\<cdot>(stack_arity S)) x" by (simp add: Aexp_Var)
   also have "(Aexp (Var x)\<cdot>(stack_arity S)) \<sqsubseteq>  (Afix \<Gamma>\<cdot>(Aexp (Var x)\<cdot>(stack_arity S)))" by (rule Afix_above_arg)
   finally
   have "up\<cdot>(stack_arity S) \<sqsubseteq> (Afix \<Gamma>\<cdot>(Aexp (Var x)\<cdot>(stack_arity S))) x" by this simp
-  thus ?thesis using `e = _` by simp
+  thus ?thesis using `e = _` unfolding conf_analysis.simps by simp
 qed auto
 
 theorem
   assumes "(\<Gamma>, e, S) \<Rightarrow>\<^sup>*\<^bsub>T\<^esub> final"
-  shows "trace_arities ((\<Gamma>, e, S) # T) \<sqsubseteq> Afix \<Gamma> \<cdot> (Aexp e \<cdot> (stack_arity S))"
+  shows "trace_arities ((\<Gamma>, e, S) # T) \<sqsubseteq> conf_analysis (\<Gamma>, e, S)"
 using assms
 proof(induction rule: conf_trace_induct_final)
   case (trace_nil \<Gamma> e S)
@@ -58,12 +63,12 @@ proof(induction rule: conf_trace_induct_final)
 next
   case (trace_cons \<Gamma> e S T \<Gamma>' e' S')
 
-  have "conf_arities (\<Gamma>, e, S) \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp e\<cdot>(stack_arity S))" by (rule arity_correct_now)
+  have "conf_arities (\<Gamma>, e, S) \<sqsubseteq> conf_analysis (\<Gamma>, e, S)" by (rule arity_correct_now)
   moreover
-  note `trace_arities ((\<Gamma>', e', S') # T) \<sqsubseteq> Afix \<Gamma>'\<cdot>(Aexp e'\<cdot>(stack_arity S'))`
+  note `trace_arities ((\<Gamma>', e', S') # T) \<sqsubseteq> conf_analysis (\<Gamma>', e', S')`
   moreover
   from `(\<Gamma>, e, S) \<Rightarrow> (\<Gamma>', e', S')`
-  have "Afix \<Gamma>'\<cdot>(Aexp e'\<cdot>(stack_arity S')) \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp e\<cdot>(stack_arity S))"
+  have "conf_analysis (\<Gamma>', e', S') \<sqsubseteq> conf_analysis (\<Gamma>, e, S)"
     by (rule arity_preservation)
   ultimately
   show ?case by (auto intro: join_below dest: below_trans simp del: conf_arities.simps fun_meet_simp)

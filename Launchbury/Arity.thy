@@ -2,7 +2,9 @@ theory Arity
 imports "HOLCF-Join-Classes" Lifting
 begin
 
-typedef Arity = "UNIV :: nat set" by auto
+typedef Arity = "UNIV :: nat set"
+  morphisms Rep_Arity to_Arity 
+  by auto
 
 
 setup_lifting type_definition_Arity
