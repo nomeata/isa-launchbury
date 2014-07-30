@@ -91,7 +91,7 @@ where
   "remove_dead_code (Lam [x]. e) = Lam [x]. remove_dead_code e"
 | "remove_dead_code (App e x) = App (remove_dead_code e) x"
 | "remove_dead_code (Var x) = Var x"
-| "remove_dead_code (Terms.Let as e) = Terms.Let (restrict_reachable (map_ran (\<lambda> _ e. remove_dead_code e) as) (remove_dead_code e)) (remove_dead_code e)"
+| "remove_dead_code (Terms.Let as e) = SmartLet (restrict_reachable (map_ran (\<lambda> _ e. remove_dead_code e) as) (remove_dead_code e)) (remove_dead_code e)"
 proof-
 case goal1 thus ?case
   unfolding remove_dead_code_graph_aux_def eqvt_def 
@@ -129,13 +129,14 @@ case (goal13 as body as' body')
     have eqvt_at2: "eqvt_at (map_ran (\<lambda>_. remove_dead_code_sumC)) as" by (induction as) (fastforce simp add: eqvt_at_def)+
 
     assume assm: "supp \<pi> \<sharp>* Terms.Let as body"
+    
 
     let ?as' = "restrict_reachable (map_ran (\<lambda>_. remove_dead_code_sumC) as) (remove_dead_code_sumC body)"
     let ?body' = "remove_dead_code_sumC body"
     let ?rable = "reachable (map_ran (\<lambda>_. remove_dead_code_sumC) as) (remove_dead_code_sumC body)"
 
-    have "supp (Terms.Let ?as' ?body') \<subseteq> supp as \<union> supp body"
-      by (auto 4 4 simp add: exp_assn.supp Let_supp
+    have "supp (SmartLet ?as' ?body') \<subseteq> supp as \<union> supp body"
+      by (auto 4 4 simp add: exp_assn.supp SmartLet_supp
           dest!: set_mp[OF supp_eqvt_at[OF eqvt_at1 finite_supp]]
                  set_mp[OF supp_eqvt_at[OF eqvt_at2 finite_supp]]
                  set_mp[OF supp_restrict_reachable_subset]
@@ -147,18 +148,18 @@ case (goal13 as body as' body')
     have "fv ?body' \<subseteq> reachable (map_ran (\<lambda>_. remove_dead_code_sumC) as) ?body'"
       by (rule fv_e_reachable)
     ultimately
-    have supp_subset: "supp (Terms.Let ?as' ?body') \<subseteq> supp (Terms.Let as body)"
-      by (auto simp add: Let_supp fv_def)
+    have supp_subset: "supp (SmartLet ?as' ?body') \<subseteq> supp (Terms.Let as body)"
+      by (auto simp add: Let_supp SmartLet_supp fv_def)
     with assm
-    have *: "supp \<pi> \<sharp>* Terms.Let ?as' ?body'"  by (auto simp add: fresh_star_def fresh_def)
+    have *: "supp \<pi> \<sharp>* SmartLet ?as' ?body'"  by (auto simp add: fresh_star_def fresh_def)
 
 
-    have "Terms.Let (restrict_reachable (map_ran (\<lambda>_. remove_dead_code_sumC) (\<pi> \<bullet> as))  (remove_dead_code_sumC (\<pi> \<bullet> body))) (remove_dead_code_sumC (\<pi> \<bullet> body)) =
-      \<pi> \<bullet> Terms.Let ?as' ?body'"
-      unfolding  Let_perm_simps restrict_reachable_eqvt eqvt_at_apply'[OF eqvt_at1] subst eqvt_at_apply'[OF eqvt_at2] ..
-    also have "\<dots> = Terms.Let ?as' ?body'" by (rule perm_supp_eq[OF *])
-    finally show "Terms.Let (restrict_reachable (map_ran (\<lambda>_. remove_dead_code_sumC) (\<pi> \<bullet> as)) (remove_dead_code_sumC (\<pi> \<bullet> body))) (remove_dead_code_sumC (\<pi> \<bullet> body)) =
-         (Terms.Let ?as' ?body')".
+    have "SmartLet (restrict_reachable (map_ran (\<lambda>_. remove_dead_code_sumC) (\<pi> \<bullet> as))  (remove_dead_code_sumC (\<pi> \<bullet> body))) (remove_dead_code_sumC (\<pi> \<bullet> body)) =
+      \<pi> \<bullet> SmartLet ?as' ?body'"
+      unfolding  SmartLet_eqvt restrict_reachable_eqvt eqvt_at_apply'[OF eqvt_at1] subst eqvt_at_apply'[OF eqvt_at2] ..
+    also have "\<dots> = SmartLet ?as' ?body'" by (rule perm_supp_eq[OF *])
+    finally show "SmartLet (restrict_reachable (map_ran (\<lambda>_. remove_dead_code_sumC) (\<pi> \<bullet> as)) (remove_dead_code_sumC (\<pi> \<bullet> body))) (remove_dead_code_sumC (\<pi> \<bullet> body)) =
+         (SmartLet ?as' ?body')".
   qed
 qed auto
 nominal_termination (eqvt) by lexicographic_order

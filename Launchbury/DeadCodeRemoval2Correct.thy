@@ -206,8 +206,8 @@ case (Let as \<Gamma> L body \<Delta> z \<Gamma>' let')
   let "Terms.Let ?as' ?body'" = "Terms.Let (restrict_reachable (map_ran (\<lambda>_. remove_dead_code) as) (remove_dead_code body)) (remove_dead_code body)"
 
   from `(\<Gamma>, Terms.Let as body) \<triangleright>\<^bsub>L\<^esub> (\<Gamma>', let')` 
-  obtain S where "\<Gamma>' = rdcH S \<Gamma>" and "let' = Terms.Let ?as' ?body'"
-  and "S \<subseteq> domA \<Gamma> \<union> set L" and S: "S \<inter> fv (rdcH S \<Gamma>, Terms.Let ?as' ?body', L) = {}"  by (auto elim!: dc_rel.cases)
+  obtain S where "\<Gamma>' = rdcH S \<Gamma>" and "let' = SmartLet ?as' ?body'"
+  and "S \<subseteq> domA \<Gamma> \<union> set L" and S: "S \<inter> fv (rdcH S \<Gamma>, SmartLet ?as' ?body', L) = {}"  by (auto elim!: dc_rel.cases)
 
   let "?S'" = "domA as - reachable (map_ran (\<lambda>_. remove_dead_code) as) ?body'"
 
@@ -256,7 +256,7 @@ case (Let as \<Gamma> L body \<Delta> z \<Gamma>' let')
   hence "(as @ \<Gamma>, body) \<triangleright>\<^bsub>L\<^esub> (?as' @ \<Gamma>', ?body')" unfolding `\<Gamma>'=_` using fresh_distinct[OF Let(1)] by simp
   from Let(4)[OF this]
   obtain \<Delta>' z' where "(\<Delta>, z) \<triangleright>\<^bsub>L\<^esub> (\<Delta>', z')" and "?as' @ \<Gamma>' : ?body' \<Down>\<^bsub>L\<^esub> \<Delta>' : z'" by auto
-  from reds.Let[OF _ this(2)]
+  from reds_SmartLet[OF _ this(2)]
   have "\<Gamma>' : let' \<Down>\<^bsub>L\<^esub> \<Delta>' : z'" unfolding `\<Gamma>'=_`  `let' = _`
     using Let(1,2) by (auto simp add: fresh_star_def fresh_Pair)
   with `(\<Delta>, z) \<triangleright>\<^bsub>L\<^esub> (\<Delta>', z')`

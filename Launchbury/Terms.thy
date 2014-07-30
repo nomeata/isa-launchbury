@@ -386,4 +386,26 @@ proof-
   finally show ?thesis.
 qed
 
+subsubsection {* A smart constructor for lets *}
+
+text {*
+Certian program transformations might change the bound variables, possibly making it an empty list.
+This smart constructor avoids the empty let in the resulting expression. Semantically, it should
+not make a difference. 
+*}
+
+definition SmartLet :: "heap => exp => exp"
+  where "SmartLet \<Gamma> e = (if \<Gamma> = [] then e else Let \<Gamma> e)"
+
+lemma SmartLet_eqvt[eqvt]: "\<pi> \<bullet> (SmartLet \<Gamma> e) = SmartLet (\<pi> \<bullet> \<Gamma>) (\<pi> \<bullet> e)"
+  unfolding SmartLet_def by perm_simp rule
+
+lemma SmartLet_supp:
+  "supp (SmartLet \<Gamma> e) = (supp e \<union> supp \<Gamma>) - atom ` (domA \<Gamma>)"
+  unfolding SmartLet_def using Let_supp by (auto simp add: supp_Nil)
+
+lemma fv_SmartLet[simp]: "fv (SmartLet \<Gamma> e) = (fv \<Gamma> \<union> fv e) - domA \<Gamma>"
+  unfolding SmartLet_def by auto
+
+
 end

@@ -94,6 +94,14 @@ proof-
   show ?thesis ..
 qed
 
+lemma reds_SmartLet: "\<lbrakk>
+    atom ` domA as \<sharp>* (\<Gamma>, L);
+    as @ \<Gamma> : body \<Down>\<^bsub>L\<^esub> \<Delta> : z
+  \<rbrakk> \<Longrightarrow>
+    \<Gamma> : SmartLet as body \<Down>\<^bsub>L\<^esub> \<Delta> : z"
+unfolding SmartLet_def
+by (auto intro: reds.Let)
+
 subsubsection {* Properties of the semantics *}
 
 text {*

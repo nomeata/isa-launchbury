@@ -289,4 +289,18 @@ proof-
   have "supp (split f (x,y)) \<subseteq> supp (x,y)".
   thus ?thesis by (simp add: supp_Pair)
 qed
+
+(* Unused. Still submit? *)
+lemma Abs_lst_Nil_eq[simp]: "[[]]lst. (x::'a::fs) = [xs]lst. x' \<longleftrightarrow> (([],x) = (xs, x'))"
+  apply rule
+  apply (frule Abs_lst_fcb2[where f = "\<lambda> x y _ . (x,y)" and as = "[]" and bs = "xs" and c = "()"])
+  apply (auto simp add: fresh_star_def)
+  done
+
+(* Unused. Still submit? *)
+lemma Abs_lst_Nil_eq2[simp]: "[xs]lst. (x::'a::fs) = [[]]lst. x' \<longleftrightarrow> ((xs,x) = ([], x'))"
+  by (subst eq_commute) auto
+
+
+
 end

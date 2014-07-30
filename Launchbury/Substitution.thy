@@ -179,6 +179,7 @@ lemma shows
 by(induct rule:subst_subst_heap.induct)
   (auto simp add: exp_assn.bn_defs fresh_star_insert)
 
+
 lemma subst_noop[simp]:
 shows "e[y ::= y] = e" and "as[y::h=y]= as"
 by(induct e y y and as y y rule:subst_subst_heap.induct)
@@ -239,5 +240,12 @@ by(nominal_induct  e and \<Gamma> avoiding: x y rule:exp_heap_strong_induct)
 
 lemma subst_heap_delete[simp]: "(delete x \<Gamma>)[y ::h= z] = delete x (\<Gamma>[y ::h= z])"
   by (induction \<Gamma>) auto
+
+lemma subst_nil_iff[simp]: "\<Gamma>[x ::h= z] = [] \<longleftrightarrow> \<Gamma> = []"
+  by (cases \<Gamma>) auto
+
+lemma subst_SmartLet[simp]:
+  "atom ` domA as \<sharp>* (y,z) \<Longrightarrow> (SmartLet as body)[y ::= z] = SmartLet (as[y ::h= z]) (body[y ::= z])"
+  unfolding SmartLet_def by auto
 
 end
