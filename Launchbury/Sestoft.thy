@@ -28,6 +28,30 @@ lemma fv_Upd[simp]: "fv (Upd v) = fv v"  unfolding fv_def by auto
 instance stack_elem :: fs  by (default, case_tac x) (auto simp add: finite_supp)
 
 type_synonym stack = "stack_elem list"
+
+fun ap :: "stack \<Rightarrow> var set" where
+  "ap [] = {}"
+| "ap (Arg x # S) = insert x (ap S)"
+| "ap (Upd x # S) = ap S"
+| "ap (Dummy x # S) = ap S"
+fun upds :: "stack \<Rightarrow> var set" where
+  "upds [] = {}"
+| "upds (Upd x # S) = insert x (upds S)"
+| "upds (Arg x # S) = upds S"
+| "upds (Dummy x # S) = upds S"
+fun flattn :: "stack \<Rightarrow> var list" where
+  "flattn [] = []"
+| "flattn (Upd x # S) = x # flattn S"
+| "flattn (Arg x # S) = x # flattn S"
+| "flattn (Dummy x # S) = x # flattn S"
+  
+
+lemma fresh_flattn[simp]: "a \<sharp> flattn S \<longleftrightarrow> a \<sharp> S"
+  by (induction S rule:flattn.induct) (auto simp add: fresh_Nil fresh_Cons)
+lemma fresh_star_flattn[simp]: "a \<sharp>* flattn S \<longleftrightarrow> a \<sharp>* S"
+  by (auto simp add: fresh_star_def)
+
+
 type_synonym conf = "(heap \<times> exp \<times> stack)"
 
 nominal_function isLam :: "exp \<Rightarrow> bool" where

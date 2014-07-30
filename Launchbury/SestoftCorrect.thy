@@ -3,28 +3,6 @@ imports Sestoft Launchbury BalancedTraces
 begin
 
 
-fun ap :: "stack \<Rightarrow> var set" where
-  "ap [] = {}"
-| "ap (Arg x # S) = insert x (ap S)"
-| "ap (Upd x # S) = ap S"
-| "ap (Dummy x # S) = ap S"
-fun upds :: "stack \<Rightarrow> var set" where
-  "upds [] = {}"
-| "upds (Upd x # S) = insert x (upds S)"
-| "upds (Arg x # S) = upds S"
-| "upds (Dummy x # S) = upds S"
-fun flattn :: "stack \<Rightarrow> var list" where
-  "flattn [] = []"
-| "flattn (Upd x # S) = x # flattn S"
-| "flattn (Arg x # S) = x # flattn S"
-| "flattn (Dummy x # S) = x # flattn S"
-  
-
-lemma fresh_flattn[simp]: "a \<sharp> flattn S \<longleftrightarrow> a \<sharp> S"
-  by (induction S rule:flattn.induct) (auto simp add: fresh_Nil fresh_Cons)
-lemma fresh_star_flattn[simp]: "a \<sharp>* flattn S \<longleftrightarrow> a \<sharp>* S"
-  by (auto simp add: fresh_star_def)
-
 lemma lemma_2:
   assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
   and "L = flattn S"
@@ -72,8 +50,14 @@ qed
 type_synonym trace = "conf list"
 
 fun stack :: "conf \<Rightarrow> stack" where "stack (\<Gamma>, e, S) = S"
-
+                 
 interpretation traces step.
+
+abbreviation trace_syn ("_ \<Rightarrow>\<^sup>*\<^bsub>_\<^esub> _" [50,50,50] 50) where "trace_syn \<equiv> trace"
+
+lemma conf_trace_induct_final[consumes 1, case_names trace_nil trace_cons]:
+  "(\<Gamma>, e, S) \<Rightarrow>\<^sup>*\<^bsub>T\<^esub> final \<Longrightarrow> (\<And> \<Gamma> e S. final = (\<Gamma>, e, S) \<Longrightarrow> P \<Gamma> e S [] (\<Gamma>, e, S)) \<Longrightarrow> (\<And>\<Gamma> e S T \<Gamma>' e' S'. (\<Gamma>', e', S') \<Rightarrow>\<^sup>*\<^bsub>T\<^esub> final \<Longrightarrow> P \<Gamma>' e' S' T final \<Longrightarrow> (\<Gamma>, e, S) \<Rightarrow> (\<Gamma>', e', S') \<Longrightarrow> P \<Gamma> e S ((\<Gamma>', e', S') # T) final) \<Longrightarrow> P \<Gamma> e S T final"
+  by (induction "(\<Gamma>, e, S)" T final arbitrary: \<Gamma> e S rule: trace_induct_final) auto
 
 interpretation balance_trace step  stack
   apply default
@@ -81,26 +65,30 @@ interpretation balance_trace step  stack
   apply auto
   done
 
+abbreviation bal_syn ("_ \<Rightarrow>\<^sup>b\<^sup>*\<^bsub>_\<^esub> _" [50,50,50] 50) where "bal_syn \<equiv> bal"
+
 lemma lambda_stop:
   assumes "isLam e"
-  assumes "bal (\<Gamma>, e, S) T (\<Delta>, z, S)"
+  assumes "(\<Gamma>, e, S) \<Rightarrow>\<^sup>b\<^sup>*\<^bsub>T\<^esub> (\<Delta>, z, S)"
   shows "T=[]"
   using assms
   apply -
   apply (erule balE)
   apply (erule trace.cases)
-  apply (auto elim: step.cases)
+  apply simp
+  apply auto
+  apply (auto elim!: step.cases)
   done
   
 lemma lemma_3:
-  assumes "bal (\<Gamma>, e, S) T (\<Delta>, z, S)"
+  assumes "(\<Gamma>, e, S) \<Rightarrow>\<^sup>b\<^sup>*\<^bsub>T\<^esub> (\<Delta>, z, S)"
   assumes "isLam z"
   shows "\<Gamma> : e \<Down>\<^bsub>flattn S\<^esub> \<Delta> : z"
 using assms
 proof(induction T arbitrary: \<Gamma> e S \<Delta> z rule: measure_induct_rule[where f = length])
   case (less T \<Gamma> e S \<Delta> z)
-  from `bal (\<Gamma>, e, S) T (\<Delta>, z, S)`
-  have "trace (\<Gamma>, e, S) T (\<Delta>, z, S)" and "list_all (\<lambda>c'. S \<lesssim> stack c') T" unfolding bal.simps by auto
+  from `(\<Gamma>, e, S) \<Rightarrow>\<^sup>b\<^sup>*\<^bsub>T\<^esub> (\<Delta>, z, S)`
+  have "(\<Gamma>, e, S) \<Rightarrow>\<^sup>*\<^bsub>T\<^esub> (\<Delta>, z, S)" and "list_all (\<lambda>c'. S \<lesssim> stack c') T" unfolding bal.simps by auto
 
   from this(1)
   show ?case
@@ -110,14 +98,14 @@ proof(induction T arbitrary: \<Gamma> e S \<Delta> z rule: measure_induct_rule[w
     with trace_nil show ?thesis by (auto intro: reds.intros)
   next
   case (trace_cons conf' T')
-    from `T = conf' # T'` and `list_all _ _` have "S \<lesssim> stack conf'" by auto
+    from `T = (\<Gamma>, e, S) # T'` and `list_all _ _` have "S \<lesssim> stack conf'" by auto
   
     from `(\<Gamma>, e, S) \<Rightarrow> conf'`
     show ?thesis
     proof(cases)
     case (app\<^sub>1 e x)
       obtain T\<^sub>1 c\<^sub>3 c\<^sub>4 T\<^sub>2
-      where "T' = T\<^sub>1 @ c\<^sub>4 # T\<^sub>2" and prem1: "bal (\<Gamma>, e, Arg x # S) T\<^sub>1 c\<^sub>3" and "c\<^sub>3 \<Rightarrow> c\<^sub>4" and prem2: "bal c\<^sub>4 T\<^sub>2 (\<Delta>, z, S)"
+      where "T' = T\<^sub>1 @ c\<^sub>4 # T\<^sub>2" and prem1: "(\<Gamma>, e, Arg x # S) \<Rightarrow>\<^sup>b\<^sup>*\<^bsub>T\<^sub>1\<^esub> c\<^sub>3" and "c\<^sub>3 \<Rightarrow> c\<^sub>4" and prem2: " c\<^sub>4 \<Rightarrow>\<^sup>b\<^sup>*\<^bsub>T\<^sub>2\<^esub> (\<Delta>, z, S)"
         by (rule bal_consE[OF  `bal _ T _`[unfolded app\<^sub>1 trace_cons]]) (simp, rule)
 
       from `T = _` `T' = _` have "length T\<^sub>1 < length T" and "length T\<^sub>2 < length T" by auto
@@ -147,7 +135,7 @@ proof(induction T arbitrary: \<Gamma> e S \<Delta> z rule: measure_induct_rule[w
     next
     case (var\<^sub>1 x e)
       obtain T\<^sub>1 c\<^sub>3 c\<^sub>4 T\<^sub>2
-      where "T' = T\<^sub>1 @ c\<^sub>4 # T\<^sub>2" and prem1: "bal (delete x \<Gamma>, e, Upd x # S) T\<^sub>1 c\<^sub>3" and "c\<^sub>3 \<Rightarrow> c\<^sub>4" and prem2: "bal c\<^sub>4 T\<^sub>2 (\<Delta>, z, S)"
+      where "T' = T\<^sub>1 @ c\<^sub>4 # T\<^sub>2" and prem1: "(delete x \<Gamma>, e, Upd x # S) \<Rightarrow>\<^sup>b\<^sup>*\<^bsub>T\<^sub>1\<^esub> c\<^sub>3" and "c\<^sub>3 \<Rightarrow> c\<^sub>4" and prem2: "c\<^sub>4 \<Rightarrow>\<^sup>b\<^sup>*\<^bsub>T\<^sub>2\<^esub> (\<Delta>, z, S)"
         by (rule bal_consE[OF  `bal _ T _`[unfolded var\<^sub>1 trace_cons]]) (simp, rule)
       
       from `T = _` `T' = _` have "length T\<^sub>1 < length T" and "length T\<^sub>2 < length T" by auto
@@ -180,7 +168,7 @@ proof(induction T arbitrary: \<Gamma> e S \<Delta> z rule: measure_induct_rule[w
     case (let\<^sub>1 as e)
       from `T = conf' # T'` have "length T' < length T" by auto
       moreover
-      have "bal (as @ \<Gamma>, e, S) T' (\<Delta>, z, S)" 
+      have "(as @ \<Gamma>, e, S) \<Rightarrow>\<^sup>b\<^sup>*\<^bsub>T'\<^esub> (\<Delta>, z, S)" 
         using trace_cons `conf' = _`  `list_all _ _` by auto
       moreover
       note `isLam z`
@@ -207,15 +195,15 @@ lemma[simp]: "Arg x \<notin> range Dummy"  "Upd x \<notin> range Dummy" by auto
 lemma dummy_stack_balanced:
   assumes "set S \<subseteq> Dummy ` UNIV"
   assumes "(\<Gamma>, e, S) \<Rightarrow>\<^sup>* (\<Delta>, z, S)"
-  obtains T where "bal (\<Gamma>, e, S) T (\<Delta>, z, S)"
+  obtains T where "(\<Gamma>, e, S) \<Rightarrow>\<^sup>b\<^sup>*\<^bsub>T\<^esub> (\<Delta>, z, S)"
 proof-
   from build_trace[OF assms(2)]
-  obtain T where "trace (\<Gamma>, e, S) T (\<Delta>, z, S)"..
+  obtain T where "(\<Gamma>, e, S) \<Rightarrow>\<^sup>*\<^bsub>T\<^esub> (\<Delta>, z, S)"..
   moreover
   hence "list_all (\<lambda>c'. stack (\<Gamma>, e, S) \<lesssim> stack c') T"
     by(rule conjunct1[OF traces_list_all]) (auto elim: step.cases simp add: dummy_stack_extended[OF `set S \<subseteq> Dummy \` UNIV`])
   ultimately
-  have "bal (\<Gamma>, e, S) T (\<Delta>, z, S)"
+  have "(\<Gamma>, e, S) \<Rightarrow>\<^sup>b\<^sup>*\<^bsub>T\<^esub> (\<Delta>, z, S)"
     by (rule balI) simp
   thus ?thesis by (rule that)
 qed
