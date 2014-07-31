@@ -9,6 +9,7 @@ lemmas join_mono = join_mono[OF all_compatible all_compatible ]
 lemmas join_above1[simp] = all_compatible[THEN join_above1]
 lemmas join_above2[simp] = all_compatible[THEN join_above2]
 lemmas join_below[simp] = all_compatible[THEN join_below]
+lemmas join_below_iff = all_compatible[THEN join_below_iff]
 lemmas join_assoc[simp] = join_assoc[OF all_compatible all_compatible all_compatible]
 lemmas join_comm = all_compatible[THEN join_commute]
 

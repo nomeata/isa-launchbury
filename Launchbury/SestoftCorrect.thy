@@ -98,7 +98,7 @@ proof(induction T arbitrary: \<Gamma> e S \<Delta> z rule: measure_induct_rule[w
     with trace_nil show ?thesis by (auto intro: reds.intros)
   next
   case (trace_cons conf' T')
-    from `T = (\<Gamma>, e, S) # T'` and `list_all _ _` have "S \<lesssim> stack conf'" by auto
+    from `T = conf' # T'` and `list_all _ _` have "S \<lesssim> stack conf'" by auto
   
     from `(\<Gamma>, e, S) \<Rightarrow> conf'`
     show ?thesis

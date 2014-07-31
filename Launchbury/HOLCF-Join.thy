@@ -127,6 +127,11 @@ proof-
   ultimately show ?thesis by simp
 qed
 
+lemma join_below_iff:
+  assumes "compatible x y"
+  shows "x \<squnion> y \<sqsubseteq> a \<longleftrightarrow> (x \<sqsubseteq> a \<and> y \<sqsubseteq> a)"
+  by (metis assms below_trans cpo_class.join_above1 cpo_class.join_above2 join_below)
+
 lemma join_assoc:
   assumes "compatible x y"
   assumes "compatible x (y \<squnion> z)"
