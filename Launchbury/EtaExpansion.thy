@@ -68,18 +68,8 @@ case (Suc n)
     using `atom z \<sharp> _` by simp
   also have "\<dots> = Lam [fresh_var (e[x::=y])]. eta_expand n (App e[x::=y] (fresh_var (e[x::=y])))"
     apply (subst change_Lam_Variable[where y' = "fresh_var (e[x::=y])"])
-    apply (simp add: fresh_Pair)
-    apply (rule  eqvt_fresh_cong2[where f = eta_expand, OF eta_expand_eqvt])
-    apply (simp add: pure_fresh)
-    apply simp
-    apply (subst eta_expand_eqvt)
-    apply (subst permute_pure)
-    apply (subst exp_assn.perm_simps)
-    apply (subst flip_fresh_fresh)
-    prefer 3
-    apply simp
-    using `atom z \<sharp> _`  apply (auto simp add: fresh_Pair subst_pres_fresh)
-    done
+    using `atom z \<sharp> _`
+    by (auto simp add: fresh_Pair eqvt_fresh_cong2[where f = eta_expand, OF eta_expand_eqvt] pure_fresh eta_expand_eqvt  flip_fresh_fresh subst_pres_fresh simp del: exp_assn.eq_iff)
   also have "\<dots> = eta_expand (Suc n) e[x::=y]" by simp
   finally show ?case.
 qed
