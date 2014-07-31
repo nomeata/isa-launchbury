@@ -51,7 +51,6 @@ lemma fresh_flattn[simp]: "a \<sharp> flattn S \<longleftrightarrow> a \<sharp> 
 lemma fresh_star_flattn[simp]: "a \<sharp>* flattn S \<longleftrightarrow> a \<sharp>* S"
   by (auto simp add: fresh_star_def)
 
-
 type_synonym conf = "(heap \<times> exp \<times> stack)"
 
 nominal_function isLam :: "exp \<Rightarrow> bool" where
