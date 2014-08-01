@@ -113,6 +113,11 @@ lemma env_restr_join:
   shows "(m1 \<squnion> m2) f|` S = (m1 f|` S) \<squnion> (m2 f|` S )"
   by (auto simp add: env_restr_def)
 
+lemma join_env_restr_UNIV:
+  fixes m :: "'a::type \<Rightarrow> 'b::{Finite_Join_cpo,pcpo}"
+  shows "S1 \<union> S2 = UNIV \<Longrightarrow> (m f|` S1) \<squnion> (m f|` S2) = m"
+  by (fastforce simp add: env_restr_def)
+
 lemma Afix_repeat_singleton: "(\<mu> xa. Afix \<Gamma>\<cdot>(AE_singleton x\<cdot>(n \<squnion> xa x) \<squnion> ae)) = Afix \<Gamma>\<cdot>(AE_singleton x\<cdot>n \<squnion> ae)"
   apply (rule below_antisym)
   defer

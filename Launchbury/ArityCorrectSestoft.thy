@@ -8,10 +8,14 @@ fun Astack :: "AEnv \<Rightarrow> stack \<Rightarrow> Arity"
       | "Astack ae (Upd x # S) = (case ae x of Iup a \<Rightarrow> a)"
       | "Astack ae (Dummy x # S) = 0"
 
+lemma Astack_cong: "(\<And> x. x \<in> upds S \<Longrightarrow> ae x = ae' x) \<Longrightarrow>  Astack ae S = Astack ae' S"
+  by (induction S  rule: Astack.induct) auto
+
 lemma Astack_Upd_simps[simp]:
   "ae x = up\<cdot>u \<Longrightarrow> Astack ae (Upd x # S) = u"
   by (simp add: up_def cont_Iup)
 declare Astack.simps(3)[simp del]
+
 
 fun AEstack :: "AEnv \<Rightarrow> stack \<Rightarrow> AEnv"
   where "AEstack ae [] = \<bottom>"
@@ -19,7 +23,16 @@ fun AEstack :: "AEnv \<Rightarrow> stack \<Rightarrow> AEnv"
       | "AEstack ae (Upd x # S) = AE_singleton x \<cdot> (up\<cdot>(Astack ae S)) \<squnion> AEstack ae S"
       | "AEstack ae (Dummy x # S) = AEstack ae S"
 
-context CorrectArityAnalysis
+lemma AEstack_cong: "(\<And> x. x \<in> upds S \<Longrightarrow> ae x = ae' x) \<Longrightarrow> AEstack ae S = AEstack ae' S"
+  by (induction S  rule: upds.induct) (auto cong: Astack_cong)
+
+locale CorrectArityAnalysis2 = CorrectArityAnalysis + 
+  fixes Aheap :: "heap \<Rightarrow> AEnv \<rightarrow> AEnv"
+  assumes edom_Aheap: "edom (Aheap \<Gamma> \<cdot> ae) \<subseteq> domA \<Gamma>"
+  assumes Aheap_heap: "map_of \<Gamma> x = Some e' \<Longrightarrow> Aexp' e'\<cdot>((Aheap \<Gamma>\<cdot>ae) x) f|` domA \<Gamma> \<sqsubseteq> Aheap \<Gamma>\<cdot>ae"
+  assumes Aheap_heap2: "map_of \<Gamma> x = Some e' \<Longrightarrow> Aexp' e'\<cdot>((Aheap \<Gamma>\<cdot>(Aexp e\<cdot>a)) x) f|` (- domA \<Gamma>) \<sqsubseteq>  Aexp (Terms.Let \<Gamma> e)\<cdot>a"
+  assumes Aheap_above_arg: "ae f|` domA \<Gamma> \<sqsubseteq> Aheap \<Gamma>\<cdot>ae"
+  assumes Aexp_Let_above: "Aexp e\<cdot>a f|` (- domA \<Gamma>) \<sqsubseteq> Aexp (Terms.Let \<Gamma> e)\<cdot>a"
 begin
 
 inductive AE_consistent :: "AEnv \<Rightarrow> conf \<Rightarrow> bool" where
@@ -84,9 +97,75 @@ case (var\<^sub>2 x \<Gamma> e S)
     by (fastforce intro!: AE_consistentI  simp add: join_below_iff split:if_splits)+
   thus ?case by simp
 next
-case (let\<^sub>1 x \<Gamma> e S)
-  show ?case
-    sorry
+case (let\<^sub>1 \<Delta> \<Gamma> S e)
+  let ?ae = "Aheap \<Delta> \<cdot> (Aexp e\<cdot>(Astack ae S))"
+  let ?new = "(domA (\<Delta> @ \<Gamma>) \<union> upds S - (domA \<Gamma> \<union> upds S))"
+  have new: "?new = domA \<Delta>"
+    using fresh_distinct[OF let\<^sub>1(1)] fresh_distinct_fv[OF let\<^sub>1(2)]
+    by (auto dest: set_mp[OF ups_fv_subset])
+
+  have "domA \<Delta> \<inter> upds S = {}" using fresh_distinct_fv[OF let\<^sub>1(2)] by (auto dest: set_mp[OF ups_fv_subset])
+  hence "\<And> x. x \<in> upds S \<Longrightarrow> x \<notin> edom (Aheap \<Delta>\<cdot>(Aexp e\<cdot>(Astack ae S)))"
+    using edom_Aheap[where \<Gamma> = \<Delta> and ae = "Aexp e\<cdot>(Astack ae S)"] by auto
+  hence stack: "AEstack (Aheap \<Delta>\<cdot>(Aexp e\<cdot>(Astack ae S)) \<squnion> ae) S = AEstack ae S"
+               "Astack (Aheap \<Delta>\<cdot>(Aexp e\<cdot>(Astack ae S)) \<squnion> ae) S = Astack ae S"
+    by (auto simp add: edomIff cong: AEstack_cong Astack_cong)
+
+  have "edom ae \<subseteq> - domA \<Delta>" using let\<^sub>1(3)
+    sorry (* need more invariants in AE_consistent *)
+  hence "(?ae \<squnion> ae) f|` (- domA \<Delta>) = ae"
+    by (auto simp add: env_restr_join  env_restr_useless disjoint_eq_subset_Compl edom_Aheap)
+  moreover
+  {
+  have "upds S \<subseteq> edom (?ae \<squnion> ae)"
+    using let\<^sub>1(3) by auto
+  moreover
+  have "AEstack ae S \<sqsubseteq> ?ae \<squnion> ae"
+    by (rule AE_consistentE[OF let\<^sub>1(3)])
+       (metis "join_above1" below_refl box_below join_comm)
+  moreover
+  {
+  have "Aexp e\<cdot>(Astack ae S) \<sqsubseteq> (Aexp e\<cdot>(Astack ae S) f|` domA \<Delta>) \<squnion> (Aexp e\<cdot>(Astack ae S) f|` (- domA \<Delta>))"
+    by (rule eq_imp_below[OF join_env_restr_UNIV[symmetric]]) auto
+  also have "Aexp e\<cdot>(Astack ae S) f|` (- domA \<Delta>) \<sqsubseteq> Aexp (Terms.Let \<Delta> e)\<cdot>(Astack ae S)" by (rule Aexp_Let_above)
+  also have "\<dots> \<sqsubseteq> ae" by (rule AE_consistentE[OF let\<^sub>1(3)])
+  also have "Aexp e\<cdot>(Astack ae S) f|` domA \<Delta> \<sqsubseteq> ?ae" by (rule Aheap_above_arg)
+  finally have "Aexp e\<cdot>(Astack ae S) \<sqsubseteq> ?ae \<squnion> ae" by this auto
+  }
+  moreover
+  { fix x e'
+    assume "map_of \<Delta> x = Some e'"
+    hence "x \<notin> edom ae" using `edom ae \<subseteq> - domA \<Delta>` by (metis Compl_iff contra_subsetD domI dom_map_of_conv_domA)
+    hence "Aexp' e'\<cdot>((?ae \<squnion> ae) x) = Aexp' e'\<cdot>(?ae x)" by (auto simp add: edomIff)
+    also
+    have "Aexp' e'\<cdot>(?ae x) \<sqsubseteq> (Aexp' e'\<cdot>(?ae x) f|` domA \<Delta>) \<squnion> (Aexp' e'\<cdot>(?ae x) f|` (- domA \<Delta>))"
+      by (rule eq_imp_below[OF join_env_restr_UNIV[symmetric]]) auto
+    also
+    from `map_of \<Delta> x = Some e'`
+    have "Aexp' e'\<cdot>(?ae x) f|` domA \<Delta> \<sqsubseteq> ?ae" by (rule Aheap_heap)
+    also
+    from `map_of \<Delta> x = Some e'`
+    have "Aexp' e'\<cdot>(?ae x) f|` (- domA \<Delta>) \<sqsubseteq> Aexp (Terms.Let \<Delta> e)\<cdot>(Astack ae S)" by (rule Aheap_heap2)
+    also
+    have "Aexp (Terms.Let \<Delta> e)\<cdot>(Astack ae S) \<sqsubseteq> ae"  by (rule AE_consistentE[OF let\<^sub>1(3)])
+    finally
+    have "Aexp' e'\<cdot>((?ae \<squnion> ae) x) \<sqsubseteq> ?ae \<squnion> ae" by this auto
+  }
+  moreover
+  { fix x e'
+    assume "map_of \<Gamma> x = Some e'"
+    hence "x \<in> domA \<Gamma>" by (metis domI dom_map_of_conv_domA)
+    hence "x \<notin>  edom ?ae" using fresh_distinct[OF let\<^sub>1(1)]  by (auto dest: set_mp[OF edom_Aheap])
+    with let\<^sub>1 `map_of \<Gamma> x = Some e'`
+    have "Aexp' e'\<cdot>((?ae \<squnion> ae) x) \<sqsubseteq> ae" by (auto simp add: edomIff)
+    hence "Aexp' e'\<cdot>((?ae \<squnion> ae) x) \<sqsubseteq> ?ae \<squnion> ae" by (metis (erased, hide_lams) "HOLCF-Join-Classes.join_above2" below_trans)
+  }
+  ultimately
+  have "AE_consistent (?ae \<squnion> ae) (\<Delta> @ \<Gamma>, e, S) "
+    by (auto intro!: AE_consistentI simp add: stack)
+  }
+  ultimately
+  show ?case unfolding new by auto
 qed
 
 
@@ -168,5 +247,39 @@ next
 qed
 
 *)
+end
+
+context CorrectArityAnalysis 
+begin
+
+sublocale CorrectArityAnalysis2 Aexp "\<lambda> \<Gamma>. \<Lambda> ae. (Afix \<Gamma> \<cdot> ae f|` domA \<Gamma>)"
+apply default
+  apply simp
+
+  apply simp
+  apply (subst Env.lookup_env_restr)
+  apply (metis domI dom_map_of_conv_domA)
+  apply (rule env_restr_mono)
+  apply (metis (erased, hide_lams) "HOLCF-Join-Classes.join_above2" ABind_eq ArityAnalysis.Abinds_Afix ArityAnalysis.Abinds_reorder1 join_comm monofun_cfun_fun)
+
+  apply simp
+  apply (subst Env.lookup_env_restr)
+  apply (metis domI dom_map_of_conv_domA)
+  apply (rule below_trans[OF _ Aexp_Let])
+  apply (rule env_restr_mono)
+  apply (metis (erased, hide_lams) "HOLCF-Join-Classes.join_above2" ABind_eq ArityAnalysis.Abinds_Afix ArityAnalysis.Abinds_reorder1 join_comm monofun_cfun_fun)
+
+
+  apply simp
+  apply (metis ArityAnalysis.Afix_above_arg env_restr_mono)
+
+  apply (rule below_trans[OF _ Aexp_Let])
+  apply (metis ArityAnalysis.Afix_above_arg env_restr_mono)
+
+
+
+
+done
+end
 
 end

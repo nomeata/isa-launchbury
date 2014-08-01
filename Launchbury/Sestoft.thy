@@ -44,7 +44,9 @@ fun flattn :: "stack \<Rightarrow> var list" where
 | "flattn (Upd x # S) = x # flattn S"
 | "flattn (Arg x # S) = x # flattn S"
 | "flattn (Dummy x # S) = x # flattn S"
-  
+
+lemma ups_fv_subset: "upds S \<subseteq> fv S"
+  by (induction S rule: upds.induct) auto
 
 lemma fresh_flattn[simp]: "a \<sharp> flattn S \<longleftrightarrow> a \<sharp> S"
   by (induction S rule:flattn.induct) (auto simp add: fresh_Nil fresh_Cons)
