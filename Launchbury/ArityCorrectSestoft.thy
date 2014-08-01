@@ -37,7 +37,8 @@ begin
 
 inductive AE_consistent :: "AEnv \<Rightarrow> conf \<Rightarrow> bool" where
   AE_consistentI: 
-  "upds S \<subseteq> edom ae
+  "edom ae \<subseteq> domA \<Gamma> \<union> upds S
+  \<Longrightarrow> upds S \<subseteq> edom ae
   \<Longrightarrow> AEstack ae S \<sqsubseteq> ae 
   \<Longrightarrow> Aexp e \<cdot> (Astack ae S) \<sqsubseteq> ae
   \<Longrightarrow> (\<And> x e. map_of \<Gamma> x = Some e \<Longrightarrow> Aexp' e \<cdot> (ae x) \<sqsubseteq> ae)
@@ -111,12 +112,17 @@ case (let\<^sub>1 \<Delta> \<Gamma> S e)
                "Astack (Aheap \<Delta>\<cdot>(Aexp e\<cdot>(Astack ae S)) \<squnion> ae) S = Astack ae S"
     by (auto simp add: edomIff cong: AEstack_cong Astack_cong)
 
+
   have "edom ae \<subseteq> - domA \<Delta>" using let\<^sub>1(3)
-    sorry (* need more invariants in AE_consistent *)
+    using fresh_distinct[OF let\<^sub>1(1)] fresh_distinct_fv[OF let\<^sub>1(2)]
+    by (fastforce dest: set_mp[OF ups_fv_subset])
   hence "(?ae \<squnion> ae) f|` (- domA \<Delta>) = ae"
     by (auto simp add: env_restr_join  env_restr_useless disjoint_eq_subset_Compl edom_Aheap)
   moreover
   {
+  have "edom (?ae \<squnion> ae) \<subseteq> domA (\<Delta> @ \<Gamma>) \<union> upds S"
+    using let\<^sub>1(3) by (auto dest: set_mp[OF edom_Aheap])
+  moreover
   have "upds S \<subseteq> edom (?ae \<squnion> ae)"
     using let\<^sub>1(3) by auto
   moreover
