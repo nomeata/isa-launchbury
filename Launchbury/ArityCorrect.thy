@@ -27,7 +27,20 @@ locale CorrectArityAnalysis = EdomArityAnalysis +
   assumes Aexp_Var: "up \<cdot> n \<sqsubseteq> (Aexp (Var x) \<cdot> n) x"
   assumes Aexp_subst_App_Lam: "Aexp (e[y::=x]) \<sqsubseteq> Aexp (App (Lam [y]. e) x)"
   assumes Aexp_App: "Aexp (App e x) \<cdot> n = Aexp e \<cdot>(inc\<cdot>n) \<squnion> AE_singleton x \<cdot> (up\<cdot>0)"
+
+locale CorrectArityAnalysisAfix = CorrectArityAnalysis + 
   assumes Aexp_Let: "Afix as\<cdot>(Aexp e\<cdot>n) f|` (- domA as) \<sqsubseteq> Aexp (Terms.Let as e)\<cdot>n"
+
+locale CorrectArityAnalysisAheap = CorrectArityAnalysis + 
+  fixes Aheap :: "heap \<Rightarrow> AEnv \<rightarrow> AEnv"
+  assumes edom_Aheap: "edom (Aheap \<Gamma> \<cdot> ae) \<subseteq> domA \<Gamma>"
+  assumes Aheap_heap: "map_of \<Gamma> x = Some e' \<Longrightarrow> Aexp' e'\<cdot>((Aheap \<Gamma>\<cdot>ae) x) f|` domA \<Gamma> \<sqsubseteq> Aheap \<Gamma>\<cdot>ae"
+  assumes Aheap_heap2: "map_of \<Gamma> x = Some e' \<Longrightarrow> Aexp' e'\<cdot>((Aheap \<Gamma>\<cdot>(Aexp e\<cdot>a)) x) f|` (- domA \<Gamma>) \<sqsubseteq>  Aexp (Terms.Let \<Gamma> e)\<cdot>a"
+  assumes Aheap_above_arg: "ae f|` domA \<Gamma> \<sqsubseteq> Aheap \<Gamma>\<cdot>ae"
+  assumes Aexp_Let_above: "Aexp e\<cdot>a f|` (- domA \<Gamma>) \<sqsubseteq> Aexp (Terms.Let \<Gamma> e)\<cdot>a"
+
+
+context CorrectArityAnalysisAfix
 begin
 
 lemma Aexp_Var_singleton: "AE_singleton x \<cdot> (up\<cdot>n) \<sqsubseteq> Aexp (Var x) \<cdot> n"
@@ -309,5 +322,37 @@ corollary  reds_improves_arity:
   shows "Afix \<Delta> \<cdot> (Aexp' v \<cdot> n) f|` (- (domA \<Delta> - domA \<Gamma>)) \<sqsubseteq> Afix \<Gamma> \<cdot> (Aexp' e \<cdot> n) f|` (- (domA \<Delta> - domA \<Gamma>))"
   using reds_improves_arity'[where ae = \<bottom>, OF assms] by simp
 end
+
+
+
+context CorrectArityAnalysisAfix 
+begin
+
+sublocale CorrectArityAnalysisAheap Aexp "\<lambda> \<Gamma>. \<Lambda> ae. (Afix \<Gamma> \<cdot> ae f|` domA \<Gamma>)"
+apply default
+  apply simp
+
+  apply simp
+  apply (subst Env.lookup_env_restr)
+  apply (metis domI dom_map_of_conv_domA)
+  apply (rule env_restr_mono)
+  apply (metis (erased, hide_lams) "HOLCF-Join-Classes.join_above2" ABind_eq ArityAnalysis.Abinds_Afix ArityAnalysis.Abinds_reorder1 join_comm monofun_cfun_fun)
+
+  apply simp
+  apply (subst Env.lookup_env_restr)
+  apply (metis domI dom_map_of_conv_domA)
+  apply (rule below_trans[OF _ Aexp_Let])
+  apply (rule env_restr_mono)
+  apply (metis (erased, hide_lams) "HOLCF-Join-Classes.join_above2" ABind_eq ArityAnalysis.Abinds_Afix ArityAnalysis.Abinds_reorder1 join_comm monofun_cfun_fun)
+
+
+  apply simp
+  apply (metis ArityAnalysis.Afix_above_arg env_restr_mono)
+
+  apply (rule below_trans[OF _ Aexp_Let])
+  apply (metis ArityAnalysis.Afix_above_arg env_restr_mono)
+  done
+end
+
 
 end

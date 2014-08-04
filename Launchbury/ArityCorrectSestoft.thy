@@ -26,13 +26,7 @@ fun AEstack :: "AEnv \<Rightarrow> stack \<Rightarrow> AEnv"
 lemma AEstack_cong: "(\<And> x. x \<in> upds S \<Longrightarrow> ae x = ae' x) \<Longrightarrow> AEstack ae S = AEstack ae' S"
   by (induction S  rule: upds.induct) (auto cong: Astack_cong)
 
-locale CorrectArityAnalysis2 = CorrectArityAnalysis + 
-  fixes Aheap :: "heap \<Rightarrow> AEnv \<rightarrow> AEnv"
-  assumes edom_Aheap: "edom (Aheap \<Gamma> \<cdot> ae) \<subseteq> domA \<Gamma>"
-  assumes Aheap_heap: "map_of \<Gamma> x = Some e' \<Longrightarrow> Aexp' e'\<cdot>((Aheap \<Gamma>\<cdot>ae) x) f|` domA \<Gamma> \<sqsubseteq> Aheap \<Gamma>\<cdot>ae"
-  assumes Aheap_heap2: "map_of \<Gamma> x = Some e' \<Longrightarrow> Aexp' e'\<cdot>((Aheap \<Gamma>\<cdot>(Aexp e\<cdot>a)) x) f|` (- domA \<Gamma>) \<sqsubseteq>  Aexp (Terms.Let \<Gamma> e)\<cdot>a"
-  assumes Aheap_above_arg: "ae f|` domA \<Gamma> \<sqsubseteq> Aheap \<Gamma>\<cdot>ae"
-  assumes Aexp_Let_above: "Aexp e\<cdot>a f|` (- domA \<Gamma>) \<sqsubseteq> Aexp (Terms.Let \<Gamma> e)\<cdot>a"
+context CorrectArityAnalysisAheap
 begin
 
 inductive AE_consistent :: "AEnv \<Rightarrow> conf \<Rightarrow> bool" where
@@ -46,19 +40,12 @@ inductive AE_consistent :: "AEnv \<Rightarrow> conf \<Rightarrow> bool" where
 
 inductive_cases AE_consistentE[elim]: "AE_consistent ae (\<Gamma>, e, S)"
 
-lemma [simp]: "Aexp' e\<cdot>(Iup u) = Aexp e\<cdot>u"
-proof-
-  have "Iup u = up\<cdot>u" by (simp add: up_def cont_Iup )
-  thus ?thesis by simp
-qed
-
 lemma map_of_deleteD: "map_of (delete x \<Gamma>) xa = Some e \<Longrightarrow> map_of \<Gamma> xa = Some e"
   by (metis delete_conv fun_upd_same map_of_delete option.distinct(1))
 
 theorem
   assumes "(\<Gamma>, e, S) \<Rightarrow> (\<Delta>, v, S')"
   assumes "AE_consistent ae (\<Gamma>, e, S)"
-(*   shows "AE_consistent ae (\<Delta>, v, S')" *)
   shows "\<exists> ae'. ae' f|` (-((domA \<Delta> \<union> upds S') - (domA \<Gamma> \<union> upds S))) = ae \<and> AE_consistent ae' (\<Delta>, v, S')"
 using assms
 proof(induction "(\<Gamma>, e, S)" "(\<Delta>, v, S')"  arbitrary: \<Gamma> e S \<Delta> v S' rule: step.inducts)
@@ -173,119 +160,6 @@ case (let\<^sub>1 \<Delta> \<Gamma> S e)
   ultimately
   show ?case unfolding new by auto
 qed
-
-
-(*
-
-nominal_function maybeVar :: "exp \<Rightarrow> var option" where
-  "maybeVar (Var x) = Some x" |
-  "maybeVar (Lam [x]. e) = None" |
-  "maybeVar (App e x) = None" |
-  "maybeVar (Let as e) = None"
-  unfolding maybeVar_graph_aux_def eqvt_def
-  apply simp
-  apply simp
-  apply (metis exp_strong_exhaust)
-  apply auto
-  done
-nominal_termination (eqvt) by lexicographic_order
-
-fun conf_arities :: "conf \<Rightarrow> AEnv"
-  where "conf_arities (\<Gamma>,e,S) = (case maybeVar e of Some x \<Rightarrow> (AE_singleton x) \<cdot> (up\<cdot>(stack_arity S)) | None \<Rightarrow> \<bottom>)"
-
-fun trace_arities :: "conf list \<Rightarrow> AEnv"
-  where
-  "trace_arities [] = \<bottom>"
- |"trace_arities ((\<Gamma>,e,S)#T) = conf_arities (\<Gamma>,e,S) \<squnion> trace_arities T"
-
-
-context CorrectArityAnalysis
-begin
-
-fun  conf_analysis :: "conf \<Rightarrow> AEnv"
-where "conf_analysis (\<Gamma>,e,S) = Afix \<Gamma>\<cdot>(Aexp e\<cdot>(stack_arity S))" 
-lemmas conf_analysis.simps[simp del]
-
-lemma arity_preservation:
-  assumes "(\<Gamma>, e, S) \<Rightarrow> (\<Gamma>', e', S')"
-  shows "conf_analysis (\<Gamma>', e', S')  f|` (- (domA \<Gamma>' - domA \<Gamma>))  \<sqsubseteq> conf_analysis (\<Gamma>, e, S)  f|` (- (domA \<Gamma>' - domA \<Gamma>)) "
-sorry
-
-lemma arity_correct_now:
-  shows "conf_arities (\<Gamma>, e, S) \<sqsubseteq> conf_analysis (\<Gamma>, e, S)"
-proof(cases e rule: maybeVar.cases)
-case goal1
-  have "up\<cdot>(stack_arity S) \<sqsubseteq> (Aexp (Var x)\<cdot>(stack_arity S)) x" by (simp add: Aexp_Var)
-  also have "(Aexp (Var x)\<cdot>(stack_arity S)) \<sqsubseteq>  (Afix \<Gamma>\<cdot>(Aexp (Var x)\<cdot>(stack_arity S)))" by (rule Afix_above_arg)
-  finally
-  have "up\<cdot>(stack_arity S) \<sqsubseteq> (Afix \<Gamma>\<cdot>(Aexp (Var x)\<cdot>(stack_arity S))) x" by this simp
-  thus ?thesis using `e = _` unfolding conf_analysis.simps by simp
-qed auto
-
-theorem
-  assumes "(\<Gamma>, e, S) \<Rightarrow>\<^sup>*\<^bsub>T\<^esub> (\<Delta>, v, S')"
-  shows "trace_arities ((\<Gamma>, e, S) # T) f|` (- (domA \<Delta> - domA \<Gamma>)) \<sqsubseteq> conf_analysis (\<Gamma>, e, S)  f|` (- (domA \<Delta> - domA \<Gamma>))"
-using assms
-proof(induction rule: conf_trace_induct_final)
-  case (trace_nil \<Gamma> e S)
-    thus ?case by (simp del: app_strict conf_arities.simps) (rule arity_correct_now)
-next
-  case (trace_cons \<Gamma> e S T \<Gamma>' e' S')
-
-  have "domA \<Gamma> \<subseteq> domA \<Gamma>'" and "domA \<Gamma>' \<subseteq> domA \<Delta>" sorry
-  hence subset1: "- (domA \<Delta> - domA \<Gamma>) \<subseteq> - (domA \<Delta> - domA \<Gamma>')" and
-        subset2: "- (domA \<Delta> - domA \<Gamma>) \<subseteq> - (domA \<Gamma>' - domA \<Gamma>)" by auto
-
-  from arity_correct_now
-  have "conf_arities (\<Gamma>, e, S)  f|` (- (domA \<Delta> - domA \<Gamma>)) \<sqsubseteq> conf_analysis (\<Gamma>, e, S)  f|` (- (domA \<Delta> - domA \<Gamma>))" by (rule env_restr_mono)
-  moreover
-  from trace_cons(3)
-  have "trace_arities ((\<Gamma>', e', S') # T)  f|` (- (domA \<Delta> - domA \<Gamma>)) \<sqsubseteq> conf_analysis (\<Gamma>', e', S')  f|` (- (domA \<Delta> - domA \<Gamma>))"
-    by (rule env_restr_below_subset[OF subset1])
-  moreover
-  from `(\<Gamma>, e, S) \<Rightarrow> (\<Gamma>', e', S')`
-  have "conf_analysis (\<Gamma>', e', S')  f|` (- (domA \<Gamma>' - domA \<Gamma>)) \<sqsubseteq> conf_analysis (\<Gamma>, e, S)  f|` (- (domA \<Gamma>' - domA \<Gamma>))"
-    by (rule arity_preservation)
-  hence "conf_analysis (\<Gamma>', e', S')  f|` (- (domA \<Delta> - domA \<Gamma>)) \<sqsubseteq> conf_analysis (\<Gamma>, e, S)  f|` (- (domA \<Delta> - domA \<Gamma>))"
-    by (rule env_restr_below_subset[OF subset2])
-  ultimately
-  show ?case by (auto intro: join_below dest: below_trans simp add: env_restr_join simp del: conf_arities.simps fun_meet_simp)
-qed
-
-*)
-end
-
-context CorrectArityAnalysis 
-begin
-
-sublocale CorrectArityAnalysis2 Aexp "\<lambda> \<Gamma>. \<Lambda> ae. (Afix \<Gamma> \<cdot> ae f|` domA \<Gamma>)"
-apply default
-  apply simp
-
-  apply simp
-  apply (subst Env.lookup_env_restr)
-  apply (metis domI dom_map_of_conv_domA)
-  apply (rule env_restr_mono)
-  apply (metis (erased, hide_lams) "HOLCF-Join-Classes.join_above2" ABind_eq ArityAnalysis.Abinds_Afix ArityAnalysis.Abinds_reorder1 join_comm monofun_cfun_fun)
-
-  apply simp
-  apply (subst Env.lookup_env_restr)
-  apply (metis domI dom_map_of_conv_domA)
-  apply (rule below_trans[OF _ Aexp_Let])
-  apply (rule env_restr_mono)
-  apply (metis (erased, hide_lams) "HOLCF-Join-Classes.join_above2" ABind_eq ArityAnalysis.Abinds_Afix ArityAnalysis.Abinds_reorder1 join_comm monofun_cfun_fun)
-
-
-  apply simp
-  apply (metis ArityAnalysis.Afix_above_arg env_restr_mono)
-
-  apply (rule below_trans[OF _ Aexp_Let])
-  apply (metis ArityAnalysis.Afix_above_arg env_restr_mono)
-
-
-
-
-done
 end
 
 end

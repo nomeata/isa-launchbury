@@ -157,4 +157,8 @@ proof default
     done
 qed simp_all
 
+interpretation CorrectArityAnalysisAfix Aexp by default simp
+
+interpretation CorrectArityAnalysisAheap Aexp "\<lambda> \<Gamma>. \<Lambda> ae. (Afix \<Gamma> \<cdot> ae f|` domA \<Gamma>)" by default
+
 end
