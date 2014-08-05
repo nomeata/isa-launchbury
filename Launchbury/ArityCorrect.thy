@@ -36,6 +36,7 @@ locale CorrectArityAnalysisAheap = CorrectArityAnalysis +
   assumes edom_Aheap: "edom (Aheap \<Gamma> \<cdot> ae) \<subseteq> domA \<Gamma>"
   assumes Aheap_heap: "map_of \<Gamma> x = Some e' \<Longrightarrow> Aexp' e'\<cdot>((Aheap \<Gamma>\<cdot>ae) x) f|` domA \<Gamma> \<sqsubseteq> Aheap \<Gamma>\<cdot>ae"
   assumes Aheap_heap2: "map_of \<Gamma> x = Some e' \<Longrightarrow> Aexp' e'\<cdot>((Aheap \<Gamma>\<cdot>(Aexp e\<cdot>a)) x) f|` (- domA \<Gamma>) \<sqsubseteq>  Aexp (Terms.Let \<Gamma> e)\<cdot>a"
+  assumes Aheap_heap3: "map_of \<Gamma> x = Some e' \<Longrightarrow> \<not>(isLam e') \<Longrightarrow> (Aheap \<Gamma>\<cdot>ae) x = up\<cdot>0"
   assumes Aheap_above_arg: "ae f|` domA \<Gamma> \<sqsubseteq> Aheap \<Gamma>\<cdot>ae"
   assumes Aexp_Let_above: "Aexp e\<cdot>a f|` (- domA \<Gamma>) \<sqsubseteq> Aexp (Terms.Let \<Gamma> e)\<cdot>a"
 
@@ -344,7 +345,7 @@ apply default
   apply (rule below_trans[OF _ Aexp_Let])
   apply (rule env_restr_mono)
   apply (metis (erased, hide_lams) "HOLCF-Join-Classes.join_above2" ABind_eq ArityAnalysis.Abinds_Afix ArityAnalysis.Abinds_reorder1 join_comm monofun_cfun_fun)
-
+  defer
 
   apply simp
   apply (metis ArityAnalysis.Afix_above_arg env_restr_mono)
@@ -352,6 +353,7 @@ apply default
   apply (rule below_trans[OF _ Aexp_Let])
   apply (metis ArityAnalysis.Afix_above_arg env_restr_mono)
   done
+  sorry
 end
 
 

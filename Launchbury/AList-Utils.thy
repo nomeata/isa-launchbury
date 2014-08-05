@@ -73,6 +73,9 @@ lemma map_of_delete_insert:
   shows "map_of ((x,e) # delete x \<Gamma>) = map_of \<Gamma>"
   using assms by (induct \<Gamma>) (auto split:prod.split)
 
+lemma map_of_delete_iff[simp]: "map_of (delete x \<Gamma>) xa = Some e \<longleftrightarrow> (map_of \<Gamma> xa = Some e) \<and> xa \<noteq> x"
+  by (metis delete_conv fun_upd_same map_of_delete option.distinct(1))
+
 lemma map_add_domA[simp]: 
   "x \<in> domA \<Gamma> \<Longrightarrow> (map_of \<Delta> ++ map_of \<Gamma>) x = map_of \<Gamma> x"
   "x \<notin> domA \<Gamma> \<Longrightarrow> (map_of \<Delta> ++ map_of \<Gamma>) x = map_of \<Delta> x"
@@ -102,5 +105,9 @@ lemma ran_map_cong[fundef_cong]:
 
 lemma domA_map_ran[simp]: "domA (map_ran f m) = domA m"
   unfolding domA_def by (rule dom_map_ran)
+
+lemma map_ran_delete:
+  "map_ran f (delete x \<Gamma>) = delete x (map_ran f \<Gamma>)"
+  by (induction \<Gamma>)  auto
 
 end

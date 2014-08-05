@@ -70,7 +70,8 @@ lemma traces_list_all:
   "trace c T c' \<Longrightarrow> P c' \<Longrightarrow> (\<And> c c'. c \<Rightarrow> c' \<Longrightarrow> P c' \<Longrightarrow> P c) \<Longrightarrow> (list_all P T \<and> P c)"
   by (induction rule:trace.induct) auto
 
-
+lemma trace_nil[simp]: "trace c [] c' \<longleftrightarrow> c = c'"
+  by (metis list.distinct(1) trace.cases traces.trace_nil)
   
 end
 

@@ -33,11 +33,25 @@ case (Variable \<Gamma> x e L \<Delta> z S)
 
   note `L = flattn S`[simp]
 
-  from `map_of \<Gamma> x = Some e`
-  have "(\<Gamma>, Var x, S) \<Rightarrow> (delete x \<Gamma>, e, Upd x # S)"..
-  also have "\<dots> \<Rightarrow>\<^sup>* (\<Delta>, z, Upd x # S)" by (rule Variable) simp
-  also have "\<dots> \<Rightarrow> ((x,z)#\<Delta>, z, S)" using `x \<notin> domA \<Delta>` `isLam z` by (rule var\<^sub>2)
-  finally show ?case.
+  show ?case
+  proof (cases "isLam e")
+  case True
+    with `map_of \<Gamma> x = Some e`
+    have "(\<Gamma>, Var x, S) \<Rightarrow> ((x, e) # delete x \<Gamma>, e, S)"
+      by (rule var\<^sub>2)
+    moreover
+    from Variable(2) `isLam e`
+    have "z = e" and "\<Delta> = delete x \<Gamma>" by induct auto
+    ultimately
+    show ?thesis by auto
+  next
+  case False
+    from `map_of \<Gamma> x = Some e` False
+    have "(\<Gamma>, Var x, S) \<Rightarrow> (delete x \<Gamma>, e, Upd x # S)"..
+    also have "\<dots> \<Rightarrow>\<^sup>* (\<Delta>, z, Upd x # S)" by (rule Variable) simp
+    also have "\<dots> \<Rightarrow> ((x,z)#\<Delta>, z, S)" using `x \<notin> domA \<Delta>` `isLam z` by (rule var\<^sub>3)
+    finally show ?thesis.
+  qed
 next
 case (Let as \<Gamma> L body \<Delta> z S)
   from Let(1) Let(4)
@@ -160,7 +174,25 @@ proof(induction T arbitrary: \<Gamma> e S \<Delta> z rule: measure_induct_rule[w
       with `map_of _ _ = _`
       show ?thesis unfolding var\<^sub>1(1) `\<Delta> = _` by rule
     next
-    case (var\<^sub>2 x S')
+    case (var\<^sub>2 x e)
+      from `map_of \<Gamma> x = Some e` `isLam e`
+      have "\<Gamma> : Var x \<Down>\<^bsub>flattn S\<^esub> (x, e) # delete x \<Gamma> : e"
+        by (induction e rule:isLam.induct) (auto intro!: reds.intros)
+      moreover
+      from `T = conf' # T'` and `list_all _ _` have "list_all (\<lambda>c'. S \<lesssim> stack c') T'" by simp
+      with trace_cons(2)[unfolded var\<^sub>2] `isLam e`  
+      have "T' = []"
+        apply (cases rule: trace.cases)
+        apply assumption
+        apply (erule step.cases)
+        apply auto
+        done
+      with trace_cons 
+      have "\<Delta> = (x, e) # delete x \<Gamma>" and "z = e" unfolding var\<^sub>2 by auto
+      ultimately
+      show ?thesis unfolding var\<^sub>2 by simp
+    next
+    case (var\<^sub>3 x S')
       from `conf' = _` `S = _ # S'` `S \<lesssim> stack conf'`
       have False by (auto simp add: extends_def)
       thus ?thesis..

@@ -1,12 +1,12 @@
 theory EtaExpansion
-imports Sestoft
+imports Sestoft SestoftCorrect AbstractTransform
 begin
 
 definition fresh_var :: "exp \<Rightarrow> var" where
   "fresh_var e = (SOME v. v \<notin> fv e)"
 
 lemma fresh_var_not_free:
-  "fresh_var e \<notin>  fv e"
+  "fresh_var e \<notin> fv e"
 proof-
   obtain v :: var where "atom v \<sharp> e" by (rule obtain_fresh)
   hence "v \<notin> fv e" by (metis fv_not_fresh)
@@ -31,6 +31,12 @@ lemma eta_expand_eqvt[eqvt]:
   apply (auto simp add: fresh_Pair permute_pure)
   apply (metis fresh_at_base_permI fresh_at_base_permute_iff fresh_var_fresh subst_fresh_noop subst_swap_same)
   done
+
+lemma fresh_eta_expand[simp]: "a \<sharp> eta_expand n e \<longleftrightarrow> a \<sharp> e"
+  apply (induction n arbitrary: e)
+  apply  (simp add: fresh_Pair)
+  apply  (clarsimp simp add: fresh_Pair fresh_at_base)
+  by (metis fresh_var_fresh)
 
 lemma change_Lam_Variable:
   assumes "y' \<noteq> y \<Longrightarrow> atom y' \<sharp> (e,  y)"
@@ -74,7 +80,11 @@ case (Suc n)
   finally show ?case.
 qed
 
-theorem eta_expandsion_correct:
+lemma isLam_eta_expand:
+  "isLam e \<Longrightarrow> isLam (eta_expand n e)" and "n > 0 \<Longrightarrow> isLam (eta_expand n e)"
+by (induction n) auto
+
+theorem eta_expansion_correct:
   assumes "set T \<subseteq> range Arg"
   shows "(\<Gamma>, eta_expand (length T) e, T@S) \<Rightarrow>\<^sup>* (\<Gamma>, e, T@S)"
 using assms
@@ -93,5 +103,124 @@ next
   also have "\<dots> \<Rightarrow> (\<Gamma>, e, Arg x # T @ S)"  by (rule app\<^sub>1)
   finally show ?case using `se = _` by simp
 qed
+
+fun arg_prefix :: "stack \<Rightarrow> nat" where
+  "arg_prefix [] = 0"
+| "arg_prefix (Arg x # S) = Suc (arg_prefix S)"
+| "arg_prefix (Upd x # S) = 0"
+| "arg_prefix (Dummy x # S) = 0"
+
+theorem eta_expansion_correct':
+  assumes "n \<le> arg_prefix S"
+  shows "(\<Gamma>, eta_expand n e, S) \<Rightarrow>\<^sup>* (\<Gamma>, e, S)"
+proof-
+  from assms
+  have "set (take n S) \<subseteq> range Arg" and "length (take n S) = n"
+    apply (induction S arbitrary: n rule: arg_prefix.induct)
+    apply auto
+    apply (case_tac n, auto)+
+    done
+  hence "S = take n S @ drop n S" by (metis append_take_drop_id)
+  with eta_expansion_correct[OF `_ \<subseteq> _`] `length _ = _`
+  show ?thesis by metis
+qed
+ 
+definition eta_expand_heap :: "(var \<Rightarrow> nat) \<Rightarrow> heap \<Rightarrow> heap"
+  where "eta_expand_heap f \<Gamma> = map_ran (\<lambda> x e. eta_expand (f x) e) \<Gamma>"
+
+lemma eta_expand_heap_Nil[simp]: 
+  "eta_expand_heap exp [] = []"
+  unfolding eta_expand_heap_def by simp
+lemma eta_expand_heap_Cons[simp]: 
+  "eta_expand_heap exp ((x, e) # \<Gamma>) = (x, eta_expand (exp x) e) # eta_expand_heap exp \<Gamma>"
+  unfolding eta_expand_heap_def by simp
+lemma eta_expand_heap_append[simp]:
+  "eta_expand_heap exp (\<Delta> @ \<Gamma>) = eta_expand_heap exp \<Delta> @ eta_expand_heap exp \<Gamma>"
+  by (induction \<Delta>) auto
+
+lemma fresh_eta_expand_heap[simp]: "a \<sharp> eta_expand_heap exp \<Gamma> \<longleftrightarrow> a \<sharp> \<Gamma>"
+  by (induction \<Gamma>) (auto simp add: fresh_Cons fresh_Pair)
+
+theorem bound_eta_expansion_correct1:
+  fixes exp :: "var \<Rightarrow> nat"
+  assumes "(\<Gamma>, e, S) \<Rightarrow> (\<Delta>, z, S')"
+  assumes "\<And> x e'. e = Var x \<Longrightarrow> map_of \<Gamma> x = Some e' \<Longrightarrow> (if isLam e' then exp x \<le> arg_prefix S else exp x = 0)"
+  assumes "exp ` (- domA \<Gamma>) \<subseteq> {0}"
+  shows "(eta_expand_heap exp \<Gamma>, e, S) \<Rightarrow>\<^sup>* (eta_expand_heap exp \<Delta>, z, S')"
+using assms
+proof (induction "(\<Gamma>, e, S)" "(\<Delta>, z, S')" arbitrary: \<Gamma> e S \<Delta> z S' )
+case (var\<^sub>1 \<Gamma> x e S)
+  from var\<^sub>1.prems var\<^sub>1.hyps
+  have "exp x = 0" by auto
+  hence "eta_expand (exp x) e = e" by simp
+ 
+  from `map_of \<Gamma> x = Some e`
+  have "map_of (eta_expand_heap exp \<Gamma>) x = Some (eta_expand (exp x) e)"
+    unfolding eta_expand_heap_def by (metis  map_ran_conv option.simps(9))
+  hence "(eta_expand_heap exp \<Gamma>, Var x, S) \<Rightarrow> (delete x (eta_expand_heap exp \<Gamma>), e, Upd x # S)"
+    unfolding `eta_expand (exp x) e = e`
+    using  `~ (isLam _)`
+    by (rule step.var\<^sub>1)
+  also have "delete x (eta_expand_heap exp \<Gamma>) = eta_expand_heap exp (delete x \<Gamma>)" 
+    by (simp add: eta_expand_heap_def map_ran_delete)
+  finally
+  show ?case..
+next
+case (var\<^sub>2 \<Gamma> x e S)
+  from var\<^sub>2.prems var\<^sub>2.hyps
+  have "exp x \<le> arg_prefix S" by auto
+
+  from `map_of \<Gamma> x = Some e`
+  have "map_of (eta_expand_heap exp \<Gamma>) x = Some (eta_expand (exp x) e)"
+    unfolding eta_expand_heap_def by (metis map_ran_conv option.simps(9))
+  hence "(eta_expand_heap exp \<Gamma>, Var x, S) \<Rightarrow> ((x, eta_expand (exp x) e) # delete x (eta_expand_heap exp \<Gamma>), eta_expand (exp x) e, S)"
+    using isLam_eta_expand(1)[OF `isLam _`]
+    by (rule step.var\<^sub>2)
+  also have "\<dots> \<Rightarrow>\<^sup>* ((x, eta_expand (exp x) e) # delete x (eta_expand_heap exp \<Gamma>), e, S)"
+      by (rule eta_expansion_correct') fact
+  also have "(x, eta_expand (exp x) e) # delete x (eta_expand_heap exp \<Gamma>) = eta_expand_heap exp ((x, e) # delete x \<Gamma>)"
+    by (simp add: eta_expand_heap_def map_ran_delete)
+  finally show ?case.
+next
+case (let\<^sub>1 \<Delta> \<Gamma> S e)
+  from fresh_distinct[OF let\<^sub>1(1)] let\<^sub>1(4)
+  have "\<And> x. x \<in> domA \<Delta> \<Longrightarrow> exp x = 0" by auto
+  hence "eta_expand_heap exp \<Delta> = \<Delta>" by (induction \<Delta>) auto
+  with let\<^sub>1
+  show ?case by (fastforce intro: step.intros simp add: fresh_star_def )
+qed (fastforce intro: step.intros simp add: eta_expand_heap_def)+
+
+(*
+theorem bound_eta_expansion_correct:
+  fixes exp :: "var \<Rightarrow> nat"
+  assumes "(\<Gamma>, e, S) \<Rightarrow>\<^sup>*\<^bsub>T\<^esub> (\<Delta>, z, S')"
+  assumes "\<And> \<Gamma> x S. (\<Gamma>, Var x, S) \<in> set ((\<Gamma>, e, S)#T) \<Longrightarrow> exp x \<le> arg_prefix S"
+  shows "(eta_expand_heap exp \<Gamma>, e, S) \<Rightarrow>\<^sup>* (eta_expand_heap exp \<Delta>, z, S')"
+using assms
+proof (induction "(\<Gamma>, e, S)" T "(\<Delta>, z, S')" arbitrary: \<Gamma> e S \<Delta> z S' rule: trace.induct)
+case (trace_cons conf' T \<Gamma> e S \<Delta> z S')
+  obtain \<Gamma>2 e2 S2 where "conf' = (\<Gamma>2, e2, S2)" by (metis stack.cases)
+
+  from trace_cons(3) 
+  have "(eta_expand_heap exp \<Gamma>, e, S) \<Rightarrow>\<^sup>* (eta_expand_heap exp \<Gamma>2, e2, S2)"
+    unfolding `conf' = _`
+    apply (rule bound_eta_expansion_correct1)
+
+  have "(eta_expand_heap exp \<Gamma>, e, S) \<Rightarrow>\<^sup>* (eta_expand_heap exp \<Delta>, z, S')
+  thus ?case
+  apply -
+  apply (rule rtranclp_trans )
+  apply auto[1]
+  apply simp
+  apply (rule bound_eta_expansion_correct1)
+  apply auto
+apply_end simp
+case trace_nil
+  show ?case
+  
+apply simp
+
+*)
+
 
 end    

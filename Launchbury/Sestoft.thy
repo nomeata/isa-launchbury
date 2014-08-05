@@ -73,8 +73,9 @@ lemma isLam_Lam: "isLam (Lam [x]. e)" by simp
 inductive step :: "conf \<Rightarrow> conf \<Rightarrow> bool" (infix "\<Rightarrow>" 50) where
   app\<^sub>1:  "(\<Gamma>, App e x, S) \<Rightarrow> (\<Gamma>, e , Arg x # S)"
 | app\<^sub>2:  "(\<Gamma>, Lam [y]. e, Arg x # S) \<Rightarrow> (\<Gamma>, e[y ::= x] , S)"
-| var\<^sub>1:  "map_of \<Gamma> x = Some e \<Longrightarrow> (\<Gamma>, Var x, S) \<Rightarrow> (delete x \<Gamma>, e , Upd x # S)"
-| var\<^sub>2:  "x \<notin> domA \<Gamma> \<Longrightarrow> isLam e \<Longrightarrow> (\<Gamma>, e, Upd x # S) \<Rightarrow> ((x,e)# \<Gamma>, e , S)"
+| var\<^sub>1:  "map_of \<Gamma> x = Some e \<Longrightarrow> \<not> isLam e \<Longrightarrow> (\<Gamma>, Var x, S) \<Rightarrow> (delete x \<Gamma>, e , Upd x # S)"
+| var\<^sub>2:  "map_of \<Gamma> x = Some e \<Longrightarrow> isLam e \<Longrightarrow> (\<Gamma>, Var x, S) \<Rightarrow> ((x,e) # delete x \<Gamma>, e , S)"
+| var\<^sub>3:  "x \<notin> domA \<Gamma> \<Longrightarrow> isLam e \<Longrightarrow> (\<Gamma>, e, Upd x # S) \<Rightarrow> ((x,e)# \<Gamma>, e , S)"
 | let\<^sub>1:  "atom ` domA \<Delta> \<sharp>* \<Gamma> \<Longrightarrow> atom ` domA \<Delta> \<sharp>* S \<Longrightarrow> (\<Gamma>, Let \<Delta> e, S) \<Rightarrow> (\<Delta>@\<Gamma>, e , S)"
 
 abbreviation steps (infix "\<Rightarrow>\<^sup>*" 50) where "steps \<equiv> step\<^sup>*\<^sup>*"

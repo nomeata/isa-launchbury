@@ -86,6 +86,20 @@ lemma pred_inc[simp]: "pred\<cdot>(inc\<cdot>n) = n"
   apply simp  
   done
 
+lemma inc_below_inc[simp]: "inc\<cdot>a \<sqsubseteq> inc\<cdot>b \<longleftrightarrow> a \<sqsubseteq> b"
+  apply (simp add: inc_def pred_def)
+  apply transfer
+  apply simp
+  done
+
+lemma Rep_Arity_inc[simp]: "Rep_Arity (inc\<cdot>a') = Suc (Rep_Arity a')"
+  apply (simp add: inc_def pred_def)
+  apply transfer
+  apply simp
+  done
+  
+  
+
 instance Arity :: Finite_Join_cpo
 proof default
   fix x y :: Arity
@@ -100,6 +114,9 @@ instance ..
 end
 
 lemma Arity_zero_top[simp]: "(x :: Arity) \<sqsubseteq> 0"
+  by transfer simp
+
+lemma Arity_above_top[simp]: "0 \<sqsubseteq> (a :: Arity) \<longleftrightarrow> a = 0"
   by transfer simp
 
 lemma Arity_zero_join[simp]: "(x :: Arity) \<squnion> 0 = 0"
