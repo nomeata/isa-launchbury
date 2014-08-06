@@ -76,10 +76,13 @@ begin
     "Aeta_expand_transform a (Lam [x]. e) = Lam [x].(Aeta_expand_transform (pred\<cdot>a) e)"
     "Aeta_expand_transform a (Var x) = Var x"
     "Aeta_expand_transform a (Terms.Let \<Delta> e) = Terms.Let (map_ran (\<lambda>x ea. Aeta_expand' ((Aheap \<Delta>\<cdot>(Aexp e\<cdot>a)) x) (Aeta_expand_transform' ((Aheap \<Delta>\<cdot>(Aexp e\<cdot>a)) x) ea)) \<Delta>) (Aeta_expand_transform a e)"
-    "isLam (Aeta_expand_transform a e) \<longleftrightarrow> isLam e"
     "Aeta_expand_transform a (e[x ::= z]) = (Aeta_expand_transform a e)[x ::= z]"
     "at \<sharp> Aeta_expand_transform a e \<longleftrightarrow> at \<sharp> e"
     sorry
+  
+  lemma isLam_Aeta_expand_transform[simp]:
+    "isLam (Aeta_expand_transform a e) \<longleftrightarrow> isLam e"
+    by (induction e rule:isLam.induct) auto
 
   lemma Aeta_expand_transform'_fresh[simp]: "a \<sharp> Aeta_expand_transform' n e = a \<sharp> e" by (cases "(n, e)" rule: Aeta_expand_transform'.cases) auto
   lemma Aeta_expand_transform'_fresh_star[simp]: "a \<sharp>* Aeta_expand_transform' n e = a \<sharp>* e" by (auto simp add: fresh_star_def)
