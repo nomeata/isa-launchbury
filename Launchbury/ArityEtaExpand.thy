@@ -2,6 +2,9 @@ theory ArityEtaExpand
 imports ArityCorrectSestoft EtaExpansion
 begin
 
+  find_theorems isLam subst
+
+
 locale ArityEtaExpand = CorrectArityAnalysisAheap +
   fixes Aeta_expand_transform :: "Arity \<Rightarrow> exp \<Rightarrow> exp"
 begin
@@ -104,11 +107,9 @@ case (app\<^sub>1 \<Gamma> e x S)
 next
 case (app\<^sub>2 \<Gamma> y e x S)
   have "Aexp (e[y ::= x])\<cdot>(pred\<cdot>a) \<sqsubseteq> ae" using app\<^sub>2
-    apply (auto simp add: Aexp_Lam join_below_iff)
+    apply (auto simp add:  join_below_iff)
     apply (rule below_trans[OF monofun_cfun_fun[OF Aexp_subst_App_Lam]])
-    apply (auto simp add: Aexp_App join_below_iff)
-    apply (cases a rule: Arity_exhaust)
-    apply (auto simp add: Aexp_Lam join_below_iff)
+    apply (auto simp add: Aexp_App Aexp_Lam join_below_iff)
     done
   hence "consistent (ae, pred \<cdot> a) (\<Gamma>, e[y::=x], S)"  using app\<^sub>2
     apply  (auto intro!:  below_trans[OF monofun_cfun_fun[OF Aexp_subst_App_Lam]] simp add: Aexp_App join_below_iff monofun_cfun_arg)

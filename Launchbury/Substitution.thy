@@ -248,4 +248,7 @@ lemma subst_SmartLet[simp]:
   "atom ` domA as \<sharp>* (y,z) \<Longrightarrow> (SmartLet as body)[y ::= z] = SmartLet (as[y ::h= z]) (body[y ::= z])"
   unfolding SmartLet_def by auto
 
+lemma isLam_subst[simp]: "isLam e[x::=y] = isLam e"
+  by (nominal_induct e avoiding: x y  rule: exp_strong_induct)
+     (auto simp add: fresh_star_Pair)
 end

@@ -55,20 +55,6 @@ lemma fresh_star_flattn[simp]: "a \<sharp>* flattn S \<longleftrightarrow> a \<s
 
 type_synonym conf = "(heap \<times> exp \<times> stack)"
 
-nominal_function isLam :: "exp \<Rightarrow> bool" where
-  "isLam (Var x) = False" |
-  "isLam (Lam [x]. e) = True" |
-  "isLam (App e x) = False" |
-  "isLam (Let as e) = False"
-  unfolding isLam_graph_aux_def eqvt_def
-  apply simp
-  apply simp
-  apply (metis exp_strong_exhaust)
-  apply auto
-  done
-nominal_termination (eqvt) by lexicographic_order
-
-lemma isLam_Lam: "isLam (Lam [x]. e)" by simp
 
 inductive step :: "conf \<Rightarrow> conf \<Rightarrow> bool" (infix "\<Rightarrow>" 50) where
   app\<^sub>1:  "(\<Gamma>, App e x, S) \<Rightarrow> (\<Gamma>, e , Arg x # S)"

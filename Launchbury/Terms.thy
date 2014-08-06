@@ -410,5 +410,22 @@ lemma SmartLet_supp:
 lemma fv_SmartLet[simp]: "fv (SmartLet \<Gamma> e) = (fv \<Gamma> \<union> fv e) - domA \<Gamma>"
   unfolding SmartLet_def by auto
 
+subsubsection {* A predicate for value expressions *}
+
+nominal_function isLam :: "exp \<Rightarrow> bool" where
+  "isLam (Var x) = False" |
+  "isLam (Lam [x]. e) = True" |
+  "isLam (App e x) = False" |
+  "isLam (Let as e) = False"
+  unfolding isLam_graph_aux_def eqvt_def
+  apply simp
+  apply simp
+  apply (metis exp_strong_exhaust)
+  apply auto
+  done
+nominal_termination (eqvt) by lexicographic_order
+
+lemma isLam_Lam: "isLam (Lam [x]. e)" by simp
+
 
 end

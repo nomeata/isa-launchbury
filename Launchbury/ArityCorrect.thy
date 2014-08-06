@@ -26,7 +26,7 @@ end
 locale CorrectArityAnalysis = EdomArityAnalysis +
   assumes Aexp_Var: "up \<cdot> n \<sqsubseteq> (Aexp (Var x) \<cdot> n) x"
   assumes Aexp_subst_App_Lam: "Aexp (e[y::=x]) \<sqsubseteq> Aexp (App (Lam [y]. e) x)"
-  assumes Aexp_Lam: "Aexp (Lam [y]. e) \<cdot> n = env_delete y (Aexp e \<cdot>(pred\<cdot>n))
+  assumes Aexp_Lam: "Aexp (Lam [y]. e) \<cdot> n = env_delete y (Aexp e \<cdot>(pred\<cdot>n))"
   assumes Aexp_App: "Aexp (App e x) \<cdot> n = Aexp e \<cdot>(inc\<cdot>n) \<squnion> AE_singleton x \<cdot> (up\<cdot>0)"
 
 locale CorrectArityAnalysisAfix = CorrectArityAnalysis + 
@@ -42,7 +42,7 @@ locale CorrectArityAnalysisAheap = CorrectArityAnalysis +
   assumes Aexp_Let_above: "Aexp e\<cdot>a f|` (- domA \<Gamma>) \<sqsubseteq> Aexp (Terms.Let \<Gamma> e)\<cdot>a"
 
 
-context CorrectArityAnalysisAfix
+context CorrectArityAnalysis
 begin
 
 lemma Aexp_Var_singleton: "AE_singleton x \<cdot> (up\<cdot>n) \<sqsubseteq> Aexp (Var x) \<cdot> n"
@@ -50,9 +50,6 @@ lemma Aexp_Var_singleton: "AE_singleton x \<cdot> (up\<cdot>n) \<sqsubseteq> Aex
 
 lemma Aexp'_Var: "AE_singleton x \<cdot> n \<sqsubseteq> Aexp' (Var x) \<cdot> n"
   by (cases n) (simp_all add: Aexp_Var)
-
-lemma Aexp'_Let: "Afix as\<cdot>(Aexp' e\<cdot>n) f|` (- domA as) \<sqsubseteq> Aexp' (Terms.Let as e)\<cdot>n"
-  by (cases n) (simp_all add: Aexp_Let)
 
 
 lemma Aexp_lookup_fresh: "atom v \<sharp> e \<Longrightarrow> (Aexp e\<cdot>a) v = \<bottom>"
@@ -156,7 +153,12 @@ lemma Afix_e_to_heap:
 lemma Afix_e_to_heap':
    "Afix (delete x \<Gamma>)\<cdot>(Aexp e\<cdot>n) \<sqsubseteq> Afix ((x, e) # delete x \<Gamma>)\<cdot>(AE_singleton x\<cdot>(up\<cdot>n))"
 using Afix_e_to_heap[where ae = \<bottom> and n = "up\<cdot>n"] by simp
+end
 
+context CorrectArityAnalysisAfix
+begin
+lemma Aexp'_Let: "Afix as\<cdot>(Aexp' e\<cdot>n) f|` (- domA as) \<sqsubseteq> Aexp' (Terms.Let as e)\<cdot>n"
+  by (cases n) (simp_all add: Aexp_Let)
 
 lemma  reds_improves_arity':
        "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : v \<Longrightarrow>
