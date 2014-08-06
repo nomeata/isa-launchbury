@@ -92,12 +92,18 @@ lemma inc_below_inc[simp]: "inc\<cdot>a \<sqsubseteq> inc\<cdot>b \<longleftrigh
   apply simp
   done
 
+lemma inc_below_below_pred[elim]:
+  "inc\<cdot>a \<sqsubseteq> b \<Longrightarrow> a \<sqsubseteq> pred \<cdot> b"
+  apply (simp add: inc_def pred_def)
+  apply transfer
+  apply simp
+  done
+
 lemma Rep_Arity_inc[simp]: "Rep_Arity (inc\<cdot>a') = Suc (Rep_Arity a')"
   apply (simp add: inc_def pred_def)
   apply transfer
   apply simp
   done
-  
   
 
 instance Arity :: Finite_Join_cpo
@@ -128,6 +134,12 @@ lemma Arity_up_zero_join[simp]: "(x :: Arity\<^sub>\<bottom>) \<squnion> up\<cdo
   by (cases x) auto
 lemma Arity_up_zero_join2[simp]: "up\<cdot>0 \<squnion> (x :: Arity\<^sub>\<bottom>) = up\<cdot>0"
   by (cases x) auto
+lemma Arity_above_up_top[simp]: "up \<cdot> 0 \<sqsubseteq> (a :: Arity\<^sub>\<bottom>) \<longleftrightarrow> a = up\<cdot>0"
+  by (metis Arity_up_zero_join2 join_self_below(4))
+
+
+lemma Arity_exhaust: "(y = 0 \<Longrightarrow> P) \<Longrightarrow> (\<And>x. y = inc \<cdot> x \<Longrightarrow> P) \<Longrightarrow> P"
+  by (metis Abs_cfun_inverse2 Arity.inc_def Rep_Arity_inverse inc_Arity.abs_eq inc_Arity_cont list_decode.cases zero_Arity_def)
 
 
 end
