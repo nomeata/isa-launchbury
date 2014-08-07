@@ -29,6 +29,7 @@ locale CorrectArityAnalysis = EdomArityAnalysis +
   assumes Aexp_subst_App_Lam: "Aexp (e[y::=x]) \<sqsubseteq> Aexp (App (Lam [y]. e) x)"
   assumes Aexp_Lam: "Aexp (Lam [y]. e) \<cdot> n = env_delete y (Aexp e \<cdot>(pred\<cdot>n))"
   assumes Aexp_App: "Aexp (App e x) \<cdot> n = Aexp e \<cdot>(inc\<cdot>n) \<squnion> AE_singleton x \<cdot> (up\<cdot>0)"
+  assumes Aexp_subst_restr: "x \<notin> S \<Longrightarrow> y \<notin> S \<Longrightarrow> (Aexp e[x::=y] \<cdot> a) f|` S = (Aexp e\<cdot>a) f|` S"
 
 locale CorrectArityAnalysisAfix = CorrectArityAnalysis + 
   assumes Aexp_Let: "Afix as\<cdot>(Aexp e\<cdot>n) f|` (- domA as) \<sqsubseteq> Aexp (Terms.Let as e)\<cdot>n"
@@ -42,6 +43,8 @@ locale CorrectArityAnalysisAheap = CorrectArityAnalysis +
   assumes Aheap_heap3: "map_of \<Gamma> x = Some e' \<Longrightarrow> \<not>(isLam e') \<Longrightarrow> (Aheap \<Gamma>\<cdot>ae) x = up\<cdot>0"
   assumes Aheap_above_arg: "ae f|` domA \<Gamma> \<sqsubseteq> Aheap \<Gamma>\<cdot>ae"
   assumes Aexp_Let_above: "Aexp e\<cdot>a f|` (- domA \<Gamma>) \<sqsubseteq> Aexp (Terms.Let \<Gamma> e)\<cdot>a"
+  assumes Aheap_subst: "x \<notin> domA \<Gamma> \<Longrightarrow> y \<notin> domA \<Gamma> \<Longrightarrow> Aheap \<Gamma>[x::h=y] = Aheap \<Gamma>"
+  assumes Aheap_cong: "ae f|` domA \<Gamma> = ae' f|` domA \<Gamma> \<Longrightarrow> Aheap \<Gamma>\<cdot>ae = Aheap \<Gamma>\<cdot>ae'"
 
 
 context CorrectArityAnalysis
@@ -73,6 +76,12 @@ lemma Afix_lookup_fresh:
   apply (auto simp add: ABinds_lookup_fresh[OF assms] fun_belowD[OF Afix_above_arg])
   done
 
+lemma Afix_restr_subst:
+  assumes "x \<notin> S"
+  assumes "y \<notin> S"
+  assumes "domA \<Gamma> \<subseteq> S"
+  shows "Afix \<Gamma>[x::h=y]\<cdot>ae f|` S = Afix \<Gamma>\<cdot>(ae f|` S) f|` S"
+  by (rule Afix_restr_subst'[OF Aexp_subst_restr[OF assms(1,2)] assms])
 
 lemma Abinds_append_fresh: "atom ` (domA \<Delta>) \<sharp>* \<Gamma> \<Longrightarrow>  ABinds (\<Delta> @ \<Gamma>)\<cdot>ae = ABinds \<Delta>\<cdot>(ABinds \<Gamma>\<cdot>ae)"
 proof (induct \<Delta> rule: ABinds.induct)
@@ -360,7 +369,7 @@ apply default
   apply (rule below_trans[OF _ Aexp_Let])
   apply (metis ArityAnalysis.Afix_above_arg env_restr_mono)
   done
-  sorry
+  sor ry
 end
 *)
 

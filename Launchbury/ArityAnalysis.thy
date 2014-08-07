@@ -189,6 +189,54 @@ next
   finally show ?case by simp
 qed
 
+lemma ABinds_restr:
+  assumes "domA \<Gamma> \<subseteq> S"
+  shows "ABinds \<Gamma>\<cdot>ae f|` S = ABinds \<Gamma>\<cdot>(ae  f|` S) f|` S"
+  using assms
+  by (induction \<Gamma> rule:ABinds.induct) (fastforce simp del: fun_meet_simp simp add: env_restr_join)+
+
+lemma Afix_restr:
+  assumes "domA \<Gamma> \<subseteq> S"
+  shows "Afix \<Gamma>\<cdot>ae f|` S = Afix \<Gamma>\<cdot>(ae  f|` S) f|` S"
+  unfolding Afix_eq
+  apply (rule parallel_fix_ind[where P = "\<lambda> x y . x f|`S = y  f|` S"])
+  apply simp
+  apply rule
+  apply (auto   simp add: env_restr_join)
+  apply (metis  ABinds_restr[OF assms, symmetric])
+  done
+
+lemma ABinds_restr_subst:
+  assumes "\<And> x' e a. (x',e) \<in> set \<Gamma> \<Longrightarrow> Aexp e[x::=y]\<cdot>a f|` S = Aexp e\<cdot>a f|` S"
+  assumes "x \<notin> S"
+  assumes "y \<notin> S"
+  assumes "domA \<Gamma> \<subseteq> S"
+  shows "ABinds \<Gamma>[x::h=y]\<cdot>ae f|` S = ABinds \<Gamma>\<cdot>(ae  f|` S) f|` S"
+  using assms
+  apply (induction \<Gamma> rule:ABinds.induct)
+  apply (auto simp del: fun_meet_simp simp add: env_restr_join)
+  apply (rule arg_cong2[where f = join])
+  apply (case_tac "ae v")
+  apply (auto dest:  set_mp[OF set_delete_subset])
+  done
+
+lemma Afix_restr_subst':
+  assumes "\<And> x' e a. (x',e) \<in> set \<Gamma> \<Longrightarrow> Aexp e[x::=y]\<cdot>a f|` S = Aexp e\<cdot>a f|` S"
+  assumes "x \<notin> S"
+  assumes "y \<notin> S"
+  assumes "domA \<Gamma> \<subseteq> S"
+  shows "Afix \<Gamma>[x::h=y]\<cdot>ae f|` S = Afix \<Gamma>\<cdot>(ae f|` S) f|` S"
+  unfolding Afix_eq
+  apply (rule parallel_fix_ind[where P = "\<lambda> x y . x f|`S = y  f|` S"])
+  apply simp
+  apply rule
+  apply (auto   simp add: env_restr_join)
+  apply (subst ABinds_restr_subst[OF assms]) apply assumption
+  apply (subst ABinds_restr[OF assms(4)]) back
+  apply simp
+  done
+
+ 
 lemma Afix_subst_approx:
   assumes "\<And> v n. v \<in> domA \<Gamma> \<Longrightarrow> Aexp (the (map_of \<Gamma> v))[y::=x]\<cdot>n \<sqsubseteq> (Aexp (the (map_of \<Gamma> v))\<cdot>n)(y := \<bottom>, x := up\<cdot>0)"
   assumes "x \<notin> domA \<Gamma>"

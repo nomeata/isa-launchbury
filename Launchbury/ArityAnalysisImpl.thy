@@ -170,6 +170,45 @@ next
   finally show ?case by this simp_all
 qed
 
+lemma env_delete_env_restr_swap:
+  "env_delete x (env_restr S e) = env_restr S (env_delete x e)"
+  by (metis (erased, hide_lams) env_delete_def env_restr_fun_upd env_restr_fun_upd_other fun_upd_triv lookup_env_restr_eq)
+
+lemma Aexp_restr_subst:
+  assumes "x \<notin> S" and "y \<notin> S"
+  shows "(Aexp e[x::=y]\<cdot>a) f|` S = (Aexp e\<cdot>a) f|` S"
+using assms
+proof (nominal_induct e avoiding: x y  arbitrary: a  S rule: exp_strong_induct_set)
+  case (Var v) 
+  thus ?case by auto
+next
+  case (App e v)
+  thus ?case by (auto simp add: env_restr_join simp del: fun_meet_simp)
+next
+  case (Lam v e)
+  thus ?case
+  by (auto simp add: env_restr_join env_delete_env_restr_swap[symmetric]  simp del: fun_meet_simp)
+next
+  case (Let \<Gamma> e)
+  hence "x \<notin> domA \<Gamma> " and "y \<notin> domA \<Gamma>"
+    by (metis (erased, hide_lams) bn_subst domA_not_fresh fresh_def fresh_star_at_base fresh_star_def obtain_fresh subst_is_fresh(2))+
+  
+  note this[simp] Let(1,2)[simp]
+
+  from Let
+  have "ArityAnalysis.Afix Aexp \<Gamma>[x::h=y]\<cdot>(Aexp e[x::=y]\<cdot>a \<squnion> thunks \<Gamma>) f|` (S \<union> domA \<Gamma>) = ArityAnalysis.Afix Aexp \<Gamma>\<cdot>(Aexp e\<cdot>a \<squnion> thunks \<Gamma>) f|` (S \<union> domA \<Gamma>)"
+    apply (auto simp add: fresh_star_Pair)
+    apply (subst Afix_restr_subst')
+    apply auto[1]
+    apply auto[3]
+    apply (simp add: env_restr_join)
+    apply (subst Afix_restr) back
+    apply auto[1]
+    apply (simp add: env_restr_join)
+    done
+  thus ?case using Let(1,2) by (auto simp add: fresh_star_Pair elim:env_restr_eq_subset[rotated])
+qed
+
 interpretation CorrectArityAnalysis Aexp
 proof default
   fix \<pi> show "\<pi> \<bullet> Aexp = Aexp" by perm_simp rule
@@ -181,6 +220,10 @@ next
     apply (rule fun_belowI)
     apply auto
     done
+next
+  fix x y :: var and e :: exp and S and a 
+  assume "x \<notin> S" and "y \<notin> S"
+  thus "(Aexp e[x::=y]\<cdot>a) f|` S = (Aexp e\<cdot>a) f|` S" by (rule Aexp_restr_subst)
 qed simp_all
 
 definition Aheap where
@@ -195,54 +238,20 @@ lemma Aheap_eqvt'[eqvt]:
   apply rule
   done
 
-(*   moreover
-    have "Aheap \<Delta>[x::h=y] = Aheap \<Delta>" sorry
-    moreover
-    have "(Aexp body[x::=y]\<cdot>a) f|` domA \<Delta> = (Aexp body\<cdot>a) f|` domA \<Delta>"
-      sorry
-    hence "Aheap \<Delta>\<cdot>(Aexp body[x::=y]\<cdot>a) = Aheap \<Delta>\<cdot>(Aexp body\<cdot>a)"
-*)
-
-(*
-lemma foobar:
-  assumes "x \<notin> S" and "y \<notin> S"
-  shows "(Aexp e[x::=y]\<cdot>a) f|` S = (Aexp e\<cdot>a) f|` S"
-using assms
-proof (nominal_induct e avoiding: x y  arbitrary: a  S rule: exp_strong_induct)
-  case (Var v) 
-  thus ?case by auto
-next
-  case (App e v)
-  thus ?case by (auto simp add: env_restr_join simp del: fun_meet_simp)
-next
-  case (Lam v e)
-  thus ?case by (auto simp add: env_restr_join env_delete_restr simp del: fun_meet_simp)
-next
-  case (Let \<Gamma> e)
-  hence "x \<notin> domA \<Gamma> " and "y \<notin> domA \<Gamma>"
-    by (metis (erased, hide_lams) bn_subst domA_not_fresh fresh_def fresh_star_at_base fresh_star_def obtain_fresh subst_is_fresh(2))+
-  
-  note this[simp] Let(1,2)[simp]
-
-  from Let
-  show ?case apply (auto simp add: fresh_star_Pair)
-
-  have "Aexp (Terms.Let \<Gamma> e)[y::=x]\<cdot>n \<sqsubseteq> Afix \<Gamma>[y::h=x]\<cdot>(Aexp e[y::=x]\<cdot>n \<squnion> thunks \<Gamma>[y::h=x]) f|` ( - domA \<Gamma>)" by (simp add: fresh_star_Pair)
-  also have "(Aexp e[y::=x]\<cdot>n) \<sqsubseteq> (Aexp e\<cdot>n)(y := \<bottom>, x := up\<cdot>0)" by fact
-  also have "thunks \<Gamma>[y::h=x] \<sqsubseteq> (thunks \<Gamma>)(y := \<bottom>, x := up\<cdot>0)" by (rule thunks_subst_approx[OF `y \<notin> domA \<Gamma>`])
-  also have "(Aexp e\<cdot>n)(y := \<bottom>, x := up\<cdot>0) \<squnion> (thunks \<Gamma>)(y := \<bottom>, x := up\<cdot>0) = (Aexp e\<cdot>n \<squnion> thunks \<Gamma>)(y := \<bottom>, x := up\<cdot>0)" by simp
-  also have "Afix \<Gamma>[y::h=x]\<cdot>((Aexp e\<cdot>n \<squnion> thunks \<Gamma>)(y := \<bottom>, x := up\<cdot>0)) \<sqsubseteq> (Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks \<Gamma>))(y := \<bottom>, x := up\<cdot>0)"
-    by (rule Afix_subst_approx[OF Let(3) `x \<notin> domA \<Gamma>` `y \<notin> domA \<Gamma>`])
-  also have "(Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks \<Gamma>))(y := \<bottom>, x := up\<cdot>0) f|` (- domA \<Gamma>) = (Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks \<Gamma>) f|` (- domA \<Gamma>)) (y := \<bottom>, x := up\<cdot>0)" by auto
-  also have "(Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks \<Gamma>) f|` (- domA \<Gamma>)) = Aexp (Terms.Let \<Gamma> e)\<cdot>n" by simp
-  finally show ?case by this simp_all
-qed
-*)
-
-
 interpretation CorrectArityAnalysisAheap Aexp Aheap
 proof default
   fix \<pi> show "\<pi> \<bullet> Aheap = Aheap" by perm_simp rule
+next
+  fix x y :: var and \<Gamma> :: heap
+  assume assms: "x \<notin> domA \<Gamma>"  "y \<notin> domA \<Gamma>"
+  show "Aheap \<Gamma>[x::h=y] = Aheap \<Gamma>"
+    apply (rule cfun_eqI)
+    unfolding Aheap_def
+    apply simp
+    apply (subst Afix_restr_subst[OF assms subset_refl])
+    apply (subst Afix_restr[OF  subset_refl]) back
+    apply simp
+    done
 next
   fix \<Gamma> ae
   show "edom (Aheap \<Gamma>\<cdot>ae) \<subseteq> domA \<Gamma>"  unfolding Aheap_def by simp
@@ -285,6 +294,16 @@ next
     apply simp
     apply (rule env_restr_mono)
     apply (rule below_trans[OF join_above1 Afix_above_arg])
+    done
+next
+  fix \<Gamma> :: heap and ae ae' :: AEnv
+  assume [simp]: "ae f|` domA \<Gamma> = ae' f|` domA \<Gamma>"
+  show "Aheap \<Gamma>\<cdot>ae = Aheap \<Gamma>\<cdot>ae'"
+    unfolding Aheap_def
+    apply simp
+    apply (subst Afix_restr[OF subset_refl])
+    apply (subst Afix_restr[OF subset_refl]) back
+    apply (simp add: env_restr_join)
     done
 qed
 

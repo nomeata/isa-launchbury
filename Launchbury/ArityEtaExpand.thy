@@ -240,13 +240,16 @@ lemma supp_Aeta_expand_transform: "supp (Aeta_expand_transform a e) \<subseteq> 
 lemma subst_Aeta_expand_transform: "(Aeta_expand_transform a e)[x ::= y] = Aeta_expand_transform a e[x ::= y]"
 proof (nominal_induct e avoiding: x y arbitrary: a  rule: exp_strong_induct_set)
   case (Let \<Delta> body x y)
-    moreover
-    have "Aheap \<Delta>[x::h=y] = Aheap \<Delta>" sorry
+    hence *: "x \<notin> domA \<Delta>" "y \<notin> domA \<Delta>" by (auto simp add: fresh_star_def fresh_at_base)
+    
+    note Let
+    moreover                         
+    from * have "Aheap \<Delta>[x::h=y] = Aheap \<Delta>" by (rule Aheap_subst)
     moreover
     have "(Aexp body[x::=y]\<cdot>a) f|` domA \<Delta> = (Aexp body\<cdot>a) f|` domA \<Delta>"
-      sorry
+      by (rule Aexp_subst_restr[OF *])
     hence "Aheap \<Delta>\<cdot>(Aexp body[x::=y]\<cdot>a) = Aheap \<Delta>\<cdot>(Aexp body\<cdot>a)"
-      sorry
+      by (rule Aheap_cong)
     ultimately
     show ?case
     apply (auto simp add: fresh_star_Pair simp del: Let_eq_iff)

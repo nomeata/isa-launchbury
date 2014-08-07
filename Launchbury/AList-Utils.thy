@@ -89,6 +89,9 @@ lemma map_of_empty[simp]:
   apply auto
   by (metis fun_upd_same option.distinct(1))
 
+lemma set_delete_subset: "set (delete k al) \<subseteq> set al"
+  by (auto simp add: delete_eq)
+
 lemma dom_delete_subset: "snd ` set (delete k al) \<subseteq> snd ` set al"
   by (auto simp add: delete_eq)
 

@@ -385,7 +385,7 @@ lemma eqvt_lam_case_eqvt:
   shows "F e x (Lam [x]. e) = F e' x' (Lam [x']. e')"
 using assms(1)
 proof(rule eqvt_lam_case)
-  have "eqvt F" unfolding eqvt_def by (rule, perm_simp, rule) sorry
+  have "eqvt F" unfolding eqvt_def by (rule, perm_simp, rule) so rry
   hence "supp (F e x (Lam [x]. e)) \<subseteq> supp e \<union> supp x \<union> supp (Lam [x]. e)" by (rule supp_fun_app_eqvt3)    
   with F_supp[unfolded fresh_def]
   have *: "supp (F e x (Lam [x]. e)) \<subseteq> supp (Lam [x]. e)" by (auto simp add: exp_assn.supp supp_at_base)
