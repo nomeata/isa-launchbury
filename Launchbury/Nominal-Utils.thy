@@ -263,7 +263,6 @@ lemma supp_set_elem_finite:
 lemmas fresh_star_Cons = fresh_star_list(2)
 
 lemma mem_permute_set: 
-  fixes x :: "'a :: at_base"
   shows "x \<in> p \<bullet> S \<longleftrightarrow> (- p \<bullet> x) \<in> S"
   by (metis mem_permute_iff permute_minus_cancel(2))
 
@@ -289,6 +288,18 @@ proof-
   have "supp (split f (x,y)) \<subseteq> supp (x,y)".
   thus ?thesis by (simp add: supp_Pair)
 qed
+
+lemma supp_fun_app_eqvt3:
+  assumes a: "eqvt f"
+  shows "supp (f x y z) \<subseteq> supp x \<union> supp y \<union> supp z"
+proof-
+  term "split  split"
+  thm eqvt_uncurry
+  from supp_fun_app_eqvt2[OF eqvt_uncurry [OF a]]
+  have "supp (split f (x,y) z) \<subseteq> supp (x,y) \<union> supp z".
+  thus ?thesis by (simp add: supp_Pair)
+qed
+
 
 (* Unused. Still submit? *)
 lemma Abs_lst_Nil_eq[simp]: "[[]]lst. (x::'a::fs) = [xs]lst. x' \<longleftrightarrow> (([],x) = (xs, x'))"

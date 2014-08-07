@@ -260,6 +260,22 @@ lemma exp_induct[case_names Var App Let Lam]:
   apply auto
   done
 
+lemma  exp_strong_induct_set[case_names Var App Let Lam]:
+  assumes "\<And>var c. P c (Var var)"
+  assumes "\<And>exp var c. (\<And>c. P c exp) \<Longrightarrow> P c (App exp var)"
+  assumes "\<And>\<Gamma> exp c.
+    atom ` domA \<Gamma> \<sharp>* c \<Longrightarrow> (\<And>c x e. (x,e) \<in> set \<Gamma> \<Longrightarrow>  P c e) \<Longrightarrow> (\<And>c. P c exp) \<Longrightarrow> P c (Let \<Gamma> exp)"
+  assumes "\<And>var exp c. {atom var} \<sharp>* c \<Longrightarrow> (\<And>c. P c exp) \<Longrightarrow> P c (Lam [var]. exp)"
+  shows "P (c::'a::fs) exp"
+  apply (rule exp_heap_strong_induct(1)[of P "\<lambda> c \<Gamma>. (\<forall>(x,e) \<in> set \<Gamma>. P c e)"])
+  apply (metis assms(1))
+  apply (metis assms(2))
+  apply (metis assms(3) split_conv)
+  apply (metis assms(4))
+  apply auto
+  done
+
+
 lemma  exp_strong_induct[case_names Var App Let Lam]:
   assumes "\<And>var c. P c (Var var)"
   assumes "\<And>exp var c. (\<And>c. P c exp) \<Longrightarrow> P c (App exp var)"
@@ -359,6 +375,30 @@ proof-
   also have "\<dots> = F e' x' (Lam [x']. e')" by (simp add: assms(1))
   finally show ?thesis.
 qed
+
+(* Nice idea, but doesn't work well with extra arguments to the function
+
+lemma eqvt_lam_case_eqvt:
+  assumes "Lam [x]. e = Lam [x']. e'"
+  assumes F_eqvt: "\<And> \<pi> e'. \<pi> \<bullet> F e x e' = F (\<pi> \<bullet> e) (\<pi> \<bullet> x) (\<pi> \<bullet> e')"
+  assumes F_supp: "atom x \<sharp> F e x (Lam [x]. e)"
+  shows "F e x (Lam [x]. e) = F e' x' (Lam [x']. e')"
+using assms(1)
+proof(rule eqvt_lam_case)
+  have "eqvt F" unfolding eqvt_def by (rule, perm_simp, rule) sorry
+  hence "supp (F e x (Lam [x]. e)) \<subseteq> supp e \<union> supp x \<union> supp (Lam [x]. e)" by (rule supp_fun_app_eqvt3)    
+  with F_supp[unfolded fresh_def]
+  have *: "supp (F e x (Lam [x]. e)) \<subseteq> supp (Lam [x]. e)" by (auto simp add: exp_assn.supp supp_at_base)
+
+  fix \<pi> :: perm
+  assume "supp \<pi> \<sharp>* Lam [x]. e" with *
+  have "supp \<pi> \<sharp>* F e x (Lam [x]. e)" by (auto simp add: fresh_star_def fresh_def)
+  hence "F e x (Lam [x]. e) = \<pi> \<bullet> (F e x (Lam [x]. e))" by (metis perm_supp_eq)
+  also have "\<dots> =  F (\<pi> \<bullet> e) (\<pi> \<bullet> x) (\<pi> \<bullet> (Lam [x]. e))" by (simp add: F_eqvt)
+  also have "\<pi> \<bullet> (Lam [x]. e) = (Lam [x]. e)" using `supp \<pi> \<sharp>* Lam [x]. e` by (metis perm_supp_eq)
+  finally show "F (\<pi> \<bullet> e) (\<pi> \<bullet> x) (Lam [x]. e) = F e x (Lam [x]. e)"..
+qed
+*)
 
 lemma eqvt_let_case:
   assumes "Let as body = Let as' body'"

@@ -24,6 +24,7 @@ lemma Afix_edom: "edom (Afix \<Gamma> \<cdot> ae) \<subseteq> fv \<Gamma> \<unio
 end
 
 locale CorrectArityAnalysis = EdomArityAnalysis +
+  assumes Aexp_eqvt[eqvt]: "\<pi> \<bullet> Aexp = Aexp"
   assumes Aexp_Var: "up \<cdot> n \<sqsubseteq> (Aexp (Var x) \<cdot> n) x"
   assumes Aexp_subst_App_Lam: "Aexp (e[y::=x]) \<sqsubseteq> Aexp (App (Lam [y]. e) x)"
   assumes Aexp_Lam: "Aexp (Lam [y]. e) \<cdot> n = env_delete y (Aexp e \<cdot>(pred\<cdot>n))"
@@ -34,6 +35,7 @@ locale CorrectArityAnalysisAfix = CorrectArityAnalysis +
 
 locale CorrectArityAnalysisAheap = CorrectArityAnalysis + 
   fixes Aheap :: "heap \<Rightarrow> AEnv \<rightarrow> AEnv"
+  assumes Aheap_eqvt[eqvt]: "\<pi> \<bullet> Aheap = Aheap"
   assumes edom_Aheap: "edom (Aheap \<Gamma> \<cdot> ae) \<subseteq> domA \<Gamma>"
   assumes Aheap_heap: "map_of \<Gamma> x = Some e' \<Longrightarrow> Aexp' e'\<cdot>((Aheap \<Gamma>\<cdot>ae) x) f|` domA \<Gamma> \<sqsubseteq> Aheap \<Gamma>\<cdot>ae"
   assumes Aheap_heap2: "map_of \<Gamma> x = Some e' \<Longrightarrow> Aexp' e'\<cdot>((Aheap \<Gamma>\<cdot>(Aexp e\<cdot>a)) x) f|` (- domA \<Gamma>) \<sqsubseteq>  Aexp (Terms.Let \<Gamma> e)\<cdot>a"
@@ -328,12 +330,14 @@ corollary  reds_improves_arity:
 end
 
 
-
+(*
 context CorrectArityAnalysisAfix 
 begin
 
 sublocale CorrectArityAnalysisAheap Aexp "\<lambda> \<Gamma>. \<Lambda> ae. (Afix \<Gamma> \<cdot> ae f|` domA \<Gamma>)"
 apply default
+  defer
+
   apply simp
 
   apply simp
@@ -358,6 +362,6 @@ apply default
   done
   sorry
 end
-
+*)
 
 end
