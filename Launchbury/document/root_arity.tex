@@ -4,7 +4,7 @@
 % further packages required for unusual symbols (see also
 % isabellesym.sty), use only when needed
 
-%\usepackage{amssymb}
+\usepackage{amssymb}
   %for \<leadsto>, \<box>, \<diamond>, \<sqsupset>, \<mho>, \<Join>,
   %\<lhd>, \<lesssim>, \<greatersim>, \<lessapprox>, \<greaterapprox>,
   %\<triangleq>, \<yen>, \<lozenge>
@@ -49,6 +49,9 @@
 % Concrete implemenation thanks to http://www.mrunix.de/forums/showpost.php?p=235085&postcount=5
 \newenvironment{alignstar}{\csname align*\endcsname}{\csname endalign*\endcsname}
 \newenvironment{alignatstar}{\csname alignat*\endcsname}{\csname endalignat*\endcsname}
+
+% quench koma warnings
+\def\bf{\normalfont\bfseries}
 
 
 \begin{document}

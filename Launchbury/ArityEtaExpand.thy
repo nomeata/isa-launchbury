@@ -196,7 +196,7 @@ case (goal13 a as body a' as' body')
   have "\<And> x e a. (x, e) \<in> set as \<Longrightarrow> supp (Aeta_expand_transform_sumC (a, e)) \<subseteq> supp e"
     by (auto simp add: exp_assn.fsupp supp_Pair pure_supp)
   hence supp_map: "\<And>ae. supp (map_transform (\<lambda>x0 x1. Aeta_expand_transform_sumC (x0, x1)) ae as) \<subseteq> supp as"
-    by (rule supp_map_transform)    
+    by (rule supp_map_transform_step)
 
   from goal13(9)
   have "a' = a" and  "Terms.Let as body = Terms.Let as' body'" by simp_all

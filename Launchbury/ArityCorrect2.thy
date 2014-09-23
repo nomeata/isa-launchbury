@@ -2,7 +2,7 @@ theory ArityCorrect2
 imports ArityCorrect LaunchburyAddLog
 begin
 
-context CorrectArityAnalysis
+context CorrectArityAnalysisAfix
 begin
 
 
