@@ -4,7 +4,6 @@ begin
 
 lemma isLam_remove_dead_code[simp]: "isLam e \<Longrightarrow> isLam (remove_dead_code e)"
   by (induction e rule:isLam.induct) auto
-  
 
 definition rdcH :: "var set \<Rightarrow> heap \<Rightarrow> heap"
   where "rdcH S \<Gamma> = restrictA (-S) (clearjunk (map_ran (\<lambda> _ e . remove_dead_code e) \<Gamma>))" 
@@ -140,13 +139,42 @@ proof(rule dc_rel_elim)
       unfolding var\<^sub>1(1)
       by -(rule dc_relI[where V = V], auto dest: set_mp[OF *] set_mp[OF **])
     also
-    from  `map_of (rdcH V \<Gamma>) x = Some (remove_dead_code z)`
     have "(rdcH V \<Gamma>, remove_dead_code (Var x), S) \<Rightarrow> (rdcH V (delete x \<Gamma>), remove_dead_code z, Upd x # S)"
-      by (simp add: delete_rdcH[symmetric] del: delete_rdcH) rule
+    proof(cases "isLam (remove_dead_code z)")
+      case True with `map_of (rdcH V \<Gamma>) x = Some (remove_dead_code z)`
+      show ?thesis sorry
+    next
+      case False with `map_of (rdcH V \<Gamma>) x = Some (remove_dead_code z)`
+      show ?thesis  by (simp add: delete_rdcH[symmetric] del: delete_rdcH) rule
+    qed
     ultimately
     show ?thesis unfolding var\<^sub>1 by blast
   next
   case (var\<^sub>2 x)
+    from V\<^sub>2 var\<^sub>2 `map_of \<Gamma> x = Some z`  have "x \<notin> V" by auto
+
+    from `map_of \<Gamma> x = Some z` and `x \<notin> V`
+    have "map_of (rdcH V \<Gamma>) x = Some (remove_dead_code z)" by (auto simp add: map_of_rdcH)
+
+    have *: "\<And> S . fv (rdcH S (delete x \<Gamma>)) \<subseteq> fv (rdcH S \<Gamma>)" by (metis delete_rdcH fv_delete_subset)
+
+    from `map_of (rdcH V \<Gamma>) x = Some (remove_dead_code z)`
+    have **: "fv (remove_dead_code z) \<subseteq> fv (rdcH V \<Gamma>)" by (metis domA_from_set map_of_fv_subset map_of_is_SomeD option.sel)
+
+    from `isLam z` have "isLam (remove_dead_code z)" by (rule isLam_remove_dead_code)
+
+    from V\<^sub>1 V\<^sub>2
+    have "((x, z) # delete x \<Gamma>, z, S) \<triangleright> (rdcH V ((x, z) # delete x \<Gamma>), remove_dead_code z, S)"
+      unfolding var\<^sub>1(1)
+      by -(rule dc_relI[where V = V], auto simp add: `x \<notin> V` dest: set_mp[OF *] set_mp[OF **])
+    also
+    from  `map_of (rdcH V \<Gamma>) x = Some (remove_dead_code z)` and `isLam (remove_dead_code z)`
+    have "(rdcH V \<Gamma>, remove_dead_code (Var x), S) \<Rightarrow> (rdcH V ((x, z) # delete x \<Gamma>), remove_dead_code z, S)"      
+      by (simp add: delete_rdcH[symmetric] rdch_Cons[OF `x \<notin> V`] del: delete_rdcH) rule
+    ultimately
+    show ?thesis unfolding var\<^sub>2 by blast
+  next
+  case (var\<^sub>3 x)
     with V\<^sub>2 have [simp]: "x \<notin> V" by auto
     with `x \<notin> domA \<Gamma>`
     have  "rdcH V ((x, z) # \<Gamma>) = (x,remove_dead_code z) # rdcH V \<Gamma>" by simp
@@ -156,13 +184,13 @@ proof(rule dc_rel_elim)
 
     from V\<^sub>1 V\<^sub>2
     have "((x, e) # \<Gamma>, e, T) \<triangleright> ((x,remove_dead_code e) # rdcH V \<Gamma>, remove_dead_code e, T)"
-      unfolding var\<^sub>2(1-1)
+      unfolding var\<^sub>3(1-1)
       by -(rule dc_relI[where V = V], auto)
     moreover
     have "(rdcH V \<Gamma>, remove_dead_code e, Upd x # T) \<Rightarrow> ((x,remove_dead_code e) # rdcH V \<Gamma>, remove_dead_code e, T)"
       by rule simp_all
     ultimately
-    show ?thesis unfolding eqs var\<^sub>2 by blast
+    show ?thesis unfolding eqs var\<^sub>3 by blast
   next
   case (let\<^sub>1 \<Delta>)
     let "(?\<Delta>', ?body')" = "((restrict_reachable (map_ran (\<lambda>_. remove_dead_code) \<Delta>) (remove_dead_code z)), (remove_dead_code z))"
