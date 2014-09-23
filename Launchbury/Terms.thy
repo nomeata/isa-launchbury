@@ -16,14 +16,14 @@ referenced.
 *}
 
 nominal_datatype exp =
-  Var "var"
-| App "exp" "var"
-| LetA as::"assn" body::"exp" binds "bn as" in "body" "as"
-| Lam x::"var" body::"exp" binds x in body  ("Lam [_]. _" [100, 100] 100)
+  Var var
+| App exp var
+| LetA as::assn body::exp binds "bn as" in body as
+| Lam x::var body::exp binds x in body  ("Lam [_]. _" [100, 100] 100)
 and assn =
-  ANil | ACons "var" "exp" "assn" 
+  ANil | ACons var exp assn
 binder
-  bn
+  bn :: "assn \<Rightarrow> atom list"
 where "bn ANil = []" | "bn (ACons x t as) = (atom x) # (bn as)"
 
 notation (latex output) Terms.Var ("_")
