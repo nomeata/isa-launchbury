@@ -1,5 +1,5 @@
 theory DeadCodeRemoval2CorrectSestoft
-imports Sestoft DeadCodeRemoval2 SestoftCorrect
+imports Sestoft DeadCodeRemoval2 SestoftCorrect LookAheadSim
 begin
 
 lemma isLam_remove_dead_code[simp]: "isLam e \<Longrightarrow> isLam (remove_dead_code e)"
@@ -88,6 +88,51 @@ lemma disjoint_mono: "A \<inter> B = {} \<Longrightarrow>  A' \<subseteq> A \<Lo
 lemma disjoint_Un1: "(A \<union> B) \<inter> C = {} \<longleftrightarrow> A \<inter> C = {} \<and> B \<inter> C = {} " by auto
 lemma disjoint_Un2: "C \<inter> (A \<union> B) = {} \<longleftrightarrow> C \<inter> A = {} \<and> C \<inter> B = {} " by auto
 
+lemma isLam_SmartLet[simp]: "isLam (SmartLet \<Gamma> e) \<longleftrightarrow> \<Gamma> = [] \<and> isLam e"
+  unfolding SmartLet_def by auto
+
+lemma SmartLet_Nil[simp]: "SmartLet [] e = e"
+  unfolding SmartLet_def by auto
+(*
+lemma remove_dead_code_eventually:
+  assumes "isLam (remove_dead_code z)"
+  shows "eventually (\<lambda> (\<Gamma>', z', S) . remove_dead_code z = remove_dead_code z' \<and> restrict_reachable (map_ran (\<lambda>_. remove_dead_code) \<Gamma>') (remove_dead_code z') = restrict_reachable (map_ran (\<lambda>_. remove_dead_code) \<Gamma>) (remove_dead_code z') \<and>  isLam z') op \<Rightarrow> (\<Gamma>, z, S)"
+    (is "?t \<Gamma> z S")
+using assms
+apply(nominal_induct z avoiding: \<Gamma> S rule:exp_strong_induct)
+apply auto
+apply (rule laterI)
+apply rule
+apply assumption
+apply assumption
+apply (erule step.cases)
+apply auto[5]
+apply (auto simp del: Let_eq_iff)
+proof-
+  case (goal1 \<Gamma> exp \<Delta> \<Gamma>'' S e)
+  have "?t (\<Delta> @ \<Gamma>'') e S" sorry
+  moreover
+  from `_ = []`
+  have "restrict_reachable (map_ran (\<lambda>_. remove_dead_code) \<Delta>) (remove_dead_code e) = []"
+    sorry
+  ultimately
+  show ?case apply simp
+
+lemma remove_dead_code_eventually:
+  assumes "isLam (remove_dead_code z)"
+  assumes "(\<Gamma>, z, S) \<triangleright> c'"
+  shows "eventually (\<lambda>c . c \<triangleright> c') op \<Rightarrow> (\<Gamma>, z, S)"
+using assms
+apply(nominal_induct z avoiding: \<Gamma> S rule:exp_strong_induct)
+apply auto
+apply (rule laterI)
+apply rule
+apply assumption
+apply assumption
+apply (erule step.cases)
+apply auto[5]
+*)
+
 
 theorem DeadCodeRemovalCorrectStep:
   assumes "(\<Gamma>, e, S) \<Rightarrow> (\<Delta>, z, T)"
@@ -100,7 +145,7 @@ proof(rule dc_rel_elim)
   assume V\<^sub>2: "V \<inter> (fv (rdcH V \<Gamma>) \<union> (fv (remove_dead_code e) \<union> fv S)) = {}"
   assume eqs: "\<Gamma>' = rdcH V \<Gamma>" "e' = remove_dead_code e" "S' = S"
 
-  have "\<exists>\<Delta>' z' T'. (\<Delta>, z, T) \<triangleright> (\<Delta>', z', T') \<and> (rdcH V \<Gamma>, remove_dead_code e, S) \<Rightarrow>\<^sup>* (\<Delta>', z', T')"
+  have "\<exists> \<Delta>' z' T'. (\<Delta>, z, T) \<triangleright> (\<Delta>', z', T') \<and> (rdcH V \<Gamma>, remove_dead_code e, S) \<Rightarrow>\<^sup>* (\<Delta>', z', T')"
   using assms(1)
   proof(cases rule: step.cases)
   case (app\<^sub>1 x)
@@ -138,43 +183,14 @@ proof(rule dc_rel_elim)
     have "(delete x \<Gamma>, z, Upd x # S) \<triangleright> (rdcH V (delete x \<Gamma>), remove_dead_code z, Upd x # S)"
       unfolding var\<^sub>1(1)
       by -(rule dc_relI[where V = V], auto dest: set_mp[OF *] set_mp[OF **])
-    also
+    moreover
+    from  `map_of (rdcH V \<Gamma>) x = Some (remove_dead_code z)`
     have "(rdcH V \<Gamma>, remove_dead_code (Var x), S) \<Rightarrow> (rdcH V (delete x \<Gamma>), remove_dead_code z, Upd x # S)"
-    proof(cases "isLam (remove_dead_code z)")
-      case True with `map_of (rdcH V \<Gamma>) x = Some (remove_dead_code z)`
-      show ?thesis sorry
-    next
-      case False with `map_of (rdcH V \<Gamma>) x = Some (remove_dead_code z)`
-      show ?thesis  by (simp add: delete_rdcH[symmetric] del: delete_rdcH) rule
-    qed
+      by (simp add: delete_rdcH[symmetric] del: delete_rdcH) rule
     ultimately
     show ?thesis unfolding var\<^sub>1 by blast
   next
   case (var\<^sub>2 x)
-    from V\<^sub>2 var\<^sub>2 `map_of \<Gamma> x = Some z`  have "x \<notin> V" by auto
-
-    from `map_of \<Gamma> x = Some z` and `x \<notin> V`
-    have "map_of (rdcH V \<Gamma>) x = Some (remove_dead_code z)" by (auto simp add: map_of_rdcH)
-
-    have *: "\<And> S . fv (rdcH S (delete x \<Gamma>)) \<subseteq> fv (rdcH S \<Gamma>)" by (metis delete_rdcH fv_delete_subset)
-
-    from `map_of (rdcH V \<Gamma>) x = Some (remove_dead_code z)`
-    have **: "fv (remove_dead_code z) \<subseteq> fv (rdcH V \<Gamma>)" by (metis domA_from_set map_of_fv_subset map_of_is_SomeD option.sel)
-
-    from `isLam z` have "isLam (remove_dead_code z)" by (rule isLam_remove_dead_code)
-
-    from V\<^sub>1 V\<^sub>2
-    have "((x, z) # delete x \<Gamma>, z, S) \<triangleright> (rdcH V ((x, z) # delete x \<Gamma>), remove_dead_code z, S)"
-      unfolding var\<^sub>1(1)
-      by -(rule dc_relI[where V = V], auto simp add: `x \<notin> V` dest: set_mp[OF *] set_mp[OF **])
-    also
-    from  `map_of (rdcH V \<Gamma>) x = Some (remove_dead_code z)` and `isLam (remove_dead_code z)`
-    have "(rdcH V \<Gamma>, remove_dead_code (Var x), S) \<Rightarrow> (rdcH V ((x, z) # delete x \<Gamma>), remove_dead_code z, S)"      
-      by (simp add: delete_rdcH[symmetric] rdch_Cons[OF `x \<notin> V`] del: delete_rdcH) rule
-    ultimately
-    show ?thesis unfolding var\<^sub>2 by blast
-  next
-  case (var\<^sub>3 x)
     with V\<^sub>2 have [simp]: "x \<notin> V" by auto
     with `x \<notin> domA \<Gamma>`
     have  "rdcH V ((x, z) # \<Gamma>) = (x,remove_dead_code z) # rdcH V \<Gamma>" by simp
@@ -184,13 +200,13 @@ proof(rule dc_rel_elim)
 
     from V\<^sub>1 V\<^sub>2
     have "((x, e) # \<Gamma>, e, T) \<triangleright> ((x,remove_dead_code e) # rdcH V \<Gamma>, remove_dead_code e, T)"
-      unfolding var\<^sub>3(1-1)
+      unfolding var\<^sub>2(1-1)
       by -(rule dc_relI[where V = V], auto)
     moreover
     have "(rdcH V \<Gamma>, remove_dead_code e, Upd x # T) \<Rightarrow> ((x,remove_dead_code e) # rdcH V \<Gamma>, remove_dead_code e, T)"
       by rule simp_all
     ultimately
-    show ?thesis unfolding eqs var\<^sub>3 by blast
+    show ?thesis unfolding eqs var\<^sub>2 by blast
   next
   case (let\<^sub>1 \<Delta>)
     let "(?\<Delta>', ?body')" = "((restrict_reachable (map_ran (\<lambda>_. remove_dead_code) \<Delta>) (remove_dead_code z)), (remove_dead_code z))"

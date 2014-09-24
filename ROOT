@@ -38,7 +38,7 @@ session Arity (AFP) in "Launchbury" = "HOLCF-Nominal2" +
     "ArityEtaExpand"
     "DeadCodeRemovalCorrect"
     "DeadCodeRemoval2Correct"
-    (* "DeadCodeRemoval2CorrectSestoft" *)
+    "DeadCodeRemoval2CorrectSestoft"
 
 session Nominal2013_1 in "Nominal2-Isabelle2013-1/Nominal" = HOL +
   theories
