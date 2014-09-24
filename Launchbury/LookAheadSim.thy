@@ -4,13 +4,18 @@ begin
 inductive eventually :: "('a \<Rightarrow> bool) \<Rightarrow> ('a \<Rightarrow> 'a \<Rightarrow> bool) \<Rightarrow> ('a \<Rightarrow> bool)"
   for rel :: "'a \<Rightarrow> bool" and step :: "'a \<Rightarrow> 'a \<Rightarrow> bool" (infix "\<Rightarrow>" 50)
   where
-    nowI : "rel x \<Longrightarrow> eventually rel step x"
+    nowI[intro] : "rel x \<Longrightarrow> eventually rel step x"
   | laterI : "x \<Rightarrow> x' \<Longrightarrow> (\<And> x'. x \<Rightarrow> x' \<Longrightarrow> eventually rel step x') \<Longrightarrow> eventually rel step x"
+
+lemma later_uniqueI:
+  fixes step :: "'a \<Rightarrow> 'a \<Rightarrow> bool" (infix "\<Rightarrow>" 50)
+  shows  "x \<Rightarrow> x' \<Longrightarrow> (\<And> x''. x \<Rightarrow> x'' \<Longrightarrow> x'' = x') \<Longrightarrow> eventually rel step x' \<Longrightarrow> eventually rel step x"
+  by (erule laterI) auto
 
 lemma later_svI:
   fixes step :: "'a \<Rightarrow> 'a \<Rightarrow> bool" (infix "\<Rightarrow>" 50)
   shows  "single_valuedP (op \<Rightarrow>) \<Longrightarrow> x \<Rightarrow> x' \<Longrightarrow> eventually rel step x' \<Longrightarrow> eventually rel step x"
-  by (rule laterI) (auto dest: single_valuedD)
+  by (rule later_uniqueI) (auto dest: single_valuedD)
 
 context
   fixes rel :: "'a \<Rightarrow> 'b \<Rightarrow> bool" (infix "\<triangleright>" 50)
@@ -66,7 +71,7 @@ end
 
 subsection {* Example *}
 
-context
+locale LookAheadSimExample
 begin
 
 inductive rel :: "nat \<Rightarrow> nat \<Rightarrow> bool" (infix "\<triangleright>" 50)
