@@ -1,29 +1,28 @@
 theory LookAheadSim imports Main
 begin
 
-inductive look_ahead :: "('a \<Rightarrow> 'b \<Rightarrow> bool) \<Rightarrow> ('a \<Rightarrow> 'a \<Rightarrow> bool) \<Rightarrow> ('a \<Rightarrow> 'b \<Rightarrow> bool)"
-  for rel :: "'a \<Rightarrow> 'b \<Rightarrow> bool" (infix "\<triangleright>" 50) and step :: "'a \<Rightarrow> 'a \<Rightarrow> bool" (infix "\<Rightarrow>" 50)
+inductive eventually :: "('a \<Rightarrow> bool) \<Rightarrow> ('a \<Rightarrow> 'a \<Rightarrow> bool) \<Rightarrow> ('a \<Rightarrow> bool)"
+  for rel :: "'a \<Rightarrow> bool" and step :: "'a \<Rightarrow> 'a \<Rightarrow> bool" (infix "\<Rightarrow>" 50)
   where
-    nowI : "x \<triangleright> y \<Longrightarrow> look_ahead rel step x y"
-  | laterI : "x \<Rightarrow> x' \<Longrightarrow> (\<And> x'. x \<Rightarrow> x' \<Longrightarrow> look_ahead rel step x' y) \<Longrightarrow> look_ahead rel step x y"
+    nowI : "rel x \<Longrightarrow> eventually rel step x"
+  | laterI : "x \<Rightarrow> x' \<Longrightarrow> (\<And> x'. x \<Rightarrow> x' \<Longrightarrow> eventually rel step x') \<Longrightarrow> eventually rel step x"
 
 lemma later_svI:
   fixes step :: "'a \<Rightarrow> 'a \<Rightarrow> bool" (infix "\<Rightarrow>" 50)
-  shows  "single_valuedP (op \<Rightarrow>) \<Longrightarrow> x \<Rightarrow> x' \<Longrightarrow> look_ahead rel step x' y \<Longrightarrow> look_ahead rel step x y"
+  shows  "single_valuedP (op \<Rightarrow>) \<Longrightarrow> x \<Rightarrow> x' \<Longrightarrow> eventually rel step x' \<Longrightarrow> eventually rel step x"
   by (rule laterI) (auto dest: single_valuedD)
 
 context
   fixes rel :: "'a \<Rightarrow> 'b \<Rightarrow> bool" (infix "\<triangleright>" 50)
   fixes step1 :: "'a \<Rightarrow> 'a \<Rightarrow> bool" (infix "\<Rightarrow>\<^sub>1" 50)
   fixes step2 :: "'b \<Rightarrow> 'b \<Rightarrow> bool" (infix "\<Rightarrow>\<^sub>2" 50)
-  assumes single_step: "\<And> x x' y . x \<Rightarrow>\<^sub>1 x' \<Longrightarrow> x \<triangleright> y \<Longrightarrow> \<exists> y'. op \<Rightarrow>\<^sub>2\<^sup>*\<^sup>* y y' \<and> look_ahead rel step1 x' y'"
+  assumes single_step: "\<And> x x' y . x \<Rightarrow>\<^sub>1 x' \<Longrightarrow> x \<triangleright> y \<Longrightarrow> \<exists> y'. op \<Rightarrow>\<^sub>2\<^sup>*\<^sup>* y y' \<and> eventually (\<lambda>x. x \<triangleright> y') step1 x'"
 begin
-
 
 lemma simulate_with_later:
   assumes "x \<Rightarrow>\<^sub>1 x'"
-  assumes "look_ahead rel step1 x y"
-  shows "\<exists> y'. op \<Rightarrow>\<^sub>2\<^sup>*\<^sup>* y y' \<and> look_ahead rel step1 x' y'"
+  assumes "eventually (\<lambda>x. x \<triangleright> y) step1 x"
+  shows "\<exists> y'. op \<Rightarrow>\<^sub>2\<^sup>*\<^sup>* y y' \<and>  eventually (\<lambda>x. x \<triangleright> y') step1 x'"
 using assms(2)
 proof(cases)
   case nowI
@@ -41,23 +40,23 @@ lemma simulate_with_later_to_end:
   shows "\<exists> y'. op \<Rightarrow>\<^sub>2\<^sup>*\<^sup>* y y' \<and> x' \<triangleright> y'"
 proof-
   from `x \<triangleright> y`
-  have "look_ahead rel step1 x y"..
+  have "eventually (\<lambda>x. x \<triangleright> y) step1 x"..
   
   from `op \<Rightarrow>\<^sub>1\<^sup>*\<^sup>* x x'` and this
-  have "\<exists> y'. op \<Rightarrow>\<^sub>2\<^sup>*\<^sup>* y y' \<and> look_ahead rel step1 x' y'"
+  have "\<exists> y'. op \<Rightarrow>\<^sub>2\<^sup>*\<^sup>* y y' \<and>  eventually (\<lambda>x. x \<triangleright> y') step1 x'"
   proof(induction)
     case base thus ?case by blast
   next
     case (step x' x'')
-    then obtain y' where "op \<Rightarrow>\<^sub>2\<^sup>*\<^sup>* y y'" and "look_ahead op \<triangleright> op \<Rightarrow>\<^sub>1 x' y'" by auto
+    then obtain y' where "op \<Rightarrow>\<^sub>2\<^sup>*\<^sup>* y y'" and " eventually (\<lambda>x. x \<triangleright> y') op \<Rightarrow>\<^sub>1 x'" by auto
     
-    from `x' \<Rightarrow>\<^sub>1 x''` and `look_ahead op \<triangleright> op \<Rightarrow>\<^sub>1 x' y'`
-    have "\<exists>y''. op \<Rightarrow>\<^sub>2\<^sup>*\<^sup>* y' y'' \<and> look_ahead op \<triangleright> op \<Rightarrow>\<^sub>1 x'' y''" by (rule simulate_with_later)
+    from `x' \<Rightarrow>\<^sub>1 x''` and `eventually (\<lambda>x. x \<triangleright> y') op \<Rightarrow>\<^sub>1 x'`
+    have "\<exists>y''. op \<Rightarrow>\<^sub>2\<^sup>*\<^sup>* y' y'' \<and>  eventually (\<lambda>x. x \<triangleright> y'') op \<Rightarrow>\<^sub>1 x''" by (rule simulate_with_later)
     with `op \<Rightarrow>\<^sub>2\<^sup>*\<^sup>* y y'`
     show ?case by (metis rtranclpD tranclp_into_rtranclp tranclp_rtranclp_tranclp)
   qed
-  then obtain y' where "op \<Rightarrow>\<^sub>2\<^sup>*\<^sup>* y y'" and "look_ahead rel step1 x' y'" by auto
-  from `look_ahead rel step1 x' y'` and `\<not> Domainp step1 x'`
+  then obtain y' where "op \<Rightarrow>\<^sub>2\<^sup>*\<^sup>* y y'" and " eventually (\<lambda>x. x \<triangleright> y') step1 x'" by auto
+  from ` eventually (\<lambda>x. x \<triangleright> y') step1 x'` and `\<not> Domainp step1 x'`
   have "x' \<triangleright> y'" by cases auto
   with `op \<Rightarrow>\<^sub>2\<^sup>*\<^sup>* y y'`
   show ?thesis by auto
@@ -109,11 +108,11 @@ proof-
     have "Suc (Suc x') \<triangleright> Suc (Suc y)"
       unfolding `x' = Suc x` `x = 3*n` `y = 2*n`
       using relI[of "Suc n"] by (metis Suc3_eq_add_3 add_2_eq_Suc mult_Suc_right)
-    hence "look_ahead op \<triangleright> op \<Rightarrow> (Suc (Suc x')) (Suc (Suc y))"..
+    hence "eventually (\<lambda>x. x \<triangleright> Suc (Suc y)) op \<Rightarrow> (Suc (Suc x'))"..
     with `Suc x' \<Rightarrow> Suc (Suc x')`
-    have  "look_ahead op \<triangleright> op \<Rightarrow> (Suc x') (Suc (Suc y))" by(rule later_svI[OF sv_step])
+    have  "eventually (\<lambda>x. x \<triangleright> Suc (Suc y)) op \<Rightarrow> (Suc x')" by(rule later_svI[OF sv_step])
     with `x' \<Rightarrow> Suc x'`
-    have  "look_ahead op \<triangleright> op \<Rightarrow> x' (Suc (Suc y))" by (rule later_svI[OF sv_step])
+    have  "eventually (\<lambda>x. x \<triangleright> Suc (Suc y)) op \<Rightarrow> x'" by (rule later_svI[OF sv_step])
     moreover
     from `x \<le> 299` and `x = 3*n` and `y = 2*n` have "y < 298" by arith
 
@@ -121,7 +120,7 @@ proof-
     hence "y \<Rightarrow> Suc y" and "Suc y \<Rightarrow> Suc (Suc y)" by (auto intro: stepI)
     hence "op \<Rightarrow>\<^sup>*\<^sup>* y (Suc (Suc y))" by auto
     ultimately
-    show "\<exists>y'. op \<Rightarrow>\<^sup>*\<^sup>* y y' \<and> look_ahead op \<triangleright> op \<Rightarrow> x' y'" by auto
+    show "\<exists>y'. op \<Rightarrow>\<^sup>*\<^sup>* y y' \<and> eventually (\<lambda>x. x \<triangleright> y') op \<Rightarrow> x'" by auto
   qed
 qed
 end
