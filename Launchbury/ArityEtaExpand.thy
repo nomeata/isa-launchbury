@@ -294,14 +294,16 @@ qed auto
     "isLam (Aeta_expand_transform a e) \<longleftrightarrow> isLam e"
     by (induction e rule:isLam.induct) auto
 
+(*
   sublocale AbstractConforms step consistent.
+*)
 
 lemma foo:
   fixes c c' R 
-  assumes "c \<Rightarrow> c'" and "consistent (ae,a) c"
+  assumes "c \<Rightarrow>\<^sup>* c'" and "\<not> boring_step c'" and "consistent (ae,a) c"
   shows "\<exists>ae' a'. consistent (ae',a') c' \<and> Atransform (ae,a) c \<Rightarrow>\<^sup>* Atransform (ae',a') c'"
 using assms
-proof(induction)
+proof(induction c c' arbitrary: ae a rule:step_induction)
 case (app\<^sub>1 \<Gamma> e x S)
   from app\<^sub>1 have "consistent (ae, inc\<cdot>a) (\<Gamma>, e, Arg x # S)"  by (fastforce simp add: Aexp_App join_below_iff)
   moreover
@@ -323,11 +325,11 @@ case (app\<^sub>2 \<Gamma> y e x S)
   ultimately
   show ?case by (blast del: consistentI consistentE)
 next
-case (var\<^sub>1 \<Gamma> x e S)
-  have "consistent (ae, 0) (delete x \<Gamma>, e, Upd x # S)" using var\<^sub>1 by (fastforce  simp add: join_below_iff)
+case (thunk \<Gamma> x e S)
+  have "consistent (ae, 0) (delete x \<Gamma>, e, Upd x # S)" using thunk by (fastforce  simp add: join_below_iff)
   moreover
   {
-  from var\<^sub>1 have "ae x = up\<cdot>0" by auto
+  from thunk have "ae x = up\<cdot>0" by auto
   with  `map_of \<Gamma> x = Some e`
   have "map_of (map_transform Aeta_expand ae (map_transform Aeta_expand_transform ae \<Gamma>)) x = Some (Aeta_expand_transform 0 e)"
     by (simp add: map_of_map_transform)
@@ -337,12 +339,12 @@ case (var\<^sub>1 \<Gamma> x e S)
   }
   ultimately
   show ?case by (blast del: consistentI consistentE)
-next 
-case (var\<^sub>2 \<Gamma> x e S)
-  from var\<^sub>2 have "ae ` upds S \<subseteq> {up \<cdot> 0}" by fastforce
-  from var\<^sub>2 have "Astack ae S \<sqsubseteq> a" by auto
+next
+case (lamvar \<Gamma> x e S)
+  from lamvar have "ae ` upds S \<subseteq> {up \<cdot> 0}" by fastforce
+  from lamvar have "Astack ae S \<sqsubseteq> a" by auto
 
-  from var\<^sub>2 have "Aexp (Var x)\<cdot>a \<sqsubseteq> ae" by auto
+  from lamvar have "Aexp (Var x)\<cdot>a \<sqsubseteq> ae" by auto
   from below_trans[OF Aexp_Var fun_belowD[OF this] ]
   have "up\<cdot>a \<sqsubseteq> ae x".
   then obtain u where "ae x = up\<cdot>u" and "a \<sqsubseteq> u" by (cases "ae x") auto
@@ -350,14 +352,14 @@ case (var\<^sub>2 \<Gamma> x e S)
 
   from this(2)
   have "Aexp e\<cdot>a \<sqsubseteq> Aexp e\<cdot>u" by (rule monofun_cfun_arg)
-  also have "\<dots> \<sqsubseteq> ae" using `ae x = up \<cdot> u` var\<^sub>2 by fastforce
+  also have "\<dots> \<sqsubseteq> ae" using `ae x = up \<cdot> u` lamvar by fastforce
   finally have "Aexp e\<cdot>a \<sqsubseteq> ae" by this simp
   moreover
-  have "Aexp' e\<cdot>(ae x) \<sqsubseteq> ae" using var\<^sub>2 by auto
+  have "Aexp' e\<cdot>(ae x) \<sqsubseteq> ae" using lamvar by auto
   hence "Aexp e\<cdot>u \<sqsubseteq> ae" using `ae x = up\<cdot>u` by simp
   ultimately
   have "consistent (ae, u) ((x, e) # delete x \<Gamma>, e, S)"
-    using var\<^sub>2 by (auto  simp add: join_below_iff split:if_splits intro: below_trans[OF _ `a \<sqsubseteq> u`])
+    using lamvar by (auto  simp add: join_below_iff split:if_splits intro: below_trans[OF _ `a \<sqsubseteq> u`])
   moreover
   {
   from `isLam e`
@@ -368,9 +370,9 @@ case (var\<^sub>2 \<Gamma> x e S)
   have "map_of (map_transform Aeta_expand ae (map_transform Aeta_expand_transform ae \<Gamma>)) x = Some (Aeta_expand u (Aeta_expand_transform u e))"
     by (simp add: map_of_map_transform)
   ultimately
-  have "Atransform (ae, a) (\<Gamma>, Var x, S) \<Rightarrow>
+  have "Atransform (ae, a) (\<Gamma>, Var x, S) \<Rightarrow>\<^sup>*
         ((x, Aeta_expand u (Aeta_expand_transform u e)) # (map_transform Aeta_expand ae (map_transform Aeta_expand_transform ae (delete x \<Gamma>))), Aeta_expand u  (Aeta_expand_transform u e), S)"
-     by (auto intro: step.intros simp add: map_transform_delete)
+     by (auto intro: lambda_var simp add: map_transform_delete)
   also have "\<dots> = ((map_transform Aeta_expand ae (map_transform Aeta_expand_transform ae ((x,e) # delete x \<Gamma>))), Aeta_expand u  (Aeta_expand_transform u e), S)"
     using `ae x = up \<cdot> u` by (simp add: map_transform_Cons)
   also have "\<dots> \<Rightarrow>\<^sup>* Atransform (ae, u) ((x, e) # delete x \<Gamma>, e, S)"
@@ -381,21 +383,21 @@ case (var\<^sub>2 \<Gamma> x e S)
   }
   ultimately show ?case by (blast del: consistentI consistentE)
 next
-case (var\<^sub>3 x \<Gamma> e S)
+case (var\<^sub>2 \<Gamma> x e S)
   hence "ae x = up\<cdot>0" by auto
 
-  have "Astack ae (Upd x # S) \<sqsubseteq> a" using var\<^sub>3 by auto
+  have "Astack ae (Upd x # S) \<sqsubseteq> a" using var\<^sub>2 by auto
   with `ae x = up \<cdot> 0`
   have "a = 0" by auto
 
-  have "consistent (ae, 0) ((x, e) # \<Gamma>, e, S)" using var\<^sub>3 
+  have "consistent (ae, 0) ((x, e) # \<Gamma>, e, S)" using var\<^sub>2
     by (fastforce  simp add: join_below_iff split:if_splits)
   moreover
   have "Atransform (ae, a) (\<Gamma>, e, Upd x # S) \<Rightarrow> Atransform (ae, 0) ((x, e) # \<Gamma>, e, S)"
-    using `ae x = up\<cdot>0` `a = 0` var\<^sub>3 by (auto intro!: step.intros simp add: map_transform_Cons)
+    using `ae x = up\<cdot>0` `a = 0` var\<^sub>2 by (auto intro!: step.intros simp add: map_transform_Cons)
   ultimately show ?case by (blast del: consistentI consistentE)
 next
-  case (let\<^sub>1 \<Delta> \<Gamma> S e)
+  case (let\<^sub>1 \<Delta> \<Gamma> e S)
 
   let ?ae = "Aheap \<Delta> \<cdot> (Aexp e\<cdot>a)"
   let ?new = "(domA (\<Delta> @ \<Gamma>) \<union> upds S - (domA \<Gamma> \<union> upds S))"
@@ -511,14 +513,24 @@ next
   }
   ultimately
   show ?case  by (blast del: consistentI consistentE)
+next
+  case refl thus ?case by auto
+next
+  case trans
+    from trans(5)
+    show ?case
+      apply (auto dest!: trans(3,4))
+      apply (metis (poly_guards_query) rtranclp_trans)
+      done
 qed
 
-
+(*
   sublocale AbstractTransform step consistent Atransform
     apply default
     using foo
     apply (auto del: consistentI consistentE)
     done
+*)
 
 end
 end

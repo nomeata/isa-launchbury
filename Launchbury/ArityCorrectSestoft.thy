@@ -1,5 +1,5 @@
 theory ArityCorrectSestoft
-imports ArityCorrect SestoftCorrect LookAheadSim
+imports ArityCorrect SestoftCorrect
 begin
 
 fun Astack :: "AEnv \<Rightarrow> stack \<Rightarrow> Arity"
@@ -42,14 +42,35 @@ inductive AE_consistent :: "AEnv \<Rightarrow> conf \<Rightarrow> bool" where
 
 inductive_cases AE_consistentE[elim]: "AE_consistent ae (\<Gamma>, e, S)"
 
-theorem
-  assumes "(\<Gamma>, e, S) \<Rightarrow> (\<Delta>, v, S')"
-  assumes "AE_consistent ae (\<Gamma>, e, S)"
-  shows "\<exists> ae'. ae' f|` (-((domA \<Delta> \<union> upds S') - (domA \<Gamma> \<union> upds S))) = ae \<and> eventually (AE_consistent ae') op \<Rightarrow> (\<Delta>, v, S')"
+(* The following use of the induction method fails with "induction "(\<Gamma>, e, S)" "(\<Delta>, v, S')", hence
+this work-around. *)
+fun bound :: "conf \<Rightarrow> var set"
+ where "bound (\<Gamma>, e, S) = (domA \<Gamma> \<union> upds S)"
+
+lemma step_does_not_forget:
+  assumes "c \<Rightarrow>\<^sup>* c'"
+  shows "bound c \<subseteq> bound c'"
 using assms
-proof(induction "(\<Gamma>, e, S)" "(\<Delta>, v, S')"  arbitrary: \<Gamma> e S \<Delta> v S' rule: step.inducts)
+proof(induction)
+  case base thus ?case..
+next
+  case (step c' c'')
+  from `c' \<Rightarrow> c''`
+  have "bound c' \<subseteq> bound c''" by induction auto
+  with `bound c \<subseteq> bound c'`
+  show ?case by auto
+qed
+  
+
+theorem
+  assumes "c \<Rightarrow>\<^sup>* c'"
+  assumes "\<not> boring_step c'"
+  assumes "AE_consistent ae c"
+  shows "\<exists> ae'. ae' f|` (- (bound c' - bound c)) = ae \<and> AE_consistent ae' c'"
+using assms
+proof(induction c c' arbitrary: ae rule: step_induction)
 case (app\<^sub>1 \<Gamma> e x S)
-  hence "AE_consistent ae (\<Gamma>, e, Arg x # S)"  by (fastforce elim!: AE_consistentE intro!: AE_consistentI simp add: Aexp_App join_below_iff)
+  hence "AE_consistent ae (\<Gamma>, e, Arg x # S)" by (fastforce elim!: AE_consistentE intro!: AE_consistentI simp add: Aexp_App join_below_iff)
   thus ?case by auto
 next
 case (app\<^sub>2 \<Gamma> y e x S)
@@ -57,53 +78,40 @@ case (app\<^sub>2 \<Gamma> y e x S)
     by (fastforce elim!: AE_consistentE intro!: AE_consistentI  below_trans[OF monofun_cfun_fun[OF Aexp_subst_App_Lam]] simp add: Aexp_App join_below_iff)
   thus ?case by auto
 next
-case (var\<^sub>1 \<Gamma> x e S)
+case (thunk \<Gamma> x e S)
   from `map_of \<Gamma> x = Some e`
   have "x \<in> domA \<Gamma>" by (metis domI dom_map_of_conv_domA)
-  hence *: "(domA (delete x \<Gamma>) \<union> upds (Upd x # S) - (domA \<Gamma> \<union> upds S)) = {}" using `x \<in> domA \<Gamma>` by auto
+  hence *: "bound (delete x \<Gamma>, e, Upd x # S) - bound (\<Gamma>, Var x, S) = {}" using `x \<in> domA \<Gamma>` by auto
 
-  show ?case
-  proof(cases "isLam e")
-    case True
-    have "eventually (AE_consistent ae) op \<Rightarrow> (delete x \<Gamma>, e, Upd x # S)"
-    proof(rule later_uniqueI)
-      from True
-      show "(delete x \<Gamma>, e, Upd x # S) \<Rightarrow> ((x,e) # delete x \<Gamma>, e, S)" by (auto intro: var\<^sub>2)
-    next
-      from var\<^sub>1 have "Aexp (Var x)\<cdot>(Astack ae S) \<sqsubseteq> ae" by auto
-      from below_trans[OF Aexp_Var fun_belowD[OF this] ]
-      have "up\<cdot>(Astack ae S) \<sqsubseteq> ae x".
-      then obtain u where "ae x = up\<cdot>u" and "Astack ae S \<sqsubseteq> u" by (cases "ae x") auto
-    
-      from this(2)
-      have "Aexp e\<cdot>(Astack ae S) \<sqsubseteq> Aexp e\<cdot>u" by (rule monofun_cfun_arg)
-      also have "\<dots> \<sqsubseteq> ae" using `ae x = up \<cdot> u` var\<^sub>1 by fastforce
-      finally have "Aexp e\<cdot>(Astack ae S) \<sqsubseteq> ae" by this simp
-      hence "AE_consistent ae ((x, e) # delete x \<Gamma>, e, S)"
-        using var\<^sub>1 by(fastforce intro!: AE_consistentI  simp add: join_below_iff split:if_splits)
-      thus "eventually (AE_consistent ae) op \<Rightarrow> ((x, e) # delete x \<Gamma>, e, S)"..
-    next
-      fix x'
-      from True
-      show "(delete x \<Gamma>, e, Upd x # S) \<Rightarrow> x' \<Longrightarrow> x' = ((x, e) # delete x \<Gamma>, e, S)"
-        by (auto elim: step.cases)
-    qed
-    thus ?thesis unfolding * by simp
-  next
-    case False
-  
-    from var\<^sub>1 have "Aexp (Var x)\<cdot>(Astack ae S) \<sqsubseteq> ae" by auto
+  from thunk have "Aexp (Var x)\<cdot>(Astack ae S) \<sqsubseteq> ae" by auto
+  from below_trans[OF Aexp_Var fun_belowD[OF this] ]
+  have "up\<cdot>(Astack ae S) \<sqsubseteq> ae x".
+  then obtain u where "ae x = up\<cdot>u" and "Astack ae S \<sqsubseteq> u" by (cases "ae x") auto
+  moreover
+  hence "x \<in> edom ae" unfolding edom_def by auto
+  ultimately
+  have "AE_consistent ae (delete x \<Gamma>, e, Upd x # S)" using thunk by (fastforce intro!: AE_consistentI  simp add: join_below_iff)
+  thus ?case unfolding * by auto
+next
+case (lamvar \<Gamma> x e S)
+  from `map_of \<Gamma> x = Some e`
+  have "x \<in> domA \<Gamma>" by (metis domI dom_map_of_conv_domA)
+  hence *: "bound ((x, e) # delete x \<Gamma>, e, S) - bound (\<Gamma>, Var x, S)  = {}" using `x \<in> domA \<Gamma>` by auto
+
+    from lamvar have "Aexp (Var x)\<cdot>(Astack ae S) \<sqsubseteq> ae" by auto
     from below_trans[OF Aexp_Var fun_belowD[OF this] ]
     have "up\<cdot>(Astack ae S) \<sqsubseteq> ae x".
     then obtain u where "ae x = up\<cdot>u" and "Astack ae S \<sqsubseteq> u" by (cases "ae x") auto
-    moreover
-    hence "x \<in> edom ae" unfolding edom_def by auto
-    ultimately
-    have "AE_consistent ae (delete x \<Gamma>, e, Upd x # S)" using var\<^sub>1 False by (fastforce intro!: AE_consistentI  simp add: join_below_iff)
-    thus ?thesis unfolding * by auto
-  qed
+  
+    from this(2)
+    have "Aexp e\<cdot>(Astack ae S) \<sqsubseteq> Aexp e\<cdot>u" by (rule monofun_cfun_arg)
+    also have "\<dots> \<sqsubseteq> ae" using `ae x = up \<cdot> u` lamvar by fastforce
+    finally have "Aexp e\<cdot>(Astack ae S) \<sqsubseteq> ae" by this simp
+    hence "AE_consistent ae ((x, e) # delete x \<Gamma>, e, S)"
+      using lamvar by(fastforce intro!: AE_consistentI  simp add: join_below_iff split:if_splits)
+    thus ?case unfolding * by auto
 next
-case (var\<^sub>2 x \<Gamma> e S)
+case (var\<^sub>2 \<Gamma> x e S)
   have "up\<cdot>(Astack ae S) \<sqsubseteq> ae x" using var\<^sub>2 by (auto simp add: join_below_iff)
   then obtain u where "ae x = up \<cdot> u" and "Astack ae S \<sqsubseteq> u" by (cases "ae x") auto
 
@@ -115,10 +123,9 @@ case (var\<^sub>2 x \<Gamma> e S)
     by (fastforce intro!: AE_consistentI  simp add: join_below_iff split:if_splits)+
   thus ?case by auto
 next
-case (let\<^sub>1 \<Delta> \<Gamma> S e)
+case (let\<^sub>1 \<Delta> \<Gamma> e S)
   let ?ae = "Aheap \<Delta> \<cdot> (Aexp e\<cdot>(Astack ae S))"
-  let ?new = "(domA (\<Delta> @ \<Gamma>) \<union> upds S - (domA \<Gamma> \<union> upds S))"
-  have new: "?new = domA \<Delta>"
+  have new: "bound (\<Delta> @ \<Gamma>, e, S) - bound (\<Gamma>, Terms.Let \<Delta> e, S) = domA \<Delta>"
     using fresh_distinct[OF let\<^sub>1(1)] fresh_distinct_fv[OF let\<^sub>1(2)]
     by (auto dest: set_mp[OF ups_fv_subset])
 
@@ -206,6 +213,15 @@ case (let\<^sub>1 \<Delta> \<Gamma> S e)
   }
   ultimately
   show ?case unfolding new by auto
+next
+  case refl thus ?case by auto
+next
+  case (trans c c' c'')
+  from step_does_not_forget[OF trans(1)] step_does_not_forget[OF trans(2)]
+  have * : "(- bound c' \<union> bound c) \<inter> (- bound c'' \<union> bound c') = (- bound c'' \<union> bound c)" by auto
+
+  from trans(5)
+  show ?case by (auto dest!: trans(3,4) simp add: *)
 qed
 end
 

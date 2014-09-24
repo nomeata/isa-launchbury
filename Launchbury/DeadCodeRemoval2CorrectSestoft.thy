@@ -1,5 +1,5 @@
 theory DeadCodeRemoval2CorrectSestoft
-imports Sestoft DeadCodeRemoval2 SestoftCorrect LookAheadSim
+imports Sestoft DeadCodeRemoval2 SestoftCorrect
 begin
 
 lemma isLam_remove_dead_code[simp]: "isLam e \<Longrightarrow> isLam (remove_dead_code e)"
