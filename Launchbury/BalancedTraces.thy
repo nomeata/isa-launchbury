@@ -41,10 +41,10 @@ lemma traceWhile:
   assumes "P c\<^sub>1"
   assumes "\<not> P c\<^sub>4"
   obtains  T\<^sub>1 c\<^sub>2 c\<^sub>3 T\<^sub>2
-  where "T = T\<^sub>1 @ c\<^sub>3 # T\<^sub>2"  and "trace c\<^sub>1 T\<^sub>1 c\<^sub>2" and "list_all P T\<^sub>1" and "P c\<^sub>2" and "c\<^sub>2 \<Rightarrow> c\<^sub>3" and "\<not> P c\<^sub>3" and "trace c\<^sub>3 T\<^sub>2 c\<^sub>4"
+  where "T = T\<^sub>1 @ c\<^sub>3 # T\<^sub>2"  and "trace c\<^sub>1 T\<^sub>1 c\<^sub>2" and "\<forall>x\<in>set T\<^sub>1.  P x" and "P c\<^sub>2" and "c\<^sub>2 \<Rightarrow> c\<^sub>3" and "\<not> P c\<^sub>3" and "trace c\<^sub>3 T\<^sub>2 c\<^sub>4"
 proof-
   from assms
-  have "\<exists> T\<^sub>1 c\<^sub>2 c\<^sub>3 T\<^sub>2 . (T = T\<^sub>1 @ c\<^sub>3 # T\<^sub>2 \<and> trace c\<^sub>1 T\<^sub>1 c\<^sub>2 \<and> list_all P T\<^sub>1 \<and> P c\<^sub>2 \<and> c\<^sub>2 \<Rightarrow> c\<^sub>3 \<and> \<not> P c\<^sub>3 \<and> trace c\<^sub>3 T\<^sub>2 c\<^sub>4)"
+  have "\<exists> T\<^sub>1 c\<^sub>2 c\<^sub>3 T\<^sub>2 . (T = T\<^sub>1 @ c\<^sub>3 # T\<^sub>2 \<and> trace c\<^sub>1 T\<^sub>1 c\<^sub>2 \<and> (\<forall>x\<in>set T\<^sub>1. P x) \<and> P c\<^sub>2 \<and> c\<^sub>2 \<Rightarrow> c\<^sub>3 \<and> \<not> P c\<^sub>3 \<and> trace c\<^sub>3 T\<^sub>2 c\<^sub>4)"
   proof(induction)
     case trace_nil thus ?case by auto
   next
@@ -53,13 +53,13 @@ proof-
     proof (cases "P conf'")
     case True
       from trace_cons.IH[OF True `\<not> P end`]
-      obtain T\<^sub>1 c\<^sub>2 c\<^sub>3 T\<^sub>2 where "T = T\<^sub>1 @ c\<^sub>3 # T\<^sub>2 \<and> trace conf' T\<^sub>1 c\<^sub>2 \<and> list_all P T\<^sub>1 \<and> P c\<^sub>2 \<and> c\<^sub>2 \<Rightarrow> c\<^sub>3 \<and> \<not> P c\<^sub>3 \<and> trace c\<^sub>3 T\<^sub>2 end" by auto
+      obtain T\<^sub>1 c\<^sub>2 c\<^sub>3 T\<^sub>2 where "T = T\<^sub>1 @ c\<^sub>3 # T\<^sub>2 \<and> trace conf' T\<^sub>1 c\<^sub>2 \<and> (\<forall>x\<in>set T\<^sub>1. P x) \<and> P c\<^sub>2 \<and> c\<^sub>2 \<Rightarrow> c\<^sub>3 \<and> \<not> P c\<^sub>3 \<and> trace c\<^sub>3 T\<^sub>2 end" by auto
       with True
-      have "conf' # T = (conf' # T\<^sub>1) @ c\<^sub>3 # T\<^sub>2 \<and> trace conf (conf' # T\<^sub>1) c\<^sub>2 \<and> list_all P (conf' # T\<^sub>1) \<and> P c\<^sub>2 \<and> c\<^sub>2 \<Rightarrow> c\<^sub>3 \<and> \<not> P c\<^sub>3  \<and> trace c\<^sub>3 T\<^sub>2 end" by (auto intro: trace_cons)
+      have "conf' # T = (conf' # T\<^sub>1) @ c\<^sub>3 # T\<^sub>2 \<and> trace conf (conf' # T\<^sub>1) c\<^sub>2 \<and> (\<forall>x\<in>set (conf' # T\<^sub>1). P x)  \<and> P c\<^sub>2 \<and> c\<^sub>2 \<Rightarrow> c\<^sub>3 \<and> \<not> P c\<^sub>3  \<and> trace c\<^sub>3 T\<^sub>2 end" by (auto intro: trace_cons)
       thus ?thesis by blast
     next
     case False with trace_cons
-      have "conf' # T = [] @ conf' # T \<and> list_all P [] \<and> P conf \<and> conf \<Rightarrow> conf' \<and> \<not> P conf' \<and> trace conf' T end" by auto
+      have "conf' # T = [] @ conf' # T \<and> (\<forall>x\<in>set []. P x) \<and> P conf \<and> conf \<Rightarrow> conf' \<and> \<not> P conf' \<and> trace conf' T end" by auto
       thus ?thesis by blast
     qed
   qed
@@ -67,7 +67,7 @@ proof-
 qed
 
 lemma traces_list_all:
-  "trace c T c' \<Longrightarrow> P c' \<Longrightarrow> (\<And> c c'. c \<Rightarrow> c' \<Longrightarrow> P c' \<Longrightarrow> P c) \<Longrightarrow> (list_all P T \<and> P c)"
+  "trace c T c' \<Longrightarrow> P c' \<Longrightarrow> (\<And> c c'. c \<Rightarrow> c' \<Longrightarrow> P c' \<Longrightarrow> P c) \<Longrightarrow> (\<forall> x\<in>set T. P x) \<and> P c"
   by (induction rule:trace.induct) auto
 
 lemma trace_nil[simp]: "trace c [] c' \<longleftrightarrow> c = c'"
@@ -90,7 +90,7 @@ locale balance_trace = traces +
 begin
 
 inductive bal :: "'a \<Rightarrow> 'a list \<Rightarrow> 'a \<Rightarrow> bool" where
-  balI[intro]: "trace c T c' \<Longrightarrow> list_all (\<lambda>c'. stack c \<lesssim> stack c') T \<Longrightarrow> stack c' = stack c \<Longrightarrow> bal c T c'"
+  balI[intro]: "trace c T c' \<Longrightarrow> \<forall>c'\<in> set T. stack c \<lesssim> stack c' \<Longrightarrow> stack c' = stack c \<Longrightarrow> bal c T c'"
 
 inductive_cases balE: "bal c T c'"
 
@@ -153,7 +153,7 @@ using assms(1)
 proof(rule balE)
   
   assume c\<^sub>5: "stack c\<^sub>5 = stack c\<^sub>1"
-  assume T: "list_all (\<lambda>c'. stack c\<^sub>1 \<lesssim> stack c') (c\<^sub>2 # T)"
+  assume T: "\<forall> c' \<in> set (c\<^sub>2 # T). stack c\<^sub>1 \<lesssim> stack c'"
 
   assume "trace c\<^sub>1 (c\<^sub>2 # T) c\<^sub>5"
   hence "c\<^sub>1 \<Rightarrow> c\<^sub>2" and "trace c\<^sub>2 T c\<^sub>5" by (auto elim: trace_consE)
@@ -165,7 +165,7 @@ proof(rule balE)
   have "\<not> (stack c\<^sub>2 \<lesssim> stack c\<^sub>5)" unfolding c\<^sub>5 c\<^sub>2  by simp
   ultimately
   obtain T\<^sub>1 c\<^sub>3 c\<^sub>4 T\<^sub>2
-    where "T = T\<^sub>1 @ c\<^sub>4 # T\<^sub>2" and "trace c\<^sub>2 T\<^sub>1 c\<^sub>3" and "list_all (\<lambda>a. stack c\<^sub>2 \<lesssim> stack a) T\<^sub>1" 
+    where "T = T\<^sub>1 @ c\<^sub>4 # T\<^sub>2" and "trace c\<^sub>2 T\<^sub>1 c\<^sub>3" and "\<forall> c' \<in> set T\<^sub>1. stack c\<^sub>2 \<lesssim> stack c'" 
      and "stack c\<^sub>2 \<lesssim> stack c\<^sub>3" and "c\<^sub>3 \<Rightarrow> c\<^sub>4" and "\<not> stack c\<^sub>2 \<lesssim> stack c\<^sub>4" and "trace c\<^sub>4 T\<^sub>2 c\<^sub>5"
      by (rule traceWhile)
 
@@ -176,7 +176,7 @@ proof(rule balE)
     from `c\<^sub>3 \<Rightarrow> c\<^sub>4` `stack c\<^sub>2 \<lesssim> stack c\<^sub>3` `\<not> stack c\<^sub>2 \<lesssim> stack c\<^sub>4`
     have "stack c\<^sub>3 = stack c\<^sub>2" and c\<^sub>2': "stack c\<^sub>4 = tl (stack c\<^sub>2)" by (rule stack_passes_lower_bound)+
 
-    from  `trace c\<^sub>2 T\<^sub>1 c\<^sub>3` `list_all (\<lambda>a. stack c\<^sub>2 \<lesssim> stack a) T\<^sub>1` this(1)
+    from  `trace c\<^sub>2 T\<^sub>1 c\<^sub>3` `\<forall> a \<in> set T\<^sub>1. stack c\<^sub>2 \<lesssim> stack a` this(1)
     show "bal c\<^sub>2 T\<^sub>1 c\<^sub>3"..
 
     show "c\<^sub>3 \<Rightarrow> c\<^sub>4" by fact
@@ -185,7 +185,7 @@ proof(rule balE)
 
     note  `trace c\<^sub>4 T\<^sub>2 c\<^sub>5` 
     moreover
-    have "list_all (\<lambda>a. stack c\<^sub>4 \<lesssim> stack a) T\<^sub>2" using c\<^sub>4 T `T = _`  by auto
+    have "\<forall> a\<in>set T\<^sub>2. stack c\<^sub>4 \<lesssim> stack a" using c\<^sub>4 T `T = _`  by auto
     moreover
     have "stack c\<^sub>5 = stack c\<^sub>4" unfolding c\<^sub>4 c\<^sub>5..
     ultimately

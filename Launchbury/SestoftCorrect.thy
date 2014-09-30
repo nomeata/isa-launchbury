@@ -88,7 +88,7 @@ using assms
 proof(induction T arbitrary: \<Gamma> e S \<Delta> z rule: measure_induct_rule[where f = length])
   case (less T \<Gamma> e S \<Delta> z)
   from `(\<Gamma>, e, S) \<Rightarrow>\<^sup>b\<^sup>*\<^bsub>T\<^esub> (\<Delta>, z, S)`
-  have "(\<Gamma>, e, S) \<Rightarrow>\<^sup>*\<^bsub>T\<^esub> (\<Delta>, z, S)" and "list_all (\<lambda>c'. S \<lesssim> stack c') T" unfolding bal.simps by auto
+  have "(\<Gamma>, e, S) \<Rightarrow>\<^sup>*\<^bsub>T\<^esub> (\<Delta>, z, S)" and "\<forall> c'\<in>set T. S \<lesssim> stack c'" unfolding bal.simps by auto
 
   from this(1)
   show ?case
@@ -98,7 +98,7 @@ proof(induction T arbitrary: \<Gamma> e S \<Delta> z rule: measure_induct_rule[w
     with trace_nil show ?thesis by (auto intro: reds.intros)
   next
   case (trace_cons conf' T')
-    from `T = conf' # T'` and `list_all _ _` have "S \<lesssim> stack conf'" by auto
+    from `T = conf' # T'` and `\<forall> c'\<in>set T. S \<lesssim> stack c'` have "S \<lesssim> stack conf'" by auto
   
     from `(\<Gamma>, e, S) \<Rightarrow> conf'`
     show ?thesis
@@ -169,7 +169,7 @@ proof(induction T arbitrary: \<Gamma> e S \<Delta> z rule: measure_induct_rule[w
       from `T = conf' # T'` have "length T' < length T" by auto
       moreover
       have "(as @ \<Gamma>, e, S) \<Rightarrow>\<^sup>b\<^sup>*\<^bsub>T'\<^esub> (\<Delta>, z, S)" 
-        using trace_cons `conf' = _`  `list_all _ _` by auto
+        using trace_cons `conf' = _`  `\<forall> c'\<in>set T. S \<lesssim> stack c'` by fastforce
       moreover
       note `isLam z`
       ultimately
@@ -200,7 +200,7 @@ proof-
   from build_trace[OF assms(2)]
   obtain T where "(\<Gamma>, e, S) \<Rightarrow>\<^sup>*\<^bsub>T\<^esub> (\<Delta>, z, S)"..
   moreover
-  hence "list_all (\<lambda>c'. stack (\<Gamma>, e, S) \<lesssim> stack c') T"
+  hence "\<forall> c'\<in>set T. stack (\<Gamma>, e, S) \<lesssim> stack c'"
     by(rule conjunct1[OF traces_list_all]) (auto elim: step.cases simp add: dummy_stack_extended[OF `set S \<subseteq> Dummy \` UNIV`])
   ultimately
   have "(\<Gamma>, e, S) \<Rightarrow>\<^sup>b\<^sup>*\<^bsub>T\<^esub> (\<Delta>, z, S)"
