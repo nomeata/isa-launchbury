@@ -16,7 +16,7 @@ referenced.
 *}
 
 nominal_datatype exp =
-  Var var
+  GVar bool var
 | App exp var
 | LetA as::assn body::exp binds "bn as" in body as
 | Lam x::var body::exp binds x in body  ("Lam [_]. _" [100, 100] 100)
@@ -25,6 +25,9 @@ and assn =
 binder
   bn :: "assn \<Rightarrow> atom list"
 where "bn ANil = []" | "bn (ACons x t as) = (atom x) # (bn as)"
+
+abbreviation Var where "Var == GVar False"
+abbreviation Var1 where "Var1 == GVar True"
 
 notation (latex output) Terms.Var ("_")
 notation (latex output) Terms.App ("_ _")
@@ -143,8 +146,8 @@ lemma size_Let[simp]: "size (Let \<Gamma> e) = size_list (\<lambda>p. size (snd 
   unfolding Let_def by (auto simp add: split_beta')
 
 lemma Let_distinct[simp]:
-  "Var v \<noteq> Let \<Gamma> e"
-  "Let \<Gamma> e \<noteq> Var v"
+  "GVar s v \<noteq> Let \<Gamma> e"
+  "Let \<Gamma> e \<noteq> GVar s v"
   "App e v \<noteq> Let \<Gamma> e'"
   "Lam [v]. e' \<noteq> Let \<Gamma> e"
   "Let \<Gamma> e \<noteq> Lam [v]. e'"
@@ -180,7 +183,7 @@ lemma Let_eq_iff[simp]:
 
 lemma exp_strong_exhaust:
   fixes c :: "'a :: fs"
-  assumes "(\<And>var. y = Var var \<Longrightarrow> P)"
+  assumes "(\<And>bool var. y = GVar bool var \<Longrightarrow> P)"
   assumes "\<And>exp var. y = App exp var \<Longrightarrow> P"
   assumes "\<And>\<Gamma> exp. atom ` domA \<Gamma> \<sharp>* c \<Longrightarrow> y = Let \<Gamma> exp \<Longrightarrow> P"
   assumes "\<And>var exp. {atom var} \<sharp>* c \<Longrightarrow> y = Lam [var]. exp \<Longrightarrow> P"
@@ -197,7 +200,7 @@ And finally the induction rules with @{term Let}.
 *}
 
 lemma exp_heap_induct[case_names Var App Let Lam Nil Cons]:
-  assumes "\<And>var. P1 (Var var)"
+  assumes "\<And>b var. P1 (GVar b var)"
   assumes "\<And>exp var. P1 exp \<Longrightarrow> P1 (App exp var)"
   assumes "\<And>\<Gamma> exp. P2 \<Gamma> \<Longrightarrow> P1 exp \<Longrightarrow> P1 (Let \<Gamma> exp)"
   assumes "\<And>var exp. P1 exp \<Longrightarrow> P1 (Lam [var]. exp)"
@@ -218,7 +221,7 @@ proof-
 qed
 
 lemma exp_heap_strong_induct[case_names Var App Let Lam Nil Cons]:
-  assumes "\<And>var c. P1 c (Var var)"
+  assumes "\<And>b var c. P1 c (GVar b var)"
   assumes "\<And>exp var c. (\<And>c. P1 c exp) \<Longrightarrow> P1 c (App exp var)"
   assumes "\<And>\<Gamma> exp c. atom ` domA \<Gamma> \<sharp>* c \<Longrightarrow> (\<And>c. P2 c \<Gamma>) \<Longrightarrow> (\<And>c. P1 c exp) \<Longrightarrow> P1 c (Let \<Gamma> exp)"
   assumes "\<And>var exp c. {atom var} \<sharp>* c \<Longrightarrow> (\<And>c. P1 c exp) \<Longrightarrow> P1 c (Lam [var]. exp)"
@@ -247,7 +250,7 @@ goal for @{typ assn}.
 *}
 
 lemma exp_induct[case_names Var App Let Lam]:
-  assumes "\<And>var. P (Var var)"
+  assumes "\<And>b var. P (GVar b var)"
   assumes "\<And>exp var. P exp \<Longrightarrow> P (App exp var)"
   assumes "\<And>\<Gamma> exp. (\<And> x. x \<in> domA \<Gamma> \<Longrightarrow>  P (the (map_of \<Gamma> x))) \<Longrightarrow> P exp \<Longrightarrow> P (Let \<Gamma> exp)"
   assumes "\<And>var exp.  P exp \<Longrightarrow> P (Lam [var]. exp)"
@@ -261,7 +264,7 @@ lemma exp_induct[case_names Var App Let Lam]:
   done
 
 lemma  exp_strong_induct_set[case_names Var App Let Lam]:
-  assumes "\<And>var c. P c (Var var)"
+  assumes "\<And>b var c. P c (GVar b var)"
   assumes "\<And>exp var c. (\<And>c. P c exp) \<Longrightarrow> P c (App exp var)"
   assumes "\<And>\<Gamma> exp c.
     atom ` domA \<Gamma> \<sharp>* c \<Longrightarrow> (\<And>c x e. (x,e) \<in> set \<Gamma> \<Longrightarrow>  P c e) \<Longrightarrow> (\<And>c. P c exp) \<Longrightarrow> P c (Let \<Gamma> exp)"
@@ -277,7 +280,7 @@ lemma  exp_strong_induct_set[case_names Var App Let Lam]:
 
 
 lemma  exp_strong_induct[case_names Var App Let Lam]:
-  assumes "\<And>var c. P c (Var var)"
+  assumes "\<And>b var c. P c (GVar b var)"
   assumes "\<And>exp var c. (\<And>c. P c exp) \<Longrightarrow> P c (App exp var)"
   assumes "\<And>\<Gamma> exp c.
     atom ` domA \<Gamma> \<sharp>* c \<Longrightarrow> (\<And>c x. x \<in> domA \<Gamma> \<Longrightarrow>  P c (the (map_of \<Gamma> x))) \<Longrightarrow> (\<And>c. P c exp) \<Longrightarrow> P c (Let \<Gamma> exp)"
@@ -295,11 +298,11 @@ subsubsection {* Testing alpha equivalence *}
               
 lemma alpha_test:
   shows "Lam [x]. (Var x) = Lam [y]. (Var y)"
-  by (simp add: Abs1_eq_iff fresh_at_base)
+  by (simp add: Abs1_eq_iff fresh_at_base pure_fresh)
 
 lemma alpha_test2:
   shows "let x be (Var x) in (Var x) = let y be (Var y) in (Var y)"
-  by (simp add: fresh_Cons fresh_Nil Abs1_eq_iff fresh_Pair add: fresh_at_base)
+  by (simp add: fresh_Cons fresh_Nil Abs1_eq_iff fresh_Pair add: fresh_at_base pure_fresh)
 
 lemma alpha_test3:
   shows "
@@ -313,15 +316,15 @@ subsubsection {* Free variables *}
 
 lemma fv_supp_exp: "supp e = atom ` (fv (e::exp) :: var set)" and fv_supp_as: "supp as = atom ` (fv (as::assn) :: var set)"
   by (induction e and as rule:exp_assn.inducts)
-     (auto simp add: fv_def exp_assn.supp supp_at_base)
+     (auto simp add: fv_def exp_assn.supp supp_at_base pure_supp)
 
 lemma fv_supp_heap: "supp (\<Gamma>::heap) = atom ` (fv \<Gamma> :: var set)"
   by (metis fv_def fv_supp_as supp_heapToAssn)
 
 lemma fv_Lam[simp]: "fv (Lam [x]. e) = fv e - {x}"
   unfolding fv_def by (auto simp add: exp_assn.supp)
-lemma fv_Var[simp]: "fv (Var x) = {x}"
-  unfolding fv_def by (auto simp add: exp_assn.supp supp_at_base)
+lemma fv_Var[simp]: "fv (GVar b x) = {x}"
+  unfolding fv_def by (auto simp add: exp_assn.supp supp_at_base pure_supp)
 lemma fv_App[simp]: "fv (App e x) = insert x (fv e)"
   unfolding fv_def by (auto simp add: exp_assn.supp supp_at_base)
 lemma fv_Let[simp]: "fv (Let \<Gamma> e) = (fv \<Gamma> \<union> fv e) - domA \<Gamma>"
@@ -453,7 +456,7 @@ lemma fv_SmartLet[simp]: "fv (SmartLet \<Gamma> e) = (fv \<Gamma> \<union> fv e)
 subsubsection {* A predicate for value expressions *}
 
 nominal_function isLam :: "exp \<Rightarrow> bool" where
-  "isLam (Var x) = False" |
+  "isLam (GVar b x) = False" |
   "isLam (Lam [x]. e) = True" |
   "isLam (App e x) = False" |
   "isLam (Let as e) = False"

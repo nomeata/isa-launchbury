@@ -23,6 +23,7 @@ where
      resource and makes the adequacy proof difficult. *)
 | "ESem (App e x) = (\<Lambda> \<rho>. tick \<cdot> (Fn_project \<cdot> (ESem e \<cdot> \<rho>) \<cdot> (\<rho> x)))"
 | "ESem (Var x) = (\<Lambda> \<rho>. tick \<cdot> (\<rho> x))"
+| "ESem (Var1 x) = \<bottom>"
   (* Restrict \<rho> to avoid having to demand set (bn as) \<sharp>* \<rho> *)
 | "ESem (Let as body) = (\<Lambda> \<rho>. tick \<cdot> (ESem body \<cdot> (has_ESem.HSem ESem as \<cdot>  (\<rho> f|` fv (Let as body)))))"
 proof-
@@ -36,7 +37,7 @@ case goal1 thus ?case
   done
 next
 case (goal3 P x)
-  thus ?case by (metis (no_types) exp_strong_exhaust)
+  thus ?case by (metis (poly_guards_query) exp_strong_exhaust)
 next
 
 case (goal4 x e x' e')
@@ -56,8 +57,8 @@ case (goal4 x e x' e')
   qed
 next
 
-case (goal13 as body as' body')
-  from goal13(9)
+case (goal18 as body as' body')
+  from goal18(9)
   show ?case
   proof (rule eqvt_let_case)
     fix \<pi> :: perm
@@ -72,7 +73,7 @@ case (goal13 as body as' body')
       also have "(- \<pi> \<bullet> ESem_sumC) body = ESem_sumC body"
         by (rule eqvt_at_apply[OF `eqvt_at ESem_sumC body`])
       also have "has_ESem.HSem (- \<pi> \<bullet> ESem_sumC) as = has_ESem.HSem  ESem_sumC as"
-        by (rule HSem_cong[OF eqvt_at_apply[OF goal13(2)] refl])
+        by (rule HSem_cong[OF eqvt_at_apply[OF goal18(2)] refl])
       also have "- \<pi> \<bullet> \<rho> f|` fv (Let as body) = \<rho> f|` fv (Let as body)"
         by (rule env_restr_perm'[OF *], simp)
       finally have "ESem_sumC (\<pi> \<bullet> body)\<cdot>(has_ESem.HSem ESem_sumC (\<pi> \<bullet> as)\<cdot>(\<rho> f|` fv (Let as body))) = ESem_sumC body\<cdot>(has_ESem.HSem ESem_sumC as\<cdot>(\<rho> f|` fv (Let as body)))".

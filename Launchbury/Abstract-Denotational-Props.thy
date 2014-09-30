@@ -9,8 +9,8 @@ subsubsection {* The semantics ignores fresh variables *}
 
 lemma ESem_considers_fv': "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho> f|` (fv e)\<^esub>"
 proof (induct e arbitrary: \<rho> rule:exp_induct)
-  case Var
-  show ?case by simp
+  case (Var b x)
+  show ?case by (cases b) simp_all
 next
   have [simp]: "\<And> S x. S \<inter> insert x S = S" by auto
   case App
@@ -74,7 +74,7 @@ proof-
     by (rule ESem_fresh_cong) (auto simp add: lookup_env_restr_eq)
   finally show ?thesis.
 qed
-declare ESem.simps(4)[simp del]
+declare ESem.simps(5)[simp del]
 
 
 subsubsection {* Denotation of Substitution *}
@@ -83,7 +83,8 @@ lemma ESem_subst_same: "\<rho> x = \<rho> y \<Longrightarrow>  \<lbrakk> e \<rbr
   and 
   "\<rho> x = \<rho> y  \<Longrightarrow>  (\<^bold>\<lbrakk> as \<^bold>\<rbrakk>\<^bsub>\<rho>\<^esub>) = \<^bold>\<lbrakk> as[x::h=y] \<^bold>\<rbrakk>\<^bsub>\<rho>\<^esub>"
 proof (nominal_induct e and as avoiding: x y arbitrary: \<rho> and \<rho> rule:exp_heap_strong_induct)
-case Var thus ?case by auto
+case (Var b var x y)
+  thus ?case by (cases b) auto
 next
 case App
   from App(1)[OF App(2)] App(2)

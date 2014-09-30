@@ -90,7 +90,7 @@ nominal_function
 where
   "remove_dead_code (Lam [x]. e) = Lam [x]. remove_dead_code e"
 | "remove_dead_code (App e x) = App (remove_dead_code e) x"
-| "remove_dead_code (Var x) = Var x"
+| "remove_dead_code (GVar b x) = GVar b x"
 | "remove_dead_code (Terms.Let as e) = SmartLet (restrict_reachable (map_ran (\<lambda> _ e. remove_dead_code e) as) (remove_dead_code e)) (remove_dead_code e)"
 proof-
 case goal1 thus ?case
@@ -248,7 +248,7 @@ lemma subst_remove_dead_code: "(remove_dead_code e)[y::=x] = remove_dead_code (e
 proof (nominal_induct e and \<Gamma>  avoiding: y x rule:exp_heap_strong_induct)
 case (Let \<Gamma> e y x)
   thus ?case
-  by (auto simp add: fresh_star_at_base fv_subst_eq fresh_star_Pair simp del: Let_eq_iff)
+  by (auto simp add: fresh_star_at_base fv_subst_eq fresh_star_Pair pure_fresh simp del: Let_eq_iff)
 qed auto
 
 

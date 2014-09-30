@@ -25,7 +25,7 @@ nominal_function  (default "case_sum (\<lambda>x. Inl undefined) (\<lambda>x. In
 and
   subst_heap :: "heap \<Rightarrow> var \<Rightarrow> var \<Rightarrow> heap" ("_[_::h=_]" [1000,100,100] 1000)
 where
-  "(Var x)[y ::= z] = Var (x[y ::v= z])"
+  "(GVar b x)[y ::= z] = GVar b (x[y ::v= z])"
  |"(App e v)[y ::= z] = App (e[y ::= z]) (v[y ::v= z])"
  |"atom ` domA as \<sharp>* (y,z) \<Longrightarrow> (Let as body)[y ::= z] = Let (as[y ::h= z]) (body[y ::= z])" 
  |"atom x \<sharp> (y,z) \<Longrightarrow> (Lam [x].e)[y ::= z] = Lam [x].(e[y::=z])"
@@ -193,7 +193,7 @@ and
  "atom ` domA as \<sharp>* y \<Longrightarrow> atom y \<sharp> as[y::h=z]"
 using assms
 by(induct e y z and as y z rule:subst_subst_heap.induct)
-  (auto simp add:fresh_at_base fresh_star_Pair fresh_star_insert fresh_Nil fresh_Cons)
+  (auto simp add:fresh_at_base fresh_star_Pair fresh_star_insert fresh_Nil fresh_Cons pure_fresh)
 
 lemma
  subst_pres_fresh: "x \<sharp> e \<Longrightarrow> x \<sharp> z \<Longrightarrow> x \<sharp> e[y ::= z]"
@@ -210,7 +210,7 @@ by (nominal_induct  e and \<Gamma> avoiding: x y rule:exp_heap_strong_induct)
 lemma supp_subst_eq: "supp (e[y::=x]) = (supp e - {atom y}) \<union> (if atom y \<in> supp e then {atom x} else {})"
   and  "atom ` domA \<Gamma> \<sharp>* y \<Longrightarrow> supp (\<Gamma>[y::h=x]) = (supp \<Gamma> - {atom y}) \<union> (if atom y \<in> supp \<Gamma> then {atom x} else {})"
 by (nominal_induct  e  and \<Gamma> avoiding: x y rule:exp_heap_strong_induct)
-   (auto simp add: fresh_star_def fresh_Pair supp_Nil supp_Cons supp_Pair fresh_Cons exp_assn.supp Let_supp supp_at_base simp del: exp_assn.eq_iff)
+   (auto simp add: fresh_star_def fresh_Pair supp_Nil supp_Cons supp_Pair fresh_Cons exp_assn.supp Let_supp supp_at_base pure_supp simp del: exp_assn.eq_iff)
 
 lemma supp_subst: "supp (e[y::=x]) \<subseteq> (supp e - {atom y}) \<union> {atom x}"
   using supp_subst_eq by auto
@@ -230,8 +230,8 @@ lemma fresh_star_at_base:
 
 lemma subst_swap_same: "atom x \<sharp> e \<Longrightarrow>  (x \<leftrightarrow> y) \<bullet> e = e[y ::=x]"
   and "atom x \<sharp> \<Gamma> \<Longrightarrow> atom `domA \<Gamma> \<sharp>* y \<Longrightarrow> (x \<leftrightarrow> y) \<bullet> \<Gamma> = \<Gamma>[y ::h= x]"
-by(nominal_induct  e and \<Gamma> avoiding: x y rule:exp_heap_strong_induct)
-  (auto simp add: fresh_star_Pair fresh_star_at_base fresh_Cons simp del: exp_assn.eq_iff)
+by (nominal_induct  e and \<Gamma> avoiding: x y rule:exp_heap_strong_induct)
+   (auto simp add: fresh_star_Pair fresh_star_at_base fresh_Cons pure_fresh permute_pure simp del: exp_assn.eq_iff)
 
 lemma subst_subst_back: "atom x \<sharp> e \<Longrightarrow>  e[y::=x][x::=y] = e" 
   and "atom x \<sharp> \<Gamma> \<Longrightarrow> atom `domA \<Gamma> \<sharp>* y  \<Longrightarrow> \<Gamma>[y::h=x][x::h=y] = \<Gamma>"

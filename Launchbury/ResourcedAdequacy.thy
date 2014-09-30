@@ -17,21 +17,28 @@ environment with less resources.
 
 lemma restr_can_restrict_env: "(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>)|\<^bsub>r\<^esub> = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)|\<^bsub>r\<^esub>"
 proof(induction e arbitrary: \<rho> r rule: exp_induct)
-  case (Var x)
+  case (Var b x)
   show ?case
-  proof(rule C_restr_cong)
-    fix r'
-    assume "r' \<sqsubseteq> r"
-    {
-      fix r''
-      assume "r' = C\<cdot>r''" with `r' \<sqsubseteq> r`
-      have "(Cpred\<cdot>r \<sqinter> r'') = r''"
-        by (metis Cpred.simps below_refl is_meetI monofun_cfun_arg)
-      hence "\<rho> x\<cdot>r'' = (\<rho> x|\<^bsub>Cpred\<cdot>r\<^esub>)\<cdot>r''" by simp
-    }
-    thus "(\<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r' = (\<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)\<cdot>r'"
-      unfolding CESem_simps
-      by -(rule C_case_cong, simp)
+  proof(cases b)
+    case True
+    thus ?thesis by simp
+  next
+    case False hence "b = False" by simp
+    show ?thesis unfolding `b = False`
+    proof(rule C_restr_cong)
+      fix r'
+      assume "r' \<sqsubseteq> r"
+      {
+        fix r''
+        assume "r' = C\<cdot>r''" with `r' \<sqsubseteq> r`
+        have "(Cpred\<cdot>r \<sqinter> r'') = r''"
+          by (metis Cpred.simps below_refl is_meetI monofun_cfun_arg)
+        hence "\<rho> x\<cdot>r'' = (\<rho> x|\<^bsub>Cpred\<cdot>r\<^esub>)\<cdot>r''" by simp
+      }
+      thus "(\<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r' = (\<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)\<cdot>r'"
+        unfolding CESem_simps
+        by -(rule C_case_cong, simp)
+    qed
   qed
 next
   case (Lam x e)
@@ -254,21 +261,30 @@ next
   case (Suc n)
   show ?case
   proof(cases e rule:exp_strong_exhaust(1)[where c = "(\<Gamma>,S)", case_names Var App Let Lam])
-  case (Var x)
-    let ?e = "the (map_of \<Gamma> x)"
-    from Suc.prems[unfolded Var]
-    have "x \<in> domA \<Gamma>" 
-      by (auto intro: ccontr simp add: lookup_HSem_other)
-    hence "map_of \<Gamma> x = Some ?e" by (rule domA_map_of_Some_the)
-    moreover
-    from Suc.prems[unfolded Var] `map_of \<Gamma> x = Some ?e` `x \<in> domA \<Gamma>`
-    have "(\<N>\<lbrakk>?e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (auto simp add: lookup_HSem_heap  simp del: app_strict)
-    hence "(\<N>\<lbrakk>?e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (rule add_BH[OF `map_of \<Gamma> x = Some ?e`])
-    from Suc.IH[OF this]
-    obtain \<Delta> v where "delete x \<Gamma> : ?e \<Down>\<^bsub>x # S\<^esub> \<Delta> : v" by blast
-    ultimately
-    have "\<Gamma> : (Var x) \<Down>\<^bsub>S\<^esub> (x,v) #  \<Delta> : v" by (rule Variable)
-    thus ?thesis using Var by auto
+  case (Var b x)
+    show ?thesis
+    proof(cases b)
+    case False hence "b = False" by simp
+      let ?e = "the (map_of \<Gamma> x)"
+      from Suc.prems[unfolded Var `b = False`]
+      have "x \<in> domA \<Gamma>" 
+        by (auto intro: ccontr simp add: lookup_HSem_other)
+      hence "map_of \<Gamma> x = Some ?e" by (rule domA_map_of_Some_the)
+      moreover
+      from Suc.prems[unfolded Var `b = False`] `map_of \<Gamma> x = Some ?e` `x \<in> domA \<Gamma>`
+      have "(\<N>\<lbrakk>?e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (auto simp add: lookup_HSem_heap  simp del: app_strict)
+      hence "(\<N>\<lbrakk>?e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (rule add_BH[OF `map_of \<Gamma> x = Some ?e`])
+      from Suc.IH[OF this]
+      obtain \<Delta> v where "delete x \<Gamma> : ?e \<Down>\<^bsub>x # S\<^esub> \<Delta> : v" by blast
+      ultimately
+      have "\<Gamma> : (Var x) \<Down>\<^bsub>S\<^esub> (x,v) #  \<Delta> : v" by (rule Variable)
+      thus ?thesis using Var `b = False` by auto
+    next
+    case True
+      hence "b = True" by simp
+      from Suc.prems[unfolded Var `b = True`] have False by simp
+      thus ?thesis..
+  qed
   next
   case (App e' x)
     have "finite (set S \<union> fv (\<Gamma>, e'))" by simp
