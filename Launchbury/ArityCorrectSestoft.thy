@@ -33,10 +33,11 @@ inductive AE_consistent :: "AEnv \<Rightarrow> conf \<Rightarrow> bool" where
   AE_consistentI: 
   "edom ae \<subseteq> domA \<Gamma> \<union> upds S
   \<Longrightarrow> upds S \<subseteq> edom ae
-  \<Longrightarrow> AEstack ae S \<sqsubseteq> ae 
+(*  \<Longrightarrow> AEstack ae S \<sqsubseteq> ae  *)
   \<Longrightarrow> Aexp e \<cdot> (Astack ae S) \<sqsubseteq> ae
   \<Longrightarrow> (\<And> x e. map_of \<Gamma> x = Some e \<Longrightarrow> Aexp' e \<cdot> (ae x) \<sqsubseteq> ae)
   \<Longrightarrow> (\<And> x e. map_of \<Gamma> x = Some e \<Longrightarrow> \<not> isLam e \<Longrightarrow> ae x = up\<cdot>0)
+  \<Longrightarrow> ae ` ap S \<subseteq> {up\<cdot>0}
   \<Longrightarrow> ae ` upds S \<subseteq> {up\<cdot>0}
   \<Longrightarrow> AE_consistent ae (\<Gamma>, e, S)"
 
@@ -150,10 +151,11 @@ case (let\<^sub>1 \<Delta> \<Gamma> e S)
   have "upds S \<subseteq> edom (?ae \<squnion> ae)"
     using let\<^sub>1(3) by auto
   moreover
+  (*
   have "AEstack ae S \<sqsubseteq> ?ae \<squnion> ae"
     by (rule AE_consistentE[OF let\<^sub>1(3)])
        (metis "join_above1" below_refl box_below join_comm)
-  moreover
+  moreover *)
   {
   have "Aexp e\<cdot>(Astack ae S) \<sqsubseteq> (Aexp e\<cdot>(Astack ae S) f|` domA \<Delta>) \<squnion> (Aexp e\<cdot>(Astack ae S) f|` (- domA \<Delta>))"
     by (rule eq_imp_below[OF join_env_restr_UNIV[symmetric]]) auto
@@ -207,6 +209,8 @@ case (let\<^sub>1 \<Delta> \<Gamma> e S)
   }
   moreover
   have "(?ae \<squnion> ae) ` upds S \<subseteq> {up \<cdot> 0}" using let\<^sub>1 * by fastforce
+  moreover
+  have "(?ae \<squnion> ae) ` ap S \<subseteq> {up \<cdot> 0}" using let\<^sub>1 * by fastforce
   ultimately
   have "AE_consistent (?ae \<squnion> ae) (\<Delta> @ \<Gamma>, e, S) "
     by (auto intro!: AE_consistentI simp add: stack)

@@ -1,106 +1,8 @@
 theory ArityEtaExpand
-imports ArityCorrectSestoft EtaExpansion
+imports ArityCorrectSestoft EtaExpansion TransformTools
 begin
 
-fun lift_transform :: "(Arity \<Rightarrow> exp \<Rightarrow> exp) \<Rightarrow> (Arity\<^sub>\<bottom> \<Rightarrow> exp \<Rightarrow> exp)"
-  where "lift_transform t Ibottom  e = e"
-  |     "lift_transform t (Iup a) e = t a e"
-
-lemma lift_transform_eqvt[eqvt]: "\<pi> \<bullet>  lift_transform t a e = lift_transform (\<pi> \<bullet> t) (\<pi> \<bullet> a) (\<pi> \<bullet> e)"
-  by (cases "(t,a,e)" rule: lift_transform.cases) simp_all
-
-lemma lift_transform_up[simp]: "lift_transform t (up\<cdot>a) e = t a e"
-  unfolding up_def by (simp add: cont_Iup)
-
-lemma lift_transform_bot[simp]: "lift_transform t \<bottom> e = e"
-  by (metis inst_up_pcpo lift_transform.simps(1))
-
-lemma lift_transform_fun_cong[fundef_cong]:
-  "(\<And> a. t1 a e1 = t2 a e1) \<Longrightarrow> a1 = a2 \<Longrightarrow> e1 = e2 \<Longrightarrow> lift_transform t1 a1 e1 = lift_transform t2 a2 e2"
-  by (cases "(t2,a2,e2)" rule: lift_transform.cases) auto
-
-lemma subst_lift_transform: 
-  assumes "\<And> a. (t a e)[x ::= y] = t a (e[x ::= y])"
-  shows "(lift_transform t a e)[x ::=y] = lift_transform t a (e[x ::= y])"
-  using assms by (cases a) auto
-
-definition map_transform :: "(Arity \<Rightarrow> exp \<Rightarrow> exp) \<Rightarrow> AEnv \<Rightarrow> heap \<Rightarrow> heap"
-  where "map_transform t ae = map_ran (\<lambda> x e . lift_transform t (ae x) e)"
-
-lemma map_transform_eqvt[eqvt]: "\<pi> \<bullet> map_transform t ae = map_transform (\<pi> \<bullet> t) (\<pi> \<bullet> ae)"
-  unfolding map_transform_def by simp
-
-lemma domA_map_transform[simp]: "domA (map_transform t ae \<Gamma>) = domA \<Gamma>"
-  unfolding map_transform_def by simp
-
-lemma map_transform_delete:
-  "map_transform t ae (delete x \<Gamma>) = delete x (map_transform t ae \<Gamma>)"
-  unfolding map_transform_def by (simp add: map_ran_delete)
-
-lemma map_transform_Nil:
-  "map_transform t ae [] = []"
-  unfolding map_transform_def by simp
-
-lemma map_transform_Cons:
-  "map_transform t ae ((x,e)# \<Gamma>) = (x, lift_transform t (ae x) e) #  (map_transform t ae \<Gamma>)"
-  unfolding map_transform_def by simp
-
-lemma map_transform_append:
-  "map_transform t ae (\<Delta>@\<Gamma>) = map_transform t ae \<Delta> @ map_transform t ae \<Gamma>"
-  unfolding map_transform_def by (simp add: map_ran_append)
-
-lemma map_transform_fundef_cong[fundef_cong]:
-  "(\<And>x e a. (x,e) \<in> set m1 \<Longrightarrow> t1 a e = t2 a e) \<Longrightarrow> ae1 = ae2 \<Longrightarrow> m1 = m2 \<Longrightarrow> map_transform t1 ae1 m1 = map_transform t2 ae2 m2"
-  by (induction m2 arbitrary: m1)
-     (fastforce simp add: map_transform_Nil map_transform_Cons intro!: lift_transform_fun_cong)+
-
-lemma map_transform_cong:
-  "(\<And>x. x \<in> domA m1 \<Longrightarrow> ae x = ae' x) \<Longrightarrow> m1 = m2 \<Longrightarrow> map_transform t ae m1 = map_transform t ae' m2"
-  unfolding map_transform_def by (auto intro!: map_ran_cong dest: domA_from_set)
-
-lemma map_of_map_transform: "map_of (map_transform t ae \<Gamma>) x = map_option (lift_transform t (ae x)) (map_of \<Gamma> x)"
-  unfolding map_transform_def by (simp add: map_ran_conv)
-
-lemma supp_map_transform_step:
-  assumes "\<And> x e a. (x, e) \<in> set \<Gamma> \<Longrightarrow> supp (t a e) \<subseteq> supp e"
-  shows "supp (map_transform t ae \<Gamma>) \<subseteq> supp \<Gamma>"
-  using assms
-    apply (induction \<Gamma>)
-    apply (auto simp add: supp_Nil supp_Cons map_transform_Nil map_transform_Cons supp_Pair pure_supp)
-    apply (case_tac "ae a")
-    apply (fastforce)+
-    done
-
-lemma subst_map_transform: 
-  assumes "\<And> x' e a. (x',e) : set \<Gamma> \<Longrightarrow> (t a e)[x ::= y] = t a (e[x ::= y])"
-  shows "(map_transform t ae \<Gamma>)[x ::h=y] = map_transform t ae (\<Gamma>[x ::h= y])"
-  using assms
-  apply (induction \<Gamma>)
-  apply (auto simp add: map_transform_Nil map_transform_Cons)
-  apply (subst subst_lift_transform)
-  apply auto
-  done
-
-locale supp_bounded_transform = 
-  fixes trans :: "Arity \<Rightarrow> exp \<Rightarrow> exp"
-  assumes supp_trans: "supp (trans a e) \<subseteq> supp e"
-begin
-  lemma supp_lift_transform: "supp (lift_transform trans a e) \<subseteq> supp e"
-    by (cases "(trans, a, e)" rule:lift_transform.cases) (auto dest!: set_mp[OF supp_trans])
-
-  lemma supp_map_transform: "supp (map_transform trans ae \<Gamma>) \<subseteq> supp \<Gamma>"
-  unfolding map_transform_def
-     by (induction \<Gamma>) (auto simp add: supp_Pair supp_Cons dest!: set_mp[OF supp_lift_transform])
-
-  lemma fresh_map_transform[intro]: "a \<sharp> \<Gamma> \<Longrightarrow> a \<sharp> map_transform trans ae \<Gamma>"
-    unfolding fresh_def using supp_map_transform by auto
-
-  lemma fresh_star_map_transform[intro]: "a \<sharp>* \<Gamma> \<Longrightarrow> a \<sharp>* map_transform trans ae \<Gamma>"
-    by (auto simp add: fresh_star_def)
-end
-
-
-lift_definition Aeta_expand :: "Arity \<Rightarrow> exp \<Rightarrow> exp"  is "\<lambda> a e. eta_expand a e".
+lift_definition Aeta_expand :: "Arity \<Rightarrow> exp \<Rightarrow> exp" is "eta_expand".
 
 lemma Aeta_expand_eqvt[eqvt]: "\<pi> \<bullet> Aeta_expand a e = Aeta_expand (\<pi> \<bullet> a) (\<pi> \<bullet> e)"
   apply (cases a)
@@ -273,15 +175,22 @@ qed auto
      Aeta_expand_transform a e,
      S)"
 
+  inductive_set thunks :: "heap \<Rightarrow> var set" for \<Gamma> where
+    "map_of \<Gamma> x = Some e \<Longrightarrow> \<not> isLam e \<Longrightarrow> x \<in> thunks \<Gamma>"
+
+  lemma Aheap_thunks: "x \<in> thunks \<Gamma> \<Longrightarrow> (Aheap \<Gamma>\<cdot>ae) x = up\<cdot>0"
+    by (metis thunks.cases Aheap_heap3)
+
   inductive consistent :: "(AEnv \<times> Arity) \<Rightarrow> conf \<Rightarrow> bool" where
     consistentI[intro!]: 
     "edom ae \<subseteq> domA \<Gamma> \<union> upds S
     \<Longrightarrow> upds S \<subseteq> edom ae
     \<Longrightarrow> Astack ae S \<sqsubseteq> a
-    \<Longrightarrow> AEstack ae S \<sqsubseteq> ae 
+(*    \<Longrightarrow> AEstack ae S \<sqsubseteq> ae  *)
     \<Longrightarrow> Aexp e \<cdot> a \<sqsubseteq> ae
     \<Longrightarrow> (\<And> x e. map_of \<Gamma> x = Some e \<Longrightarrow> Aexp' e \<cdot> (ae x) \<sqsubseteq> ae)
     \<Longrightarrow> (\<And> x e. map_of \<Gamma> x = Some e \<Longrightarrow> \<not> isLam e \<Longrightarrow> ae x = up\<cdot>0)
+    \<Longrightarrow> ae ` ap S \<subseteq> {up\<cdot>0}
     \<Longrightarrow> ae ` upds S \<subseteq> {up\<cdot>0}
     \<Longrightarrow> consistent (ae, a) (\<Gamma>, e, S)"  
   inductive_cases consistentE[elim!]: "consistent (ae, a) (\<Gamma>, e, S)"
@@ -319,17 +228,19 @@ case (app\<^sub>2 \<Gamma> y e x S)
     done
   hence "consistent (ae, pred \<cdot> a) (\<Gamma>, e[y::=x], S)"  using app\<^sub>2
     apply  (auto intro!:  below_trans[OF monofun_cfun_fun[OF Aexp_subst_App_Lam]] simp add: Aexp_App join_below_iff monofun_cfun_arg)
-    by (metis image_eqI singletonD subsetCE)
+    apply (metis image_eqI singletonD subsetCE)+
+    done
   moreover
   have "Atransform (ae, a) (\<Gamma>, Lam [y]. e, Arg x # S) \<Rightarrow> Atransform (ae, pred \<cdot> a) (\<Gamma>, e[y::=x], S)" by (simp add: subst_Aeta_expand_transform[symmetric]) rule
   ultimately
   show ?case by (blast del: consistentI consistentE)
 next
 case (thunk \<Gamma> x e S)
-  have "consistent (ae, 0) (delete x \<Gamma>, e, Upd x # S)" using thunk by (fastforce  simp add: join_below_iff)
+  hence "consistent (ae, 0) (delete x \<Gamma>, e, Upd x # S)" using thunk by (fastforce simp add: join_below_iff)
   moreover
   {
-  from thunk have "ae x = up\<cdot>0" by auto
+  from thunk
+  have "ae x = up\<cdot>0" by auto
   with  `map_of \<Gamma> x = Some e`
   have "map_of (map_transform Aeta_expand ae (map_transform Aeta_expand_transform ae \<Gamma>)) x = Some (Aeta_expand_transform 0 e)"
     by (simp add: map_of_map_transform)
@@ -425,9 +336,11 @@ next
   moreover
   have "upds S \<subseteq> edom (?ae \<squnion> ae)"
     using let\<^sub>1(3) by auto
+  (*
   moreover
   have "AEstack ae S \<sqsubseteq> ae" using let\<^sub>1(3) by auto
   hence "AEstack ae S \<sqsubseteq> ?ae \<squnion> ae" by (metis join_above1 below_refl box_below join_comm)
+  *)
   moreover
   { fix x e'
     assume "map_of \<Delta> x = Some e'"
@@ -473,6 +386,8 @@ next
   }
   moreover
   have "(?ae \<squnion> ae) ` upds S \<subseteq> {up \<cdot> 0}" using let\<^sub>1 * by fastforce
+  moreover
+  have "(?ae \<squnion> ae) ` ap S \<subseteq> {up \<cdot> 0}" using let\<^sub>1 * by fastforce
   moreover
   have "Astack (?ae \<squnion> ae) S \<sqsubseteq> a" unfolding stack using let\<^sub>1 by auto
   moreover
