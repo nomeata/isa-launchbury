@@ -32,19 +32,21 @@ locale CorrectArityAnalysis = EdomArityAnalysis +
   assumes Aexp_subst_restr: "x \<notin> S \<Longrightarrow> y \<notin> S \<Longrightarrow> (Aexp e[x::=y] \<cdot> a) f|` S = (Aexp e\<cdot>a) f|` S"
 
 locale CorrectArityAnalysisAfix = CorrectArityAnalysis + 
-  assumes Aexp_Let: "Afix as\<cdot>(Aexp e\<cdot>n) f|` (- domA as) \<sqsubseteq> Aexp (Terms.Let as e)\<cdot>n"
+  assumes Aexp_Let: "Afix as\<cdot>(Aexp e\<cdot>n) f|` (- domA as) \<sqsubseteq> Aexp (Let as e)\<cdot>n"
 
 locale CorrectArityAnalysisAheap = CorrectArityAnalysis + 
   fixes Aheap :: "heap \<Rightarrow> AEnv \<rightarrow> AEnv"
   assumes Aheap_eqvt[eqvt]: "\<pi> \<bullet> Aheap = Aheap"
   assumes edom_Aheap: "edom (Aheap \<Gamma> \<cdot> ae) \<subseteq> domA \<Gamma>"
   assumes Aheap_heap: "map_of \<Gamma> x = Some e' \<Longrightarrow> Aexp' e'\<cdot>((Aheap \<Gamma>\<cdot>ae) x) f|` domA \<Gamma> \<sqsubseteq> Aheap \<Gamma>\<cdot>ae"
-  assumes Aheap_heap2: "map_of \<Gamma> x = Some e' \<Longrightarrow> Aexp' e'\<cdot>((Aheap \<Gamma>\<cdot>(Aexp e\<cdot>a)) x) f|` (- domA \<Gamma>) \<sqsubseteq>  Aexp (Terms.Let \<Gamma> e)\<cdot>a"
-  assumes Aheap_heap3: "map_of \<Gamma> x = Some e' \<Longrightarrow> \<not>(isLam e') \<Longrightarrow> (Aheap \<Gamma>\<cdot>ae) x = up\<cdot>0"
+  assumes Aheap_heap3: "map_of \<Gamma> x = Some e' \<Longrightarrow> \<not> isLam e' \<Longrightarrow> (Aheap \<Gamma>\<cdot>ae) x = up\<cdot>0"
   assumes Aheap_above_arg: "ae f|` domA \<Gamma> \<sqsubseteq> Aheap \<Gamma>\<cdot>ae"
-  assumes Aexp_Let_above: "Aexp e\<cdot>a f|` (- domA \<Gamma>) \<sqsubseteq> Aexp (Terms.Let \<Gamma> e)\<cdot>a"
   assumes Aheap_subst: "x \<notin> domA \<Gamma> \<Longrightarrow> y \<notin> domA \<Gamma> \<Longrightarrow> Aheap \<Gamma>[x::h=y] = Aheap \<Gamma>"
   assumes Aheap_cong: "ae f|` domA \<Gamma> = ae' f|` domA \<Gamma> \<Longrightarrow> Aheap \<Gamma>\<cdot>ae = Aheap \<Gamma>\<cdot>ae'"
+
+locale CorrectArityAnalysisLet = CorrectArityAnalysisAheap +
+  assumes Aheap_heap2: "map_of \<Gamma> x = Some e' \<Longrightarrow> Aexp' e'\<cdot>((Aheap \<Gamma>\<cdot>(Aexp e\<cdot>a)) x) f|` (- domA \<Gamma>) \<sqsubseteq>  Aexp (Let \<Gamma> e)\<cdot>a"
+  assumes Aexp_Let_above: "Aexp e\<cdot>a f|` (- domA \<Gamma>) \<sqsubseteq> Aexp (Let \<Gamma> e)\<cdot>a"
 
 
 context CorrectArityAnalysis

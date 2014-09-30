@@ -238,7 +238,7 @@ lemma Aheap_eqvt'[eqvt]:
   apply rule
   done
 
-interpretation CorrectArityAnalysisAheap Aexp Aheap
+interpretation CorrectArityAnalysisLet Aexp Aheap
 proof default
   fix \<pi> show "\<pi> \<bullet> Aheap = Aheap" by perm_simp rule
 next

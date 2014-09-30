@@ -26,7 +26,7 @@ fun AEstack :: "AEnv \<Rightarrow> stack \<Rightarrow> AEnv"
 lemma AEstack_cong: "(\<And> x. x \<in> upds S \<Longrightarrow> ae x = ae' x) \<Longrightarrow> AEstack ae S = AEstack ae' S"
   by (induction S  rule: upds.induct) (auto cong: Astack_cong)
 
-context CorrectArityAnalysisAheap
+context CorrectArityAnalysisLet
 begin
 
 inductive AE_consistent :: "AEnv \<Rightarrow> conf \<Rightarrow> bool" where

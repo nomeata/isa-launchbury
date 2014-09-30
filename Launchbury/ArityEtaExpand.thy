@@ -45,7 +45,7 @@ interpretation supp_bounded_transform Aeta_expand
   apply (auto simp add: fresh_def)
   done
 
-locale ArityEtaExpand = CorrectArityAnalysisAheap
+locale ArityEtaExpand = CorrectArityAnalysisLet
 begin
 
   nominal_function Aeta_expand_transform where
