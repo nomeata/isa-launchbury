@@ -1,5 +1,5 @@
 theory ArityCorrect2
-imports ArityCorrect LaunchburyAddLog
+imports ArityAnalysisFix LaunchburyAddLog
 begin
 
 context CorrectArityAnalysisAfix

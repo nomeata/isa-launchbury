@@ -1,5 +1,5 @@
 theory ArityAnalysisImpl
-imports ArityCorrect "Arity-Nominal" "Nominal-HOLCF" "Env-Nominal" "Env-HOLCF"
+imports ArityAnalysisFix "Arity-Nominal" "Nominal-HOLCF" "Env-Nominal" "Env-HOLCF"
 begin
 
 
