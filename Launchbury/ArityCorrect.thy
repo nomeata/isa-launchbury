@@ -9,14 +9,6 @@ begin
 lemma Aexp'_edom: "edom (Aexp' e\<cdot>a) \<subseteq> fv e"
   by (cases a) (auto dest:set_mp[OF Aexp_edom])
 
-lemma ABinds_edom: "edom (ABinds \<Gamma> \<cdot> ae) \<subseteq> fv \<Gamma> \<union> edom ae"
-  apply (induct rule: ABinds.induct)
-  apply simp
-  apply (auto dest: set_mp[OF Aexp'_edom] simp del: fun_meet_simp)
-  apply (drule (1) set_mp)
-  apply (auto dest: set_mp[OF fv_delete_subset])
-  done
-
 end
 
 locale CorrectArityAnalysis = EdomArityAnalysis +
@@ -58,62 +50,6 @@ lemma Aexp_lookup_fresh: "atom v \<sharp> e \<Longrightarrow> (Aexp e\<cdot>a) v
 lemma Aexp'_lookup_fresh: "atom v \<sharp> e \<Longrightarrow> (Aexp' e\<cdot>a) v = \<bottom>"
   by (cases a) (auto simp add: Aexp_lookup_fresh)
 
-lemma ABinds_lookup_fresh:
-  "atom v \<sharp> \<Gamma> \<Longrightarrow> (ABinds \<Gamma>\<cdot>ae) v = ae v"
-by (induct \<Gamma> rule: ABinds.induct) (auto simp add: fresh_Cons fresh_Pair Aexp'_lookup_fresh fresh_delete)
-
-lemma Abinds_append_fresh: "atom ` (domA \<Delta>) \<sharp>* \<Gamma> \<Longrightarrow>  ABinds (\<Delta> @ \<Gamma>)\<cdot>ae = ABinds \<Delta>\<cdot>(ABinds \<Gamma>\<cdot>ae)"
-proof (induct \<Delta> rule: ABinds.induct)
-  case 1 thus ?case by simp
-next
-  case (2 v e \<Delta>)
-  from 2(2)
-  have "atom v \<sharp> \<Gamma>" and  "atom ` domA (delete v \<Delta>) \<sharp>* \<Gamma>"
-    by (auto simp add: fresh_star_def)
-  from 2(1)[OF this(2)]
-  have "ABinds (delete v \<Delta> @ \<Gamma>)\<cdot>ae = ABinds (delete v \<Delta>)\<cdot>(ABinds \<Gamma>\<cdot>ae)".
-  moreover
-  have "delete v \<Gamma> = \<Gamma>" by (metis `atom v \<sharp> \<Gamma>` delete_not_domA domA_not_fresh)
-  moreover
-  have "(ABinds \<Gamma>\<cdot>ae) v = ae v" by (rule ABinds_lookup_fresh[OF `atom v \<sharp> \<Gamma>`])
-  ultimately
-  show "ABinds (((v, e) # \<Delta>) @ \<Gamma>)\<cdot>ae = ABinds ((v, e) # \<Delta>)\<cdot>(ABinds \<Gamma>\<cdot>ae)"
-    by simp
-qed  
 end
-
-(*
-context CorrectArityAnalysisAfix 
-begin
-
-sublocale CorrectArityAnalysisAheap Aexp "\<lambda> \<Gamma>. \<Lambda> ae. (Afix \<Gamma> \<cdot> ae f|` domA \<Gamma>)"
-apply default
-  defer
-
-  apply simp
-
-  apply simp
-  apply (subst Env.lookup_env_restr)
-  apply (metis domI dom_map_of_conv_domA)
-  apply (rule env_restr_mono)
-  apply (metis (erased, hide_lams) "HOLCF-Join-Classes.join_above2" ABind_eq ArityAnalysis.Abinds_Afix ArityAnalysis.Abinds_reorder1 join_comm monofun_cfun_fun)
-
-  apply simp
-  apply (subst Env.lookup_env_restr)
-  apply (metis domI dom_map_of_conv_domA)
-  apply (rule below_trans[OF _ Aexp_Let])
-  apply (rule env_restr_mono)
-  apply (metis (erased, hide_lams) "HOLCF-Join-Classes.join_above2" ABind_eq ArityAnalysis.Abinds_Afix ArityAnalysis.Abinds_reorder1 join_comm monofun_cfun_fun)
-  defer
-
-  apply simp
-  apply (metis ArityAnalysis.Afix_above_arg env_restr_mono)
-
-  apply (rule below_trans[OF _ Aexp_Let])
-  apply (metis ArityAnalysis.Afix_above_arg env_restr_mono)
-  done
-  sor ry
-end
-*)
 
 end
