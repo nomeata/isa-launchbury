@@ -52,7 +52,9 @@ begin
     "Aeta_expand_transform a (App e x) = App (Aeta_expand_transform (inc\<cdot>a) e) x"
   | "Aeta_expand_transform a (Lam [x]. e) = Lam [x].(Aeta_expand_transform (pred\<cdot>a) e)"
   | "Aeta_expand_transform a (GVar b x) = GVar b x"
-  | "Aeta_expand_transform a (Terms.Let \<Delta> e) = Terms.Let (map_transform Aeta_expand (Aheap \<Delta>\<cdot>(Aexp e\<cdot>a)) (map_transform Aeta_expand_transform (Aheap \<Delta>\<cdot>(Aexp e\<cdot>a)) \<Delta>)) (Aeta_expand_transform a e)"
+  | "Aeta_expand_transform a (Terms.Let \<Delta> e) =
+       Let (map_transform Aeta_expand (Aheap \<Delta>\<cdot>(Aexp e\<cdot>a)) (map_transform Aeta_expand_transform (Aheap \<Delta>\<cdot>(Aexp e\<cdot>a)) \<Delta>))
+           (Aeta_expand_transform a e)"
   proof-
   case goal1
     thus ?case

@@ -20,7 +20,12 @@ end
 instance CoCalls :: cpo
   sorry
 
-
 lift_definition ccField :: "CoCalls \<Rightarrow> var set" is Field.
+
+lift_definition inCC :: "var \<Rightarrow> var \<Rightarrow> CoCalls \<Rightarrow> bool" ("_--_\<in>_")
+  is "\<lambda> x y s. (x,y) \<in> s".
+
+abbreviation notInCC :: "var \<Rightarrow> var \<Rightarrow> CoCalls \<Rightarrow> bool" ("_--_\<notin>_")
+  where "x--y\<notin>S \<equiv> \<not> (x--y\<in>S)"
 
 end
