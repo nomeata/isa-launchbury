@@ -2,34 +2,32 @@ theory ArityAnalysisImpl
 imports ArityAnalysisFix "Arity-Nominal" "Nominal-HOLCF" "Env-Nominal" "Env-HOLCF"
 begin
 
+definition thunks_AE  :: "heap \<Rightarrow> AEnv" where
+  "thunks_AE \<Gamma> = (\<lambda> x . (if x \<in> thunks \<Gamma> then up\<cdot>0 else \<bottom>))"
 
-fun thunks :: "heap \<Rightarrow> AEnv" where
-  "thunks [] = \<bottom>"
-  | "thunks ((x,e)#\<Gamma>) = (if isLam e then \<bottom> else AE_singleton x\<cdot>(up\<cdot>0)) \<squnion> thunks \<Gamma>"
+lemma edom_thunks_AE: "edom (thunks_AE \<Gamma>) \<subseteq> domA \<Gamma>"
+  unfolding edom_def thunks_AE_def by (auto dest: set_mp[OF thunks_domA])
 
-lemma edom_thunks: "edom (thunks \<Gamma>) \<subseteq> domA \<Gamma>"
-  by (induction \<Gamma> rule:thunks.induct) (auto simp del: fun_meet_simp)
+lemma thunks_AE_eqvt[eqvt]:
+  "\<pi> \<bullet> thunks_AE \<Gamma> = thunks_AE (\<pi> \<bullet> \<Gamma>)"
+  unfolding thunks_AE_def
+  by perm_simp rule
 
-lemma thunks_eqvt[eqvt]:
-  "\<pi> \<bullet> thunks \<Gamma> = thunks (\<pi> \<bullet> \<Gamma>)"
-  by (induction \<Gamma> rule:thunks.induct) (auto simp add: join_eqvt simp del: fun_meet_simp)
+lemma thunks_AE_subst[simp]:
+  "thunks_AE \<Gamma>[y::h=x] = thunks_AE \<Gamma>"
+  unfolding thunks_AE_def by simp
 
-lemma thunks_subst[simp]:
-  "thunks \<Gamma>[y::h=x] = thunks \<Gamma>"
-  by (induction \<Gamma> rule:thunks.induct)  (auto simp del: fun_meet_simp app_strict )
-
-lemma thunks_subst_approx:
-  "y \<notin> domA \<Gamma> \<Longrightarrow> thunks \<Gamma>[y::h=x] \<sqsubseteq> (thunks \<Gamma>)(y := \<bottom>, x := up\<cdot>0)"
-  by (auto intro!: fun_belowI dest!: contra_subsetD[OF edom_thunks] simp add: edomIff)
+lemma thunks_AE_subst_approx:
+  "y \<notin> domA \<Gamma> \<Longrightarrow> thunks_AE \<Gamma>[y::h=x] \<sqsubseteq> (thunks_AE \<Gamma>)(y := \<bottom>, x := up\<cdot>0)"
+  by (auto intro!: fun_belowI dest!: contra_subsetD[OF edom_thunks_AE] simp add: edomIff)
   
-
 nominal_function
   Aexp :: "exp \<Rightarrow> (Arity \<rightarrow> AEnv)"
 where
   "Aexp (GVar b x) = (\<Lambda> n . AE_singleton x \<cdot> (up \<cdot> n))"
 | "Aexp (Lam [x]. e) = (\<Lambda> n . (Aexp e \<cdot> (pred \<cdot> n)  f|` (fv (Lam [x]. e))))"
 | "Aexp (App e x) = (\<Lambda> n . Aexp e  \<cdot> (inc \<cdot> n) \<squnion> (AE_singleton x \<cdot> (up \<cdot> 0)))"
-| "Aexp (Terms.Let as e) = (\<Lambda> n . (ArityAnalysis.Afix Aexp as \<cdot> (Aexp e \<cdot> n \<squnion> thunks as)) f|` (fv (Terms.Let as e)))"
+| "Aexp (Terms.Let as e) = (\<Lambda> n . (ArityAnalysis.Afix Aexp as \<cdot> (Aexp e \<cdot> n \<squnion> thunks_AE as)) f|` (fv (Terms.Let as e)))"
 proof-
 case goal1 show ?case
     unfolding eqvt_def Aexp_graph_aux_def
@@ -65,11 +63,11 @@ case (goal13 as body as' body')
     assume *: "supp (-\<pi>) \<sharp>* (fv (Terms.Let as body) :: var set)"
     
     { fix n
-      have "ArityAnalysis.Afix Aexp_sumC (\<pi> \<bullet> as)\<cdot>(Aexp_sumC (\<pi> \<bullet> body)\<cdot>n \<squnion> thunks (\<pi> \<bullet> as)) f|` fv (Terms.Let as body)
-      =  (- \<pi> \<bullet> ArityAnalysis.Afix Aexp_sumC (\<pi> \<bullet> as)\<cdot>(Aexp_sumC (\<pi> \<bullet> body)\<cdot>n \<squnion> thunks (\<pi> \<bullet> as))) f|` fv (Terms.Let as body)"
+      have "ArityAnalysis.Afix Aexp_sumC (\<pi> \<bullet> as)\<cdot>(Aexp_sumC (\<pi> \<bullet> body)\<cdot>n \<squnion> thunks_AE (\<pi> \<bullet> as)) f|` fv (Terms.Let as body)
+      =  (- \<pi> \<bullet> ArityAnalysis.Afix Aexp_sumC (\<pi> \<bullet> as)\<cdot>(Aexp_sumC (\<pi> \<bullet> body)\<cdot>n \<squnion> thunks_AE (\<pi> \<bullet> as))) f|` fv (Terms.Let as body)"
         by (rule env_restr_perm[OF *, symmetric]) simp
-      also have "- \<pi> \<bullet> ArityAnalysis.Afix Aexp_sumC (\<pi> \<bullet> as)\<cdot>(Aexp_sumC (\<pi> \<bullet> body)\<cdot>n \<squnion> thunks (\<pi> \<bullet> as)) = 
-                       ArityAnalysis.Afix (- \<pi> \<bullet> Aexp_sumC) as\<cdot>((- \<pi> \<bullet> Aexp_sumC) body\<cdot>n \<squnion> thunks as)"
+      also have "- \<pi> \<bullet> ArityAnalysis.Afix Aexp_sumC (\<pi> \<bullet> as)\<cdot>(Aexp_sumC (\<pi> \<bullet> body)\<cdot>n \<squnion> thunks_AE (\<pi> \<bullet> as)) = 
+                       ArityAnalysis.Afix (- \<pi> \<bullet> Aexp_sumC) as\<cdot>((- \<pi> \<bullet> Aexp_sumC) body\<cdot>n \<squnion> thunks_AE as)"
         by (simp add: pemute_minus_self)
       also have "ArityAnalysis.Afix (- \<pi> \<bullet> Aexp_sumC) as = ArityAnalysis.Afix Aexp_sumC as"
         by (rule Afix_cong[OF eqvt_at_apply[OF goal13(1)] refl])
@@ -77,8 +75,8 @@ case (goal13 as body as' body')
         by (rule eqvt_at_apply[OF goal13(2)])
       also note calculation
     }
-    thus "(\<Lambda> n. ArityAnalysis.Afix Aexp_sumC (\<pi> \<bullet> as)\<cdot>(Aexp_sumC (\<pi> \<bullet> body)\<cdot>n \<squnion> thunks (\<pi> \<bullet> as)) f|` fv (Terms.Let as body)) =
-         (\<Lambda> n. ArityAnalysis.Afix Aexp_sumC as\<cdot>(Aexp_sumC body\<cdot>n \<squnion> thunks as) f|` fv (Terms.Let as body))" by (simp only:)
+    thus "(\<Lambda> n. ArityAnalysis.Afix Aexp_sumC (\<pi> \<bullet> as)\<cdot>(Aexp_sumC (\<pi> \<bullet> body)\<cdot>n \<squnion> thunks_AE (\<pi> \<bullet> as)) f|` fv (Terms.Let as body)) =
+         (\<Lambda> n. ArityAnalysis.Afix Aexp_sumC as\<cdot>(Aexp_sumC body\<cdot>n \<squnion> thunks_AE as) f|` fv (Terms.Let as body))" by (simp only:)
   qed
 qed auto
 
@@ -101,13 +99,13 @@ proof-
 qed
 declare Aexp.simps(2)[simp del]
 
-lemma Aexp_let_simp[simp]: "Aexp (Terms.Let \<Gamma> e) \<cdot> n = Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks \<Gamma>) f|` (- domA \<Gamma>)"
+lemma Aexp_let_simp[simp]: "Aexp (Terms.Let \<Gamma> e) \<cdot> n = Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>) f|` (- domA \<Gamma>)"
 proof-
-  have "Aexp (Terms.Let \<Gamma> e) \<cdot> n  = Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks \<Gamma>) f|` fv (Terms.Let \<Gamma> e)" by simp
-  also have "\<dots> = Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks \<Gamma>) f|` (- domA \<Gamma>) f|` fv (Terms.Let \<Gamma> e)" by auto (metis Diff_eq Diff_idemp)
-  also have "\<dots> = Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks \<Gamma>) f|` (- domA \<Gamma>)"
+  have "Aexp (Terms.Let \<Gamma> e) \<cdot> n  = Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>) f|` fv (Terms.Let \<Gamma> e)" by simp
+  also have "\<dots> = Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>) f|` (- domA \<Gamma>) f|` fv (Terms.Let \<Gamma> e)" by auto (metis Diff_eq Diff_idemp)
+  also have "\<dots> = Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>) f|` (- domA \<Gamma>)"
      by (rule env_restr_useless)
-        (auto dest!: set_mp[OF Aexp_edom] set_mp[OF Afix_edom] set_mp[OF edom_thunks])
+        (auto dest!: set_mp[OF Aexp_edom] set_mp[OF Afix_edom] set_mp[OF edom_thunks_AE])
   finally show ?thesis.
 qed
 declare Aexp.simps(4)[simp del]
@@ -159,14 +157,14 @@ next
   
   note this[simp] Let(1,2)[simp]
 
-  have "Aexp (Terms.Let \<Gamma> e)[y::=x]\<cdot>n \<sqsubseteq> Afix \<Gamma>[y::h=x]\<cdot>(Aexp e[y::=x]\<cdot>n \<squnion> thunks \<Gamma>[y::h=x]) f|` ( - domA \<Gamma>)" by (simp add: fresh_star_Pair)
+  have "Aexp (Terms.Let \<Gamma> e)[y::=x]\<cdot>n \<sqsubseteq> Afix \<Gamma>[y::h=x]\<cdot>(Aexp e[y::=x]\<cdot>n \<squnion> thunks_AE \<Gamma>[y::h=x]) f|` ( - domA \<Gamma>)" by (simp add: fresh_star_Pair)
   also have "(Aexp e[y::=x]\<cdot>n) \<sqsubseteq> (Aexp e\<cdot>n)(y := \<bottom>, x := up\<cdot>0)" by fact
-  also have "thunks \<Gamma>[y::h=x] \<sqsubseteq> (thunks \<Gamma>)(y := \<bottom>, x := up\<cdot>0)" by (rule thunks_subst_approx[OF `y \<notin> domA \<Gamma>`])
-  also have "(Aexp e\<cdot>n)(y := \<bottom>, x := up\<cdot>0) \<squnion> (thunks \<Gamma>)(y := \<bottom>, x := up\<cdot>0) = (Aexp e\<cdot>n \<squnion> thunks \<Gamma>)(y := \<bottom>, x := up\<cdot>0)" by simp
-  also have "Afix \<Gamma>[y::h=x]\<cdot>((Aexp e\<cdot>n \<squnion> thunks \<Gamma>)(y := \<bottom>, x := up\<cdot>0)) \<sqsubseteq> (Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks \<Gamma>))(y := \<bottom>, x := up\<cdot>0)"
+  also have "thunks_AE \<Gamma>[y::h=x] \<sqsubseteq> (thunks_AE \<Gamma>)(y := \<bottom>, x := up\<cdot>0)" by (rule thunks_AE_subst_approx[OF `y \<notin> domA \<Gamma>`])
+  also have "(Aexp e\<cdot>n)(y := \<bottom>, x := up\<cdot>0) \<squnion> (thunks_AE \<Gamma>)(y := \<bottom>, x := up\<cdot>0) = (Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>)(y := \<bottom>, x := up\<cdot>0)" by simp
+  also have "Afix \<Gamma>[y::h=x]\<cdot>((Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>)(y := \<bottom>, x := up\<cdot>0)) \<sqsubseteq> (Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>))(y := \<bottom>, x := up\<cdot>0)"
     by (rule Afix_subst_approx[OF Let(3) `x \<notin> domA \<Gamma>` `y \<notin> domA \<Gamma>`])
-  also have "(Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks \<Gamma>))(y := \<bottom>, x := up\<cdot>0) f|` (- domA \<Gamma>) = (Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks \<Gamma>) f|` (- domA \<Gamma>)) (y := \<bottom>, x := up\<cdot>0)" by auto
-  also have "(Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks \<Gamma>) f|` (- domA \<Gamma>)) = Aexp (Terms.Let \<Gamma> e)\<cdot>n" by simp
+  also have "(Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>))(y := \<bottom>, x := up\<cdot>0) f|` (- domA \<Gamma>) = (Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>) f|` (- domA \<Gamma>)) (y := \<bottom>, x := up\<cdot>0)" by auto
+  also have "(Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>) f|` (- domA \<Gamma>)) = Aexp (Terms.Let \<Gamma> e)\<cdot>n" by simp
   finally show ?case by this simp_all
 qed
 
@@ -196,7 +194,7 @@ next
   note this[simp] Let(1,2)[simp]
 
   from Let
-  have "ArityAnalysis.Afix Aexp \<Gamma>[x::h=y]\<cdot>(Aexp e[x::=y]\<cdot>a \<squnion> thunks \<Gamma>) f|` (S \<union> domA \<Gamma>) = ArityAnalysis.Afix Aexp \<Gamma>\<cdot>(Aexp e\<cdot>a \<squnion> thunks \<Gamma>) f|` (S \<union> domA \<Gamma>)"
+  have "ArityAnalysis.Afix Aexp \<Gamma>[x::h=y]\<cdot>(Aexp e[x::=y]\<cdot>a \<squnion> thunks_AE \<Gamma>) f|` (S \<union> domA \<Gamma>) = ArityAnalysis.Afix Aexp \<Gamma>\<cdot>(Aexp e\<cdot>a \<squnion> thunks_AE \<Gamma>) f|` (S \<union> domA \<Gamma>)"
     apply (auto simp add: fresh_star_Pair)
     apply (subst Afix_restr_subst')
     apply auto[1]
@@ -227,7 +225,7 @@ next
 qed simp_all
 
 definition Aheap where
-  "Aheap \<Gamma> = (\<Lambda> ae. (Afix \<Gamma> \<cdot> (ae \<squnion> thunks \<Gamma>) f|` domA \<Gamma>))"
+  "Aheap \<Gamma> = (\<Lambda> ae. (Afix \<Gamma> \<cdot> (ae \<squnion> thunks_AE \<Gamma>) f|` domA \<Gamma>))"
 
 lemma Aheap_eqvt'[eqvt]:
   "\<pi> \<bullet> (Aheap \<Gamma>) = Aheap (\<pi> \<bullet> \<Gamma>)"
@@ -278,14 +276,15 @@ next
     done
 
    assume "\<not> isLam e"
-   with `map_of \<Gamma> x = Some e` have "thunks \<Gamma> x = up\<cdot>0" by (induction \<Gamma> rule: thunks.induct) (auto split: if_splits)
-   hence "(ae \<squnion> thunks \<Gamma>) x = up \<cdot> 0" by simp
-   moreover have "(ae \<squnion> thunks \<Gamma>) \<sqsubseteq> Afix \<Gamma>\<cdot>(ae \<squnion> thunks \<Gamma>)" by (rule Afix_above_arg)
-   ultimately have "(Afix \<Gamma>\<cdot>(ae \<squnion> thunks \<Gamma>)) x = up\<cdot>0" by (metis Arity_above_up_top  fun_belowD) 
+   with `map_of \<Gamma> x = Some e` have "x \<in> thunks \<Gamma>" by (induction \<Gamma> rule: thunks.induct) (auto split: if_splits)
+   hence "thunks_AE \<Gamma> x = up\<cdot>0" unfolding thunks_AE_def by simp
+   hence "(ae \<squnion> thunks_AE \<Gamma>) x = up \<cdot> 0" by simp
+   moreover have "(ae \<squnion> thunks_AE \<Gamma>) \<sqsubseteq> Afix \<Gamma>\<cdot>(ae \<squnion> thunks_AE \<Gamma>)" by (rule Afix_above_arg)
+   ultimately have "(Afix \<Gamma>\<cdot>(ae \<squnion> thunks_AE \<Gamma>)) x = up\<cdot>0" by (metis Arity_above_up_top  fun_belowD) 
    thus "(Aheap \<Gamma>\<cdot>ae) x = up\<cdot>0" unfolding Aheap_def by simp
 next
   fix \<Gamma> ae
-  have "ae \<sqsubseteq> ArityAnalysis.Afix Aexp \<Gamma>\<cdot>(ae \<squnion> thunks \<Gamma>)" by (rule  below_trans[OF join_above1 Afix_above_arg])
+  have "ae \<sqsubseteq> ArityAnalysis.Afix Aexp \<Gamma>\<cdot>(ae \<squnion> thunks_AE \<Gamma>)" by (rule  below_trans[OF join_above1 Afix_above_arg])
   thus "ae f|` domA \<Gamma> \<sqsubseteq> Aheap \<Gamma>\<cdot>ae"
     unfolding Aheap_def by (simp add: env_restr_mono)
 next
@@ -306,5 +305,49 @@ next
     apply (simp add: env_restr_join)
     done
 qed
+
+(*
+lemma Afix_cong:
+  assumes "domA \<Gamma> = domA \<Gamma>'"
+  assumes "thunks \<Gamma> = thunks \<Gamma>'"
+  assumes "\<And>x a. x \<in> domA \<Gamma> \<Longrightarrow> up \<cdot> a \<sqsubseteq> ae x \<Longrightarrow> Aexp (the (map_of \<Gamma> x))\<cdot>a = Aexp (the (map_of \<Gamma>' x))\<cdot>a"
+  shows "Afix \<Gamma>\<cdot>ae = Afix \<Gamma>'\<cdot>ae"
+  unfolding Afix_eq
+  apply (rule fix_eq_fix)
+  apply auto
+  
+  
+  find_theorems "fix\<cdot>_ = fix\<cdot>_"
+  
+  
+
+interpretation CorrectArityAnalysisCong Aexp Aheap
+proof default
+  fix \<Gamma> \<Gamma>' :: heap and  e e' a
+  assume "domA \<Gamma> = domA \<Gamma>'"
+  moreover
+  assume "\<And>x a. x \<in> domA \<Gamma> \<Longrightarrow> up \<cdot> a \<sqsubseteq> (Aheap \<Gamma>'\<cdot>(Aexp e\<cdot>a)) x \<Longrightarrow> Aexp (the (map_of \<Gamma> x))\<cdot>a = Aexp (the (map_of \<Gamma>' x))\<cdot>a"
+  hence  "Afix \<Gamma>\<cdot>((Aexp e\<cdot>a) \<squnion> thunks_AE \<Gamma>) = Afix \<Gamma>'\<cdot>(Aexp e'\<cdot>a \<squnion> thunks_AE \<Gamma>)"
+    sorry
+  note * = this
+  moreover
+  assume "Aexp e\<cdot>a = Aexp e'\<cdot>a"
+  moreover
+  assume "thunks \<Gamma> = thunks \<Gamma>'"
+  hence "thunks_AE \<Gamma> = thunks_AE \<Gamma>'" unfolding thunks_AE_def by simp
+  ultimately
+  show "Aexp (Terms.Let \<Gamma> e)\<cdot>a = Aexp (Terms.Let \<Gamma>' e')\<cdot>a"  by auto
+next
+  fix \<Gamma> \<Gamma>' :: heap and ae
+  assume *: "domA \<Gamma> = domA \<Gamma>'"
+  assume "\<And>x a. x \<in> domA \<Gamma> \<Longrightarrow> up\<cdot>a \<sqsubseteq> (Aheap \<Gamma>'\<cdot>ae) x \<Longrightarrow> Aexp (the (map_of \<Gamma> x))\<cdot>a = Aexp (the (map_of \<Gamma>' x))\<cdot>a"
+  hence "ArityAnalysis.Afix Aexp \<Gamma>\<cdot>(ae \<squnion> thunks_AE \<Gamma>) = ArityAnalysis.Afix Aexp \<Gamma>'\<cdot>(ae \<squnion> thunks_AE \<Gamma>')"
+    sorry
+  thus "Aheap \<Gamma>\<cdot>ae = Aheap \<Gamma>'\<cdot>ae"
+    unfolding Aheap_def using * by simp
+qed simp_all
+
+ *)
+
 
 end

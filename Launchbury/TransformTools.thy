@@ -35,6 +35,10 @@ lemma map_transform_eqvt[eqvt]: "\<pi> \<bullet> map_transform t ae = map_transf
 lemma domA_map_transform[simp]: "domA (map_transform t ae \<Gamma>) = domA \<Gamma>"
   unfolding map_transform_def by simp
 
+lemma length_map_transform[simp]: "length (map_transform t ae xs) = length xs"
+  unfolding map_transform_def map_ran_def by simp
+ 
+
 lemma map_transform_delete:
   "map_transform t ae (delete x \<Gamma>) = delete x (map_transform t ae \<Gamma>)"
   unfolding map_transform_def by (simp add: map_ran_delete)

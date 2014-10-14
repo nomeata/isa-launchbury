@@ -36,11 +36,18 @@ lemma AE_singleton_eqvt[eqvt]: "\<pi> \<bullet> (AE_singleton x) = AE_singleton 
   apply (simp add: Abs_cfun_eqvt)
   done
 
+lemma env_delete_AE_singleton[simp]: "env_delete x (AE_singleton x \<cdot> n) = \<bottom>"
+  unfolding env_delete_def AE_singleton_def
+  by auto
+
 lemma join_eqvt[eqvt]: "\<pi> \<bullet> (x \<squnion> (y :: 'a :: {Finite_Join_cpo, cont_pt})) = (\<pi> \<bullet> x) \<squnion> (\<pi> \<bullet> y)"
   by (rule is_joinI[symmetric]) (auto simp add: perm_below_to_right)
 
 (* Move to somewhere? *)
 lemma edom_join[simp]: "edom (f \<squnion> (g::('a::type \<Rightarrow> 'b::{Finite_Join_cpo,pcpo}))) = edom f \<union> edom g"
   unfolding edom_def by auto
+
+lemma env_delete_join[simp]: "env_delete x (f \<squnion> (g::('a::type \<Rightarrow> 'b::{Finite_Join_cpo,pcpo}))) = env_delete x f \<squnion> env_delete x g"
+  by (metis env_delete_def fun_upd_meet_simp)
 
 end

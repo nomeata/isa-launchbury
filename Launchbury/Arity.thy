@@ -59,7 +59,6 @@ instance Arity :: cpo by default
 lift_definition inc_Arity :: "Arity \<Rightarrow> Arity" is Suc.
 lift_definition pred_Arity :: "Arity \<Rightarrow> Arity" is "(\<lambda> x . x - 1)".
 
-
 lemma inc_Arity_cont[simp]: "cont inc_Arity"
   apply (rule chfindom_monofun2cont)
   apply (rule monofunI)
@@ -104,7 +103,18 @@ lemma Rep_Arity_inc[simp]: "Rep_Arity (inc\<cdot>a') = Suc (Rep_Arity a')"
   apply transfer
   apply simp
   done
-  
+
+instantiation Arity :: zero
+begin
+lift_definition zero_Arity :: Arity is 0.
+instance ..
+end
+
+lemma Arity_ind:  "P 0 \<Longrightarrow> (\<And> n. P n \<Longrightarrow> P (inc\<cdot>n)) \<Longrightarrow> P n"
+  apply (simp add: inc_def)
+  apply transfer
+  by (rule nat.induct) 
+    
 
 instance Arity :: Finite_Join_cpo
 proof default
@@ -112,12 +122,6 @@ proof default
   have "x \<sqsubseteq> y \<or> y \<sqsubseteq> x" by transfer auto
   thus "compatible x y" by (metis below_refl compatibleI)
 qed
-
-instantiation Arity :: zero
-begin
-lift_definition zero_Arity :: Arity is 0.
-instance ..
-end
 
 lemma Arity_zero_top[simp]: "(x :: Arity) \<sqsubseteq> 0"
   by transfer simp

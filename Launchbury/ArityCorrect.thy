@@ -33,6 +33,19 @@ locale CorrectArityAnalysisLet = CorrectArityAnalysisAheap +
   assumes Aheap_heap2: "map_of \<Gamma> x = Some e' \<Longrightarrow> Aexp' e'\<cdot>((Aheap \<Gamma>\<cdot>(Aexp e\<cdot>a)) x) f|` (- domA \<Gamma>) \<sqsubseteq>  Aexp (Let \<Gamma> e)\<cdot>a"
   assumes Aexp_Let_above: "Aexp e\<cdot>a f|` (- domA \<Gamma>) \<sqsubseteq> Aexp (Let \<Gamma> e)\<cdot>a"
 
+locale CorrectArityAnalysisCong = CorrectArityAnalysisAheap +
+  assumes Aexp_App_cong: "Aexp e\<cdot>(inc\<cdot>a) = Aexp e'\<cdot>(inc\<cdot>a) \<Longrightarrow> Aexp (App e x)\<cdot>a = Aexp (App e' x)\<cdot>a"
+  assumes Aexp_Lam_cong: "Aexp e\<cdot>(pred\<cdot>n) = Aexp e'\<cdot>(pred\<cdot>n) \<Longrightarrow> Aexp (Lam [y]. e) \<cdot> n = Aexp (Lam [y]. e') \<cdot> n"
+  assumes Aexp_Let_cong:
+    "domA \<Gamma> = domA \<Gamma>' \<Longrightarrow>
+     thunks \<Gamma> = thunks \<Gamma>' \<Longrightarrow>
+     (\<And> x a. x \<in> domA \<Gamma> \<Longrightarrow> up\<cdot>a \<sqsubseteq> (Aheap \<Gamma>'\<cdot>(Aexp e\<cdot>a)) x \<Longrightarrow> Aexp (the (map_of \<Gamma> x))\<cdot>a = Aexp (the (map_of \<Gamma>' x))\<cdot>a) \<Longrightarrow>
+     Aexp e\<cdot>a = Aexp e'\<cdot>a \<Longrightarrow>
+     Aexp (Let \<Gamma> e)\<cdot>a = Aexp (Let \<Gamma>' e')\<cdot>a"
+  assumes Aheap_cong2: "domA \<Gamma> = domA \<Gamma>' \<Longrightarrow>
+    (\<And> x a. x \<in> domA \<Gamma> \<Longrightarrow> up\<cdot>a \<sqsubseteq> (Aheap \<Gamma>'\<cdot>ae) x \<Longrightarrow> Aexp (the (map_of \<Gamma> x))\<cdot>a = Aexp (the (map_of \<Gamma>' x))\<cdot>a) \<Longrightarrow>
+    Aheap \<Gamma>\<cdot>ae = Aheap \<Gamma>'\<cdot>ae"
+
 
 context CorrectArityAnalysis
 begin

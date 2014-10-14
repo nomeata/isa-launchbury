@@ -251,4 +251,8 @@ lemma subst_SmartLet[simp]:
 lemma isLam_subst[simp]: "isLam e[x::=y] = isLam e"
   by (nominal_induct e avoiding: x y  rule: exp_strong_induct)
      (auto simp add: fresh_star_Pair)
+
+lemma thunks_subst[simp]:
+  "thunks \<Gamma>[y::h=x] = thunks \<Gamma>"
+  by (induction \<Gamma> rule:thunks.induct) auto
 end

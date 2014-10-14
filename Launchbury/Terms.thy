@@ -470,5 +470,24 @@ nominal_termination (eqvt) by lexicographic_order
 
 lemma isLam_Lam: "isLam (Lam [x]. e)" by simp
 
+subsection {* The notion of thunks *}
+
+
+fun thunks :: "heap \<Rightarrow> var set" where
+  "thunks [] = {}"
+  | "thunks ((x,e)#\<Gamma>) = (if isLam e then {} else {x}) \<union> thunks \<Gamma>"
+
+lemma thunks_domA: "thunks \<Gamma> \<subseteq> domA \<Gamma>"
+  by (induction \<Gamma> rule:thunks.induct) auto
+
+
+lemma thunks_eqvt[eqvt]:
+  "\<pi> \<bullet> thunks \<Gamma> = thunks (\<pi> \<bullet> \<Gamma>)"
+    apply (induction \<Gamma> rule:thunks.induct)
+    apply simp 
+    unfolding thunks.simps
+    apply perm_simp
+    apply simp
+    done
 
 end
