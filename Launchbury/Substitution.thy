@@ -254,5 +254,5 @@ lemma isLam_subst[simp]: "isLam e[x::=y] = isLam e"
 
 lemma thunks_subst[simp]:
   "thunks \<Gamma>[y::h=x] = thunks \<Gamma>"
-  by (induction \<Gamma> rule:thunks.induct) auto
+  by (induction \<Gamma>) auto
 end
