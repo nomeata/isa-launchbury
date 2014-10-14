@@ -144,18 +144,11 @@ proof (nominal_induct e avoiding: x y arbitrary: a  rule: exp_strong_induct_set)
     done
 qed (case_tac b, auto)
 
-
   fun conf_transform :: "(AEnv \<times> Arity) \<Rightarrow> conf \<Rightarrow> conf"
   where "conf_transform (ae, a) (\<Gamma>, e, S) =
     (map_transform Aeta_expand ae (map_transform transform ae \<Gamma>), 
      transform a e,
      S)"
-
-  inductive_set thunks :: "heap \<Rightarrow> var set" for \<Gamma> where
-    "map_of \<Gamma> x = Some e \<Longrightarrow> \<not> isLam e \<Longrightarrow> x \<in> thunks \<Gamma>"
-
-  lemma Aheap_thunks: "x \<in> thunks \<Gamma> \<Longrightarrow> (Aheap \<Gamma>\<cdot>ae) x = up\<cdot>0"
-    by (metis thunks.cases Aheap_heap3)
 
   inductive consistent :: "(AEnv \<times> Arity) \<Rightarrow> conf \<Rightarrow> bool" where
     consistentI[intro!]: 
@@ -170,8 +163,6 @@ qed (case_tac b, auto)
     \<Longrightarrow> ae ` upds S \<subseteq> {up\<cdot>0}
     \<Longrightarrow> consistent (ae, a) (\<Gamma>, e, S)"  
   inductive_cases consistentE[elim!]: "consistent (ae, a) (\<Gamma>, e, S)"
-
-    find_theorems supp Atransform
 
   interpretation supp_bounded_transform transform
     by default (auto simp add: fresh_def supp_transform)
