@@ -4,18 +4,18 @@ begin
 
 default_sort type
 
-fun lift_transform :: "('a::pure_cont_pt \<Rightarrow> exp \<Rightarrow> exp) \<Rightarrow> ('a\<^sub>\<bottom> \<Rightarrow> exp \<Rightarrow> exp)"
+fun lift_transform :: "('a::cont_pt \<Rightarrow> exp \<Rightarrow> exp) \<Rightarrow> ('a\<^sub>\<bottom> \<Rightarrow> exp \<Rightarrow> exp)"
   where "lift_transform t Ibottom  e = e"
   |     "lift_transform t (Iup a) e = t a e"
-
-lemma lift_transform_eqvt[eqvt]: "\<pi> \<bullet>  lift_transform t a e = lift_transform (\<pi> \<bullet> t) (\<pi> \<bullet> a) (\<pi> \<bullet> e)"
-  by (cases "(t,a,e)" rule: lift_transform.cases) simp_all
 
 lemma lift_transform_up[simp]: "lift_transform t (up\<cdot>a) e = t a e"
   unfolding up_def by (simp add: cont_Iup)
 
 lemma lift_transform_bot[simp]: "lift_transform t \<bottom> e = e"
   by (metis inst_up_pcpo lift_transform.simps(1))
+
+lemma lift_transform_eqvt[eqvt]: "\<pi> \<bullet>  lift_transform t a e = lift_transform (\<pi> \<bullet> t) (\<pi> \<bullet> a) (\<pi> \<bullet> e)"
+  by (cases "a") simp_all
 
 lemma lift_transform_fun_cong[fundef_cong]:
   "(\<And> a. t1 a e1 = t2 a e1) \<Longrightarrow> a1 = a2 \<Longrightarrow> e1 = e2 \<Longrightarrow> lift_transform t1 a1 e1 = lift_transform t2 a2 e2"
@@ -26,7 +26,7 @@ lemma subst_lift_transform:
   shows "(lift_transform t a e)[x ::=y] = lift_transform t a (e[x ::= y])"
   using assms by (cases a) auto
 
-definition map_transform :: "('a::pure_cont_pt \<Rightarrow> exp \<Rightarrow> exp) \<Rightarrow> (var \<Rightarrow> 'a\<^sub>\<bottom>) \<Rightarrow> heap \<Rightarrow> heap"
+definition map_transform :: "('a::cont_pt \<Rightarrow> exp \<Rightarrow> exp) \<Rightarrow> (var \<Rightarrow> 'a\<^sub>\<bottom>) \<Rightarrow> heap \<Rightarrow> heap"
   where "map_transform t ae = map_ran (\<lambda> x e . lift_transform t (ae x) e)"
 
 lemma map_transform_eqvt[eqvt]: "\<pi> \<bullet> map_transform t ae = map_transform (\<pi> \<bullet> t) (\<pi> \<bullet> ae)"
@@ -38,7 +38,6 @@ lemma domA_map_transform[simp]: "domA (map_transform t ae \<Gamma>) = domA \<Gam
 lemma length_map_transform[simp]: "length (map_transform t ae xs) = length xs"
   unfolding map_transform_def map_ran_def by simp
  
-
 lemma map_transform_delete:
   "map_transform t ae (delete x \<Gamma>) = delete x (map_transform t ae \<Gamma>)"
   unfolding map_transform_def by (simp add: map_ran_delete)
