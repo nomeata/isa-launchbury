@@ -30,17 +30,28 @@ begin
     by (metis Aexp_lookup_fresh edomIff fresh_var_fresh)
 
   sublocale AbstractTransformBound
-    "\<lambda> e x a . inc\<cdot>a"
-    "\<lambda> x e a . pred\<cdot>a"
-    "\<lambda> \<Delta> e a . a"
+    "\<lambda> a . inc\<cdot>a"
+    "\<lambda> a . pred\<cdot>a"
+    "\<lambda> a . a"
     "\<lambda> \<Delta> e a . Aheap \<Delta>\<cdot>(Aexp e\<cdot>a)"
     "Aeta_expand"
   apply default
-  apply ((rule eq_reflection)?, perm_simp, rule)+
+  apply (((rule eq_reflection)?, perm_simp, rule)+)[4]
+  apply simp
   done
 
-  abbreviation Atransform where "Atransform \<equiv> transform"
+  sublocale AbstractTransformBoundSubst
+    "\<lambda> a . inc\<cdot>a"
+    "\<lambda> a . pred\<cdot>a"
+    "\<lambda> a . a"
+    "\<lambda> \<Delta> e a . Aheap \<Delta>\<cdot>(Aexp e\<cdot>a)"
+    "Aeta_expand"
+  apply default
+  apply (simp add: Aheap_subst  Aheap_cong[OF Aexp_subst_restr])[1]
+  apply (rule subst_Aeta_expand)  
+   done
 
+  abbreviation Atransform where "Atransform \<equiv> transform"
 
  (*
   lemma trans_pres_Aexp: "Aexp (Atransform a e)\<cdot>a = Aexp e\<cdot>a"
@@ -81,35 +92,6 @@ begin
 lemma supp_transform: "supp (transform a e) \<subseteq> supp e"
   by (induction rule: transform.induct)
      (auto simp add: exp_assn.supp Let_supp dest!: set_mp[OF supp_map_transform] set_mp[OF supp_map_transform_step] )
-
-lemma subst_Aeta_expand_transform: "(transform a e)[x ::= y] = transform a e[x ::= y]"
-proof (nominal_induct e avoiding: x y arbitrary: a  rule: exp_strong_induct_set)
-  case (Let \<Delta> body x y)
-    hence *: "x \<notin> domA \<Delta>" "y \<notin> domA \<Delta>" by (auto simp add: fresh_star_def fresh_at_base)
-    
-    note Let
-    moreover                         
-    from * have "Aheap \<Delta>[x::h=y] = Aheap \<Delta>" by (rule Aheap_subst)
-    moreover
-    have "(Aexp body[x::=y]\<cdot>a) f|` domA \<Delta> = (Aexp body\<cdot>a) f|` domA \<Delta>"
-      by (rule Aexp_subst_restr[OF *])
-    hence "Aheap \<Delta>\<cdot>(Aexp body[x::=y]\<cdot>a) = Aheap \<Delta>\<cdot>(Aexp body\<cdot>a)"
-      by (rule Aheap_cong)
-    ultimately
-    show ?case
-    apply (auto simp add: fresh_star_Pair simp del: Let_eq_iff)
-    apply (rule arg_cong2[where f = Let, OF _ refl])
-    apply (subst subst_map_transform)
-    apply (rule subst_Aeta_expand)
-    apply (subst subst_map_transform)
-    apply assumption
-    apply (rule map_transform_cong)
-    apply simp
-    apply (rule map_transform_cong)
-    apply simp
-    apply simp
-    done
-qed (case_tac b, auto)
 
   fun conf_transform :: "(AEnv \<times> Arity) \<Rightarrow> conf \<Rightarrow> conf"
   where "conf_transform (ae, a) (\<Gamma>, e, S) =
@@ -162,7 +144,7 @@ case (app\<^sub>2 \<Gamma> y e x S)
     apply (metis image_eqI singletonD subsetCE)+
     done
   moreover
-  have "conf_transform (ae, a) (\<Gamma>, Lam [y]. e, Arg x # S) \<Rightarrow> conf_transform (ae, pred \<cdot> a) (\<Gamma>, e[y::=x], S)" by (simp add: subst_Aeta_expand_transform[symmetric]) rule
+  have "conf_transform (ae, a) (\<Gamma>, Lam [y]. e, Arg x # S) \<Rightarrow> conf_transform (ae, pred \<cdot> a) (\<Gamma>, e[y::=x], S)" by (simp add: subst_transform[symmetric]) rule
   ultimately
   show ?case by (blast del: consistentI consistentE)
 next
