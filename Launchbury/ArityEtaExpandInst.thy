@@ -1,5 +1,5 @@
 theory ArityEtaExpandInst
-imports ArityCorrectSestoft EtaExpansion TransformTools AbstractTransform
+imports ArityCorrectSestoft EtaExpansionSestoft TransformTools AbstractTransform
 begin
 
 lift_definition Aeta_expand :: "Arity \<Rightarrow> exp \<Rightarrow> exp" is "eta_expand".
