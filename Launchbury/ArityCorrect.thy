@@ -1,5 +1,5 @@
 theory ArityCorrect
-imports ArityAnalysis Launchbury (* "Vars-Nominal-HOLCF" *)
+imports ArityAnalysis (* "Vars-Nominal-HOLCF" *)
 begin
 
 locale EdomArityAnalysis = ArityAnalysis + 

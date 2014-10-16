@@ -1,5 +1,5 @@
 theory ArityCorrectSestoft
-imports ArityCorrect SestoftCorrect
+imports ArityCorrect Sestoft
 begin
 
 fun Astack :: "AEnv \<Rightarrow> stack \<Rightarrow> Arity"

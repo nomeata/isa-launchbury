@@ -1,5 +1,5 @@
 theory ArityAnalysisFix
-imports ArityAnalysis ArityCorrect
+imports ArityAnalysis ArityCorrect Launchbury
 begin
 
 context ArityAnalysis
