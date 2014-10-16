@@ -1,5 +1,5 @@
 theory ArityEtaExpand
-imports ArityCorrectSestoft EtaExpansionSestoft TransformTools
+imports ArityCorrectSestoft EtaExpansionSestoft TransformTools AbstractTransform
 begin
 
 lift_definition Aeta_expand :: "Arity \<Rightarrow> exp \<Rightarrow> exp" is "eta_expand".
@@ -12,6 +12,10 @@ lemma Aeta_expand_eqvt[eqvt]: "\<pi> \<bullet> Aeta_expand a e = Aeta_expand (\<
   done
 
 lemma Aeta_expand_0[simp]: "Aeta_expand 0 e = e"
+  by transfer simp
+
+lemma Aeta_expand_inc[simp]: "Aeta_expand (inc\<cdot>n) e = (Lam [fresh_var e]. Aeta_expand n (App e (fresh_var e)))"
+  apply (simp add: inc_def)
   by transfer simp
 
 lemma subst_Aeta_expand:
@@ -47,101 +51,71 @@ interpretation supp_bounded_transform Aeta_expand
 
 locale ArityEtaExpand = CorrectArityAnalysisLet
 begin
+  lemma Aeta_expand_pres_Aexp:
+  "Aexp (Aeta_expand n e)\<cdot>n = Aexp e\<cdot>n"
+    apply (induction n arbitrary:e rule: Arity_ind)
+    apply simp
+    apply (simp add: Aexp_App Aexp_Lam)
+    apply (subgoal_tac "fresh_var e \<notin> edom (Aexp e\<cdot>(inc\<cdot>n))")
+    apply simp
+    by (metis Aexp_lookup_fresh edomIff fresh_var_fresh)
 
-  nominal_function Aeta_expand_transform where
-    "Aeta_expand_transform a (App e x) = App (Aeta_expand_transform (inc\<cdot>a) e) x"
-  | "Aeta_expand_transform a (Lam [x]. e) = Lam [x].(Aeta_expand_transform (pred\<cdot>a) e)"
-  | "Aeta_expand_transform a (GVar b x) = GVar b x"
-  | "Aeta_expand_transform a (Terms.Let \<Delta> e) =
-       Let (map_transform Aeta_expand (Aheap \<Delta>\<cdot>(Aexp e\<cdot>a)) (map_transform Aeta_expand_transform (Aheap \<Delta>\<cdot>(Aexp e\<cdot>a)) \<Delta>))
-           (Aeta_expand_transform a e)"
-  proof-
-  case goal1
-    thus ?case
-    unfolding eqvt_def Aeta_expand_transform_graph_aux_def
-    apply rule
-    apply perm_simp
-    apply (rule refl)
-    done
-  case (goal3 P x)
-    show ?case
-    proof (cases x)
-      fix a b
-      assume "x = (a, b)"
-      thus ?case
-      using goal3
-      apply (cases b rule:Terms.exp_strong_exhaust)
-      apply auto
-      done
-    qed
-  next
-case (goal8 a x e a' x' e')
-  from goal8(5)
-  have "a' = a" and  "Lam [x]. e = Lam [x']. e'" by simp_all
-  from this(2)
-  show ?case
-  unfolding `a' = a`
-  proof(rule eqvt_lam_case)
-    fix \<pi> :: perm
+  sublocale AbstractTransformBound
+    "\<lambda> e x a . inc\<cdot>a"
+    "\<lambda> x e a . pred\<cdot>a"
+    "\<lambda> \<Delta> e a . a"
+    "\<lambda> \<Delta> e a . Aheap \<Delta>\<cdot>(Aexp e\<cdot>a)"
+    "Aeta_expand"
+  apply default
+  apply ((rule eq_reflection)?, perm_simp, rule)+
+  done
 
-    assume "supp \<pi> \<sharp>* (Lam [x]. e)" 
-    hence *: "supp \<pi> \<sharp>* Lam [x]. Aeta_expand_transform_sumC (pred\<cdot>a, e)"
-      by (auto simp add: fresh_star_def fresh_def  exp_assn.supp supp_Pair pure_supp exp_assn.fsupp dest!:  set_mp[OF supp_eqvt_at[OF goal8(1)], rotated])
+  abbreviation Atransform where "Atransform \<equiv> transform"
 
-    have "Lam [(\<pi> \<bullet> x)]. Aeta_expand_transform_sumC (pred\<cdot>a, \<pi> \<bullet> e) = \<pi> \<bullet> (Lam [x]. Aeta_expand_transform_sumC (pred\<cdot>a, e))"
-      by (simp add: eqvt_at_apply'[OF goal8(1)])
-    also have "\<dots> = Lam [x]. Aeta_expand_transform_sumC (pred\<cdot>a, e)"
-      by (rule perm_supp_eq[OF *])
-    finally show "Lam [(\<pi> \<bullet> x)]. Aeta_expand_transform_sumC (pred\<cdot>a, \<pi> \<bullet> e) = Lam [x]. Aeta_expand_transform_sumC (pred\<cdot>a, e)" by simp
-  qed
-next
-case (goal13 a as body a' as' body')
-  from supp_eqvt_at[OF goal13(1)]
-  have "\<And> x e a. (x, e) \<in> set as \<Longrightarrow> supp (Aeta_expand_transform_sumC (a, e)) \<subseteq> supp e"
-    by (auto simp add: exp_assn.fsupp supp_Pair pure_supp)
-  hence supp_map: "\<And>ae. supp (map_transform (\<lambda>x0 x1. Aeta_expand_transform_sumC (x0, x1)) ae as) \<subseteq> supp as"
-    by (rule supp_map_transform_step)
+  lemma the_map_option_domA[simp]: "x \<in> domA \<Gamma> \<Longrightarrow> the (map_option f (map_of \<Gamma> x)) = f (the (map_of \<Gamma> x))"
+    by (induction \<Gamma>) auto
 
-  from goal13(9)
-  have "a' = a" and  "Terms.Let as body = Terms.Let as' body'" by simp_all
-  from this(2)
-  show ?case
-  unfolding `a' = a`
-  proof (rule eqvt_let_case)
-    fix \<pi> :: perm
-    assume "supp \<pi> \<sharp>* Terms.Let as body"
-    hence *: "supp \<pi> \<sharp>* Terms.Let (map_transform Aeta_expand (Aheap as\<cdot>(Aexp body\<cdot>a)) (map_transform (\<lambda>x0 x1. Aeta_expand_transform_sumC (x0, x1)) (Aheap as\<cdot>(Aexp body\<cdot>a)) as)) (Aeta_expand_transform_sumC (a, body))"
-      by (auto simp add: fresh_star_def fresh_def  Let_supp supp_Pair pure_supp exp_assn.fsupp
-               dest!:  set_mp[OF supp_eqvt_at[OF goal13(2)], rotated] set_mp[OF supp_map_transform] set_mp[OF supp_map])
+ (*
+  lemma trans_pres_Aexp: "Aexp (Atransform a e)\<cdot>a = Aexp e\<cdot>a"
+  apply (nominal_induct e arbitrary: a  rule: exp_strong_induct)
+  apply (case_tac b)
+  apply simp_all[2]
+  apply (auto simp add: Aexp_App)[1]
+  defer
+  apply (auto cong add: Aexp_Lam)[1]
+  apply simp
+  apply (rule Aexp_Let_cong)
+  apply simp
+  defer
+  apply simp
+  thm Aheap_cong[where \<Gamma> = "map_transform Atransform (Aheap \<Gamma>\<cdot>(Aexp exp\<cdot>a)) \<Gamma>" and \<Gamma>' = \<Gamma> for \<Gamma> exp]
+  apply (subgoal_tac "Aheap (map_transform Atransform (Aheap \<Gamma>\<cdot>(Aexp exp\<cdot>a)) \<Gamma>)\<cdot>(Aexp exp\<cdot>a) = Aheap \<Gamma>\<cdot>(Aexp exp\<cdot>a)")
+  apply simp
+  defer
+  apply (rule Aheap_cong)
+    apply simp
+    apply (simp add: map_of_map_transform option.map_comp)
+  apply (rule Aheap_cong)
+    apply simp
+    apply (simp add: map_of_map_transform option.map_comp Aeta_expand_pres_Aexp)
+  done
+  
+  lemma trans_pres_Aheap: "Aheap (map_transform Atransform (Aheap \<Delta>\<cdot>ae) \<Delta>)\<cdot>ae = (Aheap \<Delta>\<cdot>ae)"
+    by (rule Aheap_cong) (simp_all add: map_of_map_transform trans_pres_Aexp)
+  *)
 
-    have "Terms.Let (map_transform Aeta_expand (Aheap (\<pi> \<bullet> as)\<cdot>(Aexp (\<pi> \<bullet> body)\<cdot>a)) (map_transform (\<lambda>x xa. (\<pi> \<bullet> Aeta_expand_transform_sumC) (x, xa)) (Aheap (\<pi> \<bullet> as)\<cdot>(Aexp (\<pi> \<bullet> body)\<cdot>a)) (\<pi> \<bullet> as))) ((\<pi> \<bullet> Aeta_expand_transform_sumC) (a, \<pi> \<bullet> body)) = 
-        \<pi> \<bullet> (Terms.Let (map_transform Aeta_expand (Aheap as\<cdot>(Aexp body\<cdot>a)) (map_transform (\<lambda>x0 x1. Aeta_expand_transform_sumC (x0, x1)) (Aheap as\<cdot>(Aexp body\<cdot>a)) as)) (Aeta_expand_transform_sumC (a, body)))"
-       by (simp del: Let_eq_iff Pair_eqvt add:  eqvt_at_apply[OF goal13(2)])
-    also have "\<dots> = (Terms.Let (map_transform Aeta_expand (Aheap as\<cdot>(Aexp body\<cdot>a)) (map_transform (\<lambda>x0 x1. Aeta_expand_transform_sumC (x0, x1)) (Aheap as\<cdot>(Aexp body\<cdot>a)) as)) (Aeta_expand_transform_sumC (a, body)))"
-      by (rule perm_supp_eq[OF *])
-    also
-    have "map_transform (\<lambda>x0 x1. Aeta_expand_transform_sumC (x0, x1)) (Aheap (\<pi> \<bullet> as)\<cdot>(Aexp (\<pi> \<bullet> body)\<cdot>a)) (\<pi> \<bullet> as)
-        = map_transform (\<lambda>x xa. (\<pi> \<bullet> Aeta_expand_transform_sumC) (x, xa)) (Aheap (\<pi> \<bullet> as)\<cdot>(Aexp (\<pi> \<bullet> body)\<cdot>a)) (\<pi> \<bullet> as)"
-        apply (rule map_transform_fundef_cong[OF _ refl refl])
-        apply (subst (asm) set_eqvt[symmetric])
-        apply (subst (asm) mem_permute_set)
-        apply (auto simp add: permute_self  dest: eqvt_at_apply''[OF goal13(1)[where aa = "(- \<pi> \<bullet> a)" for a], where p = \<pi>, symmetric])
-        done
-    moreover
-    have " ((\<pi> \<bullet> Aeta_expand_transform_sumC) (a, \<pi> \<bullet> body)) =  (Aeta_expand_transform_sumC) (a, \<pi> \<bullet> body)"
-      using eqvt_at_apply''[OF goal13(2), where p = \<pi>]  by (simp add: permute_pure)
-    ultimately
-    show "Terms.Let (map_transform Aeta_expand (Aheap (\<pi> \<bullet> as)\<cdot>(Aexp (\<pi> \<bullet> body)\<cdot>a)) (map_transform (\<lambda>x0 x1. Aeta_expand_transform_sumC (x0, x1)) (Aheap (\<pi> \<bullet> as)\<cdot>(Aexp (\<pi> \<bullet> body)\<cdot>a)) (\<pi> \<bullet> as))) (Aeta_expand_transform_sumC (a, \<pi> \<bullet> body)) =
-         Terms.Let (map_transform Aeta_expand (Aheap as\<cdot>(Aexp body\<cdot>a)) (map_transform (\<lambda>x0 x1. Aeta_expand_transform_sumC (x0, x1)) (Aheap as\<cdot>(Aexp body\<cdot>a)) as)) (Aeta_expand_transform_sumC (a, body))" by metis
-  qed
-qed auto
-nominal_termination by lexicographic_order
+  (* Check simp rules *)
+  lemma "transform a (App e x) = App (transform (inc\<cdot>a) e) x" by simp
+  lemma "transform a (Lam [x]. e) = Lam [x].(transform (pred\<cdot>a) e)" by simp
+  lemma "transform a (GVar b x) = GVar b x" by (cases b) simp_all
+  lemma "transform a (Terms.Let \<Delta> e) = Let (map_transform Aeta_expand (Aheap \<Delta>\<cdot>(Aexp e\<cdot>a)) (map_transform transform (Aheap \<Delta>\<cdot>(Aexp e\<cdot>a)) \<Delta>))
+           (transform a e)" by (simp del: Let_eq_iff)
 
-lemma supp_Aeta_expand_transform: "supp (Aeta_expand_transform a e) \<subseteq> supp e"
-  by (induction rule: Aeta_expand_transform.induct)
+lemma supp_transform: "supp (transform a e) \<subseteq> supp e"
+  by (induction rule: transform.induct)
      (auto simp add: exp_assn.supp Let_supp dest!: set_mp[OF supp_map_transform] set_mp[OF supp_map_transform_step] )
 
-lemma subst_Aeta_expand_transform: "(Aeta_expand_transform a e)[x ::= y] = Aeta_expand_transform a e[x ::= y]"
+lemma subst_Aeta_expand_transform: "(transform a e)[x ::= y] = transform a e[x ::= y]"
 proof (nominal_induct e avoiding: x y arbitrary: a  rule: exp_strong_induct_set)
   case (Let \<Delta> body x y)
     hence *: "x \<notin> domA \<Delta>" "y \<notin> domA \<Delta>" by (auto simp add: fresh_star_def fresh_at_base)
@@ -157,7 +131,7 @@ proof (nominal_induct e avoiding: x y arbitrary: a  rule: exp_strong_induct_set)
     ultimately
     show ?case
     apply (auto simp add: fresh_star_Pair simp del: Let_eq_iff)
-    apply (rule arg_cong) back
+    apply (rule arg_cong2[where f = Let, OF _ refl])
     apply (subst subst_map_transform)
     apply (rule subst_Aeta_expand)
     apply (subst subst_map_transform)
@@ -168,20 +142,13 @@ proof (nominal_induct e avoiding: x y arbitrary: a  rule: exp_strong_induct_set)
     apply simp
     apply simp
     done
-qed auto
+qed (case_tac b, auto)
 
-
-  fun Atransform :: "(AEnv \<times> Arity) \<Rightarrow> conf \<Rightarrow> conf"
-  where "Atransform (ae, a) (\<Gamma>, e, S) =
-    (map_transform Aeta_expand ae (map_transform Aeta_expand_transform ae \<Gamma>), 
-     Aeta_expand_transform a e,
+  fun conf_transform :: "(AEnv \<times> Arity) \<Rightarrow> conf \<Rightarrow> conf"
+  where "conf_transform (ae, a) (\<Gamma>, e, S) =
+    (map_transform Aeta_expand ae (map_transform transform ae \<Gamma>), 
+     transform a e,
      S)"
-
-  inductive_set thunks :: "heap \<Rightarrow> var set" for \<Gamma> where
-    "map_of \<Gamma> x = Some e \<Longrightarrow> \<not> isLam e \<Longrightarrow> x \<in> thunks \<Gamma>"
-
-  lemma Aheap_thunks: "x \<in> thunks \<Gamma> \<Longrightarrow> (Aheap \<Gamma>\<cdot>ae) x = up\<cdot>0"
-    by (metis thunks.cases Aheap_heap3)
 
   inductive consistent :: "(AEnv \<times> Arity) \<Rightarrow> conf \<Rightarrow> bool" where
     consistentI[intro!]: 
@@ -197,28 +164,23 @@ qed auto
     \<Longrightarrow> consistent (ae, a) (\<Gamma>, e, S)"  
   inductive_cases consistentE[elim!]: "consistent (ae, a) (\<Gamma>, e, S)"
 
-
-  interpretation supp_bounded_transform Aeta_expand_transform
-    by default (auto simp add: fresh_def supp_Aeta_expand_transform)
+  interpretation supp_bounded_transform transform
+    by default (auto simp add: fresh_def supp_transform)
   
   lemma isLam_Aeta_expand_transform[simp]:
-    "isLam (Aeta_expand_transform a e) \<longleftrightarrow> isLam e"
-    by (induction e rule:isLam.induct) auto
-
-(*
-  sublocale AbstractConforms step consistent.
-*)
+    "isLam (Atransform a e) \<longleftrightarrow> isLam e"
+    by (induction e rule:isLam.induct) (case_tac b, auto)
 
 lemma foo:
   fixes c c' R 
   assumes "c \<Rightarrow>\<^sup>* c'" and "\<not> boring_step c'" and "consistent (ae,a) c"
-  shows "\<exists>ae' a'. consistent (ae',a') c' \<and> Atransform (ae,a) c \<Rightarrow>\<^sup>* Atransform (ae',a') c'"
+  shows "\<exists>ae' a'. consistent (ae',a') c' \<and> conf_transform (ae,a) c \<Rightarrow>\<^sup>* conf_transform (ae',a') c'"
 using assms
 proof(induction c c' arbitrary: ae a rule:step_induction)
 case (app\<^sub>1 \<Gamma> e x S)
   from app\<^sub>1 have "consistent (ae, inc\<cdot>a) (\<Gamma>, e, Arg x # S)"  by (fastforce simp add: Aexp_App join_below_iff)
   moreover
-  have "Atransform (ae, a) (\<Gamma>, App e x, S) \<Rightarrow> Atransform (ae, inc\<cdot>a) (\<Gamma>, e, Arg x # S)" by simp rule
+  have "conf_transform (ae, a) (\<Gamma>, App e x, S) \<Rightarrow> conf_transform (ae, inc\<cdot>a) (\<Gamma>, e, Arg x # S)" by simp rule
   ultimately
   show ?case by (blast del: consistentI consistentE)
 next
@@ -233,7 +195,7 @@ case (app\<^sub>2 \<Gamma> y e x S)
     apply (metis image_eqI singletonD subsetCE)+
     done
   moreover
-  have "Atransform (ae, a) (\<Gamma>, Lam [y]. e, Arg x # S) \<Rightarrow> Atransform (ae, pred \<cdot> a) (\<Gamma>, e[y::=x], S)" by (simp add: subst_Aeta_expand_transform[symmetric]) rule
+  have "conf_transform (ae, a) (\<Gamma>, Lam [y]. e, Arg x # S) \<Rightarrow> conf_transform (ae, pred \<cdot> a) (\<Gamma>, e[y::=x], S)" by (simp add: subst_Aeta_expand_transform[symmetric]) rule
   ultimately
   show ?case by (blast del: consistentI consistentE)
 next
@@ -244,10 +206,10 @@ case (thunk \<Gamma> x e S)
   from thunk
   have "ae x = up\<cdot>0" by auto
   with  `map_of \<Gamma> x = Some e`
-  have "map_of (map_transform Aeta_expand ae (map_transform Aeta_expand_transform ae \<Gamma>)) x = Some (Aeta_expand_transform 0 e)"
+  have "map_of (map_transform Aeta_expand ae (map_transform Atransform ae \<Gamma>)) x = Some (transform 0 e)"
     by (simp add: map_of_map_transform)
   with `\<not> isLam e`
-  have "Atransform (ae, a) (\<Gamma>, Var x, S) \<Rightarrow> Atransform (ae, 0) (delete x \<Gamma>, e, Upd x # S)"
+  have "conf_transform (ae, a) (\<Gamma>, Var x, S) \<Rightarrow> conf_transform (ae, 0) (delete x \<Gamma>, e, Upd x # S)"
     by (auto simp add: map_transform_delete intro!: step.intros)
   }
   ultimately
@@ -276,23 +238,23 @@ case (lamvar \<Gamma> x e S)
   moreover
   {
   from `isLam e`
-  have "isLam (Aeta_expand_transform u e)" by simp
-  hence "isLam (Aeta_expand u (Aeta_expand_transform u e))" by (rule isLam_Aeta_expand)
+  have "isLam (Atransform u e)" by simp
+  hence "isLam (Aeta_expand u (Atransform u e))" by (rule isLam_Aeta_expand)
   moreover
   from  `map_of \<Gamma> x = Some e`  `ae x = up \<cdot> u`
-  have "map_of (map_transform Aeta_expand ae (map_transform Aeta_expand_transform ae \<Gamma>)) x = Some (Aeta_expand u (Aeta_expand_transform u e))"
+  have "map_of (map_transform Aeta_expand ae (map_transform Atransform ae \<Gamma>)) x = Some (Aeta_expand u (Atransform u e))"
     by (simp add: map_of_map_transform)
   ultimately
-  have "Atransform (ae, a) (\<Gamma>, Var x, S) \<Rightarrow>\<^sup>*
-        ((x, Aeta_expand u (Aeta_expand_transform u e)) # (map_transform Aeta_expand ae (map_transform Aeta_expand_transform ae (delete x \<Gamma>))), Aeta_expand u  (Aeta_expand_transform u e), S)"
+  have "conf_transform (ae, a) (\<Gamma>, Var x, S) \<Rightarrow>\<^sup>*
+        ((x, Aeta_expand u (Atransform u e)) # (map_transform Aeta_expand ae (map_transform Atransform ae (delete x \<Gamma>))), Aeta_expand u  (Atransform u e), S)"
      by (auto intro: lambda_var simp add: map_transform_delete)
-  also have "\<dots> = ((map_transform Aeta_expand ae (map_transform Aeta_expand_transform ae ((x,e) # delete x \<Gamma>))), Aeta_expand u  (Aeta_expand_transform u e), S)"
+  also have "\<dots> = ((map_transform Aeta_expand ae (map_transform Atransform ae ((x,e) # delete x \<Gamma>))), Aeta_expand u  (Atransform u e), S)"
     using `ae x = up \<cdot> u` by (simp add: map_transform_Cons)
-  also have "\<dots> \<Rightarrow>\<^sup>* Atransform (ae, u) ((x, e) # delete x \<Gamma>, e, S)"
+  also(subst[rotated]) have "\<dots> \<Rightarrow>\<^sup>* conf_transform (ae, u) ((x, e) # delete x \<Gamma>, e, S)"
     apply simp
     by (rule Aeta_expand_correct[OF `ae \` upds S \<subseteq> {up \<cdot> 0}` below_trans[OF `Astack ae S \<sqsubseteq> a` `a \<sqsubseteq> u`]])
-  finally
-  have "Atransform (ae, a) (\<Gamma>, Var x, S) \<Rightarrow>\<^sup>* Atransform (ae, u) ((x, e) # delete x \<Gamma>, e, S)".
+  finally(rtranclp_trans)
+  have "conf_transform (ae, a) (\<Gamma>, Var x, S) \<Rightarrow>\<^sup>* conf_transform (ae, u) ((x, e) # delete x \<Gamma>, e, S)".
   }
   ultimately show ?case by (blast del: consistentI consistentE)
 next
@@ -306,7 +268,7 @@ case (var\<^sub>2 \<Gamma> x e S)
   have "consistent (ae, 0) ((x, e) # \<Gamma>, e, S)" using var\<^sub>2
     by (fastforce  simp add: join_below_iff split:if_splits)
   moreover
-  have "Atransform (ae, a) (\<Gamma>, e, Upd x # S) \<Rightarrow> Atransform (ae, 0) ((x, e) # \<Gamma>, e, S)"
+  have "conf_transform (ae, a) (\<Gamma>, e, Upd x # S) \<Rightarrow> conf_transform (ae, 0) ((x, e) # \<Gamma>, e, S)"
     using `ae x = up\<cdot>0` `a = 0` var\<^sub>2 by (auto intro!: step.intros simp add: map_transform_Cons)
   ultimately show ?case by (blast del: consistentI consistentE)
 next
@@ -338,11 +300,6 @@ next
   moreover
   have "upds S \<subseteq> edom (?ae \<squnion> ae)"
     using let\<^sub>1(3) by auto
-  (*
-  moreover
-  have "AEstack ae S \<sqsubseteq> ae" using let\<^sub>1(3) by auto
-  hence "AEstack ae S \<sqsubseteq> ?ae \<squnion> ae" by (metis join_above1 below_refl box_below join_comm)
-  *)
   moreover
   { fix x e'
     assume "map_of \<Delta> x = Some e'"
@@ -356,6 +313,7 @@ next
     have "Aexp' e'\<cdot>(?ae x) f|` domA \<Delta> \<sqsubseteq> ?ae" by (rule Aheap_heap)
     also
     from `map_of \<Delta> x = Some e'`
+    find_theorems Aheap name:heap
     have "Aexp' e'\<cdot>(?ae x) f|` (- domA \<Delta>) \<sqsubseteq> Aexp (Terms.Let \<Delta> e)\<cdot>a" by (rule Aheap_heap2)
     also
     have "Aexp (Terms.Let \<Delta> e)\<cdot>a \<sqsubseteq> ae" using let\<^sub>1(3) by auto
@@ -410,19 +368,19 @@ next
     have "\<And> x. x \<in> domA \<Gamma> \<Longrightarrow> x \<notin> edom (Aheap \<Delta>\<cdot>(Aexp e\<cdot>a))"
       using fresh_distinct[OF let\<^sub>1(1)]
       by (auto dest!: set_mp[OF edom_Aheap])
-    hence "map_transform Aeta_expand ((Aheap \<Delta>\<cdot>(Aexp e\<cdot>a)) \<squnion> ae) (map_transform Aeta_expand_transform ((Aheap \<Delta>\<cdot>(Aexp e\<cdot>a)) \<squnion> ae) \<Gamma>)
-       = map_transform Aeta_expand ae (map_transform Aeta_expand_transform ae \<Gamma>)"
+    hence "map_transform Aeta_expand ((Aheap \<Delta>\<cdot>(Aexp e\<cdot>a)) \<squnion> ae) (map_transform Atransform ((Aheap \<Delta>\<cdot>(Aexp e\<cdot>a)) \<squnion> ae) \<Gamma>)
+       = map_transform Aeta_expand ae (map_transform Atransform ae \<Gamma>)"
       by (auto intro!: map_transform_cong simp add: edomIff)
     moreover
     from let\<^sub>1 have *: "edom ae \<subseteq> domA \<Gamma> \<union> upds S" by auto
     have "\<And> x. x \<in> domA \<Delta> \<Longrightarrow> x \<notin> edom ae"
        using fresh_distinct[OF let\<^sub>1(1)] fresh_distinct_fv[OF let\<^sub>1(2)] 
        by (auto dest!: set_mp[OF *] set_mp[OF ups_fv_subset])
-    hence "map_transform Aeta_expand ((Aheap \<Delta>\<cdot>(Aexp e\<cdot>a)) \<squnion> ae) (map_transform Aeta_expand_transform ((Aheap \<Delta>\<cdot>(Aexp e\<cdot>a)) \<squnion> ae) \<Delta>)
-       = map_transform Aeta_expand ((Aheap \<Delta>\<cdot>(Aexp e\<cdot>a))) (map_transform Aeta_expand_transform ((Aheap \<Delta>\<cdot>(Aexp e\<cdot>a))) \<Delta>)"
+    hence "map_transform Aeta_expand ((Aheap \<Delta>\<cdot>(Aexp e\<cdot>a)) \<squnion> ae) (map_transform Atransform ((Aheap \<Delta>\<cdot>(Aexp e\<cdot>a)) \<squnion> ae) \<Delta>)
+       = map_transform Aeta_expand ((Aheap \<Delta>\<cdot>(Aexp e\<cdot>a))) (map_transform Atransform ((Aheap \<Delta>\<cdot>(Aexp e\<cdot>a))) \<Delta>)"
       by (auto intro!: map_transform_cong simp add: edomIff)
     ultimately
-    have "Atransform (ae, a) (\<Gamma>, Terms.Let \<Delta> e, S) \<Rightarrow> Atransform (?ae \<squnion> ae, a) (\<Delta> @ \<Gamma>, e, S)"
+    have "conf_transform (ae, a) (\<Gamma>, Terms.Let \<Delta> e, S) \<Rightarrow> conf_transform (?ae \<squnion> ae, a) (\<Delta> @ \<Gamma>, e, S)"
       apply (simp add: map_transform_append)
       apply rule
       using let\<^sub>1(1,2)
@@ -440,14 +398,6 @@ next
       apply (metis (poly_guards_query) rtranclp_trans)
       done
 qed
-
-(*
-  sublocale AbstractTransform step consistent Atransform
-    apply default
-    using foo
-    apply (auto del: consistentI consistentE)
-    done
-*)
 
 end
 end
