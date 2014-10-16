@@ -1,26 +1,6 @@
 theory ArityEtaExpand
-imports ArityCorrectSestoft EtaExpansionSestoft TransformTools AbstractTransform
+imports ArityCorrectSestoft EtaExpansionSestoft EtaExpansionArity AbstractTransform
 begin
-
-lift_definition Aeta_expand :: "Arity \<Rightarrow> exp \<Rightarrow> exp" is "eta_expand".
-
-lemma Aeta_expand_eqvt[eqvt]: "\<pi> \<bullet> Aeta_expand a e = Aeta_expand (\<pi> \<bullet> a) (\<pi> \<bullet> e)"
-  apply (cases a)
-  apply simp
-  apply transfer
-  apply simp
-  done
-
-lemma Aeta_expand_0[simp]: "Aeta_expand 0 e = e"
-  by transfer simp
-
-lemma Aeta_expand_inc[simp]: "Aeta_expand (inc\<cdot>n) e = (Lam [fresh_var e]. Aeta_expand n (App e (fresh_var e)))"
-  apply (simp add: inc_def)
-  by transfer simp
-
-lemma subst_Aeta_expand:
-  "(Aeta_expand n e)[x::=y] = Aeta_expand n e[x::=y]"
-  by transfer (rule subst_eta_expand)
 
 lemma Aeta_expand_correct:
   assumes "ae ` upds S \<subseteq> {up \<cdot> 0}"  
@@ -37,17 +17,6 @@ proof-
   show ?thesis by transfer (rule eta_expansion_correct')
 qed
 
-lemma isLam_Aeta_expand: "isLam e \<Longrightarrow> isLam (Aeta_expand a e)"
-  by transfer (rule isLam_eta_expand)
-
-lemma Aeta_expand_fresh[simp]: "a \<sharp> Aeta_expand n e = a \<sharp> e" by transfer simp
-lemma Aeta_expand_fresh_star[simp]: "a \<sharp>* Aeta_expand n e = a \<sharp>* e" by (auto simp add: fresh_star_def)
-
-interpretation supp_bounded_transform Aeta_expand
-  apply default
-  using Aeta_expand_fresh
-  apply (auto simp add: fresh_def)
-  done
 
 locale ArityEtaExpand = CorrectArityAnalysisLet
 begin
@@ -72,8 +41,6 @@ begin
 
   abbreviation Atransform where "Atransform \<equiv> transform"
 
-  lemma the_map_option_domA[simp]: "x \<in> domA \<Gamma> \<Longrightarrow> the (map_option f (map_of \<Gamma> x)) = f (the (map_of \<Gamma> x))"
-    by (induction \<Gamma>) auto
 
  (*
   lemma trans_pres_Aexp: "Aexp (Atransform a e)\<cdot>a = Aexp e\<cdot>a"

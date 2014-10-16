@@ -51,6 +51,9 @@ lemma domA_map_of_Some_the:
 lemma domA_clearjunk[simp]: "domA (clearjunk \<Gamma>) = domA \<Gamma>"
   unfolding domA_def using dom_clearjunk.
 
+lemma the_map_option_domA[simp]: "x \<in> domA \<Gamma> \<Longrightarrow> the (map_option f (map_of \<Gamma> x)) = f (the (map_of \<Gamma> x))"
+  by (induction \<Gamma>) auto
+
 subsubsection {* Other lemmas about associative lists *}
 
 lemma delete_set_none: "(map_of l)(x := None) = map_of (delete x l)"
