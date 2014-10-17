@@ -5,6 +5,15 @@ begin
 locale CoCallAnalysis =
   fixes ccExp :: "exp \<Rightarrow> Arity \<rightarrow> CoCalls"
   assumes "ccField (ccExp e\<cdot>a) \<subseteq> fv e"
+begin
+definition ccExp' :: "exp \<Rightarrow> Arity\<^sub>\<bottom> \<rightarrow> CoCalls"
+  where "ccExp' e = fup \<cdot> (ccExp e)"
+
+lemma ccExp'_simps[simp]:
+  "ccExp' e \<cdot> \<bottom> = \<bottom>"
+  "ccExp' e \<cdot> (up\<cdot>n) = ccExp e \<cdot> n"
+  unfolding ccExp'_def by simp_all
+end
 
 locale CorrectCoCallAnalysis = CoCallAnalysis +
   assumes Aexp_eqvt[eqvt]: "\<pi> \<bullet> ccExp = ccExp"
