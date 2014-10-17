@@ -34,6 +34,15 @@ lemma eqvt_at_apply'':
 by (metis (hide_lams, no_types) assms eqvt_at_def permute_fun_def permute_minus_cancel(1))
 
 
+lemma size_list_eqvt[eqvt]: "p \<bullet> size_list f x = size_list (p \<bullet> f) (p \<bullet> x)"
+proof (induction x)
+  case (Cons x xs)
+  have "f x = p \<bullet> (f x)" by (simp add: permute_pure)
+  also have "... = (p \<bullet> f) (p \<bullet> x)" by simp
+  with Cons
+  show ?case by (auto simp add: permute_pure)
+qed simp
+
 subsubsection {* Freshness via equivariance *}
 
 lemma eqvt_fresh_cong1: "(\<And>p x. p \<bullet> (f x) = f (p \<bullet> x)) \<Longrightarrow> a \<sharp> x \<Longrightarrow> a \<sharp> f x "
@@ -296,8 +305,6 @@ lemma supp_fun_app_eqvt3:
   assumes a: "eqvt f"
   shows "supp (f x y z) \<subseteq> supp x \<union> supp y \<union> supp z"
 proof-
-  term "split  split"
-  thm eqvt_uncurry
   from supp_fun_app_eqvt2[OF eqvt_uncurry [OF a]]
   have "supp (split f (x,y) z) \<subseteq> supp (x,y) \<union> supp z".
   thus ?thesis by (simp add: supp_Pair)

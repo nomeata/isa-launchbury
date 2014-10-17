@@ -25,9 +25,10 @@ locale ArityAnalysisPreImpl =
   fixes Afix ::  "(exp \<Rightarrow> (Arity \<rightarrow> AEnv)) \<Rightarrow> heap \<Rightarrow> AEnv \<rightarrow> AEnv"
   assumes Afix_eqvt: "p \<bullet> Afix = Afix"
   assumes Afix_cong[fundef_cong]:
-    "\<lbrakk> (\<And> e. e \<in> snd ` set heap2 \<Longrightarrow> aexp1 e = aexp2 e); heap1 = heap2 \<rbrakk>
+    "\<lbrakk> (\<And> e. size e \<le> size_list (\<lambda>p. size (snd p)) heap1 \<Longrightarrow> aexp1 e = aexp2 e); heap1 = heap2 \<rbrakk>
         \<Longrightarrow> Afix aexp1 heap1 = Afix aexp2 heap2"
 begin
+
   
 nominal_function
   Aexp :: "exp \<Rightarrow> (Arity \<rightarrow> AEnv)"

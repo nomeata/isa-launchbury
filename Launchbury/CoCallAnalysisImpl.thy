@@ -1,6 +1,10 @@
 theory CoCallAnalysisImpl
-imports CoCallFix "Arity-Nominal" "Nominal-HOLCF" "Env-Nominal" "Env-HOLCF"
+imports CoCallFix ArityAnalysisPreImpl "Arity-Nominal" "Nominal-HOLCF" "Env-Nominal" "Env-HOLCF"
 begin
+
+
+term ArityAnalysisPreImpl.Aexp
+term "\<lambda> x y z. CoCallArityAnalysis.ccFix z (ArityAnalysisPreImpl.Aexp x)"
 
 nominal_function
   Aexp :: "exp \<Rightarrow> (Arity \<rightarrow> AEnv)" and ccExp :: "exp \<Rightarrow> (Arity \<rightarrow> CoCalls)" 

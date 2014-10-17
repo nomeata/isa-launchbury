@@ -35,6 +35,9 @@ notation (latex output) Terms.Lam ("\<lambda>_. _"  [100, 100] 100)
 
 type_synonym heap = "(var \<times> exp) list"
 
+lemma exp_assn_size_eqvt[eqvt]: "p \<bullet> (size :: exp \<Rightarrow> nat) = size"
+  by (metis exp_assn.size_eqvt(1) fun_eqvtI permute_pure)
+
 subsubsection {* Rewriting in terms of heaps *}
 
 text {*
