@@ -110,6 +110,13 @@ lift_definition zero_Arity :: Arity is 0.
 instance ..
 end
 
+instantiation Arity :: one
+begin
+lift_definition one_Arity :: Arity is 1.
+instance ..
+end
+
+
 lemma Arity_ind:  "P 0 \<Longrightarrow> (\<And> n. P n \<Longrightarrow> P (inc\<cdot>n)) \<Longrightarrow> P n"
   apply (simp add: inc_def)
   apply transfer

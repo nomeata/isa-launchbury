@@ -14,6 +14,9 @@ lemma perm_rel_lemma2:
   shows "r x y \<longleftrightarrow> r (\<pi> \<bullet> x) (\<pi> \<bullet> y)" (is "?l \<longleftrightarrow> ?r")
 by (metis (full_types) assms permute_minus_cancel(2))
 
+lemma fun_eqvtI:
+  assumes f_eqvt[eqvt]: "(\<And> p x. p \<bullet> (f x) = f (p \<bullet> x))"
+  shows "p \<bullet> f = f" by perm_simp rule
 
 lemma eqvt_at_apply:
   assumes "eqvt_at f x"

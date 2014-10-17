@@ -27,6 +27,21 @@ proof (rule admI)
     using goal1(2) unfolding pointwise_def by auto
 qed
 
+lemma cfun_beta_Pair:
+  assumes "cont (\<lambda> p. f (fst p) (snd p))"
+  shows "csplit\<cdot>(\<Lambda> a b . f a b)\<cdot>(x, y) = f x y"
+  apply simp
+  apply (subst beta_cfun)
+  apply (rule cont2cont_LAM')
+  apply (rule assms)
+  apply (rule beta_cfun)
+  apply (rule cont2cont_fun)
+  using assms
+  unfolding prod_cont_iff
+  apply auto
+  done
+
+
 lemma fun_upd_mono:
   "\<rho>1 \<sqsubseteq> \<rho>2 \<Longrightarrow> v1 \<sqsubseteq> v2 \<Longrightarrow> \<rho>1(x := v1) \<sqsubseteq> \<rho>2(x := v2)"
   apply (rule fun_belowI)
@@ -40,6 +55,52 @@ lemma fun_upd_cont[simp,cont2cont]:
   shows "cont (\<lambda> x. (f x)(v := h x) :: 'a \<Rightarrow> 'b::pcpo)"
   by (rule cont2cont_lambda)(auto simp add: assms)
 
+
+lemma cont_if_else_above: 
+  assumes "cont f"
+  assumes "cont g"
+  assumes "\<And> x. f x \<sqsubseteq> g x"
+  assumes "\<And> x y. x \<sqsubseteq> y \<Longrightarrow> P y \<Longrightarrow> P x"
+  assumes "adm P"
+  shows "cont (\<lambda>x. if P x then f x else g x)" (is "cont ?I")
+proof(intro contI2 monofunI)
+  fix x y :: 'a
+  assume "x \<sqsubseteq> y"
+  with assms(4)[OF this]
+  show "?I x \<sqsubseteq> ?I y"
+    apply (auto)
+    apply (rule cont2monofunE[OF assms(1)], assumption)
+    apply (rule below_trans[OF cont2monofunE[OF assms(1)] assms(3)], assumption)
+    apply (rule cont2monofunE[OF assms(2)], assumption)
+    done
+next
+  fix Y :: "nat \<Rightarrow> 'a"
+  assume "chain Y"
+  assume "chain (\<lambda>i . ?I (Y i))"
+
+  have ch_f: "f (\<Squnion> i. Y i) \<sqsubseteq> (\<Squnion> i. f (Y i))" by (metis `chain Y` assms(1) below_refl cont2contlubE)
+
+  show "?I (\<Squnion> i. Y i) \<sqsubseteq> (\<Squnion> i. ?I (Y i))" 
+  proof(cases "\<forall> i. P (Y i)")
+    case True hence "P (\<Squnion> i. Y i)" by (metis `chain Y` adm_def assms(5))
+    with True ch_f show ?thesis by auto
+  next
+    case False
+    then obtain j where "\<not> P (Y j)" by auto
+    hence *:  "\<forall> i \<ge> j. \<not> P (Y i)" "\<not> P (\<Squnion> i. Y i)"
+      apply (auto)
+      apply (metis assms(4) chain_mono[OF `chain Y`])
+      apply (metis assms(4) is_ub_thelub[OF `chain Y`])
+      done
+
+    have "?I (\<Squnion> i. Y i) = g (\<Squnion> i. Y i)" using * by simp
+    also have "\<dots> = g (\<Squnion> i. Y (i + j))" by (metis lub_range_shift[OF `chain Y`])
+    also have "\<dots> = (\<Squnion> i. (g (Y (i + j))))" by (rule cont2contlubE[OF assms(2) chain_shift[OF `chain Y`]] )
+    also have "\<dots> = (\<Squnion> i. (?I (Y (i + j))))" using * by auto
+    also have "\<dots> = (\<Squnion> i. (?I (Y i)))" by (metis lub_range_shift[OF `chain (\<lambda>i . ?I (Y i))`])
+    finally show ?thesis by simp
+  qed
+qed
 
 subsubsection {* Composition of fun and cfun *}
 

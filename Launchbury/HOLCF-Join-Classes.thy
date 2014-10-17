@@ -113,6 +113,21 @@ proof default
   done
 qed
 
+
+instance prod :: (Finite_Join_cpo, Finite_Join_cpo) Finite_Join_cpo
+proof default
+  fix x y :: "('a \<times> 'b)"
+  let ?z = "(fst x \<squnion> fst y, snd x \<squnion> snd y)"
+  show "compatible x y"
+  proof(rule compatibleI)
+    show "x \<sqsubseteq> ?z" by (cases x, auto)
+    show "y \<sqsubseteq> ?z" by (cases y, auto)
+    fix z'
+    assume "x \<sqsubseteq> z'" and "y \<sqsubseteq> z'" thus "?z \<sqsubseteq> z'"
+      by (cases z', cases x, cases y, auto)
+  qed
+qed
+
 lemma fun_meet_simp[simp]: "(f \<squnion> g) x = f x \<squnion> (g x::'a::Finite_Join_cpo)"
 proof-
   have "f \<squnion> g = (\<lambda> x. f x \<squnion> g x)"

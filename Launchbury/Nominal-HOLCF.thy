@@ -225,4 +225,15 @@ lemma fup_eqvt[eqvt]: "\<pi> \<bullet> fup = fup"
   apply (simp add: permute_self)
   done
 
+subsubsection {* Instance for @{type u} *}
+
+instance prod :: (cont_pt, cont_pt) cont_pt
+proof default
+  fix p
+  (* Fighting eta contraction... *)
+  have "permute p = (\<lambda> (x :: ('a, 'b) prod). (p \<bullet> fst x, p \<bullet> snd x))"  by auto
+  moreover have "cont ..." by (intro cont2cont)
+  ultimately show "cont (permute p :: ('a,'b) prod  \<Rightarrow> ('a,'b) prod)" by simp
+qed
+
 end
