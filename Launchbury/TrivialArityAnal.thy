@@ -57,5 +57,65 @@ next
     by (auto simp add: Trivial_Aexp_simp fv_subst_eq intro!: arg_cong[where f = "\<lambda> S. env_restr S e" for e])
 qed
 
+definition Trivial_Aheap :: "heap \<Rightarrow> AEnv \<rightarrow> AEnv" where
+  "Trivial_Aheap \<Gamma> = (\<Lambda> ae. (\<lambda> x. up\<cdot>0) f|` domA \<Gamma>)"
+
+lemma Trivial_Aheap_eqvt[eqvt]: "\<pi> \<bullet>  (Trivial_Aheap \<Gamma>) = Trivial_Aheap (\<pi> \<bullet> \<Gamma>)"
+  unfolding Trivial_Aheap_def
+  apply perm_simp
+  apply (simp add: Abs_cfun_eqvt)
+  done
+
+lemma Trivial_Aheap_simp: "Trivial_Aheap \<Gamma> \<cdot> ae = (\<lambda> x. up\<cdot>0) f|` domA \<Gamma>"
+  unfolding Trivial_Aheap_def by simp
+
+interpretation CorrectArityAnalysisLet Trivial_Aexp Trivial_Aheap
+proof default
+  fix \<pi>
+  show "\<pi> \<bullet> Trivial_Aheap = Trivial_Aheap" by perm_simp rule  
+next
+  fix \<Gamma> ae show "edom (Trivial_Aheap \<Gamma>\<cdot>ae) \<subseteq> domA \<Gamma>"
+  by (simp add: Trivial_Aheap_simp)
+next
+  fix \<Gamma> :: heap and x :: var and  e' :: exp and  ae :: AEnv
+  assume "map_of \<Gamma> x = Some e'"
+  show "Aexp' e'\<cdot>((Trivial_Aheap \<Gamma>\<cdot>ae) x) f|` domA \<Gamma> \<sqsubseteq> Trivial_Aheap \<Gamma>\<cdot>ae"
+    by (auto intro: env_restr_belowI simp add: Trivial_Aheap_simp)
+next
+  fix \<Gamma> :: heap and x :: var and  e' :: exp and  ae :: AEnv
+  assume "\<not> isLam e'" 
+  assume "map_of \<Gamma> x = Some e'"
+  hence "x \<in> domA \<Gamma>" by (metis domI dom_map_of_conv_domA)
+  thus "(Trivial_Aheap \<Gamma>\<cdot>ae) x = up\<cdot>0" by (simp add: Trivial_Aheap_simp)
+next
+  fix \<Gamma> ae
+  show "ae f|` domA \<Gamma> \<sqsubseteq> Trivial_Aheap \<Gamma>\<cdot>ae"
+    by (auto intro: env_restr_belowI simp add: Trivial_Aheap_simp)
+next
+  fix x y :: var and \<Gamma> :: heap
+  assume "x \<notin> domA \<Gamma>" and "y \<notin> domA \<Gamma>"
+  thus "Trivial_Aheap \<Gamma>[x::h=y] = Trivial_Aheap \<Gamma>"
+    by (auto intro: cfun_eqI simp add: Trivial_Aheap_simp)
+next
+  fix \<Gamma> :: heap and ae ae' :: AEnv
+  assume "ae f|` domA \<Gamma> = ae' f|` domA \<Gamma>"
+  show "Trivial_Aheap \<Gamma>\<cdot>ae = Trivial_Aheap \<Gamma>\<cdot>ae'"
+    by (simp add: Trivial_Aheap_simp)
+next
+  fix \<Gamma> :: heap and x :: var and  e' e :: exp and a :: Arity
+  assume "map_of \<Gamma> x = Some e'"
+  hence "x \<in> domA \<Gamma>" and "fv e' \<subseteq> fv \<Gamma>" 
+    apply -
+    apply (metis domI dom_map_of_conv_domA)
+    apply (metis domA_from_set map_of_fv_subset map_of_is_SomeD option.sel)
+    done
+  thus "Aexp' e'\<cdot>((Trivial_Aheap \<Gamma>\<cdot>(Trivial_Aexp e\<cdot>a)) x) f|` (- domA \<Gamma>) \<sqsubseteq> Trivial_Aexp (Terms.Let \<Gamma> e)\<cdot>a"
+    by (auto intro: env_restr_mono2 simp add: Trivial_Aheap_simp Trivial_Aexp_simp)
+next
+  fix \<Gamma> e a
+  show "Trivial_Aexp e\<cdot>a f|` (- domA \<Gamma>) \<sqsubseteq> Trivial_Aexp (Terms.Let \<Gamma> e)\<cdot>a"
+    by (auto intro: env_restr_mono2 simp add: Trivial_Aexp_simp)
+qed
+
 end
 
