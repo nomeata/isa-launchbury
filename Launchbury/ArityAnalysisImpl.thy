@@ -267,7 +267,7 @@ proof default
   moreover
   assume "\<And>x a. x \<in> domA \<Gamma> \<Longrightarrow> up \<cdot> a \<sqsubseteq> (Aheap \<Gamma>'\<cdot>(Aexp e\<cdot>a)) x \<Longrightarrow> Aexp (the (map_of \<Gamma> x))\<cdot>a = Aexp (the (map_of \<Gamma>' x))\<cdot>a"
   hence  "Afix \<Gamma>\<cdot>((Aexp e\<cdot>a) \<squnion> thunks_AE \<Gamma>) = Afix \<Gamma>'\<cdot>(Aexp e'\<cdot>a \<squnion> thunks_AE \<Gamma>)"
-    sorry
+    so rry
   note * = this
   moreover
   assume "Aexp e\<cdot>a = Aexp e'\<cdot>a"
@@ -281,7 +281,7 @@ next
   assume *: "domA \<Gamma> = domA \<Gamma>'"
   assume "\<And>x a. x \<in> domA \<Gamma> \<Longrightarrow> up\<cdot>a \<sqsubseteq> (Aheap \<Gamma>'\<cdot>ae) x \<Longrightarrow> Aexp (the (map_of \<Gamma> x))\<cdot>a = Aexp (the (map_of \<Gamma>' x))\<cdot>a"
   hence "ArityAnalysis.Afix Aexp \<Gamma>\<cdot>(ae \<squnion> thunks_AE \<Gamma>) = ArityAnalysis.Afix Aexp \<Gamma>'\<cdot>(ae \<squnion> thunks_AE \<Gamma>')"
-    sorry
+    so rry
   thus "Aheap \<Gamma>\<cdot>ae = Aheap \<Gamma>'\<cdot>ae"
     unfolding Aheap_def using * by simp
 qed simp_all

@@ -119,6 +119,9 @@ lemma Abs_cfun_eqvt: "cont f \<Longrightarrow> (p \<bullet> Abs_cfun) f = Abs_cf
   apply (subst permute_fun_def)
   by (metis permute_Lam perm_still_cont permute_minus_cancel(1))
 
+lemma cfun_eqvtI: "(\<And>x. p \<bullet> (f \<cdot> x) = f' \<cdot> (p \<bullet> x)) \<Longrightarrow> p \<bullet> f = f'"
+  by (metis Cfun_app_eqvt cfun_eqI permute_minus_cancel(1))
+
 lemma ID_eqvt[eqvt]: "\<pi> \<bullet> ID = ID"
   unfolding ID_def
   apply perm_simp

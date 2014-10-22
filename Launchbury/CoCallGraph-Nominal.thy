@@ -20,6 +20,26 @@ instance CoCalls :: cont_pt
   apply (thin_tac "chain ?x")+
   apply transfer
   apply simp
-  done  
+  done
+
+lemma cc_restr_perm:
+  fixes G :: CoCalls
+  assumes "supp p \<sharp>* S" and [simp]: "finite S"
+  shows "cc_restr S (p \<bullet> G) = cc_restr S G"
+  using assms
+  apply -
+  apply transfer
+  apply (auto simp add: mem_permute_set)
+  apply (subst (asm) perm_supp_eq, simp add: supp_minus_perm, metis (full_types) fresh_def fresh_star_def supp_set_elem_finite)+
+  apply assumption
+  apply (subst perm_supp_eq, simp add: supp_minus_perm, metis (full_types) fresh_def fresh_star_def supp_set_elem_finite)+
+  apply assumption
+  done
+
+lemma inCC_eqvt[eqvt]: "\<pi> \<bullet> inCC = inCC" sorry
+lemma cc_restr_eqvt[eqvt]: "\<pi> \<bullet> cc_restr = cc_restr" sorry
+lemma ccSquare_eqvt[eqvt]: "\<pi> \<bullet> ccSquare = ccSquare" sorry
+lemma ccProd_eqvt[eqvt]: "\<pi> \<bullet> ccProd = ccProd" sorry
+lemma ccNeighbors_eqvt[eqvt]: "\<pi> \<bullet> ccNeighbors = ccNeighbors" sorry
 
 end

@@ -28,7 +28,6 @@ locale ArityAnalysisPreImpl =
     "\<lbrakk> (\<And> e. size e \<le> size_list (\<lambda>p. size (snd p)) heap1 \<Longrightarrow> aexp1 e = aexp2 e); heap1 = heap2 \<rbrakk>
         \<Longrightarrow> Afix aexp1 heap1 = Afix aexp2 heap2"
 begin
-
   
 nominal_function
   Aexp :: "exp \<Rightarrow> (Arity \<rightarrow> AEnv)"

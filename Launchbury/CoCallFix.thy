@@ -2,10 +2,11 @@ theory CoCallFix
 imports CoCallAnalysis ArityAnalysisFix
 begin
 
-locale CoCallArityAnalysis = CoCallAnalysis + ArityAnalysis
-
-context CoCallArityAnalysis
+locale CoCallArityAnalysis =
+  fixes cccExp :: "exp \<Rightarrow> (Arity \<rightarrow> AEnv \<times> CoCalls)"
 begin
+sublocale ArityAnalysis  "\<lambda> e. (\<Lambda> a. fst (cccExp e \<cdot> a))".
+sublocale CoCallAnalysis  "\<lambda> e. (\<Lambda> a. snd (cccExp e \<cdot> a))".
 
 definition ccBind :: "var \<Rightarrow> exp \<Rightarrow> ((AEnv \<times> CoCalls) \<rightarrow> CoCalls)"
   where "ccBind v e = (\<Lambda> (ae, G).  if (v--v\<notin>G) \<or> \<not> isLam e then cc_restr (fv e) (ccExp' e \<cdot> (ae v)) else ccSquare (fv e))"
@@ -104,4 +105,69 @@ lemma Afix_reorder: "map_of \<Gamma> = map_of \<Delta> \<Longrightarrow> Afix \<
 
 end
 
+lemma ccBind_eqvt[eqvt]: "\<pi> \<bullet> (CoCallArityAnalysis.ccBind cccExp x e) = CoCallArityAnalysis.ccBind (\<pi> \<bullet> cccExp) (\<pi> \<bullet> x) (\<pi> \<bullet> e)"
+proof-
+  {
+  fix \<pi> ae G
+  have "\<pi> \<bullet> ((CoCallArityAnalysis.ccBind cccExp x e) \<cdot> (ae,G)) = CoCallArityAnalysis.ccBind (\<pi> \<bullet> cccExp) (\<pi> \<bullet> x) (\<pi> \<bullet> e) \<cdot> (\<pi> \<bullet> ae, \<pi> \<bullet> G)"
+    unfolding CoCallArityAnalysis.ccBind_eq
+    by perm_simp (simp add: Abs_cfun_eqvt)
+  }
+  thus ?thesis by (auto intro: cfun_eqvtI)
+qed
+
+lemma ccBinds_eqvt[eqvt]: "\<pi> \<bullet> (CoCallArityAnalysis.ccBinds cccExp \<Gamma>) = CoCallArityAnalysis.ccBinds (\<pi> \<bullet> cccExp) (\<pi> \<bullet> \<Gamma>)"
+  apply (rule cfun_eqvtI)
+  apply (induction \<Gamma> rule: CoCallArityAnalysis.ccBinds.induct)
+  apply (simp add: CoCallArityAnalysis.ccBinds.simps)
+  apply (simp add: CoCallArityAnalysis.ccBinds.simps, perm_simp, simp)
+  done
+
+lemma ccBindsExtra_eqvt[eqvt]: "\<pi> \<bullet> (CoCallArityAnalysis.ccBindsExtra cccExp \<Gamma>) = CoCallArityAnalysis.ccBindsExtra (\<pi> \<bullet> cccExp) (\<pi> \<bullet> \<Gamma>)"
+  by (rule cfun_eqvtI) (simp add: CoCallArityAnalysis.ccBindsExtra_def)
+
+lemma ccFix_eqvt[eqvt]: "\<pi> \<bullet> (CoCallArityAnalysis.ccFix cccExp \<Gamma>) = CoCallArityAnalysis.ccFix  (\<pi> \<bullet> cccExp) (\<pi> \<bullet> \<Gamma>)"
+  unfolding CoCallArityAnalysis.ccFix_def
+  by perm_simp (simp add: Abs_cfun_eqvt)
+
+lemma ccExp'_cong: 
+  "cccexp1 e = cccexp2 e \<Longrightarrow> CoCallAnalysis.ccExp' cccexp1 e = CoCallAnalysis.ccExp' cccexp2 e"
+  unfolding CoCallAnalysis.ccExp'_def by simp
+  
+lemma ccBind_cong[fundef_cong]:
+  "cccexp1 e = cccexp2 e \<Longrightarrow> CoCallArityAnalysis.ccBind cccexp1 x e = CoCallArityAnalysis.ccBind cccexp2 x e "
+  apply (rule cfun_eqI)
+  apply (case_tac xa)
+  apply (auto simp add: CoCallArityAnalysis.ccBind_eq cong: ccExp'_cong)
+  done
+
+lemma ccBinds_cong[fundef_cong]:
+  "\<lbrakk> (\<And> e. e \<in> snd ` set heap2 \<Longrightarrow> cccexp1 e = cccexp2 e); heap1 = heap2 \<rbrakk>
+      \<Longrightarrow> CoCallArityAnalysis.ccBinds cccexp1 heap1 = CoCallArityAnalysis.ccBinds cccexp2 heap2"
+  apply simp
+  apply (induction heap2 arbitrary: heap1 rule: CoCallArityAnalysis.ccBinds.induct)
+  apply (simp add: CoCallArityAnalysis.ccBinds.simps)
+  apply (simp add: CoCallArityAnalysis.ccBinds.simps)
+  by (metis "AList-Utils.dom_delete_subset" ccBind_cong contra_subsetD)
+
+
+lemma ccBindsExtra_cong[fundef_cong]:
+  "\<lbrakk> (\<And> e. e \<in> snd ` set heap2 \<Longrightarrow> cccexp1 e = cccexp2 e); heap1 = heap2 \<rbrakk>
+      \<Longrightarrow> CoCallArityAnalysis.ccBindsExtra cccexp1 heap1 = CoCallArityAnalysis.ccBindsExtra cccexp2 heap2"
+  unfolding CoCallArityAnalysis.ccBindsExtra_def
+  by (metis (mono_tags, hide_lams) ccBinds_cong)
+
+
+lemma ccFix_cong[fundef_cong]:
+  "\<lbrakk> (\<And> e. e \<in> snd ` set heap2 \<Longrightarrow> cccexp1 e = cccexp2 e); heap1 = heap2 \<rbrakk>
+      \<Longrightarrow> CoCallArityAnalysis.ccFix cccexp1 heap1 = CoCallArityAnalysis.ccFix cccexp2 heap2"
+   unfolding CoCallArityAnalysis.ccFix_def
+   apply (rule cong) back back
+   defer
+   apply (metis ccBindsExtra_cong)
+   apply (rule arg_cong[OF Abinds_cong])
+   apply metis
+   apply metis
+   done
+  
 end

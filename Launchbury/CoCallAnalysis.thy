@@ -4,7 +4,6 @@ begin
 
 locale CoCallAnalysis =
   fixes ccExp :: "exp \<Rightarrow> Arity \<rightarrow> CoCalls"
-  assumes "ccField (ccExp e\<cdot>a) \<subseteq> fv e"
 begin
 definition ccExp' :: "exp \<Rightarrow> Arity\<^sub>\<bottom> \<rightarrow> CoCalls"
   where "ccExp' e = fup \<cdot> (ccExp e)"
@@ -15,7 +14,15 @@ lemma ccExp'_simps[simp]:
   unfolding ccExp'_def by simp_all
 end
 
-locale CorrectCoCallAnalysis = CoCallAnalysis +
+lemma ccExp'_eqvt[eqvt]:
+  "\<pi> \<bullet> (CoCallAnalysis.ccExp' ccexp e) = CoCallAnalysis.ccExp' (\<pi> \<bullet> ccexp) (\<pi> \<bullet> e)"
+  unfolding CoCallAnalysis.ccExp'_def
+  by perm_simp rule
+
+locale CoCallAnalysis_ccField = CoCallAnalysis +
+  assumes "ccField (ccExp e\<cdot>a) \<subseteq> fv e"
+
+locale CorrectCoCallAnalysis = CoCallAnalysis_ccField +
   assumes Aexp_eqvt[eqvt]: "\<pi> \<bullet> ccExp = ccExp"
   (* assumes Aexp_Var: "up \<cdot> n \<sqsubseteq> (ccExp (Var x) \<cdot> n) x" *) 
   (* assumes Aexp_subst_App_Lam: "ccExp (e[y::=x]) \<sqsubseteq> ccExp (App (Lam [y]. e) x)" *)
