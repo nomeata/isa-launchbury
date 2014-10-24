@@ -4,44 +4,46 @@ begin
 
 
 locale AbstractAnalProp =
-  fixes PropApp :: "'a \<Rightarrow> ('a::cont_pt)"
+  fixes PropApp :: "'a \<Rightarrow> 'a::cont_pt"
   fixes PropLam :: "'a \<Rightarrow> 'a"
-  fixes PropLetBody :: "'a \<Rightarrow> 'a"
-  fixes PropLetHeap :: "heap \<Rightarrow> exp \<Rightarrow> 'a \<Rightarrow> (var \<Rightarrow> 'a\<^sub>\<bottom>)"
+  fixes AnalLet :: "heap \<Rightarrow> exp \<Rightarrow> 'a \<Rightarrow> 'b::cont_pt"
+  fixes PropLetBody :: "'b \<Rightarrow> 'a"
+  fixes PropLetHeap :: "'b\<Rightarrow> var \<Rightarrow> 'a\<^sub>\<bottom>"
   assumes PropApp_eqvt: "\<pi> \<bullet> PropApp \<equiv> PropApp"
   assumes PropLam_eqvt: "\<pi> \<bullet> PropLam \<equiv> PropLam"
+  assumes AnalLet_eqvt: "\<pi> \<bullet> AnalLet \<equiv> AnalLet"
   assumes PropLetBody_eqvt: "\<pi> \<bullet> PropLetBody \<equiv> PropLetBody"
   assumes PropLetHeap_eqvt: "\<pi> \<bullet> PropLetHeap \<equiv> PropLetHeap"
 
 locale AbstractAnalPropSubst = AbstractAnalProp +
-  assumes PropLetHeap_subst:  "x \<notin> domA \<Gamma> \<Longrightarrow> y \<notin> domA \<Gamma> \<Longrightarrow> PropLetHeap (\<Gamma>[x::h=y]) (e[x::=y]) a = PropLetHeap \<Gamma> e a"
+  assumes PropLetHeap_subst:  "x \<notin> domA \<Gamma> \<Longrightarrow> y \<notin> domA \<Gamma> \<Longrightarrow> AnalLet (\<Gamma>[x::h=y]) (e[x::=y]) a = AnalLet \<Gamma> e a"
 
 locale AbstractTransform = AbstractAnalProp +
-  constrains PropApp :: "'a \<Rightarrow> ('a::pure_cont_pt)"
+  constrains AnalLet :: "heap \<Rightarrow> exp \<Rightarrow> 'a::pure_cont_pt \<Rightarrow> 'b::cont_pt"
   fixes TransVar :: "'a \<Rightarrow> var \<Rightarrow> exp"
   fixes TransVar1 :: "'a \<Rightarrow> var \<Rightarrow> exp"
   fixes TransApp :: "'a \<Rightarrow> exp \<Rightarrow> var \<Rightarrow> exp"
   fixes TransLam :: "'a \<Rightarrow> var \<Rightarrow> exp \<Rightarrow> exp"
-  fixes TransLet :: "'a \<Rightarrow> (var \<Rightarrow> 'a\<^sub>\<bottom>) \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> exp"
+  fixes TransLet :: "'b \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> exp"
   assumes TransVar_eqvt: "\<pi> \<bullet> TransVar = TransVar"
   assumes TransVar1_eqvt: "\<pi> \<bullet> TransVar1 = TransVar1"
   assumes TransApp_eqvt: "\<pi> \<bullet> TransApp = TransApp"
   assumes TransLam_eqvt: "\<pi> \<bullet> TransLam = TransLam"
   assumes TransLet_eqvt: "\<pi> \<bullet> TransLet = TransLet"
   assumes SuppTransLam: "supp (TransLam a v e) \<subseteq> supp e - supp v"
-  assumes SuppTransLet: "supp (TransLet a ae \<Gamma> e) \<subseteq> supp (\<Gamma>, e) - atom ` domA \<Gamma>"
+  assumes SuppTransLet: "supp (TransLet b \<Gamma> e) \<subseteq> supp (\<Gamma>, e) - atom ` domA \<Gamma>"
 begin
   nominal_function transform where
     "transform a (App e x) = TransApp a (transform (PropApp a) e) x"
   | "transform a (Lam [x]. e) = TransLam a x (transform (PropLam a) e)"
   | "transform a (Var x) = TransVar a x"
   | "transform a (Var1 x) = TransVar1 a x"
-  | "transform a (Let \<Delta> e) = TransLet a  (PropLetHeap \<Delta> e a)
-        (map_transform transform (PropLetHeap \<Delta> e a) \<Delta>)
-        (transform (PropLetBody a) e)"
+  | "transform a (Let \<Gamma> e) = TransLet (AnalLet \<Gamma> e a)
+        (map_transform transform (PropLetHeap (AnalLet \<Gamma> e a)) \<Gamma>)
+        (transform (PropLetBody (AnalLet \<Gamma> e a)) e)"
 proof-
 case goal1
-  note PropApp_eqvt[eqvt_raw] PropLam_eqvt[eqvt_raw] PropLetBody_eqvt[eqvt_raw] PropLetHeap_eqvt[eqvt_raw] TransVar_eqvt[eqvt] TransVar1_eqvt[eqvt]  TransApp_eqvt[eqvt]  TransLam_eqvt[eqvt] TransLet_eqvt[eqvt]
+  note PropApp_eqvt[eqvt_raw] PropLam_eqvt[eqvt_raw] PropLetBody_eqvt[eqvt_raw] PropLetHeap_eqvt[eqvt_raw] AnalLet_eqvt[eqvt_raw] TransVar_eqvt[eqvt] TransVar1_eqvt[eqvt]  TransApp_eqvt[eqvt]  TransLam_eqvt[eqvt] TransLet_eqvt[eqvt]
   show ?case
   unfolding eqvt_def transform_graph_aux_def
     apply rule
@@ -93,7 +95,7 @@ case (goal9 a x e a' x' e')
   qed
 next
 case (goal18 a as body a' as' body')
-  note PropApp_eqvt[eqvt_raw] PropLam_eqvt[eqvt_raw] PropLetBody_eqvt[eqvt_raw] PropLetHeap_eqvt[eqvt_raw] TransVar_eqvt[eqvt] TransVar1_eqvt[eqvt]  TransApp_eqvt[eqvt]  TransLam_eqvt[eqvt] TransLet_eqvt[eqvt]
+  note PropApp_eqvt[eqvt_raw] PropLam_eqvt[eqvt_raw] PropLetBody_eqvt[eqvt_raw]  AnalLet_eqvt[eqvt_raw] PropLetHeap_eqvt[eqvt_raw] TransVar_eqvt[eqvt] TransVar1_eqvt[eqvt]  TransApp_eqvt[eqvt]  TransLam_eqvt[eqvt] TransLet_eqvt[eqvt]
 
   from supp_eqvt_at[OF goal18(1)]
   have "\<And> x e a. (x, e) \<in> set as \<Longrightarrow> supp (transform_sumC (a, e)) \<subseteq> supp e"
@@ -107,35 +109,35 @@ case (goal18 a as body a' as' body')
   show ?case
   unfolding `a' = a`
   proof (rule eqvt_let_case)
-    have "supp (TransLet a  (PropLetHeap as body a) (map_transform (\<lambda>x0 x1. transform_sumC (x0, x1)) (PropLetHeap as body a) as) (transform_sumC (PropLetBody a, body))) \<subseteq> supp (Let as body)"
+    have "supp (TransLet (AnalLet as body a) (map_transform (\<lambda>x0 x1. transform_sumC (x0, x1)) (PropLetHeap (AnalLet as body a)) as) (transform_sumC (PropLetBody (AnalLet as body a), body))) \<subseteq> supp (Let as body)"
       by (auto simp add: Let_supp supp_Pair pure_supp exp_assn.fsupp
                dest!: set_mp[OF supp_eqvt_at[OF goal18(2)], rotated] set_mp[OF SuppTransLet] set_mp[OF supp_map])
     moreover
     fix \<pi> :: perm
     assume "supp \<pi> \<sharp>* Terms.Let as body"
     ultimately
-    have *: "supp \<pi> \<sharp>* TransLet a  (PropLetHeap as body a) (map_transform (\<lambda>x0 x1. transform_sumC (x0, x1)) (PropLetHeap as body a) as) (transform_sumC (PropLetBody a, body))"
+    have *: "supp \<pi> \<sharp>* TransLet (AnalLet as body a) (map_transform (\<lambda>x0 x1. transform_sumC (x0, x1)) (PropLetHeap (AnalLet as body a)) as) (transform_sumC (PropLetBody (AnalLet as body a), body))"
       by (auto simp add: fresh_star_def fresh_def)
 
-    have "TransLet a (PropLetHeap (\<pi> \<bullet> as) (\<pi> \<bullet> body) a) (map_transform (\<lambda>x0 x1. (\<pi> \<bullet> transform_sumC) (x0, x1)) (PropLetHeap (\<pi> \<bullet> as) (\<pi> \<bullet> body) a) (\<pi> \<bullet> as)) ((\<pi> \<bullet> transform_sumC) (PropLetBody a, \<pi> \<bullet> body)) = 
-        \<pi> \<bullet> (TransLet a (PropLetHeap as body a) (map_transform (\<lambda>x0 x1. transform_sumC (x0, x1)) (PropLetHeap as body a) as) (transform_sumC (PropLetBody a, body)))"
+    have "TransLet (AnalLet (\<pi> \<bullet> as) (\<pi> \<bullet> body) a) (map_transform (\<lambda>x0 x1. (\<pi> \<bullet> transform_sumC) (x0, x1)) (PropLetHeap (AnalLet (\<pi> \<bullet> as) (\<pi> \<bullet> body) a)) (\<pi> \<bullet> as)) ((\<pi> \<bullet> transform_sumC) (PropLetBody (AnalLet (\<pi> \<bullet> as) (\<pi> \<bullet> body) a), \<pi> \<bullet> body)) = 
+        \<pi> \<bullet> TransLet (AnalLet as body a) (map_transform (\<lambda>x0 x1. transform_sumC (x0, x1)) (PropLetHeap (AnalLet as body a)) as) (transform_sumC (PropLetBody (AnalLet as body a), body))"
        by (simp del: Let_eq_iff Pair_eqvt add:  eqvt_at_apply[OF goal18(2)])
-    also have "\<dots> = (TransLet a  (PropLetHeap as body a) (map_transform (\<lambda>x0 x1. transform_sumC (x0, x1)) (PropLetHeap as body a) as) (transform_sumC (PropLetBody a, body)))"
+    also have "\<dots> = TransLet (AnalLet as body a) (map_transform (\<lambda>x0 x1. transform_sumC (x0, x1)) (PropLetHeap (AnalLet as body a)) as) (transform_sumC (PropLetBody (AnalLet as body a), body))"
       by (rule perm_supp_eq[OF *])
     also
-    have "map_transform (\<lambda>x0 x1. transform_sumC (x0, x1)) (PropLetHeap (\<pi> \<bullet> as) (\<pi> \<bullet> body) a) (\<pi> \<bullet> as)
-        = map_transform (\<lambda>x xa. (\<pi> \<bullet> transform_sumC) (x, xa)) (PropLetHeap (\<pi> \<bullet> as) (\<pi> \<bullet> body) a) (\<pi> \<bullet> as)"
+    have "map_transform (\<lambda>x0 x1. transform_sumC (x0, x1)) (PropLetHeap (AnalLet (\<pi> \<bullet> as) (\<pi> \<bullet> body) a)) (\<pi> \<bullet> as)
+        = map_transform (\<lambda>x xa. (\<pi> \<bullet> transform_sumC) (x, xa)) (PropLetHeap (AnalLet (\<pi> \<bullet> as) (\<pi> \<bullet> body) a)) (\<pi> \<bullet> as)"
         apply (rule map_transform_fundef_cong[OF _ refl refl])
         apply (subst (asm) set_eqvt[symmetric])
         apply (subst (asm) mem_permute_set)
         apply (auto simp add: permute_self  dest: eqvt_at_apply''[OF goal18(1)[where aa = "(- \<pi> \<bullet> a)" for a], where p = \<pi>, symmetric])
         done
     moreover
-    have "(\<pi> \<bullet> transform_sumC) (PropLetBody a, \<pi> \<bullet> body) = transform_sumC (PropLetBody a, \<pi> \<bullet> body)"
+    have "(\<pi> \<bullet> transform_sumC) (PropLetBody (AnalLet (\<pi> \<bullet> as) (\<pi> \<bullet> body) a), \<pi> \<bullet> body) = transform_sumC (PropLetBody (AnalLet (\<pi> \<bullet> as) (\<pi> \<bullet> body) a), \<pi> \<bullet> body)"
       using eqvt_at_apply''[OF goal18(2), where p = \<pi>] by perm_simp
     ultimately
-    show "TransLet a (PropLetHeap (\<pi> \<bullet> as) (\<pi> \<bullet> body) a) (map_transform (\<lambda>x0 x1. transform_sumC (x0, x1)) (PropLetHeap (\<pi> \<bullet> as) (\<pi> \<bullet> body) a) (\<pi> \<bullet> as)) (transform_sumC (PropLetBody a, \<pi> \<bullet> body)) =
-          TransLet a (PropLetHeap as body a)   (map_transform (\<lambda>x0 x1. transform_sumC (x0, x1)) (PropLetHeap as body a) as) (transform_sumC (PropLetBody a, body))" by metis
+    show "TransLet (AnalLet (\<pi> \<bullet> as) (\<pi> \<bullet> body) a) (map_transform (\<lambda>x0 x1. transform_sumC (x0, x1)) (PropLetHeap (AnalLet (\<pi> \<bullet> as) (\<pi> \<bullet> body) a)) (\<pi> \<bullet> as)) (transform_sumC (PropLetBody (AnalLet (\<pi> \<bullet> as) (\<pi> \<bullet> body) a), \<pi> \<bullet> body)) =
+          TransLet (AnalLet as body a) (map_transform (\<lambda>x0 x1. transform_sumC (x0, x1)) (PropLetHeap (AnalLet as body a)) as) (transform_sumC (PropLetBody (AnalLet as body a), body))" by metis
     qed
   qed auto
   nominal_termination by lexicographic_order
@@ -146,36 +148,37 @@ locale AbstractTransformSubst = AbstractTransform + AbstractAnalPropSubst +
   assumes TransVar1_subst: "(TransVar1 a v)[x ::= y] = (TransVar1 a v[x ::v= y])"
   assumes TransApp_subst: "(TransApp a e v)[x ::= y] = (TransApp a e[x ::= y] v[x ::v= y])"
   assumes TransLam_subst: "atom v \<sharp> (x,y) \<Longrightarrow> (TransLam a v e)[x ::= y] = (TransLam a v[x ::v= y] e[x ::= y])"
-  assumes TransLet_subst: "atom ` domA \<Gamma> \<sharp>* (x,y) \<Longrightarrow> (TransLet a ae \<Gamma> e)[x ::= y] = (TransLet a ae \<Gamma>[x ::h= y] e[x ::= y])"
+  assumes TransLet_subst: "atom ` domA \<Gamma> \<sharp>* (x,y) \<Longrightarrow> (TransLet b \<Gamma> e)[x ::= y] = (TransLet b \<Gamma>[x ::h= y] e[x ::= y])"
 begin
   lemma subst_transform: "(transform a e)[x ::= y] = transform a e[x ::= y]"
   proof (nominal_induct e avoiding: x y arbitrary: a  rule: exp_strong_induct_set)
   case (Let \<Delta> body x y)
     hence *: "x \<notin> domA \<Delta>" "y \<notin> domA \<Delta>" by (auto simp add: fresh_star_def fresh_at_base)
-    hence "PropLetHeap \<Delta>[x::h=y] body[x::=y] a = PropLetHeap \<Delta> body a" by (rule PropLetHeap_subst)
+    hence "AnalLet \<Delta>[x::h=y] body[x::=y] a = AnalLet \<Delta> body a" by (rule PropLetHeap_subst)
     with Let
     show ?case
     apply (auto simp add: fresh_star_Pair TransLet_subst simp del: Let_eq_iff)
-    apply (rule fun_cong[OF arg_cong[where f = "TransLet a b" for a b]])
+    apply (rule fun_cong[OF arg_cong[where f = "TransLet b" for b]])
     apply (rule subst_map_transform)
     apply simp
     done
   qed (case_tac b, simp_all add: TransVar_subst TransVar1_subst TransApp_subst TransLam_subst)
 end
 
+
 locale AbstractTransformBound = AbstractAnalProp + supp_bounded_transform  +
   constrains PropApp :: "'a \<Rightarrow> 'a::pure_cont_pt"
   constrains trans :: "'a::pure_cont_pt \<Rightarrow> exp \<Rightarrow> exp"
   assumes TransBound_eqvt: "\<pi> \<bullet> trans = trans"
 begin
-  sublocale AbstractTransform PropApp PropLam PropLetBody PropLetHeap
+  sublocale AbstractTransform PropApp PropLam AnalLet PropLetBody PropLetHeap
       "(\<lambda> a. Var)"
       "(\<lambda> a. Var1)"
       "(\<lambda> a. App)"
       "(\<lambda> a. Terms.Lam)"
-      "(\<lambda> a ae \<Gamma> e . Let (map_transform trans ae \<Gamma>) e)"
+      "(\<lambda> b \<Gamma> e . Let (map_transform trans (PropLetHeap b) \<Gamma>) e)"
   proof-
-  note PropApp_eqvt[eqvt_raw] PropLam_eqvt[eqvt_raw] PropLetBody_eqvt[eqvt_raw] PropLetHeap_eqvt[eqvt_raw] TransBound_eqvt[eqvt]
+  note PropApp_eqvt[eqvt_raw] PropLam_eqvt[eqvt_raw] PropLetBody_eqvt[eqvt_raw] PropLetHeap_eqvt[eqvt_raw] AnalLet_eqvt[eqvt_raw] TransBound_eqvt[eqvt]
   case goal1
   show ?case
   apply default
@@ -189,12 +192,12 @@ end
 locale AbstractTransformBoundSubst = AbstractAnalPropSubst + AbstractTransformBound + 
   assumes TransBound_subst: "(trans a e)[x::=y] = trans a e[x::=y]"
 begin
-  sublocale AbstractTransformSubst PropApp PropLam PropLetBody PropLetHeap
+  sublocale AbstractTransformSubst PropApp PropLam AnalLet PropLetBody PropLetHeap
       "(\<lambda> a. Var)"
       "(\<lambda> a. Var1)"
       "(\<lambda> a. App)"
       "(\<lambda> a. Terms.Lam)"
-      "(\<lambda> a ae \<Gamma> e . Let (map_transform trans ae \<Gamma>) e)"
+      "(\<lambda> b \<Gamma> e . Let (map_transform trans (PropLetHeap b) \<Gamma>) e)"
   proof-
   note PropApp_eqvt[eqvt_raw] PropLam_eqvt[eqvt_raw] PropLetBody_eqvt[eqvt_raw] PropLetHeap_eqvt[eqvt_raw] TransBound_eqvt[eqvt]
   case goal1

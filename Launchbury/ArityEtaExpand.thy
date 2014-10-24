@@ -32,19 +32,20 @@ begin
   sublocale AbstractTransformBound
     "\<lambda> a . inc\<cdot>a"
     "\<lambda> a . pred\<cdot>a"
-    "\<lambda> a . a"
-    "\<lambda> \<Delta> e a . Aheap \<Delta>\<cdot>(Aexp e\<cdot>a)"
+    "\<lambda> \<Delta> e a . (a, Aheap \<Delta>\<cdot>(Aexp e\<cdot>a))"
+    "\<lambda> b . fst b"
+    "\<lambda> b . snd b"
     "Aeta_expand"
   apply default
-  apply (((rule eq_reflection)?, perm_simp, rule)+)[4]
-  apply simp
+  apply (((rule eq_reflection)?, perm_simp, rule)+)[6]
   done
 
   sublocale AbstractTransformBoundSubst
     "\<lambda> a . inc\<cdot>a"
     "\<lambda> a . pred\<cdot>a"
-    "\<lambda> a . a"
-    "\<lambda> \<Delta> e a . Aheap \<Delta>\<cdot>(Aexp e\<cdot>a)"
+    "\<lambda> \<Delta> e a . (a, Aheap \<Delta>\<cdot>(Aexp e\<cdot>a))"
+    "\<lambda> b . fst b"
+    "\<lambda> b . snd b"
     "Aeta_expand"
   apply default
   apply (simp add: Aheap_subst  Aheap_cong[OF Aexp_subst_restr])[1]
