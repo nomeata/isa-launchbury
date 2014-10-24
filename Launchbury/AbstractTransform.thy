@@ -2,7 +2,6 @@ theory AbstractTransform
 imports Terms Up TransformTools
 begin
 
-
 locale AbstractAnalProp =
   fixes PropApp :: "'a \<Rightarrow> 'a::cont_pt"
   fixes PropLam :: "'a \<Rightarrow> 'a"
