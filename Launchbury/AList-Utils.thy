@@ -116,6 +116,10 @@ lemma map_ran_delete:
   "map_ran f (delete x \<Gamma>) = delete x (map_ran f \<Gamma>)"
   by (induction \<Gamma>)  auto
 
+lemma map_ran_restrictA:
+  "map_ran f (restrictA V \<Gamma>) = restrictA V (map_ran f \<Gamma>)"
+  by (induction \<Gamma>)  auto
+
 lemma map_ran_append:
   "map_ran f (\<Gamma>@\<Delta>) = map_ran f \<Gamma> @ map_ran f \<Delta>"
   by (induction \<Gamma>)  auto

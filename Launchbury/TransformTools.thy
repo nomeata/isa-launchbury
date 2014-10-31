@@ -42,6 +42,10 @@ lemma map_transform_delete:
   "map_transform t ae (delete x \<Gamma>) = delete x (map_transform t ae \<Gamma>)"
   unfolding map_transform_def by (simp add: map_ran_delete)
 
+lemma map_transform_restrA:
+  "map_transform t ae (restrictA S \<Gamma>) = restrictA S (map_transform t ae \<Gamma>)"
+  unfolding map_transform_def by (auto simp add: map_ran_restrictA)
+
 lemma delete_map_transform_env_delete:
   "delete x (map_transform t (env_delete x ae) \<Gamma>) = delete x (map_transform t ae \<Gamma>)"
   unfolding map_transform_def by (induction \<Gamma>) auto

@@ -2,21 +2,13 @@ theory ArityCorrectSestoft
 imports ArityCorrect Sestoft
 begin
 
-fun Astack :: "AEnv \<Rightarrow> stack \<Rightarrow> Arity"
-  where "Astack ae [] = 0"
-      | "Astack ae (Arg x # S) = inc\<cdot>(Astack ae S)"
-      | "Astack ae (Upd x # S) = (case ae x of Iup a \<Rightarrow> a)"
-      | "Astack ae (Dummy x # S) = 0"
+fun Astack :: "stack \<Rightarrow> Arity"
+  where "Astack [] = 0"
+      | "Astack (Arg x # S) = inc\<cdot>(Astack S)"
+      | "Astack (Upd x # S) = 0"
+      | "Astack (Dummy x # S) = 0"
 
-lemma Astack_cong: "(\<And> x. x \<in> upds S \<Longrightarrow> ae x = ae' x) \<Longrightarrow>  Astack ae S = Astack ae' S"
-  by (induction S  rule: Astack.induct) auto
-
-lemma Astack_Upd_simps[simp]:
-  "ae x = up\<cdot>u \<Longrightarrow> Astack ae (Upd x # S) = u"
-  by (simp add: up_def cont_Iup)
-declare Astack.simps(3)[simp del]
-
-
+(*
 fun AEstack :: "AEnv \<Rightarrow> stack \<Rightarrow> AEnv"
   where "AEstack ae [] = \<bottom>"
       | "AEstack ae (Arg x # S) = AE_singleton x \<cdot> (up\<cdot>0) \<squnion> AEstack ae S"
@@ -25,6 +17,7 @@ fun AEstack :: "AEnv \<Rightarrow> stack \<Rightarrow> AEnv"
 
 lemma AEstack_cong: "(\<And> x. x \<in> upds S \<Longrightarrow> ae x = ae' x) \<Longrightarrow> AEstack ae S = AEstack ae' S"
   by (induction S  rule: upds.induct) (auto cong: Astack_cong)
+*)
 
 context CorrectArityAnalysisLet
 begin
@@ -34,7 +27,7 @@ inductive AE_consistent :: "AEnv \<Rightarrow> conf \<Rightarrow> bool" where
   "edom ae \<subseteq> domA \<Gamma> \<union> upds S
   \<Longrightarrow> upds S \<subseteq> edom ae
 (*  \<Longrightarrow> AEstack ae S \<sqsubseteq> ae  *)
-  \<Longrightarrow> Aexp e \<cdot> (Astack ae S) \<sqsubseteq> ae
+  \<Longrightarrow> Aexp e \<cdot> (Astack S) \<sqsubseteq> ae
   \<Longrightarrow> (\<And> x e. map_of \<Gamma> x = Some e \<Longrightarrow> Aexp' e \<cdot> (ae x) \<sqsubseteq> ae)
   \<Longrightarrow> (\<And> x e. map_of \<Gamma> x = Some e \<Longrightarrow> \<not> isLam e \<Longrightarrow> ae x = up\<cdot>0)
   \<Longrightarrow> ae ` ap S \<subseteq> {up\<cdot>0}
@@ -84,10 +77,10 @@ case (thunk \<Gamma> x e S)
   have "x \<in> domA \<Gamma>" by (metis domI dom_map_of_conv_domA)
   hence *: "bound (delete x \<Gamma>, e, Upd x # S) - bound (\<Gamma>, Var x, S) = {}" using `x \<in> domA \<Gamma>` by auto
 
-  from thunk have "Aexp (Var x)\<cdot>(Astack ae S) \<sqsubseteq> ae" by auto
+  from thunk have "Aexp (Var x)\<cdot>(Astack S) \<sqsubseteq> ae" by auto
   from below_trans[OF Aexp_Var fun_belowD[OF this] ]
-  have "up\<cdot>(Astack ae S) \<sqsubseteq> ae x".
-  then obtain u where "ae x = up\<cdot>u" and "Astack ae S \<sqsubseteq> u" by (cases "ae x") auto
+  have "up\<cdot>(Astack S) \<sqsubseteq> ae x".
+  then obtain u where "ae x = up\<cdot>u" and "Astack S \<sqsubseteq> u" by (cases "ae x") auto
   moreover
   hence "x \<in> edom ae" unfolding edom_def by auto
   ultimately
@@ -99,42 +92,40 @@ case (lamvar \<Gamma> x e S)
   have "x \<in> domA \<Gamma>" by (metis domI dom_map_of_conv_domA)
   hence *: "bound ((x, e) # delete x \<Gamma>, e, S) - bound (\<Gamma>, Var x, S)  = {}" using `x \<in> domA \<Gamma>` by auto
 
-    from lamvar have "Aexp (Var x)\<cdot>(Astack ae S) \<sqsubseteq> ae" by auto
+    from lamvar have "Aexp (Var x)\<cdot>(Astack S) \<sqsubseteq> ae" by auto
     from below_trans[OF Aexp_Var fun_belowD[OF this] ]
-    have "up\<cdot>(Astack ae S) \<sqsubseteq> ae x".
-    then obtain u where "ae x = up\<cdot>u" and "Astack ae S \<sqsubseteq> u" by (cases "ae x") auto
+    have "up\<cdot>(Astack S) \<sqsubseteq> ae x".
+    then obtain u where "ae x = up\<cdot>u" and "Astack S \<sqsubseteq> u" by (cases "ae x") auto
   
     from this(2)
-    have "Aexp e\<cdot>(Astack ae S) \<sqsubseteq> Aexp e\<cdot>u" by (rule monofun_cfun_arg)
+    have "Aexp e\<cdot>(Astack S) \<sqsubseteq> Aexp e\<cdot>u" by (rule monofun_cfun_arg)
     also have "\<dots> \<sqsubseteq> ae" using `ae x = up \<cdot> u` lamvar by fastforce
-    finally have "Aexp e\<cdot>(Astack ae S) \<sqsubseteq> ae" by this simp
+    finally have "Aexp e\<cdot>(Astack S) \<sqsubseteq> ae" by this simp
     hence "AE_consistent ae ((x, e) # delete x \<Gamma>, e, S)"
       using lamvar by(fastforce intro!: AE_consistentI  simp add: join_below_iff split:if_splits)
     thus ?case unfolding * by auto
 next
 case (var\<^sub>2 \<Gamma> x e S)
-  have "up\<cdot>(Astack ae S) \<sqsubseteq> ae x" using var\<^sub>2 by (auto simp add: join_below_iff)
-  then obtain u where "ae x = up \<cdot> u" and "Astack ae S \<sqsubseteq> u" by (cases "ae x") auto
+  have "up\<cdot>(Astack S) \<sqsubseteq> ae x" using var\<^sub>2 by (auto simp add: join_below_iff)
+  then obtain u where "ae x = up \<cdot> u" and "Astack S \<sqsubseteq> u" by (cases "ae x") auto
 
   from this(2)
-  have "Aexp e\<cdot>(Astack ae S) \<sqsubseteq> Aexp e\<cdot>u" by (rule monofun_cfun_arg)
+  have "Aexp e\<cdot>(Astack S) \<sqsubseteq> Aexp e\<cdot>u" by (rule monofun_cfun_arg)
   also have "\<dots> \<sqsubseteq> ae" using `ae x = up \<cdot> u` var\<^sub>2 by auto
-  finally have "Aexp e\<cdot>(Astack ae S) \<sqsubseteq> ae" by this simp
+  finally have "Aexp e\<cdot>(Astack S) \<sqsubseteq> ae" by this simp
   hence "AE_consistent ae ((x, e) # \<Gamma>, e, S)" using var\<^sub>2 `ae x = up \<cdot> u`
     by (fastforce intro!: AE_consistentI  simp add: join_below_iff split:if_splits)+
   thus ?case by auto
 next
 case (let\<^sub>1 \<Delta> \<Gamma> e S)
-  let ?ae = "Aheap \<Delta> \<cdot> (Aexp e\<cdot>(Astack ae S))"
+  let ?ae = "Aheap \<Delta> \<cdot> (Aexp e\<cdot>(Astack S))"
   have new: "bound (\<Delta> @ \<Gamma>, e, S) - bound (\<Gamma>, Terms.Let \<Delta> e, S) = domA \<Delta>"
     using fresh_distinct[OF let\<^sub>1(1)] fresh_distinct_fv[OF let\<^sub>1(2)]
     by (auto dest: set_mp[OF ups_fv_subset])
 
   have "domA \<Delta> \<inter> upds S = {}" using fresh_distinct_fv[OF let\<^sub>1(2)] by (auto dest: set_mp[OF ups_fv_subset])
-  hence *: "\<And> x. x \<in> upds S \<Longrightarrow> x \<notin> edom (Aheap \<Delta>\<cdot>(Aexp e\<cdot>(Astack ae S)))"
-    using edom_Aheap[where \<Gamma> = \<Delta> and ae = "Aexp e\<cdot>(Astack ae S)"] by auto
-  hence stack: "Astack (Aheap \<Delta>\<cdot>(Aexp e\<cdot>(Astack ae S)) \<squnion> ae) S = Astack ae S"
-    by (auto simp add: edomIff cong: Astack_cong)
+  hence *: "\<And> x. x \<in> upds S \<Longrightarrow> x \<notin> edom (Aheap \<Delta>\<cdot>(Aexp e\<cdot>(Astack S)))"
+    using edom_Aheap[where \<Gamma> = \<Delta> and ae = "Aexp e\<cdot>(Astack S)"] by auto
 
   have "edom ae \<subseteq> - domA \<Delta>" using let\<^sub>1(3)
     using fresh_distinct[OF let\<^sub>1(1)] fresh_distinct_fv[OF let\<^sub>1(2)]
@@ -155,12 +146,12 @@ case (let\<^sub>1 \<Delta> \<Gamma> e S)
        (metis "join_above1" below_refl box_below join_comm)
   moreover *)
   {
-  have "Aexp e\<cdot>(Astack ae S) \<sqsubseteq> (Aexp e\<cdot>(Astack ae S) f|` domA \<Delta>) \<squnion> (Aexp e\<cdot>(Astack ae S) f|` (- domA \<Delta>))"
+  have "Aexp e\<cdot>(Astack S) \<sqsubseteq> (Aexp e\<cdot>(Astack S) f|` domA \<Delta>) \<squnion> (Aexp e\<cdot>(Astack S) f|` (- domA \<Delta>))"
     by (rule eq_imp_below[OF join_env_restr_UNIV[symmetric]]) auto
-  also have "Aexp e\<cdot>(Astack ae S) f|` (- domA \<Delta>) \<sqsubseteq> Aexp (Terms.Let \<Delta> e)\<cdot>(Astack ae S)" by (rule Aexp_Let_above)
+  also have "Aexp e\<cdot>(Astack S) f|` (- domA \<Delta>) \<sqsubseteq> Aexp (Terms.Let \<Delta> e)\<cdot>(Astack S)" by (rule Aexp_Let_above)
   also have "\<dots> \<sqsubseteq> ae" by (rule AE_consistentE[OF let\<^sub>1(3)])
-  also have "Aexp e\<cdot>(Astack ae S) f|` domA \<Delta> \<sqsubseteq> ?ae" by (rule Aheap_above_arg)
-  finally have "Aexp e\<cdot>(Astack ae S) \<sqsubseteq> ?ae \<squnion> ae" by this auto
+  also have "Aexp e\<cdot>(Astack S) f|` domA \<Delta> \<sqsubseteq> ?ae" by (rule Aheap_above_arg)
+  finally have "Aexp e\<cdot>(Astack S) \<sqsubseteq> ?ae \<squnion> ae" by this auto
   }
   moreover
   { fix x e'
@@ -175,9 +166,9 @@ case (let\<^sub>1 \<Delta> \<Gamma> e S)
     have "Aexp' e'\<cdot>(?ae x) f|` domA \<Delta> \<sqsubseteq> ?ae" by (rule Aheap_heap)
     also
     from `map_of \<Delta> x = Some e'`
-    have "Aexp' e'\<cdot>(?ae x) f|` (- domA \<Delta>) \<sqsubseteq> Aexp (Terms.Let \<Delta> e)\<cdot>(Astack ae S)" by (rule Aheap_heap2)
+    have "Aexp' e'\<cdot>(?ae x) f|` (- domA \<Delta>) \<sqsubseteq> Aexp (Terms.Let \<Delta> e)\<cdot>(Astack S)" by (rule Aheap_heap2)
     also
-    have "Aexp (Terms.Let \<Delta> e)\<cdot>(Astack ae S) \<sqsubseteq> ae"  by (rule AE_consistentE[OF let\<^sub>1(3)])
+    have "Aexp (Terms.Let \<Delta> e)\<cdot>(Astack S) \<sqsubseteq> ae"  by (rule AE_consistentE[OF let\<^sub>1(3)])
     finally
     have "Aexp' e'\<cdot>((?ae \<squnion> ae) x) \<sqsubseteq> ?ae \<squnion> ae" by this auto
   }
@@ -211,7 +202,7 @@ case (let\<^sub>1 \<Delta> \<Gamma> e S)
   have "(?ae \<squnion> ae) ` ap S \<subseteq> {up \<cdot> 0}" using let\<^sub>1 * by fastforce
   ultimately
   have "AE_consistent (?ae \<squnion> ae) (\<Delta> @ \<Gamma>, e, S) "
-    by (auto intro!: AE_consistentI simp add: stack)
+    by (auto intro!: AE_consistentI)
   }
   ultimately
   show ?case unfolding new by auto
