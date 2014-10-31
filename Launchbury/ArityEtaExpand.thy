@@ -36,8 +36,9 @@ begin
     "\<lambda> b . fst b"
     "\<lambda> b . snd b"
     "Aeta_expand"
+    "\<lambda> b . snd b"
   apply default
-  apply (((rule eq_reflection)?, perm_simp, rule)+)[6]
+  apply (((rule eq_reflection)?, perm_simp, rule)+)[7]
   done
 
   sublocale AbstractTransformBoundSubst
@@ -47,10 +48,11 @@ begin
     "\<lambda> b . fst b"
     "\<lambda> b . snd b"
     "Aeta_expand"
+    "\<lambda> b . snd b"
   apply default
   apply (simp add: Aheap_subst  Aheap_cong[OF Aexp_subst_restr])[1]
   apply (rule subst_Aeta_expand)  
-   done
+  done
 
   abbreviation Atransform where "Atransform \<equiv> transform"
 
@@ -140,17 +142,14 @@ case (app\<^sub>2 \<Gamma> y e x S)
     apply (rule below_trans[OF monofun_cfun_fun[OF Aexp_subst_App_Lam]])
     apply (auto simp add: Aexp_App Aexp_Lam join_below_iff)
     done
-  hence "consistent (ae, pred \<cdot> a) (\<Gamma>, e[y::=x], S)"  using app\<^sub>2
-    apply  (auto intro!:  below_trans[OF monofun_cfun_fun[OF Aexp_subst_App_Lam]] simp add: Aexp_App join_below_iff monofun_cfun_arg)
-    apply (metis image_eqI singletonD subsetCE)+
-    done
+  hence "consistent (ae, pred \<cdot> a) (\<Gamma>, e[y::=x], S)"  using app\<^sub>2  by fastforce
   moreover
   have "conf_transform (ae, a) (\<Gamma>, Lam [y]. e, Arg x # S) \<Rightarrow> conf_transform (ae, pred \<cdot> a) (\<Gamma>, e[y::=x], S)" by (simp add: subst_transform[symmetric]) rule
   ultimately
   show ?case by (blast del: consistentI consistentE)
 next
 case (thunk \<Gamma> x e S)
-  hence "consistent (ae, 0) (delete x \<Gamma>, e, Upd x # S)" using thunk by (fastforce simp add: join_below_iff)
+  have "consistent (ae, 0) (delete x \<Gamma>, e, Upd x # S)" using thunk by (fastforce simp add: join_below_iff)
   moreover
   {
   from thunk

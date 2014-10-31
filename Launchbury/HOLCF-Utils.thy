@@ -102,6 +102,26 @@ next
   qed
 qed
 
+fun up2option :: "'a::cpo\<^sub>\<bottom> \<Rightarrow> 'a option"
+  where "up2option Ibottom = None"
+  |     "up2option (Iup a) = Some a"
+
+lemma up2option_simps[simp]:
+  "up2option \<bottom> = None"
+  "up2option (up\<cdot>x) = Some x"
+  unfolding up_def by (simp_all add: cont_Iup inst_up_pcpo)
+
+fun option2up :: "'a option \<Rightarrow> 'a::cpo\<^sub>\<bottom>"
+  where "option2up None = \<bottom>"
+  |     "option2up (Some a) = up\<cdot>a"
+
+lemma option2up_up2option[simp]:
+  "option2up (up2option x) = x"
+  by (cases x) auto
+lemma up2option_option2up[simp]:
+  "up2option (option2up x) = x"
+  by (cases x) auto
+
 subsubsection {* Composition of fun and cfun *}
 
 lemma cont2cont_comp [simp, cont2cont]:

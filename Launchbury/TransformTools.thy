@@ -1,5 +1,5 @@
 theory TransformTools
-imports "Nominal-HOLCF" Terms Substitution
+imports "Nominal-HOLCF" Terms Substitution Env
 begin
 
 default_sort type
@@ -41,6 +41,10 @@ lemma length_map_transform[simp]: "length (map_transform t ae xs) = length xs"
 lemma map_transform_delete:
   "map_transform t ae (delete x \<Gamma>) = delete x (map_transform t ae \<Gamma>)"
   unfolding map_transform_def by (simp add: map_ran_delete)
+
+lemma delete_map_transform_env_delete:
+  "delete x (map_transform t (env_delete x ae) \<Gamma>) = delete x (map_transform t ae \<Gamma>)"
+  unfolding map_transform_def by (induction \<Gamma>) auto
 
 lemma map_transform_Nil:
   "map_transform t ae [] = []"
@@ -87,7 +91,7 @@ lemma subst_map_transform:
   done
 
 locale supp_bounded_transform = 
-  fixes trans :: "'a::pure_cont_pt \<Rightarrow> exp \<Rightarrow> exp"
+  fixes trans :: "'a::cont_pt \<Rightarrow> exp \<Rightarrow> exp"
   assumes supp_trans: "supp (trans a e) \<subseteq> supp e"
 begin
   lemma supp_lift_transform: "supp (lift_transform trans a e) \<subseteq> supp e"

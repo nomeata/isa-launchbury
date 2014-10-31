@@ -23,6 +23,11 @@ lemma lookup_not_edom: "x \<notin> edom m \<Longrightarrow> m x = \<bottom>"  by
 
 lemma lookup_edom[simp]: "m x \<noteq> \<bottom> \<Longrightarrow> x \<in> edom m"  by (auto iff:edomIff)
 
+lemma edom_mono: "x \<sqsubseteq> y \<Longrightarrow> edom x \<subseteq> edom y"
+  unfolding edom_def
+  by auto (metis below_bottom_iff fun_belowD)
+  
+
 lemma edom_subset_adm[simp]:
   "adm (\<lambda>ae'. edom ae' \<subseteq> S)"
   apply (rule admI)
@@ -192,6 +197,9 @@ lemma env_restr_env_delete_other[simp]: "x \<notin> S \<Longrightarrow> env_dele
 
 lemma env_delete_restr: "env_delete x m = m f|` (-{x})"
   by (auto simp add: lookup_env_restr_eq)
+
+lemma below_env_deleteI: "f x = \<bottom> \<Longrightarrow> f \<sqsubseteq> g \<Longrightarrow> f \<sqsubseteq> env_delete x g"
+  by (metis env_delete_def env_delete_restr env_restr_mono fun_upd_triv)
 
 subsubsection {* Merging of two functions *}
 

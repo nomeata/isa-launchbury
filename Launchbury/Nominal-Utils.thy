@@ -127,6 +127,13 @@ lemma case_option_eqvt[eqvt]:
   "\<pi> \<bullet> case_option d f x = case_option (\<pi> \<bullet> d) (\<pi> \<bullet> f) (\<pi> \<bullet> x)"
   by(cases x)(simp_all)
 
+lemma supp_option_eqvt:
+  "supp (case_option d f x) \<subseteq> supp d \<union> supp f \<union> supp x"
+  apply (cases x)
+  apply (auto simp add: supp_Some )
+  apply (metis (mono_tags) Un_iff subsetCE supp_fun_app)
+  done
+
 lemma funpow_eqvt[simp,eqvt]:
   "\<pi> \<bullet> ((f :: 'a \<Rightarrow> 'a::pt) ^^ n) = (\<pi> \<bullet> f) ^^ (\<pi> \<bullet> n)"
  apply (induct n)

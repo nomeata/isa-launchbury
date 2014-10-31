@@ -228,7 +228,42 @@ lemma fup_eqvt[eqvt]: "\<pi> \<bullet> fup = fup"
   apply (simp add: permute_self)
   done
 
-subsubsection {* Instance for @{type u} *}
+subsubsection {* Instance for @{type lift} *}
+
+instantiation lift :: (pt) pt
+begin
+  definition "p \<bullet> (x :: 'a lift) = case_lift \<bottom> (\<lambda> x. Def (p \<bullet> x)) x"
+  instance
+  apply default
+  apply (case_tac x) apply (auto simp add: permute_lift_def)
+  apply (case_tac x) apply (auto simp add: permute_lift_def)
+  done
+end
+
+instance lift :: (pt) cont_pt
+proof default
+  fix p
+  (* Fighting eta contraction... *)
+  have "permute p = (\<lambda> x. case_lift \<bottom> (\<lambda> x. Def (p \<bullet> x)) (x::'a lift))" 
+    by (rule ext, rule permute_lift_def)
+  moreover have "cont (\<lambda> x. case_lift \<bottom> (\<lambda> x. Def (p \<bullet> x)) (x::'a lift))" by simp
+  ultimately show "cont (permute p :: 'a lift \<Rightarrow> 'a lift)" by simp
+qed
+
+instance lift :: (pt) pcpo_pt by default
+
+instance lift :: (pure) pure
+  apply default
+  apply (case_tac x) apply (auto simp add: permute_lift_def permute_pure)
+  done  
+
+lemma Def_eqvt[eqvt]: "\<pi> \<bullet> (Def x) = Def (\<pi> \<bullet> x)"
+  by (simp add: permute_lift_def)
+
+lemma case_lift_eqvt[eqvt]: "\<pi> \<bullet> case_lift d f x = case_lift (\<pi> \<bullet> d) (\<pi> \<bullet> f) (\<pi> \<bullet> x)"
+  by (cases x) (auto simp add: permute_self)
+
+subsubsection {* Instance for @{type prod} *}
 
 instance prod :: (cont_pt, cont_pt) cont_pt
 proof default

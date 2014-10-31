@@ -114,4 +114,5 @@ lemma C_Cpred_id[simp]:
   "r \<noteq> \<bottom> \<Longrightarrow> C\<cdot>(Cpred\<cdot>r) = r"
   by (cases r) auto
 
+
 end
