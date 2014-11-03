@@ -50,4 +50,14 @@ lemma edom_join[simp]: "edom (f \<squnion> (g::('a::type \<Rightarrow> 'b::{Fini
 lemma env_delete_join[simp]: "env_delete x (f \<squnion> (g::('a::type \<Rightarrow> 'b::{Finite_Join_cpo,pcpo}))) = env_delete x f \<squnion> env_delete x g"
   by (metis env_delete_def fun_upd_meet_simp)
 
+lemma env_restr_join:
+  fixes m1 m2 :: "'a::type \<Rightarrow> 'b::{Finite_Join_cpo,pcpo}"
+  shows "(m1 \<squnion> m2) f|` S = (m1 f|` S) \<squnion> (m2 f|` S )"
+  by (auto simp add: env_restr_def)
+
+lemma join_env_restr_UNIV:
+  fixes m :: "'a::type \<Rightarrow> 'b::{Finite_Join_cpo,pcpo}"
+  shows "S1 \<union> S2 = UNIV \<Longrightarrow> (m f|` S1) \<squnion> (m f|` S2) = m"
+  by (fastforce simp add: env_restr_def)
+
 end

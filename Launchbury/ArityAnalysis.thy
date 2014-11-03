@@ -14,16 +14,6 @@ lemma Aexp'_simps[simp]:
   "Aexp' e \<cdot> (up\<cdot>n) = Aexp e \<cdot> n"
   unfolding Aexp'_def by simp_all
 
-lemma env_restr_join:
-  fixes m1 m2 :: "'a::type \<Rightarrow> 'b::{Finite_Join_cpo,pcpo}"
-  shows "(m1 \<squnion> m2) f|` S = (m1 f|` S) \<squnion> (m2 f|` S )"
-  by (auto simp add: env_restr_def)
-
-lemma join_env_restr_UNIV:
-  fixes m :: "'a::type \<Rightarrow> 'b::{Finite_Join_cpo,pcpo}"
-  shows "S1 \<union> S2 = UNIV \<Longrightarrow> (m f|` S1) \<squnion> (m f|` S2) = m"
-  by (fastforce simp add: env_restr_def)
-
 definition inc_bot :: "Arity\<^sub>\<bottom> \<rightarrow> Arity\<^sub>\<bottom>" ("inc\<^sub>\<bottom>") where "inc_bot = fup\<cdot>(up oo inc)"
 
 lemma inc_bot_simps[simp]:

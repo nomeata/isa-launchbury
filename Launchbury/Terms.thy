@@ -483,6 +483,15 @@ fun thunks :: "heap \<Rightarrow> var set" where
 lemma thunks_domA: "thunks \<Gamma> \<subseteq> domA \<Gamma>"
   by (induction \<Gamma> rule:thunks.induct) auto
 
+lemma thunks_append[simp]: "thunks (\<Delta>@\<Gamma>) = thunks \<Delta> \<union> thunks \<Gamma>"
+  by (induction \<Delta> rule:thunks.induct) auto
+
+lemma thunks_delete[simp]: "thunks (delete x \<Gamma>) = thunks \<Gamma> - {x}"
+  by (induction \<Gamma> rule:thunks.induct) auto
+
+lemma thunksI[intro]: "map_of \<Gamma> x = Some e \<Longrightarrow> \<not> isLam e \<Longrightarrow> x \<in> thunks \<Gamma>"
+  by (induction \<Gamma> rule:thunks.induct) (auto split:if_splits)
+   
 
 lemma thunks_eqvt[eqvt]:
   "\<pi> \<bullet> thunks \<Gamma> = thunks (\<pi> \<bullet> \<Gamma>)"
