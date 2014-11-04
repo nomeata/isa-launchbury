@@ -113,6 +113,26 @@ proof default
   done
 qed
 
+class is_unit = fixes unit assumes is_unit: "\<And> x. x = unit"
+
+instantiation unit :: is_unit
+begin
+  definition "unit \<equiv> ()"
+instance by default auto
+end
+
+instance lift :: (is_unit) Finite_Join_cpo
+proof default
+  fix x y :: "'a lift"
+  show "compatible x y"
+  apply (cases x, simp)
+  apply (cases y, simp)
+  apply (simp add: all_compatible)
+  apply (subst is_unit)
+  apply (subst is_unit) back
+  apply simp
+  done
+qed
 
 instance prod :: (Finite_Join_cpo, Finite_Join_cpo) Finite_Join_cpo
 proof default

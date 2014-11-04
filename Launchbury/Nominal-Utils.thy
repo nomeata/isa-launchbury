@@ -152,6 +152,10 @@ lemma restrict_eqvt[eqvt]:
   "\<pi> \<bullet> AList.restrict S \<Gamma> = AList.restrict (\<pi> \<bullet> S) (\<pi> \<bullet> \<Gamma>)"
 unfolding restrict_eq by perm_simp rule
 
+lemma supp_restrict:
+  "supp (AList.restrict S \<Gamma>) \<subseteq> supp \<Gamma>"
+ by (induction \<Gamma>) (auto simp add: supp_Pair supp_Cons)
+
 lemma clearjunk_eqvt[eqvt]:
   "\<pi> \<bullet> AList.clearjunk \<Gamma> = AList.clearjunk (\<pi> \<bullet> \<Gamma>)"
   by (induction \<Gamma> rule: clearjunk.induct) auto

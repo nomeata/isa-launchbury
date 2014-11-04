@@ -9,6 +9,9 @@ abbreviation update where "update \<equiv> AList.update"
 abbreviation restrictA where "restrictA \<equiv> AList.restrict"
 abbreviation clearjunk where "clearjunk \<equiv> AList.clearjunk"
 
+lemma restrictA_append: "restrictA S (a@b) = restrictA S a @ restrictA S b"
+  unfolding restrict_eq by (rule filter_append)
+
 subsubsection {* The domain of an associative list *}
 
 definition domA
@@ -53,6 +56,13 @@ lemma domA_clearjunk[simp]: "domA (clearjunk \<Gamma>) = domA \<Gamma>"
 
 lemma the_map_option_domA[simp]: "x \<in> domA \<Gamma> \<Longrightarrow> the (map_option f (map_of \<Gamma> x)) = f (the (map_of \<Gamma> x))"
   by (induction \<Gamma>) auto
+
+lemma restrictA_noop: "domA \<Gamma> \<subseteq> S \<Longrightarrow> restrictA S \<Gamma> = \<Gamma>"
+  unfolding restrict_eq by (induction \<Gamma>) auto
+
+lemma restrictA_cong:
+  "(\<And>x. x \<in> domA m1 \<Longrightarrow> x \<in> V \<longleftrightarrow> x \<in> V') \<Longrightarrow> m1 = m2 \<Longrightarrow> restrictA V m1 = restrictA V' m2"
+  unfolding restrict_eq by (induction m1 arbitrary: m2) auto
 
 subsubsection {* Other lemmas about associative lists *}
 

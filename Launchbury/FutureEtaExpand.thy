@@ -26,6 +26,7 @@ lemma two_cases[case_names many once none]:
 definition abstractPath :: "var list set \<Rightarrow> var \<Rightarrow> two"
   where "abstractPath ps v = undefined"
 
+(*
 text {* Expands only if it is safe to do so, i.e. either one-shot or already a function. *}
 
 fun rhsExpand :: "(Arity \<times> one) \<Rightarrow> exp \<Rightarrow> exp"
@@ -34,7 +35,7 @@ fun rhsExpand :: "(Arity \<times> one) \<Rightarrow> exp \<Rightarrow> exp"
 interpretation supp_bounded_transform rhsExpand sorry
 
 lemma rhsExpand[eqvt]: "\<pi> \<bullet> rhsExpand = rhsExpand" sorry
-
+*)
 
 fun Astack :: "stack \<Rightarrow> Arity"
   where "Astack [] = 0"
@@ -48,19 +49,30 @@ fun upds_list :: "stack \<Rightarrow> var list" where
 | "upds_list (Arg x # S) = upds_list S"
 | "upds_list (Dummy x # S) = upds_list S"
 
-fun heap_upds_ok where "heap_upds_ok (\<Gamma>,S) = distinct (map fst \<Gamma> @ upds_list S)"
+lemma set_upds_list[simp]:
+  "set (upds_list S) = upds S"
+  by (induction S rule: upds_list.induct) auto
+
+fun heap_upds_ok where "heap_upds_ok (\<Gamma>,S) \<longleftrightarrow> domA \<Gamma> \<inter> upds S = {} \<and> distinct (upds_list S)"
+
+lemma heap_upds_okE: "heap_upds_ok (\<Gamma>, S) \<Longrightarrow> x \<in> domA \<Gamma> \<Longrightarrow> x \<notin> upds S"
+  by auto
 
 lemma heap_upds_ok_app1: "heap_upds_ok (\<Gamma>, S) \<Longrightarrow> heap_upds_ok (\<Gamma>,Arg x # S)" by auto
 lemma heap_upds_ok_app2: "heap_upds_ok (\<Gamma>, Arg x # S) \<Longrightarrow> heap_upds_ok (\<Gamma>, S)" by auto
 
+lemma heap_upds_ok_append:
+  assumes "domA \<Delta> \<inter> domA \<Gamma> = {}"
+  assumes "domA \<Delta> \<inter> upds S = {}"
+  assumes "heap_upds_ok (\<Gamma>,S)"
+  shows "heap_upds_ok (\<Delta>@\<Gamma>, S)"
+  using assms
+  unfolding heap_upds_ok.simps
+  by auto
+
 lemma heap_upds_ok_to_stack:
   "x \<in> domA \<Gamma> \<Longrightarrow> heap_upds_ok (\<Gamma>, S) \<Longrightarrow> heap_upds_ok (delete x \<Gamma>, Upd x #S)"
-  apply (auto)
-  apply (metis distinct_delete)
-  apply (metis disjoint_iff_not_equal domA_def)
-  apply (metis delete_notin_dom domA_def domA_from_set)
-  apply (auto dest!:set_mp[OF set_delete_subset])
-  done
+  by (auto)
 
 lemma heap_upds_ok_to_heap:
   "heap_upds_ok (\<Gamma>, Upd x # S) \<Longrightarrow> heap_upds_ok ((x,e) # \<Gamma>, S)"
@@ -104,6 +116,10 @@ lemma restr_stack_cong:
 lemma upds_restr_stack[simp]: "upds (restr_stack V S) = upds S \<inter> V"
   by (induction V S rule: restr_stack.induct) auto
 
+lemma fresh_star_restict_stack[intro]:
+  "a \<sharp>* S \<Longrightarrow> a \<sharp>* restr_stack V S"
+  by (induction V S rule: restr_stack.induct) (auto simp add: fresh_star_Cons)
+
 definition fup_fst :: "(var \<Rightarrow> (Arity \<times> one)\<^sub>\<bottom>) \<Rightarrow> AEnv"
     where "fup_fst e x = fup\<cdot>(\<Lambda> p. up\<cdot>(cfst\<cdot>p))\<cdot>(e x)"
 
@@ -122,6 +138,8 @@ locale FutureAnalysis =
   assumes aExp_App: "aExp (App e x) \<cdot> n = aExp e \<cdot>(inc\<cdot>n) \<squnion> AE_singleton x \<cdot> (up\<cdot>0)"
   assumes aExp_subst_App_Lam: "aExp (e[y::=x]) \<sqsubseteq> aExp (App (Lam [y]. e) x)"
   assumes aExp_Lam: "aExp (Lam [y]. e) \<cdot> n = env_delete y (aExp e \<cdot>(pred\<cdot>n))"
+  assumes aExp_subst_restr: "x \<notin> S \<Longrightarrow> y \<notin> S \<Longrightarrow> (aExp e[x::=y] \<cdot> a) f|` S = (aExp e\<cdot>a) f|` S"
+
 
   assumes aHeap_eqvt[eqvt]: "\<pi> \<bullet> aHeap = aHeap"
   assumes edom_aHeap: "edom (aHeap \<Gamma> \<cdot> ae) \<subseteq> domA \<Gamma>"
@@ -129,14 +147,13 @@ locale FutureAnalysis =
   assumes aHeap_heap3: "x \<in> thunks \<Gamma> \<Longrightarrow> many \<sqsubseteq> (fHeap \<Gamma>\<cdot>ae) x \<Longrightarrow> (aHeap \<Gamma>\<cdot>ae) x = up\<cdot>0"
   assumes aHeap_above_arg: "fst ae f|` domA \<Gamma> \<sqsubseteq> aHeap \<Gamma>\<cdot>ae"
   assumes aHeap_subst: "x \<notin> domA \<Gamma> \<Longrightarrow> y \<notin> domA \<Gamma> \<Longrightarrow> aHeap \<Gamma>[x::h=y] = aHeap \<Gamma>"
-  (*
-  assumes aHeap_cong: "ae f|` domA \<Gamma> = ae' f|` domA \<Gamma> \<Longrightarrow> aHeap \<Gamma>\<cdot>ae = aHeap \<Gamma>\<cdot>ae'"
-  *)
+  assumes aHeap_cong: "fst ae f|` domA \<Gamma> = fst ae' f|` domA \<Gamma> \<Longrightarrow> restrict_future (domA \<Gamma>) ` snd ae = restrict_future (domA \<Gamma>) ` snd ae' \<Longrightarrow> aHeap \<Gamma>\<cdot>ae = aHeap \<Gamma>\<cdot>ae'"
   assumes aHeap_heap2: "map_of \<Gamma> x = Some e' \<Longrightarrow> fup\<cdot>(aExp e')\<cdot>((aHeap \<Gamma>\<cdot>(aExp e\<cdot>a, fExp e\<cdot>a)) x) f|` (- domA \<Gamma>) \<sqsubseteq>  aExp (Let \<Gamma> e)\<cdot>a"
   assumes aExp_Let_above: "aExp e\<cdot>a f|` (- domA \<Gamma>) \<sqsubseteq> aExp (Let \<Gamma> e)\<cdot>a"
 
+  assumes fExp_subst_restr: "x \<notin> S \<Longrightarrow> y \<notin> S \<Longrightarrow> restrict_future S ` (fExp e[x::=y] \<cdot> a) = restrict_future S ` (fExp e\<cdot>a)"
 
-  assumes fExp_App: "fExp (App e x)\<cdot>n = may_call x (fExp e \<cdot>(inc\<cdot>n))"
+  assumes edom_fHeap: "edom (fHeap \<Gamma> \<cdot> ae) \<subseteq> domA \<Gamma>"
 
   assumes aExp[eqvt]: "\<pi> \<bullet> aExp = aExp"
   assumes fExp[eqvt]: "\<pi> \<bullet> fExp = fExp"
@@ -164,13 +181,17 @@ begin
     "Aeta_expand"
     "snd"
   apply default
-  (*
-  apply (simp add: Aheap_subst  Aheap_cong[OF Aexp_subst_restr])[1]
+  apply (simp add: aHeap_subst, rule aHeap_cong, simp, erule (1) aExp_subst_restr, simp, erule (1) fExp_subst_restr)[1]
   apply (rule subst_Aeta_expand)
-  *)
-  sorry
+  done
 
   abbreviation ccTransform where "ccTransform \<equiv> transform"
+
+  lemma supp_transform: "supp (transform a e) \<subseteq> supp e"
+    by (induction rule: transform.induct)
+       (auto simp add: exp_assn.supp Let_supp dest!: set_mp[OF supp_map_transform] set_mp[OF supp_map_transform_step] )
+  interpretation supp_bounded_transform transform
+    by default (auto simp add: fresh_def supp_transform) 
 
   type_synonym tstate = "(AEnv \<times> (var \<Rightarrow> two) \<times> Arity)"
 
@@ -186,7 +207,7 @@ begin
 
   fun conf_transform :: "tstate \<Rightarrow> conf \<Rightarrow> conf"
   where "conf_transform (ae, ce,  a) (\<Gamma>, e, S) =
-    (restrictA (edom ae) (map_transform rhsExpand (env_u_com ae ce) (map_transform ccTransform ae \<Gamma>)), 
+    (restrictA (edom ae) (map_transform Aeta_expand ae (map_transform ccTransform ae \<Gamma>)), 
      ccTransform a e,
      restr_stack (edom ae) S)"
 
@@ -244,7 +265,7 @@ begin
   case (app\<^sub>1 \<Gamma> e x S)
     have " prognosis ae (inc\<cdot>a) (\<Gamma>, e, Arg x # S) = prognosis ae a (\<Gamma>, App e x, S)" sorry
     with app\<^sub>1 have "consistent (ae, ce, inc\<cdot>a) (\<Gamma>, e, Arg x # S)"
-      by (auto simp add: join_below_iff fExp_App aExp_App)
+      by (auto simp add: join_below_iff aExp_App)
     moreover
     have "conf_transform (ae, ce, a) (\<Gamma>, App e x, S) \<Rightarrow>\<^sub>G conf_transform (ae, ce, inc\<cdot>a) (\<Gamma>, e, Arg x # S)"
       by simp rule
@@ -276,6 +297,7 @@ next
 case (thunk \<Gamma> x e S)
   hence "x \<in> thunks \<Gamma>" by auto
   hence [simp]: "x \<in> domA \<Gamma>" by (rule set_mp[OF thunks_domA])
+  hence "x \<notin> upds S" using thunk by (auto elim!: heap_upds_okE)
 
   from thunk have "aExp (Var x)\<cdot>a \<sqsubseteq> ae" by auto
   from below_trans[OF aExp_Var fun_belowD[OF this] ]
@@ -306,7 +328,7 @@ case (thunk \<Gamma> x e S)
     hence "prognosis ae a (\<Gamma>, Var x, S) x \<sqsubseteq> once"
       using once by (metis (mono_tags) fun_belowD)
     hence "x \<notin> ap S" sorry
-    moreover
+    
 
     have *: "prognosis (env_delete x ae) u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> prognosis ae a (\<Gamma>, Var x, S)"
       sorry
@@ -314,9 +336,8 @@ case (thunk \<Gamma> x e S)
     from `prognosis ae a (\<Gamma>, Var x, S) x \<sqsubseteq> once`
     have **:  "prognosis (env_delete x ae) u (delete x \<Gamma>, e, Upd x # S) x = \<bottom>" sorry
 
-    have "x \<notin> upds S" sorry
     hence [simp]: "restr_stack (edom ae - {x}) S = restr_stack (edom ae) S" 
-      by (auto intro: restr_stack_cong)
+      using `x \<notin> upds S` by (auto intro: restr_stack_cong)
   
     have "prognosis (env_delete x ae) u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> env_delete x ce"
       using ** below_trans[OF * `prognosis ae a (\<Gamma>, Var x, S) \<sqsubseteq> ce`]
@@ -359,16 +380,16 @@ case (thunk \<Gamma> x e S)
     
     {
     from  `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u` once
-    have "map_of (map_transform rhsExpand (env_u_com ae ce) (map_transform ccTransform ae \<Gamma>)) x = Some (Aeta_expand u (transform u e))"
+    have "map_of (map_transform Aeta_expand ae (map_transform ccTransform ae \<Gamma>)) x = Some (Aeta_expand u (transform u e))"
       by (simp add: map_of_map_transform)
     hence "conf_transform (ae, ce, a) (\<Gamma>, Var x, S) \<Rightarrow>\<^sub>G
-           (restrictA (edom ae) (delete x (map_transform rhsExpand (env_u_com ae ce) (map_transform ccTransform ae \<Gamma>))), Aeta_expand u (ccTransform u e), Upd x # restr_stack (edom ae) S)"
+           (restrictA (edom ae) (delete x (map_transform Aeta_expand ae (map_transform ccTransform ae \<Gamma>))), Aeta_expand u (ccTransform u e), Upd x # restr_stack (edom ae) S)"
         by (auto simp add: env_u_com_delete  map_transform_delete delete_map_transform_env_delete insert_absorb restr_delete_twist simp del: restr_delete)
     also
-    have "\<dots> \<Rightarrow>\<^sub>G\<^sup>* (restrictA (edom ae) (delete x (map_transform rhsExpand (env_u_com ae ce) (map_transform ccTransform ae \<Gamma>))), Aeta_expand u (ccTransform u e), restr_stack (edom ae) S)"
+    have "\<dots> \<Rightarrow>\<^sub>G\<^sup>* (restrictA (edom ae) (delete x (map_transform Aeta_expand ae (map_transform ccTransform ae \<Gamma>))), Aeta_expand u (ccTransform u e), restr_stack (edom ae) S)"
       by (rule r_into_rtranclp, rule)
     also
-    have "\<dots> \<Rightarrow>\<^sub>G\<^sup>* (restrictA (edom ae)  (delete x (map_transform rhsExpand (env_u_com ae ce) (map_transform ccTransform ae \<Gamma>))), ccTransform u e, restr_stack (edom ae) S)"
+    have "\<dots> \<Rightarrow>\<^sub>G\<^sup>* (restrictA (edom ae)  (delete x (map_transform Aeta_expand ae (map_transform ccTransform ae \<Gamma>))), ccTransform u e, restr_stack (edom ae) S)"
       by (intro normal_trans Aeta_expand_correct `Astack (restr_stack (edom ae) S) \<sqsubseteq> u`)
     also(rtranclp_trans)
     have "\<dots> = conf_transform (env_delete x ae, env_delete x ce, u) (delete x \<Gamma>, e, Upd x # S)" 
@@ -391,7 +412,7 @@ case (thunk \<Gamma> x e S)
       by (auto simp add: join_below_iff)
     moreover
     from  `map_of \<Gamma> x = Some e` `ae x = up\<cdot>0` many
-    have "map_of (map_transform rhsExpand (env_u_com ae ce) (map_transform ccTransform ae \<Gamma>)) x = Some (transform 0 e)"
+    have "map_of (map_transform Aeta_expand ae (map_transform ccTransform ae \<Gamma>)) x = Some (transform 0 e)"
       by (simp add: map_of_map_transform)
     with `\<not> isLam e`
     have "conf_transform (ae, ce, a) (\<Gamma>, Var x, S) \<Rightarrow>\<^sub>G conf_transform (ae, ce, 0) (delete x \<Gamma>, e, Upd x # S)"
@@ -428,13 +449,13 @@ case (lamvar \<Gamma> x e S)
   hence "isLam (Aeta_expand u (transform u e))" by (rule isLam_Aeta_expand)
   moreover
   from  `map_of \<Gamma> x = Some e`  `ae x = up \<cdot> u` `ce x = up\<cdot>c` `isLam (transform u e)`
-  have "map_of (restrictA (edom ae) (map_transform rhsExpand (env_u_com ae ce) (map_transform transform ae \<Gamma>))) x = Some (Aeta_expand u (transform u e))"
+  have "map_of (restrictA (edom ae) (map_transform Aeta_expand ae (map_transform transform ae \<Gamma>))) x = Some (Aeta_expand u (transform u e))"
     by (simp add: map_of_map_transform)
   ultimately
   have "conf_transform (ae, ce, a) (\<Gamma>, Var x, S) \<Rightarrow>\<^sup>*
-        ((x, Aeta_expand u (transform u e)) # delete x (restrictA (edom ae) (map_transform rhsExpand (env_u_com ae ce) (map_transform transform ae \<Gamma>))), Aeta_expand u  (transform u e), restr_stack (edom ae) S)"
+        ((x, Aeta_expand u (transform u e)) # delete x (restrictA (edom ae) (map_transform Aeta_expand ae (map_transform transform ae \<Gamma>))), Aeta_expand u  (transform u e), restr_stack (edom ae) S)"
      by (auto intro: lambda_var simp add: map_transform_delete simp del: restr_delete)
-  also have "\<dots> = (restrictA (edom ae) ((map_transform rhsExpand (env_u_com ae ce) (map_transform transform ae ((x,e) # delete x \<Gamma>)))), Aeta_expand u  (transform u e), restr_stack (edom ae) S)"
+  also have "\<dots> = (restrictA (edom ae) ((map_transform Aeta_expand ae (map_transform transform ae ((x,e) # delete x \<Gamma>)))), Aeta_expand u  (transform u e), restr_stack (edom ae) S)"
     using `ae x = up \<cdot> u` `ce x = up\<cdot>c` `isLam (transform u e)`
     by (simp add: map_transform_Cons map_transform_delete restr_delete_twist del: restr_delete)
   also(subst[rotated]) have "\<dots> \<Rightarrow>\<^sup>* conf_transform (ae, ce, u) ((x, e) # delete x \<Gamma>, e, S)"
@@ -494,6 +515,9 @@ next
   hence *: "\<And> x. x \<in> upds S \<Longrightarrow> x \<notin> edom ?ae"
     using edom_aHeap[where \<Gamma> = \<Delta> and ae = "(aExp e\<cdot>a, fExp e\<cdot>a)"] by auto
 
+  have restr_stack_simp: "restr_stack (edom (?ae \<squnion> ae)) S = restr_stack (edom ae) S"
+    by (auto intro: restr_stack_cong dest!: *)
+
   have "edom ae \<subseteq> - domA \<Delta>" using let\<^sub>1(3)
     using fresh_distinct[OF let\<^sub>1(1)] fresh_distinct_fv[OF let\<^sub>1(2)]
     by (fastforce dest: set_mp[OF ups_fv_subset])
@@ -543,21 +567,24 @@ next
   moreover
   { fix x e'
     assume "x \<in> thunks \<Gamma>"
-    hence "x \<in> domA \<Gamma>" sorry
-    hence "x \<notin> edom ?ae" using fresh_distinct[OF let\<^sub>1(1)]  by (auto dest: set_mp[OF edom_aHeap])
-    moreover assume "many \<sqsubseteq> (?ce \<squnion> ce) x" hence "many \<sqsubseteq> ce x" sorry
-    moreover note let\<^sub>1 `x \<in> thunks \<Gamma>`
-    ultimately have "(?ae \<squnion> ae) x = up \<cdot>0" by (auto simp add: edomIff)
+    hence "x \<notin> edom ?ce" using fresh_distinct[OF let\<^sub>1(1)]  by (auto dest: set_mp[OF edom_fHeap]  set_mp[OF thunks_domA])
+    hence [simp]: "?ce x = \<bottom>" by (auto simp add: edomIff)
+  
+    assume "many \<sqsubseteq> (?ce \<squnion> ce) x"
+    with let\<^sub>1 `x \<in> thunks \<Gamma>`
+    have "(?ae \<squnion> ae) x = up \<cdot>0" by auto
   }
   moreover
   { fix x e'
     assume "x \<in> thunks \<Delta>" 
-    moreover
-    assume "many \<sqsubseteq> (?ce \<squnion> ce) x"
-    hence "many \<sqsubseteq> ?ce x" sorry
-    ultimately
-    have "?ae x = up \<cdot> 0" by (rule aHeap_heap3)
-    hence "(?ae \<squnion> ae) x = up \<cdot> 0" by simp
+    hence "x \<notin> domA \<Gamma>" and "x \<notin> upds S"
+      using fresh_distinct[OF let\<^sub>1(1)] fresh_distinct_fv[OF let\<^sub>1(2)]
+      by (auto dest!: set_mp[OF thunks_domA] set_mp[OF ups_fv_subset])
+    hence "x \<notin> edom ce" using let\<^sub>1 by auto
+    hence [simp]: "ce x = \<bottom>"  by (auto simp add: edomIff)
+
+    assume "many \<sqsubseteq> (?ce \<squnion> ce) x" with `x \<in> thunks \<Delta>`
+    have "(?ae \<squnion> ae) x = up \<cdot> 0" by (auto simp add: aHeap_heap3)
   }
   moreover
   (*
@@ -566,11 +593,14 @@ next
   have "(?ae \<squnion> ae) ` ap S \<subseteq> {up \<cdot> 0}" using let\<^sub>1 * by fastforce
   moreover
   *)
-  have "const_on (?ae \<squnion> ae) (ap S) (up\<cdot>0)" sorry
+  have "const_on ae (ap S) (up\<cdot>0)" using let\<^sub>1 by auto
+  hence "const_on (?ae \<squnion> ae) (ap S) (up\<cdot>0)"  unfolding const_on_def by auto
   moreover
-  have "const_on (?ae \<squnion> ae) (upds (restr_stack (edom (?ae \<squnion> ae)) S)) (up\<cdot>0)" sorry
+  have "const_on ae (upds (restr_stack (edom ae) S)) (up\<cdot>0)" using let\<^sub>1 by auto
+  hence "const_on (?ae \<squnion> ae) (upds (restr_stack (edom ae) S)) (up\<cdot>0)" unfolding const_on_def by auto
+  hence "const_on (?ae \<squnion> ae) (upds (restr_stack (edom (?ae \<squnion> ae)) S)) (up\<cdot>0)" unfolding restr_stack_simp.
   moreover
-  have "Astack (restr_stack (edom (?ae \<squnion> ae)) S) \<sqsubseteq> a" sorry
+  have "Astack (restr_stack (edom (?ae \<squnion> ae)) S) \<sqsubseteq> a" unfolding restr_stack_simp using let\<^sub>1 by auto
   moreover
   {
   have "aExp e\<cdot>a \<sqsubseteq> (aExp e\<cdot>a f|` domA \<Delta>) \<squnion> (aExp e\<cdot>a f|` (- domA \<Delta>))"
@@ -581,40 +611,39 @@ next
   finally have "aExp e\<cdot>a \<sqsubseteq> ?ae \<squnion> ae" by this auto
   }
   moreover
-  have "edom (?ce \<squnion> ce) = edom (?ae \<squnion> ae)" sorry
+  have "edom ?ce = edom ?ae" sorry
+  hence "edom (?ce \<squnion> ce) = edom (?ae \<squnion> ae)" using let\<^sub>1 by auto
   moreover
   have "prognosis (aHeap \<Delta>\<cdot>(aExp e\<cdot>a, fExp e\<cdot>a) \<squnion> ae) a (\<Delta> @ \<Gamma>, e, S) \<sqsubseteq> ?ce \<squnion> ce" sorry
   moreover
-  have "heap_upds_ok (\<Delta> @ \<Gamma>, S)" sorry
+  have "heap_upds_ok (\<Gamma>, S)" using let\<^sub>1 by auto
+  with fresh_distinct[OF let\<^sub>1(1)]  `domA \<Delta> \<inter> upds S = {}`
+  have "heap_upds_ok (\<Delta> @ \<Gamma>, S)" by (rule heap_upds_ok_append)
   ultimately
-  have "consistent (?ae \<squnion> ae, ?ce \<squnion> ce, a) (\<Delta> @ \<Gamma>, e, S) "
-    by auto
+  have "consistent (?ae \<squnion> ae, ?ce \<squnion> ce, a) (\<Delta> @ \<Gamma>, e, S) "  by auto
   }
   moreover
   {
     have "\<And> x. x \<in> domA \<Gamma> \<Longrightarrow> x \<notin> edom ?ae"
       using fresh_distinct[OF let\<^sub>1(1)]
       by (auto dest!: set_mp[OF edom_aHeap])
-    hence "map_transform Aeta_expand (?ae \<squnion> ae) (map_transform transform ((aHeap \<Delta>\<cdot>(aExp e\<cdot>a, fExp e\<cdot>a)) \<squnion> ae) \<Gamma>)
-       = map_transform Aeta_expand ae (map_transform transform ae \<Gamma>)"
-      by (auto intro!: map_transform_cong simp add: edomIff)
+    hence "restrictA (edom (?ae \<squnion> ae)) (map_transform Aeta_expand (?ae \<squnion> ae) (map_transform transform ((aHeap \<Delta>\<cdot>(aExp e\<cdot>a, fExp e\<cdot>a)) \<squnion> ae) \<Gamma>))
+       = restrictA (edom ae) (map_transform Aeta_expand ae (map_transform transform ae \<Gamma>))"
+       by (auto intro!: map_transform_cong restrictA_cong simp add: edomIff)
     moreover
+
     from let\<^sub>1 have *: "edom ae \<subseteq> domA \<Gamma> \<union> upds S" by auto
     have "\<And> x. x \<in> domA \<Delta> \<Longrightarrow> x \<notin> edom ae"
        using fresh_distinct[OF let\<^sub>1(1)] fresh_distinct_fv[OF let\<^sub>1(2)] 
        by (auto dest!: set_mp[OF *] set_mp[OF ups_fv_subset])
-    hence "map_transform Aeta_expand ((aHeap \<Delta>\<cdot>(aExp e\<cdot>a, fExp e\<cdot>a)) \<squnion> ae) (map_transform transform ((aHeap \<Delta>\<cdot>(aExp e\<cdot>a, fExp e\<cdot>a)) \<squnion> ae) \<Delta>)
-       = map_transform Aeta_expand ((aHeap \<Delta>\<cdot>(aExp e\<cdot>a, fExp e\<cdot>a))) (map_transform transform ((aHeap \<Delta>\<cdot>(aExp e\<cdot>a, fExp e\<cdot>a))) \<Delta>)"
-      by (auto intro!: map_transform_cong simp add: edomIff)
+    hence "restrictA (edom (?ae \<squnion> ae)) (map_transform Aeta_expand ((aHeap \<Delta>\<cdot>(aExp e\<cdot>a, fExp e\<cdot>a)) \<squnion> ae) (map_transform transform ((aHeap \<Delta>\<cdot>(aExp e\<cdot>a, fExp e\<cdot>a)) \<squnion> ae) \<Delta>))
+       = restrictA (edom ?ae) (map_transform Aeta_expand ((aHeap \<Delta>\<cdot>(aExp e\<cdot>a, fExp e\<cdot>a))) (map_transform transform ((aHeap \<Delta>\<cdot>(aExp e\<cdot>a, fExp e\<cdot>a))) \<Delta>))"
+       by (auto intro!: map_transform_cong restrictA_cong simp add: edomIff)
     ultimately
-    have "conf_transform (ae, ce, a) (\<Gamma>, Let \<Delta> e, S) \<Rightarrow>\<^sub>G conf_transform (?ae \<squnion> ae, ?ce \<squnion> ce, a) (\<Delta> @ \<Gamma>, e, S)"
-      apply (simp add: map_transform_append)
-      sorry
-      (*
-      apply rule
-      using let\<^sub>1(1,2)
-      by auto
-      *)
+
+    have "conf_transform (ae, ce, a) (\<Gamma>, Let \<Delta> e, S) \<Rightarrow>\<^sub>G\<^sup>* conf_transform (?ae \<squnion> ae, ?ce \<squnion> ce, a) (\<Delta> @ \<Gamma>, e, S)"
+      using restr_stack_simp let\<^sub>1(1,2)
+      by (fastforce intro!: lam_and_restrict simp  add: map_transform_append restrictA_append restr_stack_simp   dest: set_mp[OF edom_aHeap])
   }
   ultimately
   show ?case by (blast del: consistentI consistentE)

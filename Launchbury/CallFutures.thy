@@ -75,6 +75,9 @@ definition may_call :: "var \<Rightarrow> future set \<Rightarrow> future set"
 lemma may_call_cont: "cont (may_call v)" sorry
 lemmas may_call_cont[cont2cont, simp]
 
+definition restrict_future :: "var set \<Rightarrow> future \<Rightarrow> future"
+  where "restrict_future S f x = (if x \<in> S then f x else 0)"
+
 
 text {* Some tests *}
 

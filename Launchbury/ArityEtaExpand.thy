@@ -90,9 +90,12 @@ begin
   lemma "transform a (Terms.Let \<Delta> e) = Let (map_transform Aeta_expand (Aheap \<Delta>\<cdot>(Aexp e\<cdot>a)) (map_transform transform (Aheap \<Delta>\<cdot>(Aexp e\<cdot>a)) \<Delta>))
            (transform a e)" by (simp del: Let_eq_iff)
 
-lemma supp_transform: "supp (transform a e) \<subseteq> supp e"
-  by (induction rule: transform.induct)
-     (auto simp add: exp_assn.supp Let_supp dest!: set_mp[OF supp_map_transform] set_mp[OF supp_map_transform_step] )
+  lemma supp_transform: "supp (transform a e) \<subseteq> supp e"
+    by (induction rule: transform.induct)
+       (auto simp add: exp_assn.supp Let_supp dest!: set_mp[OF supp_map_transform] set_mp[OF supp_map_transform_step] )
+  interpretation supp_bounded_transform transform
+    by default (auto simp add: fresh_def supp_transform)
+  
 
   fun conf_transform :: "(AEnv \<times> Arity) \<Rightarrow> conf \<Rightarrow> conf"
   where "conf_transform (ae, a) (\<Gamma>, e, S) =
@@ -113,9 +116,6 @@ lemma supp_transform: "supp (transform a e) \<subseteq> supp e"
     \<Longrightarrow> consistent (ae, a) (\<Gamma>, e, S)"  
   inductive_cases consistentE[elim!]: "consistent (ae, a) (\<Gamma>, e, S)"
 
-  interpretation supp_bounded_transform transform
-    by default (auto simp add: fresh_def supp_transform)
-  
   lemma isLam_Aeta_expand_transform[simp]:
     "isLam (Atransform a e) \<longleftrightarrow> isLam e"
     by (induction e rule:isLam.induct) (case_tac b, auto)

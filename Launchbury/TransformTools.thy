@@ -112,4 +112,8 @@ begin
     by (auto simp add: fresh_star_def)
 end
 
+lemma fresh_star_restrictA[intro]: "a \<sharp>* \<Gamma> \<Longrightarrow> a \<sharp>* restrictA V \<Gamma>"
+  by (induction \<Gamma>) (auto simp add: fresh_star_Cons)
+
+
 end
