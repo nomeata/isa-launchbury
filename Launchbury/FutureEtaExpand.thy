@@ -129,41 +129,37 @@ lemma fup_fst_eqvt[eqvt]: "\<pi> \<bullet> (fup_fst e x) = fup_fst (\<pi> \<bull
 
 locale FutureAnalysis =
   fixes aExp :: "exp \<Rightarrow> Arity \<rightarrow> AEnv"
-  fixes aHeap :: "heap \<Rightarrow> (AEnv \<times> future set) \<rightarrow> AEnv"
+  fixes aHeap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> AEnv"
+  fixes fHeap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> (var \<Rightarrow> two)"
 
-  fixes fExp :: "exp \<Rightarrow> Arity \<rightarrow> future set"
-  fixes fHeap :: "heap \<Rightarrow> (AEnv \<times> future set) \<rightarrow> (var \<Rightarrow> two)"
-
+  assumes aExp[eqvt]: "\<pi> \<bullet> aExp = aExp"
   assumes aExp_Var: "up \<cdot> n \<sqsubseteq> (aExp (Var x)\<cdot>n) x"
   assumes aExp_App: "aExp (App e x) \<cdot> n = aExp e \<cdot>(inc\<cdot>n) \<squnion> AE_singleton x \<cdot> (up\<cdot>0)"
   assumes aExp_subst_App_Lam: "aExp (e[y::=x]) \<sqsubseteq> aExp (App (Lam [y]. e) x)"
   assumes aExp_Lam: "aExp (Lam [y]. e) \<cdot> n = env_delete y (aExp e \<cdot>(pred\<cdot>n))"
-  assumes aExp_subst_restr: "x \<notin> S \<Longrightarrow> y \<notin> S \<Longrightarrow> (aExp e[x::=y] \<cdot> a) f|` S = (aExp e\<cdot>a) f|` S"
 
 
   assumes aHeap_eqvt[eqvt]: "\<pi> \<bullet> aHeap = aHeap"
-  assumes edom_aHeap: "edom (aHeap \<Gamma> \<cdot> ae) \<subseteq> domA \<Gamma>"
-  assumes aHeap_heap: "map_of \<Gamma> x = Some e' \<Longrightarrow> fup\<cdot>(aExp e')\<cdot>((aHeap \<Gamma>\<cdot>ae) x) f|` domA \<Gamma> \<sqsubseteq> aHeap \<Gamma>\<cdot>ae"
-  assumes aHeap_heap3: "x \<in> thunks \<Gamma> \<Longrightarrow> many \<sqsubseteq> (fHeap \<Gamma>\<cdot>ae) x \<Longrightarrow> (aHeap \<Gamma>\<cdot>ae) x = up\<cdot>0"
-  assumes aHeap_above_arg: "fst ae f|` domA \<Gamma> \<sqsubseteq> aHeap \<Gamma>\<cdot>ae"
-  assumes aHeap_subst: "x \<notin> domA \<Gamma> \<Longrightarrow> y \<notin> domA \<Gamma> \<Longrightarrow> aHeap \<Gamma>[x::h=y] = aHeap \<Gamma>"
-  assumes aHeap_cong: "fst ae f|` domA \<Gamma> = fst ae' f|` domA \<Gamma> \<Longrightarrow> restrict_future (domA \<Gamma>) ` snd ae = restrict_future (domA \<Gamma>) ` snd ae' \<Longrightarrow> aHeap \<Gamma>\<cdot>ae = aHeap \<Gamma>\<cdot>ae'"
-  assumes aHeap_heap2: "map_of \<Gamma> x = Some e' \<Longrightarrow> fup\<cdot>(aExp e')\<cdot>((aHeap \<Gamma>\<cdot>(aExp e\<cdot>a, fExp e\<cdot>a)) x) f|` (- domA \<Gamma>) \<sqsubseteq>  aExp (Let \<Gamma> e)\<cdot>a"
-  assumes aExp_Let_above: "aExp e\<cdot>a f|` (- domA \<Gamma>) \<sqsubseteq> aExp (Let \<Gamma> e)\<cdot>a"
+  assumes edom_aHeap: "edom (aHeap \<Gamma> e\<cdot> a) \<subseteq> domA \<Gamma>"
+  assumes aHeap_heap3: "x \<in> thunks \<Gamma> \<Longrightarrow> many \<sqsubseteq> (fHeap \<Gamma> e\<cdot>a) x \<Longrightarrow> (aHeap \<Gamma> e\<cdot>a) x = up\<cdot>0"
+  assumes aHeap_subst: "x \<notin> domA \<Gamma> \<Longrightarrow> y \<notin> domA \<Gamma> \<Longrightarrow> aHeap \<Gamma>[x::h=y] e[x ::=y]  = aHeap \<Gamma> e"
 
-  assumes fExp_subst_restr: "x \<notin> S \<Longrightarrow> y \<notin> S \<Longrightarrow> restrict_future S ` (fExp e[x::=y] \<cdot> a) = restrict_future S ` (fExp e\<cdot>a)"
-
-  assumes edom_fHeap: "edom (fHeap \<Gamma> \<cdot> ae) \<subseteq> domA \<Gamma>"
-
-  assumes aExp[eqvt]: "\<pi> \<bullet> aExp = aExp"
-  assumes fExp[eqvt]: "\<pi> \<bullet> fExp = fExp"
+  assumes aHeap_heap: "map_of \<Gamma> x = Some e' \<Longrightarrow>  fup\<cdot>(aExp e')\<cdot>((aHeap \<Gamma> e\<cdot>a) x) f|` domA \<Gamma> \<sqsubseteq> aHeap \<Gamma> e\<cdot>a"
+  assumes aHeap_heap2: "map_of \<Gamma> x = Some e' \<Longrightarrow> fup\<cdot>(aExp e')\<cdot>((aHeap \<Gamma> e\<cdot>a) x) f|` (- domA \<Gamma>) \<sqsubseteq>  aExp (Let \<Gamma> e)\<cdot>a"
+  assumes aHeap_above_aExp: "aExp e\<cdot>a f|` domA \<Gamma> \<sqsubseteq> aHeap \<Gamma> e\<cdot>a"
+  assumes aExp_Let_above:   "aExp e\<cdot>a f|` (- domA \<Gamma>) \<sqsubseteq> aExp (Let \<Gamma> e)\<cdot>a"
+ 
   assumes fHeap[eqvt]: "\<pi> \<bullet> fHeap = fHeap"
+  assumes edom_fHeap[simp]: "edom (fHeap \<Delta> e\<cdot>a) = edom (aHeap \<Delta> e\<cdot>a)"
+
+  fixes prognosis :: "AEnv \<Rightarrow> Arity \<Rightarrow> conf \<Rightarrow> (var \<Rightarrow> two)"
+    (*    where "prognosis ae a (\<Gamma>, e, S) = abstractPath (paths (anal_env fExp \<Gamma> \<cdot> ae) (fstack S \<cdot>(fExp e \<cdot> a)))" *)
 begin
 
   sublocale AbstractTransformBound
     "\<lambda> a . inc\<cdot>a"
     "\<lambda> a . pred\<cdot>a"
-    "\<lambda> \<Delta> e a . (a, aHeap \<Delta>\<cdot>(aExp e\<cdot>a, fExp e\<cdot>a))"
+    "\<lambda> \<Delta> e a . (a, aHeap \<Delta> e\<cdot>a)"
     "fst"
     "snd"
     "Aeta_expand"
@@ -175,13 +171,13 @@ begin
   sublocale AbstractTransformBoundSubst
     "\<lambda> a . inc\<cdot>a"
     "\<lambda> a . pred\<cdot>a"
-    "\<lambda> \<Delta> e a . (a, aHeap \<Delta>\<cdot>(aExp e\<cdot>a, fExp e\<cdot>a))"
+    "\<lambda> \<Delta> e a . (a, aHeap \<Delta> e\<cdot>a)"
     "fst"
     "snd"
     "Aeta_expand"
     "snd"
   apply default
-  apply (simp add: aHeap_subst, rule aHeap_cong, simp, erule (1) aExp_subst_restr, simp, erule (1) fExp_subst_restr)[1]
+  apply (simp add: aHeap_subst)
   apply (rule subst_Aeta_expand)
   done
 
@@ -233,10 +229,6 @@ begin
   lemma const_on_insert[simp]: "const_on f (insert x S) y \<longleftrightarrow> const_on f S y \<and> f x = y"
     unfolding const_on_def by auto
 
-  fun prognosis :: "AEnv \<Rightarrow> Arity \<Rightarrow> conf \<Rightarrow> (var \<Rightarrow> two)"
-    where "prognosis ae a (\<Gamma>, e, S) = abstractPath (paths (anal_env fExp \<Gamma> \<cdot> ae) (fstack S \<cdot>(fExp e \<cdot> a)))"
-  lemmas prognosis.simps[simp del]
-
   inductive consistent :: "tstate \<Rightarrow> conf \<Rightarrow> bool" where
     consistentI[intro!]: 
     "edom ae \<subseteq> domA \<Gamma> \<union> upds S
@@ -246,7 +238,7 @@ begin
     \<Longrightarrow> aExp e \<cdot> a \<sqsubseteq> ae
     \<Longrightarrow> prognosis ae a (\<Gamma>, e, S) \<sqsubseteq> ce
     \<Longrightarrow> (\<And> x. x \<in> thunks \<Gamma> \<Longrightarrow>  many \<sqsubseteq> ce x \<Longrightarrow> ae x = up\<cdot>0)
-    \<Longrightarrow> (\<And> x e'. map_of \<Gamma> x = Some e' \<Longrightarrow> x \<in> edom (prognosis ae a  (\<Gamma>, e, S)) \<Longrightarrow> fup\<cdot>(aExp e')\<cdot>(ae x) \<sqsubseteq> ae)
+    \<Longrightarrow> (\<And> x e'. map_of \<Gamma> x = Some e' \<Longrightarrow> x \<in> edom ae \<Longrightarrow> fup\<cdot>(aExp e')\<cdot>(ae x) \<sqsubseteq> ae)
     \<Longrightarrow> const_on ae (ap S) (up\<cdot>0)
     \<Longrightarrow> const_on ae (upds (restr_stack (edom ae) S)) (up\<cdot>0)
     \<Longrightarrow> consistent (ae, ce, a) (\<Gamma>, e, S)"  
@@ -279,8 +271,6 @@ case (app\<^sub>2 \<Gamma> y e x S)
     apply (auto simp add: aExp_App aExp_Lam join_below_iff)
     done
   moreover
-  have "fExp e[y::=x]\<cdot>(pred\<cdot>a) \<sqsubseteq> may_call x (fExp (Lam [y]. e)\<cdot>a)" sorry
-  hence "fstack S\<cdot>(fExp e[y::=x]\<cdot>(pred\<cdot>a)) \<sqsubseteq> fstack S\<cdot>(may_call x (fExp (Lam [y]. e)\<cdot>a))" by (rule monofun_cfun_arg)
   hence "prognosis ae (pred\<cdot>a) (\<Gamma>, e[y::=x], S) \<sqsubseteq> prognosis ae a (\<Gamma>, (Lam [y]. e), Arg x # S)"
     sorry
   moreover
@@ -307,10 +297,8 @@ case (thunk \<Gamma> x e S)
 
   have "Astack (restr_stack (edom ae) S) \<sqsubseteq> u" using thunk `a \<sqsubseteq> u` by (auto elim: below_trans)
 
-  have "x \<in> edom (prognosis ae a (\<Gamma>, Var x, S))" sorry
-  hence "fup\<cdot>(aExp e)\<cdot>(ae x) \<sqsubseteq> ae " using  thunk by blast
+  have "fup\<cdot>(aExp e)\<cdot>(ae x) \<sqsubseteq> ae " using  thunk by fastforce
   hence "aExp e\<cdot>u \<sqsubseteq> ae" using  `ae x = up\<cdot>u` by auto
-
 
   show ?case
   proof(cases "ce x" rule:two_cases)
@@ -351,16 +339,13 @@ case (thunk \<Gamma> x e S)
 
     {
     fix x' e'
-    assume "map_of \<Gamma> x' = Some e'" and "x' \<noteq> x"
+    assume "map_of \<Gamma> x' = Some e'" and "x' \<noteq> x" and "x' \<in> edom (env_delete x ae)"
+    hence "fup\<cdot>(aExp e')\<cdot>(ae x') \<sqsubseteq> ae" using thunk by fastforce
     moreover
-    assume "x' \<in> edom (prognosis (env_delete x ae) u (delete x \<Gamma>, e, Upd x # S))"
-    hence "x' \<in> edom (prognosis ae a (\<Gamma>, Var x, S))" using edom_mono[OF *]..
-    ultimately
-    have "fup\<cdot>(aExp e')\<cdot>(ae x') \<sqsubseteq> ae" using thunk by auto
-    moreover
+    from `map_of \<Gamma> x' = Some e'` `prognosis ae a (\<Gamma>, Var x, S) x \<sqsubseteq> once`
     have "(fup\<cdot>(aExp e')\<cdot>(ae x')) x = \<bottom>" sorry
     ultimately
-    have "fup\<cdot>(aExp e')\<cdot>(ae x') \<sqsubseteq> env_delete x ae" sorry
+    have "fup\<cdot>(aExp e')\<cdot>(ae x') \<sqsubseteq> env_delete x ae"  by (metis below_env_deleteI)
     }
     moreover
 
@@ -435,7 +420,7 @@ case (lamvar \<Gamma> x e S)
 
   have *: "prognosis ae u ((x, e) # delete x \<Gamma>, e, S) \<sqsubseteq> prognosis ae a (\<Gamma>, Var x, S)" sorry
 
-  have "x \<in> edom (prognosis ae a (\<Gamma>, Var x, S))" sorry
+  have "x \<in> edom ce" sorry
   hence "fup\<cdot>(aExp e)\<cdot>(ae x) \<sqsubseteq> ae" using lamvar by auto
   hence "aExp e\<cdot>u \<sqsubseteq> ae" using `ae x = up\<cdot>u` by simp
   hence "consistent (ae, ce, u) ((x, e) # delete x \<Gamma>, e, S)"
@@ -503,17 +488,16 @@ case (var\<^sub>2 \<Gamma> x e S)
 next
   case (let\<^sub>1 \<Delta> \<Gamma> e S)
 
-  let ?ae = "aHeap \<Delta> \<cdot> (aExp e\<cdot>a, fExp e\<cdot>a)"
+  let ?ae = "aHeap \<Delta> e\<cdot>a"
   let ?new = "(domA (\<Delta> @ \<Gamma>) \<union> upds S - (domA \<Gamma> \<union> upds S))"
   have new: "?new = domA \<Delta>"
     using fresh_distinct[OF let\<^sub>1(1)] fresh_distinct_fv[OF let\<^sub>1(2)]
     by (auto dest: set_mp[OF ups_fv_subset])
 
-  let ?ce = "fHeap \<Delta>\<cdot>(aExp e\<cdot>a, fExp e\<cdot>a)"
+  let ?ce = "fHeap \<Delta> e\<cdot>a"
 
   have "domA \<Delta> \<inter> upds S = {}" using fresh_distinct_fv[OF let\<^sub>1(2)] by (auto dest: set_mp[OF ups_fv_subset])
-  hence *: "\<And> x. x \<in> upds S \<Longrightarrow> x \<notin> edom ?ae"
-    using edom_aHeap[where \<Gamma> = \<Delta> and ae = "(aExp e\<cdot>a, fExp e\<cdot>a)"] by auto
+  hence *: "\<And> x. x \<in> upds S \<Longrightarrow> x \<notin> edom ?ae" by (auto dest!: set_mp[OF edom_aHeap])
 
   have restr_stack_simp: "restr_stack (edom (?ae \<squnion> ae)) S = restr_stack (edom ae) S"
     by (auto intro: restr_stack_cong dest!: *)
@@ -557,7 +541,7 @@ next
     hence "x \<in> domA \<Gamma>" by (metis domI dom_map_of_conv_domA)
     hence "x \<notin> edom ?ae" using fresh_distinct[OF let\<^sub>1(1)]  by (auto dest: set_mp[OF edom_aHeap])
     moreover
-    have "prognosis ae a (\<Gamma>, Terms.Let \<Delta> e, S) x \<noteq> none" sorry
+    assume "x \<in> edom (?ae \<squnion> ae)"
     moreover
     note let\<^sub>1 `map_of \<Gamma> x = Some e'`
     ultimately
@@ -567,8 +551,8 @@ next
   moreover
   { fix x e'
     assume "x \<in> thunks \<Gamma>"
-    hence "x \<notin> edom ?ce" using fresh_distinct[OF let\<^sub>1(1)]  by (auto dest: set_mp[OF edom_fHeap]  set_mp[OF thunks_domA])
-    hence [simp]: "?ce x = \<bottom>" by (auto simp add: edomIff)
+    hence "x \<notin> edom ?ce" using fresh_distinct[OF let\<^sub>1(1)]  by (auto dest: set_mp[OF edom_aHeap]  set_mp[OF thunks_domA])
+    hence [simp]: "?ce x = \<bottom>" unfolding edomIff by auto
   
     assume "many \<sqsubseteq> (?ce \<squnion> ce) x"
     with let\<^sub>1 `x \<in> thunks \<Gamma>`
@@ -587,12 +571,6 @@ next
     have "(?ae \<squnion> ae) x = up \<cdot> 0" by (auto simp add: aHeap_heap3)
   }
   moreover
-  (*
-  have "(?ae \<squnion> ae) ` upds S \<subseteq> {up \<cdot> 0}" using let\<^sub>1 * by fastforce
-  moreover
-  have "(?ae \<squnion> ae) ` ap S \<subseteq> {up \<cdot> 0}" using let\<^sub>1 * by fastforce
-  moreover
-  *)
   have "const_on ae (ap S) (up\<cdot>0)" using let\<^sub>1 by auto
   hence "const_on (?ae \<squnion> ae) (ap S) (up\<cdot>0)"  unfolding const_on_def by auto
   moreover
@@ -607,14 +585,17 @@ next
     by (rule eq_imp_below[OF join_env_restr_UNIV[symmetric]]) auto
   also have "aExp e\<cdot>a f|` (- domA \<Delta>) \<sqsubseteq> aExp (Let \<Delta> e)\<cdot>a" by (rule aExp_Let_above)
   also have "\<dots> \<sqsubseteq> ae" using let\<^sub>1(3) by auto
-  also have "aExp e\<cdot>a f|` domA \<Delta> \<sqsubseteq> ?ae" by (rule aHeap_above_arg[where ae = "(aExp e\<cdot>a, fExp e\<cdot>a)", simplified])
+  also have "aExp e\<cdot>a f|` domA \<Delta> \<sqsubseteq> ?ae" by (rule aHeap_above_aExp)
   finally have "aExp e\<cdot>a \<sqsubseteq> ?ae \<squnion> ae" by this auto
   }
   moreover
-  have "edom ?ce = edom ?ae" sorry
-  hence "edom (?ce \<squnion> ce) = edom (?ae \<squnion> ae)" using let\<^sub>1 by auto
+  have "edom (?ce \<squnion> ce) = edom (?ae \<squnion> ae)" using let\<^sub>1 by auto
   moreover
-  have "prognosis (aHeap \<Delta>\<cdot>(aExp e\<cdot>a, fExp e\<cdot>a) \<squnion> ae) a (\<Delta> @ \<Gamma>, e, S) \<sqsubseteq> ?ce \<squnion> ce" sorry
+  {
+  have "prognosis (?ae \<squnion> ae) a (\<Delta> @ \<Gamma>, e, S) \<sqsubseteq> ?ce \<squnion> prognosis ae a (\<Gamma>, Let \<Delta> e, S)" sorry
+  also have "prognosis ae a (\<Gamma>, Let \<Delta> e, S) \<sqsubseteq> ce" using let\<^sub>1 by auto
+  finally have "prognosis (?ae \<squnion> ae) a (\<Delta> @ \<Gamma>, e, S) \<sqsubseteq> ?ce \<squnion> ce" by this simp
+  }
   moreover
   have "heap_upds_ok (\<Gamma>, S)" using let\<^sub>1 by auto
   with fresh_distinct[OF let\<^sub>1(1)]  `domA \<Delta> \<inter> upds S = {}`
@@ -627,7 +608,7 @@ next
     have "\<And> x. x \<in> domA \<Gamma> \<Longrightarrow> x \<notin> edom ?ae"
       using fresh_distinct[OF let\<^sub>1(1)]
       by (auto dest!: set_mp[OF edom_aHeap])
-    hence "restrictA (edom (?ae \<squnion> ae)) (map_transform Aeta_expand (?ae \<squnion> ae) (map_transform transform ((aHeap \<Delta>\<cdot>(aExp e\<cdot>a, fExp e\<cdot>a)) \<squnion> ae) \<Gamma>))
+    hence "restrictA (edom (?ae \<squnion> ae)) (map_transform Aeta_expand (?ae \<squnion> ae) (map_transform transform (?ae \<squnion> ae) \<Gamma>))
        = restrictA (edom ae) (map_transform Aeta_expand ae (map_transform transform ae \<Gamma>))"
        by (auto intro!: map_transform_cong restrictA_cong simp add: edomIff)
     moreover
@@ -636,8 +617,8 @@ next
     have "\<And> x. x \<in> domA \<Delta> \<Longrightarrow> x \<notin> edom ae"
        using fresh_distinct[OF let\<^sub>1(1)] fresh_distinct_fv[OF let\<^sub>1(2)] 
        by (auto dest!: set_mp[OF *] set_mp[OF ups_fv_subset])
-    hence "restrictA (edom (?ae \<squnion> ae)) (map_transform Aeta_expand ((aHeap \<Delta>\<cdot>(aExp e\<cdot>a, fExp e\<cdot>a)) \<squnion> ae) (map_transform transform ((aHeap \<Delta>\<cdot>(aExp e\<cdot>a, fExp e\<cdot>a)) \<squnion> ae) \<Delta>))
-       = restrictA (edom ?ae) (map_transform Aeta_expand ((aHeap \<Delta>\<cdot>(aExp e\<cdot>a, fExp e\<cdot>a))) (map_transform transform ((aHeap \<Delta>\<cdot>(aExp e\<cdot>a, fExp e\<cdot>a))) \<Delta>))"
+    hence "restrictA (edom (?ae \<squnion> ae)) (map_transform Aeta_expand (?ae \<squnion> ae) (map_transform transform (?ae \<squnion> ae) \<Delta>))
+       = restrictA (edom ?ae) (map_transform Aeta_expand ?ae (map_transform transform ?ae \<Delta>))"
        by (auto intro!: map_transform_cong restrictA_cong simp add: edomIff)
     ultimately
 
