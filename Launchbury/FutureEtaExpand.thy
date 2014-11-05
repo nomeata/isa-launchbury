@@ -185,7 +185,7 @@ locale FutureAnalysis = ArityAnalysis +
   assumes aHeap_subst: "x \<notin> domA \<Gamma> \<Longrightarrow> y \<notin> domA \<Gamma> \<Longrightarrow> aHeap \<Gamma>[x::h=y] e[x ::=y]  = aHeap \<Gamma> e"
 
 
-  assumes ASummay_Let: "ABinds \<Gamma>\<cdot>(aHeap \<Gamma> e\<cdot>a) \<squnion> aExp e\<cdot>a \<sqsubseteq> aHeap \<Gamma> e\<cdot>a \<squnion>  aExp (Let \<Gamma> e)\<cdot>a"
+  assumes aExp_Let: "ABinds \<Gamma>\<cdot>(aHeap \<Gamma> e\<cdot>a) \<squnion> aExp e\<cdot>a \<sqsubseteq> aHeap \<Gamma> e\<cdot>a \<squnion>  aExp (Let \<Gamma> e)\<cdot>a"
   (*
   assumes aHeap_heap: "map_of \<Gamma> x = Some e' \<Longrightarrow>  fup\<cdot>(aExp e')\<cdot>((aHeap \<Gamma> e\<cdot>a) x) f|` domA \<Gamma> \<sqsubseteq> aHeap \<Gamma> e\<cdot>a"
   assumes aHeap_heap2: "map_of \<Gamma> x = Some e' \<Longrightarrow> fup\<cdot>(aExp e')\<cdot>((aHeap \<Gamma> e\<cdot>a) x) f|` (- domA \<Gamma>) \<sqsubseteq>  aExp (Let \<Gamma> e)\<cdot>a"
@@ -202,7 +202,11 @@ locale FutureAnalysis = ArityAnalysis +
   assumes prognosis_App: "prognosis ae (inc\<cdot>a) (\<Gamma>, e, Arg x # S) \<sqsubseteq> prognosis ae a (\<Gamma>, App e x, S)"
   assumes prognosis_subst_Lam: "prognosis ae (pred\<cdot>a) (\<Gamma>, e[y::=x], S) \<sqsubseteq> prognosis ae a (\<Gamma>, Lam [y]. e, Arg x # S)"
   assumes prognosis_Var: "ae x = up\<cdot>u \<Longrightarrow> a \<sqsubseteq> u \<Longrightarrow> prognosis ae u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))"
+  assumes prognosis_Var2: "ae x \<sqsubseteq> up\<cdot>a \<Longrightarrow> prognosis ae a ((x, e) # \<Gamma>, e, S) \<sqsubseteq> prognosis ae a (\<Gamma>, e, Upd x # S)"
+  assumes prognosis_Let: "prognosis (aHeap \<Delta> e\<cdot>a \<squnion> ae) a (\<Delta> @ \<Gamma>, e, S) \<sqsubseteq> fHeap \<Delta> e\<cdot>a \<squnion> prognosis ae a (\<Gamma>, Terms.Let \<Delta> e, S)"
+
   assumes prognosis_ap: "const_on (prognosis ae a (\<Gamma>, e, S)) (ap S) many"
+  assumes prognosis_env_cong: "ae f|` domA \<Gamma> = ae' f|` domA \<Gamma> \<Longrightarrow> prognosis ae u (\<Gamma>, e, S) = prognosis ae' u (\<Gamma>, e, S)"
 
   assumes artiy_edom_prognosis: "edom (ABinds \<Gamma>\<cdot>ae \<squnion> aExp e\<cdot>a) \<subseteq> edom (prognosis ae a (\<Gamma>, e, S))"
 
@@ -327,10 +331,10 @@ case (thunk \<Gamma> x e S)
 
   have "Astack (restr_stack (edom ae) S) \<sqsubseteq> u" using thunk `a \<sqsubseteq> u` by (auto elim: below_trans)
 
-  have "ABinds (delete x \<Gamma>)\<cdot>ae \<squnion> aExp e\<cdot>u \<sqsubseteq> ABinds \<Gamma>\<cdot>ae \<squnion> aExp e\<cdot>u" sorry
-  also have "\<dots> = ABinds \<Gamma>\<cdot>ae" using `ae x = up\<cdot>u` sorry
+  from Abinds_reorder1[OF `map_of \<Gamma> x = Some e`] `ae x = up\<cdot>u`
+  have "ABinds (delete x \<Gamma>)\<cdot>ae \<squnion> aExp e\<cdot>u = ABinds \<Gamma>\<cdot>ae" by (auto intro: join_comm)
   also have "\<dots> \<sqsubseteq> ae" using thunk by (auto simp add: join_below_iff)
-  finally have "ABinds (delete x \<Gamma>)\<cdot>ae \<squnion> aExp e\<cdot>u \<sqsubseteq> ae" by this simp
+  finally have "ABinds (delete x \<Gamma>)\<cdot>ae \<squnion> aExp e\<cdot>u \<sqsubseteq> ae".
 
   show ?case
   proof(cases "ce x" rule:two_cases)
@@ -358,8 +362,9 @@ case (thunk \<Gamma> x e S)
     have "(record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))) x = none"
       by (simp add: two_pred_none)
     hence **: "prognosis ae u (delete x \<Gamma>, e, Upd x # S) x = none" using fun_belowD[OF *, where x = x] by auto
-    hence eq: "prognosis (env_delete x ae) u (delete x \<Gamma>, e, Upd x # S) = prognosis ae u (delete x \<Gamma>, e, Upd x # S)"
-      sorry
+
+    have eq: "prognosis (env_delete x ae) u (delete x \<Gamma>, e, Upd x # S) = prognosis ae u (delete x \<Gamma>, e, Upd x # S)"
+      by (rule prognosis_env_cong) simp
 
     have [simp]: "restr_stack (edom ae - {x}) S = restr_stack (edom ae) S" 
       using `x \<notin> upds S` by (auto intro: restr_stack_cong)
@@ -454,16 +459,21 @@ case (lamvar \<Gamma> x e S)
   have "up\<cdot>a \<sqsubseteq> ae x".
   then obtain u where "ae x = up\<cdot>u" and "a \<sqsubseteq> u" by (cases "ae x") auto
 
-  have "ABinds (delete x \<Gamma>)\<cdot>ae \<squnion> aExp e\<cdot>u \<sqsubseteq> ABinds \<Gamma>\<cdot>ae \<squnion> aExp e\<cdot>u" sorry
-  also have "\<dots> = ABinds \<Gamma>\<cdot>ae" using `ae x = up\<cdot>u` sorry
+  from Abinds_reorder1[OF `map_of \<Gamma> x = Some e`] `ae x = up\<cdot>u`
+  have "ABinds (delete x \<Gamma>)\<cdot>ae \<squnion> aExp e\<cdot>u = ABinds \<Gamma>\<cdot>ae" by (auto intro: join_comm)
   also have "\<dots> \<sqsubseteq> ae" using lamvar by (auto simp add: join_below_iff)
-  finally have "ABinds (delete x \<Gamma>)\<cdot>ae \<squnion> aExp e\<cdot>u \<sqsubseteq> ae" by this simp
-
+  finally have "ABinds (delete x \<Gamma>)\<cdot>ae \<squnion> aExp e\<cdot>u \<sqsubseteq> ae".
 
   from `ae x = up\<cdot>u` have "ce x \<noteq> \<bottom>" using lamvar by (auto simp add: edom_def)
   then obtain c where "ce x = up\<cdot>c" by (cases "ce x") auto
 
-  have *: "prognosis ae u ((x, e) # delete x \<Gamma>, e, S) \<sqsubseteq> prognosis ae a (\<Gamma>, Var x, S)" sorry
+  find_theorems prognosis Upd
+  have "prognosis ae u ((x, e) # delete x \<Gamma>, e, S) \<sqsubseteq> prognosis ae u (delete x \<Gamma>, e, Upd x # S)"
+    using eq_imp_below[OF `ae x = up\<cdot>u`]   by (rule prognosis_Var2)
+  also have "\<dots> \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))"
+    using `ae x = up\<cdot>u` `a \<sqsubseteq> u` by (rule prognosis_Var)
+  also have "\<dots> \<sqsubseteq> prognosis ae a (\<Gamma>, Var x, S)" by (rule record_call_below_arg)
+  finally have *: "prognosis ae u ((x, e) # delete x \<Gamma>, e, S) \<sqsubseteq> prognosis ae a (\<Gamma>, Var x, S)" by this simp_all
 
   have "consistent (ae, ce, u) ((x, e) # delete x \<Gamma>, e, S)"
     using lamvar `ABinds (delete x \<Gamma>)\<cdot>ae \<squnion> aExp e\<cdot>u \<sqsubseteq> ae`  `ae x = up\<cdot>u` edom_mono[OF *]
@@ -496,33 +506,33 @@ case (lamvar \<Gamma> x e S)
 next
 case (var\<^sub>2 \<Gamma> x e S)
   show ?case
-  proof(cases  "x \<in> edom ae")
+  proof(cases "x \<in> edom ae")
     case True[simp]
-    hence "ae x = up\<cdot>0" using var\<^sub>2 by auto
+    hence "ae x = up\<cdot>a" using var\<^sub>2 by auto
 
     hence "ce x \<noteq> \<bottom>" using var\<^sub>2 by (auto simp add: edom_def)
     then obtain c where "ce x = up\<cdot>c" by (cases "ce x") auto
 
-    from `isLam e`
-    have *: "prognosis ae 0 ((x, e) # \<Gamma>, e, S) \<sqsubseteq> prognosis ae 0 (\<Gamma>, e, Upd x # S)" sorry
+    from  `ae x = up\<cdot>a`
+    have *: "prognosis ae a ((x, e) # \<Gamma>, e, S) \<sqsubseteq> prognosis ae a (\<Gamma>, e, Upd x # S)" by (rule prognosis_Var2[OF eq_imp_below])
 
     have "Astack (Upd x # S) \<sqsubseteq> a" using var\<^sub>2 by auto
     hence "a = 0" by auto
 
-    have "consistent (ae, ce, 0) ((x, e) # \<Gamma>, e, S)" using var\<^sub>2  edom_mono[OF *]
-      by (auto simp add: join_below_iff split:if_splits elim:below_trans[OF *])
+    have "consistent (ae, ce, 0) ((x, e) # \<Gamma>, e, S)" using var\<^sub>2
+      by (auto simp add: join_below_iff split:if_splits elim:below_trans[OF *[unfolded `a = 0`]])
     moreover
     have "conf_transform (ae, ce, a) (\<Gamma>, e, Upd x # S) \<Rightarrow>\<^sub>G conf_transform (ae, ce, 0) ((x, e) # \<Gamma>, e, S)"
-      using `ae x = up\<cdot>0` `a = 0` var\<^sub>2 `ce x = up\<cdot>c`
+      using `ae x = up\<cdot>a` `a = 0` var\<^sub>2 `ce x = up\<cdot>c`
       by (auto intro!: step.intros simp add: map_transform_Cons)
     ultimately show ?thesis by (blast del: consistentI consistentE)
   next
     case False[simp]
     hence [simp]: "ae x = \<bottom>" "ce x = \<bottom>" using var\<^sub>2 by (auto simp add: edom_def)
 
-    have *: "prognosis ae a ((x, e) # \<Gamma>, e, S) \<sqsubseteq> prognosis ae a (\<Gamma>, e, Upd x # S)" sorry
+    have *: "prognosis ae a ((x, e) # \<Gamma>, e, S) \<sqsubseteq> prognosis ae a (\<Gamma>, e, Upd x # S)"  by (rule prognosis_Var2) simp
 
-    have "consistent (ae, ce, a) ((x, e) # \<Gamma>, e, S)" using var\<^sub>2  edom_mono[OF *]
+    have "consistent (ae, ce, a) ((x, e) # \<Gamma>, e, S)" using var\<^sub>2
       by (auto simp add: join_below_iff split:if_splits elim:below_trans[OF *])
     moreover
     have "conf_transform (ae, ce, a) (\<Gamma>, e, Upd x # S) = conf_transform (ae, ce, a) ((x, e) # \<Gamma>, e, S)"
@@ -635,7 +645,7 @@ next
   have "edom (?ce \<squnion> ce) = edom (?ae \<squnion> ae)" using let\<^sub>1 by auto
   moreover
   {
-  have "prognosis (?ae \<squnion> ae) a (\<Delta> @ \<Gamma>, e, S) \<sqsubseteq> ?ce \<squnion> prognosis ae a (\<Gamma>, Let \<Delta> e, S)" sorry
+  have "prognosis (?ae \<squnion> ae) a (\<Delta> @ \<Gamma>, e, S) \<sqsubseteq> ?ce \<squnion> prognosis ae a (\<Gamma>, Let \<Delta> e, S)" by (rule prognosis_Let)
   also have "prognosis ae a (\<Gamma>, Let \<Delta> e, S) \<sqsubseteq> ce" using let\<^sub>1 by auto
   finally have "prognosis (?ae \<squnion> ae) a (\<Delta> @ \<Gamma>, e, S) \<sqsubseteq> ?ce \<squnion> ce" by this simp
   }
@@ -654,7 +664,7 @@ next
   have "ABinds (\<Delta> @ \<Gamma>) \<cdot> (aHeap \<Delta> e\<cdot>a \<squnion> ae) \<squnion> aExp e\<cdot>a = (ABinds \<Delta>\<cdot>(aHeap \<Delta> e\<cdot>a) \<squnion> aExp e\<cdot>a) \<squnion> ABinds \<Gamma>\<cdot>ae"
     apply (simp add: Abinds_append_disjoint[OF fresh_distinct[OF let\<^sub>1(1)]])
     by (metis join_comm)
-  moreover have "(ABinds \<Delta>\<cdot>(aHeap \<Delta> e\<cdot>a) \<squnion> aExp e\<cdot>a) \<sqsubseteq> aHeap \<Delta> e\<cdot>a \<squnion> aExp (Let \<Delta> e)\<cdot>a" sorry
+  moreover have "(ABinds \<Delta>\<cdot>(aHeap \<Delta> e\<cdot>a) \<squnion> aExp e\<cdot>a) \<sqsubseteq> aHeap \<Delta> e\<cdot>a \<squnion> aExp (Let \<Delta> e)\<cdot>a" by (rule aExp_Let)
   moreover have " ABinds \<Gamma>\<cdot>ae \<squnion> aExp (Let \<Delta> e)\<cdot>a \<sqsubseteq> ae" using let\<^sub>1 by auto
   ultimately
   have "ABinds (\<Delta> @ \<Gamma>) \<cdot> (aHeap \<Delta> e\<cdot>a \<squnion> ae) \<squnion> aExp e\<cdot>a \<sqsubseteq> aHeap \<Delta> e\<cdot>a \<squnion> ae"
