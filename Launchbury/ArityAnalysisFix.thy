@@ -197,22 +197,6 @@ lemma ABinds_lookup_fresh:
   "atom v \<sharp> \<Gamma> \<Longrightarrow> (ABinds \<Gamma>\<cdot>ae) v = \<bottom>"
 by (induct \<Gamma> rule: ABinds.induct) (auto simp add: fresh_Cons fresh_Pair Aexp'_lookup_fresh fresh_delete)
 
-lemma Abinds_append_fresh: "domA \<Delta> \<inter> domA \<Gamma> = {} \<Longrightarrow>  ABinds (\<Delta> @ \<Gamma>)\<cdot>ae = ABinds \<Delta>\<cdot>ae \<squnion> ABinds \<Gamma>\<cdot>ae"
-proof (induct \<Delta> rule: ABinds.induct)
-  case 1 thus ?case by simp
-next
-  case (2 v e \<Delta>)
-  from 2(2)
-  have "v \<notin> domA \<Gamma>" and  "domA (delete v \<Delta>) \<inter> domA \<Gamma> = {}" by auto
-  from 2(1)[OF this(2)]
-  have "ABinds (delete v \<Delta> @ \<Gamma>)\<cdot>ae = ABinds (delete v \<Delta>)\<cdot>ae \<squnion> ABinds \<Gamma>\<cdot>ae".
-  moreover
-  have "delete v \<Gamma> = \<Gamma>" by (metis `v \<notin> domA \<Gamma>` delete_not_domA)
-  ultimately
-  show " ABinds (((v, e) # \<Delta>) @ \<Gamma>)\<cdot>ae = ABinds ((v, e) # \<Delta>)\<cdot>ae \<squnion> ABinds \<Gamma>\<cdot>ae"
-    by auto
-qed
-
 lemma Afix_lookup_fresh:
   assumes "atom v \<sharp> \<Gamma>"
   shows "(Afix \<Gamma>\<cdot>ae) v = ae v"
@@ -248,7 +232,7 @@ lemma Afix_append_fresh:
 proof (rule below_antisym)
   show *: "Afix (\<Delta> @ \<Gamma>)\<cdot>ae \<sqsubseteq> Afix \<Gamma>\<cdot>(Afix \<Delta>\<cdot>ae)"
   apply (rule Afix_least_below)
-  apply (simp add: Abinds_append_fresh[OF fresh_distinct[OF assms]] Afix_comp2join_fresh[OF assms])
+  apply (simp add: Abinds_append_disjoint[OF fresh_distinct[OF assms]] Afix_comp2join_fresh[OF assms])
   apply (rule below_trans[OF join_mono[OF Abinds_Afix_below Abinds_Afix_below]])
   apply (simp_all add: Afix_above_arg  below_trans[OF Afix_above_arg Afix_above_arg])
   done
@@ -257,12 +241,12 @@ next
   proof (rule Afix_least_below)
     show "ABinds \<Gamma>\<cdot>(Afix (\<Delta> @ \<Gamma>)\<cdot>ae) \<sqsubseteq> Afix (\<Delta> @ \<Gamma>)\<cdot>ae"
       apply (rule below_trans[OF _ Abinds_Afix_below])
-      apply (subst Abinds_append_fresh[OF fresh_distinct[OF assms]])
+      apply (subst Abinds_append_disjoint[OF fresh_distinct[OF assms]])
       apply simp
       done
     have "ABinds \<Delta>\<cdot>(Afix (\<Delta> @ \<Gamma>)\<cdot>ae) \<sqsubseteq> Afix (\<Delta> @ \<Gamma>)\<cdot>ae"
       apply (rule below_trans[OF _ Abinds_Afix_below])
-      apply (subst Abinds_append_fresh[OF fresh_distinct[OF assms]])
+      apply (subst Abinds_append_disjoint[OF fresh_distinct[OF assms]])
       apply simp
       done
     thus "Afix \<Delta>\<cdot>ae \<sqsubseteq> Afix (\<Delta> @ \<Gamma>)\<cdot>ae"

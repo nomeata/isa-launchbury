@@ -109,6 +109,23 @@ lemma ABinds_restr_subst:
   apply (auto dest:  set_mp[OF set_delete_subset])
   done
 
+lemma Abinds_append_disjoint: "domA \<Delta> \<inter> domA \<Gamma> = {} \<Longrightarrow>  ABinds (\<Delta> @ \<Gamma>)\<cdot>ae = ABinds \<Delta>\<cdot>ae \<squnion> ABinds \<Gamma>\<cdot>ae"
+proof (induct \<Delta> rule: ABinds.induct)
+  case 1 thus ?case by simp
+next
+  case (2 v e \<Delta>)
+  from 2(2)
+  have "v \<notin> domA \<Gamma>" and  "domA (delete v \<Delta>) \<inter> domA \<Gamma> = {}" by auto
+  from 2(1)[OF this(2)]
+  have "ABinds (delete v \<Delta> @ \<Gamma>)\<cdot>ae = ABinds (delete v \<Delta>)\<cdot>ae \<squnion> ABinds \<Gamma>\<cdot>ae".
+  moreover
+  have "delete v \<Gamma> = \<Gamma>" by (metis `v \<notin> domA \<Gamma>` delete_not_domA)
+  ultimately
+  show " ABinds (((v, e) # \<Delta>) @ \<Gamma>)\<cdot>ae = ABinds ((v, e) # \<Delta>)\<cdot>ae \<squnion> ABinds \<Gamma>\<cdot>ae"
+    by auto
+qed
+
+
 end
 
 

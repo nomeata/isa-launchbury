@@ -1,5 +1,5 @@
 theory FutureEtaExpand
-imports CallFutures AEnv Terms EtaExpansionArity EtaExpansionSestoft AbstractTransform Set_Cpo_Nominal  Sestoft SestoftGC
+imports CallFutures AEnv Terms EtaExpansionArity EtaExpansionSestoft AbstractTransform Set_Cpo_Nominal  Sestoft SestoftGC ArityAnalysisAbinds
 begin
 
 default_sort type
@@ -159,10 +159,47 @@ lemma const_onE[elim]: "const_on f S r ==> x : S ==> r = r' ==> f x = r'"     by
 lemma const_on_insert[simp]: "const_on f (insert x S) y \<longleftrightarrow> const_on f S y \<and> f x = y"
   unfolding const_on_def by auto
 
+context ArityAnalysis 
+begin
+  abbreviation "aExp \<equiv> Aexp"
 
+  abbreviation aSummary :: "AEnv \<Rightarrow> Arity \<Rightarrow> heap \<Rightarrow> exp \<Rightarrow> AEnv"
+    where "aSummary ae a \<Gamma> e \<equiv> ABinds \<Gamma>\<cdot>ae \<squnion> aExp e\<cdot>a"
 
-locale FutureAnalysis =
-  fixes aExp :: "exp \<Rightarrow> Arity \<rightarrow> AEnv"
+  (*
+  lemma aSummary_aExp[elim]:
+    "aSummary ae a \<Gamma> e \<sqsubseteq> ae \<Longrightarrow> aExp e\<cdot>a \<sqsubseteq> ae"
+    find_theorems "_ \<squnion> _ \<sqsubseteq> _"
+    apply (auto simp add: join_below_iff)
+    done
+    by (induction ae a \<Gamma> e rule: aSummary.induct) (auto simp add: join_below_iff)
+  *)
+
+  lemma aSummary_App: "aSummary ae (inc\<cdot>a) \<Gamma> e \<squnion> AE_singleton x \<cdot> (up\<cdot>0) \<sqsubseteq> aSummary ae a \<Gamma> (App e x)"
+    sorry
+
+  lemma aSummary_Subst:
+    assumes "aSummary ae a \<Gamma> (Lam [y]. e) \<sqsubseteq> ae"
+    assumes "ae x = up\<cdot>0"
+    shows "aSummary ae (pred\<cdot>a) \<Gamma> e[y::=x] \<sqsubseteq> ae"
+    sorry
+
+  lemma aSummary_Var:
+    assumes "map_of \<Gamma> x = Some e" and "a \<sqsubseteq> u" and "ae x = up\<cdot>u"
+    shows "aSummary ae u \<Gamma> e \<sqsubseteq> aSummary ae a \<Gamma> (Var x)"
+    sorry
+
+  lemma aSummary_delete:
+    shows "aSummary ae u (delete x \<Gamma>) e \<sqsubseteq> aSummary ae u \<Gamma> e"
+      sorry
+
+  lemma aSummary_env_delete:
+    assumes "x \<notin> domA \<Gamma>"
+    shows "aSummary (env_delete x ae) u \<Gamma> e = aSummary ae u \<Gamma> e"
+    sorry
+end
+
+locale FutureAnalysis = ArityAnalysis +
   fixes aHeap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> AEnv"
   fixes fHeap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> (var \<Rightarrow> two)"
 
@@ -178,10 +215,13 @@ locale FutureAnalysis =
   assumes aHeap_heap3: "x \<in> thunks \<Gamma> \<Longrightarrow> many \<sqsubseteq> (fHeap \<Gamma> e\<cdot>a) x \<Longrightarrow> (aHeap \<Gamma> e\<cdot>a) x = up\<cdot>0"
   assumes aHeap_subst: "x \<notin> domA \<Gamma> \<Longrightarrow> y \<notin> domA \<Gamma> \<Longrightarrow> aHeap \<Gamma>[x::h=y] e[x ::=y]  = aHeap \<Gamma> e"
 
+  assumes ASummay_Let: "aSummary (aHeap \<Gamma> e\<cdot>a) a \<Gamma> e \<sqsubseteq> aHeap \<Gamma> e\<cdot>a \<squnion>  aExp (Let \<Gamma> e)\<cdot>a"
+  (*
   assumes aHeap_heap: "map_of \<Gamma> x = Some e' \<Longrightarrow>  fup\<cdot>(aExp e')\<cdot>((aHeap \<Gamma> e\<cdot>a) x) f|` domA \<Gamma> \<sqsubseteq> aHeap \<Gamma> e\<cdot>a"
   assumes aHeap_heap2: "map_of \<Gamma> x = Some e' \<Longrightarrow> fup\<cdot>(aExp e')\<cdot>((aHeap \<Gamma> e\<cdot>a) x) f|` (- domA \<Gamma>) \<sqsubseteq>  aExp (Let \<Gamma> e)\<cdot>a"
   assumes aHeap_above_aExp: "aExp e\<cdot>a f|` domA \<Gamma> \<sqsubseteq> aHeap \<Gamma> e\<cdot>a"
   assumes aExp_Let_above:   "aExp e\<cdot>a f|` (- domA \<Gamma>) \<sqsubseteq> aExp (Let \<Gamma> e)\<cdot>a"
+  *)
  
   assumes fHeap[eqvt]: "\<pi> \<bullet> fHeap = fHeap"
   assumes edom_fHeap[simp]: "edom (fHeap \<Delta> e\<cdot>a) = edom (aHeap \<Delta> e\<cdot>a)"
@@ -193,6 +233,9 @@ locale FutureAnalysis =
   assumes prognosis_subst_Lam: "prognosis ae (pred\<cdot>a) (\<Gamma>, e[y::=x], S) \<sqsubseteq> prognosis ae a (\<Gamma>, Lam [y]. e, Arg x # S)"
   assumes prognosis_Var: "ae x = up\<cdot>u \<Longrightarrow> a \<sqsubseteq> u \<Longrightarrow> prognosis ae u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))"
   assumes prognosis_ap: "const_on (prognosis ae a (\<Gamma>, e, S)) (ap S) many"
+
+  assumes aSummary_edom_prognosis: "edom (aSummary ae a \<Gamma> e) \<subseteq> edom (prognosis ae a (\<Gamma>, e, S))"
+
 begin
 
   sublocale AbstractTransformBound
@@ -262,10 +305,9 @@ begin
     \<Longrightarrow> heap_upds_ok (\<Gamma>, S)
     \<Longrightarrow> edom ce = edom ae
     \<Longrightarrow> Astack (restr_stack (edom ae) S) \<sqsubseteq> a
-    \<Longrightarrow> aExp e \<cdot> a \<sqsubseteq> ae
     \<Longrightarrow> prognosis ae a (\<Gamma>, e, S) \<sqsubseteq> ce
+    \<Longrightarrow> aSummary ae a \<Gamma> e \<sqsubseteq> ae
     \<Longrightarrow> (\<And> x. x \<in> thunks \<Gamma> \<Longrightarrow>  many \<sqsubseteq> ce x \<Longrightarrow> ae x = up\<cdot>0)
-    \<Longrightarrow> (\<And> x e'. map_of \<Gamma> x = Some e' \<Longrightarrow> fup\<cdot>(aExp e')\<cdot>(ae x) \<sqsubseteq> ae)
     \<Longrightarrow> const_on ae (ap S) (up\<cdot>0)
     \<Longrightarrow> const_on ae (upds (restr_stack (edom ae) S)) (up\<cdot>0)
     \<Longrightarrow> consistent (ae, ce, a) (\<Gamma>, e, S)"  
@@ -284,7 +326,7 @@ begin
   case (app\<^sub>1 \<Gamma> e x S)
     have "prognosis ae (inc\<cdot>a) (\<Gamma>, e, Arg x # S) \<sqsubseteq> prognosis ae a (\<Gamma>, App e x, S)" by (rule prognosis_App)
     with app\<^sub>1 have "consistent (ae, ce, inc\<cdot>a) (\<Gamma>, e, Arg x # S)"
-      by (auto simp add: join_below_iff aExp_App elim: below_trans)
+      by (auto simp add: join_below_iff aExp_App dest: below_trans[OF aSummary_App]  elim: below_trans)
     moreover
     have "conf_transform (ae, ce, a) (\<Gamma>, App e x, S) \<Rightarrow>\<^sub>G conf_transform (ae, ce, inc\<cdot>a) (\<Gamma>, e, Arg x # S)"
       by simp rule
@@ -292,20 +334,11 @@ begin
     show ?case by (blast del: consistentI consistentE)
   next
 case (app\<^sub>2 \<Gamma> y e x S)
-  have "aExp (e[y ::= x])\<cdot>(pred\<cdot>a) \<sqsubseteq> ae" using app\<^sub>2
-    apply (auto simp add:  join_below_iff)
-    apply (rule below_trans[OF monofun_cfun_fun[OF aExp_subst_App_Lam]])
-    apply (auto simp add: aExp_App aExp_Lam join_below_iff)
-    done
-  moreover
   have "prognosis ae (pred\<cdot>a) (\<Gamma>, e[y::=x], S) \<sqsubseteq> prognosis ae a (\<Gamma>, (Lam [y]. e), Arg x # S)"
      by (rule prognosis_subst_Lam)
-  moreover
-  hence "edom (prognosis ae (pred\<cdot>a) (\<Gamma>, e[y::=x], S)) \<subseteq> edom (prognosis ae a (\<Gamma>, (Lam [y]. e), Arg x # S))" 
-    by (rule edom_mono)
-  ultimately
+  then
   have "consistent (ae, ce, pred\<cdot>a) (\<Gamma>, e[y::=x], S)"  using app\<^sub>2
-    by (auto elim: below_trans)
+    by (auto elim: below_trans edom_mono elim: aSummary_Subst)
   moreover
   have "conf_transform (ae, ce, a) (\<Gamma>, Lam [y]. e, Arg x # S) \<Rightarrow>\<^sub>G conf_transform (ae, ce, pred \<cdot> a) (\<Gamma>, e[y::=x], S)" by (simp add: subst_transform[symmetric]) rule
   ultimately
@@ -316,7 +349,7 @@ case (thunk \<Gamma> x e S)
   hence [simp]: "x \<in> domA \<Gamma>" by (rule set_mp[OF thunks_domA])
   hence "x \<notin> upds S" using thunk by (auto elim!: heap_upds_okE)
 
-  from thunk have "aExp (Var x)\<cdot>a \<sqsubseteq> ae" by auto
+  from thunk have "aExp (Var x)\<cdot>a \<sqsubseteq> ae" by (auto simp add: join_below_iff)
   from below_trans[OF aExp_Var fun_belowD[OF this] ]
   have "up\<cdot>a \<sqsubseteq> ae x".    
   then obtain u where "ae x = up\<cdot>u" and "a \<sqsubseteq> u" by (cases "ae x") auto
@@ -324,8 +357,15 @@ case (thunk \<Gamma> x e S)
 
   have "Astack (restr_stack (edom ae) S) \<sqsubseteq> u" using thunk `a \<sqsubseteq> u` by (auto elim: below_trans)
 
+  have "aSummary ae u (delete x \<Gamma>) e \<sqsubseteq> aSummary ae u \<Gamma> e" by (rule aSummary_delete)
+  also have "\<dots> \<sqsubseteq>  aSummary ae a \<Gamma> (Var x)"  using thunk `a \<sqsubseteq> u` `ae x = up\<cdot>u` by (auto intro!: aSummary_Var)
+  also have "\<dots> \<sqsubseteq> ae" using thunk by auto
+  finally have "aSummary ae u (delete x \<Gamma>) e \<sqsubseteq> ae" by this simp_all
+
+  (*
   have "fup\<cdot>(aExp e)\<cdot>(ae x) \<sqsubseteq> ae " using  thunk by fastforce
   hence "aExp e\<cdot>u \<sqsubseteq> ae" using  `ae x = up\<cdot>u` by auto
+  *)
 
   show ?case
   proof(cases "ce x" rule:two_cases)
@@ -365,22 +405,17 @@ case (thunk \<Gamma> x e S)
       by (rule below_env_deleteI)
     moreover
 
-    from **
-    have "(aExp e\<cdot>u) x = \<bottom>" sorry
-    hence "aExp e\<cdot>u \<sqsubseteq> env_delete x ae" using `aExp e\<cdot>u \<sqsubseteq> ae` by (metis below_env_deleteI)
-    moreover
-
     {
-    fix x' e'
-    assume "map_of (delete x \<Gamma>) x' = Some e'"
-    hence "fup\<cdot>(aExp e')\<cdot>(env_delete x ae x') \<sqsubseteq> ae" using thunk by fastforce
+    from `aSummary ae u (delete x \<Gamma>) e \<sqsubseteq> ae`
+    have "aSummary (env_delete x ae) u (delete x \<Gamma>) e \<sqsubseteq> ae" by (simp add: aSummary_env_delete)
     moreover
-    from `map_of (delete x \<Gamma>) x' = Some e'`  **
-    have "(fup\<cdot>(aExp e')\<cdot>(env_delete x ae x')) x = \<bottom>" sorry
+    from **[folded eq] set_mp[OF aSummary_edom_prognosis, unfolded edomIff]
+    have "aSummary (env_delete x ae) u (delete x \<Gamma>) e x = \<bottom>" by metis
     ultimately
-    have "fup\<cdot>(aExp e')\<cdot>(env_delete x ae x') \<sqsubseteq> env_delete x ae"  by (metis below_env_deleteI)
+    have "aSummary (env_delete x ae) u (delete x \<Gamma>) e \<sqsubseteq> env_delete x ae" by (metis below_env_deleteI)
     }
     moreover
+
 
     have "const_on ae (ap S) (up\<cdot>0)" using thunk by auto
     hence "const_on (env_delete x ae) (ap S) (up\<cdot>0)" using `x \<notin>  ap S`
@@ -430,9 +465,12 @@ case (thunk \<Gamma> x e S)
 
     
     have "prognosis ae 0 (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> ce" using *[unfolded `u=0`] thunk by (auto elim: below_trans)
-    hence "consistent (ae, ce, 0) (delete x \<Gamma>, e, Upd x # S)" using thunk  `aExp e\<cdot>u \<sqsubseteq> ae` `ae x = up\<cdot>u` `u = 0` edom_mono[OF *]
-      by (auto simp add: join_below_iff)
     moreover
+    note `aSummary ae u (delete x \<Gamma>) e \<sqsubseteq> ae`
+    ultimately
+    have "consistent (ae, ce, 0) (delete x \<Gamma>, e, Upd x # S)" using thunk `ae x = up\<cdot>u` `u = 0`  by auto
+    moreover
+
     from  `map_of \<Gamma> x = Some e` `ae x = up\<cdot>0` many
     have "map_of (map_transform Aeta_expand ae (map_transform ccTransform ae \<Gamma>)) x = Some (transform 0 e)"
       by (simp add: map_of_map_transform)
@@ -445,26 +483,28 @@ case (thunk \<Gamma> x e S)
 next
 case (lamvar \<Gamma> x e S)
   from lamvar have [simp]: "x \<in> domA \<Gamma>" by auto (metis domI dom_map_of_conv_domA)
-  from lamvar have "aExp (Var x)\<cdot>a \<sqsubseteq> ae" by auto
+  from lamvar have "aExp (Var x)\<cdot>a \<sqsubseteq> ae" by (auto simp add: join_below_iff)
   from below_trans[OF aExp_Var fun_belowD[OF this] ]
   have "up\<cdot>a \<sqsubseteq> ae x".
   then obtain u where "ae x = up\<cdot>u" and "a \<sqsubseteq> u" by (cases "ae x") auto
-  
+
+  have "aSummary ae u (delete x \<Gamma>) e \<sqsubseteq> aSummary ae u \<Gamma> e" by (rule aSummary_delete)
+  also have "\<dots> \<sqsubseteq>  aSummary ae a \<Gamma> (Var x)"  using lamvar `a \<sqsubseteq> u` `ae x = up\<cdot>u` by (auto intro!: aSummary_Var)
+  also have "\<dots> \<sqsubseteq> ae" using lamvar by auto
+  finally have "aSummary ae u (delete x \<Gamma>) e \<sqsubseteq> ae" by this simp_all
+
   from `ae x = up\<cdot>u` have "ce x \<noteq> \<bottom>" using lamvar by (auto simp add: edom_def)
   then obtain c where "ce x = up\<cdot>c" by (cases "ce x") auto
 
-  have "Astack (restr_stack (edom ae) S) \<sqsubseteq> u" using lamvar  below_trans[OF _ `a \<sqsubseteq> u`] by auto
-
   have *: "prognosis ae u ((x, e) # delete x \<Gamma>, e, S) \<sqsubseteq> prognosis ae a (\<Gamma>, Var x, S)" sorry
 
-  have "x \<in> edom ce" sorry
-  hence "fup\<cdot>(aExp e)\<cdot>(ae x) \<sqsubseteq> ae" using lamvar by auto
-  hence "aExp e\<cdot>u \<sqsubseteq> ae" using `ae x = up\<cdot>u` by simp
-  hence "consistent (ae, ce, u) ((x, e) # delete x \<Gamma>, e, S)"
-    using lamvar `ae x = up\<cdot>u` edom_mono[OF *]
+  have "consistent (ae, ce, u) ((x, e) # delete x \<Gamma>, e, S)"
+    using lamvar `aSummary ae u (delete x \<Gamma>) e \<sqsubseteq> ae`  `ae x = up\<cdot>u` edom_mono[OF *]
     by (auto simp add: join_below_iff split:if_splits intro: below_trans[OF _ `a \<sqsubseteq> u`] below_trans[OF *])
-    
   moreover
+
+  have "Astack (restr_stack (edom ae) S) \<sqsubseteq> u" using lamvar  below_trans[OF _ `a \<sqsubseteq> u`] by auto
+
   {
   from `isLam e`
   have "isLam (transform u e)" by simp
@@ -548,12 +588,8 @@ next
   {
   have "edom (?ae \<squnion> ae) \<subseteq> domA (\<Delta> @ \<Gamma>) \<union> upds S"
     using let\<^sub>1(3) by (auto dest: set_mp[OF edom_aHeap])
+  moreover
   (*
-  moreover
-  have "upds S \<subseteq> edom (?ae \<squnion> ae)"
-    using let\<^sub>1(3) apply auto
-  *)
-  moreover
   { fix x e'
     assume "map_of \<Delta> x = Some e'"
     hence "x \<notin> edom ae" using `edom ae \<subseteq> - domA \<Delta>` by (metis Compl_iff contra_subsetD domI dom_map_of_conv_domA)
@@ -584,6 +620,7 @@ next
     hence "fup\<cdot>(aExp e')\<cdot>((?ae \<squnion> ae) x) \<sqsubseteq> ?ae \<squnion> ae" by (metis (erased, hide_lams) "HOLCF-Join-Classes.join_above2" below_trans)
   }
   moreover
+  *)
   { fix x e'
     assume "x \<in> thunks \<Gamma>"
     hence "x \<notin> edom ?ce" using fresh_distinct[OF let\<^sub>1(1)]  by (auto dest: set_mp[OF edom_aHeap]  set_mp[OF thunks_domA])
@@ -615,6 +652,7 @@ next
   moreover
   have "Astack (restr_stack (edom (?ae \<squnion> ae)) S) \<sqsubseteq> a" unfolding restr_stack_simp using let\<^sub>1 by auto
   moreover
+  (*
   {
   have "aExp e\<cdot>a \<sqsubseteq> (aExp e\<cdot>a f|` domA \<Delta>) \<squnion> (aExp e\<cdot>a f|` (- domA \<Delta>))"
     by (rule eq_imp_below[OF join_env_restr_UNIV[symmetric]]) auto
@@ -624,6 +662,7 @@ next
   finally have "aExp e\<cdot>a \<sqsubseteq> ?ae \<squnion> ae" by this auto
   }
   moreover
+  *)
   have "edom (?ce \<squnion> ce) = edom (?ae \<squnion> ae)" using let\<^sub>1 by auto
   moreover
   {
@@ -635,8 +674,44 @@ next
   have "heap_upds_ok (\<Gamma>, S)" using let\<^sub>1 by auto
   with fresh_distinct[OF let\<^sub>1(1)]  `domA \<Delta> \<inter> upds S = {}`
   have "heap_upds_ok (\<Delta> @ \<Gamma>, S)" by (rule heap_upds_ok_append)
+  moreover
+  {
+  have "aSummary ae a \<Gamma> (Let \<Delta> e) \<sqsubseteq> ae" using let\<^sub>1 by auto
+
+  note ASummay_Let[where \<Gamma> =\<Delta>]
+
+  (*
+  have "aSummary (aHeap \<Delta> e\<cdot>a \<squnion> ae) a (\<Delta> @ \<Gamma>) e = aSummary (aHeap \<Delta> e\<cdot>a \<squnion> ae) a \<Delta> e \<squnion> aSummary (aHeap \<Delta> e\<cdot>a \<squnion> ae) a \<Gamma> e" sorry
+  note eq_imp_below[OF this]
+  also have "aSummary (aHeap \<Delta> e\<cdot>a \<squnion> ae) a \<Delta> e = aSummary (aHeap \<Delta> e\<cdot>a) a \<Delta> e" sorry
+  also have "\<dots> \<sqsubseteq> aHeap \<Delta> e\<cdot>a \<squnion> aExp (Terms.Let \<Delta> e)\<cdot>a" by (rule ASummay_Let)
+  also have "aSummary (aHeap \<Delta> e\<cdot>a \<squnion> ae) a \<Gamma> e = aSummary ae a \<Gamma> e" sorry
+  also have "\<dots> \<sqsubseteq> aSummary ae a \<Gamma> (Let \<Delta> e)" sorry
+  also have "\<dots> \<sqsubseteq> ae" using let\<^sub>1 by auto
+  also 
+  
+  also have "aSummary (aHeap \<Delta> e\<cdot>a \<squnion> ae) a \<Gamma> e
+  *)
+  have "ABinds \<Delta>\<cdot>(aHeap \<Delta> e\<cdot>a \<squnion> ae) = ABinds \<Delta>\<cdot>(aHeap \<Delta> e\<cdot>a)" sorry
+  moreover
+  have "ABinds \<Gamma>\<cdot>(aHeap \<Delta> e\<cdot>a \<squnion> ae) = ABinds \<Gamma>\<cdot>ae" sorry
   ultimately
-  have "consistent (?ae \<squnion> ae, ?ce \<squnion> ce, a) (\<Delta> @ \<Gamma>, e, S) "  by auto
+  have "aSummary (aHeap \<Delta> e\<cdot>a \<squnion> ae) a (\<Delta> @ \<Gamma>) e = (ABinds \<Delta>\<cdot>(aHeap \<Delta> e\<cdot>a) \<squnion> aExp e\<cdot>a) \<squnion> ABinds \<Gamma>\<cdot>ae"
+    apply (simp add: Abinds_append_disjoint[OF fresh_distinct[OF let\<^sub>1(1)]])
+    by (metis join_comm)
+  moreover have "(ABinds \<Delta>\<cdot>(aHeap \<Delta> e\<cdot>a) \<squnion> aExp e\<cdot>a) \<sqsubseteq> aHeap \<Delta> e\<cdot>a \<squnion> aExp (Let \<Delta> e)\<cdot>a" sorry
+  moreover have "aSummary ae a \<Gamma> (Terms.Let \<Delta> e) \<sqsubseteq> ae" using let\<^sub>1 by auto
+  ultimately
+  have "aSummary (aHeap \<Delta> e\<cdot>a \<squnion> ae) a (\<Delta> @ \<Gamma>) e \<sqsubseteq> aHeap \<Delta> e\<cdot>a \<squnion> ae"
+    apply (simp only: join_assoc[symmetric])
+    apply (erule below_trans[OF join_mono[OF _ below_refl]])
+    apply (simp only: join_assoc)
+    apply (subst join_comm) back
+    apply (erule join_mono[OF  below_refl])
+    done
+  }
+  ultimately
+  have "consistent (?ae \<squnion> ae, ?ce \<squnion> ce, a) (\<Delta> @ \<Gamma>, e, S) " by auto
   }
   moreover
   {
