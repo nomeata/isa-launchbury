@@ -62,20 +62,14 @@ next
 qed
 *)
 
+lemma Abinds_env_cong: "(\<And> x. x\<in>domA \<Delta> \<Longrightarrow> ae x = ae' x)  \<Longrightarrow>  ABinds \<Delta>\<cdot>ae = ABinds \<Delta>\<cdot>ae'"
+  by (induct \<Delta> rule: ABinds.induct) auto
+
+lemma Abinds_env_restr_cong: " ae f|` domA \<Delta> = ae' f|` domA \<Delta> \<Longrightarrow>  ABinds \<Delta>\<cdot>ae = ABinds \<Delta>\<cdot>ae'"
+  by (rule Abinds_env_cong) (metis env_restr_eqD)
+
 lemma Abinds_join_fresh: "ae' ` (domA \<Delta>) \<subseteq> {\<bottom>} \<Longrightarrow>  ABinds \<Delta>\<cdot>(ae \<squnion> ae') = (ABinds \<Delta>\<cdot>ae)"
-proof (induct \<Delta> rule: ABinds.induct)
-  case 1 thus ?case by simp
-next
-  case (2 v e \<Delta>)
-  from 2(2)
-  have "ae' v = \<bottom>" by auto
-  moreover
-  from 2(2) have  "ae' ` domA (delete v \<Delta>) \<subseteq> {\<bottom>}" by auto
-  hence "ABinds (delete v \<Delta>)\<cdot>(ae \<squnion> ae') = ABinds (delete v \<Delta>)\<cdot>ae" by (rule 2)
-  ultimately
-  show "ABinds ((v, e) # \<Delta>)\<cdot>(ae \<squnion> ae') = ABinds ((v, e) # \<Delta>)\<cdot>ae"
-    by simp
-qed
+  by (rule Abinds_env_cong) auto
 
 lemma ABinds_restr_fresh:
   assumes "atom ` S \<sharp>* \<Gamma>"

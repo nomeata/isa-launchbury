@@ -61,8 +61,11 @@ abbreviation env_restr_rev  (infixl "f|`"  110) where "env_restr_rev m S \<equiv
 
 notation (latex output) env_restr_rev ("_|\<^bsub>_\<^esub>")
 
-lemma env_restr_empty[simp]: "edom m \<inter> S = {} \<Longrightarrow> m f|` S = \<bottom>"
-  by (fastforce simp add: edom_def env_restr_def)
+lemma env_restr_empty[simp]: "m f|` S = \<bottom> \<longleftrightarrow> edom m \<inter> S = {}"
+  apply (auto simp add: edom_def env_restr_def lambda_strict[symmetric]  split:if_splits)
+  apply metis
+  apply (fastforce simp add: edom_def env_restr_def lambda_strict[symmetric]  split:if_splits)
+  done
 
 lemma lookup_env_restr[simp]: "x \<in> S \<Longrightarrow> (m f|` S) x = m x"
   by (fastforce simp add: env_restr_def)
