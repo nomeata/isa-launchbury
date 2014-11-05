@@ -13,14 +13,34 @@ abbreviation many :: two where "many \<equiv> up\<cdot>notOneShot"
 abbreviation once :: two where "once \<equiv> up\<cdot>oneShot"
 abbreviation none :: two where "none \<equiv> \<bottom>"
 
-definition two_pred where "two_pred = (\<Lambda> x. if x = once then \<bottom> else x)"
-
-definition record_call where "record_call x = (\<Lambda> ce. (\<lambda> y. if x = y then two_pred\<cdot>(ce y) else ce x))"
-
 lemma two_conj: "c = many \<or> c = once \<or> c = none" by (metis Exh_Up one_neq_iffs(1))
 
 lemma two_cases[case_names many once none]:
   obtains "c = many" | "c = once" | "c = none" using two_conj by metis
+
+definition two_pred where "two_pred = (\<Lambda> x. if x \<sqsubseteq> once then \<bottom> else x)"
+
+lemma two_pred_simp: "two_pred\<cdot>c = (if c \<sqsubseteq> once then \<bottom> else c)"
+  unfolding two_pred_def
+  apply (rule beta_cfun)
+  apply (rule cont_if_else_above)
+  apply (auto elim: below_trans)
+  done
+
+lemma two_pred_below_arg: "two_pred \<cdot> f \<sqsubseteq> f"
+  by (auto simp add: two_pred_simp)
+
+lemma two_pred_none: "two_pred\<cdot>c = none \<longleftrightarrow> c \<sqsubseteq> once"
+  by (auto simp add: two_pred_simp)
+
+definition record_call where "record_call x = (\<Lambda> ce. (\<lambda> y. if x = y then two_pred\<cdot>(ce y) else ce y))"
+
+lemma record_call[simp]: "(record_call x \<cdot> f) x = two_pred \<cdot> (f x)"
+  unfolding record_call_def by auto
+
+lemma record_call_below_arg: "record_call x \<cdot> f \<sqsubseteq> f"
+  unfolding record_call_def
+  by (auto intro!: fun_belowI two_pred_below_arg)
 
 
 definition abstractPath :: "var list set \<Rightarrow> var \<Rightarrow> two"
@@ -127,6 +147,20 @@ lemma fup_fst_eqvt[eqvt]: "\<pi> \<bullet> (fup_fst e x) = fup_fst (\<pi> \<bull
   unfolding fup_fst_def
   by perm_simp rule
 
+definition const_on :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a set \<Rightarrow> 'b \<Rightarrow> bool"
+  where "const_on f S x = (\<forall> y \<in> S . f y = x)"
+
+lemma const_on_simp:
+ "const_on f S r \<Longrightarrow> x \<in> S \<Longrightarrow> f x = r"
+ by (simp add: const_on_def)
+
+lemma const_onE[elim]: "const_on f S r ==> x : S ==> r = r' ==> f x = r'"     by (simp add: const_on_def)
+
+lemma const_on_insert[simp]: "const_on f (insert x S) y \<longleftrightarrow> const_on f S y \<and> f x = y"
+  unfolding const_on_def by auto
+
+
+
 locale FutureAnalysis =
   fixes aExp :: "exp \<Rightarrow> Arity \<rightarrow> AEnv"
   fixes aHeap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> AEnv"
@@ -154,6 +188,11 @@ locale FutureAnalysis =
 
   fixes prognosis :: "AEnv \<Rightarrow> Arity \<Rightarrow> conf \<Rightarrow> (var \<Rightarrow> two)"
     (*    where "prognosis ae a (\<Gamma>, e, S) = abstractPath (paths (anal_env fExp \<Gamma> \<cdot> ae) (fstack S \<cdot>(fExp e \<cdot> a)))" *)
+
+  assumes prognosis_App: "prognosis ae (inc\<cdot>a) (\<Gamma>, e, Arg x # S) \<sqsubseteq> prognosis ae a (\<Gamma>, App e x, S)"
+  assumes prognosis_subst_Lam: "prognosis ae (pred\<cdot>a) (\<Gamma>, e[y::=x], S) \<sqsubseteq> prognosis ae a (\<Gamma>, Lam [y]. e, Arg x # S)"
+  assumes prognosis_Var: "ae x = up\<cdot>u \<Longrightarrow> a \<sqsubseteq> u \<Longrightarrow> prognosis ae u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))"
+  assumes prognosis_ap: "const_on (prognosis ae a (\<Gamma>, e, S)) (ap S) many"
 begin
 
   sublocale AbstractTransformBound
@@ -217,18 +256,6 @@ begin
         | "fstack (Dummy x # S) = fstack S"
 
 
-  definition const_on :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a set \<Rightarrow> 'b \<Rightarrow> bool"
-    where "const_on f S x = (\<forall> y \<in> S . f y = x)"
-
-  lemma const_on_simp:
-   "const_on f S r \<Longrightarrow> x \<in> S \<Longrightarrow> f x = r"
-   by (simp add: const_on_def)
-
-  lemma const_onE[elim]: "const_on f S r ==> x : S ==> r = r' ==> f x = r'"     by (simp add: const_on_def)
-
-  lemma const_on_insert[simp]: "const_on f (insert x S) y \<longleftrightarrow> const_on f S y \<and> f x = y"
-    unfolding const_on_def by auto
-
   inductive consistent :: "tstate \<Rightarrow> conf \<Rightarrow> bool" where
     consistentI[intro!]: 
     "edom ae \<subseteq> domA \<Gamma> \<union> upds S
@@ -238,7 +265,7 @@ begin
     \<Longrightarrow> aExp e \<cdot> a \<sqsubseteq> ae
     \<Longrightarrow> prognosis ae a (\<Gamma>, e, S) \<sqsubseteq> ce
     \<Longrightarrow> (\<And> x. x \<in> thunks \<Gamma> \<Longrightarrow>  many \<sqsubseteq> ce x \<Longrightarrow> ae x = up\<cdot>0)
-    \<Longrightarrow> (\<And> x e'. map_of \<Gamma> x = Some e' \<Longrightarrow> x \<in> edom ae \<Longrightarrow> fup\<cdot>(aExp e')\<cdot>(ae x) \<sqsubseteq> ae)
+    \<Longrightarrow> (\<And> x e'. map_of \<Gamma> x = Some e' \<Longrightarrow> fup\<cdot>(aExp e')\<cdot>(ae x) \<sqsubseteq> ae)
     \<Longrightarrow> const_on ae (ap S) (up\<cdot>0)
     \<Longrightarrow> const_on ae (upds (restr_stack (edom ae) S)) (up\<cdot>0)
     \<Longrightarrow> consistent (ae, ce, a) (\<Gamma>, e, S)"  
@@ -255,9 +282,9 @@ begin
   using assms
   proof(induction c c' arbitrary: ae ce a rule:step_induction)
   case (app\<^sub>1 \<Gamma> e x S)
-    have " prognosis ae (inc\<cdot>a) (\<Gamma>, e, Arg x # S) = prognosis ae a (\<Gamma>, App e x, S)" sorry
+    have "prognosis ae (inc\<cdot>a) (\<Gamma>, e, Arg x # S) \<sqsubseteq> prognosis ae a (\<Gamma>, App e x, S)" by (rule prognosis_App)
     with app\<^sub>1 have "consistent (ae, ce, inc\<cdot>a) (\<Gamma>, e, Arg x # S)"
-      by (auto simp add: join_below_iff aExp_App)
+      by (auto simp add: join_below_iff aExp_App elim: below_trans)
     moreover
     have "conf_transform (ae, ce, a) (\<Gamma>, App e x, S) \<Rightarrow>\<^sub>G conf_transform (ae, ce, inc\<cdot>a) (\<Gamma>, e, Arg x # S)"
       by simp rule
@@ -271,8 +298,8 @@ case (app\<^sub>2 \<Gamma> y e x S)
     apply (auto simp add: aExp_App aExp_Lam join_below_iff)
     done
   moreover
-  hence "prognosis ae (pred\<cdot>a) (\<Gamma>, e[y::=x], S) \<sqsubseteq> prognosis ae a (\<Gamma>, (Lam [y]. e), Arg x # S)"
-    sorry
+  have "prognosis ae (pred\<cdot>a) (\<Gamma>, e[y::=x], S) \<sqsubseteq> prognosis ae a (\<Gamma>, (Lam [y]. e), Arg x # S)"
+     by (rule prognosis_subst_Lam)
   moreover
   hence "edom (prognosis ae (pred\<cdot>a) (\<Gamma>, e[y::=x], S)) \<subseteq> edom (prognosis ae a (\<Gamma>, (Lam [y]. e), Arg x # S))" 
     by (rule edom_mono)
@@ -315,20 +342,26 @@ case (thunk \<Gamma> x e S)
     have "prognosis ae a (\<Gamma>, Var x, S) \<sqsubseteq> ce" using thunk by auto
     hence "prognosis ae a (\<Gamma>, Var x, S) x \<sqsubseteq> once"
       using once by (metis (mono_tags) fun_belowD)
-    hence "x \<notin> ap S" sorry
+    hence "x \<notin> ap S" using prognosis_ap by (auto simp add: const_on_def)
     
 
-    have *: "prognosis (env_delete x ae) u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> prognosis ae a (\<Gamma>, Var x, S)"
-      sorry
+    from `ae x = up\<cdot>u` `a \<sqsubseteq> u`
+    have *: "prognosis ae u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))"
+      by (rule prognosis_Var)
 
     from `prognosis ae a (\<Gamma>, Var x, S) x \<sqsubseteq> once`
-    have **:  "prognosis (env_delete x ae) u (delete x \<Gamma>, e, Upd x # S) x = \<bottom>" sorry
+    have "(record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))) x = none"
+      by (simp add: two_pred_none)
+    hence **: "prognosis ae u (delete x \<Gamma>, e, Upd x # S) x = none" using fun_belowD[OF *, where x = x] by auto
+    hence eq: "prognosis (env_delete x ae) u (delete x \<Gamma>, e, Upd x # S) = prognosis ae u (delete x \<Gamma>, e, Upd x # S)"
+      sorry
 
-    hence [simp]: "restr_stack (edom ae - {x}) S = restr_stack (edom ae) S" 
+    have [simp]: "restr_stack (edom ae - {x}) S = restr_stack (edom ae) S" 
       using `x \<notin> upds S` by (auto intro: restr_stack_cong)
   
     have "prognosis (env_delete x ae) u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> env_delete x ce"
-      using ** below_trans[OF * `prognosis ae a (\<Gamma>, Var x, S) \<sqsubseteq> ce`]
+      unfolding eq
+      using ** below_trans[OF below_trans[OF * Cfun.monofun_cfun_arg[OF `prognosis ae a (\<Gamma>, Var x, S) \<sqsubseteq> ce`]] record_call_below_arg]
       by (rule below_env_deleteI)
     moreover
 
@@ -339,13 +372,13 @@ case (thunk \<Gamma> x e S)
 
     {
     fix x' e'
-    assume "map_of \<Gamma> x' = Some e'" and "x' \<noteq> x" and "x' \<in> edom (env_delete x ae)"
-    hence "fup\<cdot>(aExp e')\<cdot>(ae x') \<sqsubseteq> ae" using thunk by fastforce
+    assume "map_of (delete x \<Gamma>) x' = Some e'"
+    hence "fup\<cdot>(aExp e')\<cdot>(env_delete x ae x') \<sqsubseteq> ae" using thunk by fastforce
     moreover
-    from `map_of \<Gamma> x' = Some e'` `prognosis ae a (\<Gamma>, Var x, S) x \<sqsubseteq> once`
-    have "(fup\<cdot>(aExp e')\<cdot>(ae x')) x = \<bottom>" sorry
+    from `map_of (delete x \<Gamma>) x' = Some e'`  **
+    have "(fup\<cdot>(aExp e')\<cdot>(env_delete x ae x')) x = \<bottom>" sorry
     ultimately
-    have "fup\<cdot>(aExp e')\<cdot>(ae x') \<sqsubseteq> env_delete x ae"  by (metis below_env_deleteI)
+    have "fup\<cdot>(aExp e')\<cdot>(env_delete x ae x') \<sqsubseteq> env_delete x ae"  by (metis below_env_deleteI)
     }
     moreover
 
@@ -387,12 +420,16 @@ case (thunk \<Gamma> x e S)
 
   next
     case many
-    have *: "prognosis ae 0 (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> prognosis ae a (\<Gamma>, Var x, S)" sorry
+
+    from `ae x = up\<cdot>u` `a \<sqsubseteq> u`
+    have "prognosis ae u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))" by (rule prognosis_Var)
+    note * = below_trans[OF this record_call_below_arg]
 
     have "ae x = up\<cdot>0" using thunk many `x \<in> thunks \<Gamma>` by (auto)
     hence "u = 0" using `ae x = up\<cdot>u` by simp
+
     
-    have "prognosis ae 0 (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> ce" using * thunk by (auto elim: below_trans)
+    have "prognosis ae 0 (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> ce" using *[unfolded `u=0`] thunk by (auto elim: below_trans)
     hence "consistent (ae, ce, 0) (delete x \<Gamma>, e, Upd x # S)" using thunk  `aExp e\<cdot>u \<sqsubseteq> ae` `ae x = up\<cdot>u` `u = 0` edom_mono[OF *]
       by (auto simp add: join_below_iff)
     moreover
@@ -540,8 +577,6 @@ next
     assume "map_of \<Gamma> x = Some e'"
     hence "x \<in> domA \<Gamma>" by (metis domI dom_map_of_conv_domA)
     hence "x \<notin> edom ?ae" using fresh_distinct[OF let\<^sub>1(1)]  by (auto dest: set_mp[OF edom_aHeap])
-    moreover
-    assume "x \<in> edom (?ae \<squnion> ae)"
     moreover
     note let\<^sub>1 `map_of \<Gamma> x = Some e'`
     ultimately
