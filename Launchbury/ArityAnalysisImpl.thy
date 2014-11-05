@@ -198,12 +198,11 @@ next
   hence [simp]: "x \<in> domA \<Gamma>" by (metis domI dom_map_of_conv_domA)
 
   show "ArityAnalysis.Aexp' Aexp e\<cdot>((Aheap \<Gamma>\<cdot>ae) x) f|` domA \<Gamma> \<sqsubseteq> Aheap \<Gamma>\<cdot>ae"
-    using `map_of \<Gamma> x = Some e`
     unfolding Aheap_def
     apply simp
     apply (rule env_restr_mono)
-    apply (metis (erased, hide_lams) "HOLCF-Join-Classes.join_above2" ABind_eq ArityAnalysis.Abinds_Afix ArityAnalysis.Abinds_reorder1 join_comm monofun_cfun_fun)
-    done
+    apply (subst Afix_unroll) back
+    by (simp add: ArityAnalysis.Abinds_reorder1[OF  `map_of \<Gamma> x = Some e`])
   
   fix a e'
   show "ArityAnalysis.Aexp' Aexp e\<cdot>((Aheap \<Gamma>\<cdot>(Aexp e'\<cdot>a)) x) f|` (- domA \<Gamma>) \<sqsubseteq> Aexp (Terms.Let \<Gamma> e')\<cdot>a"
@@ -211,8 +210,8 @@ next
     unfolding Aheap_def
     apply simp
     apply (rule env_restr_mono)
-    apply (metis (erased, hide_lams) "HOLCF-Join-Classes.join_above2" ABind_eq ArityAnalysis.Abinds_Afix ArityAnalysis.Abinds_reorder1 join_comm monofun_cfun_fun)
-    done
+    apply (subst Afix_unroll) back
+    by (simp add: ArityAnalysis.Abinds_reorder1[OF  `map_of \<Gamma> x = Some e`])
 
    assume "\<not> isLam e"
    with `map_of \<Gamma> x = Some e` have "x \<in> thunks \<Gamma>" by (induction \<Gamma> rule: thunks.induct) (auto split: if_splits)
