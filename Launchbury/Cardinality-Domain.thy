@@ -11,6 +11,8 @@ abbreviation many :: two where "many \<equiv> up\<cdot>notOneShot"
 abbreviation once :: two where "once \<equiv> up\<cdot>oneShot"
 abbreviation none :: two where "none \<equiv> \<bottom>"
 
+lemma many_max[simp]: "a \<sqsubseteq> many" by (cases a) auto
+
 lemma two_conj: "c = many \<or> c = once \<or> c = none" by (metis Exh_Up one_neq_iffs(1))
 
 lemma two_cases[case_names many once none]:
@@ -24,6 +26,13 @@ lemma two_pred_simp: "two_pred\<cdot>c = (if c \<sqsubseteq> once then \<bottom>
   apply (rule cont_if_else_above)
   apply (auto elim: below_trans)
   done
+
+lemma two_pred_simps[simp]:
+  "two_pred\<cdot>many = many"
+  "two_pred\<cdot>once = none"
+  "two_pred\<cdot>none = none"
+by (simp_all add: two_pred_simp)
+
 
 lemma two_pred_below_arg: "two_pred \<cdot> f \<sqsubseteq> f"
   by (auto simp add: two_pred_simp)

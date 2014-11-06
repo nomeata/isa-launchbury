@@ -119,6 +119,9 @@ next
     by auto
 qed
 
+lemma ABinds_delete_below: "ABinds (delete x \<Gamma>)\<cdot>ae \<sqsubseteq> ABinds \<Gamma>\<cdot>ae"
+  by (induct \<Gamma> rule: ABinds.induct)
+     (auto simp add: join_below_iff   delete_twist[where x = x] elim: below_trans simp del: fun_meet_simp)
 
 end
 

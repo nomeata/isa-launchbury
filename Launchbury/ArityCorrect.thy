@@ -25,7 +25,7 @@ locale CorrectArityAnalysis' = ArityAnalysis +
   assumes Aexp_App: "Aexp e \<cdot>(inc\<cdot>n) \<squnion> AE_singleton x \<cdot> (up\<cdot>0) \<sqsubseteq>  Aexp (App e x) \<cdot> n"
   assumes Aexp_subst_App_Lam: "Aexp (e[y::=x]) \<sqsubseteq> Aexp (App (Lam [y]. e) x)"
   assumes Aexp_Lam: " env_delete y (Aexp e \<cdot>(pred\<cdot>n)) \<sqsubseteq> Aexp (Lam [y]. e) \<cdot> n"
-  assumes Aexp_Subst: "Aexp (e[y::=x])\<cdot>a \<sqsubseteq> env_delete y ((Aexp e)\<cdot>a) \<squnion> AE_singleton x\<cdot>(up\<cdot>0)"
+  assumes Aexp_subst: "Aexp (e[y::=x])\<cdot>a \<sqsubseteq> env_delete y ((Aexp e)\<cdot>a) \<squnion> AE_singleton x\<cdot>(up\<cdot>0)"
 
 locale CorrectArityAnalysisAheap = CorrectArityAnalysis + 
   fixes Aheap :: "heap \<Rightarrow> AEnv \<rightarrow> AEnv"
@@ -43,14 +43,13 @@ locale CorrectArityAnalysisAheap' = CorrectArityAnalysis' +
   assumes edom_Aheap: "edom (Aheap \<Gamma> e\<cdot> a) \<subseteq> domA \<Gamma>"
   assumes Aheap_subst: "x \<notin> domA \<Gamma> \<Longrightarrow> y \<notin> domA \<Gamma> \<Longrightarrow> Aheap \<Gamma>[x::h=y] e[x ::=y]  = Aheap \<Gamma> e"
 
-locale CorrectArityAnalysisLet' = CorrectArityAnalysisAheap' +
-  assumes Aexp_Let: "ABinds \<Gamma>\<cdot>(Aheap \<Gamma> e\<cdot>a) \<squnion> Aexp e\<cdot>a \<sqsubseteq> Aheap \<Gamma> e\<cdot>a \<squnion>  Aexp (Let \<Gamma> e)\<cdot>a"
- 
-
-
 locale CorrectArityAnalysisLet = CorrectArityAnalysisAheap +
   assumes Aheap_heap2: "map_of \<Gamma> x = Some e' \<Longrightarrow> Aexp' e'\<cdot>((Aheap \<Gamma>\<cdot>(Aexp e\<cdot>a)) x) f|` (- domA \<Gamma>) \<sqsubseteq>  Aexp (Let \<Gamma> e)\<cdot>a"
   assumes Aexp_Let_above: "Aexp e\<cdot>a f|` (- domA \<Gamma>) \<sqsubseteq> Aexp (Let \<Gamma> e)\<cdot>a"
+
+locale CorrectArityAnalysisLet' = CorrectArityAnalysisAheap' +
+  assumes Aexp_Let: "ABinds \<Gamma>\<cdot>(Aheap \<Gamma> e\<cdot>a) \<squnion> Aexp e\<cdot>a \<sqsubseteq> Aheap \<Gamma> e\<cdot>a \<squnion>  Aexp (Let \<Gamma> e)\<cdot>a"
+ 
 
 locale CorrectArityAnalysisCong = CorrectArityAnalysisAheap +
   assumes Aexp_App_cong: "Aexp e\<cdot>(inc\<cdot>a) = Aexp e'\<cdot>(inc\<cdot>a) \<Longrightarrow> Aexp (App e x)\<cdot>a = Aexp (App e' x)\<cdot>a"

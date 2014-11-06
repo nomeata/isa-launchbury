@@ -55,6 +55,11 @@ lemma env_restr_join:
   shows "(m1 \<squnion> m2) f|` S = (m1 f|` S) \<squnion> (m2 f|` S )"
   by (auto simp add: env_restr_def)
 
+lemma env_restr_join2:
+  fixes m :: "'a::type \<Rightarrow> 'b::{Finite_Join_cpo,pcpo}"
+  shows "m f|` S \<squnion> m f|` S' = m f|` (S \<union> S')"
+  by (auto simp add: env_restr_def)
+
 lemma join_env_restr_UNIV:
   fixes m :: "'a::type \<Rightarrow> 'b::{Finite_Join_cpo,pcpo}"
   shows "S1 \<union> S2 = UNIV \<Longrightarrow> (m f|` S1) \<squnion> (m f|` S2) = m"

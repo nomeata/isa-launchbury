@@ -86,7 +86,7 @@ case (app\<^sub>2 \<Gamma> y e x S)
      by (rule prognosis_subst_Lam)
   moreover
   {
-  have "Aexp (e[y::=x])\<cdot>(pred\<cdot>a) \<sqsubseteq> env_delete y ((Aexp e)\<cdot>(pred\<cdot>a)) \<squnion> AE_singleton x\<cdot>(up\<cdot>0)" by (rule Aexp_Subst)
+  have "Aexp (e[y::=x])\<cdot>(pred\<cdot>a) \<sqsubseteq> env_delete y ((Aexp e)\<cdot>(pred\<cdot>a)) \<squnion> AE_singleton x\<cdot>(up\<cdot>0)" by (rule Aexp_subst)
   also have "env_delete y ((Aexp e)\<cdot>(pred\<cdot>a)) \<sqsubseteq> Aexp (Lam [y]. e)\<cdot>a" by (rule Aexp_Lam)
   also have "\<dots> \<sqsubseteq> ae" using app\<^sub>2 by (auto simp add: join_below_iff)
   also have "AE_singleton x\<cdot>(up\<cdot>0) \<sqsubseteq> ae" using app\<^sub>2 by auto
@@ -137,7 +137,7 @@ case (thunk \<Gamma> x e S)
     hence "x \<notin> ap S" using prognosis_ap[of ae a \<Gamma> "(Var x)" S] by auto
     
 
-    from `ae x = up\<cdot>u` `a \<sqsubseteq> u`
+    from `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u` `a \<sqsubseteq> u`
     have *: "prognosis ae u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))"
       by (rule prognosis_Var)
 
@@ -210,7 +210,7 @@ case (thunk \<Gamma> x e S)
   next
     case many
 
-    from `ae x = up\<cdot>u` `a \<sqsubseteq> u`
+    from `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u` `a \<sqsubseteq> u`
     have "prognosis ae u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))" by (rule prognosis_Var)
     note * = below_trans[OF this record_call_below_arg]
 
@@ -254,7 +254,7 @@ case (lamvar \<Gamma> x e S)
   have "prognosis ae u ((x, e) # delete x \<Gamma>, e, S) \<sqsubseteq> prognosis ae u (delete x \<Gamma>, e, Upd x # S)"
     using eq_imp_below[OF `ae x = up\<cdot>u`]   by (rule prognosis_Var2)
   also have "\<dots> \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))"
-    using `ae x = up\<cdot>u` `a \<sqsubseteq> u` by (rule prognosis_Var)
+    using `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u` `a \<sqsubseteq> u` by (rule prognosis_Var)
   also have "\<dots> \<sqsubseteq> prognosis ae a (\<Gamma>, Var x, S)" by (rule record_call_below_arg)
   finally have *: "prognosis ae u ((x, e) # delete x \<Gamma>, e, S) \<sqsubseteq> prognosis ae a (\<Gamma>, Var x, S)" by this simp_all
 
@@ -418,6 +418,7 @@ next
   have "edom (?ce \<squnion> ce) = edom (?ae \<squnion> ae)" using let\<^sub>1 by (auto simp add: edom_cHeap)
   moreover
   {
+  from `domA \<Delta> \<inter> domA \<Gamma> = {}`
   have "prognosis (?ae \<squnion> ae) a (\<Delta> @ \<Gamma>, e, S) \<sqsubseteq> ?ce \<squnion> prognosis ae a (\<Gamma>, Let \<Delta> e, S)" by (rule prognosis_Let)
   also have "prognosis ae a (\<Gamma>, Let \<Delta> e, S) \<sqsubseteq> ce" using let\<^sub>1 by auto
   finally have "prognosis (?ae \<squnion> ae) a (\<Delta> @ \<Gamma>, e, S) \<sqsubseteq> ?ce \<squnion> ce" by this simp
