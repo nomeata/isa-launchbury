@@ -8,17 +8,6 @@ fun Astack :: "stack \<Rightarrow> Arity"
       | "Astack (Upd x # S) = 0"
       | "Astack (Dummy x # S) = 0"
 
-(*
-fun AEstack :: "AEnv \<Rightarrow> stack \<Rightarrow> AEnv"
-  where "AEstack ae [] = \<bottom>"
-      | "AEstack ae (Arg x # S) = AE_singleton x \<cdot> (up\<cdot>0) \<squnion> AEstack ae S"
-      | "AEstack ae (Upd x # S) = AE_singleton x \<cdot> (up\<cdot>(Astack ae S)) \<squnion> AEstack ae S"
-      | "AEstack ae (Dummy x # S) = AEstack ae S"
-
-lemma AEstack_cong: "(\<And> x. x \<in> upds S \<Longrightarrow> ae x = ae' x) \<Longrightarrow> AEstack ae S = AEstack ae' S"
-  by (induction S  rule: upds.induct) (auto cong: Astack_cong)
-*)
-
 context CorrectArityAnalysisLet
 begin
 

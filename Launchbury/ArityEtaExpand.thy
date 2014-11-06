@@ -1,20 +1,6 @@
 theory ArityEtaExpand
-imports ArityCorrectSestoft EtaExpansionSestoft EtaExpansionArity AbstractTransform
+imports ArityCorrectSestoft ArityEtaExpansionSestoft AbstractTransform
 begin
-
-lemma Aeta_expand_correct:
-  assumes "Astack S \<sqsubseteq> a"
-  shows "(\<Gamma>, Aeta_expand a e, S) \<Rightarrow>\<^sup>* (\<Gamma>, e, S)"
-proof-
-  have "arg_prefix S = Rep_Arity (Astack S)"
-    by (induction S arbitrary: a rule: arg_prefix.induct) (auto simp add: Arity.zero_Arity.rep_eq[symmetric])
-  also
- from assms
-  have "Rep_Arity a \<le> Rep_Arity (Astack S)" by (metis below_Arity.rep_eq)
-  finally
-  show ?thesis by transfer (rule eta_expansion_correct')
-qed
-
 
 locale ArityEtaExpand = CorrectArityAnalysisLet
 begin
@@ -115,10 +101,6 @@ begin
     \<Longrightarrow> ae ` upds S \<subseteq> {up\<cdot>0}
     \<Longrightarrow> consistent (ae, a) (\<Gamma>, e, S)"  
   inductive_cases consistentE[elim!]: "consistent (ae, a) (\<Gamma>, e, S)"
-
-  lemma isLam_Aeta_expand_transform[simp]:
-    "isLam (Atransform a e) \<longleftrightarrow> isLam e"
-    by (induction e rule:isLam.induct) (case_tac b, auto)
 
 lemma foo:
   fixes c c' R 

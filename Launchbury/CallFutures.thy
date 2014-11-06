@@ -1,5 +1,5 @@
 theory CallFutures
-imports Vars "Nominal-Utils" "Set_Cpo"
+imports Vars "Nominal-Utils" "Set-Cpo"
 begin
 
 type_synonym future = "var \<Rightarrow> nat"
@@ -72,8 +72,10 @@ lemma combine_nofuture[simp]: "combine no_future f = f"
 definition may_call :: "var \<Rightarrow> future set \<Rightarrow> future set"
   where "may_call v fs = {f . \<exists> f' \<in> fs. \<forall> x. x \<noteq> v \<longrightarrow> f x = f' x}"
 
+(*
 lemma may_call_cont: "cont (may_call v)" sorry
 lemmas may_call_cont[cont2cont, simp]
+*)
 
 definition restrict_future :: "var set \<Rightarrow> future \<Rightarrow> future"
   where "restrict_future S f x = (if x \<in> S then f x else 0)"

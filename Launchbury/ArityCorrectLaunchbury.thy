@@ -1,4 +1,4 @@
-theory ArityCorrect2
+theory ArityCorrectLaunchbury
 imports RedsImprovesArityAnalysis LaunchburyAddLog
 begin
 

@@ -27,4 +27,6 @@ lemma Aexp'_eqvt[eqvt]: "\<pi> \<bullet> (ArityAnalysis.Aexp' Aexp e) = ArityAna
   unfolding ArityAnalysis.Aexp'_def
   by perm_simp rule
 
+
+
 end

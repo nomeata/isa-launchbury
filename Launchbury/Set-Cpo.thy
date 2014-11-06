@@ -1,4 +1,4 @@
-theory Set_Cpo
+theory "Set-Cpo"
 imports HOLCF
 begin
 
@@ -30,7 +30,7 @@ lemma set_contI:
 proof(rule contI)
   case (goal1 Y)
   have "f (\<Squnion> i. Y i) = \<Union> (range (\<lambda>i. f (Y i)))" 
-    using assms by (metis Set_Cpo.is_lub_fun image_image lub_eqI)
+    using assms by (metis is_lub_fun image_image lub_eqI)
   with is_lub_fun
   show "range (\<lambda>i. f (Y i)) <<| f (\<Squnion> i. Y i)" by metis
 qed

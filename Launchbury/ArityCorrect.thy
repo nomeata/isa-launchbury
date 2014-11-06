@@ -1,5 +1,5 @@
 theory ArityCorrect
-imports ArityAnalysis (* "Vars-Nominal-HOLCF" *)
+imports ArityAnalysisAbinds (* "Vars-Nominal-HOLCF" *)
 begin
 
 locale EdomArityAnalysis = ArityAnalysis + 
@@ -19,6 +19,14 @@ locale CorrectArityAnalysis = EdomArityAnalysis +
   assumes Aexp_App: "Aexp (App e x) \<cdot> n = Aexp e \<cdot>(inc\<cdot>n) \<squnion> AE_singleton x \<cdot> (up\<cdot>0)"
   assumes Aexp_subst_restr: "x \<notin> S \<Longrightarrow> y \<notin> S \<Longrightarrow> (Aexp e[x::=y] \<cdot> a) f|` S = (Aexp e\<cdot>a) f|` S"
 
+locale CorrectArityAnalysis' = ArityAnalysis +
+  assumes Aexp[eqvt]: "\<pi> \<bullet> Aexp = Aexp"
+  assumes Aexp_Var: "up \<cdot> n \<sqsubseteq> (Aexp (Var x)\<cdot>n) x"
+  assumes Aexp_App: "Aexp e \<cdot>(inc\<cdot>n) \<squnion> AE_singleton x \<cdot> (up\<cdot>0) \<sqsubseteq>  Aexp (App e x) \<cdot> n"
+  assumes Aexp_subst_App_Lam: "Aexp (e[y::=x]) \<sqsubseteq> Aexp (App (Lam [y]. e) x)"
+  assumes Aexp_Lam: " env_delete y (Aexp e \<cdot>(pred\<cdot>n)) \<sqsubseteq> Aexp (Lam [y]. e) \<cdot> n"
+  assumes Aexp_Subst: "Aexp (e[y::=x])\<cdot>a \<sqsubseteq> env_delete y ((Aexp e)\<cdot>a) \<squnion> AE_singleton x\<cdot>(up\<cdot>0)"
+
 locale CorrectArityAnalysisAheap = CorrectArityAnalysis + 
   fixes Aheap :: "heap \<Rightarrow> AEnv \<rightarrow> AEnv"
   assumes Aheap_eqvt[eqvt]: "\<pi> \<bullet> Aheap = Aheap"
@@ -28,6 +36,17 @@ locale CorrectArityAnalysisAheap = CorrectArityAnalysis +
   assumes Aheap_above_arg: "ae f|` domA \<Gamma> \<sqsubseteq> Aheap \<Gamma>\<cdot>ae"
   assumes Aheap_subst: "x \<notin> domA \<Gamma> \<Longrightarrow> y \<notin> domA \<Gamma> \<Longrightarrow> Aheap \<Gamma>[x::h=y] = Aheap \<Gamma>"
   assumes Aheap_cong: "ae f|` domA \<Gamma> = ae' f|` domA \<Gamma> \<Longrightarrow> Aheap \<Gamma>\<cdot>ae = Aheap \<Gamma>\<cdot>ae'"
+
+locale CorrectArityAnalysisAheap' = CorrectArityAnalysis' + 
+  fixes Aheap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> AEnv"
+  assumes Aheap_eqvt[eqvt]: "\<pi> \<bullet> Aheap = Aheap"
+  assumes edom_Aheap: "edom (Aheap \<Gamma> e\<cdot> a) \<subseteq> domA \<Gamma>"
+  assumes Aheap_subst: "x \<notin> domA \<Gamma> \<Longrightarrow> y \<notin> domA \<Gamma> \<Longrightarrow> Aheap \<Gamma>[x::h=y] e[x ::=y]  = Aheap \<Gamma> e"
+
+locale CorrectArityAnalysisLet' = CorrectArityAnalysisAheap' +
+  assumes Aexp_Let: "ABinds \<Gamma>\<cdot>(Aheap \<Gamma> e\<cdot>a) \<squnion> Aexp e\<cdot>a \<sqsubseteq> Aheap \<Gamma> e\<cdot>a \<squnion>  Aexp (Let \<Gamma> e)\<cdot>a"
+ 
+
 
 locale CorrectArityAnalysisLet = CorrectArityAnalysisAheap +
   assumes Aheap_heap2: "map_of \<Gamma> x = Some e' \<Longrightarrow> Aexp' e'\<cdot>((Aheap \<Gamma>\<cdot>(Aexp e\<cdot>a)) x) f|` (- domA \<Gamma>) \<sqsubseteq>  Aexp (Let \<Gamma> e)\<cdot>a"

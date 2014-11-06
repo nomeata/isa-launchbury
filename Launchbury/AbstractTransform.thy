@@ -189,6 +189,10 @@ begin
   apply (auto simp add: Let_supp supp_Pair supp_at_base dest: set_mp[OF supp_map_transform])[1]
   done
   qed
+
+  lemma isLam_transform[simp]:
+    "isLam (transform a e) \<longleftrightarrow> isLam e"
+    by (induction e rule:isLam.induct) (case_tac b, auto)
 end
 
 locale AbstractTransformBoundSubst = AbstractAnalPropSubst + AbstractTransformBound + 

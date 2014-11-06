@@ -1,5 +1,5 @@
-theory Set_Cpo_Nominal
-imports Set_Cpo "Nominal-HOLCF"
+theory "Set-Cpo-Nominal"
+imports "Set-Cpo" "Nominal-HOLCF"
 begin
 
 instance set :: (pt) cont_pt
