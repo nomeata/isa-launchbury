@@ -418,7 +418,7 @@ next
   have "edom (?ce \<squnion> ce) = edom (?ae \<squnion> ae)" using let\<^sub>1 by (auto simp add: edom_cHeap)
   moreover
   {
-  from `domA \<Delta> \<inter> domA \<Gamma> = {}`
+  from let\<^sub>1(1,2) `edom ae \<subseteq> domA \<Gamma> \<union> upds S`
   have "prognosis (?ae \<squnion> ae) a (\<Delta> @ \<Gamma>, e, S) \<sqsubseteq> ?ce \<squnion> prognosis ae a (\<Gamma>, Let \<Delta> e, S)" by (rule prognosis_Let)
   also have "prognosis ae a (\<Gamma>, Let \<Delta> e, S) \<sqsubseteq> ce" using let\<^sub>1 by auto
   finally have "prognosis (?ae \<squnion> ae) a (\<Delta> @ \<Gamma>, e, S) \<sqsubseteq> ?ce \<squnion> ce" by this simp

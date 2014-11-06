@@ -98,13 +98,18 @@ qed
 sublocale CardinalityPrognosisCorrectLet prognosis Aexp Aheap cHeap
 proof
   case goal1
-  note set_mp[OF edom_Aheap]
-  have "ABinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a \<squnion> ae) = ABinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)" sorry
-  moreover
-  have "ABinds \<Gamma>\<cdot>(Aheap \<Delta> e\<cdot>a \<squnion> ae) = ABinds \<Gamma>\<cdot>ae" sorry
-  ultimately
+
+  from set_mp[OF goal1(3)] fresh_distinct[OF goal1(1)] fresh_distinct_fv[OF goal1(2)]
+  have  "ae f|` domA \<Delta> = \<bottom>"
+    by (auto dest: set_mp[OF ups_fv_subset])
+  hence [simp]: "ABinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a \<squnion> ae) = ABinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)" by (simp cong: Abinds_env_restr_cong add: env_restr_join)
+
+  from  fresh_distinct[OF goal1(1)]
+  have "Aheap \<Delta> e\<cdot>a f|` domA \<Gamma> = \<bottom>" by (auto dest!: set_mp[OF edom_Aheap])
+  hence [simp]: "ABinds \<Gamma>\<cdot>(Aheap \<Delta> e\<cdot>a \<squnion> ae) = ABinds \<Gamma>\<cdot>ae" by (simp cong: Abinds_env_restr_cong add: env_restr_join)
+  
   have "edom (ABinds (\<Delta> @ \<Gamma>)\<cdot>(Aheap \<Delta> e\<cdot>a \<squnion> ae)) \<union> edom (Aexp e\<cdot>a)  = edom (ABinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) \<union> edom (ABinds \<Gamma>\<cdot>ae) \<union>  edom (Aexp e\<cdot>a) "
-    by (simp add: Abinds_append_disjoint[OF goal1(1)])
+    by (simp add: Abinds_append_disjoint[OF fresh_distinct[OF goal1(1)]])
   also have "\<dots> = edom (ABinds \<Gamma>\<cdot>ae) \<union> edom (ABinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a) \<squnion> Aexp e\<cdot>a)"
     by force
   also have "\<dots> \<subseteq> edom (ABinds \<Gamma>\<cdot>ae) \<union> edom (Aheap \<Delta> e\<cdot>a \<squnion> Aexp (Let \<Delta> e)\<cdot>a)"

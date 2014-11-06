@@ -24,7 +24,7 @@ locale CardinalityPrognosisCorrect = CardinalityPrognosis +
 
 locale CardinalityPrognosisCorrectLet = CardinalityPrognosisCorrect + CardinalityHeap +
   assumes prognosis_Let:
-  "domA \<Delta> \<inter> domA \<Gamma> = {} \<Longrightarrow> prognosis (Aheap \<Delta> e\<cdot>a \<squnion> ae) a (\<Delta> @ \<Gamma>, e, S) \<sqsubseteq> cHeap \<Delta> e\<cdot>a \<squnion> prognosis ae a (\<Gamma>, Terms.Let \<Delta> e, S)"
+  "atom ` domA \<Delta> \<sharp>* \<Gamma> \<Longrightarrow> atom ` domA \<Delta> \<sharp>* S \<Longrightarrow> edom ae \<subseteq> domA \<Gamma> \<union> upds S \<Longrightarrow> prognosis (Aheap \<Delta> e\<cdot>a \<squnion> ae) a (\<Delta> @ \<Gamma>, e, S) \<sqsubseteq> cHeap \<Delta> e\<cdot>a \<squnion> prognosis ae a (\<Gamma>, Terms.Let \<Delta> e, S)"
 
 locale CardinalityPrognosisEdom = CardinalityPrognosis + CorrectArityAnalysisAheap' +
   assumes artiy_edom_prognosis: "edom (ABinds \<Gamma>\<cdot>ae \<squnion> Aexp e\<cdot>a) \<subseteq> edom (prognosis ae a (\<Gamma>, e, S))"
