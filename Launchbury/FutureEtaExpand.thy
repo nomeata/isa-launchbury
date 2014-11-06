@@ -331,7 +331,7 @@ next
     using fresh_distinct[OF let\<^sub>1(1)] fresh_distinct_fv[OF let\<^sub>1(2)]
     by (auto dest: set_mp[OF ups_fv_subset])
 
-  let ?ce = "fHeap \<Delta> e\<cdot>a"
+  let ?ce = "cHeap \<Delta> e\<cdot>a"
 
   have "domA \<Delta> \<inter> upds S = {}" using fresh_distinct_fv[OF let\<^sub>1(2)] by (auto dest: set_mp[OF ups_fv_subset])
   hence *: "\<And> x. x \<in> upds S \<Longrightarrow> x \<notin> edom ?ae" by (auto dest!: set_mp[OF edom_Aheap])
@@ -386,7 +386,7 @@ next
   { fix x e'
     assume "x \<in> thunks \<Gamma>"
     hence "x \<notin> edom ?ce" using fresh_distinct[OF let\<^sub>1(1)]
-      by (auto simp add: edom_fHeap dest: set_mp[OF edom_Aheap]  set_mp[OF thunks_domA])
+      by (auto simp add: edom_cHeap dest: set_mp[OF edom_Aheap]  set_mp[OF thunks_domA])
     hence [simp]: "?ce x = \<bottom>" unfolding edomIff by auto
   
     assume "many \<sqsubseteq> (?ce \<squnion> ce) x"
@@ -415,7 +415,7 @@ next
   moreover
   have "Astack (restr_stack (edom (?ae \<squnion> ae)) S) \<sqsubseteq> a" unfolding restr_stack_simp using let\<^sub>1 by auto
   moreover
-  have "edom (?ce \<squnion> ce) = edom (?ae \<squnion> ae)" using let\<^sub>1 by (auto simp add: edom_fHeap)
+  have "edom (?ce \<squnion> ce) = edom (?ae \<squnion> ae)" using let\<^sub>1 by (auto simp add: edom_cHeap)
   moreover
   {
   have "prognosis (?ae \<squnion> ae) a (\<Delta> @ \<Gamma>, e, S) \<sqsubseteq> ?ce \<squnion> prognosis ae a (\<Gamma>, Let \<Delta> e, S)" by (rule prognosis_Let)
