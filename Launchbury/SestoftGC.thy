@@ -27,7 +27,7 @@ proof-
   show ?thesis by (rule converse_rtranclp_into_rtranclp[OF _ r_into_rtranclp])
 qed
 
-lemma lam_and_restrict:
+lemma let_and_restrict:
   assumes "atom ` domA \<Delta> \<sharp>* \<Gamma>" and "atom ` domA \<Delta> \<sharp>* S"
   assumes "V \<subseteq> domA \<Delta>"
   shows "(\<Gamma>, Let \<Delta> e, S) \<Rightarrow>\<^sub>G\<^sup>* (restrictA V \<Delta> @ \<Gamma>, e, S)"

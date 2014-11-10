@@ -49,6 +49,9 @@ locale CorrectArityAnalysisLet = CorrectArityAnalysisAheap +
 
 locale CorrectArityAnalysisLet' = CorrectArityAnalysisAheap' +
   assumes Aexp_Let: "ABinds \<Gamma>\<cdot>(Aheap \<Gamma> e\<cdot>a) \<squnion> Aexp e\<cdot>a \<sqsubseteq> Aheap \<Gamma> e\<cdot>a \<squnion>  Aexp (Let \<Gamma> e)\<cdot>a"
+
+locale CorrectArityAnalysisLetNoCard = CorrectArityAnalysisLet' +
+  assumes Aheap_heap3: "x \<in> thunks \<Gamma> \<Longrightarrow> (Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
  
 
 locale CorrectArityAnalysisCong = CorrectArityAnalysisAheap +

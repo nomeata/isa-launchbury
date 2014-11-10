@@ -2,8 +2,6 @@ theory FutureEtaExpand
 imports CardinalityAnalysis AbstractTransform Sestoft SestoftGC  ArityEtaExpansionSestoft
 begin
 
-default_sort type
-
 locale CardinalityArityTransformation = CardinalityPrognosisEdom + CardinalityPrognosisCorrectLet 
 begin
 
@@ -351,38 +349,6 @@ next
   have "edom (?ae \<squnion> ae) \<subseteq> domA (\<Delta> @ \<Gamma>) \<union> upds S"
     using let\<^sub>1(3) by (auto dest: set_mp[OF edom_Aheap])
   moreover
-  (*
-  { fix x e'
-    assume "map_of \<Delta> x = Some e'"
-    hence "x \<notin> edom ae" using `edom ae \<subseteq> - domA \<Delta>` by (metis Compl_iff contra_subsetD domI dom_map_of_conv_domA)
-    hence "fup\<cdot>(Aexp e')\<cdot>((?ae \<squnion> ae) x) = fup\<cdot>(Aexp e')\<cdot>(?ae x)" by (auto simp add: edomIff)
-    also
-    have "fup\<cdot>(Aexp e')\<cdot>(?ae x) \<sqsubseteq> (fup\<cdot>(Aexp e')\<cdot>(?ae x) f|` domA \<Delta>) \<squnion> (fup\<cdot>(Aexp e')\<cdot>(?ae x) f|` (- domA \<Delta>))"
-      by (rule eq_imp_below[OF join_env_restr_UNIV[symmetric]]) auto
-    also
-    from `map_of \<Delta> x = Some e'`
-    have "fup\<cdot>(Aexp e')\<cdot>(?ae x) f|` domA \<Delta> \<sqsubseteq> ?ae" by (rule Aheap_heap)
-    also
-    from `map_of \<Delta> x = Some e'`
-    have "fup\<cdot>(Aexp e')\<cdot>(?ae x) f|` (- domA \<Delta>) \<sqsubseteq> Aexp (Terms.Let \<Delta> e)\<cdot>a" by (rule Aheap_heap2)
-    also
-    have "Aexp (Terms.Let \<Delta> e)\<cdot>a \<sqsubseteq> ae" using let\<^sub>1(3) by auto
-    finally
-    have "fup\<cdot>(Aexp e')\<cdot>((?ae \<squnion> ae) x) \<sqsubseteq> ?ae \<squnion> ae" by this auto
-  }
-  moreover
-  { fix x e'
-    assume "map_of \<Gamma> x = Some e'"
-    hence "x \<in> domA \<Gamma>" by (metis domI dom_map_of_conv_domA)
-    hence "x \<notin> edom ?ae" using fresh_distinct[OF let\<^sub>1(1)]  by (auto dest: set_mp[OF edom_Aheap])
-    moreover
-    note let\<^sub>1 `map_of \<Gamma> x = Some e'`
-    ultimately
-    have "fup\<cdot>(Aexp e')\<cdot>((?ae \<squnion> ae) x) \<sqsubseteq> ae" by (auto simp add: edomIff)
-    hence "fup\<cdot>(Aexp e')\<cdot>((?ae \<squnion> ae) x) \<sqsubseteq> ?ae \<squnion> ae" by (metis (erased, hide_lams) "HOLCF-Join-Classes.join_above2" below_trans)
-  }
-  moreover
-  *)
   { fix x e'
     assume "x \<in> thunks \<Gamma>"
     hence "x \<notin> edom ?ce" using fresh_distinct[OF let\<^sub>1(1)]
@@ -473,7 +439,7 @@ next
 
     have "conf_transform (ae, ce, a) (\<Gamma>, Let \<Delta> e, S) \<Rightarrow>\<^sub>G\<^sup>* conf_transform (?ae \<squnion> ae, ?ce \<squnion> ce, a) (\<Delta> @ \<Gamma>, e, S)"
       using restr_stack_simp let\<^sub>1(1,2)
-      by (fastforce intro!: lam_and_restrict simp  add: map_transform_append restrictA_append restr_stack_simp   dest: set_mp[OF edom_Aheap])
+      by (fastforce intro!: let_and_restrict simp  add: map_transform_append restrictA_append restr_stack_simp   dest: set_mp[OF edom_Aheap])
   }
   ultimately
   show ?case by (blast del: consistentI consistentE)

@@ -18,6 +18,7 @@ lemma const_onE[elim]: "const_on f S r ==> x : S ==> r = r' ==> f x = r'"
 lemma const_on_insert[simp]: "const_on f (insert x S) y \<longleftrightarrow> const_on f S y \<and> f x = y"
    by auto
 
-
+lemma const_on_union[simp]: "const_on f (S \<union> S') y \<longleftrightarrow> const_on f S y \<and> const_on f S' y"
+  by auto
 
 end
