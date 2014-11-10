@@ -68,6 +68,9 @@ lemma Abinds_env_cong: "(\<And> x. x\<in>domA \<Delta> \<Longrightarrow> ae x = 
 lemma Abinds_env_restr_cong: " ae f|` domA \<Delta> = ae' f|` domA \<Delta> \<Longrightarrow>  ABinds \<Delta>\<cdot>ae = ABinds \<Delta>\<cdot>ae'"
   by (rule Abinds_env_cong) (metis env_restr_eqD)
 
+lemma ABinds_env_restr[simp]: "ABinds \<Delta>\<cdot>(ae f|` domA \<Delta>) = ABinds \<Delta>\<cdot>ae"
+  by (rule Abinds_env_restr_cong) simp
+
 lemma Abinds_join_fresh: "ae' ` (domA \<Delta>) \<subseteq> {\<bottom>} \<Longrightarrow>  ABinds \<Delta>\<cdot>(ae \<squnion> ae') = (ABinds \<Delta>\<cdot>ae)"
   by (rule Abinds_env_cong) auto
 

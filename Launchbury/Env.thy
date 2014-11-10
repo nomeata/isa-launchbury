@@ -205,6 +205,15 @@ lemma env_delete_restr: "env_delete x m = m f|` (-{x})"
 lemma below_env_deleteI: "f x = \<bottom> \<Longrightarrow> f \<sqsubseteq> g \<Longrightarrow> f \<sqsubseteq> env_delete x g"
   by (metis env_delete_def env_delete_restr env_restr_mono fun_upd_triv)
 
+lemma env_delete_below_cong[intro]:
+  assumes "x \<noteq> v \<Longrightarrow> e1 x \<sqsubseteq> e2 x"
+  shows "env_delete v e1 x \<sqsubseteq> env_delete v e2 x"
+  using assms unfolding env_delete_def by auto
+
+lemma env_delete_env_restr_swap:
+  "env_delete x (env_restr S e) = env_restr S (env_delete x e)"
+  by (metis (erased, hide_lams) env_delete_def env_restr_fun_upd env_restr_fun_upd_other fun_upd_triv lookup_env_restr_eq)
+
 subsubsection {* Merging of two functions *}
 
 text {*

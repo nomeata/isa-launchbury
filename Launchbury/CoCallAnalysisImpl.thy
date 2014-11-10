@@ -82,16 +82,16 @@ lemma cc_restr_predCC[simp]:
 
   
 nominal_function
-  cccExp :: "exp \<Rightarrow> (Arity \<rightarrow> AEnv \<times> CoCalls)" 
+  cCCexp :: "exp \<Rightarrow> (Arity \<rightarrow> AEnv \<times> CoCalls)" 
 where
-  "cccExp (GVar b x) = (\<Lambda> n . (AE_singleton x \<cdot> (up \<cdot> n), \<bottom>))"
-| "cccExp (Lam [x]. e) = (\<Lambda> n . combined_restrict (fv (Lam [x]. e)) (fst (cccExp e\<cdot>(pred\<cdot>n)), predCC (fv (Lam [x]. e)) (\<Lambda> a. snd(cccExp e\<cdot>a))\<cdot>n))"
-| "cccExp (App e x) = (\<Lambda> n . (fst (cccExp e\<cdot>(inc\<cdot>n)) \<squnion> (AE_singleton x \<cdot> (up \<cdot> 0)), snd (cccExp e\<cdot>(inc\<cdot>n)) \<squnion> ccProd (fv e) {x}))"
-| "cccExp (Let \<Gamma> e) = (\<Lambda> n . combined_restrict (fv (Let \<Gamma> e)) (CoCallArityAnalysis.ccFix cccExp \<Gamma> \<cdot> (cccExp e \<cdot> n)))"
+  "cCCexp (GVar b x) = (\<Lambda> n . (AE_singleton x \<cdot> (up \<cdot> n), \<bottom>))"
+| "cCCexp (Lam [x]. e) = (\<Lambda> n . combined_restrict (fv (Lam [x]. e)) (fst (cCCexp e\<cdot>(pred\<cdot>n)), predCC (fv (Lam [x]. e)) (\<Lambda> a. snd(cCCexp e\<cdot>a))\<cdot>n))"
+| "cCCexp (App e x) = (\<Lambda> n . (fst (cCCexp e\<cdot>(inc\<cdot>n)) \<squnion> (AE_singleton x \<cdot> (up \<cdot> 0)), snd (cCCexp e\<cdot>(inc\<cdot>n)) \<squnion> ccProd (fv e) {x}))"
+| "cCCexp (Let \<Gamma> e) = (\<Lambda> n . combined_restrict (fv (Let \<Gamma> e)) (CoCallArityAnalysis.cccFix cCCexp \<Gamma> \<cdot> (cCCexp e \<cdot> n)))"
 proof-
 case goal1
     show ?case
-    unfolding eqvt_def cccExp_graph_aux_def
+    unfolding eqvt_def cCCexp_graph_aux_def
     apply rule
     apply (perm_simp)
     apply (simp add: Abs_cfun_eqvt)
@@ -107,16 +107,16 @@ case (goal8 x e x' e')
     assume *: "supp (-\<pi>) \<sharp>* (fv (Lam [x]. e) :: var set)" 
     {
     fix n
-    have "combined_restrict (fv (Lam [x]. e)) (fst (cccExp_sumC (\<pi> \<bullet> e)\<cdot>(pred\<cdot>n)), predCC (fv (Lam [x]. e)) (\<Lambda> a. snd(cccExp_sumC (\<pi> \<bullet> e)\<cdot>a))\<cdot>n)
-       = combined_restrict (fv (Lam [x]. e)) (- \<pi> \<bullet> (fst (cccExp_sumC (\<pi> \<bullet> e)\<cdot>(pred\<cdot>n)), predCC (fv (Lam [x]. e)) (\<Lambda> a. snd(cccExp_sumC (\<pi> \<bullet> e)\<cdot>a))\<cdot>n))"
+    have "combined_restrict (fv (Lam [x]. e)) (fst (cCCexp_sumC (\<pi> \<bullet> e)\<cdot>(pred\<cdot>n)), predCC (fv (Lam [x]. e)) (\<Lambda> a. snd(cCCexp_sumC (\<pi> \<bullet> e)\<cdot>a))\<cdot>n)
+       = combined_restrict (fv (Lam [x]. e)) (- \<pi> \<bullet> (fst (cCCexp_sumC (\<pi> \<bullet> e)\<cdot>(pred\<cdot>n)), predCC (fv (Lam [x]. e)) (\<Lambda> a. snd(cCCexp_sumC (\<pi> \<bullet> e)\<cdot>a))\<cdot>n))"
       by (rule combined_restrict_perm[symmetric, OF *]) simp
-    also have "\<dots> = combined_restrict (fv (Lam [x]. e)) (fst (cccExp_sumC e\<cdot>(pred\<cdot>n)), predCC (- \<pi> \<bullet> fv (Lam [x]. e)) (\<Lambda> a. snd(cccExp_sumC e\<cdot>a))\<cdot>n)"
+    also have "\<dots> = combined_restrict (fv (Lam [x]. e)) (fst (cCCexp_sumC e\<cdot>(pred\<cdot>n)), predCC (- \<pi> \<bullet> fv (Lam [x]. e)) (\<Lambda> a. snd(cCCexp_sumC e\<cdot>a))\<cdot>n)"
       by (perm_simp, simp add: eqvt_at_apply[OF goal8(1)] pemute_minus_self Abs_cfun_eqvt)
     also have "- \<pi> \<bullet> fv (Lam [x]. e) = (fv (Lam [x]. e) :: var set)" by (rule perm_supp_eq[OF *])
     also note calculation
     }
-    thus "(\<Lambda> n. combined_restrict (fv (Lam [x]. e)) (fst (cccExp_sumC (\<pi> \<bullet> e)\<cdot>(pred\<cdot>n)), predCC (fv (Lam [x]. e)) (\<Lambda> a. snd(cccExp_sumC (\<pi> \<bullet> e)\<cdot>a))\<cdot>n))
-        = (\<Lambda> n. combined_restrict (fv (Lam [x]. e)) (fst (cccExp_sumC e\<cdot>(pred\<cdot>n)), predCC (fv (Lam [x]. e)) (\<Lambda> a. snd(cccExp_sumC e\<cdot>a))\<cdot>n))" by simp
+    thus "(\<Lambda> n. combined_restrict (fv (Lam [x]. e)) (fst (cCCexp_sumC (\<pi> \<bullet> e)\<cdot>(pred\<cdot>n)), predCC (fv (Lam [x]. e)) (\<Lambda> a. snd(cCCexp_sumC (\<pi> \<bullet> e)\<cdot>a))\<cdot>n))
+        = (\<Lambda> n. combined_restrict (fv (Lam [x]. e)) (fst (cCCexp_sumC e\<cdot>(pred\<cdot>n)), predCC (fv (Lam [x]. e)) (\<Lambda> a. snd(cCCexp_sumC e\<cdot>a))\<cdot>n))" by simp
   qed
 next
 case (goal13 \<Gamma> body \<Gamma>' body')
@@ -127,44 +127,57 @@ case (goal13 \<Gamma> body \<Gamma>' body')
     assume *: "supp (-\<pi>) \<sharp>* (fv (Terms.Let \<Gamma> body) :: var set)"
     
     { fix n
-      have "combined_restrict (fv (Terms.Let \<Gamma> body)) (CoCallArityAnalysis.ccFix cccExp_sumC (\<pi> \<bullet> \<Gamma>)\<cdot>(cccExp_sumC (\<pi> \<bullet> body)\<cdot>n))
-      =  combined_restrict (fv (Terms.Let \<Gamma> body)) (- \<pi> \<bullet> (CoCallArityAnalysis.ccFix cccExp_sumC (\<pi> \<bullet> \<Gamma>)\<cdot>(cccExp_sumC (\<pi> \<bullet> body)\<cdot>n)))"
+      have "combined_restrict (fv (Terms.Let \<Gamma> body)) (CoCallArityAnalysis.cccFix cCCexp_sumC (\<pi> \<bullet> \<Gamma>)\<cdot>(cCCexp_sumC (\<pi> \<bullet> body)\<cdot>n))
+      =  combined_restrict (fv (Terms.Let \<Gamma> body)) (- \<pi> \<bullet> (CoCallArityAnalysis.cccFix cCCexp_sumC (\<pi> \<bullet> \<Gamma>)\<cdot>(cCCexp_sumC (\<pi> \<bullet> body)\<cdot>n)))"
         by (rule combined_restrict_perm[OF *, symmetric]) simp
-      also have "- \<pi> \<bullet> (CoCallArityAnalysis.ccFix cccExp_sumC (\<pi> \<bullet> \<Gamma>)\<cdot>(cccExp_sumC (\<pi> \<bullet> body)\<cdot>n)) = 
-                       CoCallArityAnalysis.ccFix (- \<pi> \<bullet> cccExp_sumC) \<Gamma>\<cdot>((- \<pi> \<bullet> cccExp_sumC) body\<cdot>n)"
+      also have "- \<pi> \<bullet> (CoCallArityAnalysis.cccFix cCCexp_sumC (\<pi> \<bullet> \<Gamma>)\<cdot>(cCCexp_sumC (\<pi> \<bullet> body)\<cdot>n)) = 
+                       CoCallArityAnalysis.cccFix (- \<pi> \<bullet> cCCexp_sumC) \<Gamma>\<cdot>((- \<pi> \<bullet> cCCexp_sumC) body\<cdot>n)"
         by (simp add: pemute_minus_self)
-      also have "CoCallArityAnalysis.ccFix (- \<pi> \<bullet> cccExp_sumC) \<Gamma> = CoCallArityAnalysis.ccFix cccExp_sumC \<Gamma>"
-        by (rule ccFix_cong[OF eqvt_at_apply[OF goal13(1)] refl])
-      also have "(- \<pi> \<bullet> cccExp_sumC) body = cccExp_sumC body"
+      also have "CoCallArityAnalysis.cccFix (- \<pi> \<bullet> cCCexp_sumC) \<Gamma> = CoCallArityAnalysis.cccFix cCCexp_sumC \<Gamma>"
+        by (rule cccFix_cong[OF eqvt_at_apply[OF goal13(1)] refl])
+      also have "(- \<pi> \<bullet> cCCexp_sumC) body = cCCexp_sumC body"
         by (rule eqvt_at_apply[OF goal13(2)])
       also note calculation
     }
-    thus "(\<Lambda> n. combined_restrict (fv (Terms.Let \<Gamma> body)) (CoCallArityAnalysis.ccFix cccExp_sumC (\<pi> \<bullet> \<Gamma>)\<cdot>(cccExp_sumC (\<pi> \<bullet> body)\<cdot>n))) =
-         (\<Lambda> n. combined_restrict (fv (Terms.Let \<Gamma> body)) (CoCallArityAnalysis.ccFix cccExp_sumC \<Gamma>\<cdot>(cccExp_sumC body\<cdot>n)))" by (simp only:)
+    thus "(\<Lambda> n. combined_restrict (fv (Terms.Let \<Gamma> body)) (CoCallArityAnalysis.cccFix cCCexp_sumC (\<pi> \<bullet> \<Gamma>)\<cdot>(cCCexp_sumC (\<pi> \<bullet> body)\<cdot>n))) =
+         (\<Lambda> n. combined_restrict (fv (Terms.Let \<Gamma> body)) (CoCallArityAnalysis.cccFix cCCexp_sumC \<Gamma>\<cdot>(cCCexp_sumC body\<cdot>n)))" by (simp only:)
   qed
 qed auto
 
 nominal_termination (eqvt) by lexicographic_order
 
-interpretation CoCallArityAnalysis cccExp.
+interpretation CoCallArityAnalysis cCCexp.
 
-definition aExp :: "exp \<Rightarrow> (Arity \<rightarrow> AEnv)" where "aExp e = (\<Lambda> a. fst (cccExp e \<cdot> a))"
-definition ccExp :: "exp \<Rightarrow> (Arity \<rightarrow> CoCalls)" where "ccExp e = (\<Lambda> a. snd (cccExp e \<cdot> a))"
+definition Aexp :: "exp \<Rightarrow> (Arity \<rightarrow> AEnv)" where "Aexp e = (\<Lambda> a. fst (cCCexp e \<cdot> a))"
+definition CCexp :: "exp \<Rightarrow> (Arity \<rightarrow> CoCalls)" where "CCexp \<Gamma> = (\<Lambda> a. snd (cCCexp \<Gamma>\<cdot>a))"
 
-lemma aExp_simps:
-  "aExp (GVar b x)\<cdot>n = AE_singleton x\<cdot>(up\<cdot>n)"
-  "aExp (Lam [x]. e)\<cdot>n = aExp e\<cdot>(pred\<cdot>n) f|` fv (Lam [x]. e)"
-  "aExp (App e x)\<cdot>n = aExp e\<cdot>(inc\<cdot>n) \<squnion> AE_singleton x\<cdot>(up\<cdot>0)"
-  "aExp (Let \<Gamma> e)\<cdot>n = fst (ccFix \<Gamma>\<cdot>(aExp e\<cdot>n, ccExp e\<cdot>n)) f|` fv (Let \<Gamma> e)"
-unfolding aExp_def ccExp_def by (simp add: beta_cfun)+
+definition Afix :: "heap \<Rightarrow> (AEnv \<times> CoCalls \<rightarrow> AEnv)" where "Afix e = (\<Lambda> ae. fst (cccFix e \<cdot> ae))"
+definition CCfix :: "heap \<Rightarrow> (AEnv \<times> CoCalls \<rightarrow> CoCalls)" where "CCfix \<Gamma> = (\<Lambda> ae. snd (cccFix \<Gamma>\<cdot>ae))"
+
+lemma Aexp_eqvt[eqvt]:  "\<pi> \<bullet> (Aexp e) = Aexp (\<pi> \<bullet> e)"
+  unfolding Aexp_def by perm_simp (simp_all add: Abs_cfun_eqvt)
+lemma CCexp_eqvt[eqvt]:  "\<pi> \<bullet> (CCexp e) = CCexp (\<pi> \<bullet> e)"
+  unfolding CCexp_def by perm_simp (simp_all add: Abs_cfun_eqvt)
+lemma Afix_eqvt[eqvt]:  "\<pi> \<bullet> (Afix \<Gamma>) = Afix (\<pi> \<bullet> \<Gamma>)"
+  unfolding Afix_def by perm_simp (simp_all add: Abs_cfun_eqvt)
+lemma CCfix_eqvt[eqvt]:  "\<pi> \<bullet> (CCfix \<Gamma>) = CCfix (\<pi> \<bullet> \<Gamma>)"
+  unfolding CCfix_def by perm_simp (simp_all add: Abs_cfun_eqvt)
+
+lemma Aexp_simps[simp]:
+  "Aexp (GVar b x)\<cdot>n = AE_singleton x\<cdot>(up\<cdot>n)"
+  "Aexp (Lam [x]. e)\<cdot>n = Aexp e\<cdot>(pred\<cdot>n) f|` fv (Lam [x]. e)"
+  "Aexp (App e x)\<cdot>n = Aexp e\<cdot>(inc\<cdot>n) \<squnion> AE_singleton x\<cdot>(up\<cdot>0)"
+  "Aexp (Let \<Gamma> e)\<cdot>n = Afix \<Gamma>\<cdot>(Aexp e\<cdot>n, CCexp e\<cdot>n) f|` fv (Let \<Gamma> e)"
+unfolding Aexp_def CCexp_def Afix_def by (simp add: beta_cfun)+
 
 
-lemma ccExp_simps:
-  "ccExp (GVar b x)\<cdot>n = \<bottom>"
-  "ccExp (Lam [x]. e)\<cdot>n = predCC (fv (Lam [x]. e)) (ccExp e)\<cdot>n"
-  "ccExp (App e x)\<cdot>n = ccExp e\<cdot>(inc\<cdot>n) \<squnion> ccProd (fv e) {x}"
-  "ccExp (Let \<Gamma> e)\<cdot>n = cc_restr (fv (Let \<Gamma> e)) (snd (ccFix \<Gamma>\<cdot>(aExp e\<cdot>n, ccExp e\<cdot>n)))"
-unfolding aExp_def ccExp_def by (simp add: beta_cfun)+
+lemma CCexp_simps[simp]:
+  "CCexp (GVar b x)\<cdot>n = \<bottom>"
+  "CCexp (Lam [x]. e)\<cdot>n = predCC (fv (Lam [x]. e)) (CCexp e)\<cdot>n"
+  "CCexp (App e x)\<cdot>n = CCexp e\<cdot>(inc\<cdot>n) \<squnion> ccProd (fv e) {x}"
+  "CCexp (Let \<Gamma> e)\<cdot>n = cc_restr (fv (Let \<Gamma> e)) (CCfix \<Gamma>\<cdot>(Aexp e\<cdot>n, CCexp e\<cdot>n))"
+unfolding Aexp_def CCexp_def CCfix_def by (simp add: beta_cfun)+
+
 
 
 end

@@ -1,5 +1,5 @@
 theory ArityCorrectSestoft
-imports ArityCorrect Sestoft
+imports ArityCorrect ArityStack Sestoft
 begin
 
 fun Astack :: "stack \<Rightarrow> Arity"
@@ -206,5 +206,6 @@ next
   show ?case by (auto dest!: trans(3,4) simp add: *)
 qed
 end
+
 
 end

@@ -190,7 +190,7 @@ lemma Afix_edom: "edom (Afix \<Gamma> \<cdot> ae) \<subseteq> fv \<Gamma> \<unio
      (auto dest: set_mp[OF ABinds_edom])
 end
 
-context CorrectArityAnalysis
+context CorrectArityAnalysis'
 begin
 
 lemma ABinds_lookup_fresh:
@@ -281,7 +281,7 @@ using Afix_e_to_heap[where ae = \<bottom> and n = "up\<cdot>n"] by simp
 
 end
 
-locale CorrectArityAnalysisAfix = CorrectArityAnalysis + 
+locale CorrectArityAnalysisAfix = CorrectArityAnalysis' + 
   assumes Aexp_Let: "Afix as\<cdot>(Aexp e\<cdot>n) f|` (- domA as) \<sqsubseteq> Aexp (Let as e)\<cdot>n"
 
 end

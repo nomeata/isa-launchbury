@@ -96,6 +96,8 @@ lemma env_restr_below_subset:
 using assms
 by (auto intro!: env_restr_belowI dest: env_restr_belowD)
 
+
+
 lemma  override_on_below_restrI:
   assumes " x f|` (-S) \<sqsubseteq> z f|` (-S)"
   and "y f|` S \<sqsubseteq> z f|` S"

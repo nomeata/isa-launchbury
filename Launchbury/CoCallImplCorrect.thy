@@ -1,21 +1,6 @@
-theory ArityAnalysisImpl
-imports ArityAnalysisFix ArityAnalysisPreImpl "Arity-Nominal" "Nominal-HOLCF" "Env-HOLCF"
+theory CoCallImplCorrect
+imports CoCallAnalysisImpl CardinalityAnalysis
 begin
-
-definition Real_Aexp where "Real_Aexp = ArityAnalysisPreImpl.Aexp ArityAnalysis.Afix"
-
-lemma heap_exp_are_smaller:  "e \<in> snd ` set \<Gamma> \<Longrightarrow> size e \<le> size_list (\<lambda>p. size (snd p)) \<Gamma>"
-  by (metis (mono_tags) imageE order_refl size_list_estimation')
-
-interpretation ArityAnalysisPreImpl ArityAnalysis.Afix where "Aexp = ArityAnalysisImpl.Real_Aexp"
-  unfolding Real_Aexp_def atomize_conj
-  apply (rule conjI[OF _ refl])
-  apply default
-  apply (perm_simp, rule)
-  apply (rule ArityAnalysisFix.Afix_cong)
-  apply (metis heap_exp_are_smaller)
-  apply assumption
-  done
 
 interpretation ArityAnalysis Aexp.
 
@@ -32,11 +17,12 @@ proof-
      by (rule env_restr_useless) (auto dest: set_mp[OF Aexp_edom])
   finally show ?thesis.
 qed
-declare Aexp.simps(2)[simp del]
+declare Aexp_simps(2)[simp del]
 
+(*
 lemma Aexp_let_simp[simp]: "Aexp (Terms.Let \<Gamma> e) \<cdot> n = Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>) f|` (- domA \<Gamma>)"
 proof-
-  have "Aexp (Terms.Let \<Gamma> e) \<cdot> n  = Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>) f|` fv (Terms.Let \<Gamma> e)" by simp
+  have "Aexp (Let \<Gamma> e) \<cdot> n  = Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>) f|` fv (Terms.Let \<Gamma> e)" by simp
   also have "\<dots> = Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>) f|` (- domA \<Gamma>) f|` fv (Terms.Let \<Gamma> e)" by auto (metis Diff_eq Diff_idemp)
   also have "\<dots> = Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>) f|` (- domA \<Gamma>)"
      by (rule env_restr_useless)
@@ -44,6 +30,7 @@ proof-
   finally show ?thesis.
 qed
 declare Aexp.simps(4)[simp del]
+*)
 
 lemma Aexp_subst_upd: "(Aexp e[y::=x]\<cdot>n) \<sqsubseteq> (Aexp e\<cdot>n)(y := \<bottom>, x := up\<cdot>0)"
 proof (nominal_induct e avoiding: x y  arbitrary: n rule: exp_strong_induct)
@@ -69,6 +56,7 @@ next
   finally show ?case.
 next
   case (Let \<Gamma> e)
+  (*
   hence "x \<notin> domA \<Gamma> " and "y \<notin> domA \<Gamma>"
     by (metis (erased, hide_lams) bn_subst domA_not_fresh fresh_def fresh_star_at_base fresh_star_def obtain_fresh subst_is_fresh(2))+
   
@@ -82,7 +70,10 @@ next
     by (rule Afix_subst_approx[OF Let(3) `x \<notin> domA \<Gamma>` `y \<notin> domA \<Gamma>`])
   also have "(Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>))(y := \<bottom>, x := up\<cdot>0) f|` (- domA \<Gamma>) = (Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>) f|` (- domA \<Gamma>)) (y := \<bottom>, x := up\<cdot>0)" by auto
   also have "(Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>) f|` (- domA \<Gamma>)) = Aexp (Terms.Let \<Gamma> e)\<cdot>n" by simp
-  finally show ?case by this simp_all
+  finally
+  show ?case by this simp_all
+  *)
+  show ?case sorry
 qed
 
 lemma Aexp_restr_subst:
@@ -101,6 +92,7 @@ next
   by (auto simp add: env_restr_join env_delete_env_restr_swap[symmetric]  simp del: fun_meet_simp)
 next
   case (Let \<Gamma> e)
+  (*
   hence "x \<notin> domA \<Gamma> " and "y \<notin> domA \<Gamma>"
     by (metis (erased, hide_lams) bn_subst domA_not_fresh fresh_def fresh_star_at_base fresh_star_def obtain_fresh subst_is_fresh(2))+
   
@@ -118,13 +110,14 @@ next
     apply (simp add: env_restr_join)
     done
   thus ?case using Let(1,2) by (auto simp add: fresh_star_Pair elim:env_restr_eq_subset[rotated])
+  *)
+  show ?case sorry
 qed
 
 interpretation CorrectArityAnalysis' Aexp
 proof default
   fix \<pi>
-  show "\<pi> \<bullet> Aexp = Aexp"
-    by (rule fun_eqvtI[OF Aexp.eqvt])
+  show "\<pi> \<bullet> Aexp = Aexp" by perm_simp rule
 next
   fix x y :: var and e :: exp  and a 
   show "Aexp e[y::=x]\<cdot>a \<sqsubseteq> env_delete y (Aexp e\<cdot>a) \<squnion> AE_singleton x\<cdot>(up\<cdot>0)"
@@ -135,7 +128,7 @@ next
 qed (simp_all add:Aexp_restr_subst)
 
 definition Aheap where
-  "Aheap \<Gamma> e = (\<Lambda> a. (Afix \<Gamma> \<cdot> (Aexp e\<cdot>a \<squnion> thunks_AE \<Gamma>) f|` domA \<Gamma>))"
+  "Aheap \<Gamma> e = (\<Lambda> a. (Afix \<Gamma> \<cdot> (Aexp e\<cdot>a, CCexp e\<cdot>a) f|` domA \<Gamma>))"
 
 lemma Aheap_eqvt'[eqvt]:
   "\<pi> \<bullet> (Aheap \<Gamma> e) = Aheap (\<pi> \<bullet> \<Gamma>) (\<pi> \<bullet> e)"
@@ -161,32 +154,23 @@ next
     apply (rule cfun_eqI)
     unfolding Aheap_def
     apply simp
+    sorry
+    (*
     apply (subst Afix_restr_subst[OF assms subset_refl])
     apply (subst Afix_restr[OF  subset_refl]) back
     apply (simp add: env_restr_join)
     apply (subst Aexp_restr_subst[OF assms])
     apply rule
     done
+    *)
 next
   fix \<Gamma> e a
   show "ABinds \<Gamma>\<cdot>(Aheap \<Gamma> e\<cdot>a) \<squnion> Aexp e\<cdot>a \<sqsubseteq> Aheap \<Gamma> e\<cdot>a \<squnion> Aexp (Let \<Gamma> e)\<cdot>a"
-    by (auto simp add: Aheap_def join_below_iff env_restr_join2 Compl_partition intro:  below_trans[OF _ Afix_above_arg])
+    (* by (auto simp add: Aheap_def join_below_iff env_restr_join2 Compl_partition intro:  below_trans[OF _ Afix_above_arg]) *)
+    sorry
 qed
 
-interpretation CorrectArityAnalysisLetNoCard Aexp Aheap
-proof default
-  fix x \<Gamma> e a
-  assume "x \<in> thunks \<Gamma>"
-  hence "up\<cdot>0 \<sqsubseteq> thunks_AE \<Gamma> x" by (metis  thunks_AE_def up_zero_top)
-  also have "thunks_AE \<Gamma> \<sqsubseteq> Real_Aexp e\<cdot>a \<squnion> thunks_AE \<Gamma>"
-    by simp
-  also have "\<dots> \<sqsubseteq> Afix \<Gamma>\<cdot>(Real_Aexp e\<cdot>a \<squnion> thunks_AE \<Gamma>)"
-    by (rule Afix_above_arg)
-  also have "(Afix \<Gamma>\<cdot>(Real_Aexp e\<cdot>a \<squnion> thunks_AE \<Gamma>)) x = (Aheap \<Gamma> e\<cdot>a) x"
-    using set_mp[OF thunks_domA `x \<in> thunks \<Gamma>`] by (simp add: Aheap_def)
-  finally
-  have "up\<cdot>0 \<sqsubseteq> (Aheap \<Gamma> e\<cdot>a) x" by this simp_all
-  thus "(Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0" by (metis Arity_above_up_top)
-qed
+interpretation CardinalityHeap Aexp Aheap cHeap
+
 
 end

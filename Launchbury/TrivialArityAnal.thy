@@ -30,7 +30,7 @@ interpretation ArityAnalysis Trivial_Aexp.
 interpretation EdomArityAnalysis Trivial_Aexp  by default simp
 
 
-interpretation CorrectArityAnalysis Trivial_Aexp
+interpretation CorrectArityAnalysis' Trivial_Aexp
 proof default
   fix \<pi>
   show "\<pi> \<bullet> Trivial_Aexp = Trivial_Aexp" by perm_simp rule
@@ -39,16 +39,22 @@ next
   show "up\<cdot>n \<sqsubseteq> (Trivial_Aexp (Var x)\<cdot>n) x"
     by (simp add: Trivial_Aexp_simp)
 next
-  fix e' y x
-  show "Trivial_Aexp e'[y::=x] \<sqsubseteq> Trivial_Aexp (App (Lam [y]. e') x)"
-    by (fastforce intro: cfun_belowI env_restr_mono2 dest: set_mp[OF fv_subst_subset])
+  fix e y x a
+  have "Trivial_Aexp e[y::=x]\<cdot>a = (\<lambda>x. up\<cdot>0) f|` fv e[y::=x]"
+    by (auto simp add: Trivial_Aexp_simp)
+  also have "\<dots> \<sqsubseteq>  (\<lambda>x. up\<cdot>0) f|` (fv e - {y} \<union> {x})"
+    by (rule env_restr_mono2[OF fv_subst_subset])
+  also have "\<dots> =  env_delete y (Trivial_Aexp e\<cdot>a) \<squnion> AE_singleton x\<cdot>(up\<cdot>0)"
+    by (auto simp add: Trivial_Aexp_simp env_delete_restr lookup_env_restr_eq)
+  finally
+  show "Trivial_Aexp e[y::=x]\<cdot>a \<sqsubseteq> env_delete y (Trivial_Aexp e\<cdot>a) \<squnion> AE_singleton x\<cdot>(up\<cdot>0)".
 next
   fix e x n
-  show "Trivial_Aexp (App e x)\<cdot>n = Trivial_Aexp e\<cdot>(inc\<cdot>n) \<squnion> AE_singleton x\<cdot>(up\<cdot>0)"
-    by (auto simp add: Trivial_Aexp_def env_restr_def )
+  show "Trivial_Aexp e\<cdot>(inc\<cdot>n) \<squnion> AE_singleton x\<cdot>(up\<cdot>0) \<sqsubseteq> Trivial_Aexp (App e x)\<cdot>n"
+    by (auto intro: fun_belowI simp add: Trivial_Aexp_def env_restr_def )
 next
   fix y e n
-  show "Trivial_Aexp (Lam [y]. e)\<cdot>n = env_delete y (Trivial_Aexp e\<cdot>(pred\<cdot>n))"
+  show "env_delete y (Trivial_Aexp e\<cdot>(pred\<cdot>n)) \<sqsubseteq> Trivial_Aexp (Lam [y]. e)\<cdot>n"
     by (auto simp add: Trivial_Aexp_simp env_delete_restr Diff_eq inf_commute)
 next
   fix x y :: var and S e a
@@ -57,64 +63,41 @@ next
     by (auto simp add: Trivial_Aexp_simp fv_subst_eq intro!: arg_cong[where f = "\<lambda> S. env_restr S e" for e])
 qed
 
-definition Trivial_Aheap :: "heap \<Rightarrow> AEnv \<rightarrow> AEnv" where
-  "Trivial_Aheap \<Gamma> = (\<Lambda> ae. (\<lambda> x. up\<cdot>0) f|` domA \<Gamma>)"
+definition Trivial_Aheap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> AEnv" where
+  "Trivial_Aheap \<Gamma> e = (\<Lambda> a. (\<lambda> x. up\<cdot>0) f|` domA \<Gamma>)"
 
-lemma Trivial_Aheap_eqvt[eqvt]: "\<pi> \<bullet>  (Trivial_Aheap \<Gamma>) = Trivial_Aheap (\<pi> \<bullet> \<Gamma>)"
+lemma Trivial_Aheap_eqvt[eqvt]: "\<pi> \<bullet>  (Trivial_Aheap \<Gamma> e) = Trivial_Aheap (\<pi> \<bullet> \<Gamma>) (\<pi> \<bullet> e)"
   unfolding Trivial_Aheap_def
   apply perm_simp
   apply (simp add: Abs_cfun_eqvt)
   done
 
-lemma Trivial_Aheap_simp: "Trivial_Aheap \<Gamma> \<cdot> ae = (\<lambda> x. up\<cdot>0) f|` domA \<Gamma>"
+lemma Trivial_Aheap_simp: "Trivial_Aheap \<Gamma> e\<cdot> a = (\<lambda> x. up\<cdot>0) f|` domA \<Gamma>"
   unfolding Trivial_Aheap_def by simp
 
-interpretation CorrectArityAnalysisLet Trivial_Aexp Trivial_Aheap
+lemma Trivial_Aexp'_below_fv: "Aexp' e\<cdot>a \<sqsubseteq> (\<lambda> x . up\<cdot>0) f|` fv e"
+  by (cases a)(auto simp add: Trivial_Aexp_simp)
+
+lemma Trivial_Abinds_below_fv: "ABinds \<Gamma>\<cdot>ae \<sqsubseteq> (\<lambda> x . up\<cdot>0) f|` fv \<Gamma>"
+  by (induction \<Gamma> rule:ABinds.induct)
+     (auto simp add: join_below_iff intro!: below_trans[OF Trivial_Aexp'_below_fv] env_restr_mono2 elim: below_trans dest: set_mp[OF fv_delete_subset] simp del: fun_meet_simp)
+
+interpretation CorrectArityAnalysisLet' Trivial_Aexp Trivial_Aheap
 proof default
   fix \<pi>
   show "\<pi> \<bullet> Trivial_Aheap = Trivial_Aheap" by perm_simp rule  
 next
-  fix \<Gamma> ae show "edom (Trivial_Aheap \<Gamma>\<cdot>ae) \<subseteq> domA \<Gamma>"
+  fix \<Gamma> e ae show "edom (Trivial_Aheap \<Gamma> e\<cdot>ae) \<subseteq> domA \<Gamma>"
   by (simp add: Trivial_Aheap_simp)
 next
-  fix \<Gamma> :: heap and x :: var and  e' :: exp and  ae :: AEnv
-  assume "map_of \<Gamma> x = Some e'"
-  show "Aexp' e'\<cdot>((Trivial_Aheap \<Gamma>\<cdot>ae) x) f|` domA \<Gamma> \<sqsubseteq> Trivial_Aheap \<Gamma>\<cdot>ae"
-    by (auto intro: env_restr_belowI simp add: Trivial_Aheap_simp)
+  fix \<Gamma> :: heap and e and a
+  show "ABinds \<Gamma>\<cdot>(Trivial_Aheap \<Gamma> e\<cdot>a) \<squnion> Trivial_Aexp e\<cdot>a \<sqsubseteq> Trivial_Aheap \<Gamma> e\<cdot>a \<squnion> Trivial_Aexp (Terms.Let \<Gamma> e)\<cdot>a"
+    by (auto simp add: Trivial_Aheap_simp Trivial_Aexp_simp join_below_iff env_restr_join2 intro!: env_restr_mono2 below_trans[OF Trivial_Abinds_below_fv])
 next
-  fix \<Gamma> :: heap and x :: var and  e' :: exp and  ae :: AEnv
-  assume "\<not> isLam e'" 
-  assume "map_of \<Gamma> x = Some e'"
-  hence "x \<in> domA \<Gamma>" by (metis domI dom_map_of_conv_domA)
-  thus "(Trivial_Aheap \<Gamma>\<cdot>ae) x = up\<cdot>0" by (simp add: Trivial_Aheap_simp)
-next
-  fix \<Gamma> ae
-  show "ae f|` domA \<Gamma> \<sqsubseteq> Trivial_Aheap \<Gamma>\<cdot>ae"
-    by (auto intro: env_restr_belowI simp add: Trivial_Aheap_simp)
-next
-  fix x y :: var and \<Gamma> :: heap
+  fix x y :: var and \<Gamma> :: heap and e
   assume "x \<notin> domA \<Gamma>" and "y \<notin> domA \<Gamma>"
-  thus "Trivial_Aheap \<Gamma>[x::h=y] = Trivial_Aheap \<Gamma>"
+  thus "Trivial_Aheap \<Gamma>[x::h=y] e[x::=y] = Trivial_Aheap \<Gamma> e"
     by (auto intro: cfun_eqI simp add: Trivial_Aheap_simp)
-next
-  fix \<Gamma> :: heap and ae ae' :: AEnv
-  assume "ae f|` domA \<Gamma> = ae' f|` domA \<Gamma>"
-  show "Trivial_Aheap \<Gamma>\<cdot>ae = Trivial_Aheap \<Gamma>\<cdot>ae'"
-    by (simp add: Trivial_Aheap_simp)
-next
-  fix \<Gamma> :: heap and x :: var and  e' e :: exp and a :: Arity
-  assume "map_of \<Gamma> x = Some e'"
-  hence "x \<in> domA \<Gamma>" and "fv e' \<subseteq> fv \<Gamma>" 
-    apply -
-    apply (metis domI dom_map_of_conv_domA)
-    apply (metis domA_from_set map_of_fv_subset map_of_is_SomeD option.sel)
-    done
-  thus "Aexp' e'\<cdot>((Trivial_Aheap \<Gamma>\<cdot>(Trivial_Aexp e\<cdot>a)) x) f|` (- domA \<Gamma>) \<sqsubseteq> Trivial_Aexp (Terms.Let \<Gamma> e)\<cdot>a"
-    by (auto intro: env_restr_mono2 simp add: Trivial_Aheap_simp Trivial_Aexp_simp)
-next
-  fix \<Gamma> e a
-  show "Trivial_Aexp e\<cdot>a f|` (- domA \<Gamma>) \<sqsubseteq> Trivial_Aexp (Terms.Let \<Gamma> e)\<cdot>a"
-    by (auto intro: env_restr_mono2 simp add: Trivial_Aexp_simp)
 qed
 
 end

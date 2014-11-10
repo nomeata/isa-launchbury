@@ -1,5 +1,5 @@
 theory CoCallFix
-imports CoCallAnalysis ArityAnalysisFix
+imports CoCallAnalysis AEnv ArityCorrect
 begin
 
 locale CoCallArityAnalysis =
@@ -59,19 +59,19 @@ lemma ccBindsExtra_simp: "ccBindsExtra \<Gamma> \<cdot> i = ccBinds \<Gamma> \<c
 lemma ccBindsExtra_strict[simp]: "ccBindsExtra \<Gamma> \<cdot> \<bottom> = \<bottom>"
   by (auto simp add: ccBindsExtra_simp inst_prod_pcpo simp del: Pair_strict)
 
-definition ccFix ::  "heap \<Rightarrow> ((AEnv \<times> CoCalls) \<rightarrow> (AEnv \<times> CoCalls))"
-  where "ccFix \<Gamma> = (\<Lambda> i. (\<mu>  i'. (ABinds \<Gamma> \<cdot> (fst i'), ccBindsExtra \<Gamma> \<cdot> i') \<squnion> i))"
+definition cccFix ::  "heap \<Rightarrow> ((AEnv \<times> CoCalls) \<rightarrow> (AEnv \<times> CoCalls))"
+  where "cccFix \<Gamma> = (\<Lambda> i. (\<mu>  i'. (ABinds \<Gamma> \<cdot> (fst i'), ccBindsExtra \<Gamma> \<cdot> i') \<squnion> i))"
 
-lemma ccFix_eq: "ccFix \<Gamma> \<cdot> i = (\<mu>  i'. (ABinds \<Gamma> \<cdot> (fst i'), ccBindsExtra \<Gamma> \<cdot> i') \<squnion> i)"
-  unfolding ccFix_def by simp
+lemma cccFix_eq: "cccFix \<Gamma> \<cdot> i = (\<mu>  i'. (ABinds \<Gamma> \<cdot> (fst i'), ccBindsExtra \<Gamma> \<cdot> i') \<squnion> i)"
+  unfolding cccFix_def by simp
 
-lemma ccFix_strict[simp]: "ccFix \<Gamma> \<cdot> \<bottom> = \<bottom>"
-  unfolding ccFix_eq
+lemma cccFix_strict[simp]: "cccFix \<Gamma> \<cdot> \<bottom> = \<bottom>"
+  unfolding cccFix_eq
   by (rule fix_eqI) auto
 
 (*
-lemma ccFix_least_below: "Binds \<Gamma> \<cdot> (fst ae') \<sqsubseteq> fst ae' \<Longrightarrow> ae \<sqsubseteq> ae' \<Longrightarrow> ccFix \<Gamma> \<cdot> ae \<sqsubseteq> ae'"
-  unfolding ccFix_eq
+lemma cccFix_least_below: "Binds \<Gamma> \<cdot> (fst ae') \<sqsubseteq> fst ae' \<Longrightarrow> ae \<sqsubseteq> ae' \<Longrightarrow> cccFix \<Gamma> \<cdot> ae \<sqsubseteq> ae'"
+  unfolding cccFix_eq
   by (auto intro: fix_least_below)
 
 lemma Afix_unroll: "Afix \<Gamma>\<cdot>ae = ABinds \<Gamma> \<cdot> (Afix \<Gamma>\<cdot>ae) \<squnion> ae"
@@ -126,8 +126,8 @@ lemma ccBinds_eqvt[eqvt]: "\<pi> \<bullet> (CoCallArityAnalysis.ccBinds cccExp \
 lemma ccBindsExtra_eqvt[eqvt]: "\<pi> \<bullet> (CoCallArityAnalysis.ccBindsExtra cccExp \<Gamma>) = CoCallArityAnalysis.ccBindsExtra (\<pi> \<bullet> cccExp) (\<pi> \<bullet> \<Gamma>)"
   by (rule cfun_eqvtI) (simp add: CoCallArityAnalysis.ccBindsExtra_def)
 
-lemma ccFix_eqvt[eqvt]: "\<pi> \<bullet> (CoCallArityAnalysis.ccFix cccExp \<Gamma>) = CoCallArityAnalysis.ccFix  (\<pi> \<bullet> cccExp) (\<pi> \<bullet> \<Gamma>)"
-  unfolding CoCallArityAnalysis.ccFix_def
+lemma cccFix_eqvt[eqvt]: "\<pi> \<bullet> (CoCallArityAnalysis.cccFix cccExp \<Gamma>) = CoCallArityAnalysis.cccFix  (\<pi> \<bullet> cccExp) (\<pi> \<bullet> \<Gamma>)"
+  unfolding CoCallArityAnalysis.cccFix_def
   by perm_simp (simp add: Abs_cfun_eqvt)
 
 lemma ccExp'_cong: 
@@ -158,10 +158,10 @@ lemma ccBindsExtra_cong[fundef_cong]:
   by (metis (mono_tags, hide_lams) ccBinds_cong)
 
 
-lemma ccFix_cong[fundef_cong]:
+lemma cccFix_cong[fundef_cong]:
   "\<lbrakk> (\<And> e. e \<in> snd ` set heap2 \<Longrightarrow> cccexp1 e = cccexp2 e); heap1 = heap2 \<rbrakk>
-      \<Longrightarrow> CoCallArityAnalysis.ccFix cccexp1 heap1 = CoCallArityAnalysis.ccFix cccexp2 heap2"
-   unfolding CoCallArityAnalysis.ccFix_def
+      \<Longrightarrow> CoCallArityAnalysis.cccFix cccexp1 heap1 = CoCallArityAnalysis.cccFix cccexp2 heap2"
+   unfolding CoCallArityAnalysis.cccFix_def
    apply (rule cong) back back
    defer
    apply (metis ccBindsExtra_cong)
