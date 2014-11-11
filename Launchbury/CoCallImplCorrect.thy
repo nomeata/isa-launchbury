@@ -1,5 +1,5 @@
 theory CoCallImplCorrect
-imports CoCallAnalysisImpl CardinalityAnalysis
+imports CoCallAnalysisImpl CardinalityAnalysis CallFutureCardinality CoCallsFuture
 begin
 
 interpretation ArityAnalysis Aexp.
@@ -116,9 +116,11 @@ qed
 
 interpretation CorrectArityAnalysis' Aexp
 proof default
+(*
   fix \<pi>
   show "\<pi> \<bullet> Aexp = Aexp" by perm_simp rule
 next
+*)
   fix x y :: var and e :: exp  and a 
   show "Aexp e[y::=x]\<cdot>a \<sqsubseteq> env_delete y (Aexp e\<cdot>a) \<squnion> AE_singleton x\<cdot>(up\<cdot>0)"
     apply (rule below_trans[OF Aexp_subst_upd])
@@ -170,7 +172,62 @@ next
     sorry
 qed
 
-interpretation CardinalityHeap Aexp Aheap cHeap
+definition ccCard :: "(AEnv \<times> CoCalls) \<rightarrow> (var \<Rightarrow> two)"
+  where "ccCard = (\<Lambda> (ae, G) . (\<lambda> _. once) f|` edom ae \<squnion> (\<lambda> _. many) f|`  (edom ae \<inter> ccManyCalls G))"
 
+lemma ccCard_simp: "ccCard\<cdot>(ae, G) = (\<lambda> _. once) f|` edom ae \<squnion> (\<lambda> _. many) f|` (edom ae \<inter> ccManyCalls G)"
+  sorry
+
+lemma ccCard_above_many[simp]: "many \<sqsubseteq> (ccCard\<cdot>aeG) x \<longleftrightarrow> x \<in> ccManyCalls (snd aeG) \<and> x \<in> edom (fst aeG)"
+  by (cases aeG) (auto simp add: ccCard_simp lookup_env_restr_eq)
+
+lemma ccCard_edom[simp]: "edom (ccCard\<cdot>aeG) = edom (fst aeG)"
+  by (cases aeG) (auto simp add: ccCard_simp)
+
+definition Cheap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> (var \<Rightarrow> two)" where
+  "Cheap \<Gamma> e = (\<Lambda> a. ccCard\<cdot>(cccFix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a)) f|` domA \<Gamma>)"
+
+lemma Cheap_simp: "Cheap \<Gamma> e\<cdot>a = ccCard\<cdot>(cccFix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a)) f|` domA \<Gamma>"
+  unfolding Cheap_def by (rule beta_cfun) simp
+
+lemma Cheap_eqvt[eqvt]: "\<pi> \<bullet> Cheap = Cheap"
+  sorry
+
+interpretation CardinalityHeap Aexp Aheap Cheap
+proof
+  fix \<Delta> e a
+  show "edom (Cheap \<Delta> e\<cdot>a) = edom (Aheap \<Delta> e\<cdot>a)"
+    by (simp add: Cheap_simp Aheap_def Afix_def)
+next
+  fix x \<Gamma> e a
+  assume "x \<in> thunks \<Gamma>"
+  hence [simp]: "x \<in> domA \<Gamma>" sorry
+  
+  assume "many \<sqsubseteq> (Cheap \<Gamma> e\<cdot>a) x"
+  hence "x \<in> ccManyCalls (CCfix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a))"
+    unfolding Cheap_simp CCfix_def by simp
+  with `x \<in> thunks \<Gamma>`
+  have "(ABindsExtra \<Gamma>\<cdot>(CCfix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a))) x = up\<cdot>0"
+    by auto
+  thus "(Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
+    unfolding Aheap_def apply simp
+    by (subst Afix_unroll) simp
+next
+  fix \<pi> show "\<pi> \<bullet> Cheap = Cheap" by perm_simp rule
+qed
+
+fun futures :: "(AEnv \<times> CoCalls) \<Rightarrow> future set"
+  where "futures (ae, G) = ccFilterFuture (any_future (edom ae)) G"
+
+definition Fexp :: "exp \<Rightarrow> Arity \<rightarrow> future set"
+  where "Fexp e = (\<Lambda> a. futures (cCCexp e\<cdot>a))"
+
+fun prognosis :: "AEnv \<Rightarrow> Arity \<Rightarrow> conf \<Rightarrow> Vars.var \<Rightarrow> two"
+   where "prognosis ae a (\<Gamma>, e, S) = pathsCard (paths (\<lambda> x. fup\<cdot>(Fexp (the (map_of \<Gamma> x)))\<cdot>(ae x)) (Fexp e\<cdot>a))"
+
+interpretation CardinalityPrognosis prognosis.
+interpretation CardinalityPrognosisCorrectLet  prognosis Aexp Aheap Cheap
+proof
+oops
 
 end

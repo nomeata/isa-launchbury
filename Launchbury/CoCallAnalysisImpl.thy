@@ -148,21 +148,6 @@ nominal_termination (eqvt) by lexicographic_order
 
 interpretation CoCallArityAnalysis cCCexp.
 
-definition Aexp :: "exp \<Rightarrow> (Arity \<rightarrow> AEnv)" where "Aexp e = (\<Lambda> a. fst (cCCexp e \<cdot> a))"
-definition CCexp :: "exp \<Rightarrow> (Arity \<rightarrow> CoCalls)" where "CCexp \<Gamma> = (\<Lambda> a. snd (cCCexp \<Gamma>\<cdot>a))"
-
-definition Afix :: "heap \<Rightarrow> (AEnv \<times> CoCalls \<rightarrow> AEnv)" where "Afix e = (\<Lambda> ae. fst (cccFix e \<cdot> ae))"
-definition CCfix :: "heap \<Rightarrow> (AEnv \<times> CoCalls \<rightarrow> CoCalls)" where "CCfix \<Gamma> = (\<Lambda> ae. snd (cccFix \<Gamma>\<cdot>ae))"
-
-lemma Aexp_eqvt[eqvt]:  "\<pi> \<bullet> (Aexp e) = Aexp (\<pi> \<bullet> e)"
-  unfolding Aexp_def by perm_simp (simp_all add: Abs_cfun_eqvt)
-lemma CCexp_eqvt[eqvt]:  "\<pi> \<bullet> (CCexp e) = CCexp (\<pi> \<bullet> e)"
-  unfolding CCexp_def by perm_simp (simp_all add: Abs_cfun_eqvt)
-lemma Afix_eqvt[eqvt]:  "\<pi> \<bullet> (Afix \<Gamma>) = Afix (\<pi> \<bullet> \<Gamma>)"
-  unfolding Afix_def by perm_simp (simp_all add: Abs_cfun_eqvt)
-lemma CCfix_eqvt[eqvt]:  "\<pi> \<bullet> (CCfix \<Gamma>) = CCfix (\<pi> \<bullet> \<Gamma>)"
-  unfolding CCfix_def by perm_simp (simp_all add: Abs_cfun_eqvt)
-
 lemma Aexp_simps[simp]:
   "Aexp (GVar b x)\<cdot>n = AE_singleton x\<cdot>(up\<cdot>n)"
   "Aexp (Lam [x]. e)\<cdot>n = Aexp e\<cdot>(pred\<cdot>n) f|` fv (Lam [x]. e)"
@@ -170,15 +155,12 @@ lemma Aexp_simps[simp]:
   "Aexp (Let \<Gamma> e)\<cdot>n = Afix \<Gamma>\<cdot>(Aexp e\<cdot>n, CCexp e\<cdot>n) f|` fv (Let \<Gamma> e)"
 unfolding Aexp_def CCexp_def Afix_def by (simp add: beta_cfun)+
 
-
 lemma CCexp_simps[simp]:
   "CCexp (GVar b x)\<cdot>n = \<bottom>"
   "CCexp (Lam [x]. e)\<cdot>n = predCC (fv (Lam [x]. e)) (CCexp e)\<cdot>n"
   "CCexp (App e x)\<cdot>n = CCexp e\<cdot>(inc\<cdot>n) \<squnion> ccProd (fv e) {x}"
   "CCexp (Let \<Gamma> e)\<cdot>n = cc_restr (fv (Let \<Gamma> e)) (CCfix \<Gamma>\<cdot>(Aexp e\<cdot>n, CCexp e\<cdot>n))"
 unfolding Aexp_def CCexp_def CCfix_def by (simp add: beta_cfun)+
-
-
 
 end
 

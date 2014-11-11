@@ -11,8 +11,7 @@ definition conformsToCC :: "future \<Rightarrow> CoCalls \<Rightarrow> bool"
 definition ccFilterFuture  :: "future set \<Rightarrow> CoCalls \<Rightarrow> future set"
   where "ccFilterFuture S G = {f \<in> S . conformsToCC f G}"
 
-lemma no_future_conforms:  "conformsToCC no_future G"
+lemma no_future_conforms[simp]:  "conformsToCC no_future G"
   unfolding conformsToCC_def by simp
-
 
 end  

@@ -1,5 +1,5 @@
 theory FutureEtaExpand
-imports CardinalityAnalysis AbstractTransform Sestoft SestoftGC  ArityEtaExpansionSestoft
+imports CardinalityAnalysis AbstractTransform Sestoft SestoftGC ArityEtaExpansionSestoft
 begin
 
 locale CardinalityArityTransformation = CardinalityPrognosisEdom + CardinalityPrognosisCorrectLet 

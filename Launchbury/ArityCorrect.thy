@@ -20,7 +20,7 @@ begin
 end
 
 locale CorrectArityAnalysis' = ArityAnalysis + EdomArityAnalysis +
-  assumes Aexp[eqvt]: "\<pi> \<bullet> Aexp = Aexp"
+(*  assumes Aexp_eqvt: "\<pi> \<bullet> Aexp = Aexp" *)
   assumes Aexp_Var: "up \<cdot> n \<sqsubseteq> (Aexp (Var x)\<cdot>n) x"
   assumes Aexp_App: "Aexp e \<cdot>(inc\<cdot>n) \<squnion> AE_singleton x \<cdot> (up\<cdot>0) \<sqsubseteq>  Aexp (App e x) \<cdot> n"
   assumes Aexp_Lam: "env_delete y (Aexp e \<cdot>(pred\<cdot>n)) \<sqsubseteq> Aexp (Lam [y]. e) \<cdot> n"

@@ -33,7 +33,6 @@ lemma two_pred_simps[simp]:
   "two_pred\<cdot>none = none"
 by (simp_all add: two_pred_simp)
 
-
 lemma two_pred_below_arg: "two_pred \<cdot> f \<sqsubseteq> f"
   by (auto simp add: two_pred_simp)
 
@@ -49,6 +48,23 @@ lemma record_call_below_arg: "record_call x \<cdot> f \<sqsubseteq> f"
   unfolding record_call_def
   by (auto intro!: fun_belowI two_pred_below_arg)
 
+definition two_add :: "two \<rightarrow> two \<rightarrow> two"
+  where "two_add = (\<Lambda> x. (\<Lambda> y. if x \<sqsubseteq> \<bottom> then y else (if y \<sqsubseteq> \<bottom> then x else many)))"
+
+lemma two_add_simp: "two_add\<cdot>x\<cdot>y = (if x \<sqsubseteq> \<bottom> then y else (if y \<sqsubseteq> \<bottom> then x else many))"
+  unfolding two_add_def
+  apply (subst beta_cfun)
+  apply (rule cont2cont)
+  apply (rule cont_if_else_above)
+  apply (auto elim: below_trans)[1]
+  apply (rule cont_if_else_above)
+  apply (auto elim: below_trans)[8]
+  apply (rule beta_cfun)
+  apply (rule cont_if_else_above)
+  apply (auto elim: below_trans)[1]
+  apply (rule cont_if_else_above)
+  apply auto
+  done
 
 
 end

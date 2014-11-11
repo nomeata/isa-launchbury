@@ -155,4 +155,10 @@ proof default
     done
 qed
 
+lift_definition ccManyCalls:: "CoCalls \<Rightarrow> var set" 
+  is "\<lambda> G. {y . (y,y) \<in> G}".
+
+lemma ccManyCalls_bot[simp]:
+  "ccManyCalls \<bottom> = {}" by transfer simp
+
 end

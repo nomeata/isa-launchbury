@@ -148,6 +148,21 @@ proof default
   qed
 qed
 
+lemma prod_join: 
+    fixes x y :: "'a::Finite_Join_cpo \<times> 'b::Finite_Join_cpo" 
+    shows "x \<squnion> y = (fst x \<squnion> fst y, snd x \<squnion> snd y)"
+  apply (rule is_joinI)
+  apply (cases x, auto)[1]
+  apply (cases y, auto)[1]
+  apply (cases x, cases y, case_tac a, auto)[1]
+  done
+
+lemma 
+  fixes x y :: "'a::Finite_Join_cpo \<times> 'b::Finite_Join_cpo" 
+  shows fst_join[simp]: "fst (x \<squnion> y) = fst x \<squnion> fst y"
+  and snd_join[simp]: "snd (x \<squnion> y) = snd x \<squnion> snd y" 
+  unfolding prod_join by simp_all
+
 lemma fun_meet_simp[simp]: "(f \<squnion> g) x = f x \<squnion> (g x::'a::Finite_Join_cpo)"
 proof-
   have "f \<squnion> g = (\<lambda> x. f x \<squnion> g x)"

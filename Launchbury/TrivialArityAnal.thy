@@ -5,11 +5,13 @@ begin
 definition Trivial_Aexp :: "exp \<Rightarrow> Arity \<rightarrow> AEnv"
   where "Trivial_Aexp e = (\<Lambda> n. (\<lambda> x. up\<cdot>0) f|` fv e)"
 
+(*
 lemma Trivial_Aexp_eqvt[eqvt]: "\<pi> \<bullet>  (Trivial_Aexp e) = Trivial_Aexp (\<pi> \<bullet> e)"
   unfolding Trivial_Aexp_def
   apply perm_simp
   apply (simp add: Abs_cfun_eqvt)
   done
+*)
 
 lemma Trivial_Aexp_simp: "Trivial_Aexp e \<cdot> n = (\<lambda> x. up\<cdot>0) f|` fv e"
   unfolding Trivial_Aexp_def by simp
@@ -32,9 +34,11 @@ interpretation EdomArityAnalysis Trivial_Aexp  by default simp
 
 interpretation CorrectArityAnalysis' Trivial_Aexp
 proof default
+(*
   fix \<pi>
   show "\<pi> \<bullet> Trivial_Aexp = Trivial_Aexp" by perm_simp rule
 next
+*)
   fix n x
   show "up\<cdot>n \<sqsubseteq> (Trivial_Aexp (Var x)\<cdot>n) x"
     by (simp add: Trivial_Aexp_simp)

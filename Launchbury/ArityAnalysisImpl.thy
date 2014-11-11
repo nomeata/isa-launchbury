@@ -122,10 +122,12 @@ qed
 
 interpretation CorrectArityAnalysis' Aexp
 proof default
+(*
   fix \<pi>
   show "\<pi> \<bullet> Aexp = Aexp"
     by (rule fun_eqvtI[OF Aexp.eqvt])
 next
+*)
   fix x y :: var and e :: exp  and a 
   show "Aexp e[y::=x]\<cdot>a \<sqsubseteq> env_delete y (Aexp e\<cdot>a) \<squnion> AE_singleton x\<cdot>(up\<cdot>0)"
     apply (rule below_trans[OF Aexp_subst_upd])

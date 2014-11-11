@@ -4,7 +4,7 @@ begin
 
 type_synonym future = "var \<Rightarrow> nat"
 
-definition no_future :: future where "no_future v = 0"
+definition no_future :: future where [simp]: "no_future v = 0"
 
 definition possible :: "var \<Rightarrow> future \<Rightarrow> bool"
   where "possible v f = (f v > 0)"
@@ -30,17 +30,95 @@ definition without :: "var \<Rightarrow> future \<Rightarrow> future"
 lemma without_eqvt[eqvt]: "\<pi> \<bullet> without v f = without (\<pi> \<bullet> v) (\<pi> \<bullet> f)"
   unfolding without_def by simp
 
-
 type_synonym futures = "var \<Rightarrow> future set"
 
 definition combine :: "future \<Rightarrow> future \<Rightarrow> future"
-  where "combine f1 f2 v = f1 v + f2 v"
+  where [simp]: "combine f1 f2 v = f1 v + f2 v"
+
+lemma combine_nofuture[simp]: "combine no_future f = f" by auto
+lemma combine_nofuture2[simp]: "combine f no_future = f" by auto
+
+definition future_add :: "future set \<Rightarrow> future set \<Rightarrow> future set"
+  where "future_add fs fs' = fs \<union> fs' \<union> {f . \<exists> f1 \<in> fs. \<exists> f2 \<in> fs'. f = combine f1 f2}"
+
+lemma future_add_subset1:
+  "fs \<subseteq> future_add fs fs'"
+    unfolding future_add_def by auto
+lemma future_add_subset2:
+  "fs' \<subseteq> future_add fs fs'"
+    unfolding future_add_def by auto
+
+lemma future_addE:
+  assumes "f \<in> future_add fs fs'"
+  obtains "f \<in> fs" | "f \<in> fs'" | f' f'' where "f = combine f' f''" "f' \<in> fs" "f'' \<in> fs'"
+  using assms
+  unfolding future_add_def by auto
+
+lemma combine_comm: "combine f f' = combine f' f" 
+  by (auto simp add: combine_def)
+
+lemma combine_assoc[simp]: "combine f (combine f' f'') = combine (combine f f') f''" 
+  by (auto simp add: combine_def)
+
+
+lemma combine_mem_add_subset[intro]:
+  "f \<in> fs \<Longrightarrow> f' \<in> fs' \<Longrightarrow> combine f f' \<in> future_add fs fs'"
+  unfolding future_add_def
+  by auto
+
+lemma future_add_assoc:
+  "future_add fs (future_add fs' fs'') = future_add (future_add fs fs') fs''"
+  apply (auto elim!: future_addE 
+           intro: set_mp[OF future_add_subset1] set_mp[OF future_add_subset2])
+  apply auto
+  apply (auto simp add: combine_assoc[symmetric] simp del: combine_assoc)
+  done
+  
+lemma future_add_comm:
+  "future_add fs fs' = future_add fs' fs"
+  unfolding future_add_def
+  apply (auto elim!: future_addE)
+  apply (subst combine_comm, auto)+
+  done
+
+lemma future_add_twist:
+  "future_add fs (future_add fs' fs'') = future_add (future_add fs' fs) fs''"
+  by (metis future_add_assoc future_add_comm)
+  
+(*
+definition may_call :: "var \<Rightarrow> future set \<Rightarrow> future set"
+  where "may_call v fs = {f . \<exists> f' \<in> fs. \<forall> x. x \<noteq> v \<longrightarrow> f x = f' x}"
+*)
+
+definition many_calls :: "var set \<Rightarrow> future set"
+  where "many_calls S = {f . \<forall> x. x \<notin> S \<longrightarrow> f x = 0}"
+
+lemma not_future_many_calls[simp]:
+  "no_future \<in> many_calls S" by (simp add: many_calls_def)
+
+lemma not_future_upd_many_calls[simp, intro]: 
+  "x \<in> S \<Longrightarrow> f \<in> many_calls S \<Longrightarrow> f(x := n) \<in> many_calls S" by (simp add: many_calls_def)
+
+definition may_call :: "var \<Rightarrow> future set \<Rightarrow> future set"
+  where "may_call v fs = future_add (many_calls {v}) fs"
+
+lemma may_call_multiple_calls: "(\<exists>f\<in>may_call x fs. Suc 0 < f x') \<longleftrightarrow> x' = x \<or> (\<exists>f\<in>fs. 1 < f x')"
+  unfolding may_call_def
+  apply rule
+  apply (auto elim!: future_addE simp add: many_calls_def  intro: set_mp[OF future_add_subset1] set_mp[OF future_add_subset2])
+  apply (rule bexI[where x = "no_future(x:=2)"])
+  apply (auto intro: set_mp[OF future_add_subset1] set_mp[OF future_add_subset2])
+  done  
+
+lemma future_add_may_call_twist:
+  "future_add fs (may_call x fs') = future_add (may_call x fs) fs'"
+  unfolding may_call_def by (metis future_add_assoc future_add_comm)
 
 (* http://stackoverflow.com/questions/16603886/inductive-set-with-non-fixed-parameters *)
 
 inductive paths' :: "futures \<Rightarrow> future set \<Rightarrow> var list \<Rightarrow> bool" for G
   where "paths' G current []"
-  | "f \<in> current \<Longrightarrow> possible x f \<Longrightarrow> paths' G (combine (after x f) ` (G x)) path \<Longrightarrow> paths' G current (x#path)"
+  | "f \<in> current \<Longrightarrow> possible x f \<Longrightarrow> paths' G (future_add {after x f} (G x)) path \<Longrightarrow> paths' G current (x#path)"
 
 definition paths  :: "futures \<Rightarrow> future set \<Rightarrow> var list set" 
   where "paths G current = Collect (paths' G current)"
@@ -66,11 +144,6 @@ lemma [simp]: "x \<noteq> y \<Longrightarrow> after x (f(y := n)) =( after x f)(
 lemma no_future_upd0[simp]: "no_future(x := 0) = no_future"
   by (auto simp add: no_future_def)
 
-lemma combine_nofuture[simp]: "combine no_future f = f"
-  by (auto simp add: no_future_def combine_def)
-
-definition may_call :: "var \<Rightarrow> future set \<Rightarrow> future set"
-  where "may_call v fs = {f . \<exists> f' \<in> fs. \<forall> x. x \<noteq> v \<longrightarrow> f x = f' x}"
 
 (*
 lemma may_call_cont: "cont (may_call v)" sorry
@@ -98,6 +171,7 @@ qed
 
 lemma [simp]: "replicate n x @ [x'] = replicate n' x \<longleftrightarrow> n' = Suc n \<and> x' = x"
   by auto
+(*
 
 lemma
   fixes G current
@@ -146,5 +220,6 @@ next
   ultimately
   show "p \<in> paths G current" by blast
 qed
+*)
 
 end
