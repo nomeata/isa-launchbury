@@ -34,14 +34,16 @@ fun Fstack :: "stack \<Rightarrow> future set"
   | "Fstack (Upd x # S) = Fstack S"
   | "Fstack (Arg x # S) = may_call x (Fstack S)"
   | "Fstack (Dummy x # S) = Fstack S"
+
 fun prognosis :: "AEnv \<Rightarrow> Arity \<Rightarrow> conf \<Rightarrow> var \<Rightarrow> two"
    where "prognosis ae a (\<Gamma>, e, S) = pathsCard (paths (FBinds \<Gamma>\<cdot>ae) (future_add (Fexp e\<cdot>a) (Fstack S)))"
 end
 
 locale FutureAnalysisCorrect = FutureAnalysis +
   assumes Fexp_App: "Fexp (App e x)\<cdot>a = may_call x ((Fexp e)\<cdot>(inc\<cdot>a))"
+  assumes Fexp_Lam: "without y ` (Fexp e \<cdot>(pred\<cdot>n)) = Fexp (Lam [y]. e) \<cdot> n"
+  assumes Fexp_subst: "Fexp (e[y::=x])\<cdot>a = may_call x (without y ` ((Fexp e)\<cdot>a))"
 begin
-
 
   sublocale CardinalityPrognosisCorrect prognosis
   proof
@@ -87,6 +89,35 @@ begin
     thus "prognosis ae (inc\<cdot>a) (\<Gamma>, e, Arg x # S) \<sqsubseteq> prognosis ae a (\<Gamma>, App e x, S)"
       by simp
   next
+    fix ae a \<Gamma> e y x S
+    have "Fexp e[y::=x]\<cdot>(pred\<cdot>a) = may_call x (Fexp (Lam [y]. e)\<cdot>a)" 
+      by (simp add: Fexp_Lam Fexp_subst)
+    hence "future_add (Fexp e[y::=x]\<cdot>(pred\<cdot>a)) (Fstack S) = future_add (Fexp (Lam [y]. e)\<cdot>a) (may_call x (Fstack S))"
+      by (metis future_add_may_call_twist)
+    thus "prognosis ae (pred\<cdot>a) (\<Gamma>, e[y::=x], S) \<sqsubseteq> prognosis ae a (\<Gamma>, Lam [y]. e, Arg x # S)"
+      by simp
+  next
+    fix \<Gamma> :: heap and e :: exp and x :: var and ae :: AEnv and u a S
+    assume "map_of \<Gamma> x = Some e"
+    assume "ae x = up\<cdot>u"
+    assume "a \<sqsubseteq> u"
+
+    have "paths (FBinds (delete x \<Gamma>)\<cdot>ae) (future_add (Fexp e\<cdot>u) (Fstack S)) \<subseteq> {tl p |p. p \<in> paths (FBinds \<Gamma>\<cdot>ae) (future_add (Fexp (Var x)\<cdot>a) (Fstack S)) \<and> hd p = x}"
+    proof
+      fix p 
+      assume "p \<in> paths (FBinds (delete x \<Gamma>)\<cdot>ae) (future_add (Fexp e\<cdot>u) (Fstack S))"
+
+      have "x# p \<in>paths (FBinds \<Gamma>\<cdot>ae) (future_add (Fexp (Var x)\<cdot>a) (Fstack S))"
+      proof
+        
+      qed
+      thus "p \<in> {tl p |p. p \<in> paths (FBinds \<Gamma>\<cdot>ae) (future_add (Fexp (Var x)\<cdot>a) (Fstack S)) \<and> hd p = x}" by force
+    qed
+    hence "pathsCard (paths (FBinds (delete x \<Gamma>)\<cdot>ae) (future_add (Fexp e\<cdot>u) (Fstack S))) \<sqsubseteq> pathsCard {tl p |p. p \<in> paths (FBinds \<Gamma>\<cdot>ae) (future_add (Fexp (Var x)\<cdot>a) (Fstack S)) \<and> hd p = x}"
+      by (rule pathsCard_mono)
+    hence "pathsCard (paths (FBinds (delete x \<Gamma>)\<cdot>ae) (future_add (Fexp e\<cdot>u) (Fstack S))) \<sqsubseteq> record_call x\<cdot>(pathsCard (paths (FBinds \<Gamma>\<cdot>ae) (future_add (Fexp (Var x)\<cdot>a) (Fstack S))))"
+      by (rule below_trans[OF _ record_call_pathsCard])
+    thus "prognosis ae u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> record_call x\<cdot>(prognosis ae a (\<Gamma>, Var x, S))" by simp
   oops
 
 end

@@ -41,8 +41,14 @@ lemma two_pred_none: "two_pred\<cdot>c = none \<longleftrightarrow> c \<sqsubset
 
 definition record_call where "record_call x = (\<Lambda> ce. (\<lambda> y. if x = y then two_pred\<cdot>(ce y) else ce y))"
 
-lemma record_call[simp]: "(record_call x \<cdot> f) x = two_pred \<cdot> (f x)"
+lemma record_call_simp: "(record_call x \<cdot> f) x' = (if x = x' then two_pred \<cdot> (f x') else f x')"
   unfolding record_call_def by auto
+
+lemma record_call[simp]: "(record_call x \<cdot> f) x = two_pred \<cdot> (f x)"
+  unfolding record_call_simp by auto
+
+lemma record_call_other[simp]: "x' \<noteq> x \<Longrightarrow> (record_call x \<cdot> f) x' = f x'"
+  unfolding record_call_simp by auto
 
 lemma record_call_below_arg: "record_call x \<cdot> f \<sqsubseteq> f"
   unfolding record_call_def
@@ -65,6 +71,9 @@ lemma two_add_simp: "two_add\<cdot>x\<cdot>y = (if x \<sqsubseteq> \<bottom> the
   apply (rule cont_if_else_above)
   apply auto
   done
+
+lemma two_pred_two_add_once: "c \<sqsubseteq> two_pred\<cdot>(two_add\<cdot>once\<cdot>c)"
+  by (cases c rule: two_cases) (auto simp add: two_add_simp)
 
 
 end
