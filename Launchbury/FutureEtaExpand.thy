@@ -126,7 +126,7 @@ case (thunk \<Gamma> x e S)
   next
     case once
 
-    note `ae x = up\<cdot>u` `a \<sqsubseteq> u`
+    note `ae x = up\<cdot>u` 
     moreover
 
     have "prognosis ae a (\<Gamma>, Var x, S) \<sqsubseteq> ce" using thunk by auto
@@ -135,7 +135,7 @@ case (thunk \<Gamma> x e S)
     hence "x \<notin> ap S" using prognosis_ap[of ae a \<Gamma> "(Var x)" S] by auto
     
 
-    from `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u` `a \<sqsubseteq> u`
+    from `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u`
     have *: "prognosis ae u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))"
       by (rule prognosis_Var)
 
@@ -208,7 +208,7 @@ case (thunk \<Gamma> x e S)
   next
     case many
 
-    from `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u` `a \<sqsubseteq> u`
+    from `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u`
     have "prognosis ae u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))" by (rule prognosis_Var)
     note * = below_trans[OF this record_call_below_arg]
 
@@ -252,7 +252,7 @@ case (lamvar \<Gamma> x e S)
   have "prognosis ae u ((x, e) # delete x \<Gamma>, e, S) \<sqsubseteq> prognosis ae u (delete x \<Gamma>, e, Upd x # S)"
     using eq_imp_below[OF `ae x = up\<cdot>u`]   by (rule prognosis_Var2)
   also have "\<dots> \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))"
-    using `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u` `a \<sqsubseteq> u` by (rule prognosis_Var)
+    using `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u` by (rule prognosis_Var)
   also have "\<dots> \<sqsubseteq> prognosis ae a (\<Gamma>, Var x, S)" by (rule record_call_below_arg)
   finally have *: "prognosis ae u ((x, e) # delete x \<Gamma>, e, S) \<sqsubseteq> prognosis ae a (\<Gamma>, Var x, S)" by this simp_all
 
