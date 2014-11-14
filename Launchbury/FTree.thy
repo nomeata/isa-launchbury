@@ -53,7 +53,7 @@ typedef 'a ftree = "{xss :: 'a list set . [] \<in> xss \<and> downset xss}" by a
 setup_lifting type_definition_ftree
 
 lift_definition possible ::"'a ftree \<Rightarrow> 'a \<Rightarrow> bool"
-  is "\<lambda> xss x. \<exists> xs \<in> xss. xs \<noteq> [] \<and> hd xs = x".
+  is "\<lambda> xss x. \<exists> xs. x#xs \<in> xss".
 
 lift_definition nxt ::"'a ftree \<Rightarrow> 'a \<Rightarrow> 'a ftree"
   is "\<lambda> xss x. insert [] {xs | x' xs . x'#xs \<in> xss \<and> x' = x}"
@@ -65,8 +65,13 @@ lift_definition empty :: "'a ftree" is "{[]}" by auto
 lemma possible_empty[simp]: "possible empty x' \<longleftrightarrow> False"
   by transfer auto
 
-lemma nxt_empty[simp]: "nxt empty x' =  empty"
+lemma nxt_not_possible[simp]: "\<not> possible t x \<Longrightarrow> nxt t x = empty"
   by transfer auto
+
+definition repeatable where "repeatable t = (\<forall>x . possible t x \<longrightarrow> nxt t x = t)"
+
+lemma nxt_repeatable[simp]: "repeatable t \<Longrightarrow> possible t x \<Longrightarrow> nxt t x = t"
+  unfolding repeatable_def by auto
  
 lift_definition single :: "'a \<Rightarrow> 'a ftree" is "\<lambda> x. {[], [x]}"
   by auto
@@ -86,15 +91,17 @@ lemma possible_and_then[simp]: "possible (and_then x t) x' \<longleftrightarrow>
 lemma nxt_and_then[simp]: "nxt (and_then x t) x = t"
   by transfer auto
 
-
 lift_definition many_calls :: "'a \<Rightarrow> 'a ftree" is "\<lambda> x. range (\<lambda> n. replicate n x)"
   by (auto simp add: downset_def)
 
 lemma possible_many_calls[simp]: "possible (many_calls x) x' \<longleftrightarrow> x = x'"
-  by transfer auto
+  by transfer (force simp add: Cons_replicate_eq)
 
 lemma nxt_many_calls[simp]: "nxt (many_calls x) x' = (if x' =  x then many_calls x else empty)"
   by transfer (force simp add: Cons_replicate_eq)
+
+lemma repeatable_many_calls: "repeatable (many_calls x)"
+  unfolding repeatable_def by auto
 
 lift_definition anything :: "'a ftree" is "UNIV"
   by auto
@@ -223,11 +230,19 @@ lemma both_assoc[simp]: "both t (both t' t'') = both (both t t') t''"
 lemma both_comm: "both t t' = both t' t"
   by transfer (auto, (metis interleave_comm)+)
 
+lemma both_empty1[simp]: "both empty t = t"
+  by transfer auto
+
+lemma both_empty2[simp]: "both t empty = t"
+  by transfer auto
+
 lift_definition paths :: "'a ftree \<Rightarrow> 'a list set" is "(\<lambda> x. x)".
 
 lemma paths_inj: "paths t = paths t' \<Longrightarrow> t = t'" by transfer auto
 
 lemma paths_injs_simps[simp]: "paths t = paths t' \<longleftrightarrow> t = t'" by transfer auto
+
+lemma paths_empty[simp]: "paths empty = {[]}" by transfer auto
 
 lemma paths_both: "xs \<in> paths (both t t') \<longleftrightarrow> (\<exists> ys \<in> paths t. \<exists> zs \<in> paths t'. xs \<in> interleave ys zs)"
   by transfer fastforce
@@ -246,6 +261,11 @@ lemma paths_Nil[simp]: "[] \<in> paths t" by transfer simp
 lemma paths_Cons_nxt:
   "possible t x \<Longrightarrow> xs \<in> paths (nxt t x) \<Longrightarrow> (x#xs) \<in> paths t"
   by transfer auto
+
+lemma paths_Cons_nxt_iff:
+  "possible t x \<Longrightarrow> xs \<in> paths (nxt t x) \<longleftrightarrow> (x#xs) \<in> paths t"
+  by transfer auto
+
 
 lemma ftree_eqI: "(\<And> x xs. x#xs \<in> paths t \<longleftrightarrow> x#xs \<in> paths t') \<Longrightarrow> t = t'"
   apply (rule paths_inj)
@@ -268,70 +288,60 @@ lemma paths_and_then_Cons[simp]: "x'#xs \<in> paths (and_then x t) \<longleftrig
 lemma possible_both[simp]: "possible (both t t') x \<longleftrightarrow> possible t x \<or> possible t' x"
 proof
   assume "possible (both t t') x"
-  then obtain xs where "xs \<in> paths (both t t')" "xs \<noteq> []" "hd xs = x"
+  then obtain xs where "x#xs \<in> paths (both t t')"
     by transfer auto
   
-  from `xs \<in> paths (both t t')`
-  obtain ys zs where "ys \<in> paths t" and "zs \<in> paths t'" and "xs \<in> interleave ys zs"
+  from `x#xs \<in> paths (both t t')`
+  obtain ys zs where "ys \<in> paths t" and "zs \<in> paths t'" and "x#xs \<in> interleave ys zs"
     by transfer auto
 
-  from `xs \<noteq> []` `hd xs = x` `xs \<in> interleave ys zs`
+  from `x#xs \<in> interleave ys zs`
   have "ys \<noteq> [] \<and> hd ys = x  \<or> zs \<noteq> [] \<and> hd zs = x"
-    by (cases xs)  (auto elim: interleave_cases)
+    by (auto elim: interleave_cases)
   thus "possible t x \<or> possible t' x"
     using  `ys \<in> paths t`   `zs \<in> paths t'`
     by transfer auto
 next
   assume "possible t x \<or> possible t' x"
-  then obtain xs where "xs \<noteq> [] \<and> hd xs = x" and "xs \<in> paths t \<or> xs \<in> paths t'"
+  then obtain xs where "x#xs\<in> paths t \<or> x#xs\<in> paths t'"
     by transfer auto
-  from this(2) have "xs \<in> paths (both t t')" by (auto dest: set_mp[OF both_contains_arg1]  set_mp[OF both_contains_arg2])
-  with `xs \<noteq> [] \<and> hd xs = x`
-  show "possible (both t t') x" by transfer auto
+  from this have "x#xs \<in> paths (both t t')" by (auto dest: set_mp[OF both_contains_arg1]  set_mp[OF both_contains_arg2])
+  thus "possible (both t t') x" by transfer auto
 qed
 
+lemma nxt_both:
+    "nxt (both t' t) x = (if possible t' x \<and> possible t x then either (both (nxt t' x) t) (both t' (nxt t x)) else
+                           if possible t' x then both (nxt t' x) t else
+                           if possible t x then both t' (nxt t x) else
+                           empty)"
+  by (transfer, auto 4 4 intro: interleave_intros)
+
+lemma Cons_both:
+    "x # xs \<in> paths (both t' t) \<longleftrightarrow> (if possible t' x \<and> possible t x then xs \<in> paths (both (nxt t' x) t) \<or> xs \<in> paths (both t' (nxt t x)) else
+                           if possible t' x then xs \<in> paths (both (nxt t' x) t) else
+                           if possible t x then xs \<in> paths (both t' (nxt t x)) else
+                           False)"
+  apply (auto simp add: paths_Cons_nxt_iff[symmetric] nxt_both)
+  by (metis paths.rep_eq possible.rep_eq possible_both)
+
+
+lemma either_both_distr[simp]:
+  "either (both t' t) (both t' t'') = both t' (either t t'')"
+  by transfer auto
+
+lemma either_both_distr2[simp]:
+  "either (both t' t) (both t'' t) = both (either t' t'') t"
+  by transfer auto
+
+lemma nxt_both_repeatable[simp]:
+  assumes [simp]: "repeatable t'"
+  assumes [simp]: "possible t' x"
+  shows "nxt (both t' t) x = both t' (either t (nxt t x))"
+  by (auto simp add: nxt_both)
+
 lemma nxt_both_many_calls[simp]: "nxt (both (many_calls x) t) x = both (many_calls x) (either t (nxt t x))"
-proof (intro paths_inj  set_eqI iffI)
-  fix xs
-  assume "xs \<in> paths (nxt (both (many_calls x) t) x) "
-  thus  "xs \<in> paths (both (many_calls x) (either t (nxt t x)))"
-  proof(rule paths_nxt)
-    assume "xs = []" thus ?thesis by simp
-  next
-    assume "x # xs \<in> paths (both (many_calls x) t)"
-    then obtain ys zs where "ys \<in> paths (many_calls x)" and "zs \<in> paths t" and "x#xs \<in> interleave ys zs"
-      unfolding paths_both by auto
-    from `x#xs \<in> interleave ys zs`
-    show ?thesis
-    proof
-      fix ys'
-      assume "ys = x # ys'" with `ys \<in> paths (many_calls x)`
-      have "ys' \<in> paths (many_calls x)"
-        by transfer ( auto, metis (poly_guards_query) list.distinct(2) list.sel(3) not0_implies_Suc range_eqI replicate.simps(1) replicate_Suc)
-      moreover
-      from `zs \<in> paths t` have "zs \<in> paths (either t (nxt t x))" by simp
-      moreover
-      assume "xs \<in> interleave ys' zs"
-      ultimately
-      show "xs \<in> paths (both (many_calls x) (either t (nxt t x)))" unfolding paths_both by auto
-    next
-      fix zs'
-      note `ys \<in> paths (many_calls x)`
-      moreover
-      assume "zs = x # zs'" with `zs \<in> paths t`
-      have "zs' \<in> paths (nxt t x)" by (simp add: paths_nxt_eq)
-      moreover
-      assume "xs \<in> interleave ys zs'"
-      ultimately
-      show "xs \<in> paths (both (many_calls x) (either t (nxt t x)))" unfolding paths_both by auto
-    qed
-  qed
-next
-  fix xs
-  assume "xs \<in> paths (both (many_calls x) (either t (nxt t x)))"
-  thus "xs \<in> paths (nxt (both (many_calls x) t) x)"
-    by (fastforce simp add: paths_both paths_nxt_eq intro: interleave_intros paths_Cons_nxt)
-qed
+  by (simp add: repeatable_many_calls)
+
 
 lemma and_then_both_single:
   "paths (and_then x t) \<subseteq> paths (both (single x) t)"
@@ -484,6 +494,70 @@ lemma paths_substitute: "xs \<in> paths (substitute f t) \<longleftrightarrow> s
 lemma substitute_and_then:
   "substitute f (and_then x t) = and_then x (substitute f (both t (f x)))"
   by (auto intro: ftree_eqI simp add: paths_substitute substitute'_and_then)
+
+lemma repeatable_both_self[simp]:
+  assumes [simp]: "repeatable t"
+  shows "both t t = t"
+  apply (intro paths_inj set_eqI)
+  apply (induct_tac x)
+  apply (auto simp add: Cons_both paths_Cons_nxt_iff[symmetric])
+  apply (metis Cons_both both_empty1 possible_empty)+
+  done
+
+lemma repeatable_both_both[simp]:
+  assumes "repeatable t"
+  shows "both (both t t') t = both t t'"
+  by (metis repeatable_both_self[OF assms]  both_assoc both_comm)
+
+lemma repeatable_both_both2[simp]:
+  assumes "repeatable t"
+  shows "both (both t' t) t = both t' t"
+  by (metis repeatable_both_self[OF assms]  both_assoc both_comm)
+
+
+lemma repeatable_both_nxt:
+  assumes "repeatable t"
+  assumes "possible t' x"
+  assumes "both t' t = t'"
+  shows "both (nxt t' x) t = nxt t' x"
+proof(rule classical)
+  assume "both (nxt t' x) t \<noteq> nxt t' x"
+  hence "both (either (nxt t' x) t') t \<noteq> nxt t' x" by (metis (no_types) assms(1) both_assoc repeatable_both_self)
+  thus "both (nxt t' x) t = nxt t' x"  by (metis (no_types) assms either_both_distr2 nxt_both nxt_repeatable)
+qed
+
+lemma repeatable_both_both_nxt:
+  assumes "both t' t = t'"
+  shows "both (both t' t'') t = both t' t''"
+  by (metis assms both_assoc both_comm)
+
+lemma substitute'_remove_anyways_aux:
+  assumes [simp]: "repeatable (f x)"
+  assumes "substitute' f t xs"
+  assumes "both t (f x) = t"
+  shows "substitute' (f(x := empty)) t xs"
+  using assms(2,3)
+  by (induction rule: substitute'.induct)
+     (auto intro!: substitute'.intros simp add: repeatable_both_nxt repeatable_both_both_nxt )
+
+lemma substitute_remove_anyways:
+  assumes "repeatable t"
+  assumes "f x = t"
+  shows "substitute f (both t t') = substitute (f(x := empty)) (both t t')"
+proof (rule paths_inj, rule, rule subsetI, simp only: paths_substitute)
+  fix xs
+  have "repeatable (f x)" using assms by simp
+  moreover
+  assume "substitute' f (both t t') xs"
+  moreover
+  have "both (both t t') (f x) = both t t'" sorry
+  ultimately
+  show "substitute' (f(x := FTree.empty)) (both t t') xs"
+      by (rule  substitute'_remove_anyways_aux)
+next
+  show "paths (substitute (f(x := FTree.empty)) (both t t')) \<subseteq> paths (substitute f (both t t'))"
+    by (rule substitute_mono1) auto
+qed 
 
   
 end

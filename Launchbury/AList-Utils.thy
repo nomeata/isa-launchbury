@@ -43,6 +43,9 @@ lemma delete_not_domA[simp]:
   "x \<notin> domA \<Gamma> \<Longrightarrow>  delete x \<Gamma> = \<Gamma>"
   by (induct \<Gamma>) auto
 
+lemma deleted_not_domA: "x \<notin> domA (delete x \<Gamma>)"
+  by (induct \<Gamma>) auto
+
 lemma dom_map_of_conv_domA:
   "dom (map_of \<Gamma>) = domA \<Gamma>"
   by (induct \<Gamma>) (auto simp add: dom_if)

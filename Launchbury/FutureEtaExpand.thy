@@ -135,9 +135,15 @@ case (thunk \<Gamma> x e S)
     hence "x \<notin> ap S" using prognosis_ap[of ae a \<Gamma> "(Var x)" S] by auto
     
 
+    {
+    have "prognosis ae u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> prognosis ae u (\<Gamma>, e, Upd x # S)" by (rule prognosis_delete)
+    also
     from `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u`
-    have *: "prognosis ae u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))"
+    have "\<dots> \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))"
       by (rule prognosis_Var)
+    finally have "prognosis ae u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))" by this simp
+    }
+    note * = this
 
     from `prognosis ae a (\<Gamma>, Var x, S) x \<sqsubseteq> once`
     have "(record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))) x = none"
@@ -208,9 +214,13 @@ case (thunk \<Gamma> x e S)
   next
     case many
 
+    have "prognosis ae u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> prognosis ae u (\<Gamma>, e, Upd x # S)" by (rule prognosis_delete)
+    also
     from `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u`
-    have "prognosis ae u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))" by (rule prognosis_Var)
-    note * = below_trans[OF this record_call_below_arg]
+    have "\<dots> \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))" by (rule prognosis_Var)
+    also note record_call_below_arg
+    finally
+    have *: "prognosis ae u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> prognosis ae a (\<Gamma>, Var x, S)" by this simp_all
 
     have "ae x = up\<cdot>0" using thunk many `x \<in> thunks \<Gamma>` by (auto)
     hence "u = 0" using `ae x = up\<cdot>u` by simp
@@ -248,11 +258,11 @@ case (lamvar \<Gamma> x e S)
   from `ae x = up\<cdot>u` have "ce x \<noteq> \<bottom>" using lamvar by (auto simp add: edom_def)
   then obtain c where "ce x = up\<cdot>c" by (cases "ce x") auto
 
-  find_theorems prognosis Upd
-  have "prognosis ae u ((x, e) # delete x \<Gamma>, e, S) \<sqsubseteq> prognosis ae u (delete x \<Gamma>, e, Upd x # S)"
-    using eq_imp_below[OF `ae x = up\<cdot>u`]   by (rule prognosis_Var2)
+  have "prognosis ae u ((x, e) # delete x \<Gamma>, e, S) = prognosis ae u (\<Gamma>, e, S)"
+    using `map_of \<Gamma> x = Some e` by (auto intro!: prognosis_reorder)
+  also have "\<dots> \<sqsubseteq> prognosis ae u (\<Gamma>, e, Upd x # S)" by (rule prognosis_upd)
   also have "\<dots> \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))"
-    using `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u` by (rule prognosis_Var)
+     using `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u`  by (rule prognosis_Var)
   also have "\<dots> \<sqsubseteq> prognosis ae a (\<Gamma>, Var x, S)" by (rule record_call_below_arg)
   finally have *: "prognosis ae u ((x, e) # delete x \<Gamma>, e, S) \<sqsubseteq> prognosis ae a (\<Gamma>, Var x, S)" by this simp_all
 
@@ -294,14 +304,14 @@ case (var\<^sub>2 \<Gamma> x e S)
     hence "ce x \<noteq> \<bottom>" using var\<^sub>2 by (auto simp add: edom_def)
     then obtain c where "ce x = up\<cdot>c" by (cases "ce x") auto
 
-    from  `ae x = up\<cdot>a`
-    have *: "prognosis ae a ((x, e) # \<Gamma>, e, S) \<sqsubseteq> prognosis ae a (\<Gamma>, e, Upd x # S)" by (rule prognosis_Var2[OF eq_imp_below])
-
     have "Astack (Upd x # S) \<sqsubseteq> a" using var\<^sub>2 by auto
     hence "a = 0" by auto
 
+    from `isLam e` `x \<notin> domA \<Gamma>`
+    have *: "prognosis ae 0 ((x, e) # \<Gamma>, e, S) \<sqsubseteq> prognosis ae 0 (\<Gamma>, e, Upd x # S)" by (rule prognosis_Var2)
+
     have "consistent (ae, ce, 0) ((x, e) # \<Gamma>, e, S)" using var\<^sub>2
-      by (auto simp add: join_below_iff split:if_splits elim:below_trans[OF *[unfolded `a = 0`]])
+      by (auto simp add: join_below_iff split:if_splits elim:below_trans[OF *])
     moreover
     have "conf_transform (ae, ce, a) (\<Gamma>, e, Upd x # S) \<Rightarrow>\<^sub>G conf_transform (ae, ce, 0) ((x, e) # \<Gamma>, e, S)"
       using `ae x = up\<cdot>a` `a = 0` var\<^sub>2 `ce x = up\<cdot>c`
@@ -309,12 +319,19 @@ case (var\<^sub>2 \<Gamma> x e S)
     ultimately show ?thesis by (blast del: consistentI consistentE)
   next
     case False[simp]
-    hence [simp]: "ae x = \<bottom>" "ce x = \<bottom>" using var\<^sub>2 by (auto simp add: edom_def)
-
-    have *: "prognosis ae a ((x, e) # \<Gamma>, e, S) \<sqsubseteq> prognosis ae a (\<Gamma>, e, Upd x # S)"  by (rule prognosis_Var2) simp
+    hence "ae x = \<bottom>" "ce x = \<bottom>" using var\<^sub>2 by (auto simp add: edom_def)
+    
+    have "prognosis ae a ((x, e) # \<Gamma>, e, S) \<sqsubseteq> prognosis ae a ((x, e) # \<Gamma>, e, Upd x # S)" by (rule prognosis_upd)
+    also
+    from `ce x = \<bottom>` and var\<^sub>2
+    have "prognosis ae a (\<Gamma>, e, Upd x # S) x = \<bottom>" by auto (metis below_bottom_iff fun_belowD)
+    hence "prognosis ae a ((x, e) # \<Gamma>, e, Upd x # S) = prognosis ae a (\<Gamma>, e, Upd x # S)" 
+      by (rule prognosis_not_called[symmetric]) simp
+    finally
+    have *: "prognosis ae a ((x, e) # \<Gamma>, e, S) \<sqsubseteq> prognosis ae a (\<Gamma>, e, Upd x # S)".
 
     have "consistent (ae, ce, a) ((x, e) # \<Gamma>, e, S)" using var\<^sub>2
-      by (auto simp add: join_below_iff split:if_splits elim:below_trans[OF *])
+      by (auto simp add: join_below_iff `ae x = \<bottom>` split:if_splits elim:below_trans[OF *])
     moreover
     have "conf_transform (ae, ce, a) (\<Gamma>, e, Upd x # S) = conf_transform (ae, ce, a) ((x, e) # \<Gamma>, e, S)"
       by(simp add: map_transform_restrA[symmetric])
@@ -369,7 +386,7 @@ next
     hence [simp]: "ce x = \<bottom>"  by (auto simp add: edomIff)
 
     assume "many \<sqsubseteq> (?ce \<squnion> ce) x" with `x \<in> thunks \<Delta>`
-    have "(?ae \<squnion> ae) x = up \<cdot> 0" by (auto simp add: Aheap_heap3)
+    have "(?ae \<squnion> ae) x = up\<cdot>0" by (auto simp add: Aheap_heap3)
   }
   moreover
   have "const_on ae (ap S) (up\<cdot>0)" using let\<^sub>1 by auto  

@@ -38,6 +38,9 @@ lemma minimal_ftree: "empty \<sqsubseteq> S"
 instance ftree :: (type) pcpo
   by default (rule+, rule minimal_ftree)
 
+lemma empty_is_bottom: "empty = \<bottom>"
+  by (metis below_bottom_iff minimal_ftree)
+
 lemma both_above_arg1: "t \<sqsubseteq> both t t'"
   by transfer fastforce
 

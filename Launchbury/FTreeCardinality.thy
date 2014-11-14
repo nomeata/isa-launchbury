@@ -8,15 +8,18 @@ begin
 
 fun FBinds :: "heap \<Rightarrow> AEnv \<rightarrow> (var \<Rightarrow> var ftree)"
   where "FBinds [] = (\<Lambda> ae. \<bottom>)"
-      | "FBinds ((x,e)#\<Gamma>) = (\<Lambda> ae. (\<lambda> x'. (if x' = x then fup\<cdot>(Fexp e)\<cdot>(ae x) else (FBinds \<Gamma>\<cdot>ae) x')))"
+      | "FBinds ((x,e)#\<Gamma>) = (\<Lambda> ae. (FBinds \<Gamma>\<cdot>ae)(x := fup\<cdot>(Fexp e)\<cdot>(ae x)))"
 
 lemma FBinds_Nil_simp[simp]: "FBinds []\<cdot>ae = \<bottom>" by simp
 
 lemma FBinds_Cons[simp]:
-  "FBinds ((x,e)#\<Gamma>)\<cdot>ae = (\<lambda> x'. (if x' = x then fup\<cdot>(Fexp e)\<cdot>(ae x) else (FBinds \<Gamma>\<cdot>ae) x'))" by simp
+  "FBinds ((x,e)#\<Gamma>)\<cdot>ae = (FBinds \<Gamma>\<cdot>ae)(x := fup\<cdot>(Fexp e)\<cdot>(ae x))" by simp
 
 lemmas FBinds.simps[simp del]
 
+lemma FBinds_not_there: "x \<notin> domA \<Gamma> \<Longrightarrow> (FBinds \<Gamma>\<cdot>ae) x = \<bottom>"
+  by (induction \<Gamma> rule: FBinds.induct) auto
+  
 lemma FBinds_cong:
   assumes "ae f|` domA \<Gamma> = ae' f|` domA \<Gamma>"
   shows "FBinds \<Gamma>\<cdot>ae = FBinds \<Gamma>\<cdot>ae'"
@@ -58,6 +61,7 @@ locale FutureAnalysisCorrect = FutureAnalysis +
   assumes Fexp_Lam: "without y (Fexp e\<cdot>(pred\<cdot>n)) \<sqsubseteq> Fexp (Lam [y]. e) \<cdot> n"
   assumes Fexp_subst: "Fexp (e[y::=x])\<cdot>a \<sqsubseteq> both (many_calls x) (without y ((Fexp e)\<cdot>a))"
   assumes Fexp_Var: "single v \<sqsubseteq> Fexp (Var v)\<cdot>a"
+  assumes Fun_repeatable: "isLam e \<Longrightarrow> repeatable (Fexp e\<cdot>0)"
 begin
 
   sublocale CardinalityPrognosisCorrect prognosis
@@ -106,10 +110,7 @@ begin
     assume "map_of \<Gamma> x = Some e"
     assume "ae x = up\<cdot>u"
 
-    have "pathsCard (paths (substitute (FBinds (delete x \<Gamma>)\<cdot>ae) (both (Fexp e\<cdot>u) (Fstack S)))) \<sqsubseteq> pathsCard (paths (substitute (FBinds \<Gamma>\<cdot>ae) (both (Fexp e\<cdot>u) (Fstack S))))"
-      by (intro pathsCard_mono' paths_mono substitute_mono1' FBinds_delete_below)
-      also
-    have "\<dots> = pathsCard (paths (nxt (and_then x (substitute (FBinds \<Gamma>\<cdot>ae) (both (Fexp e\<cdot>u) (Fstack S)))) x))"
+    have "pathsCard (paths (substitute (FBinds \<Gamma>\<cdot>ae) (both (Fexp e\<cdot>u) (Fstack S)))) = pathsCard (paths (nxt (and_then x (substitute (FBinds \<Gamma>\<cdot>ae) (both (Fexp e\<cdot>u) (Fstack S)))) x))"
       by simp
       also
     have "\<dots> \<sqsubseteq> record_call x\<cdot>(pathsCard (paths (and_then x (substitute (FBinds \<Gamma>\<cdot>ae) (both (Fexp e\<cdot>u) (Fstack S))))))"
@@ -130,11 +131,45 @@ begin
     have "FTree.single x \<sqsubseteq> Fexp (Var x)\<cdot>a" by (rule Fexp_Var)
     note pathsCard_mono'[OF paths_mono[OF substitute_mono2'[OF both_mono1'[OF this]]]]
     finally
-    have "pathsCard (paths (substitute (FBinds (delete x \<Gamma>)\<cdot>ae) (both (Fexp e\<cdot>u) (Fstack S)))) \<sqsubseteq> record_call x\<cdot>(pathsCard (paths (substitute (FBinds \<Gamma>\<cdot>ae) (both (Fexp (Var x)\<cdot>a) (Fstack S)))))" 
+    have "pathsCard (paths (substitute (FBinds \<Gamma>\<cdot>ae) (both (Fexp e\<cdot>u) (Fstack S)))) \<sqsubseteq> record_call x\<cdot>(pathsCard (paths (substitute (FBinds \<Gamma>\<cdot>ae) (both (Fexp (Var x)\<cdot>a) (Fstack S)))))" 
       by this simp_all
-    thus "prognosis ae u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> record_call x\<cdot>(prognosis ae a (\<Gamma>, Var x, S))" by simp
+    thus "prognosis ae u ( \<Gamma>, e, Upd x # S) \<sqsubseteq> record_call x\<cdot>(prognosis ae a (\<Gamma>, Var x, S))" by simp
   next
+    fix \<Gamma> :: heap and e :: exp and ae :: AEnv and  x :: var and  S
+    assume "isLam e"
+    hence "repeatable (Fexp e\<cdot>0)" by (rule Fun_repeatable)
 
+    assume [simp]: "x \<notin> domA \<Gamma>"
+
+    have "fup\<cdot>(Fexp e)\<cdot>(ae x) \<sqsubseteq> Fexp e\<cdot>0" by (metis fup2 monofun_cfun_arg up_zero_top)
+    hence "substitute ((FBinds \<Gamma>\<cdot>ae)(x := fup\<cdot>(Fexp e)\<cdot>(ae x))) (both (Fexp e\<cdot>0) (Fstack S)) \<sqsubseteq> substitute ((FBinds \<Gamma>\<cdot>ae)(x := Fexp e\<cdot>0)) (both (Fexp e\<cdot>0) (Fstack S))"
+      by (intro substitute_mono1' fun_upd_mono below_refl)
+    also have "\<dots> = substitute (((FBinds \<Gamma>\<cdot>ae)(x := Fexp e\<cdot>0))(x := empty)) (both (Fexp e\<cdot>0) (Fstack S))"
+      using `repeatable (Fexp e\<cdot>0)` by (rule substitute_remove_anyways, simp)
+    also have "((FBinds \<Gamma>\<cdot>ae)(x := Fexp e\<cdot>0))(x := empty) = FBinds \<Gamma>\<cdot>ae"
+      by (simp add: fun_upd_idem FBinds_not_there empty_is_bottom)
+    finally
+    show "prognosis ae 0 ((x, e) # \<Gamma>, e, S) \<sqsubseteq> prognosis ae 0 (\<Gamma>, e, Upd x # S)"
+      by (simp, intro pathsCard_mono' paths_mono)
+  next
+    fix \<Gamma> \<Delta> :: heap and e :: exp and ae :: AEnv and u S
+    assume "map_of \<Gamma> = map_of \<Delta>"
+    hence "FBinds \<Gamma> = FBinds \<Delta>" by (auto intro!: cfun_eqI  simp add: FBinds_lookup)
+    thus "prognosis ae u (\<Gamma>, e, S) = prognosis ae u (\<Delta>, e, S)"  by simp
+  next
+    fix \<Gamma> :: heap and e :: exp and ae :: AEnv and u S x
+    show "prognosis ae u (delete x \<Gamma>, e, S) \<sqsubseteq> prognosis ae u (\<Gamma>, e, S)"
+      by simp (intro pathsCard_mono' paths_mono substitute_mono1' FBinds_delete_below)
+  next
+    fix \<Gamma> :: heap and e :: exp and ae :: AEnv and u S x
+    show "prognosis ae u (\<Gamma>, e, S) \<sqsubseteq> prognosis ae u (\<Gamma>, e, Upd x # S)" by simp
+  next
+    fix \<Gamma> \<Delta> :: heap and e :: exp and ae :: AEnv and a S x
+    assume "prognosis ae a (\<Gamma>, e, S) x = none"
+    assume "delete x \<Gamma> = delete x \<Delta>"
+    show "prognosis ae a (\<Gamma>, e, S) = prognosis ae a (\<Delta>, e, S)"
+       sorry
+  qed
 end
 
 
