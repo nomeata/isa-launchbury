@@ -19,13 +19,13 @@ locale CardinalityPrognosisCorrect = CardinalityPrognosis +
   assumes prognosis_ap: "const_on (prognosis ae a (\<Gamma>, e, S)) (ap S) many"
   assumes prognosis_upd: "prognosis ae u (\<Gamma>, e, S) \<sqsubseteq> prognosis ae u (\<Gamma>, e, Upd x # S)"
 
-  assumes prognosis_not_called:
-  "prognosis ae a (\<Gamma>, e, S) x = none \<Longrightarrow> delete x \<Gamma> = delete x \<Delta>  \<Longrightarrow> prognosis ae a (\<Gamma>, e, S) = prognosis ae a (\<Delta>, e, S)"
 
   assumes prognosis_App: "prognosis ae (inc\<cdot>a) (\<Gamma>, e, Arg x # S) \<sqsubseteq> prognosis ae a (\<Gamma>, App e x, S)"
   assumes prognosis_subst_Lam: "prognosis ae (pred\<cdot>a) (\<Gamma>, e[y::=x], S) \<sqsubseteq> prognosis ae a (\<Gamma>, Lam [y]. e, Arg x # S)"
   assumes prognosis_Var: "map_of \<Gamma> x = Some e \<Longrightarrow> ae x = up\<cdot>u \<Longrightarrow> prognosis ae u (\<Gamma>, e, Upd x # S) \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))"
   assumes prognosis_Var2: "isLam e \<Longrightarrow> x \<notin> domA \<Gamma> \<Longrightarrow> prognosis ae 0 ((x, e) # \<Gamma>, e, S) \<sqsubseteq> prognosis ae 0 (\<Gamma>, e, Upd x # S)"
+
+  assumes prognosis_not_called: "prognosis ae a (delete x \<Gamma>, e, S) x = none \<Longrightarrow> prognosis ae a (\<Gamma>, e, S) \<sqsubseteq> prognosis ae a (delete x \<Gamma>, e, S)"
 
 
 

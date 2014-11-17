@@ -11,6 +11,10 @@ fun one_call_in_path where
  | "one_call_in_path x (y#xs) \<longleftrightarrow> (if x = y then no_call_in_path x xs else one_call_in_path x xs)"
 
 
+lemma no_call_in_path_set_conv:
+  "no_call_in_path x p \<longleftrightarrow> x \<notin> set p"
+  by(induction p) auto 
+
 lemma no_call_in_tail: "no_call_in_path x (tl p) \<longleftrightarrow> (no_call_in_path x p \<or> one_call_in_path x p \<and> hd p = x)"
   by(induction p) auto
 
@@ -78,5 +82,8 @@ proof (rule pathsCard_below)
   thus "pathCard p' \<sqsubseteq> record_call x\<cdot>(pathsCard fs)" using `p' = _` by simp
 qed
   
+lemma pathCards_noneD:
+  "pathsCard ps x = none \<Longrightarrow> x \<notin> \<Union>(set ` ps)"
+  by (auto simp add: pathsCard_def no_call_in_path_set_conv split:if_splits)
 
 end

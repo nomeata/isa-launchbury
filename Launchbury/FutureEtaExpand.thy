@@ -325,10 +325,12 @@ case (var\<^sub>2 \<Gamma> x e S)
     also
     from `ce x = \<bottom>` and var\<^sub>2
     have "prognosis ae a (\<Gamma>, e, Upd x # S) x = \<bottom>" by auto (metis below_bottom_iff fun_belowD)
-    hence "prognosis ae a ((x, e) # \<Gamma>, e, Upd x # S) = prognosis ae a (\<Gamma>, e, Upd x # S)" 
-      by (rule prognosis_not_called[symmetric]) simp
+    hence "prognosis ae a (delete x ((x, e) # \<Gamma>), e, Upd x # S) x = \<bottom>"  using `x \<notin> domA \<Gamma>` by simp
+    hence "prognosis ae a ((x, e) # \<Gamma>, e, Upd x # S) \<sqsubseteq> prognosis ae a (delete x ((x,e) # \<Gamma>), e, Upd x # S)" 
+      by (rule prognosis_not_called) 
+    also have  "delete x ((x,e)#\<Gamma>) = \<Gamma>" using `x \<notin> domA \<Gamma>` by simp
     finally
-    have *: "prognosis ae a ((x, e) # \<Gamma>, e, S) \<sqsubseteq> prognosis ae a (\<Gamma>, e, Upd x # S)".
+    have *: "prognosis ae a ((x, e) # \<Gamma>, e, S) \<sqsubseteq> prognosis ae a (\<Gamma>, e, Upd x # S)" by this simp
 
     have "consistent (ae, ce, a) ((x, e) # \<Gamma>, e, S)" using var\<^sub>2
       by (auto simp add: join_below_iff `ae x = \<bottom>` split:if_splits elim:below_trans[OF *])

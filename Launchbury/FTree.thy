@@ -148,7 +148,6 @@ inductive_cases interleave_ConsE[elim]: "(x#xs) \<in> interleave ys zs"
 inductive_cases interleave_ConsE2[elim]: "xs \<in> interleave (x#ys) zs"
 inductive_cases interleave_ConsE3[elim]: "xs \<in> interleave ys (x#zs)"
 
-
 lemma interleave_comm: "xs \<in> interleave ys zs \<Longrightarrow> xs \<in> interleave zs ys"
   by (induction rule: interleave_induct) (auto intro: interleave_intros)
 
@@ -190,6 +189,8 @@ lemma interleave_assoc2: "a \<in> interleave ys zs \<Longrightarrow> b \<in> int
   by (induction b arbitrary: a  xs ys zs )
      (simp, fastforce del: interleave_ConsE elim!: interleave_ConsE  intro: interleave_intros)
 
+lemma interleave_set: "zs \<in> interleave xs ys \<Longrightarrow> set zs \<subseteq> set xs \<union> set ys"
+  by(induction rule:interleave_induct) auto
 
 lemma interleave_take: "zs \<in> interleave xs ys \<Longrightarrow> \<exists> n\<^sub>1 n\<^sub>2. n = n\<^sub>1 + n\<^sub>2 \<and>  take n zs \<in> interleave (take n\<^sub>1 xs) (take n\<^sub>2 ys)"
   apply(induction arbitrary: n rule:interleave_induct)
@@ -364,6 +365,9 @@ proof
   qed
 qed
 
+lift_definition carrier :: "'a ftree \<Rightarrow> 'a set" is "\<lambda> xss. \<Union>(set ` xss)".
+
+lemma carrier_mono: "paths t \<subseteq> paths t' \<Longrightarrow> carrier t \<subseteq> carrier t'" by transfer auto
 
 lemma downset_filter:
   assumes "downset xss"
@@ -390,9 +394,12 @@ inductive substitute' :: "('a \<Rightarrow> 'a ftree) \<Rightarrow> 'a ftree \<R
   where substitute'_Nil[simp]: "substitute' f t []"
   |  substitute'_Cons: "possible t x \<Longrightarrow> substitute' f (both (nxt t x) (f x)) xs \<Longrightarrow> substitute' f t (x#xs)"
 
+inductive_cases substitute'_ConsE: "substitute' f t (x#xs)"
+
 lemma substitute'_contains_arg: "xs \<in> paths t \<Longrightarrow> substitute' f t xs"
 proof (induction xs arbitrary: t)
-  case Nil thus ?case by simp
+  case Nil
+  show ?case by simp
 next
   case (Cons x xs)
   from `x # xs \<in> paths t` 
@@ -400,7 +407,7 @@ next
   moreover
   from `x # xs \<in> paths t` have "xs \<in> paths (nxt t x)"
     by (auto simp add: paths_nxt_eq)
-  hence "xs \<in> paths (both (nxt t x) (f x))" sorry
+  hence "xs \<in> paths (both (nxt t x) (f x))" by (rule set_mp[OF both_contains_arg1])
   hence "substitute' f (both (nxt t x) (f x)) xs" by (rule Cons.IH)
   ultimately
   show ?case..
@@ -488,7 +495,6 @@ lemma substitute_mono1: "(\<And> x. paths (f x) \<subseteq> paths (f' x)) \<Long
 lemma substitute_mono2: "paths t \<subseteq> paths t' \<Longrightarrow> paths (substitute f t) \<subseteq> paths (substitute f t')"
   by transfer (auto intro: substitute'_mono2)
 
-
 lemma paths_substitute: "xs \<in> paths (substitute f t) \<longleftrightarrow> substitute' f t xs" by transfer auto
 
 lemma substitute_and_then:
@@ -550,7 +556,8 @@ proof (rule paths_inj, rule, rule subsetI, simp only: paths_substitute)
   moreover
   assume "substitute' f (both t t') xs"
   moreover
-  have "both (both t t') (f x) = both t t'" sorry
+  have "both (both t t') (f x) = both t t'"
+    by (metis assms both_assoc both_comm repeatable_both_self)
   ultimately
   show "substitute' (f(x := FTree.empty)) (both t t') xs"
       by (rule  substitute'_remove_anyways_aux)
@@ -559,5 +566,102 @@ next
     by (rule substitute_mono1) auto
 qed 
 
-  
+lemma carrier_possible:
+   "carrier t \<subseteq> A \<Longrightarrow> possible t x \<Longrightarrow> x \<in> A" by transfer force
+
+lemma carrier_both[simp]:
+  "carrier (both t t') = carrier t \<union> carrier t'"
+proof-
+  {
+  fix x
+  assume "x \<in> carrier (both t t')"
+  then obtain xs where "xs \<in> paths (both t t')" and "x \<in> set xs" by transfer auto
+  then obtain ys zs where "ys \<in> paths t" and "zs \<in> paths t'" and "xs \<in> interleave ys zs"
+    by (auto simp add: paths_both)
+  from this(3) have "set xs \<subseteq> set ys \<union> set zs" by (rule interleave_set)
+  with `ys \<in> _` `zs \<in> _` `x \<in> set xs`
+  have "x \<in> carrier t \<union> carrier t'"  by transfer auto
+  }
+  moreover
+  note set_mp[OF carrier_mono[OF both_contains_arg1[where t=t and t' = t']]]
+       set_mp[OF carrier_mono[OF both_contains_arg2[where t=t and t' = t']]]
+  ultimately
+  show ?thesis by auto
+qed
+
+lemma carrier_nxt:
+  "carrier (nxt t x) \<subseteq> carrier t" by transfer auto
+
+
+lemma substitute'_cong:
+  assumes "substitute' f t xs"
+  assumes "\<And> x. x \<in> A \<Longrightarrow> carrier (f x) \<subseteq> A"
+  assumes "carrier t \<subseteq> A"
+  assumes "\<And> x. x \<in> A \<Longrightarrow> f x = f' x"
+  shows "substitute' f' t xs"
+  using assms
+  apply (induction rule: substitute'.induct)
+  apply (auto 4 4 elim: carrier_possible intro!: substitute'.intros) 
+  by (metis carrier_nxt carrier_possible order_trans)
+
+lemma substitute_cong_induct:
+  assumes "\<And> x. x \<in> A \<Longrightarrow> carrier (f x) \<subseteq> A"
+  assumes "carrier t \<subseteq> A"
+  assumes "\<And> x. x \<in> A \<Longrightarrow> f x = f' x"
+  shows "substitute f t = substitute f' t"
+  apply (rule paths_inj)
+  apply (rule set_eqI)
+  unfolding paths_substitute
+  using substitute'_cong[OF _ _ assms(2)] assms(1,3)
+  by metis
+
+lemma carrier_substitute1: "carrier t \<subseteq> carrier (substitute f t)"
+    by (rule carrier_mono) (rule substitute_contains_arg)
+
+
+lemma carrier_subsetI:
+  "(\<And> xs . xs \<in> paths t \<Longrightarrow> set xs \<subseteq> A) \<Longrightarrow> carrier t \<subseteq> A" by transfer auto
+
+lemma substitute_cong:
+  assumes "\<And> x. x \<in> carrier (substitute f t) \<Longrightarrow> f x = f' x"
+  shows "substitute f t = substitute f' t"
+proof(rule substitute_cong_induct[OF _ _ assms])
+  show "carrier t \<subseteq> carrier (substitute f t)"
+    by (rule carrier_substitute1)
+next
+  fix x
+  assume "x \<in> carrier (substitute f t)"
+  then obtain xs where "xs \<in> paths (substitute f t)"  and "x \<in> set xs"  by transfer auto
+  thus "carrier (f x) \<subseteq> carrier (substitute f t)"
+  unfolding paths_substitute
+  proof (induction rule: substitute'.induct )
+  print_cases
+  case substitute'_Nil thus ?case by simp
+  next
+  case (substitute'_Cons t x' xs)
+    from `x \<in> set (x' # xs)`
+    have "x = x' \<or> x \<in> set xs" by auto
+    hence "carrier (f x) \<subseteq> carrier (substitute f (both (nxt t x') (f x')))"
+    proof
+      assume "x = x'"
+      have "carrier (f x) \<subseteq> carrier (both (nxt t x) (f x))" by simp
+      also have "\<dots> \<subseteq> carrier (substitute f (both (nxt t x) (f x)))" by (rule carrier_substitute1)
+      finally show ?thesis unfolding `x = x'`.
+    next
+      assume "x \<in> set xs"
+      from substitute'_Cons.IH[OF this]
+      show "carrier (f x) \<subseteq> carrier (substitute f (both (nxt t x') (f x')))".
+    qed
+    also
+    from substitute'_Cons(1)
+    have "carrier (substitute f (both (nxt t x') (f x'))) \<subseteq>  carrier (substitute f t)"
+      apply transfer
+      apply auto
+      apply (rule_tac x = "x'#xa" in exI)
+      apply (auto intro!: substitute'.intros)
+      done
+    finally show ?case.
+  qed
+qed
+
 end

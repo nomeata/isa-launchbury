@@ -56,6 +56,9 @@ lemma pathsCard_paths_nxt:  "pathsCard (paths (nxt f x)) \<sqsubseteq> record_ca
   apply (auto intro: fun_belowI simp add: record_call_simp two_pred_two_add_once)
   done
 
+lemma pathsCards_none: "pathsCard (paths t) x = none \<Longrightarrow> x \<notin> carrier t"
+  by transfer (auto dest: pathCards_noneD)
+
 locale FutureAnalysisCorrect = FutureAnalysis +
   assumes Fexp_App: "both (many_calls x) ((Fexp e)\<cdot>(inc\<cdot>a)) \<sqsubseteq> Fexp (App e x)\<cdot>a"
   assumes Fexp_Lam: "without y (Fexp e\<cdot>(pred\<cdot>n)) \<sqsubseteq> Fexp (Lam [y]. e) \<cdot> n"
@@ -164,11 +167,14 @@ begin
     fix \<Gamma> :: heap and e :: exp and ae :: AEnv and u S x
     show "prognosis ae u (\<Gamma>, e, S) \<sqsubseteq> prognosis ae u (\<Gamma>, e, Upd x # S)" by simp
   next
-    fix \<Gamma> \<Delta> :: heap and e :: exp and ae :: AEnv and a S x
-    assume "prognosis ae a (\<Gamma>, e, S) x = none"
-    assume "delete x \<Gamma> = delete x \<Delta>"
-    show "prognosis ae a (\<Gamma>, e, S) = prognosis ae a (\<Delta>, e, S)"
-       sorry
+    fix \<Gamma> :: heap and e :: exp and ae :: AEnv and a S x
+    assume "prognosis ae a (delete x \<Gamma>, e, S) x = none"
+    hence "x \<notin> carrier (substitute (FBinds (delete x \<Gamma>)\<cdot>ae) (both (Fexp e\<cdot>a) (Fstack S)))" 
+      by (simp add: pathsCards_none)
+    hence "substitute (FBinds \<Gamma>\<cdot>ae) (both (Fexp e\<cdot>a) (Fstack S)) = substitute (FBinds (delete x \<Gamma>)\<cdot>ae) (both (Fexp e\<cdot>a) (Fstack S))"
+      by (auto intro: substitute_cong[symmetric] simp add: FBinds_lookup delete_conv')
+    thus "prognosis ae a (\<Gamma>, e, S) \<sqsubseteq> prognosis ae a (delete x \<Gamma>, e, S)"
+      by simp
   qed
 end
 
