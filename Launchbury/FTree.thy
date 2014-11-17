@@ -1,5 +1,5 @@
 theory FTree
-imports Main
+imports Main ConstOn
 begin
 
 definition downset where
@@ -289,6 +289,9 @@ lemma paths_nxt[elim]:
  obtains "x#xs \<in> paths t"  | "xs = []"
  using assms by transfer auto
 
+lemma Cons_path: "x # xs \<in> paths t \<longleftrightarrow> possible t x \<and> xs \<in> paths (nxt t x)"
+ by transfer auto
+
 lemma paths_nxt_eq: "xs \<in> paths (nxt t x) \<longleftrightarrow> xs = [] \<or> x#xs \<in> paths t"
  by transfer auto
 
@@ -381,6 +384,16 @@ qed
 lift_definition carrier :: "'a ftree \<Rightarrow> 'a set" is "\<lambda> xss. \<Union>(set ` xss)".
 
 lemma carrier_mono: "paths t \<subseteq> paths t' \<Longrightarrow> carrier t \<subseteq> carrier t'" by transfer auto
+
+lemma carrier_possible:
+  "possible t x \<Longrightarrow> x \<in> carrier t" by transfer force
+
+lemma carrier_possible_subset:
+   "carrier t \<subseteq> A \<Longrightarrow> possible t x \<Longrightarrow> x \<in> A" by transfer force
+
+lemma carrier_nxt_subset:
+  "carrier (nxt t x) \<subseteq> carrier t"
+  by transfer auto
 
 lemma Union_paths_carrier: "(\<Union>x\<in>paths t. set x) = carrier t"
   by transfer auto
@@ -547,6 +560,27 @@ proof (intro paths_inj set_eqI)
   qed
 qed
 
+lemma substitute_only_empty:
+  assumes "const_on f (carrier t) empty"
+  shows "substitute f t = t"
+proof (intro paths_inj  set_eqI)
+  fix xs
+  from assms
+  show "xs \<in> paths (substitute f t) \<longleftrightarrow> xs \<in> paths t"
+  proof (induction xs arbitrary: t)
+  case Nil thus ?case by simp
+  case (Cons x xs t)
+    from Cons.prems carrier_nxt_subset
+    have "const_on f (carrier (nxt t x)) empty"
+      by (rule const_on_subset)
+    note Cons.IH[OF this, simp]
+
+    note const_onD[OF Cons.prems carrier_possible, where y = x, simp]
+
+    show ?case by (auto simp add: Cons_path)
+  qed
+qed
+
 lemma substitute_and_then:
   "substitute f (and_then x t) = and_then x (substitute f (both t (f x)))"
   by (rule ftree_eqI) auto
@@ -615,9 +649,6 @@ next
     by (rule substitute_mono1) auto
 qed 
 
-lemma carrier_possible:
-   "carrier t \<subseteq> A \<Longrightarrow> possible t x \<Longrightarrow> x \<in> A" by transfer force
-
 lemma carrier_both[simp]:
   "carrier (both t t') = carrier t \<union> carrier t'"
 proof-
@@ -638,9 +669,6 @@ proof-
   show ?thesis by auto
 qed
 
-lemma carrier_nxt:
-  "carrier (nxt t x) \<subseteq> carrier t" by transfer auto
-
 
 lemma substitute_cong':
   assumes "xs \<in> paths (substitute f t)"
@@ -649,7 +677,9 @@ lemma substitute_cong':
   assumes "\<And> x. x \<in> A \<Longrightarrow> f x = f' x"
   shows "xs \<in> paths (substitute f' t)"
   using assms
-  by (induction xs arbitrary: t) (auto, metis Un_subset_iff carrier_both carrier_nxt carrier_possible order.trans)
+  apply (induction xs arbitrary: t)
+  apply auto
+  by (metis (poly_guards_query) Un_subset_iff carrier_both carrier_nxt_subset carrier_possible_subset order.trans)
 
 lemma substitute_cong_induct:
   assumes "\<And> x. x \<in> A \<Longrightarrow> carrier (f x) \<subseteq> A"

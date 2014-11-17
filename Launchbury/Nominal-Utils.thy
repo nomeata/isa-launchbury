@@ -321,7 +321,17 @@ proof-
   thus ?thesis by (simp add: supp_Pair)
 qed
 
+(* Fighting eta-contraction *)
+lemma permute_0[simp]: "permute 0 = (\<lambda> x. x)"
+  by auto
+lemma permute_comp[simp]: "permute x \<circ> permute y = permute (x + y)" by auto
 
+lemma map_permute: "map (permute p) = permute p"
+  apply rule
+  apply (induct_tac x)
+  apply auto
+  done
+  
 (* Unused. Still submit? *)
 lemma Abs_lst_Nil_eq[simp]: "[[]]lst. (x::'a::fs) = [xs]lst. x' \<longleftrightarrow> (([],x) = (xs, x'))"
   apply rule

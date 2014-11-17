@@ -65,4 +65,9 @@ lemma join_env_restr_UNIV:
   shows "S1 \<union> S2 = UNIV \<Longrightarrow> (m f|` S1) \<squnion> (m f|` S2) = m"
   by (fastforce simp add: env_restr_def)
 
+lemma env_restr_split:
+  fixes m :: "'a::type \<Rightarrow> 'b::{Finite_Join_cpo,pcpo}"
+  shows "m = m f|` S \<squnion> m f|` (- S)"
+by (simp add: env_restr_join2 Compl_partition)
+
 end

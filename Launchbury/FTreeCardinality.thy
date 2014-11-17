@@ -1,5 +1,5 @@
 theory FTreeCardinality
-imports CardinalityAnalysis "FTree-HOLCF" CallFutureCardinality
+imports CardinalityAnalysis "FTree-Nominal-HOLCF" CallFutureCardinality
 begin
 
 locale FutureAnalysis =
@@ -176,9 +176,97 @@ begin
     thus "prognosis ae a (\<Gamma>, e, S) \<sqsubseteq> prognosis ae a (delete x \<Gamma>, e, S)"
       by simp
   qed
+
+
 end
 
+locale FutureAnalysisCardinalityHeap = 
+  FutureAnalysisCorrect + CorrectArityAnalysisLet' + 
+  fixes Fheap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> (var ftree)"
+  assumes Fheap_eqvt[eqvt]: "\<pi> \<bullet> Fheap = Fheap"
+  assumes Fheap_thunk: "x \<in> thunks \<Gamma> \<Longrightarrow> p \<in> paths (Fheap \<Gamma> e\<cdot>a) \<Longrightarrow> \<not> one_call_in_path x p \<Longrightarrow> (Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
+  assumes carrier_Fheap: "carrier (Fheap \<Gamma> e\<cdot>a) = edom (Aheap \<Gamma> e\<cdot>a)"
+begin
 
+  definition cHeap where
+    "cHeap \<Gamma> e = (\<Lambda> a. pathsCard (paths (Fheap \<Gamma> e\<cdot>a)))"
 
+  lemma cHeap_simp: "(cHeap \<Gamma> e)\<cdot>a = pathsCard (paths (Fheap \<Gamma> e\<cdot>a))"
+    unfolding cHeap_def  by (rule beta_cfun) (intro cont2cont)
+  
+  lemma cHeap_eqvt[eqvt]: "\<pi> \<bullet> (cHeap \<Gamma> e) = cHeap (\<pi> \<bullet> \<Gamma>) (\<pi> \<bullet> e)"
+    unfolding cHeap_def
+    apply perm_simp
+    apply (rule Abs_cfun_eqvt)
+    apply (intro cont2cont)
+    done
+    
+
+  sublocale CardinalityHeap Aexp Aheap cHeap
+  proof
+    fix \<pi> show "\<pi> \<bullet> cHeap = cHeap" by perm_simp rule
+  next
+    fix x \<Gamma> e a
+    assume "x \<in> thunks \<Gamma>"
+    moreover
+    assume "many \<sqsubseteq> (cHeap \<Gamma> e\<cdot>a) x"
+    hence "many \<sqsubseteq> pathsCard (paths (Fheap \<Gamma> e \<cdot>a)) x" unfolding cHeap_def by simp
+    hence "\<exists>p\<in> (paths (Fheap \<Gamma> e\<cdot>a)). \<not> (one_call_in_path x p)" unfolding pathsCard_def
+      by (auto split: if_splits)
+    ultimately
+    show "(Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
+      by (metis Fheap_thunk)
+  next
+    fix \<Gamma> e a
+    show "edom (cHeap \<Gamma> e\<cdot>a) = edom (Aheap \<Gamma> e\<cdot>a)"
+    by (simp add: cHeap_def Union_paths_carrier carrier_Fheap)
+  qed
+
+  sublocale CardinalityPrognosisCorrectLet prognosis Aexp Aheap cHeap
+  proof
+    fix \<Delta> \<Gamma> :: heap and e :: exp and S :: stack and  ae :: AEnv and a :: Arity
+    assume "atom ` domA \<Delta> \<sharp>* \<Gamma>"
+    assume "atom ` domA \<Delta> \<sharp>* S"
+    assume "edom ae \<subseteq> domA \<Gamma> \<union> upds S"
+
+    {
+    have "pathsCard (paths (substitute (FBinds (\<Delta> @ \<Gamma>)\<cdot>(Aheap \<Delta> e\<cdot>a \<squnion> ae)) (both (Fexp e\<cdot>a) (Fstack S))))
+      = pathsCard (paths (substitute (FBinds \<Gamma>\<cdot>ae) (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (both (Fexp e\<cdot>a) (Fstack S)))))" sorry
+    also have "substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (both (Fexp e\<cdot>a) (Fstack S)) = both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fstack S))" 
+      by (rule substitute_both)
+    also
+    have "const_on (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (carrier (Fstack S)) empty" sorry
+    hence "substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fstack S) = Fstack S"
+      by (rule substitute_only_empty)
+    also note calculation
+    }
+    note eq_imp_below[OF this]
+    also
+    note env_restr_split[where S = "domA \<Delta>"]
+    also
+    have "pathsCard (paths (substitute (FBinds \<Gamma>\<cdot>ae) (both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (Fstack S)))) f|` domA \<Delta> 
+        = pathsCard (paths (ftree_restr (domA \<Delta>) (substitute (FBinds \<Gamma>\<cdot>ae) (both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (Fstack S)))))" sorry
+    also
+    have "ftree_restr (domA \<Delta>) (substitute (FBinds \<Gamma>\<cdot>ae) (both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (Fstack S)))
+        = ftree_restr (domA \<Delta>) (both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (Fstack S))" sorry
+    also
+    have "ftree_restr (domA \<Delta>) (both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (Fstack S)) \<sqsubseteq> Fheap \<Delta> e\<cdot>a"  sorry
+    also
+    have "pathsCard (paths (substitute (FBinds \<Gamma>\<cdot>ae) (both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (Fstack S)))) f|` (- domA \<Delta>) =
+          pathsCard (paths (ftree_restr (- domA \<Delta>) (substitute (FBinds \<Gamma>\<cdot>ae) (both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (Fstack S)))))" sorry
+    also have "ftree_restr (- domA \<Delta>) (substitute (FBinds \<Gamma>\<cdot>ae) (both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (Fstack S))) =
+         substitute (FBinds \<Gamma>\<cdot>ae) (ftree_restr (- domA \<Delta>) (both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (Fstack S)))" sorry
+    also have "ftree_restr (- domA \<Delta>) (both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (Fstack S)) = 
+         both (ftree_restr (- domA \<Delta>) (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a))) (Fstack S)" sorry
+    also have "ftree_restr (- domA \<Delta>) (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) \<sqsubseteq> Fexp (Terms.Let \<Delta> e)\<cdot>a" sorry
+    finally
+    show "prognosis (Aheap \<Delta> e\<cdot>a \<squnion> ae) a (\<Delta> @ \<Gamma>, e, S) \<sqsubseteq> cHeap \<Delta> e\<cdot>a \<squnion> prognosis ae a (\<Gamma>, Terms.Let \<Delta> e, S)"
+      apply (simp add: cHeap_def del: fun_meet_simp) 
+      apply (erule meta_impE)
+      defer
+      apply assumption
+      apply (intro cont2cont)
+      sorry
+  qed
 end
   

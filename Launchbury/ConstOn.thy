@@ -21,4 +21,7 @@ lemma const_on_insert[simp]: "const_on f (insert x S) y \<longleftrightarrow> co
 lemma const_on_union[simp]: "const_on f (S \<union> S') y \<longleftrightarrow> const_on f S y \<and> const_on f S' y"
   by auto
 
+lemma const_on_subset[elim]: "const_on f S y \<Longrightarrow> S' \<subseteq> S \<Longrightarrow> const_on f S' y"
+  by auto
+
 end

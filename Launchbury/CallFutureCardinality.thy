@@ -1,5 +1,5 @@
 theory CallFutureCardinality
-imports Vars "Cardinality-Domain" "Set-Cpo"
+imports Vars "Nominal-HOLCF" Env "Cardinality-Domain" "Set-Cpo"
 begin
 
 fun no_call_in_path where
@@ -85,5 +85,25 @@ qed
 lemma pathCards_noneD:
   "pathsCard ps x = none \<Longrightarrow> x \<notin> \<Union>(set ` ps)"
   by (auto simp add: pathsCard_def no_call_in_path_set_conv split:if_splits)
+
+lemma adm_Ball[simp]: "adm (\<lambda>S. \<forall>x\<in>S. P x)"
+  by (auto intro!: admI  simp add: lub_set)
+
+lemma cont_pathsCard[THEN cont_compose, cont2cont, simp]:
+  "cont pathsCard"
+  by(fastforce intro!: cont2cont_lambda cont_if_else_above simp add: pathsCard_def below_set_def)
+
+lemma no_call_in_path[eqvt]: "no_call_in_path p x \<Longrightarrow> no_call_in_path (\<pi> \<bullet> p) (\<pi> \<bullet> x)"
+  by (induction p x rule: no_call_in_path.induct) auto
+
+lemma one_call_in_path[eqvt]: "one_call_in_path p x \<Longrightarrow> one_call_in_path (\<pi> \<bullet> p) (\<pi> \<bullet> x)"
+  by (induction p x rule: one_call_in_path.induct) (auto dest: no_call_in_path)
+
+lemma pathsCard_eqvt[eqvt]: "\<pi> \<bullet> pathsCard ps x = pathsCard (\<pi> \<bullet> ps) (\<pi> \<bullet> x)"
+  unfolding pathsCard_def by perm_simp rule
+
+lemma edom_pathsCard[simp]: "edom (pathsCard ps) = \<Union>(set ` ps)"
+  unfolding edom_def pathsCard_def
+  by (auto simp add:  no_call_in_path_set_conv)
 
 end
