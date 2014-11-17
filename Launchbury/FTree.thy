@@ -48,6 +48,9 @@ qed
 
 lemma [simp]: "downset {[]}" by auto
 
+lemma downset_mapI: "downset xss \<Longrightarrow> downset (map f ` xss)"
+  by (fastforce simp add: map_butlast[symmetric])
+
 typedef 'a ftree = "{xss :: 'a list set . [] \<in> xss \<and> downset xss}" by auto
 
 setup_lifting type_definition_ftree
@@ -122,6 +125,12 @@ lemma either_empty2[simp]: "either t empty = t"
 lemma either_sym[simp]: "either t t2 = either t2 t"
   by transfer auto
 lemma either_idem[simp]: "either t t = t"
+  by transfer auto
+
+lemma possible_either[simp]: "possible (either t t') x \<longleftrightarrow> possible t x \<or> possible t' x"
+  by transfer auto
+
+lemma nxt_either[simp]: "nxt (either t t') x = either (nxt t x) (nxt t' x)"
   by transfer auto
 
 lift_definition Either :: "'a ftree set \<Rightarrow> 'a ftree"  is "\<lambda> S. insert [] (\<Union>S)"
@@ -325,6 +334,10 @@ lemma Cons_both:
   apply (auto simp add: paths_Cons_nxt_iff[symmetric] nxt_both)
   by (metis paths.rep_eq possible.rep_eq possible_both)
 
+lemma Cons_both_possible_leftE: "possible t x \<Longrightarrow> xs \<in> paths (both (nxt t x) t') \<Longrightarrow> x#xs \<in> paths (both t t')"
+  by (auto simp add: Cons_both)
+lemma Cons_both_possible_rightE: "possible t' x \<Longrightarrow> xs \<in> paths (both t (nxt t' x)) \<Longrightarrow> x#xs \<in> paths (both t t')"
+  by (auto simp add: Cons_both)
 
 lemma either_both_distr[simp]:
   "either (both t' t) (both t' t'') = both t' (either t t'')"
@@ -369,6 +382,9 @@ lift_definition carrier :: "'a ftree \<Rightarrow> 'a set" is "\<lambda> xss. \<
 
 lemma carrier_mono: "paths t \<subseteq> paths t' \<Longrightarrow> carrier t \<subseteq> carrier t'" by transfer auto
 
+lemma Union_paths_carrier: "(\<Union>x\<in>paths t. set x) = carrier t"
+  by transfer auto
+
 lemma downset_filter:
   assumes "downset xss"
   shows "downset (filter P ` xss)"
@@ -389,38 +405,34 @@ lift_definition without :: "'a \<Rightarrow> 'a ftree \<Rightarrow> 'a ftree" is
   apply (metis filter.simps(1) imageI)
   done
 
+lift_definition ftree_restr :: "'a set \<Rightarrow> 'a ftree \<Rightarrow> 'a ftree" is "\<lambda> S xss. filter (\<lambda> x'. x' \<in> S) ` xss"
+  apply (auto intro: downset_filter)
+  apply (metis filter.simps(1) imageI)
+  done
 
-inductive substitute' :: "('a \<Rightarrow> 'a ftree) \<Rightarrow> 'a ftree \<Rightarrow> 'a list \<Rightarrow> bool" for f
-  where substitute'_Nil[simp]: "substitute' f t []"
-  |  substitute'_Cons: "possible t x \<Longrightarrow> substitute' f (both (nxt t x) (f x)) xs \<Longrightarrow> substitute' f t (x#xs)"
 
-inductive_cases substitute'_ConsE: "substitute' f t (x#xs)"
-
-lemma substitute'_contains_arg: "xs \<in> paths t \<Longrightarrow> substitute' f t xs"
-proof (induction xs arbitrary: t)
-  case Nil
-  show ?case by simp
-next
-  case (Cons x xs)
-  from `x # xs \<in> paths t` 
-  have "possible t x" by transfer auto
-  moreover
-  from `x # xs \<in> paths t` have "xs \<in> paths (nxt t x)"
-    by (auto simp add: paths_nxt_eq)
-  hence "xs \<in> paths (both (nxt t x) (f x))" by (rule set_mp[OF both_contains_arg1])
-  hence "substitute' f (both (nxt t x) (f x)) xs" by (rule Cons.IH)
-  ultimately
-  show ?case..
-qed
+context fixes f :: "'a \<Rightarrow> 'a ftree"
+begin
+fun substitute' :: "'a ftree \<Rightarrow> 'a list \<Rightarrow> bool"
+  where substitute'_Nil: "substitute' t [] \<longleftrightarrow> True"
+     |  substitute'_Cons: "substitute' t (x#xs) \<longleftrightarrow> possible t x \<and> substitute' (both (nxt t x) (f x)) xs"
+end
 
 lemma downset_substitute: "downset (Collect (substitute' f t))"
 apply (rule) unfolding mem_Collect_eq
 proof-
   fix x
   assume "substitute' f t x"
-  thus "substitute' f t (butlast x)"
-    by(induction) (auto intro: substitute'.intros)
+  thus "substitute' f t (butlast x)" by(induction t x rule: substitute'.induct) (auto)
 qed
+
+lift_definition substitute :: "('a \<Rightarrow> 'a ftree) \<Rightarrow> 'a ftree \<Rightarrow> 'a ftree" is "\<lambda> f t. Collect (substitute' f t)"
+    by (simp add: downset_substitute)
+
+lemma elim_substitute'[pred_set_conv]: "substitute' f t xs \<longleftrightarrow> xs \<in> paths (substitute f t)" by transfer auto
+
+lemmas substitute_induct[case_names Nil Cons] = substitute'.induct
+lemmas substitute_simps[simp] = substitute'.simps[unfolded elim_substitute']
 
 lemma possible_mono:
   "paths t \<subseteq> paths t' \<Longrightarrow> possible t x \<Longrightarrow> possible t' x"
@@ -439,67 +451,105 @@ lemma both_mono2:
   by transfer auto
 
 
-lemma substitute'_mono2: 
+lemma substitute_mono2: 
   assumes "paths t \<subseteq> paths t'"
-  assumes "substitute' f t x"
-  shows "substitute' f t' x"
-using assms(2,1)
-proof(induction arbitrary: t' rule: substitute'.induct)
-case substitute'_Nil
-  thus ?case by simp
-next
-case (substitute'_Cons t x xs)
-  note `possible t x` with substitute'_Cons.prems
-  have "possible t' x" by (rule possible_mono)
-  moreover
-  from  substitute'_Cons.prems
-  have "paths (nxt t x) \<subseteq> paths (nxt t' x)" by (rule nxt_mono)
-  hence "paths (both (nxt t x) (f x)) \<subseteq> paths (both (nxt t' x) (f x))" by (rule both_mono1)
-  hence "substitute' f (both (nxt t' x) (f x)) xs" by (rule substitute'_Cons.IH)
-  ultimately
-  show ?case..
+  shows "paths (substitute f t) \<subseteq> paths (substitute f t')"
+proof
+  fix xs
+  assume "xs \<in> paths (substitute f t)"
+  thus "xs \<in> paths (substitute f t')"
+  using assms
+  proof(induction xs arbitrary:t  t')
+  case Nil
+    thus ?case by simp
+  next
+  case (Cons t x xs)
+    thus ?case
+    by (auto dest: possible_mono, metis both_comm both_mono2 nxt_mono)
+  qed
 qed
 
-
-lemma substitute'_mono1: 
+lemma substitute_mono1: 
   assumes "\<And>x. paths (f x) \<subseteq> paths (f' x)"
-  shows "substitute' f t x \<Longrightarrow> substitute' f' t x"
-proof(induction rule: substitute'.induct)
-case substitute'_Nil
-  thus ?case by simp
-next
-case (substitute'_Cons t x xs)
-  note `possible t x`
-  moreover
-  have "paths (both (nxt t x) (f x)) \<subseteq> paths (both (nxt t x) (f' x))" by (rule both_mono2[OF assms])
-  with `substitute' f' (both (nxt t x) (f x)) xs `
-  have "substitute' f' (both (nxt t x) (f' x)) xs" by (rule substitute'_mono2[rotated])
-  ultimately
-  show ?case..
+  shows "paths (substitute f t) \<subseteq> paths (substitute f' t)"
+proof
+  fix xs
+  assume "xs \<in> paths (substitute f t)"
+  thus "xs \<in> paths (substitute f' t)"
+    by(induction xs arbitrary: t)
+     (auto intro:  set_mp[OF substitute_mono2[OF  both_mono2[OF assms]]])
 qed
-
-lemma substitute'_and_then:
-  "substitute' f (and_then x t) (x'#xs) = (x' = x \<and> substitute' f (both t (f x)) xs)"
-  by (auto elim: substitute'.cases intro: substitute'.intros)
-
-
-lift_definition substitute :: "('a \<Rightarrow> 'a ftree) \<Rightarrow> 'a ftree \<Rightarrow> 'a ftree" is "\<lambda> f t. Collect (substitute' f t)"
-    by (simp add: downset_substitute)
 
 lemma substitute_contains_arg: "paths t \<subseteq> paths (substitute f t)"
-  by transfer (auto intro: substitute'_contains_arg)
+proof
+  fix xs
+  show "xs \<in> paths t \<Longrightarrow> xs \<in> paths (substitute f t)"
+  proof (induction xs arbitrary: t)
+    case Nil
+    show ?case by simp
+  next
+    case (Cons x xs)
+    from `x # xs \<in> paths t` 
+    have "possible t x" by transfer auto
+    moreover
+    from `x # xs \<in> paths t` have "xs \<in> paths (nxt t x)"
+      by (auto simp add: paths_nxt_eq)
+    hence "xs \<in> paths (both (nxt t x) (f x))" by (rule set_mp[OF both_contains_arg1])
+    hence "xs \<in> paths (substitute f (both (nxt t x) (f x)))" by (rule Cons.IH)
+    ultimately
+    show ?case by simp
+  qed
+qed
 
-lemma substitute_mono1: "(\<And> x. paths (f x) \<subseteq> paths (f' x)) \<Longrightarrow> paths (substitute f t) \<subseteq> paths (substitute f' t)"
-  by transfer (auto intro: substitute'_mono1)
+lemma possible_substitute[simp]: "possible (substitute f t) x \<longleftrightarrow> possible t x"
+  by (metis Cons_both both_empty2 paths_Nil substitute_simps(2))
 
-lemma substitute_mono2: "paths t \<subseteq> paths t' \<Longrightarrow> paths (substitute f t) \<subseteq> paths (substitute f t')"
-  by transfer (auto intro: substitute'_mono2)
+lemma nxt_substitute[simp]: "possible t x \<Longrightarrow> nxt (substitute f t) x = substitute f (both (nxt t x) (f x))"
+  by (rule ftree_eqI) (simp add: paths_nxt_eq )
 
-lemma paths_substitute: "xs \<in> paths (substitute f t) \<longleftrightarrow> substitute' f t xs" by transfer auto
+lemma substitute_either: "paths (substitute f (either t t')) = paths (substitute f t) \<union> paths (substitute f t')"
+proof-
+  have [simp]: "\<And> t t' x . both (either (nxt t x) (nxt t' x)) (f x) = either (both (nxt t x) (f x)) (both (nxt t' x) (f x))" sorry
+  {
+  fix xs
+  have "xs \<in> paths (substitute f (either t t'))  \<longleftrightarrow> xs \<in> paths (substitute f t)  \<or> xs \<in> paths (substitute f t')"
+  proof (induction xs arbitrary: t t')
+    case Nil thus ?case by simp
+  next
+    case (Cons x xs)
+    note IH = Cons.IH[where t = "both (nxt t' x) (f x)" and t' = "both (nxt t x) (f x)", simp]
+    show ?case
+    apply (auto simp del: either_both_distr2)
+        apply (metis IH both_comm either_both_distr either_empty2 nxt_not_possible)
+    by (metis  IH both_comm both_empty1 either_both_distr either_empty1 nxt_not_possible)
+  qed
+  }
+  thus ?thesis by auto
+qed
+
+lemma substitute_both: "substitute f (both t t') = both (substitute f t) (substitute f t')"
+proof (intro paths_inj set_eqI)
+  fix xs
+  show "(xs \<in> paths (substitute f (both t t'))) = (xs \<in> paths (both (substitute f t) (substitute f t')))"
+  proof (induction xs arbitrary: t t')
+  case Nil thus ?case by simp
+  next
+  case (Cons x xs)
+    have [simp]: "both (both (nxt t x) t') (f x) = both (both (nxt t x) (f x)) t'"
+      by (metis both_assoc both_comm)
+    have [simp]: "both (both t (nxt t' x)) (f x) = both t (both (nxt t' x) (f x))"
+      by (metis both_assoc both_comm)
+    note Cons[where t = "both (nxt t x) (f x)" and t' = t', simp]
+    note Cons[where t = t and t' = "both (nxt t' x) (f x)", simp]
+    show ?case
+      by (auto simp add: Cons_both nxt_both either_both_distr2[symmetric] substitute_either
+                  simp del: both_assoc )
+  qed
+qed
 
 lemma substitute_and_then:
   "substitute f (and_then x t) = and_then x (substitute f (both t (f x)))"
-  by (auto intro: ftree_eqI simp add: paths_substitute substitute'_and_then)
+  by (rule ftree_eqI) auto
 
 lemma repeatable_both_self[simp]:
   assumes [simp]: "repeatable t"
@@ -537,30 +587,29 @@ lemma repeatable_both_both_nxt:
   shows "both (both t' t'') t = both t' t''"
   by (metis assms both_assoc both_comm)
 
-lemma substitute'_remove_anyways_aux:
+lemma substitute_remove_anyways_aux:
   assumes [simp]: "repeatable (f x)"
-  assumes "substitute' f t xs"
+  assumes "xs \<in> paths (substitute f t)"
   assumes "both t (f x) = t"
-  shows "substitute' (f(x := empty)) t xs"
+  shows "xs \<in> paths (substitute (f(x := empty)) t)"
   using assms(2,3)
-  by (induction rule: substitute'.induct)
-     (auto intro!: substitute'.intros simp add: repeatable_both_nxt repeatable_both_both_nxt )
+  by (induction xs arbitrary: t)(auto  simp add: repeatable_both_nxt repeatable_both_both_nxt )
 
 lemma substitute_remove_anyways:
   assumes "repeatable t"
   assumes "f x = t"
   shows "substitute f (both t t') = substitute (f(x := empty)) (both t t')"
-proof (rule paths_inj, rule, rule subsetI, simp only: paths_substitute)
+proof (rule paths_inj, rule, rule subsetI)
   fix xs
   have "repeatable (f x)" using assms by simp
   moreover
-  assume "substitute' f (both t t') xs"
+  assume "xs \<in> paths (substitute f (both t t'))"
   moreover
   have "both (both t t') (f x) = both t t'"
     by (metis assms both_assoc both_comm repeatable_both_self)
   ultimately
-  show "substitute' (f(x := FTree.empty)) (both t t') xs"
-      by (rule  substitute'_remove_anyways_aux)
+  show "xs \<in> paths (substitute (f(x := FTree.empty)) (both t t'))"
+      by (rule substitute_remove_anyways_aux)
 next
   show "paths (substitute (f(x := FTree.empty)) (both t t')) \<subseteq> paths (substitute f (both t t'))"
     by (rule substitute_mono1) auto
@@ -593,16 +642,14 @@ lemma carrier_nxt:
   "carrier (nxt t x) \<subseteq> carrier t" by transfer auto
 
 
-lemma substitute'_cong:
-  assumes "substitute' f t xs"
+lemma substitute_cong':
+  assumes "xs \<in> paths (substitute f t)"
   assumes "\<And> x. x \<in> A \<Longrightarrow> carrier (f x) \<subseteq> A"
   assumes "carrier t \<subseteq> A"
   assumes "\<And> x. x \<in> A \<Longrightarrow> f x = f' x"
-  shows "substitute' f' t xs"
+  shows "xs \<in> paths (substitute f' t)"
   using assms
-  apply (induction rule: substitute'.induct)
-  apply (auto 4 4 elim: carrier_possible intro!: substitute'.intros) 
-  by (metis carrier_nxt carrier_possible order_trans)
+  by (induction xs arbitrary: t) (auto, metis Un_subset_iff carrier_both carrier_nxt carrier_possible order.trans)
 
 lemma substitute_cong_induct:
   assumes "\<And> x. x \<in> A \<Longrightarrow> carrier (f x) \<subseteq> A"
@@ -611,9 +658,8 @@ lemma substitute_cong_induct:
   shows "substitute f t = substitute f' t"
   apply (rule paths_inj)
   apply (rule set_eqI)
-  unfolding paths_substitute
-  using substitute'_cong[OF _ _ assms(2)] assms(1,3)
-  by metis
+  using substitute_cong'[OF _ _ assms(2)] assms(1,3)
+  by (metis (poly_guards_query))
 
 lemma carrier_substitute1: "carrier t \<subseteq> carrier (substitute f t)"
     by (rule carrier_mono) (rule substitute_contains_arg)
@@ -633,12 +679,13 @@ next
   assume "x \<in> carrier (substitute f t)"
   then obtain xs where "xs \<in> paths (substitute f t)"  and "x \<in> set xs"  by transfer auto
   thus "carrier (f x) \<subseteq> carrier (substitute f t)"
-  unfolding paths_substitute
-  proof (induction rule: substitute'.induct )
-  print_cases
-  case substitute'_Nil thus ?case by simp
+  proof (induction xs arbitrary: t)
+  case Nil thus ?case by simp
   next
-  case (substitute'_Cons t x' xs)
+  case (Cons x' xs t)
+    from `x' # xs \<in> paths (substitute f t)`
+    have "possible t x'" and "xs \<in> paths (substitute f (both (nxt t x') (f x'))) " by auto
+
     from `x \<in> set (x' # xs)`
     have "x = x' \<or> x \<in> set xs" by auto
     hence "carrier (f x) \<subseteq> carrier (substitute f (both (nxt t x') (f x')))"
@@ -649,16 +696,16 @@ next
       finally show ?thesis unfolding `x = x'`.
     next
       assume "x \<in> set xs"
-      from substitute'_Cons.IH[OF this]
+      from Cons.IH[OF `xs \<in> _ ` this]
       show "carrier (f x) \<subseteq> carrier (substitute f (both (nxt t x') (f x')))".
     qed
     also
-    from substitute'_Cons(1)
+    from `possible t x'`
     have "carrier (substitute f (both (nxt t x') (f x'))) \<subseteq>  carrier (substitute f t)"
       apply transfer
       apply auto
       apply (rule_tac x = "x'#xa" in exI)
-      apply (auto intro!: substitute'.intros)
+      apply auto
       done
     finally show ?case.
   qed
