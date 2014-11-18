@@ -106,4 +106,13 @@ lemma edom_pathsCard[simp]: "edom (pathsCard ps) = \<Union>(set ` ps)"
   unfolding edom_def pathsCard_def
   by (auto simp add:  no_call_in_path_set_conv)
 
+lemma no_call_in_path_filter[simp]: "no_call_in_path x [x\<leftarrow>xs . x \<in> S] \<longleftrightarrow> no_call_in_path x xs \<or> x \<notin> S"
+  by (induction xs) auto
+
+lemma one_call_in_path_filter[simp]: "one_call_in_path x [x\<leftarrow>xs . x \<in> S] \<longleftrightarrow> one_call_in_path x xs \<or> x \<notin> S"
+  by (induction xs) auto
+
+lemma env_restr_pathsCard[simp]: "pathsCard ps f|` S = pathsCard (filter (\<lambda> x. x \<in> S) ` ps)"
+  by (auto simp add: pathsCard_def lookup_env_restr_eq)
+
 end

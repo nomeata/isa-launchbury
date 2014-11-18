@@ -154,6 +154,7 @@ lemmas interleave_simps = interleave'.simps[to_set]
 inductive_cases interleave_nilE[elim!]: "[] \<in> interleave xs ys"
 
 inductive_cases interleave_ConsE[elim]: "(x#xs) \<in> interleave ys zs"
+inductive_cases interleave_ConsConsE[elim]: "xs \<in> interleave (y#ys) (z#zs)"
 inductive_cases interleave_ConsE2[elim]: "xs \<in> interleave (x#ys) zs"
 inductive_cases interleave_ConsE3[elim]: "xs \<in> interleave ys (x#zs)"
 
@@ -292,8 +293,60 @@ lemma paths_nxt[elim]:
 lemma Cons_path: "x # xs \<in> paths t \<longleftrightarrow> possible t x \<and> xs \<in> paths (nxt t x)"
  by transfer auto
 
+lemma Cons_pathI[intro]:
+  assumes "possible t x \<longleftrightarrow> possible t' x"
+  assumes "possible t x \<Longrightarrow> possible t' x \<Longrightarrow> xs \<in> paths (nxt t x) \<longleftrightarrow> xs \<in> paths (nxt t' x)"
+  shows  "x # xs \<in> paths t \<longleftrightarrow> x # xs \<in> paths t'"
+using assms by (auto simp add: Cons_path)
+
 lemma paths_nxt_eq: "xs \<in> paths (nxt t x) \<longleftrightarrow> xs = [] \<or> x#xs \<in> paths t"
  by transfer auto
+
+lemma ftree_coinduct:
+  assumes "P t t'"
+  assumes "\<And> t t' x . P t t' \<Longrightarrow> possible t x \<longleftrightarrow> possible t' x"
+  assumes "\<And> t t' x . P t t' \<Longrightarrow> possible t x \<Longrightarrow> possible t' x \<Longrightarrow> P (nxt t x) (nxt t' x)"
+  shows "t = t'"
+proof(rule paths_inj, rule set_eqI)
+  fix xs
+  from assms(1)
+  show "xs \<in> paths t \<longleftrightarrow> xs \<in> paths t'"
+  proof (induction xs arbitrary: t t')
+  case Nil thus ?case by simp
+  next
+  case (Cons x xs t t')
+    show ?case
+    proof (rule Cons_pathI)
+      from `P t t'`
+      show "possible t x \<longleftrightarrow> possible t' x" by (rule assms(2))
+    next
+      assume "possible t x" and "possible t' x"
+      with `P t t'`
+      have "P (nxt t x) (nxt t' x)" by (rule assms(3))
+      thus "xs \<in> paths (nxt t x) \<longleftrightarrow> xs \<in> paths (nxt t' x)" by (rule Cons.IH)
+    qed
+  qed
+qed
+
+(*
+lemma paths_induct:
+  assumes "\<And> x. possible t x \<longleftrightarrow> possible t' x"
+  assumes "\<And> x. possible t x \<Longrightarrow> possible t' x \<Longrightarrow> xs \<in> paths (nxt t x) \<longleftrightarrow> xs \<in> paths (nxt t' x) \<Longrightarrow> x#xs \<in> paths t \<longleftrightarrow> x # xs \<in> paths t'"
+  shows "t = t'"
+proof(rule paths_inj, rule set_eqI)
+  fix xs
+  note assms
+  show "xs \<in> paths t  \<longleftrightarrow> xs \<in> paths t'"
+  proof(induction xs arbitrary: t t')
+  case Nil
+    show ?case by simp
+  next
+  case (Cons x xs t t')
+    show ?case
+      apply (cases "possible t x")
+      apply (case_tac [!] "possible t' x")
+      apply (simp_all add: Cons_path)
+*)
 
 lemma paths_and_then_Cons[simp]: "x'#xs \<in> paths (and_then x t) \<longleftrightarrow> x' = x \<and> xs \<in> paths t"
  by transfer force
@@ -423,6 +476,18 @@ lift_definition ftree_restr :: "'a set \<Rightarrow> 'a ftree \<Rightarrow> 'a f
   apply (metis filter.simps(1) imageI)
   done
 
+lemma filter_paths_conv_free_restr:
+  "filter (\<lambda> x' . x' \<in> S) ` paths t = paths (ftree_restr S t)" by transfer auto
+
+lemma filter_paths_conv_free_restr2:
+  "filter (\<lambda> x' . x' \<notin> S) ` paths t = paths (ftree_restr (- S) t)" by transfer auto
+
+lemma ftree_restr_is_empty: "carrier t \<inter> S = {} \<Longrightarrow> ftree_restr S t = empty"
+  apply transfer
+  apply (auto del: iffI )
+  apply (metis SUP_bot_conv(2) SUP_inf inf_commute inter_set_filter set_empty)
+  apply force
+  done
 
 context fixes f :: "'a \<Rightarrow> 'a ftree"
 begin
@@ -522,7 +587,7 @@ lemma nxt_substitute[simp]: "possible t x \<Longrightarrow> nxt (substitute f t)
 
 lemma substitute_either: "paths (substitute f (either t t')) = paths (substitute f t) \<union> paths (substitute f t')"
 proof-
-  have [simp]: "\<And> t t' x . both (either (nxt t x) (nxt t' x)) (f x) = either (both (nxt t x) (f x)) (both (nxt t' x) (f x))" sorry
+  have [simp]: "\<And> t t' x . both (either (nxt t x) (nxt t' x)) (f x) = either (both (nxt t x) (f x)) (both (nxt t' x) (f x))" by (metis both_comm either_both_distr)
   {
   fix xs
   have "xs \<in> paths (substitute f (either t t'))  \<longleftrightarrow> xs \<in> paths (substitute f t)  \<or> xs \<in> paths (substitute f t')"
@@ -739,6 +804,192 @@ next
       done
     finally show ?case.
   qed
+qed
+
+lemma substitute_substitute:
+  assumes "\<And> x. const_on f' (carrier (f x)) empty"
+  shows "substitute f (substitute f' t) = substitute (\<lambda> x. both (f x) (f' x)) t"
+  apply(rule ftree_coinduct[where P = "\<lambda> t t'. \<exists> t''. t = substitute f (substitute f' t'') \<and> t' =  (substitute (\<lambda>x. both (f x) (f' x)) t'')"])
+  apply blast
+  apply auto
+  apply (rule_tac x = "(both (both (nxt t'' x) (f x)) (f' x))" in exI)
+  apply (auto simp add: substitute_both  substitute_only_empty[OF assms])
+  by (metis both_comm both_assoc)
+
+function foo where 
+  "foo [] [] = undefined"
+| "foo xs [] = undefined"
+| "foo [] ys = undefined"
+| "foo (x#xs) (y#ys) = undefined (foo xs (y#ys)) (foo (x#xs) ys)"
+by pat_completeness auto
+termination by lexicographic_order
+lemmas list_induct2'' = foo.induct[case_names NilNil ConsNil NilCons ConsCons]
+
+
+lemma ftree_restr_both:
+  "ftree_restr S (both t t') = both (ftree_restr S t) (ftree_restr S t')"
+proof(rule paths_inj, rule set_eqI, rule iffI)
+  fix xs
+  assume "xs \<in> paths (ftree_restr S (both t t'))"
+  then
+  obtain xs' ys zs  where "xs = filter (\<lambda> x'. x' \<in> S) xs'" and "xs' \<in> interleave ys zs" and "ys \<in> paths t" and "zs \<in> paths t'"
+    by (auto simp add: paths_both  filter_paths_conv_free_restr[symmetric])
+  from `xs' \<in> interleave ys zs`
+  have "filter (\<lambda> x'. x' \<in> S) xs' \<in> interleave (filter (\<lambda> x'. x' \<in> S) ys) (filter (\<lambda> x'. x' \<in> S) zs)"
+    by induction  (auto intro: interleave_intros)
+  with `xs = _` `ys \<in> _` `zs \<in> _`
+  show "xs \<in> paths (both (ftree_restr S t) (ftree_restr S t'))"
+    by (auto simp add: paths_both  filter_paths_conv_free_restr[symmetric])
+next
+  fix xs
+  assume "xs \<in> paths (both (ftree_restr S t) (ftree_restr S t'))"
+  then
+  obtain ys zs where "xs \<in> interleave [x'\<leftarrow>ys . x' \<in> S] [x'\<leftarrow>zs . x' \<in> S]" 
+                and  "ys \<in> paths t" and "zs \<in> paths t'"
+    by (auto simp add: paths_both filter_paths_conv_free_restr[symmetric])
+  thus "xs \<in> paths (ftree_restr S (both t t'))"
+  proof(induction ys zs arbitrary: xs t t' rule: list_induct2'')
+  case NilNil
+    thus ?case by simp
+  next
+  case (ConsNil ys xs)
+    hence "xs = [x'\<leftarrow>ys . x' \<in> S]" by simp
+    moreover
+    from `ys \<in> paths t`
+    have "ys \<in> paths (both t t')" by (rule set_mp[OF both_contains_arg1])
+    ultimately
+    show ?case by (auto simp add: filter_paths_conv_free_restr[symmetric])
+  next
+  case (NilCons zs xs)
+    hence "xs = [x'\<leftarrow>zs . x' \<in> S]" by simp
+    moreover
+    from `zs \<in> paths t'`
+    have "zs \<in> paths (both t t')" by (rule set_mp[OF both_contains_arg2])
+    ultimately
+    show ?case by (auto simp add: filter_paths_conv_free_restr[symmetric])
+  next
+  case (ConsCons y ys z zs xs t t')
+    hence "possible t y" and "ys \<in> paths (nxt t y)"
+     and "possible t' z" and "zs \<in> paths (nxt t' z)" by (simp_all add: Cons_path)
+
+    show ?case
+    proof(cases "y \<in> S")
+    case False
+      with ConsCons.prems(1)
+      have "xs \<in> interleave [x'\<leftarrow> ys . x' \<in> S] [x'\<leftarrow>z#zs . x' \<in> S]" by simp
+      from ConsCons.IH(1)[OF this `ys \<in> paths (nxt t y)`  `z#zs \<in> paths t'`]
+      have "xs \<in> paths (ftree_restr S (both (nxt t y) t'))".
+      then obtain xs' where "xs = [x'\<leftarrow>xs' . x' \<in> S]" and "xs' \<in> paths (both (nxt t y) t')" by (auto simp add:  filter_paths_conv_free_restr[symmetric])
+
+      note Cons_both_possible_leftE[OF `possible t y` this(2)]
+      moreover
+      have "xs = [x'\<leftarrow>y#xs' . x' \<in> S]" using `xs = _` False by simp
+      ultimately
+      show ?thesis unfolding  filter_paths_conv_free_restr[symmetric] by blast
+    next
+    case True
+      show ?thesis
+      proof(cases "z \<in> S")
+      case False
+        with ConsCons.prems(1)
+        have "xs \<in> interleave [x'\<leftarrow> y#ys . x' \<in> S] [x'\<leftarrow>zs . x' \<in> S]" by simp
+        from ConsCons.IH(2)[OF this `y#ys \<in> paths t`  `zs \<in> paths (nxt t' z)`]
+        have "xs \<in> paths (ftree_restr S (both t (nxt t' z)))".
+        then obtain xs' where "xs = [x'\<leftarrow>xs' . x' \<in> S]" and "xs' \<in> paths (both t (nxt t' z))" by (auto simp add:  filter_paths_conv_free_restr[symmetric])
+  
+        note Cons_both_possible_rightE[OF `possible t' z` this(2)]
+        moreover
+        have "xs = [x'\<leftarrow>z#xs' . x' \<in> S]" using `xs = _` False by simp
+        ultimately
+        show ?thesis unfolding  filter_paths_conv_free_restr[symmetric] by blast
+      next
+      case True
+        from ConsCons.prems(1) `y \<in> S` `z \<in> S`
+        have "xs \<in> interleave (y#[x'\<leftarrow> ys . x' \<in> S]) (z#[x'\<leftarrow> zs . x' \<in> S])"  by simp
+        thus ?thesis 
+        proof(rule interleave_ConsConsE)
+          fix xs'
+          assume "xs = y # xs'" and "xs' \<in> interleave [x'\<leftarrow>ys . x' \<in> S] (z # [x'\<leftarrow>zs . x' \<in> S])"
+          hence "xs' \<in> interleave [x'\<leftarrow>ys . x' \<in> S] ([x'\<leftarrow>z # zs . x' \<in> S])" using `z \<in> S` by simp
+          from ConsCons.IH(1)[OF this `ys \<in> paths (nxt t y)`  `z#zs \<in> paths t'`]
+          have "xs' \<in> paths (ftree_restr S (both (nxt t y) t'))".
+          then obtain xs'' where "xs' = [x'\<leftarrow>xs'' . x' \<in> S]" and "xs'' \<in> paths (both (nxt t y) t')" by (auto simp add:  filter_paths_conv_free_restr[symmetric])
+    
+          note Cons_both_possible_leftE[OF `possible t y` this(2)]
+          moreover
+          have "xs = [x'\<leftarrow>y#xs'' . x' \<in> S]" using `xs = _` `xs' = _` `y \<in> S` by simp
+          ultimately
+          show ?thesis unfolding  filter_paths_conv_free_restr[symmetric] by blast
+        next
+          fix xs'
+          assume "xs = z # xs'" and "xs' \<in> interleave (y# [x'\<leftarrow>ys . x' \<in> S])  [x'\<leftarrow>zs . x' \<in> S]"
+          hence "xs' \<in> interleave [x'\<leftarrow>y#ys . x' \<in> S] ([x'\<leftarrow> zs . x' \<in> S])" using `y \<in> S` by simp
+          from ConsCons.IH(2)[OF this `y#ys \<in> paths t`  `zs \<in> paths (nxt t' z)`]
+          have "xs' \<in> paths (ftree_restr S (both t (nxt t' z)))".
+          then obtain xs'' where "xs' = [x'\<leftarrow>xs'' . x' \<in> S]" and "xs'' \<in> paths (both t (nxt t' z))" by (auto simp add:  filter_paths_conv_free_restr[symmetric])
+    
+          note Cons_both_possible_rightE[OF `possible t' z` this(2)]
+          moreover
+          have "xs = [x'\<leftarrow>z#xs'' . x' \<in> S]" using `xs = _` `xs' = _` `z \<in> S` by simp
+          ultimately
+          show ?thesis unfolding  filter_paths_conv_free_restr[symmetric] by blast
+        qed
+      qed
+    qed
+  qed
+qed
+
+    
+lemma ftree_restr_nxt_subset: "x \<in> S \<Longrightarrow> paths (ftree_restr S (nxt t x)) \<subseteq> paths (nxt (ftree_restr S t) x)"
+  by transfer (force simp add: image_iff)
+
+lemma ftree_restr_nxt_subset2: "x \<notin> S \<Longrightarrow> paths (ftree_restr S (nxt t x)) \<subseteq> paths (ftree_restr S t)"
+  apply transfer
+  apply auto
+  apply force
+  by (metis filter.simps(2) imageI)
+
+lemma ftree_restr_possible: "x \<in> S \<Longrightarrow> possible t x \<Longrightarrow> possible (ftree_restr S t) x"
+  by transfer force
+
+lemma ftree_restr_possible2: "possible (ftree_restr S t') x \<Longrightarrow> x \<in> S" 
+  by transfer (auto, metis filter_eq_Cons_iff)
+        
+
+lemma ftree_rest_substitute:
+  assumes "\<And> x. carrier (f x) \<inter> S = {}"
+  shows "ftree_restr S (substitute f t) = ftree_restr S t"
+proof(rule paths_inj, rule set_eqI, rule iffI)
+  fix xs
+  assume "xs \<in> paths (ftree_restr S (substitute f t))"
+  then
+  obtain xs' where [simp]: "xs = filter (\<lambda> x'. x' \<in> S) xs'" and "xs' \<in> paths (substitute f t)"
+    by (auto simp add: filter_paths_conv_free_restr[symmetric])
+  from this(2)
+  have "filter (\<lambda> x'. x' \<in> S) xs' \<in>  paths (ftree_restr S t)"
+  proof (induction xs' arbitrary: t)
+  case Nil thus ?case by simp
+  next
+  case (Cons x xs t)
+    from Cons.prems
+    have "possible t x" and "xs \<in> paths (substitute f (both (nxt t x) (f x)))" by auto
+    from  Cons.IH[OF this(2)]
+    have "[x'\<leftarrow>xs . x' \<in> S] \<in> paths (both (ftree_restr S (nxt t x)) (ftree_restr S (f x)))" by (simp add: ftree_restr_both)
+    hence "[x'\<leftarrow>xs . x' \<in> S] \<in> paths (ftree_restr S (nxt t x))" by (simp add: ftree_restr_is_empty[OF assms])
+    with `possible t x`
+    show "[x'\<leftarrow>x#xs . x' \<in> S] \<in> paths (ftree_restr S t)"
+      by (cases "x \<in> S") (auto simp add: Cons_path ftree_restr_possible  dest: set_mp[OF ftree_restr_nxt_subset2]  set_mp[OF ftree_restr_nxt_subset])
+  qed
+  thus "xs \<in> paths (ftree_restr S t)" by simp
+next
+  fix xs
+  assume "xs \<in> paths (ftree_restr S t)"
+  then obtain xs' where [simp]:"xs = filter (\<lambda> x'. x' \<in> S) xs'" and "xs' \<in> paths t" 
+    by (auto simp add: filter_paths_conv_free_restr[symmetric])
+  from this(2)
+  have "xs' \<in> paths (substitute f t)" by (rule set_mp[OF substitute_contains_arg])
+  thus "xs \<in> paths (ftree_restr S (substitute f t))"
+    by (auto simp add: filter_paths_conv_free_restr[symmetric])
 qed
 
 end

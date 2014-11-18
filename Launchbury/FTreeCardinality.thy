@@ -229,15 +229,25 @@ begin
     assume "atom ` domA \<Delta> \<sharp>* S"
     assume "edom ae \<subseteq> domA \<Gamma> \<union> upds S"
 
+    have const_on1:  "\<And> x.  const_on (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (carrier ((FBinds \<Gamma>\<cdot>ae) x)) empty" sorry
+    have const_on2:  "const_on (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (carrier (Fstack S)) empty" sorry
+
+    {
+    fix x
+    have "(FBinds (\<Delta> @ \<Gamma>)\<cdot>(Aheap \<Delta> e\<cdot>a \<squnion> ae)) x =  both ((FBinds \<Gamma>\<cdot>ae) x) ((FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) x)"
+      sorry
+    }
+    note FBinds = ext[OF this]
+
     {
     have "pathsCard (paths (substitute (FBinds (\<Delta> @ \<Gamma>)\<cdot>(Aheap \<Delta> e\<cdot>a \<squnion> ae)) (both (Fexp e\<cdot>a) (Fstack S))))
-      = pathsCard (paths (substitute (FBinds \<Gamma>\<cdot>ae) (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (both (Fexp e\<cdot>a) (Fstack S)))))" sorry
+      = pathsCard (paths (substitute (FBinds \<Gamma>\<cdot>ae) (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (both (Fexp e\<cdot>a) (Fstack S)))))"
+       by (simp add:  substitute_substitute[OF const_on1] FBinds)
     also have "substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (both (Fexp e\<cdot>a) (Fstack S)) = both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fstack S))" 
       by (rule substitute_both)
     also
-    have "const_on (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (carrier (Fstack S)) empty" sorry
-    hence "substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fstack S) = Fstack S"
-      by (rule substitute_only_empty)
+    have "substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fstack S) = Fstack S"
+      by (rule substitute_only_empty[OF const_on2])
     also note calculation
     }
     note eq_imp_below[OF this]
@@ -245,7 +255,8 @@ begin
     note env_restr_split[where S = "domA \<Delta>"]
     also
     have "pathsCard (paths (substitute (FBinds \<Gamma>\<cdot>ae) (both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (Fstack S)))) f|` domA \<Delta> 
-        = pathsCard (paths (ftree_restr (domA \<Delta>) (substitute (FBinds \<Gamma>\<cdot>ae) (both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (Fstack S)))))" sorry
+        = pathsCard (paths (ftree_restr (domA \<Delta>) (substitute (FBinds \<Gamma>\<cdot>ae) (both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (Fstack S)))))"
+          by (simp add: filter_paths_conv_free_restr)
     also
     have "ftree_restr (domA \<Delta>) (substitute (FBinds \<Gamma>\<cdot>ae) (both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (Fstack S)))
         = ftree_restr (domA \<Delta>) (both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (Fstack S))" sorry
@@ -253,7 +264,8 @@ begin
     have "ftree_restr (domA \<Delta>) (both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (Fstack S)) \<sqsubseteq> Fheap \<Delta> e\<cdot>a"  sorry
     also
     have "pathsCard (paths (substitute (FBinds \<Gamma>\<cdot>ae) (both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (Fstack S)))) f|` (- domA \<Delta>) =
-          pathsCard (paths (ftree_restr (- domA \<Delta>) (substitute (FBinds \<Gamma>\<cdot>ae) (both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (Fstack S)))))" sorry
+          pathsCard (paths (ftree_restr (- domA \<Delta>) (substitute (FBinds \<Gamma>\<cdot>ae) (both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (Fstack S)))))"
+          by (simp add: filter_paths_conv_free_restr2)
     also have "ftree_restr (- domA \<Delta>) (substitute (FBinds \<Gamma>\<cdot>ae) (both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (Fstack S))) =
          substitute (FBinds \<Gamma>\<cdot>ae) (ftree_restr (- domA \<Delta>) (both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (Fstack S)))" sorry
     also have "ftree_restr (- domA \<Delta>) (both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (Fstack S)) = 
