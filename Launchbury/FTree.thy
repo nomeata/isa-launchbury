@@ -1,5 +1,5 @@
 theory FTree
-imports Main ConstOn
+imports Main ConstOn "List-Interleavings"
 begin
 
 definition downset where
@@ -135,91 +135,6 @@ lemma nxt_either[simp]: "nxt (either t t') x = either (nxt t x) (nxt t' x)"
 
 lift_definition Either :: "'a ftree set \<Rightarrow> 'a ftree"  is "\<lambda> S. insert [] (\<Union>S)"
   by (auto simp add: downset_def)
-
-inductive interleave' :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a list \<Rightarrow> bool"
-  where [simp]: "interleave' [] [] []"
-  | "interleave' xs ys zs \<Longrightarrow>interleave' (x#xs) ys (x#zs)"
-  | "interleave' xs ys zs \<Longrightarrow>interleave' xs (x#ys) (x#zs)"
-
-definition interleave :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a list set" 
-  where "interleave xs ys = Collect (interleave' xs ys)"
-lemma elim_interleave'[pred_set_conv]: "interleave' xs ys zs \<longleftrightarrow> zs \<in> interleave xs ys" unfolding interleave_def by simp
-
-lemmas interleave_intros[intro?] = interleave'.intros[to_set]
-lemmas interleave_intros(1)[simp]
-lemmas interleave_induct[consumes 1, induct set: interleave, case_names Nil left right] = interleave'.induct[to_set]
-lemmas interleave_cases[consumes 1, cases set: interleave] = interleave'.cases[to_set]
-lemmas interleave_simps = interleave'.simps[to_set]
-
-inductive_cases interleave_nilE[elim!]: "[] \<in> interleave xs ys"
-
-inductive_cases interleave_ConsE[elim]: "(x#xs) \<in> interleave ys zs"
-inductive_cases interleave_ConsConsE[elim]: "xs \<in> interleave (y#ys) (z#zs)"
-inductive_cases interleave_ConsE2[elim]: "xs \<in> interleave (x#ys) zs"
-inductive_cases interleave_ConsE3[elim]: "xs \<in> interleave ys (x#zs)"
-
-lemma interleave_comm: "xs \<in> interleave ys zs \<Longrightarrow> xs \<in> interleave zs ys"
-  by (induction rule: interleave_induct) (auto intro: interleave_intros)
-
-lemma interleave_Nil1[simp]: "interleave [] xs = {xs}"
-proof-
-  have interleave_only_left: "xs \<in> interleave [] xs"
-  by (induction xs) (auto intro: interleave_intros)
-  moreover
-  {fix x ys
-  have "x \<in> interleave ys xs \<Longrightarrow> ys = []\<Longrightarrow> x = xs"
-  by (induction rule: interleave_induct) auto
-  }
-  ultimately
-  show ?thesis by blast
-qed
-
-lemma interleave_Nil2[simp]: "interleave xs [] = {xs}"
-proof-
-  have interleave_only_left: "xs \<in> interleave xs []"
-  by (induction xs) (auto intro: interleave_intros)
-  moreover
-  {fix x ys
-  have "x \<in> interleave xs ys \<Longrightarrow> ys = []\<Longrightarrow> x = xs"
-  by (induction rule: interleave_induct) auto
-  }
-  ultimately
-  show ?thesis by blast
-qed  
-
-lemma interleave_nil_simp[simp]: "[] \<in> interleave xs ys \<longleftrightarrow> xs = [] \<and> ys = []"
-  by auto
-
-
-lemma interleave_assoc1: "a \<in> interleave xs ys \<Longrightarrow> b \<in> interleave a zs \<Longrightarrow> \<exists> c. c \<in> interleave ys zs \<and>  b \<in> interleave xs c"
-  by (induction b arbitrary: a  xs ys zs )
-     (simp, fastforce del: interleave_ConsE elim!: interleave_ConsE  intro: interleave_intros)
-
-lemma interleave_assoc2: "a \<in> interleave ys zs \<Longrightarrow> b \<in> interleave xs a \<Longrightarrow> \<exists> c. c \<in> interleave xs ys \<and>  b \<in> interleave c zs"
-  by (induction b arbitrary: a  xs ys zs )
-     (simp, fastforce del: interleave_ConsE elim!: interleave_ConsE  intro: interleave_intros)
-
-lemma interleave_set: "zs \<in> interleave xs ys \<Longrightarrow> set zs \<subseteq> set xs \<union> set ys"
-  by(induction rule:interleave_induct) auto
-
-lemma interleave_take: "zs \<in> interleave xs ys \<Longrightarrow> \<exists> n\<^sub>1 n\<^sub>2. n = n\<^sub>1 + n\<^sub>2 \<and>  take n zs \<in> interleave (take n\<^sub>1 xs) (take n\<^sub>2 ys)"
-  apply(induction arbitrary: n rule:interleave_induct)
-  apply auto
-  apply arith
-  apply (case_tac n, simp)
-  apply (drule_tac x = nat in meta_spec)
-  apply auto
-  apply (rule_tac x = "Suc n\<^sub>1" in exI)
-  apply (rule_tac x = "n\<^sub>2" in exI)
-  apply (auto intro: interleave_intros)[1]
-
-  apply (case_tac n, simp)
-  apply (drule_tac x = nat in meta_spec)
-  apply auto
-  apply (rule_tac x = "n\<^sub>1" in exI)
-  apply (rule_tac x = "Suc n\<^sub>2" in exI)
-  apply (auto intro: interleave_intros)[1]
-  done
 
 
 lift_definition both :: "'a ftree \<Rightarrow> 'a ftree \<Rightarrow> 'a ftree"
@@ -816,15 +731,6 @@ lemma substitute_substitute:
   apply (auto simp add: substitute_both  substitute_only_empty[OF assms])
   by (metis both_comm both_assoc)
 
-function foo where 
-  "foo [] [] = undefined"
-| "foo xs [] = undefined"
-| "foo [] ys = undefined"
-| "foo (x#xs) (y#ys) = undefined (foo xs (y#ys)) (foo (x#xs) ys)"
-by pat_completeness auto
-termination by lexicographic_order
-lemmas list_induct2'' = foo.induct[case_names NilNil ConsNil NilCons ConsCons]
-
 
 lemma ftree_restr_both:
   "ftree_restr S (both t t') = both (ftree_restr S t) (ftree_restr S t')"
@@ -836,7 +742,7 @@ proof(rule paths_inj, rule set_eqI, rule iffI)
     by (auto simp add: paths_both  filter_paths_conv_free_restr[symmetric])
   from `xs' \<in> interleave ys zs`
   have "filter (\<lambda> x'. x' \<in> S) xs' \<in> interleave (filter (\<lambda> x'. x' \<in> S) ys) (filter (\<lambda> x'. x' \<in> S) zs)"
-    by induction  (auto intro: interleave_intros)
+    by (rule filter_interleave)
   with `xs = _` `ys \<in> _` `zs \<in> _`
   show "xs \<in> paths (both (ftree_restr S t) (ftree_restr S t'))"
     by (auto simp add: paths_both  filter_paths_conv_free_restr[symmetric])
@@ -847,99 +753,15 @@ next
   obtain ys zs where "xs \<in> interleave [x'\<leftarrow>ys . x' \<in> S] [x'\<leftarrow>zs . x' \<in> S]" 
                 and  "ys \<in> paths t" and "zs \<in> paths t'"
     by (auto simp add: paths_both filter_paths_conv_free_restr[symmetric])
-  thus "xs \<in> paths (ftree_restr S (both t t'))"
-  proof(induction ys zs arbitrary: xs t t' rule: list_induct2'')
-  case NilNil
-    thus ?case by simp
-  next
-  case (ConsNil ys xs)
-    hence "xs = [x'\<leftarrow>ys . x' \<in> S]" by simp
-    moreover
-    from `ys \<in> paths t`
-    have "ys \<in> paths (both t t')" by (rule set_mp[OF both_contains_arg1])
-    ultimately
-    show ?case by (auto simp add: filter_paths_conv_free_restr[symmetric])
-  next
-  case (NilCons zs xs)
-    hence "xs = [x'\<leftarrow>zs . x' \<in> S]" by simp
-    moreover
-    from `zs \<in> paths t'`
-    have "zs \<in> paths (both t t')" by (rule set_mp[OF both_contains_arg2])
-    ultimately
-    show ?case by (auto simp add: filter_paths_conv_free_restr[symmetric])
-  next
-  case (ConsCons y ys z zs xs t t')
-    hence "possible t y" and "ys \<in> paths (nxt t y)"
-     and "possible t' z" and "zs \<in> paths (nxt t' z)" by (simp_all add: Cons_path)
-
-    show ?case
-    proof(cases "y \<in> S")
-    case False
-      with ConsCons.prems(1)
-      have "xs \<in> interleave [x'\<leftarrow> ys . x' \<in> S] [x'\<leftarrow>z#zs . x' \<in> S]" by simp
-      from ConsCons.IH(1)[OF this `ys \<in> paths (nxt t y)`  `z#zs \<in> paths t'`]
-      have "xs \<in> paths (ftree_restr S (both (nxt t y) t'))".
-      then obtain xs' where "xs = [x'\<leftarrow>xs' . x' \<in> S]" and "xs' \<in> paths (both (nxt t y) t')" by (auto simp add:  filter_paths_conv_free_restr[symmetric])
-
-      note Cons_both_possible_leftE[OF `possible t y` this(2)]
-      moreover
-      have "xs = [x'\<leftarrow>y#xs' . x' \<in> S]" using `xs = _` False by simp
-      ultimately
-      show ?thesis unfolding  filter_paths_conv_free_restr[symmetric] by blast
-    next
-    case True
-      show ?thesis
-      proof(cases "z \<in> S")
-      case False
-        with ConsCons.prems(1)
-        have "xs \<in> interleave [x'\<leftarrow> y#ys . x' \<in> S] [x'\<leftarrow>zs . x' \<in> S]" by simp
-        from ConsCons.IH(2)[OF this `y#ys \<in> paths t`  `zs \<in> paths (nxt t' z)`]
-        have "xs \<in> paths (ftree_restr S (both t (nxt t' z)))".
-        then obtain xs' where "xs = [x'\<leftarrow>xs' . x' \<in> S]" and "xs' \<in> paths (both t (nxt t' z))" by (auto simp add:  filter_paths_conv_free_restr[symmetric])
-  
-        note Cons_both_possible_rightE[OF `possible t' z` this(2)]
-        moreover
-        have "xs = [x'\<leftarrow>z#xs' . x' \<in> S]" using `xs = _` False by simp
-        ultimately
-        show ?thesis unfolding  filter_paths_conv_free_restr[symmetric] by blast
-      next
-      case True
-        from ConsCons.prems(1) `y \<in> S` `z \<in> S`
-        have "xs \<in> interleave (y#[x'\<leftarrow> ys . x' \<in> S]) (z#[x'\<leftarrow> zs . x' \<in> S])"  by simp
-        thus ?thesis 
-        proof(rule interleave_ConsConsE)
-          fix xs'
-          assume "xs = y # xs'" and "xs' \<in> interleave [x'\<leftarrow>ys . x' \<in> S] (z # [x'\<leftarrow>zs . x' \<in> S])"
-          hence "xs' \<in> interleave [x'\<leftarrow>ys . x' \<in> S] ([x'\<leftarrow>z # zs . x' \<in> S])" using `z \<in> S` by simp
-          from ConsCons.IH(1)[OF this `ys \<in> paths (nxt t y)`  `z#zs \<in> paths t'`]
-          have "xs' \<in> paths (ftree_restr S (both (nxt t y) t'))".
-          then obtain xs'' where "xs' = [x'\<leftarrow>xs'' . x' \<in> S]" and "xs'' \<in> paths (both (nxt t y) t')" by (auto simp add:  filter_paths_conv_free_restr[symmetric])
-    
-          note Cons_both_possible_leftE[OF `possible t y` this(2)]
-          moreover
-          have "xs = [x'\<leftarrow>y#xs'' . x' \<in> S]" using `xs = _` `xs' = _` `y \<in> S` by simp
-          ultimately
-          show ?thesis unfolding  filter_paths_conv_free_restr[symmetric] by blast
-        next
-          fix xs'
-          assume "xs = z # xs'" and "xs' \<in> interleave (y# [x'\<leftarrow>ys . x' \<in> S])  [x'\<leftarrow>zs . x' \<in> S]"
-          hence "xs' \<in> interleave [x'\<leftarrow>y#ys . x' \<in> S] ([x'\<leftarrow> zs . x' \<in> S])" using `y \<in> S` by simp
-          from ConsCons.IH(2)[OF this `y#ys \<in> paths t`  `zs \<in> paths (nxt t' z)`]
-          have "xs' \<in> paths (ftree_restr S (both t (nxt t' z)))".
-          then obtain xs'' where "xs' = [x'\<leftarrow>xs'' . x' \<in> S]" and "xs'' \<in> paths (both t (nxt t' z))" by (auto simp add:  filter_paths_conv_free_restr[symmetric])
-    
-          note Cons_both_possible_rightE[OF `possible t' z` this(2)]
-          moreover
-          have "xs = [x'\<leftarrow>z#xs'' . x' \<in> S]" using `xs = _` `xs' = _` `z \<in> S` by simp
-          ultimately
-          show ?thesis unfolding  filter_paths_conv_free_restr[symmetric] by blast
-        qed
-      qed
-    qed
-  qed
+  from this(1)
+  obtain xs' where "xs' \<in> interleave ys zs" and "xs = [x'\<leftarrow>xs' . x' \<in> S]" by (rule interleave_filter)
+  hence "xs' \<in> paths (both t t')" using `ys \<in> paths t` and `zs \<in> paths t'`
+    by (auto simp add: paths_both)
+  with `xs = _`
+  show "xs \<in> paths (ftree_restr S (both t t'))"
+     by (auto simp add: filter_paths_conv_free_restr[symmetric])
 qed
 
-    
 lemma ftree_restr_nxt_subset: "x \<in> S \<Longrightarrow> paths (ftree_restr S (nxt t x)) \<subseteq> paths (nxt (ftree_restr S t) x)"
   by transfer (force simp add: image_iff)
 
