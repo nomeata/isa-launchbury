@@ -734,33 +734,7 @@ lemma substitute_substitute:
 
 lemma ftree_restr_both:
   "ftree_restr S (both t t') = both (ftree_restr S t) (ftree_restr S t')"
-proof(rule paths_inj, rule set_eqI, rule iffI)
-  fix xs
-  assume "xs \<in> paths (ftree_restr S (both t t'))"
-  then
-  obtain xs' ys zs  where "xs = filter (\<lambda> x'. x' \<in> S) xs'" and "xs' \<in> interleave ys zs" and "ys \<in> paths t" and "zs \<in> paths t'"
-    by (auto simp add: paths_both  filter_paths_conv_free_restr[symmetric])
-  from `xs' \<in> interleave ys zs`
-  have "filter (\<lambda> x'. x' \<in> S) xs' \<in> interleave (filter (\<lambda> x'. x' \<in> S) ys) (filter (\<lambda> x'. x' \<in> S) zs)"
-    by (rule filter_interleave)
-  with `xs = _` `ys \<in> _` `zs \<in> _`
-  show "xs \<in> paths (both (ftree_restr S t) (ftree_restr S t'))"
-    by (auto simp add: paths_both  filter_paths_conv_free_restr[symmetric])
-next
-  fix xs
-  assume "xs \<in> paths (both (ftree_restr S t) (ftree_restr S t'))"
-  then
-  obtain ys zs where "xs \<in> interleave [x'\<leftarrow>ys . x' \<in> S] [x'\<leftarrow>zs . x' \<in> S]" 
-                and  "ys \<in> paths t" and "zs \<in> paths t'"
-    by (auto simp add: paths_both filter_paths_conv_free_restr[symmetric])
-  from this(1)
-  obtain xs' where "xs' \<in> interleave ys zs" and "xs = [x'\<leftarrow>xs' . x' \<in> S]" by (rule interleave_filter)
-  hence "xs' \<in> paths (both t t')" using `ys \<in> paths t` and `zs \<in> paths t'`
-    by (auto simp add: paths_both)
-  with `xs = _`
-  show "xs \<in> paths (ftree_restr S (both t t'))"
-     by (auto simp add: filter_paths_conv_free_restr[symmetric])
-qed
+  by (force simp add: paths_both filter_paths_conv_free_restr[symmetric] intro: paths_inj filter_interleave  elim: interleave_filter)
 
 lemma ftree_restr_nxt_subset: "x \<in> S \<Longrightarrow> paths (ftree_restr S (nxt t x)) \<subseteq> paths (nxt (ftree_restr S t) x)"
   by transfer (force simp add: image_iff)
