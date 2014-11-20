@@ -186,6 +186,8 @@ locale FutureAnalysisCardinalityHeap =
   assumes Fheap_eqvt[eqvt]: "\<pi> \<bullet> Fheap = Fheap"
   assumes Fheap_thunk: "x \<in> thunks \<Gamma> \<Longrightarrow> p \<in> paths (Fheap \<Gamma> e\<cdot>a) \<Longrightarrow> \<not> one_call_in_path x p \<Longrightarrow> (Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
   assumes carrier_Fheap: "carrier (Fheap \<Gamma> e\<cdot>a) = edom (Aheap \<Gamma> e\<cdot>a)"
+  assumes Fheap_substitute: "ftree_restr (domA \<Delta>) (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) \<sqsubseteq> Fheap \<Delta> e\<cdot>a"
+  assumes Fexp_Let: "ftree_restr (- domA \<Delta>) (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) \<sqsubseteq> Fexp (Terms.Let \<Delta> e)\<cdot>a"
 begin
 
   definition cHeap where
@@ -229,8 +231,15 @@ begin
     assume "atom ` domA \<Delta> \<sharp>* S"
     assume "edom ae \<subseteq> domA \<Gamma> \<union> upds S"
 
-    have const_on1:  "\<And> x.  const_on (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (carrier ((FBinds \<Gamma>\<cdot>ae) x)) empty" sorry
+    have const_on1:  "\<And> x. const_on (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (carrier ((FBinds \<Gamma>\<cdot>ae) x)) empty" sorry
     have const_on2:  "const_on (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (carrier (Fstack S)) empty" sorry
+    have const_on3: "const_on (FBinds \<Gamma>\<cdot>ae) (- (- domA \<Delta>)) FTree.empty" sorry
+
+    have disj1: "\<And> x. carrier ((FBinds \<Gamma>\<cdot>ae) x) \<inter> domA \<Delta> = {}" sorry
+    hence disj1': "\<And> x. carrier ((FBinds \<Gamma>\<cdot>ae) x) \<subseteq> - domA \<Delta>" by auto
+    have disj2: "\<And> x. carrier (Fstack S) \<inter> domA \<Delta> = {}" sorry
+    hence disj2': "carrier (Fstack S) \<subseteq> - domA \<Delta>" by auto
+    
 
     {
     fix x
@@ -259,18 +268,21 @@ begin
           by (simp add: filter_paths_conv_free_restr)
     also
     have "ftree_restr (domA \<Delta>) (substitute (FBinds \<Gamma>\<cdot>ae) (both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (Fstack S)))
-        = ftree_restr (domA \<Delta>) (both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (Fstack S))" sorry
+        = ftree_restr (domA \<Delta>) (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a))"
+          by (simp add: substitute_both ftree_restr_both ftree_rest_substitute[OF disj1]  ftree_restr_is_empty[OF disj2])
     also
-    have "ftree_restr (domA \<Delta>) (both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (Fstack S)) \<sqsubseteq> Fheap \<Delta> e\<cdot>a"  sorry
+    have "ftree_restr (domA \<Delta>) (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) \<sqsubseteq> Fheap \<Delta> e\<cdot>a"  by (rule Fheap_substitute)
     also
     have "pathsCard (paths (substitute (FBinds \<Gamma>\<cdot>ae) (both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (Fstack S)))) f|` (- domA \<Delta>) =
           pathsCard (paths (ftree_restr (- domA \<Delta>) (substitute (FBinds \<Gamma>\<cdot>ae) (both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (Fstack S)))))"
           by (simp add: filter_paths_conv_free_restr2)
     also have "ftree_restr (- domA \<Delta>) (substitute (FBinds \<Gamma>\<cdot>ae) (both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (Fstack S))) =
-         substitute (FBinds \<Gamma>\<cdot>ae) (ftree_restr (- domA \<Delta>) (both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (Fstack S)))" sorry
+         substitute (FBinds \<Gamma>\<cdot>ae) (ftree_restr (- domA \<Delta>) (both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (Fstack S)))"
+        by (rule ftree_rest_substitute2[OF disj1' const_on3])
     also have "ftree_restr (- domA \<Delta>) (both (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) (Fstack S)) = 
-         both (ftree_restr (- domA \<Delta>) (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a))) (Fstack S)" sorry
-    also have "ftree_restr (- domA \<Delta>) (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) \<sqsubseteq> Fexp (Terms.Let \<Delta> e)\<cdot>a" sorry
+         both (ftree_restr (- domA \<Delta>) (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a))) (Fstack S)"
+          by (simp add: ftree_restr_both  ftree_restr_noop[OF disj2'])
+    also have "ftree_restr (- domA \<Delta>) (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) \<sqsubseteq> Fexp (Terms.Let \<Delta> e)\<cdot>a" by (rule Fexp_Let)
     finally
     show "prognosis (Aheap \<Delta> e\<cdot>a \<squnion> ae) a (\<Delta> @ \<Gamma>, e, S) \<sqsubseteq> cHeap \<Delta> e\<cdot>a \<squnion> prognosis ae a (\<Gamma>, Terms.Let \<Delta> e, S)"
       apply (simp add: cHeap_def del: fun_meet_simp) 
