@@ -252,8 +252,8 @@ lift_definition Either :: "'a ftree set \<Rightarrow> 'a ftree"  is "\<lambda> S
 
 subsection {* Merging of trees *}
 
-lift_definition both :: "'a ftree \<Rightarrow> 'a ftree \<Rightarrow> 'a ftree"
-  is "\<lambda> xss yss . \<Union> {interleave xs ys | xs ys. xs \<in> xss \<and> ys \<in> yss}"
+lift_definition both :: "'a ftree \<Rightarrow> 'a ftree \<Rightarrow> 'a ftree" (infixl "\<otimes>\<otimes>" 86)
+  is "\<lambda> xss yss . \<Union> {xs \<otimes> ys | xs ys. xs \<in> xss \<and> ys \<in> yss}"
   apply (auto simp add: downset_def)
   apply (metis interleave_intros(1))
   apply (drule_tac n = n in interleave_take)
@@ -261,50 +261,51 @@ lift_definition both :: "'a ftree \<Rightarrow> 'a ftree \<Rightarrow> 'a ftree"
   apply metis
   done
 
-lemma both_assoc[simp]: "both t (both t' t'') = both (both t t') t''"
+
+lemma both_assoc[simp]: "t \<otimes>\<otimes> (t' \<otimes>\<otimes> t'') = (t \<otimes>\<otimes> t') \<otimes>\<otimes> t''"
   apply transfer
   apply auto
   apply (metis interleave_assoc2)
   apply (metis interleave_assoc1)
   done
 
-lemma both_comm: "both t t' = both t' t"
+lemma both_comm: "t \<otimes>\<otimes> t' = t' \<otimes>\<otimes> t"
   by transfer (auto, (metis interleave_comm)+)
 
-lemma both_empty1[simp]: "both empty t = t"
+lemma both_empty1[simp]: "empty \<otimes>\<otimes> t = t"
   by transfer auto
 
-lemma both_empty2[simp]: "both t empty = t"
+lemma both_empty2[simp]: "t \<otimes>\<otimes> empty = t"
   by transfer auto
 
-lemma paths_both: "xs \<in> paths (both t t') \<longleftrightarrow> (\<exists> ys \<in> paths t. \<exists> zs \<in> paths t'. xs \<in> interleave ys zs)"
+lemma paths_both: "xs \<in> paths (t \<otimes>\<otimes> t') \<longleftrightarrow> (\<exists> ys \<in> paths t. \<exists> zs \<in> paths t'. xs \<in> ys \<otimes> zs)"
   by transfer fastforce
 
-lemma both_contains_arg1: "paths t \<subseteq> paths (both t t')"
+lemma both_contains_arg1: "paths t \<subseteq> paths (t \<otimes>\<otimes> t')"
   by transfer fastforce
 
-lemma both_contains_arg2: "paths t' \<subseteq> paths (both t t')"
+lemma both_contains_arg2: "paths t' \<subseteq> paths (t \<otimes>\<otimes> t')"
   by transfer fastforce
 
 lemma both_mono1:
-  "paths t \<subseteq> paths t' \<Longrightarrow> paths (both t t'') \<subseteq> paths (both t' t'')"
+  "paths t \<subseteq> paths t' \<Longrightarrow> paths (t \<otimes>\<otimes> t'') \<subseteq> paths (t' \<otimes>\<otimes> t'')"
   by transfer auto
 
 lemma both_mono2:
-  "paths t \<subseteq> paths t' \<Longrightarrow> paths (both t'' t) \<subseteq> paths (both t'' t')"
+  "paths t \<subseteq> paths t' \<Longrightarrow> paths (t'' \<otimes>\<otimes> t) \<subseteq> paths (t'' \<otimes>\<otimes> t')"
   by transfer auto
 
-lemma possible_both[simp]: "possible (both t t') x \<longleftrightarrow> possible t x \<or> possible t' x"
+lemma possible_both[simp]: "possible (t \<otimes>\<otimes> t') x \<longleftrightarrow> possible t x \<or> possible t' x"
 proof
-  assume "possible (both t t') x"
-  then obtain xs where "x#xs \<in> paths (both t t')"
+  assume "possible (t \<otimes>\<otimes> t') x"
+  then obtain xs where "x#xs \<in> paths (t \<otimes>\<otimes> t')"
     by transfer auto
   
-  from `x#xs \<in> paths (both t t')`
-  obtain ys zs where "ys \<in> paths t" and "zs \<in> paths t'" and "x#xs \<in> interleave ys zs"
+  from `x#xs \<in> paths (t \<otimes>\<otimes> t')`
+  obtain ys zs where "ys \<in> paths t" and "zs \<in> paths t'" and "x#xs \<in> ys \<otimes> zs"
     by transfer auto
 
-  from `x#xs \<in> interleave ys zs`
+  from `x#xs \<in> ys \<otimes> zs`
   have "ys \<noteq> [] \<and> hd ys = x  \<or> zs \<noteq> [] \<and> hd zs = x"
     by (auto elim: interleave_cases)
   thus "possible t x \<or> possible t' x"
@@ -314,53 +315,53 @@ next
   assume "possible t x \<or> possible t' x"
   then obtain xs where "x#xs\<in> paths t \<or> x#xs\<in> paths t'"
     by transfer auto
-  from this have "x#xs \<in> paths (both t t')" by (auto dest: set_mp[OF both_contains_arg1]  set_mp[OF both_contains_arg2])
-  thus "possible (both t t') x" by transfer auto
+  from this have "x#xs \<in> paths (t \<otimes>\<otimes> t')" by (auto dest: set_mp[OF both_contains_arg1]  set_mp[OF both_contains_arg2])
+  thus "possible (t \<otimes>\<otimes> t') x" by transfer auto
 qed
 
 lemma nxt_both:
-    "nxt (both t' t) x = (if possible t' x \<and> possible t x then either (both (nxt t' x) t) (both t' (nxt t x)) else
-                           if possible t' x then both (nxt t' x) t else
-                           if possible t x then both t' (nxt t x) else
+    "nxt (t' \<otimes>\<otimes> t) x = (if possible t' x \<and> possible t x then either (nxt t' x \<otimes>\<otimes> t) (t' \<otimes>\<otimes> nxt t x) else
+                           if possible t' x then nxt t' x \<otimes>\<otimes> t else
+                           if possible t x then t' \<otimes>\<otimes> nxt t x else
                            empty)"
   by (transfer, auto 4 4 intro: interleave_intros)
 
 lemma Cons_both:
-    "x # xs \<in> paths (both t' t) \<longleftrightarrow> (if possible t' x \<and> possible t x then xs \<in> paths (both (nxt t' x) t) \<or> xs \<in> paths (both t' (nxt t x)) else
-                           if possible t' x then xs \<in> paths (both (nxt t' x) t) else
-                           if possible t x then xs \<in> paths (both t' (nxt t x)) else
+    "x # xs \<in> paths (t' \<otimes>\<otimes> t) \<longleftrightarrow> (if possible t' x \<and> possible t x then xs \<in> paths (nxt t' x \<otimes>\<otimes> t) \<or> xs \<in> paths (t' \<otimes>\<otimes> nxt t x) else
+                           if possible t' x then xs \<in> paths (nxt t' x \<otimes>\<otimes> t) else
+                           if possible t x then xs \<in> paths (t' \<otimes>\<otimes> nxt t x) else
                            False)"
   apply (auto simp add: paths_Cons_nxt_iff[symmetric] nxt_both)
   by (metis paths.rep_eq possible.rep_eq possible_both)
 
-lemma Cons_both_possible_leftE: "possible t x \<Longrightarrow> xs \<in> paths (both (nxt t x) t') \<Longrightarrow> x#xs \<in> paths (both t t')"
+lemma Cons_both_possible_leftE: "possible t x \<Longrightarrow> xs \<in> paths (nxt t x \<otimes>\<otimes> t') \<Longrightarrow> x#xs \<in> paths (t \<otimes>\<otimes> t')"
   by (auto simp add: Cons_both)
-lemma Cons_both_possible_rightE: "possible t' x \<Longrightarrow> xs \<in> paths (both t (nxt t' x)) \<Longrightarrow> x#xs \<in> paths (both t t')"
+lemma Cons_both_possible_rightE: "possible t' x \<Longrightarrow> xs \<in> paths (t \<otimes>\<otimes> nxt t' x) \<Longrightarrow> x#xs \<in> paths (t \<otimes>\<otimes> t')"
   by (auto simp add: Cons_both)
 
 lemma either_both_distr[simp]:
-  "either (both t' t) (both t' t'') = both t' (either t t'')"
+  "either (t' \<otimes>\<otimes> t) (t' \<otimes>\<otimes> t'') = t' \<otimes>\<otimes> (either t t'')"
   by transfer auto
 
 lemma either_both_distr2[simp]:
-  "either (both t' t) (both t'' t) = both (either t' t'') t"
+  "either (t' \<otimes>\<otimes> t) (t'' \<otimes>\<otimes> t) = either t' t'' \<otimes>\<otimes> t"
   by transfer auto
 
 lemma nxt_both_repeatable[simp]:
   assumes [simp]: "repeatable t'"
   assumes [simp]: "possible t' x"
-  shows "nxt (both t' t) x = both t' (either t (nxt t x))"
+  shows "nxt (t' \<otimes>\<otimes> t) x = t' \<otimes>\<otimes> (either t (nxt t x))"
   by (auto simp add: nxt_both)
 
-lemma nxt_both_many_calls[simp]: "nxt (both (many_calls x) t) x = both (many_calls x) (either t (nxt t x))"
+lemma nxt_both_many_calls[simp]: "nxt (many_calls x \<otimes>\<otimes> t) x = many_calls x \<otimes>\<otimes> either t (nxt t x)"
   by (simp add: repeatable_many_calls)
 
 lemma and_then_both_single:
-  "paths (and_then x t) \<subseteq> paths (both (single x) t)"
+  "paths (and_then x t) \<subseteq> paths (single x \<otimes>\<otimes> t)"
 proof
   fix xs
   assume "xs \<in> paths (and_then x t)"
-  show "xs \<in> paths (both (single x) t)"
+  show "xs \<in> paths (single x \<otimes>\<otimes> t)"
   proof(cases "xs = []")
     case True thus ?thesis by simp
   next
@@ -378,7 +379,7 @@ qed
 
 lemma repeatable_both_self[simp]:
   assumes [simp]: "repeatable t"
-  shows "both t t = t"
+  shows "t \<otimes>\<otimes> t = t"
   apply (intro paths_inj set_eqI)
   apply (induct_tac x)
   apply (auto simp add: Cons_both paths_Cons_nxt_iff[symmetric])
@@ -387,29 +388,29 @@ lemma repeatable_both_self[simp]:
 
 lemma repeatable_both_both[simp]:
   assumes "repeatable t"
-  shows "both (both t t') t = both t t'"
+  shows "t \<otimes>\<otimes> t' \<otimes>\<otimes> t = t \<otimes>\<otimes> t'"
   by (metis repeatable_both_self[OF assms]  both_assoc both_comm)
 
 lemma repeatable_both_both2[simp]:
   assumes "repeatable t"
-  shows "both (both t' t) t = both t' t"
+  shows "t' \<otimes>\<otimes> t \<otimes>\<otimes> t = t' \<otimes>\<otimes> t"
   by (metis repeatable_both_self[OF assms]  both_assoc both_comm)
 
 
 lemma repeatable_both_nxt:
   assumes "repeatable t"
   assumes "possible t' x"
-  assumes "both t' t = t'"
-  shows "both (nxt t' x) t = nxt t' x"
+  assumes "t' \<otimes>\<otimes> t = t'"
+  shows "nxt t' x \<otimes>\<otimes> t = nxt t' x"
 proof(rule classical)
-  assume "both (nxt t' x) t \<noteq> nxt t' x"
-  hence "both (either (nxt t' x) t') t \<noteq> nxt t' x" by (metis (no_types) assms(1) both_assoc repeatable_both_self)
-  thus "both (nxt t' x) t = nxt t' x"  by (metis (no_types) assms either_both_distr2 nxt_both nxt_repeatable)
+  assume "nxt t' x \<otimes>\<otimes> t \<noteq> nxt t' x"
+  hence "either (nxt t' x) t' \<otimes>\<otimes> t \<noteq> nxt t' x" by (metis (no_types) assms(1) both_assoc repeatable_both_self)
+  thus "nxt t' x \<otimes>\<otimes> t = nxt t' x"  by (metis (no_types) assms either_both_distr2 nxt_both nxt_repeatable)
 qed
 
 lemma repeatable_both_both_nxt:
-  assumes "both t' t = t'"
-  shows "both (both t' t'') t = both t' t''"
+  assumes "t' \<otimes>\<otimes> t = t'"
+  shows "t' \<otimes>\<otimes> t'' \<otimes>\<otimes> t = t' \<otimes>\<otimes> t''"
   by (metis assms both_assoc both_comm)
 
 
@@ -433,12 +434,12 @@ lemma Union_paths_carrier: "(\<Union>x\<in>paths t. set x) = carrier t"
   by transfer auto
 
 lemma carrier_both[simp]:
-  "carrier (both t t') = carrier t \<union> carrier t'"
+  "carrier (t \<otimes>\<otimes> t') = carrier t \<union> carrier t'"
 proof-
   {
   fix x
-  assume "x \<in> carrier (both t t')"
-  then obtain xs where "xs \<in> paths (both t t')" and "x \<in> set xs" by transfer auto
+  assume "x \<in> carrier (t \<otimes>\<otimes> t')"
+  then obtain xs where "xs \<in> paths (t \<otimes>\<otimes> t')" and "x \<in> set xs" by transfer auto
   then obtain ys zs where "ys \<in> paths t" and "zs \<in> paths t'" and "xs \<in> interleave ys zs"
     by (auto simp add: paths_both)
   from this(3) have "set xs \<subseteq> set ys \<union> set zs" by (rule interleave_set)
@@ -487,7 +488,7 @@ lemma ftree_restr_noop: "carrier t \<subseteq> S \<Longrightarrow> ftree_restr S
   done
 
 lemma ftree_restr_both:
-  "ftree_restr S (both t t') = both (ftree_restr S t) (ftree_restr S t')"
+  "ftree_restr S (t \<otimes>\<otimes> t') = ftree_restr S t \<otimes>\<otimes> ftree_restr S t'"
   by (force simp add: paths_both filter_paths_conv_free_restr[symmetric] intro: paths_inj filter_interleave  elim: interleave_filter)
 
 lemma ftree_restr_nxt_subset: "x \<in> S \<Longrightarrow> paths (ftree_restr S (nxt t x)) \<subseteq> paths (nxt (ftree_restr S t) x)"
@@ -513,7 +514,7 @@ context fixes f :: "'a \<Rightarrow> 'a ftree"
 begin
 fun substitute' :: "'a ftree \<Rightarrow> 'a list \<Rightarrow> bool"
   where substitute'_Nil: "substitute' t [] \<longleftrightarrow> True"
-     |  substitute'_Cons: "substitute' t (x#xs) \<longleftrightarrow> possible t x \<and> substitute' (both (nxt t x) (f x)) xs"
+     |  substitute'_Cons: "substitute' t (x#xs) \<longleftrightarrow> possible t x \<and> substitute' (nxt t x \<otimes>\<otimes> f x) xs"
 end
 
 lemma downset_substitute: "downset (Collect (substitute' f t))"
@@ -575,8 +576,8 @@ proof
     moreover
     from `x # xs \<in> paths t` have "xs \<in> paths (nxt t x)"
       by (auto simp add: paths_nxt_eq)
-    hence "xs \<in> paths (both (nxt t x) (f x))" by (rule set_mp[OF both_contains_arg1])
-    hence "xs \<in> paths (substitute f (both (nxt t x) (f x)))" by (rule Cons.IH)
+    hence "xs \<in> paths (nxt t x \<otimes>\<otimes> f x)" by (rule set_mp[OF both_contains_arg1])
+    hence "xs \<in> paths (substitute f (nxt t x \<otimes>\<otimes> f x))" by (rule Cons.IH)
     ultimately
     show ?case by simp
   qed
@@ -585,12 +586,12 @@ qed
 lemma possible_substitute[simp]: "possible (substitute f t) x \<longleftrightarrow> possible t x"
   by (metis Cons_both both_empty2 paths_Nil substitute_simps(2))
 
-lemma nxt_substitute[simp]: "possible t x \<Longrightarrow> nxt (substitute f t) x = substitute f (both (nxt t x) (f x))"
+lemma nxt_substitute[simp]: "possible t x \<Longrightarrow> nxt (substitute f t) x = substitute f (nxt t x \<otimes>\<otimes> f x)"
   by (rule ftree_eqI) (simp add: paths_nxt_eq )
 
-lemma substitute_either: "paths (substitute f (either t t')) = paths (substitute f t) \<union> paths (substitute f t')"
+lemma substitute_either: "substitute f (either t t') = either (substitute f t) (substitute f t')"
 proof-
-  have [simp]: "\<And> t t' x . both (either (nxt t x) (nxt t' x)) (f x) = either (both (nxt t x) (f x)) (both (nxt t' x) (f x))" by (metis both_comm either_both_distr)
+  have [simp]: "\<And> t t' x . either (nxt t x) (nxt t' x) \<otimes>\<otimes> f x = either (nxt t x \<otimes>\<otimes> f x) (nxt t' x \<otimes>\<otimes> f x)" by (metis both_comm either_both_distr)
   {
   fix xs
   have "xs \<in> paths (substitute f (either t t'))  \<longleftrightarrow> xs \<in> paths (substitute f t)  \<or> xs \<in> paths (substitute f t')"
@@ -598,30 +599,30 @@ proof-
     case Nil thus ?case by simp
   next
     case (Cons x xs)
-    note IH = Cons.IH[where t = "both (nxt t' x) (f x)" and t' = "both (nxt t x) (f x)", simp]
+    note IH = Cons.IH[where t = "nxt t' x \<otimes>\<otimes> f x" and t' = "nxt t x \<otimes>\<otimes> f x", simp]
     show ?case
     apply (auto simp del: either_both_distr2)
         apply (metis IH both_comm either_both_distr either_empty2 nxt_not_possible)
     by (metis  IH both_comm both_empty1 either_both_distr either_empty1 nxt_not_possible)
   qed
   }
-  thus ?thesis by auto
+  thus ?thesis by (auto intro: paths_inj)
 qed
 
-lemma substitute_both: "substitute f (both t t') = both (substitute f t) (substitute f t')"
+lemma substitute_both: "substitute f (t \<otimes>\<otimes> t') = substitute f t \<otimes>\<otimes> substitute f t'"
 proof (intro paths_inj set_eqI)
   fix xs
-  show "(xs \<in> paths (substitute f (both t t'))) = (xs \<in> paths (both (substitute f t) (substitute f t')))"
+  show "(xs \<in> paths (substitute f (t \<otimes>\<otimes> t'))) = (xs \<in> paths (substitute f t \<otimes>\<otimes> substitute f t'))"
   proof (induction xs arbitrary: t t')
   case Nil thus ?case by simp
   next
   case (Cons x xs)
-    have [simp]: "both (both (nxt t x) t') (f x) = both (both (nxt t x) (f x)) t'"
+    have [simp]: "nxt t x \<otimes>\<otimes> t' \<otimes>\<otimes> f x = nxt t x \<otimes>\<otimes> f x \<otimes>\<otimes> t'"
       by (metis both_assoc both_comm)
-    have [simp]: "both (both t (nxt t' x)) (f x) = both t (both (nxt t' x) (f x))"
+    have [simp]: "t \<otimes>\<otimes> nxt t' x \<otimes>\<otimes> f x = t \<otimes>\<otimes> (nxt t' x \<otimes>\<otimes> f x)"
       by (metis both_assoc both_comm)
-    note Cons[where t = "both (nxt t x) (f x)" and t' = t', simp]
-    note Cons[where t = t and t' = "both (nxt t' x) (f x)", simp]
+    note Cons[where t = "nxt t x \<otimes>\<otimes> f x" and t' = t', simp]
+    note Cons[where t = t and t' = "nxt t' x \<otimes>\<otimes> f x", simp]
     show ?case
       by (auto simp add: Cons_both nxt_both either_both_distr2[symmetric] substitute_either
                   simp del: both_assoc )
@@ -650,13 +651,13 @@ proof (intro paths_inj  set_eqI)
 qed
 
 lemma substitute_and_then:
-  "substitute f (and_then x t) = and_then x (substitute f (both t (f x)))"
+  "substitute f (and_then x t) = and_then x (substitute f (t \<otimes>\<otimes> f x))"
   by (rule ftree_eqI) auto
 
 lemma substitute_remove_anyways_aux:
   assumes [simp]: "repeatable (f x)"
   assumes "xs \<in> paths (substitute f t)"
-  assumes "both t (f x) = t"
+  assumes "t \<otimes>\<otimes> f x = t"
   shows "xs \<in> paths (substitute (f(x := empty)) t)"
   using assms(2,3)
   by (induction xs arbitrary: t)(auto  simp add: repeatable_both_nxt repeatable_both_both_nxt )
@@ -664,20 +665,20 @@ lemma substitute_remove_anyways_aux:
 lemma substitute_remove_anyways:
   assumes "repeatable t"
   assumes "f x = t"
-  shows "substitute f (both t t') = substitute (f(x := empty)) (both t t')"
+  shows "substitute f (t \<otimes>\<otimes> t') = substitute (f(x := empty)) (t \<otimes>\<otimes> t')"
 proof (rule paths_inj, rule, rule subsetI)
   fix xs
   have "repeatable (f x)" using assms by simp
   moreover
-  assume "xs \<in> paths (substitute f (both t t'))"
+  assume "xs \<in> paths (substitute f (t \<otimes>\<otimes> t'))"
   moreover
-  have "both (both t t') (f x) = both t t'"
+  have "t \<otimes>\<otimes> t' \<otimes>\<otimes> f x = t \<otimes>\<otimes> t'"
     by (metis assms both_assoc both_comm repeatable_both_self)
   ultimately
-  show "xs \<in> paths (substitute (f(x := FTree.empty)) (both t t'))"
+  show "xs \<in> paths (substitute (f(x := FTree.empty)) (t \<otimes>\<otimes> t'))"
       by (rule substitute_remove_anyways_aux)
 next
-  show "paths (substitute (f(x := FTree.empty)) (both t t')) \<subseteq> paths (substitute f (both t t'))"
+  show "paths (substitute (f(x := FTree.empty)) (t \<otimes>\<otimes> t')) \<subseteq> paths (substitute f (t \<otimes>\<otimes> t'))"
     by (rule substitute_mono1) auto
 qed 
 
@@ -721,24 +722,24 @@ next
   next
   case (Cons x' xs t)
     from `x' # xs \<in> paths (substitute f t)`
-    have "possible t x'" and "xs \<in> paths (substitute f (both (nxt t x') (f x'))) " by auto
+    have "possible t x'" and "xs \<in> paths (substitute f (nxt t x' \<otimes>\<otimes> f x')) " by auto
 
     from `x \<in> set (x' # xs)`
     have "x = x' \<or> x \<in> set xs" by auto
-    hence "carrier (f x) \<subseteq> carrier (substitute f (both (nxt t x') (f x')))"
+    hence "carrier (f x) \<subseteq> carrier (substitute f (nxt t x' \<otimes>\<otimes> f x'))"
     proof
       assume "x = x'"
-      have "carrier (f x) \<subseteq> carrier (both (nxt t x) (f x))" by simp
-      also have "\<dots> \<subseteq> carrier (substitute f (both (nxt t x) (f x)))" by (rule carrier_substitute1)
+      have "carrier (f x) \<subseteq> carrier (nxt t x \<otimes>\<otimes> f x)" by simp
+      also have "\<dots> \<subseteq> carrier (substitute f (nxt t x \<otimes>\<otimes> f x))" by (rule carrier_substitute1)
       finally show ?thesis unfolding `x = x'`.
     next
       assume "x \<in> set xs"
       from Cons.IH[OF `xs \<in> _ ` this]
-      show "carrier (f x) \<subseteq> carrier (substitute f (both (nxt t x') (f x')))".
+      show "carrier (f x) \<subseteq> carrier (substitute f (nxt t x' \<otimes>\<otimes> f x'))".
     qed
     also
     from `possible t x'`
-    have "carrier (substitute f (both (nxt t x') (f x'))) \<subseteq>  carrier (substitute f t)"
+    have "carrier (substitute f (nxt t x' \<otimes>\<otimes> f x')) \<subseteq>  carrier (substitute f t)"
       apply transfer
       apply auto
       apply (rule_tac x = "x'#xa" in exI)
@@ -750,11 +751,11 @@ qed
 
 lemma substitute_substitute:
   assumes "\<And> x. const_on f' (carrier (f x)) empty"
-  shows "substitute f (substitute f' t) = substitute (\<lambda> x. both (f x) (f' x)) t"
-  apply(rule ftree_coinduct[where P = "\<lambda> t t'. \<exists> t''. t = substitute f (substitute f' t'') \<and> t' =  (substitute (\<lambda>x. both (f x) (f' x)) t'')"])
+  shows "substitute f (substitute f' t) = substitute (\<lambda> x. f x \<otimes>\<otimes> f' x) t"
+  apply(rule ftree_coinduct[where P = "\<lambda> t t'. \<exists> t''. t = substitute f (substitute f' t'') \<and> t' =  (substitute (\<lambda>x. f x \<otimes>\<otimes> f' x) t'')"])
   apply blast
   apply auto
-  apply (rule_tac x = "(both (both (nxt t'' x) (f x)) (f' x))" in exI)
+  apply (rule_tac x = "nxt t'' x \<otimes>\<otimes> f x \<otimes>\<otimes> f' x" in exI)
   apply (auto simp add: substitute_both  substitute_only_empty[OF assms])
   by (metis both_comm both_assoc)
 
@@ -774,9 +775,9 @@ proof(rule paths_inj, rule set_eqI, rule iffI)
   next
   case (Cons x xs t)
     from Cons.prems
-    have "possible t x" and "xs \<in> paths (substitute f (both (nxt t x) (f x)))" by auto
+    have "possible t x" and "xs \<in> paths (substitute f (nxt t x \<otimes>\<otimes> f x))" by auto
     from  Cons.IH[OF this(2)]
-    have "[x'\<leftarrow>xs . x' \<in> S] \<in> paths (both (ftree_restr S (nxt t x)) (ftree_restr S (f x)))" by (simp add: ftree_restr_both)
+    have "[x'\<leftarrow>xs . x' \<in> S] \<in> paths (ftree_restr S (nxt t x) \<otimes>\<otimes> ftree_restr S (f x))" by (simp add: ftree_restr_both)
     hence "[x'\<leftarrow>xs . x' \<in> S] \<in> paths (ftree_restr S (nxt t x))" by (simp add: ftree_restr_is_empty[OF assms])
     with `possible t x`
     show "[x'\<leftarrow>x#xs . x' \<in> S] \<in> paths (ftree_restr S t)"
@@ -794,7 +795,7 @@ next
     by (auto simp add: filter_paths_conv_free_restr[symmetric])
 qed
 
-text {* An alternative characterizsation of substitution *}
+text {* An alternative characterization of substitution *}
 
 inductive substitute'' :: "('a \<Rightarrow> 'a ftree) \<Rightarrow> 'a list \<Rightarrow> 'a list \<Rightarrow> bool"
   for f :: "'a \<Rightarrow> 'a ftree"
@@ -815,9 +816,9 @@ proof
   next
     case (Cons x xs t)
     from `x # xs \<in> paths (substitute f t)`
-    have "possible t x" and "xs \<in> paths (substitute f (both (nxt t x) (f x)))" by (auto simp add: Cons_path)
+    have "possible t x" and "xs \<in> paths (substitute f (nxt t x \<otimes>\<otimes> f x))" by (auto simp add: Cons_path)
     from Cons.IH[OF this(2)]
-    obtain xs' where "xs' \<in> paths (both (nxt t x) (f x))" and "substitute'' f xs' xs" by auto
+    obtain xs' where "xs' \<in> paths (nxt t x \<otimes>\<otimes> f x)" and "substitute'' f xs' xs" by auto
     from this(1)
     obtain ys' zs' where "ys' \<in> paths (nxt t x)" and "zs' \<in> paths (f x)" and "xs' \<in> interleave ys' zs'" 
       by (auto simp add: paths_both)
@@ -860,9 +861,9 @@ proof(rule paths_inj, rule set_eqI, rule iffI)
   next
   case (Cons x xs t)
     from Cons.prems
-    have "possible t x" and "xs \<in> paths (substitute f (both (nxt t x) (f x)))" by auto
+    have "possible t x" and "xs \<in> paths (substitute f (nxt t x \<otimes>\<otimes> f x))" by auto
     from  Cons.IH[OF this(2)]
-    have *: "[x'\<leftarrow>xs . x' \<in> S] \<in> paths (substitute f (ftree_restr S (both (nxt t x) (f x))))" by (simp add: ftree_restr_both)
+    have *: "[x'\<leftarrow>xs . x' \<in> S] \<in> paths (substitute f (ftree_restr S (nxt t x \<otimes>\<otimes> f x)))" by (simp add: ftree_restr_both)
     thus ?case
       using `possible t x` assms(2)
       by (cases "x \<in> S")
