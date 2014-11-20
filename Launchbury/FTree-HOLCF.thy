@@ -68,8 +68,6 @@ lemma substitute_mono2': "t \<sqsubseteq> t'\<Longrightarrow> substitute f t \<s
 lemma and_then_both_single': "and_then x t \<sqsubseteq> both (single x) t"
   using and_then_both_single[folded below_set_def, unfolded paths_mono_iff].
 
-find_theorems cont name:"Set-Cpo"
-
 lemma ftree_contI:
   assumes  "\<And> S. f (Either S) = Either (f ` S)"
   shows "cont f"
@@ -82,6 +80,32 @@ proof(rule contI)
   show "range (\<lambda>i. f (Y i)) <<| f (\<Squnion> i. Y i)" by (metis is_lub_ftree)
 qed
 
+lemma ftree_contI2:
+  assumes  "\<And> x. paths (f x) = \<Union>(t ` paths x)"
+  assumes "[] \<in> t []"
+  shows "cont f"
+proof(rule contI)
+  fix Y :: "nat \<Rightarrow> 'a ftree"  
+  have "paths (Either (range (\<lambda>i. f (Y i)))) = insert [] (\<Union>x. paths (f (Y x)))"
+    by (simp add: paths_Either)
+  also have "\<dots> = insert [] (\<Union>x. \<Union>(t ` paths (Y x)))"
+    by (simp add: assms(1))
+  also have "\<dots> = \<Union>(t ` insert [] (\<Union>x. paths (Y x)))"
+    apply auto
+    apply (rule exI[where x = 0])
+    apply (rule bexI[where x = "[]"])
+    apply (rule assms(2))
+    apply simp
+    done
+  also have "\<dots> = \<Union>(t ` paths (Either (range Y)))"
+    by (auto simp add: paths_Either)
+  also have "\<dots> = paths (f (Either (range Y)))"
+    by (simp add: assms(1))
+  also have "\<dots> = paths (f (lub (range Y)))" unfolding lub_is_either by simp
+  finally
+  show "range (\<lambda>i. f (Y i)) <<| f (\<Squnion> i. Y i)" by (metis is_lub_ftree paths_inj)
+qed
+
 lemma cont_paths[THEN cont_compose, cont2cont, simp]:
   "cont paths"
   apply (rule set_contI)
@@ -90,5 +114,24 @@ lemma cont_paths[THEN cont_compose, cont2cont, simp]:
   apply transfer
   apply auto
   done
+
+lemma cont_substitute[THEN cont_compose, cont2cont, simp]:
+  "cont (substitute f)"
+  apply (rule ftree_contI2)
+  apply (rule paths_substitute_substitute'')
+  apply (auto intro: substitute''.intros)
+  done
+
+lemma cont_both1[THEN cont_compose, cont2cont, simp]:
+  "cont (\<lambda> x. both x y)"
+  apply (rule ftree_contI2[where t = "\<lambda>xs . {zs . \<exists>ys\<in>paths y. zs \<in> xs \<otimes> ys}"])
+  apply (rule set_eqI)
+  by (auto intro:  simp add: paths_both)
+
+lemma cont_both2[THEN cont_compose, cont2cont, simp]:
+  "cont (\<lambda> x. both y x)"
+  apply (rule ftree_contI2[where t = "\<lambda>ys . {zs . \<exists>xs\<in>paths y. zs \<in> xs \<otimes> ys}"])
+  apply (rule set_eqI)
+  by (auto intro:  simp add: paths_both)
 
 end

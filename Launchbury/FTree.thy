@@ -250,6 +250,9 @@ lemma paths_either[simp]: "paths (t \<oplus>\<oplus> t') = paths t \<union> path
 lift_definition Either :: "'a ftree set \<Rightarrow> 'a ftree"  is "\<lambda> S. insert [] (\<Union>S)"
   by (auto simp add: downset_def)
 
+lemma paths_Either: "paths (Either ts) = insert [] (\<Union>(paths ` ts))"
+  by transfer auto
+
 subsection {* Merging of trees *}
 
 lift_definition both :: "'a ftree \<Rightarrow> 'a ftree \<Rightarrow> 'a ftree" (infixl "\<otimes>\<otimes>" 86)
@@ -843,6 +846,11 @@ next
     show ?case by (force simp add: Cons_path paths_both intro!: Cons.IH)
   qed
 qed
+
+lemma paths_substitute_substitute'':
+  "paths (substitute f t) = \<Union>((\<lambda> xs . Collect (substitute'' f xs)) ` paths t)"
+  by (auto simp add: substitute_substitute'')
+
 
 lemma ftree_rest_substitute2:
   assumes "\<And> x. carrier (f x) \<subseteq> S"
