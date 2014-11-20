@@ -225,25 +225,25 @@ lemma nxt_anything[simp]: "nxt anything x = anything"
 
 subsection {* Disjoint union of trees *}
 
-lift_definition either :: "'a ftree \<Rightarrow> 'a ftree \<Rightarrow> 'a ftree"  is "op \<union>"
+lift_definition either :: "'a ftree \<Rightarrow> 'a ftree \<Rightarrow> 'a ftree" (infixl "\<oplus>\<oplus>" 80) is "op \<union>"
   by (auto simp add: downset_def)
   
-lemma either_empty1[simp]: "either empty t = t"
+lemma either_empty1[simp]: "empty \<oplus>\<oplus> t = t"
   by transfer auto
-lemma either_empty2[simp]: "either t empty = t"
+lemma either_empty2[simp]: "t \<oplus>\<oplus> empty = t"
   by transfer auto
-lemma either_sym[simp]: "either t t2 = either t2 t"
+lemma either_sym[simp]: "t \<oplus>\<oplus> t2 = t2 \<oplus>\<oplus> t"
   by transfer auto
-lemma either_idem[simp]: "either t t = t"
-  by transfer auto
-
-lemma possible_either[simp]: "possible (either t t') x \<longleftrightarrow> possible t x \<or> possible t' x"
+lemma either_idem[simp]: "t \<oplus>\<oplus> t = t"
   by transfer auto
 
-lemma nxt_either[simp]: "nxt (either t t') x = either (nxt t x) (nxt t' x)"
+lemma possible_either[simp]: "possible (t \<oplus>\<oplus> t') x \<longleftrightarrow> possible t x \<or> possible t' x"
   by transfer auto
 
-lemma paths_either[simp]: "paths (either t t') = paths t \<union> paths t'"
+lemma nxt_either[simp]: "nxt (t \<oplus>\<oplus> t') x = nxt t x \<oplus>\<oplus> nxt t' x"
+  by transfer auto
+
+lemma paths_either[simp]: "paths (t \<oplus>\<oplus> t') = paths t \<union> paths t'"
   by transfer simp
 
 
@@ -320,7 +320,7 @@ next
 qed
 
 lemma nxt_both:
-    "nxt (t' \<otimes>\<otimes> t) x = (if possible t' x \<and> possible t x then either (nxt t' x \<otimes>\<otimes> t) (t' \<otimes>\<otimes> nxt t x) else
+    "nxt (t' \<otimes>\<otimes> t) x = (if possible t' x \<and> possible t x then nxt t' x \<otimes>\<otimes> t \<oplus>\<oplus> t' \<otimes>\<otimes> nxt t x else
                            if possible t' x then nxt t' x \<otimes>\<otimes> t else
                            if possible t x then t' \<otimes>\<otimes> nxt t x else
                            empty)"
@@ -340,20 +340,20 @@ lemma Cons_both_possible_rightE: "possible t' x \<Longrightarrow> xs \<in> paths
   by (auto simp add: Cons_both)
 
 lemma either_both_distr[simp]:
-  "either (t' \<otimes>\<otimes> t) (t' \<otimes>\<otimes> t'') = t' \<otimes>\<otimes> (either t t'')"
+  "t' \<otimes>\<otimes> t \<oplus>\<oplus> t' \<otimes>\<otimes> t'' = t' \<otimes>\<otimes> (t \<oplus>\<oplus> t'')"
   by transfer auto
 
 lemma either_both_distr2[simp]:
-  "either (t' \<otimes>\<otimes> t) (t'' \<otimes>\<otimes> t) = either t' t'' \<otimes>\<otimes> t"
+  "t' \<otimes>\<otimes> t \<oplus>\<oplus> t'' \<otimes>\<otimes> t = (t' \<oplus>\<oplus> t'') \<otimes>\<otimes> t"
   by transfer auto
 
 lemma nxt_both_repeatable[simp]:
   assumes [simp]: "repeatable t'"
   assumes [simp]: "possible t' x"
-  shows "nxt (t' \<otimes>\<otimes> t) x = t' \<otimes>\<otimes> (either t (nxt t x))"
+  shows "nxt (t' \<otimes>\<otimes> t) x = t' \<otimes>\<otimes> (t \<oplus>\<oplus> nxt t x)"
   by (auto simp add: nxt_both)
 
-lemma nxt_both_many_calls[simp]: "nxt (many_calls x \<otimes>\<otimes> t) x = many_calls x \<otimes>\<otimes> either t (nxt t x)"
+lemma nxt_both_many_calls[simp]: "nxt (many_calls x \<otimes>\<otimes> t) x = many_calls x \<otimes>\<otimes> (t  \<oplus>\<oplus> nxt t x)"
   by (simp add: repeatable_many_calls)
 
 lemma and_then_both_single:
@@ -404,7 +404,7 @@ lemma repeatable_both_nxt:
   shows "nxt t' x \<otimes>\<otimes> t = nxt t' x"
 proof(rule classical)
   assume "nxt t' x \<otimes>\<otimes> t \<noteq> nxt t' x"
-  hence "either (nxt t' x) t' \<otimes>\<otimes> t \<noteq> nxt t' x" by (metis (no_types) assms(1) both_assoc repeatable_both_self)
+  hence "(nxt t' x \<oplus>\<oplus> t') \<otimes>\<otimes> t \<noteq> nxt t' x" by (metis (no_types) assms(1) both_assoc repeatable_both_self)
   thus "nxt t' x \<otimes>\<otimes> t = nxt t' x"  by (metis (no_types) assms either_both_distr2 nxt_both nxt_repeatable)
 qed
 
@@ -589,12 +589,12 @@ lemma possible_substitute[simp]: "possible (substitute f t) x \<longleftrightarr
 lemma nxt_substitute[simp]: "possible t x \<Longrightarrow> nxt (substitute f t) x = substitute f (nxt t x \<otimes>\<otimes> f x)"
   by (rule ftree_eqI) (simp add: paths_nxt_eq )
 
-lemma substitute_either: "substitute f (either t t') = either (substitute f t) (substitute f t')"
+lemma substitute_either: "substitute f (t \<oplus>\<oplus> t') = substitute f t \<oplus>\<oplus> substitute f t'"
 proof-
-  have [simp]: "\<And> t t' x . either (nxt t x) (nxt t' x) \<otimes>\<otimes> f x = either (nxt t x \<otimes>\<otimes> f x) (nxt t' x \<otimes>\<otimes> f x)" by (metis both_comm either_both_distr)
+  have [simp]: "\<And> t t' x . (nxt t x \<oplus>\<oplus> nxt t' x) \<otimes>\<otimes> f x = nxt t x \<otimes>\<otimes> f x \<oplus>\<oplus> nxt t' x \<otimes>\<otimes> f x" by (metis both_comm either_both_distr)
   {
   fix xs
-  have "xs \<in> paths (substitute f (either t t'))  \<longleftrightarrow> xs \<in> paths (substitute f t)  \<or> xs \<in> paths (substitute f t')"
+  have "xs \<in> paths (substitute f (t \<oplus>\<oplus> t'))  \<longleftrightarrow> xs \<in> paths (substitute f t) \<or> xs \<in> paths (substitute f t')"
   proof (induction xs arbitrary: t t')
     case Nil thus ?case by simp
   next
