@@ -21,8 +21,8 @@ locale FutureAnalysisCorrect = FutureAnalysisCarrier +
 
 locale FutureAnalysisCardinalityHeap = 
   FutureAnalysisCorrect + CorrectArityAnalysisLet' + 
-  fixes Fheap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> (var ftree)"
-  assumes Fheap_eqvt[eqvt]: "\<pi> \<bullet> Fheap = Fheap"
+  fixes Fheap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> var ftree"
+  assumes Fheap_eqvt: "\<pi> \<bullet> Fheap = Fheap"
   assumes Fheap_thunk: "x \<in> thunks \<Gamma> \<Longrightarrow> p \<in> paths (Fheap \<Gamma> e\<cdot>a) \<Longrightarrow> \<not> one_call_in_path x p \<Longrightarrow> (Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
   assumes carrier_Fheap: "carrier (Fheap \<Gamma> e\<cdot>a) = edom (Aheap \<Gamma> e\<cdot>a)"
   assumes Fheap_substitute: "ftree_restr (domA \<Delta>) (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) \<sqsubseteq> Fheap \<Delta> e\<cdot>a"
@@ -184,11 +184,15 @@ begin
     show "prognosis ae u (\<Gamma>, e, S) \<sqsubseteq> prognosis ae u (\<Gamma>, e, Upd x # S)" by simp
   next
     fix \<Gamma> :: heap and e :: exp and ae :: AEnv and a S x
+    assume "ae x = \<bottom>"
+    (*
     assume "prognosis ae a (delete x \<Gamma>, e, S) x = none"
     hence "x \<notin> carrier (substitute (FBinds (delete x \<Gamma>)\<cdot>ae) (Fexp e\<cdot>a \<otimes>\<otimes> Fstack S))" 
       by (simp add: pathsCards_none)
     hence "substitute (FBinds \<Gamma>\<cdot>ae) (Fexp e\<cdot>a \<otimes>\<otimes> Fstack S) = substitute (FBinds (delete x \<Gamma>)\<cdot>ae) (Fexp e\<cdot>a \<otimes>\<otimes> Fstack S)"
       by (auto intro: substitute_cong[symmetric] simp add: Fexp.AnalBinds_lookup delete_conv')
+     *)
+    hence "FBinds (delete x \<Gamma>)\<cdot>ae = FBinds \<Gamma>\<cdot>ae" by (rule Fexp.AnalBinds_delete_bot)
     thus "prognosis ae a (\<Gamma>, e, S) \<sqsubseteq> prognosis ae a (delete x \<Gamma>, e, S)"
       by simp
   qed
@@ -203,9 +207,10 @@ begin
   lemma cHeap_simp: "(cHeap \<Gamma> e)\<cdot>a = pathsCard (paths (Fheap \<Gamma> e\<cdot>a))"
     unfolding cHeap_def  by (rule beta_cfun) (intro cont2cont)
   
-  lemma cHeap_eqvt[eqvt]: "\<pi> \<bullet> (cHeap \<Gamma> e) = cHeap (\<pi> \<bullet> \<Gamma>) (\<pi> \<bullet> e)"
+  lemma cHeap_eqvt: "\<pi> \<bullet> (cHeap \<Gamma> e) = cHeap (\<pi> \<bullet> \<Gamma>) (\<pi> \<bullet> e)"
     unfolding cHeap_def
     apply perm_simp
+    apply (simp add: Fheap_eqvt)
     apply (rule Abs_cfun_eqvt)
     apply (intro cont2cont)
     done
@@ -213,6 +218,7 @@ begin
 
   sublocale CardinalityHeap Aexp Aheap cHeap
   proof
+    note cHeap_eqvt[eqvt]
     fix \<pi> show "\<pi> \<bullet> cHeap = cHeap" by perm_simp rule
   next
     fix x \<Gamma> e a
@@ -315,4 +321,5 @@ begin
       by (simp add: cHeap_def del: fun_meet_simp) 
   qed
 end
-  
+
+end

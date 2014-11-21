@@ -73,26 +73,39 @@ sublocale CardinalityPrognosisCorrect prognosis
 proof
   case goal1 thus ?case by (simp cong: Abinds_env_restr_cong)
 next
-  case goal2 thus ?case by auto
+  case goal2 thus ?case by (simp cong: Abinds_reorder)
 next
-  case goal3 thus ?case
+  case goal3 thus ?case by (auto intro!: env_restr_mono2 dest: set_mp[OF edom_mono[OF ABinds_delete_below]])
+next
+  case goal4 thus ?case by auto
+next
+  case goal5 thus ?case
     using edom_mono[OF Aexp_App] by (auto intro!: env_restr_mono2)
 next
-  case goal4
+  case goal6
+  from edom_mono[OF Aexp_App]
+  have "insert x (edom (Aexp e\<cdot>(inc\<cdot>a))) \<subseteq> edom (Aexp (App e x)\<cdot>a)" by auto
+  thus ?case by (auto intro: env_restr_mono2 )
+next
+  case goal7
   have "edom (Aexp e[y::=x]\<cdot>(pred\<cdot>a)) \<subseteq> insert x (edom (env_delete y (Aexp e\<cdot>(pred\<cdot>a))))"
     by (auto dest: set_mp[OF edom_mono[OF Aexp_subst]] )
   also have "\<dots> \<subseteq> insert x (edom (Aexp (Lam [y]. e)\<cdot>a))"
     using edom_mono[OF Aexp_Lam] by auto
   finally show ?case by (auto intro!: env_restr_mono2)
 next
-  case goal5
-  thus ?case by (auto intro!: env_restr_mono2 simp add: Abinds_reorder1[OF goal5(1)])
+  case goal8
+  thus ?case by (auto intro!: env_restr_mono2 simp add: Abinds_reorder1[OF goal8(1)])
 next
-  case goal6
-  from `ae x \<sqsubseteq> up\<cdot>a`
-  have "Aexp' e\<cdot>(ae x) \<sqsubseteq> Aexp e\<cdot>a" by (cases "ae x") (auto intro: monofun_cfun_arg)
+  case goal9
+  have "Aexp' e\<cdot>(ae x) \<sqsubseteq> Aexp e\<cdot>0" by (cases "ae x") (auto intro: monofun_cfun_arg)
   from edom_mono[OF this]
   show ?case by (auto intro!: env_restr_mono2 dest: set_mp[OF edom_mono[OF ABinds_delete_below]])
+next
+  case goal10
+  from `ae x = \<bottom>`
+  have "ABinds (delete x \<Gamma>)\<cdot>ae = ABinds \<Gamma>\<cdot>ae" by (rule ABinds_delete_bot)
+  thus ?case by simp
 qed
   
 sublocale CardinalityPrognosisCorrectLet prognosis Aexp Aheap cHeap

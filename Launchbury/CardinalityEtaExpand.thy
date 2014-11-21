@@ -1,4 +1,4 @@
-theory FutureEtaExpand
+theory CardinalityEtaExpand
 imports CardinalityAnalysis AbstractTransform Sestoft SestoftGC ArityEtaExpansionSestoft
 begin
 
@@ -323,10 +323,14 @@ case (var\<^sub>2 \<Gamma> x e S)
     
     have "prognosis ae a ((x, e) # \<Gamma>, e, S) \<sqsubseteq> prognosis ae a ((x, e) # \<Gamma>, e, Upd x # S)" by (rule prognosis_upd)
     also
+    (*
     from `ce x = \<bottom>` and var\<^sub>2
     have "prognosis ae a (\<Gamma>, e, Upd x # S) x = \<bottom>" by auto (metis below_bottom_iff fun_belowD)
     hence "prognosis ae a (delete x ((x, e) # \<Gamma>), e, Upd x # S) x = \<bottom>"  using `x \<notin> domA \<Gamma>` by simp
-    hence "prognosis ae a ((x, e) # \<Gamma>, e, Upd x # S) \<sqsubseteq> prognosis ae a (delete x ((x,e) # \<Gamma>), e, Upd x # S)" 
+    from this `ae x = \<bottom>`
+    *)
+    from `ae x = \<bottom>`
+    have "prognosis ae a ((x, e) # \<Gamma>, e, Upd x # S) \<sqsubseteq> prognosis ae a (delete x ((x,e) # \<Gamma>), e, Upd x # S)" 
       by (rule prognosis_not_called) 
     also have  "delete x ((x,e)#\<Gamma>) = \<Gamma>" using `x \<notin> domA \<Gamma>` by simp
     finally

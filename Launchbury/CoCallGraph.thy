@@ -161,4 +161,13 @@ lift_definition ccManyCalls:: "CoCalls \<Rightarrow> var set"
 lemma ccManyCalls_bot[simp]:
   "ccManyCalls \<bottom> = {}" by transfer simp
 
+
+inductive_set valid_lists :: "CoCalls \<Rightarrow> var list set"
+  for G
+  where  "[] \<in> valid_lists G"
+  | "set xs \<inter> ccNeighbors {x} G = {} \<Longrightarrow> xs \<in> valid_lists G  \<Longrightarrow> x#xs \<in> valid_lists G"
+
+inductive_simps valid_lists_simps[simp]: "[] \<in> valid_lists G" "(x#xs) \<in> valid_lists G"
+
+
 end

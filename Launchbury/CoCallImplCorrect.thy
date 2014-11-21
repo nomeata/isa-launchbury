@@ -1,5 +1,5 @@
 theory CoCallImplCorrect
-imports CoCallAnalysisImpl CardinalityAnalysis CallFutureCardinality CoCallsFuture
+imports CoCallAnalysisImpl CardinalityAnalysis CallFutureCardinality 
 begin
 
 interpretation ArityAnalysis Aexp.
@@ -216,18 +216,5 @@ next
   fix \<pi> show "\<pi> \<bullet> Cheap = Cheap" by perm_simp rule
 qed
 
-fun futures :: "(AEnv \<times> CoCalls) \<Rightarrow> future set"
-  where "futures (ae, G) = ccFilterFuture (any_future (edom ae)) G"
-
-definition Fexp :: "exp \<Rightarrow> Arity \<rightarrow> future set"
-  where "Fexp e = (\<Lambda> a. futures (cCCexp e\<cdot>a))"
-
-fun prognosis :: "AEnv \<Rightarrow> Arity \<Rightarrow> conf \<Rightarrow> Vars.var \<Rightarrow> two"
-   where "prognosis ae a (\<Gamma>, e, S) = pathsCard (paths (\<lambda> x. fup\<cdot>(Fexp (the (map_of \<Gamma> x)))\<cdot>(ae x)) (Fexp e\<cdot>a))"
-
-interpretation CardinalityPrognosis prognosis.
-interpretation CardinalityPrognosisCorrectLet  prognosis Aexp Aheap Cheap
-proof
-oops
 
 end

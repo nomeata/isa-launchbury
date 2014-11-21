@@ -122,16 +122,31 @@ lemma cont_substitute[THEN cont_compose, cont2cont, simp]:
   apply (auto intro: substitute''.intros)
   done
 
-lemma cont_both1[THEN cont_compose, cont2cont, simp]:
+lemma cont_both1:
   "cont (\<lambda> x. both x y)"
   apply (rule ftree_contI2[where t = "\<lambda>xs . {zs . \<exists>ys\<in>paths y. zs \<in> xs \<otimes> ys}"])
   apply (rule set_eqI)
   by (auto intro:  simp add: paths_both)
 
-lemma cont_both2[THEN cont_compose, cont2cont, simp]:
+lemma cont_both2:
   "cont (\<lambda> x. both y x)"
   apply (rule ftree_contI2[where t = "\<lambda>ys . {zs . \<exists>xs\<in>paths y. zs \<in> xs \<otimes> ys}"])
   apply (rule set_eqI)
   by (auto intro:  simp add: paths_both)
+
+lemma cont_both[cont2cont,simp]: "cont f \<Longrightarrow> cont g \<Longrightarrow> cont (\<lambda> x. f x \<otimes>\<otimes> g x)"
+  by (rule cont_compose2[OF cont_both1 cont_both2])
+
+lemma cont_intersect1:
+  "cont (\<lambda> x. intersect x y)"
+  by (rule ftree_contI2[where t = "\<lambda>xs . (if xs \<in> paths y then {xs} else {})"]) auto
+
+lemma cont_intersect2:
+  "cont (\<lambda> x. intersect y x)"
+  by (rule ftree_contI2[where t = "\<lambda>xs . (if xs \<in> paths y then {xs} else {})"]) auto
+
+lemma cont_intersect[cont2cont,simp]: "cont f \<Longrightarrow> cont g \<Longrightarrow> cont (\<lambda> x. f x \<inter>\<inter> g x)"
+  by (rule cont_compose2[OF cont_intersect1 cont_intersect2])
+  
 
 end

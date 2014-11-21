@@ -8,12 +8,14 @@ lemmas cont_fun[simp]
 lemmas cont2cont_fun[simp]
 
 lemma cont_compose2:
-  assumes "cont c"
-  assumes "\<And> x. cont (c x)"
+  assumes "\<And> y. cont (\<lambda> x. c x y)"
+  assumes "\<And> x. cont (\<lambda> y. c x y)"
   assumes "cont f"
   assumes "cont g"
   shows "cont (\<lambda>x. c (f x) (g x))"
-  by (rule cont_apply[OF assms(4) assms(2) cont2cont_fun[OF cont_compose[OF assms(1) assms(3)]]])
+  by (intro cont_apply[OF assms(4) assms(2)]
+            cont2cont_fun[OF cont_compose[OF _ assms(3)]]
+            cont2cont_lambda[OF assms(1)])
 
 lemma pointwise_adm:
   fixes P :: "'a::pcpo \<Rightarrow> 'b::pcpo \<Rightarrow> bool"
@@ -131,7 +133,7 @@ lemma cont2cont_comp [simp, cont2cont]:
   shows "cont (\<lambda> x. (f x) \<circ> (g x))"
   unfolding comp_def
   by (rule cont2cont_lambda)
-     (intro cont2cont  `cont g` `cont f` cont_compose2[OF assms(1,2)] cont2cont_fun)
+     (intro cont2cont  `cont g` `cont f` cont_compose2[OF cont2cont_fun[OF assms(1)] assms(2)] cont2cont_fun)
 
 definition cfun_comp :: "('a::pcpo \<rightarrow> 'b::pcpo) \<rightarrow> ('c::type \<Rightarrow> 'a) \<rightarrow> ('c::type \<Rightarrow> 'b)"
   where  "cfun_comp = (\<Lambda> f \<rho>. (\<lambda> x. f\<cdot>x) \<circ> \<rho>)"

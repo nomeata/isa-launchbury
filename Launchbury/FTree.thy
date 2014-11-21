@@ -68,6 +68,10 @@ proof(rule, elim imageE, clarsimp)
   qed
 qed
 
+lemma downset_set_subset:
+  "downset ({xs. set xs \<subseteq> S})"
+by (auto dest: in_set_butlastD)
+
 subsection {* The type of infinite labled trees *}
 
 typedef 'a ftree = "{xss :: 'a list set . [] \<in> xss \<and> downset xss}" by auto
@@ -222,6 +226,19 @@ lemma possible_anything[simp]: "possible anything x' \<longleftrightarrow> True"
 
 lemma nxt_anything[simp]: "nxt anything x = anything"
   by  transfer auto
+
+lift_definition many_among :: "'a set \<Rightarrow> 'a ftree" is "\<lambda> S. {xs . set xs \<subseteq> S}"
+  by (auto intro: downset_set_subset)
+
+subsection {* Intersection of two trees *}
+
+lift_definition intersect :: "'a ftree \<Rightarrow> 'a ftree \<Rightarrow> 'a ftree" (infixl "\<inter>\<inter>" 80)
+  is "op \<inter>"
+  by (auto simp add: downset_def)
+
+lemma paths_intersect[simp]: "paths (t \<inter>\<inter> t') = paths t \<inter> paths t'"
+  by transfer auto
+
 
 subsection {* Disjoint union of trees *}
 

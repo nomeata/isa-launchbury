@@ -5,7 +5,7 @@ begin
 locale CardinalityHeap = CorrectArityAnalysisLet' +
   fixes cHeap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> (var \<Rightarrow> two)"
 
-  assumes cHeap[eqvt]: "\<pi> \<bullet> cHeap = cHeap"
+  assumes cHeap: "\<pi> \<bullet> cHeap = cHeap"
   assumes Aheap_heap3: "x \<in> thunks \<Gamma> \<Longrightarrow> many \<sqsubseteq> (cHeap \<Gamma> e\<cdot>a) x \<Longrightarrow> (Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
   assumes edom_cHeap: "edom (cHeap \<Delta> e\<cdot>a) = edom (Aheap \<Delta> e\<cdot>a)"
 
@@ -25,7 +25,8 @@ locale CardinalityPrognosisCorrect = CardinalityPrognosis +
   assumes prognosis_Var: "map_of \<Gamma> x = Some e \<Longrightarrow> ae x = up\<cdot>u \<Longrightarrow> prognosis ae u (\<Gamma>, e, Upd x # S) \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))"
   assumes prognosis_Var2: "isLam e \<Longrightarrow> x \<notin> domA \<Gamma> \<Longrightarrow> prognosis ae 0 ((x, e) # \<Gamma>, e, S) \<sqsubseteq> prognosis ae 0 (\<Gamma>, e, Upd x # S)"
 
-  assumes prognosis_not_called: "prognosis ae a (delete x \<Gamma>, e, S) x = none \<Longrightarrow> prognosis ae a (\<Gamma>, e, S) \<sqsubseteq> prognosis ae a (delete x \<Gamma>, e, S)"
+(*  assumes prognosis_not_called: "prognosis ae a (delete x \<Gamma>, e, S) x = none \<Longrightarrow> ae x = \<bottom> \<Longrightarrow>  prognosis ae a (\<Gamma>, e, S) \<sqsubseteq> prognosis ae a (delete x \<Gamma>, e, S)" *)
+  assumes prognosis_not_called: "ae x = \<bottom> \<Longrightarrow>  prognosis ae a (\<Gamma>, e, S) \<sqsubseteq> prognosis ae a (delete x \<Gamma>, e, S)" 
 
 
 

@@ -74,6 +74,9 @@ lemma ABinds_env_restr[simp]: "ABinds \<Delta>\<cdot>(ae f|` domA \<Delta>) = AB
 lemma Abinds_join_fresh: "ae' ` (domA \<Delta>) \<subseteq> {\<bottom>} \<Longrightarrow>  ABinds \<Delta>\<cdot>(ae \<squnion> ae') = (ABinds \<Delta>\<cdot>ae)"
   by (rule Abinds_env_cong) auto
 
+lemma ABinds_delete_bot: "ae x = \<bottom> \<Longrightarrow> ABinds (delete x \<Gamma>)\<cdot>ae = ABinds \<Gamma>\<cdot>ae"
+  by (induction \<Gamma> rule: ABinds.induct) (auto simp add: delete_twist)
+
 lemma ABinds_restr_fresh:
   assumes "atom ` S \<sharp>* \<Gamma>"
   shows "ABinds \<Gamma>\<cdot>ae f|` (- S) = ABinds \<Gamma>\<cdot>(ae  f|` (- S)) f|` (- S)"

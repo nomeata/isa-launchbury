@@ -22,6 +22,10 @@ lemma ccExp'_eqvt[eqvt]:
 locale CoCallAnalysis_ccField = CoCallAnalysis +
   assumes "ccField (ccExp e\<cdot>a) \<subseteq> fv e"
 
+locale CoCallAnalyisHeap = 
+  fixes ccHeap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> CoCalls"
+
+
 locale CorrectCoCallAnalysis = CoCallAnalysis_ccField +
   assumes Aexp_eqvt[eqvt]: "\<pi> \<bullet> ccExp = ccExp"
   (* assumes Aexp_Var: "up \<cdot> n \<sqsubseteq> (ccExp (Var x) \<cdot> n) x" *) 
