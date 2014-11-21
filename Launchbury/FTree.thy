@@ -423,6 +423,10 @@ lift_definition carrier :: "'a ftree \<Rightarrow> 'a set" is "\<lambda> xss. \<
 
 lemma carrier_mono: "paths t \<subseteq> paths t' \<Longrightarrow> carrier t \<subseteq> carrier t'" by transfer auto
 
+lemma carrier_empty[simp]: "carrier empty = {}" by transfer auto
+
+lemma carrier_many_calls[simp]: "carrier (many_calls x) = {x}" by transfer auto
+
 lemma carrier_possible:
   "possible t x \<Longrightarrow> x \<in> carrier t" by transfer force
 

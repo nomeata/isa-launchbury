@@ -57,6 +57,8 @@ lemma set_upds_list[simp]:
 
 lemma ups_fv_subset: "upds S \<subseteq> fv S"
   by (induction S rule: upds.induct) auto
+lemma ap_fv_subset: "ap S \<subseteq> fv S"
+  by (induction S rule: upds.induct) auto
 
 lemma fresh_flattn[simp]: "a \<sharp> flattn S \<longleftrightarrow> a \<sharp> S"
   by (induction S rule:flattn.induct) (auto simp add: fresh_Nil fresh_Cons)

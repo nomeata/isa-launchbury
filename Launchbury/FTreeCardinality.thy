@@ -32,6 +32,9 @@ lemma FBinds_lookup: "(FBinds \<Gamma>\<cdot>ae) x = (case map_of \<Gamma> x of 
 lemma FBinds_delete_below: "FBinds (delete x \<Gamma>)\<cdot>ae \<sqsubseteq> FBinds \<Gamma>\<cdot>ae"
   by (auto intro: fun_belowI simp add: FBinds_lookup split:option.split)
 
+lemma edom_FBinds: "edom (FBinds \<Gamma>\<cdot>ae) \<subseteq> domA \<Gamma> \<inter> edom ae"
+  by (induction \<Gamma> rule: FBinds.induct) (auto  simp add: edom_def)
+
 fun unstack :: "stack \<Rightarrow> exp \<Rightarrow> exp" where
   "unstack [] e = e"
 | "unstack (Upd x # S) e = unstack S e"
@@ -43,6 +46,9 @@ fun Fstack :: "stack \<Rightarrow> var ftree"
   | "Fstack (Upd x # S) = Fstack S"
   | "Fstack (Arg x # S) = many_calls x \<otimes>\<otimes> Fstack S"
   | "Fstack (Dummy x # S) = Fstack S"
+
+lemma carrier_Fstack[simp]: "carrier (Fstack S) = ap S"
+  by (induction S rule: Fstack.induct) (auto simp add: empty_is_bottom[symmetric])
 
 fun prognosis :: "AEnv \<Rightarrow> Arity \<Rightarrow> conf \<Rightarrow> var \<Rightarrow> two"
    where "prognosis ae a (\<Gamma>, e, S) = pathsCard (paths (substitute (FBinds \<Gamma>\<cdot>ae) (Fexp e\<cdot>a \<otimes>\<otimes> Fstack S)))"
@@ -59,7 +65,24 @@ lemma pathsCard_paths_nxt:  "pathsCard (paths (nxt f x)) \<sqsubseteq> record_ca
 lemma pathsCards_none: "pathsCard (paths t) x = none \<Longrightarrow> x \<notin> carrier t"
   by transfer (auto dest: pathCards_noneD)
 
-locale FutureAnalysisCorrect = FutureAnalysis +
+lemma const_on_edom_disj: "const_on f S empty \<longleftrightarrow> edom f \<inter> S = {}"
+  by (auto simp add: empty_is_bottom edom_def)
+
+locale FutureAnalysisCarrier = FutureAnalysis +
+  assumes carrier_Fexp: "carrier (Fexp e\<cdot>a) \<subseteq> fv e"
+begin
+  lemma carrier_FBinds: "carrier ((FBinds \<Gamma>\<cdot>ae) x) \<subseteq> fv \<Gamma>"
+  apply (simp add: FBinds_lookup)
+  apply (auto split: option.split simp add: empty_is_bottom[symmetric] )
+  apply (case_tac "ae x")
+  apply (auto simp add: empty_is_bottom[symmetric] dest!: set_mp[OF carrier_Fexp])
+  by (metis (poly_guards_query) contra_subsetD domA_from_set map_of_fv_subset map_of_is_SomeD option.sel)
+
+end
+
+
+
+locale FutureAnalysisCorrect = FutureAnalysisCarrier +
   assumes Fexp_App: "many_calls x \<otimes>\<otimes> (Fexp e)\<cdot>(inc\<cdot>a) \<sqsubseteq> Fexp (App e x)\<cdot>a"
   assumes Fexp_Lam: "without y (Fexp e\<cdot>(pred\<cdot>n)) \<sqsubseteq> Fexp (Lam [y]. e) \<cdot> n"
   assumes Fexp_subst: "Fexp (e[y::=x])\<cdot>a \<sqsubseteq> many_calls x \<otimes>\<otimes> without y ((Fexp e)\<cdot>a)"
@@ -231,20 +254,50 @@ begin
     assume "atom ` domA \<Delta> \<sharp>* S"
     assume "edom ae \<subseteq> domA \<Gamma> \<union> upds S"
 
-    have const_on1:  "\<And> x. const_on (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (carrier ((FBinds \<Gamma>\<cdot>ae) x)) empty" sorry
-    have const_on2:  "const_on (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (carrier (Fstack S)) empty" sorry
-    have const_on3: "const_on (FBinds \<Gamma>\<cdot>ae) (- (- domA \<Delta>)) FTree.empty" sorry
+    have "domA \<Delta> \<inter> edom ae = {}"
+      using fresh_distinct[OF `atom \` domA \<Delta> \<sharp>* \<Gamma>`] fresh_distinct_fv[OF `atom \` domA \<Delta> \<sharp>* S`] 
+            `edom ae \<subseteq> domA \<Gamma> \<union> upds S` ups_fv_subset[of S]
+      by auto
 
-    have disj1: "\<And> x. carrier ((FBinds \<Gamma>\<cdot>ae) x) \<inter> domA \<Delta> = {}" sorry
+    have const_on1:  "\<And> x. const_on (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (carrier ((FBinds \<Gamma>\<cdot>ae) x)) empty"
+      unfolding const_on_edom_disj using fresh_distinct_fv[OF `atom \` domA \<Delta> \<sharp>* \<Gamma>`]
+      by (auto dest!: set_mp[OF carrier_FBinds] set_mp[OF edom_FBinds])
+    have const_on2:  "const_on (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (carrier (Fstack S)) empty"
+      unfolding const_on_edom_disj using fresh_distinct_fv[OF `atom \` domA \<Delta> \<sharp>* S`]
+      by (auto dest!: set_mp[OF carrier_FBinds] set_mp[OF edom_FBinds] set_mp[OF ap_fv_subset ])
+    have const_on3: "const_on (FBinds \<Gamma>\<cdot>ae) (- (- domA \<Delta>)) FTree.empty"
+      unfolding const_on_edom_disj using fresh_distinct[OF `atom \` domA \<Delta> \<sharp>* \<Gamma>`]
+      by (auto dest!:  set_mp[OF edom_FBinds])
+
+    have disj1: "\<And> x. carrier ((FBinds \<Gamma>\<cdot>ae) x) \<inter> domA \<Delta> = {}"
+      using fresh_distinct_fv[OF `atom \` domA \<Delta> \<sharp>* \<Gamma>`]
+      by (auto dest: set_mp[OF carrier_FBinds])
     hence disj1': "\<And> x. carrier ((FBinds \<Gamma>\<cdot>ae) x) \<subseteq> - domA \<Delta>" by auto
-    have disj2: "\<And> x. carrier (Fstack S) \<inter> domA \<Delta> = {}" sorry
+    have disj2: "\<And> x. carrier (Fstack S) \<inter> domA \<Delta> = {}"
+      using fresh_distinct_fv[OF `atom \` domA \<Delta> \<sharp>* S`] ap_fv_subset[of S] by auto
     hence disj2': "carrier (Fstack S) \<subseteq> - domA \<Delta>" by auto
     
 
     {
     fix x
-    have "(FBinds (\<Delta> @ \<Gamma>)\<cdot>(Aheap \<Delta> e\<cdot>a \<squnion> ae)) x =  (FBinds \<Gamma>\<cdot>ae) x \<otimes>\<otimes> (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) x"
-      sorry
+    have "(FBinds (\<Delta> @ \<Gamma>)\<cdot>(Aheap \<Delta> e\<cdot>a \<squnion> ae)) x = (FBinds \<Gamma>\<cdot>ae) x \<otimes>\<otimes> (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) x"
+    proof (cases "x \<in> domA \<Delta>")
+      case True
+      have "map_of \<Gamma> x = None" using True fresh_distinct[OF `atom \` domA \<Delta> \<sharp>* \<Gamma>`] by (metis disjoint_iff_not_equal domA_def map_of_eq_None_iff)
+      moreover
+      have "ae x = \<bottom>" using True `domA \<Delta> \<inter> edom ae = {}` by auto
+      ultimately
+      show ?thesis using True 
+          by (auto simp add: FBinds_lookup empty_is_bottom[symmetric] cong: option.case_cong)
+    next
+      case False
+      have "map_of \<Delta> x = None" using False by (metis domA_def map_of_eq_None_iff)
+      moreover
+      have "(Aheap \<Delta> e\<cdot>a) x = \<bottom>" using False using edom_Aheap by (metis contra_subsetD edomIff)
+      ultimately
+      show ?thesis using False
+         by (auto simp add: FBinds_lookup empty_is_bottom[symmetric] cong: option.case_cong)
+    qed
     }
     note FBinds = ext[OF this]
 
