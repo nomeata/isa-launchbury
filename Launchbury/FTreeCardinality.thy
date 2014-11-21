@@ -1,39 +1,36 @@
 theory FTreeCardinality
-imports CardinalityAnalysis "FTree-Nominal-HOLCF" CallFutureCardinality
+imports CardinalityAnalysis "FTree-Nominal-HOLCF" CallFutureCardinality AnalBinds
 begin
 
 locale FutureAnalysis =
  fixes Fexp :: "exp \<Rightarrow> Arity \<rightarrow> var ftree"
 begin
+  sublocale Fexp!: ExpAnalysis Fexp.
+  abbreviation "FBinds == Fexp.AnalBinds"
+end
 
-fun FBinds :: "heap \<Rightarrow> AEnv \<rightarrow> (var \<Rightarrow> var ftree)"
-  where "FBinds [] = (\<Lambda> ae. \<bottom>)"
-      | "FBinds ((x,e)#\<Gamma>) = (\<Lambda> ae. (FBinds \<Gamma>\<cdot>ae)(x := fup\<cdot>(Fexp e)\<cdot>(ae x)))"
+locale FutureAnalysisCarrier = FutureAnalysis +
+  assumes carrier_Fexp: "carrier (Fexp e\<cdot>a) \<subseteq> fv e"
 
-lemma FBinds_Nil_simp[simp]: "FBinds []\<cdot>ae = \<bottom>" by simp
+locale FutureAnalysisCorrect = FutureAnalysisCarrier +
+  assumes Fexp_App: "many_calls x \<otimes>\<otimes> (Fexp e)\<cdot>(inc\<cdot>a) \<sqsubseteq> Fexp (App e x)\<cdot>a"
+  assumes Fexp_Lam: "without y (Fexp e\<cdot>(pred\<cdot>n)) \<sqsubseteq> Fexp (Lam [y]. e) \<cdot> n"
+  assumes Fexp_subst: "Fexp (e[y::=x])\<cdot>a \<sqsubseteq> many_calls x \<otimes>\<otimes> without y ((Fexp e)\<cdot>a)"
+  assumes Fexp_Var: "single v \<sqsubseteq> Fexp (Var v)\<cdot>a"
+  assumes Fun_repeatable: "isLam e \<Longrightarrow> repeatable (Fexp e\<cdot>0)"
 
-lemma FBinds_Cons[simp]:
-  "FBinds ((x,e)#\<Gamma>)\<cdot>ae = (FBinds \<Gamma>\<cdot>ae)(x := fup\<cdot>(Fexp e)\<cdot>(ae x))" by simp
+locale FutureAnalysisCardinalityHeap = 
+  FutureAnalysisCorrect + CorrectArityAnalysisLet' + 
+  fixes Fheap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> (var ftree)"
+  assumes Fheap_eqvt[eqvt]: "\<pi> \<bullet> Fheap = Fheap"
+  assumes Fheap_thunk: "x \<in> thunks \<Gamma> \<Longrightarrow> p \<in> paths (Fheap \<Gamma> e\<cdot>a) \<Longrightarrow> \<not> one_call_in_path x p \<Longrightarrow> (Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
+  assumes carrier_Fheap: "carrier (Fheap \<Gamma> e\<cdot>a) = edom (Aheap \<Gamma> e\<cdot>a)"
+  assumes Fheap_substitute: "ftree_restr (domA \<Delta>) (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) \<sqsubseteq> Fheap \<Delta> e\<cdot>a"
+  assumes Fexp_Let: "ftree_restr (- domA \<Delta>) (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) \<sqsubseteq> Fexp (Terms.Let \<Delta> e)\<cdot>a"
 
-lemmas FBinds.simps[simp del]
 
-lemma FBinds_not_there: "x \<notin> domA \<Gamma> \<Longrightarrow> (FBinds \<Gamma>\<cdot>ae) x = \<bottom>"
-  by (induction \<Gamma> rule: FBinds.induct) auto
-  
-lemma FBinds_cong:
-  assumes "ae f|` domA \<Gamma> = ae' f|` domA \<Gamma>"
-  shows "FBinds \<Gamma>\<cdot>ae = FBinds \<Gamma>\<cdot>ae'"
-using env_restr_eqD[OF assms]
-by (induction \<Gamma> rule: FBinds.induct) (auto split: if_splits)
-
-lemma FBinds_lookup: "(FBinds \<Gamma>\<cdot>ae) x = (case map_of \<Gamma> x of Some e \<Rightarrow> fup\<cdot>(Fexp e)\<cdot>(ae x) | None \<Rightarrow> \<bottom>)"
-  by (induction \<Gamma> rule: FBinds.induct) auto
-
-lemma FBinds_delete_below: "FBinds (delete x \<Gamma>)\<cdot>ae \<sqsubseteq> FBinds \<Gamma>\<cdot>ae"
-  by (auto intro: fun_belowI simp add: FBinds_lookup split:option.split)
-
-lemma edom_FBinds: "edom (FBinds \<Gamma>\<cdot>ae) \<subseteq> domA \<Gamma> \<inter> edom ae"
-  by (induction \<Gamma> rule: FBinds.induct) (auto  simp add: edom_def)
+context FutureAnalysis
+begin
 
 fun unstack :: "stack \<Rightarrow> exp \<Rightarrow> exp" where
   "unstack [] e = e"
@@ -54,6 +51,7 @@ fun prognosis :: "AEnv \<Rightarrow> Arity \<Rightarrow> conf \<Rightarrow> var 
    where "prognosis ae a (\<Gamma>, e, S) = pathsCard (paths (substitute (FBinds \<Gamma>\<cdot>ae) (Fexp e\<cdot>a \<otimes>\<otimes> Fstack S)))"
 end
 
+
 lemma pathsCard_paths_nxt:  "pathsCard (paths (nxt f x)) \<sqsubseteq> record_call x\<cdot>(pathsCard (paths f))"
   apply transfer
   apply (rule pathsCard_below)
@@ -68,11 +66,10 @@ lemma pathsCards_none: "pathsCard (paths t) x = none \<Longrightarrow> x \<notin
 lemma const_on_edom_disj: "const_on f S empty \<longleftrightarrow> edom f \<inter> S = {}"
   by (auto simp add: empty_is_bottom edom_def)
 
-locale FutureAnalysisCarrier = FutureAnalysis +
-  assumes carrier_Fexp: "carrier (Fexp e\<cdot>a) \<subseteq> fv e"
+context FutureAnalysisCarrier
 begin
   lemma carrier_FBinds: "carrier ((FBinds \<Gamma>\<cdot>ae) x) \<subseteq> fv \<Gamma>"
-  apply (simp add: FBinds_lookup)
+  apply (simp add: Fexp.AnalBinds_lookup)
   apply (auto split: option.split simp add: empty_is_bottom[symmetric] )
   apply (case_tac "ae x")
   apply (auto simp add: empty_is_bottom[symmetric] dest!: set_mp[OF carrier_Fexp])
@@ -82,19 +79,15 @@ end
 
 
 
-locale FutureAnalysisCorrect = FutureAnalysisCarrier +
-  assumes Fexp_App: "many_calls x \<otimes>\<otimes> (Fexp e)\<cdot>(inc\<cdot>a) \<sqsubseteq> Fexp (App e x)\<cdot>a"
-  assumes Fexp_Lam: "without y (Fexp e\<cdot>(pred\<cdot>n)) \<sqsubseteq> Fexp (Lam [y]. e) \<cdot> n"
-  assumes Fexp_subst: "Fexp (e[y::=x])\<cdot>a \<sqsubseteq> many_calls x \<otimes>\<otimes> without y ((Fexp e)\<cdot>a)"
-  assumes Fexp_Var: "single v \<sqsubseteq> Fexp (Var v)\<cdot>a"
-  assumes Fun_repeatable: "isLam e \<Longrightarrow> repeatable (Fexp e\<cdot>0)"
+
+context FutureAnalysisCorrect
 begin
 
   sublocale CardinalityPrognosisCorrect prognosis
   proof
     fix \<Gamma> :: heap and ae ae' :: AEnv and u e S
     assume "ae f|` domA \<Gamma> = ae' f|` domA \<Gamma>"
-    from FBinds_cong[OF this]
+    from Fexp.AnalBinds_cong[OF this]
     show "prognosis ae u (\<Gamma>, e, S) = prognosis ae' u (\<Gamma>, e, S)" by simp
   next
     fix ae a \<Gamma> e S
@@ -146,7 +139,7 @@ begin
       by (metis both_comm)
       also
     have "\<dots> = record_call x\<cdot>(pathsCard (paths (and_then x (substitute (FBinds \<Gamma>\<cdot>ae) (Fstack S  \<otimes>\<otimes> (FBinds \<Gamma>\<cdot>ae) x)))))"
-      using `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u` by (simp add: FBinds_lookup)
+      using `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u` by (simp add: Fexp.AnalBinds_lookup)
       also
     have "and_then x (substitute (FBinds \<Gamma>\<cdot>ae) (Fstack S  \<otimes>\<otimes> ((FBinds \<Gamma>\<cdot>ae) x))) = substitute (FBinds \<Gamma>\<cdot>ae) (and_then x (Fstack S))"
       by (rule substitute_and_then[symmetric])
@@ -173,19 +166,19 @@ begin
     also have "\<dots> = substitute (((FBinds \<Gamma>\<cdot>ae)(x := Fexp e\<cdot>0))(x := empty)) (Fexp e\<cdot>0 \<otimes>\<otimes> Fstack S)"
       using `repeatable (Fexp e\<cdot>0)` by (rule substitute_remove_anyways, simp)
     also have "((FBinds \<Gamma>\<cdot>ae)(x := Fexp e\<cdot>0))(x := empty) = FBinds \<Gamma>\<cdot>ae"
-      by (simp add: fun_upd_idem FBinds_not_there empty_is_bottom)
+      by (simp add: fun_upd_idem Fexp.AnalBinds_not_there empty_is_bottom)
     finally
     show "prognosis ae 0 ((x, e) # \<Gamma>, e, S) \<sqsubseteq> prognosis ae 0 (\<Gamma>, e, Upd x # S)"
       by (simp, intro pathsCard_mono' paths_mono)
   next
     fix \<Gamma> \<Delta> :: heap and e :: exp and ae :: AEnv and u S
     assume "map_of \<Gamma> = map_of \<Delta>"
-    hence "FBinds \<Gamma> = FBinds \<Delta>" by (auto intro!: cfun_eqI  simp add: FBinds_lookup)
+    hence "FBinds \<Gamma> = FBinds \<Delta>" by (auto intro!: cfun_eqI  simp add: Fexp.AnalBinds_lookup)
     thus "prognosis ae u (\<Gamma>, e, S) = prognosis ae u (\<Delta>, e, S)"  by simp
   next
     fix \<Gamma> :: heap and e :: exp and ae :: AEnv and u S x
     show "prognosis ae u (delete x \<Gamma>, e, S) \<sqsubseteq> prognosis ae u (\<Gamma>, e, S)"
-      by simp (intro pathsCard_mono' paths_mono substitute_mono1' FBinds_delete_below)
+      by simp (intro pathsCard_mono' paths_mono substitute_mono1' Fexp.AnalBinds_delete_below)
   next
     fix \<Gamma> :: heap and e :: exp and ae :: AEnv and u S x
     show "prognosis ae u (\<Gamma>, e, S) \<sqsubseteq> prognosis ae u (\<Gamma>, e, Upd x # S)" by simp
@@ -195,22 +188,13 @@ begin
     hence "x \<notin> carrier (substitute (FBinds (delete x \<Gamma>)\<cdot>ae) (Fexp e\<cdot>a \<otimes>\<otimes> Fstack S))" 
       by (simp add: pathsCards_none)
     hence "substitute (FBinds \<Gamma>\<cdot>ae) (Fexp e\<cdot>a \<otimes>\<otimes> Fstack S) = substitute (FBinds (delete x \<Gamma>)\<cdot>ae) (Fexp e\<cdot>a \<otimes>\<otimes> Fstack S)"
-      by (auto intro: substitute_cong[symmetric] simp add: FBinds_lookup delete_conv')
+      by (auto intro: substitute_cong[symmetric] simp add: Fexp.AnalBinds_lookup delete_conv')
     thus "prognosis ae a (\<Gamma>, e, S) \<sqsubseteq> prognosis ae a (delete x \<Gamma>, e, S)"
       by simp
   qed
-
-
 end
 
-locale FutureAnalysisCardinalityHeap = 
-  FutureAnalysisCorrect + CorrectArityAnalysisLet' + 
-  fixes Fheap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> (var ftree)"
-  assumes Fheap_eqvt[eqvt]: "\<pi> \<bullet> Fheap = Fheap"
-  assumes Fheap_thunk: "x \<in> thunks \<Gamma> \<Longrightarrow> p \<in> paths (Fheap \<Gamma> e\<cdot>a) \<Longrightarrow> \<not> one_call_in_path x p \<Longrightarrow> (Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
-  assumes carrier_Fheap: "carrier (Fheap \<Gamma> e\<cdot>a) = edom (Aheap \<Gamma> e\<cdot>a)"
-  assumes Fheap_substitute: "ftree_restr (domA \<Delta>) (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) \<sqsubseteq> Fheap \<Delta> e\<cdot>a"
-  assumes Fexp_Let: "ftree_restr (- domA \<Delta>) (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) \<sqsubseteq> Fexp (Terms.Let \<Delta> e)\<cdot>a"
+context FutureAnalysisCardinalityHeap
 begin
 
   definition cHeap where
@@ -261,13 +245,13 @@ begin
 
     have const_on1:  "\<And> x. const_on (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (carrier ((FBinds \<Gamma>\<cdot>ae) x)) empty"
       unfolding const_on_edom_disj using fresh_distinct_fv[OF `atom \` domA \<Delta> \<sharp>* \<Gamma>`]
-      by (auto dest!: set_mp[OF carrier_FBinds] set_mp[OF edom_FBinds])
+      by (auto dest!: set_mp[OF carrier_FBinds] set_mp[OF Fexp.edom_AnalBinds])
     have const_on2:  "const_on (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (carrier (Fstack S)) empty"
       unfolding const_on_edom_disj using fresh_distinct_fv[OF `atom \` domA \<Delta> \<sharp>* S`]
-      by (auto dest!: set_mp[OF carrier_FBinds] set_mp[OF edom_FBinds] set_mp[OF ap_fv_subset ])
+      by (auto dest!: set_mp[OF carrier_FBinds] set_mp[OF Fexp.edom_AnalBinds] set_mp[OF ap_fv_subset ])
     have const_on3: "const_on (FBinds \<Gamma>\<cdot>ae) (- (- domA \<Delta>)) FTree.empty"
       unfolding const_on_edom_disj using fresh_distinct[OF `atom \` domA \<Delta> \<sharp>* \<Gamma>`]
-      by (auto dest!:  set_mp[OF edom_FBinds])
+      by (auto dest!:  set_mp[OF Fexp.edom_AnalBinds])
 
     have disj1: "\<And> x. carrier ((FBinds \<Gamma>\<cdot>ae) x) \<inter> domA \<Delta> = {}"
       using fresh_distinct_fv[OF `atom \` domA \<Delta> \<sharp>* \<Gamma>`]
@@ -288,7 +272,7 @@ begin
       have "ae x = \<bottom>" using True `domA \<Delta> \<inter> edom ae = {}` by auto
       ultimately
       show ?thesis using True 
-          by (auto simp add: FBinds_lookup empty_is_bottom[symmetric] cong: option.case_cong)
+          by (auto simp add: Fexp.AnalBinds_lookup empty_is_bottom[symmetric] cong: option.case_cong)
     next
       case False
       have "map_of \<Delta> x = None" using False by (metis domA_def map_of_eq_None_iff)
@@ -296,7 +280,7 @@ begin
       have "(Aheap \<Delta> e\<cdot>a) x = \<bottom>" using False using edom_Aheap by (metis contra_subsetD edomIff)
       ultimately
       show ?thesis using False
-         by (auto simp add: FBinds_lookup empty_is_bottom[symmetric] cong: option.case_cong)
+         by (auto simp add: Fexp.AnalBinds_lookup empty_is_bottom[symmetric] cong: option.case_cong)
     qed
     }
     note FBinds = ext[OF this]
