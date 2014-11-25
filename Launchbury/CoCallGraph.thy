@@ -48,7 +48,6 @@ proof-
 qed
 
 lift_definition is_cc_lub :: "CoCalls set \<Rightarrow> CoCalls \<Rightarrow> bool" is "(\<lambda> S x . x = Union S)".
-print_theorems
 
 lemma ccis_lubTransfer[transfer_rule]: "(rel_set pcr_CoCalls  ===> pcr_CoCalls ===> op =) (\<lambda> S x . x = Union S) op <<|"
 proof-
@@ -63,6 +62,22 @@ proof-
   done
   thus ?thesis using is_cc_lub.transfer by simp
 qed
+
+lift_definition coCallsJoin :: "CoCalls \<Rightarrow> CoCalls  \<Rightarrow> CoCalls" is "op \<union>".
+lemma ccJoinTransfer[transfer_rule]: "(pcr_CoCalls ===> pcr_CoCalls ===> pcr_CoCalls) op \<union> op \<squnion>"
+proof-
+  have "op \<squnion> = coCallsJoin"
+    apply (rule)
+    apply rule
+    apply (rule lub_is_join)
+    unfolding is_lub_def is_ub_def
+    apply transfer
+    apply auto
+    done
+  with coCallsJoin.transfer
+  show ?thesis by metis
+qed
+
 
 lift_definition ccEmpty :: "CoCalls" is "{}".
 
@@ -103,6 +118,14 @@ lemma ccProd_empty[simp]: "ccProd {} S = \<bottom>" by transfer auto
 
 lemma ccProd_empty'[simp]: "ccProd S {} = \<bottom>" by transfer auto
 
+lemma ccProd_union[simp]: "ccProd S (S' \<union> S'') = ccProd S S' \<squnion> ccProd S S''"
+  by transfer auto
+
+lemma ccProd_insert: "ccProd S (insert x S') = ccProd S {x} \<squnion> ccProd S S'"
+  by transfer auto
+
+lemma ccProd_mono2: "S' \<subseteq> S'' \<Longrightarrow> ccProd S S' \<sqsubseteq> ccProd S S''"
+  by transfer auto
 
 lift_definition cc_restr :: "var set \<Rightarrow> CoCalls \<Rightarrow> CoCalls"
   is "\<lambda> S. Set.filter (\<lambda> (x,y) . x \<in> S \<and> y \<in> S)".
@@ -121,6 +144,9 @@ lemma cont_cc_restr: "cont (cc_restr S)"
   done
 
 lemmas cont_compose[OF cont_cc_restr, cont2cont, simp]
+
+lemma cc_restr_mono1:
+  "S \<subseteq> S' \<Longrightarrow> cc_restr S G \<sqsubseteq> cc_restr S' G" by transfer auto
 
 definition ccSquare where "ccSquare S = ccProd S S"
 
@@ -143,6 +169,21 @@ lemma cont_ccProd_ccNeighbors:
   apply auto
   done
 
+lemma ccNeighbors_join[simp]: "ccNeighbors S (G \<squnion> G') = ccNeighbors S G \<union> ccNeighbors S G'"
+  by transfer auto
+
+lemma ccNeighbors_ccProd:
+  "ccNeighbors S (ccProd S' S'') = (if S \<inter> S' = {} then {} else S'') \<union> (if S \<inter> S'' = {} then {} else S')"
+by transfer auto
+
+lemma ccNeighbors_ccSquare: 
+  "ccNeighbors S (ccSquare S') = (if S \<inter> S' = {} then {} else S')"
+  unfolding ccSquare_def by (auto simp add: ccNeighbors_ccProd)
+
+lemma ccNeighbors_cc_restr[simp]:
+  "ccNeighbors S (cc_restr S' G) = ccNeighbors (S \<inter> S') G \<inter> S'"
+by transfer auto
+
 lemmas cont_compose[OF cont_ccProd_ccNeighbors, cont2cont]
 
 instance CoCalls :: Finite_Join_cpo
@@ -161,13 +202,6 @@ lift_definition ccManyCalls:: "CoCalls \<Rightarrow> var set"
 lemma ccManyCalls_bot[simp]:
   "ccManyCalls \<bottom> = {}" by transfer simp
 
-
-inductive_set valid_lists :: "CoCalls \<Rightarrow> var list set"
-  for G
-  where  "[] \<in> valid_lists G"
-  | "set xs \<inter> ccNeighbors {x} G = {} \<Longrightarrow> xs \<in> valid_lists G  \<Longrightarrow> x#xs \<in> valid_lists G"
-
-inductive_simps valid_lists_simps[simp]: "[] \<in> valid_lists G" "(x#xs) \<in> valid_lists G"
 
 
 end

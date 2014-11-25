@@ -147,6 +147,15 @@ lemma cont_intersect2:
 
 lemma cont_intersect[cont2cont,simp]: "cont f \<Longrightarrow> cont g \<Longrightarrow> cont (\<lambda> x. f x \<inter>\<inter> g x)"
   by (rule cont_compose2[OF cont_intersect1 cont_intersect2])
-  
+
+lemma cont_without[THEN cont_compose, cont2cont,simp]: "cont (without x)"
+  sorry
+
+lemma paths_many_calls_subset:
+  "t \<sqsubseteq> many_calls x \<otimes>\<otimes> without x t"
+  by (metis (full_types) below_set_def paths_many_calls_subset paths_mono_iff)
+
+lemma single_below:
+  "[x] \<in> paths t \<Longrightarrow> single x \<sqsubseteq> t" by transfer auto
 
 end

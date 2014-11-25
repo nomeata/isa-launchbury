@@ -239,7 +239,6 @@ lift_definition intersect :: "'a ftree \<Rightarrow> 'a ftree \<Rightarrow> 'a f
 lemma paths_intersect[simp]: "paths (t \<inter>\<inter> t') = paths t \<inter> paths t'"
   by transfer auto
 
-
 subsection {* Disjoint union of trees *}
 
 lift_definition either :: "'a ftree \<Rightarrow> 'a ftree \<Rightarrow> 'a ftree" (infixl "\<oplus>\<oplus>" 80) is "op \<union>"
@@ -466,7 +465,7 @@ proof-
   then obtain xs where "xs \<in> paths (t \<otimes>\<otimes> t')" and "x \<in> set xs" by transfer auto
   then obtain ys zs where "ys \<in> paths t" and "zs \<in> paths t'" and "xs \<in> interleave ys zs"
     by (auto simp add: paths_both)
-  from this(3) have "set xs \<subseteq> set ys \<union> set zs" by (rule interleave_set)
+  from this(3) have "set xs = set ys \<union> set zs" by (rule interleave_set)
   with `ys \<in> _` `zs \<in> _` `x \<in> set xs`
   have "x \<in> carrier t \<union> carrier t'"  by transfer auto
   }
@@ -476,6 +475,15 @@ proof-
   ultimately
   show ?thesis by auto
 qed
+
+lemma carrier_intersect: "carrier (t \<inter>\<inter> t') \<subseteq> carrier t \<inter> carrier t'"
+  unfolding Union_paths_carrier[symmetric]
+  by auto
+  
+lemma carrier_many_among[simp]: "carrier (many_among S) = S"
+ by transfer (auto, metis List.set_insert bot.extremum insertCI insert_subset list.set(1))
+
+
 
 subsection {* Removing elements from a tree *}
 
@@ -530,6 +538,32 @@ lemma ftree_restr_possible: "x \<in> S \<Longrightarrow> possible t x \<Longrigh
 
 lemma ftree_restr_possible2: "possible (ftree_restr S t') x \<Longrightarrow> x \<in> S" 
   by transfer (auto, metis filter_eq_Cons_iff)
+
+(*
+lemma intersect_many_among: "t \<inter>\<inter> many_among S = ftree_restr S t"
+  apply transfer
+  apply auto
+*)
+
+
+
+lemma paths_many_calls_subset:
+  "paths t \<subseteq> paths (many_calls x \<otimes>\<otimes> without x t)"
+proof
+  fix xs
+  assume "xs \<in> paths t"
+  
+  have "filter (\<lambda>x'. x' = x) xs = replicate (length (filter (\<lambda>x'. x' = x) xs)) x"
+    by (induction xs) auto
+  hence "filter (\<lambda>x'. x' = x) xs \<in> paths (many_calls x)" by transfer auto
+  moreover
+  from `xs \<in> paths t`
+  have "filter (\<lambda>x'. x' \<noteq> x) xs \<in> paths (without x t)" by transfer auto
+  moreover
+  have "xs \<in> interleave (filter (\<lambda>x'. x' = x) xs)  (filter (\<lambda>x'. x' \<noteq> x) xs)" by (rule interleave_filtered)
+  ultimately show "xs \<in> paths (many_calls x \<otimes>\<otimes> without x t)" by transfer auto
+qed
+
 
 
 subsection {* Substituting trees for every node *}

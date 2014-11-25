@@ -44,9 +44,8 @@ lemma interleave_assoc2: "a \<in> ys \<otimes> zs \<Longrightarrow> b \<in> xs \
   by (induction b arbitrary: a  xs ys zs )
      (simp, fastforce del: interleave_ConsE elim!: interleave_ConsE  intro: interleave_intros)
 
-lemma interleave_set: "zs \<in> xs \<otimes> ys \<Longrightarrow> set zs \<subseteq> set xs \<union> set ys"
+lemma interleave_set: "zs \<in> xs \<otimes> ys \<Longrightarrow> set zs = set xs \<union> set ys"
   by(induction rule:interleave_induct) auto
-
 
 lemma interleave_tl: "xs \<in> ys \<otimes> zs \<Longrightarrow> tl xs \<in> tl ys \<otimes> zs \<or> tl xs \<in> ys \<otimes> (tl zs)"
   by(induction rule:interleave_induct) auto
@@ -75,6 +74,9 @@ lemma interleave_take: "zs \<in> xs \<otimes> ys \<Longrightarrow> \<exists> n\<
 
 lemma filter_interleave: "xs \<in> ys \<otimes> zs \<Longrightarrow> filter P xs \<in> filter P ys \<otimes> filter P zs"
   by (induction rule: interleave_induct)  (auto intro: interleave_intros)
+
+lemma interleave_filtered: "xs \<in> interleave (filter P xs)  (filter (\<lambda>x'. \<not> P x') xs)"
+  by (induction xs) (auto intro: interleave_intros)
 
 
 function foo where 
