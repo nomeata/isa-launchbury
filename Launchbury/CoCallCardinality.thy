@@ -38,8 +38,12 @@ lemma cont_ccFTree2[THEN cont_compose, cont2cont, simp]:
   "cont (ccFTree S)"
   sorry
 
-lemma carrier_ccFTree: "carrier (ccFTree S G) \<subseteq> S"
-  by transfer (auto dest: valid_lists_subset)
+lemma carrier_ccFTree: "carrier (ccFTree S G) = S"
+  apply transfer
+  apply (auto dest: valid_lists_subset)
+  apply (rule_tac x = "[x]" in bexI)
+  apply auto
+  done
 
 lemma valid_lists_mono1:
   assumes "S \<subseteq> S'"
@@ -221,11 +225,36 @@ lemma repeatable_ccFTree_ccSquare: "S \<subseteq> S' \<Longrightarrow> repeatabl
    unfolding repeatable_def
    by transfer (auto simp add:ccNeighbors_ccSquare dest: set_mp[OF valid_lists_subset])
 
+lemma multi_calls_ccFTree:
+  assumes "xs \<in> paths (ccFTree S G)"
+  assumes "\<not> one_call_in_path x xs"
+  shows "x \<in> S" and "x \<in> ccManyCalls G"
+proof-
+  from assms(1) have "xs \<in> valid_lists S G" by simp 
+
+  have "x \<in> set xs" by (metis assms(2) filter_True one_call_in_path_filter)
+  with `xs \<in> valid_lists S G`
+  show "x \<in> S" by (metis  subsetCE valid_lists_subset)
+
+  show "x \<in> ccManyCalls G"
+  proof(rule ccontr)
+    assume "x \<notin> ccManyCalls G"
+    with `xs \<in> valid_lists S G` 
+    have "one_call_in_path x xs"
+    by (induction rule: valid_lists.induct) (auto simp add: no_call_in_path_set_conv)
+    with assms(2)
+    show False..
+  qed
+qed
+  
+
 locale CoCallCardinality = CoCallAnalysis + CoCallAnalyisHeap + CorrectArityAnalysisLet' +
   assumes ccExp_App: "ccExp e\<cdot>(inc\<cdot>a) \<squnion> ccProd {x} (insert x (fv e)) \<sqsubseteq> ccExp (App e x)\<cdot>a"
   assumes ccExp_Lam: "cc_restr (fv (Lam [y]. e)) (ccExp e\<cdot>(pred\<cdot>n)) \<sqsubseteq> ccExp (Lam [y]. e)\<cdot>n"
   assumes ccExp_subst: "x \<notin>  S \<Longrightarrow> y \<notin> S \<Longrightarrow> cc_restr S (ccExp e[y::=x]\<cdot>a) \<sqsubseteq> cc_restr S (ccExp e\<cdot>a)"
   assumes ccExp_pap: "isLam e \<Longrightarrow> ccExp e\<cdot>0 = ccSquare (fv e)"
+ 
+  assumes aHeap_thunks: "x \<in> thunks \<Gamma> \<Longrightarrow> x \<in> edom (Aheap \<Gamma> e\<cdot>a) \<Longrightarrow> x \<in> ccManyCalls (ccHeap \<Gamma> e\<cdot>a) \<Longrightarrow> (Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
 begin
 
 definition Fexp :: "exp \<Rightarrow> Arity \<rightarrow> var ftree"
@@ -235,14 +264,8 @@ lemma Fexp_simp: "Fexp e\<cdot>a = ccFTree (edom (Aexp e \<cdot>a)) (ccExp e\<cd
   unfolding Fexp_def sorry
 
 lemma carrier_Fexp: "carrier (Fexp e\<cdot>a) \<subseteq> fv e"
-  unfolding Fexp_simp
-  by (auto  dest!: set_mp[OF carrier_ccFTree] set_mp[OF Aexp_edom])
-
-definition Fheap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> var ftree"
-  where "Fheap \<Gamma> e = (\<Lambda> a. ccFTree (edom (Aheap \<Gamma> e\<cdot>a)) (ccHeap \<Gamma> e\<cdot>a))"
-
-lemma Fheap_simp: "Fheap \<Gamma> e\<cdot>a = ccFTree (edom (Aheap \<Gamma> e\<cdot>a)) (ccHeap \<Gamma> e\<cdot>a)"
-  unfolding Fheap_def sorry
+  unfolding Fexp_simp carrier_ccFTree
+  by (rule Aexp_edom)
 
 sublocale FutureAnalysis Fexp.
 
@@ -348,10 +371,33 @@ next
     unfolding Fexp_simp by (auto intro: repeatable_ccFTree_ccSquare[OF Aexp_edom])
 qed
 
+definition Fheap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> var ftree"
+  where "Fheap \<Gamma> e = (\<Lambda> a. ccFTree (edom (Aheap \<Gamma> e\<cdot>a)) (ccHeap \<Gamma> e\<cdot>a))"
+
+lemma Fheap_simp: "Fheap \<Gamma> e\<cdot>a = ccFTree (edom (Aheap \<Gamma> e\<cdot>a)) (ccHeap \<Gamma> e\<cdot>a)"
+  unfolding Fheap_def sorry
 
 sublocale FutureAnalysisCardinalityHeap Fexp Aexp Aheap Fheap
-  apply default
-  sorry
+proof default
+  fix \<Gamma> e a
+  show "carrier (Fheap \<Gamma> e\<cdot>a) = edom (Aheap \<Gamma> e\<cdot>a)"
+    unfolding Fheap_simp carrier_ccFTree..
+next
+  fix x \<Gamma> p e a
+  assume "x \<in> thunks \<Gamma>"
+  moreover
+  assume "p \<in> paths (Fheap \<Gamma> e\<cdot>a)" and "\<not> one_call_in_path x p"
+  hence "x \<in> edom (Aheap \<Gamma> e\<cdot>a)" and "x \<in> ccManyCalls (ccHeap \<Gamma> e\<cdot>a)"
+    unfolding Fheap_simp
+    by (rule multi_calls_ccFTree)+
+  ultimately
+  show "(Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
+    by (rule aHeap_thunks)
+next
+  fix \<Delta> e a
+  show "ftree_restr (domA \<Delta>) (substitute (Fexp.AnalBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) \<sqsubseteq> Fheap \<Delta> e\<cdot>a"
+    unfolding Fheap_simp Fexp_simp
+  find_theorems ftree_restr substitute
 
 end
 

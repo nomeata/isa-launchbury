@@ -22,9 +22,9 @@ locale FutureAnalysisCorrect = FutureAnalysisCarrier +
 locale FutureAnalysisCardinalityHeap = 
   FutureAnalysisCorrect + CorrectArityAnalysisLet' + 
   fixes Fheap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> var ftree"
-  assumes Fheap_eqvt: "\<pi> \<bullet> Fheap = Fheap"
-  assumes Fheap_thunk: "x \<in> thunks \<Gamma> \<Longrightarrow> p \<in> paths (Fheap \<Gamma> e\<cdot>a) \<Longrightarrow> \<not> one_call_in_path x p \<Longrightarrow> (Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
+  (* assumes Fheap_eqvt: "\<pi> \<bullet> Fheap = Fheap" *)
   assumes carrier_Fheap: "carrier (Fheap \<Gamma> e\<cdot>a) = edom (Aheap \<Gamma> e\<cdot>a)"
+  assumes Fheap_thunk: "x \<in> thunks \<Gamma> \<Longrightarrow> p \<in> paths (Fheap \<Gamma> e\<cdot>a) \<Longrightarrow> \<not> one_call_in_path x p \<Longrightarrow> (Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
   assumes Fheap_substitute: "ftree_restr (domA \<Delta>) (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) \<sqsubseteq> Fheap \<Delta> e\<cdot>a"
   assumes Fexp_Let: "ftree_restr (- domA \<Delta>) (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) \<sqsubseteq> Fexp (Terms.Let \<Delta> e)\<cdot>a"
 
@@ -207,6 +207,7 @@ begin
   lemma cHeap_simp: "(cHeap \<Gamma> e)\<cdot>a = pathsCard (paths (Fheap \<Gamma> e\<cdot>a))"
     unfolding cHeap_def  by (rule beta_cfun) (intro cont2cont)
   
+  (*
   lemma cHeap_eqvt: "\<pi> \<bullet> (cHeap \<Gamma> e) = cHeap (\<pi> \<bullet> \<Gamma>) (\<pi> \<bullet> e)"
     unfolding cHeap_def
     apply perm_simp
@@ -214,13 +215,15 @@ begin
     apply (rule Abs_cfun_eqvt)
     apply (intro cont2cont)
     done
-    
+  *)
 
   sublocale CardinalityHeap Aexp Aheap cHeap
   proof
+  (*
     note cHeap_eqvt[eqvt]
     fix \<pi> show "\<pi> \<bullet> cHeap = cHeap" by perm_simp rule
   next
+  *)
     fix x \<Gamma> e a
     assume "x \<in> thunks \<Gamma>"
     moreover

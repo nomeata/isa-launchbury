@@ -41,16 +41,18 @@ definition cHeap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> (v
 lemma cHeap_simp[simp]: "cHeap \<Gamma> e\<cdot>a = ae2ce (Aheap \<Gamma> e\<cdot>a)"
   unfolding cHeap_def by simp
 
+(*
 lemma cHeap_eqvt[eqvt]: "\<pi> \<bullet> cHeap \<Gamma> e = cHeap (\<pi> \<bullet> \<Gamma>) (\<pi> \<bullet> e)"
   unfolding cHeap_def
   apply perm_simp
   apply (rule Abs_cfun_eqvt)
   apply simp
   done
+*)
 
 sublocale CardinalityHeap Aexp Aheap cHeap
   apply default
-  apply (perm_simp, rule)
+(*  apply (perm_simp, rule) *)
   apply (erule Aheap_thunk)
   apply simp
   done

@@ -5,7 +5,7 @@ begin
 locale CardinalityHeap = CorrectArityAnalysisLet' +
   fixes cHeap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> (var \<Rightarrow> two)"
 
-  assumes cHeap: "\<pi> \<bullet> cHeap = cHeap"
+(*   assumes cHeap: "\<pi> \<bullet> cHeap = cHeap" *)
   assumes Aheap_heap3: "x \<in> thunks \<Gamma> \<Longrightarrow> many \<sqsubseteq> (cHeap \<Gamma> e\<cdot>a) x \<Longrightarrow> (Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
   assumes edom_cHeap: "edom (cHeap \<Delta> e\<cdot>a) = edom (Aheap \<Delta> e\<cdot>a)"
 

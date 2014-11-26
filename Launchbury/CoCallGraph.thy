@@ -202,6 +202,8 @@ lift_definition ccManyCalls:: "CoCalls \<Rightarrow> var set"
 lemma ccManyCalls_bot[simp]:
   "ccManyCalls \<bottom> = {}" by transfer simp
 
+lemma ccNeighbors_ccManyCalls[simp]: "x \<in> ccNeighbors {x} G \<longleftrightarrow> x \<in> ccManyCalls G"
+  by transfer auto
 
 
 end
