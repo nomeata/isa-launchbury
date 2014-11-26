@@ -25,9 +25,10 @@ locale FutureAnalysisCardinalityHeap =
   (* assumes Fheap_eqvt: "\<pi> \<bullet> Fheap = Fheap" *)
   assumes carrier_Fheap: "carrier (Fheap \<Gamma> e\<cdot>a) = edom (Aheap \<Gamma> e\<cdot>a)"
   assumes Fheap_thunk: "x \<in> thunks \<Gamma> \<Longrightarrow> p \<in> paths (Fheap \<Gamma> e\<cdot>a) \<Longrightarrow> \<not> one_call_in_path x p \<Longrightarrow> (Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
+(*
   assumes Fheap_substitute: "ftree_restr (domA \<Delta>) (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) \<sqsubseteq> Fheap \<Delta> e\<cdot>a"
   assumes Fexp_Let: "ftree_restr (- domA \<Delta>) (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)) \<sqsubseteq> Fexp (Terms.Let \<Delta> e)\<cdot>a"
-
+*)
 
 context FutureAnalysis
 begin
@@ -48,7 +49,7 @@ lemma carrier_Fstack[simp]: "carrier (Fstack S) = ap S"
   by (induction S rule: Fstack.induct) (auto simp add: empty_is_bottom[symmetric])
 
 fun prognosis :: "AEnv \<Rightarrow> Arity \<Rightarrow> conf \<Rightarrow> var \<Rightarrow> two"
-   where "prognosis ae a (\<Gamma>, e, S) = pathsCard (paths (substitute (FBinds \<Gamma>\<cdot>ae) (Fexp e\<cdot>a \<otimes>\<otimes> Fstack S)))"
+   where "prognosis ae a (\<Gamma>, e, S) = pathsCard (paths (substitute (FBinds \<Gamma>\<cdot>ae) (thunks \<Gamma>) (Fexp e\<cdot>a \<otimes>\<otimes> Fstack S)))"
 end
 
 
@@ -100,9 +101,9 @@ begin
            (auto 4 4 intro: set_mp[OF both_contains_arg1] set_mp[OF both_contains_arg2] paths_Cons_nxt)
       hence "[x,x] \<in> paths (Fexp e\<cdot>a \<otimes>\<otimes> Fstack S)"
         by (rule set_mp[OF both_contains_arg2])
-      hence "[x,x] \<in> paths (substitute (FBinds \<Gamma>\<cdot>ae) (Fexp e\<cdot>a \<otimes>\<otimes> Fstack S))" 
+      hence "[x,x] \<in> paths (substitute (FBinds \<Gamma>\<cdot>ae) (thunks \<Gamma>) (Fexp e\<cdot>a \<otimes>\<otimes> Fstack S))" 
         by (rule set_mp[OF substitute_contains_arg])
-      hence "pathCard [x,x] x \<sqsubseteq> pathsCard (paths (substitute (FBinds \<Gamma>\<cdot>ae) (Fexp e\<cdot>a \<otimes>\<otimes> Fstack S))) x"
+      hence "pathCard [x,x] x \<sqsubseteq> pathsCard (paths (substitute (FBinds \<Gamma>\<cdot>ae) (thunks \<Gamma>) (Fexp e\<cdot>a \<otimes>\<otimes> Fstack S))) x"
         by (metis fun_belowD paths_Card_above)
       also have "pathCard [x,x] x = many"  by (auto simp add: pathCard_def)
       finally
@@ -129,28 +130,32 @@ begin
     assume "map_of \<Gamma> x = Some e"
     assume "ae x = up\<cdot>u"
 
-    have "pathsCard (paths (substitute (FBinds \<Gamma>\<cdot>ae) (Fexp e\<cdot>u  \<otimes>\<otimes> Fstack S))) = pathsCard (paths (nxt (and_then x (substitute (FBinds \<Gamma>\<cdot>ae) (Fexp e\<cdot>u  \<otimes>\<otimes> Fstack S))) x))"
+    have "isLam e" sorry
+    hence "x \<notin> thunks \<Gamma>" using `map_of \<Gamma> x = Some e` by (metis thunksE)
+    hence [simp]: "f_nxt (FBinds \<Gamma>\<cdot>ae) (thunks \<Gamma>) x = FBinds \<Gamma>\<cdot>ae" by (auto simp add: f_nxt_def)
+
+    have "pathsCard (paths (substitute (FBinds \<Gamma>\<cdot>ae) (thunks \<Gamma>) (Fexp e\<cdot>u \<otimes>\<otimes> Fstack S))) = pathsCard (paths (nxt (and_then x (substitute (FBinds \<Gamma>\<cdot>ae) (thunks \<Gamma>) (Fexp e\<cdot>u  \<otimes>\<otimes> Fstack S))) x))"
       by simp
       also
-    have "\<dots> \<sqsubseteq> record_call x\<cdot>(pathsCard (paths (and_then x (substitute (FBinds \<Gamma>\<cdot>ae) (Fexp e\<cdot>u  \<otimes>\<otimes> Fstack S)))))"
+    have "\<dots> \<sqsubseteq> record_call x\<cdot>(pathsCard (paths (and_then x (substitute (FBinds \<Gamma>\<cdot>ae) (thunks \<Gamma>) (Fexp e\<cdot>u  \<otimes>\<otimes> Fstack S)))))"
       by (rule pathsCard_paths_nxt)
       also
-    have "\<dots> = record_call x\<cdot>(pathsCard (paths (and_then x (substitute (FBinds \<Gamma>\<cdot>ae) (Fstack S  \<otimes>\<otimes> Fexp e\<cdot>u)))))"
+    have "\<dots> = record_call x\<cdot>(pathsCard (paths (and_then x (substitute (FBinds \<Gamma>\<cdot>ae) (thunks \<Gamma>) (Fstack S  \<otimes>\<otimes> Fexp e\<cdot>u)))))"
       by (metis both_comm)
       also
-    have "\<dots> = record_call x\<cdot>(pathsCard (paths (and_then x (substitute (FBinds \<Gamma>\<cdot>ae) (Fstack S  \<otimes>\<otimes> (FBinds \<Gamma>\<cdot>ae) x)))))"
+    have "\<dots> = record_call x\<cdot>(pathsCard (paths (and_then x (substitute (FBinds \<Gamma>\<cdot>ae) (thunks \<Gamma>) (Fstack S  \<otimes>\<otimes> (FBinds \<Gamma>\<cdot>ae) x)))))"
       using `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u` by (simp add: Fexp.AnalBinds_lookup)
       also
-    have "and_then x (substitute (FBinds \<Gamma>\<cdot>ae) (Fstack S  \<otimes>\<otimes> ((FBinds \<Gamma>\<cdot>ae) x))) = substitute (FBinds \<Gamma>\<cdot>ae) (and_then x (Fstack S))"
-      by (rule substitute_and_then[symmetric])
+    have "and_then x (substitute (FBinds \<Gamma>\<cdot>ae) (thunks \<Gamma>) (Fstack S  \<otimes>\<otimes> ((FBinds \<Gamma>\<cdot>ae) x))) = substitute (FBinds \<Gamma>\<cdot>ae) (thunks \<Gamma>) (and_then x (Fstack S))"
+      by (simp add: substitute_and_then)
       also
-    have "and_then x (Fstack S) \<sqsubseteq> FTree.single x  \<otimes>\<otimes> Fstack S" by (rule and_then_both_single')
+    have "and_then x (Fstack S) \<sqsubseteq> FTree.single x \<otimes>\<otimes> Fstack S" by (rule and_then_both_single')
     note pathsCard_mono'[OF paths_mono[OF substitute_mono2'[OF this]]]
       also
     have "FTree.single x \<sqsubseteq> Fexp (Var x)\<cdot>a" by (rule Fexp_Var)
     note pathsCard_mono'[OF paths_mono[OF substitute_mono2'[OF both_mono1'[OF this]]]]
     finally
-    have "pathsCard (paths (substitute (FBinds \<Gamma>\<cdot>ae) (Fexp e\<cdot>u  \<otimes>\<otimes> Fstack S))) \<sqsubseteq> record_call x\<cdot>(pathsCard (paths (substitute (FBinds \<Gamma>\<cdot>ae) (Fexp (Var x)\<cdot>a  \<otimes>\<otimes> Fstack S))))" 
+    have "pathsCard (paths (substitute (FBinds \<Gamma>\<cdot>ae) (thunks \<Gamma>) (Fexp e\<cdot>u  \<otimes>\<otimes> Fstack S))) \<sqsubseteq> record_call x\<cdot>(pathsCard (paths (substitute (FBinds \<Gamma>\<cdot>ae) (thunks \<Gamma>) (Fexp (Var x)\<cdot>a  \<otimes>\<otimes> Fstack S))))" 
       by this simp_all
     thus "prognosis ae u ( \<Gamma>, e, Upd x # S) \<sqsubseteq> record_call x\<cdot>(prognosis ae a (\<Gamma>, Var x, S))" by simp
   next
@@ -160,10 +165,14 @@ begin
 
     assume [simp]: "x \<notin> domA \<Gamma>"
 
+    have [simp]: "thunks ((x, e) # \<Gamma>) = thunks \<Gamma>" 
+      using `isLam e`
+      by (auto simp add: thunks_Cons dest: set_mp[OF thunks_domA])
+
     have "fup\<cdot>(Fexp e)\<cdot>(ae x) \<sqsubseteq> Fexp e\<cdot>0" by (metis fup2 monofun_cfun_arg up_zero_top)
-    hence "substitute ((FBinds \<Gamma>\<cdot>ae)(x := fup\<cdot>(Fexp e)\<cdot>(ae x))) (Fexp e\<cdot>0 \<otimes>\<otimes> Fstack S) \<sqsubseteq> substitute ((FBinds \<Gamma>\<cdot>ae)(x := Fexp e\<cdot>0)) (Fexp e\<cdot>0 \<otimes>\<otimes> Fstack S)"
+    hence "substitute ((FBinds \<Gamma>\<cdot>ae)(x := fup\<cdot>(Fexp e)\<cdot>(ae x))) (thunks \<Gamma>) (Fexp e\<cdot>0 \<otimes>\<otimes> Fstack S) \<sqsubseteq> substitute ((FBinds \<Gamma>\<cdot>ae)(x := Fexp e\<cdot>0)) (thunks \<Gamma>) (Fexp e\<cdot>0 \<otimes>\<otimes> Fstack S)"
       by (intro substitute_mono1' fun_upd_mono below_refl)
-    also have "\<dots> = substitute (((FBinds \<Gamma>\<cdot>ae)(x := Fexp e\<cdot>0))(x := empty)) (Fexp e\<cdot>0 \<otimes>\<otimes> Fstack S)"
+    also have "\<dots> = substitute (((FBinds \<Gamma>\<cdot>ae)(x := Fexp e\<cdot>0))(x := empty)) (thunks \<Gamma>) (Fexp e\<cdot>0 \<otimes>\<otimes> Fstack S)"
       using `repeatable (Fexp e\<cdot>0)` by (rule substitute_remove_anyways, simp)
     also have "((FBinds \<Gamma>\<cdot>ae)(x := Fexp e\<cdot>0))(x := empty) = FBinds \<Gamma>\<cdot>ae"
       by (simp add: fun_upd_idem Fexp.AnalBinds_not_there empty_is_bottom)
@@ -173,12 +182,14 @@ begin
   next
     fix \<Gamma> \<Delta> :: heap and e :: exp and ae :: AEnv and u S
     assume "map_of \<Gamma> = map_of \<Delta>"
-    hence "FBinds \<Gamma> = FBinds \<Delta>" by (auto intro!: cfun_eqI  simp add: Fexp.AnalBinds_lookup)
+    hence "FBinds \<Gamma> = FBinds \<Delta>" and "thunks \<Gamma> = thunks \<Delta>" by (auto intro!: cfun_eqI  thunks_cong simp add: Fexp.AnalBinds_lookup)
     thus "prognosis ae u (\<Gamma>, e, S) = prognosis ae u (\<Delta>, e, S)"  by simp
   next
     fix \<Gamma> :: heap and e :: exp and ae :: AEnv and u S x
+
     show "prognosis ae u (delete x \<Gamma>, e, S) \<sqsubseteq> prognosis ae u (\<Gamma>, e, S)"
-      by simp (intro pathsCard_mono' paths_mono substitute_mono1' Fexp.AnalBinds_delete_below)
+      by (simp add: substitute_T_delete empty_is_bottom)
+         (intro pathsCard_mono' paths_mono substitute_mono1' Fexp.AnalBinds_delete_below)
   next
     fix \<Gamma> :: heap and e :: exp and ae :: AEnv and u S x
     show "prognosis ae u (\<Gamma>, e, S) \<sqsubseteq> prognosis ae u (\<Gamma>, e, Upd x # S)" by simp
@@ -193,8 +204,11 @@ begin
       by (auto intro: substitute_cong[symmetric] simp add: Fexp.AnalBinds_lookup delete_conv')
      *)
     hence "FBinds (delete x \<Gamma>)\<cdot>ae = FBinds \<Gamma>\<cdot>ae" by (rule Fexp.AnalBinds_delete_bot)
-    thus "prognosis ae a (\<Gamma>, e, S) \<sqsubseteq> prognosis ae a (delete x \<Gamma>, e, S)"
-      by simp
+    moreover
+    hence "((FBinds \<Gamma>\<cdot>ae) x) = \<bottom>" by (metis Fexp.AnalBinds_delete_lookup)
+    ultimately
+    show "prognosis ae a (\<Gamma>, e, S) \<sqsubseteq> prognosis ae a (delete x \<Gamma>, e, S)"
+      by (simp add: substitute_T_delete empty_is_bottom)
   qed
 end
 

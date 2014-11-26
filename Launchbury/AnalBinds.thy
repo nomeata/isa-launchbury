@@ -36,6 +36,9 @@ lemma AnalBinds_delete_bot: "ae x = \<bottom> \<Longrightarrow> AnalBinds (delet
 lemma AnalBinds_delete_below: "AnalBinds (delete x \<Gamma>)\<cdot>ae \<sqsubseteq> AnalBinds \<Gamma>\<cdot>ae"
   by (auto intro: fun_belowI simp add: AnalBinds_lookup split:option.split)
 
+lemma AnalBinds_delete_lookup[simp]: "(AnalBinds (delete x \<Gamma>)\<cdot>ae) x = \<bottom>"
+  by (auto  simp add: AnalBinds_lookup split:option.split)
+ 
 lemma edom_AnalBinds: "edom (AnalBinds \<Gamma>\<cdot>ae) \<subseteq> domA \<Gamma> \<inter> edom ae"
   by (induction \<Gamma> rule: AnalBinds.induct) (auto  simp add: edom_def)
 

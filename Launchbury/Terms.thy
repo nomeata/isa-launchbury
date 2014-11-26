@@ -474,32 +474,41 @@ nominal_termination (eqvt) by lexicographic_order
 lemma isLam_Lam: "isLam (Lam [x]. e)" by simp
 
 subsection {* The notion of thunks *}
-
-
+(*
 fun thunks :: "heap \<Rightarrow> var set" where
   "thunks [] = {}"
   | "thunks ((x,e)#\<Gamma>) = (if isLam e then {} else {x}) \<union> thunks \<Gamma>"
+*)
+
+definition thunks :: "heap \<Rightarrow> var set" where
+  "thunks \<Gamma> = {x . case map_of \<Gamma> x of Some e \<Rightarrow> \<not> isLam e | None \<Rightarrow> False}"
+
+lemma thunks_Nil[simp]: "thunks [] = {}" by (auto simp add: thunks_def)
 
 lemma thunks_domA: "thunks \<Gamma> \<subseteq> domA \<Gamma>"
-  by (induction \<Gamma> rule:thunks.induct) auto
+  by (induction \<Gamma> ) (auto simp add: thunks_def)
 
-lemma thunks_append[simp]: "thunks (\<Delta>@\<Gamma>) = thunks \<Delta> \<union> thunks \<Gamma>"
-  by (induction \<Delta> rule:thunks.induct) auto
+lemma thunks_Cons: "thunks ((x,e)#\<Gamma>) = (if isLam e then thunks \<Gamma> - {x} else insert x (thunks \<Gamma>))"
+  by (auto simp add: thunks_def )
+
+lemma thunks_append[simp]: "thunks (\<Delta>@\<Gamma>) = thunks \<Delta> \<union> (thunks \<Gamma> - domA \<Delta>)"
+  by (induction \<Delta>) (auto simp add: thunks_def )
 
 lemma thunks_delete[simp]: "thunks (delete x \<Gamma>) = thunks \<Gamma> - {x}"
-  by (induction \<Gamma> rule:thunks.induct) auto
+  by (induction \<Gamma>) (auto simp add: thunks_def )
 
 lemma thunksI[intro]: "map_of \<Gamma> x = Some e \<Longrightarrow> \<not> isLam e \<Longrightarrow> x \<in> thunks \<Gamma>"
-  by (induction \<Gamma> rule:thunks.induct) (auto split:if_splits)
-   
+  by (induction \<Gamma>) (auto simp add: thunks_def )
+
+lemma thunksE[intro]: "x \<in> thunks \<Gamma> \<Longrightarrow> map_of \<Gamma> x = Some e \<Longrightarrow> \<not> isLam e"
+  by (induction \<Gamma>) (auto simp add: thunks_def )
+
+lemma thunks_cong: "map_of \<Gamma> = map_of \<Delta> \<Longrightarrow> thunks \<Gamma> = thunks \<Delta>"
+  by (simp add: thunks_def)
 
 lemma thunks_eqvt[eqvt]:
   "\<pi> \<bullet> thunks \<Gamma> = thunks (\<pi> \<bullet> \<Gamma>)"
-    apply (induction \<Gamma> rule:thunks.induct)
-    apply simp 
-    unfolding thunks.simps
-    apply perm_simp
-    apply simp
-    done
+    unfolding thunks_def
+    by perm_simp rule
 
 end

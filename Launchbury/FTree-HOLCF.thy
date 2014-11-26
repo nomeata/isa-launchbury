@@ -58,11 +58,11 @@ lemma both_mono2':
   "t \<sqsubseteq> t' \<Longrightarrow> both t'' t \<sqsubseteq> both t'' t'"
   using  both_mono2[folded below_set_def, unfolded paths_mono_iff].
 
-lemma substitute_mono1': "f \<sqsubseteq> f'\<Longrightarrow> substitute f t \<sqsubseteq> substitute f' t"
+lemma substitute_mono1': "f \<sqsubseteq> f'\<Longrightarrow> substitute f T t \<sqsubseteq> substitute f' T t"
   using  substitute_mono1[folded below_set_def, unfolded paths_mono_iff] fun_belowD
   by metis
 
-lemma substitute_mono2': "t \<sqsubseteq> t'\<Longrightarrow> substitute f t \<sqsubseteq> substitute f t'"
+lemma substitute_mono2': "t \<sqsubseteq> t'\<Longrightarrow> substitute f T t \<sqsubseteq> substitute f T t'"
   using  substitute_mono2[folded below_set_def, unfolded paths_mono_iff].
 
 lemma and_then_both_single': "and_then x t \<sqsubseteq> both (single x) t"
@@ -116,7 +116,7 @@ lemma cont_paths[THEN cont_compose, cont2cont, simp]:
   done
 
 lemma cont_substitute[THEN cont_compose, cont2cont, simp]:
-  "cont (substitute f)"
+  "cont (substitute f T)"
   apply (rule ftree_contI2)
   apply (rule paths_substitute_substitute'')
   apply (auto intro: substitute''.intros)
