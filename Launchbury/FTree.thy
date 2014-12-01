@@ -746,14 +746,20 @@ proof (intro paths_inj  set_eqI)
   proof (induction xs arbitrary: f t)
   case Nil thus ?case by simp
   case (Cons x xs f t)
+  
+    note const_onD[OF Cons.prems carrier_possible, where y = x, simp]
+
+    have [simp]: "possible t x \<Longrightarrow> f_nxt f T x = f"
+      by (rule f_nxt_empty', rule const_onD[OF Cons.prems carrier_possible, where y = x])
+
     from Cons.prems carrier_nxt_subset
     have "const_on f (carrier (nxt t x)) empty"
       by (rule const_on_subset)
     hence "const_on (f_nxt f T x) (carrier (nxt t x)) empty"
       by (auto simp add: const_on_def f_nxt_def)
-    note Cons.IH[OF this, simp]
-
-    note const_onD[OF Cons.prems carrier_possible, where y = x, simp]
+    note Cons.IH[OF this]
+    hence [simp]: "possible t x \<Longrightarrow> (xs \<in> paths (substitute f T (nxt t x))) = (xs \<in> paths (nxt t x))"
+      by simp
 
     show ?case by (auto simp add: Cons_path)
   qed
@@ -907,6 +913,43 @@ lemma substitute_cong_induct:
   apply (erule substitute_cong'[OF _ _ assms(2)])
   apply (metis assms(1,3))
   apply (metis assms(3))
+  done
+
+lemma f_nxt_eq_empty_iff:
+  "f_nxt f T x x' = empty \<longleftrightarrow> f x' = empty \<or> (x' = x \<and> x \<in> T)"
+  by (auto simp add: f_nxt_def)
+
+lemma substitute_T_cong':
+  assumes "xs \<in> paths (substitute f T t)"
+  assumes "\<And> x.  (x \<in> T \<longleftrightarrow> x \<in> T') \<or> f x = empty"
+  shows "xs \<in> paths (substitute f T' t)"
+  using assms
+proof (induction f T t xs  rule: substitute_induct )
+  case Nil thus ?case by simp
+next
+  case (Cons f T t x xs)
+  from Cons.prems(2)[where x = x]
+  have [simp]: "f_nxt f T x = f_nxt f T' x"
+    by (auto simp add: f_nxt_def)
+
+  from Cons.prems(2)
+  have "(\<And>x'. (x' \<in> T) = (x' \<in> T') \<or> f_nxt f T x x' = FTree.empty)"
+    by (auto simp add: f_nxt_eq_empty_iff)
+  from Cons.prems(1) Cons.IH[OF _ this]
+  show ?case
+    by auto
+qed
+
+lemma substitute_cong_T:
+  assumes "\<And> x.  (x \<in> T \<longleftrightarrow> x \<in> T') \<or> f x = empty"
+  shows "substitute f T = substitute f T'"
+  apply rule
+  apply (rule paths_inj)
+  apply (rule set_eqI)
+  apply (rule iffI)
+  apply (erule substitute_T_cong'[OF _ assms])
+  apply (erule substitute_T_cong')
+  apply (metis assms)
   done
 
 lemma carrier_substitute1: "carrier t \<subseteq> carrier (substitute f T t)"

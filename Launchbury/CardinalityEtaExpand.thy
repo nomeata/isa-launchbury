@@ -135,15 +135,9 @@ case (thunk \<Gamma> x e S)
     hence "x \<notin> ap S" using prognosis_ap[of ae a \<Gamma> "(Var x)" S] by auto
     
 
-    {
-    have "prognosis ae u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> prognosis ae u (\<Gamma>, e, Upd x # S)" by (rule prognosis_delete)
-    also
-    from `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u`
-    have "\<dots> \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))"
-      by (rule prognosis_Var)
-    finally have "prognosis ae u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))" by this simp
-    }
-    note * = this
+    from `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u` `\<not> isLam e`
+    have *: "prognosis ae u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))"
+      by (rule prognosis_Var_thunk)
 
     from `prognosis ae a (\<Gamma>, Var x, S) x \<sqsubseteq> once`
     have "(record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))) x = none"
@@ -214,10 +208,9 @@ case (thunk \<Gamma> x e S)
   next
     case many
 
-    have "prognosis ae u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> prognosis ae u (\<Gamma>, e, Upd x # S)" by (rule prognosis_delete)
-    also
-    from `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u`
-    have "\<dots> \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))" by (rule prognosis_Var)
+    from `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u` `\<not> isLam e`
+    have "prognosis ae u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))"
+      by (rule prognosis_Var_thunk)
     also note record_call_below_arg
     finally
     have *: "prognosis ae u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> prognosis ae a (\<Gamma>, Var x, S)" by this simp_all
@@ -260,15 +253,14 @@ case (lamvar \<Gamma> x e S)
 
   have "prognosis ae u ((x, e) # delete x \<Gamma>, e, S) = prognosis ae u (\<Gamma>, e, S)"
     using `map_of \<Gamma> x = Some e` by (auto intro!: prognosis_reorder)
-  also have "\<dots> \<sqsubseteq> prognosis ae u (\<Gamma>, e, Upd x # S)" by (rule prognosis_upd)
   also have "\<dots> \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))"
-     using `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u`  by (rule prognosis_Var)
+     using `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u` `isLam e`  by (rule prognosis_Var_lam)
   also have "\<dots> \<sqsubseteq> prognosis ae a (\<Gamma>, Var x, S)" by (rule record_call_below_arg)
   finally have *: "prognosis ae u ((x, e) # delete x \<Gamma>, e, S) \<sqsubseteq> prognosis ae a (\<Gamma>, Var x, S)" by this simp_all
 
   have "consistent (ae, ce, u) ((x, e) # delete x \<Gamma>, e, S)"
     using lamvar `ABinds (delete x \<Gamma>)\<cdot>ae \<squnion> Aexp e\<cdot>u \<sqsubseteq> ae`  `ae x = up\<cdot>u` edom_mono[OF *]
-    by (auto simp add: join_below_iff split:if_splits intro: below_trans[OF _ `a \<sqsubseteq> u`] below_trans[OF *])
+    by (auto simp add: join_below_iff thunks_Cons split:if_splits intro: below_trans[OF _ `a \<sqsubseteq> u`] below_trans[OF *])
   moreover
 
   have "Astack (restr_stack (edom ae) S) \<sqsubseteq> u" using lamvar  below_trans[OF _ `a \<sqsubseteq> u`] by auto
@@ -311,7 +303,7 @@ case (var\<^sub>2 \<Gamma> x e S)
     have *: "prognosis ae 0 ((x, e) # \<Gamma>, e, S) \<sqsubseteq> prognosis ae 0 (\<Gamma>, e, Upd x # S)" by (rule prognosis_Var2)
 
     have "consistent (ae, ce, 0) ((x, e) # \<Gamma>, e, S)" using var\<^sub>2
-      by (auto simp add: join_below_iff split:if_splits elim:below_trans[OF *])
+      by (auto simp add: join_below_iff thunks_Cons split:if_splits elim:below_trans[OF *])
     moreover
     have "conf_transform (ae, ce, a) (\<Gamma>, e, Upd x # S) \<Rightarrow>\<^sub>G conf_transform (ae, ce, 0) ((x, e) # \<Gamma>, e, S)"
       using `ae x = up\<cdot>a` `a = 0` var\<^sub>2 `ce x = up\<cdot>c`
@@ -337,7 +329,7 @@ case (var\<^sub>2 \<Gamma> x e S)
     have *: "prognosis ae a ((x, e) # \<Gamma>, e, S) \<sqsubseteq> prognosis ae a (\<Gamma>, e, Upd x # S)" by this simp
 
     have "consistent (ae, ce, a) ((x, e) # \<Gamma>, e, S)" using var\<^sub>2
-      by (auto simp add: join_below_iff `ae x = \<bottom>` split:if_splits elim:below_trans[OF *])
+      by (auto simp add: join_below_iff `ae x = \<bottom>` thunks_Cons split:if_splits elim:below_trans[OF *])
     moreover
     have "conf_transform (ae, ce, a) (\<Gamma>, e, Upd x # S) = conf_transform (ae, ce, a) ((x, e) # \<Gamma>, e, S)"
       by(simp add: map_transform_restrA[symmetric])
