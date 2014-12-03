@@ -35,6 +35,4 @@ locale CorrectCoCallAnalysis = CoCallAnalysis_ccField +
   assumes Aexp_App: "ccExp (App e x)\<cdot>n = ccExp e \<cdot>(inc\<cdot>n) \<squnion> ccProd (fv e) {x}"
   (* assumes Aexp_subst_restr: "x \<notin> S \<Longrightarrow> y \<notin> S \<Longrightarrow> (ccExp e[x::=y] \<cdot> a) f|` S = (ccExp e\<cdot>a) f|` S" *)
 
-
-
 end

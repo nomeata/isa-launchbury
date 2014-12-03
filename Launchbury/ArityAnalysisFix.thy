@@ -28,14 +28,13 @@ lemma Abinds_below_Afix: "ABinds \<Delta> \<sqsubseteq> Afix \<Delta>"
   apply (rule cfun_belowI)
   apply (simp add: Afix_eq)
   apply (subst fix_eq, simp)
-  apply (rule below_trans[OF _ join_above1])
+  apply (rule below_trans[OF _ join_above2])
   apply (rule monofun_cfun_arg)
   apply (subst fix_eq, simp)
   done
 
 lemma Afix_above_arg: "ae \<sqsubseteq> Afix \<Gamma> \<cdot> ae"
-  by (metis (full_types) "HOLCF-Join-Classes.join_above1" ArityAnalysis.Afix_unroll join_comm)
-
+  by (subst Afix_unroll) simp
 
 lemma Abinds_Afix_below[simp]: "ABinds \<Gamma>\<cdot>(Afix \<Gamma>\<cdot>ae) \<sqsubseteq> Afix \<Gamma>\<cdot>ae"
   apply (subst Afix_unroll) back
@@ -62,14 +61,14 @@ lemma Afix_repeat_singleton: "(\<mu> xa. Afix \<Gamma>\<cdot>(AE_singleton x\<cd
 
   apply (rule fix_least_below, simp)
   apply (rule Afix_least_below, simp)
-  apply (intro join_below below_refl iffD2[OF AE_singleton_below_iff] below_trans[OF _ fun_belowD[OF Afix_above_arg]]  below_trans[OF _ Afix_above_arg] join_above2)
+  apply (intro join_below below_refl iffD2[OF AE_singleton_below_iff] below_trans[OF _ fun_belowD[OF Afix_above_arg]]  below_trans[OF _ Afix_above_arg] join_above1)
   apply simp
   done
 
 lemma Afix_join_fresh: "ae' ` (domA \<Delta>) \<subseteq> {\<bottom>}  \<Longrightarrow>  Afix \<Delta>\<cdot>(ae \<squnion> ae') = (Afix \<Delta>\<cdot>ae) \<squnion> ae'"
   apply (rule below_antisym)
   apply (rule Afix_least_below)
-  apply (simp add: Abinds_join_fresh)
+  apply (subst Abinds_join_fresh, simp)
   apply (rule below_trans[OF Abinds_Afix_below join_above1])
   apply (rule join_below)
   apply (rule below_trans[OF Afix_above_arg join_above1])
@@ -158,7 +157,8 @@ next
   qed
   finally
   have "ABinds \<Gamma>[y::h=x]\<cdot>aeL \<sqsubseteq> (ABinds \<Gamma>\<cdot>aeR)(y := \<bottom>, x := up\<cdot>0)" by this simp
-  thus ?case by (simp add: join_mono)
+  thus ?case
+    by (auto simp add: join_below_iff elim: below_trans)
 qed
 
 end
@@ -261,18 +261,16 @@ lemma Afix_e_to_heap:
     apply (simp add: Afix_eq)
     apply (rule fix_least_below, simp)
     apply (intro join_below)
+    apply (subst fix_eq, simp)
+    apply (subst fix_eq, simp)
+
+    apply (rule below_trans[OF _ join_above2])
+    apply (rule below_trans[OF _ join_above2])
+    apply (rule below_trans[OF _ join_above1])
+    apply (rule monofun_cfun_arg)
+    apply (subst fix_eq, simp)
+      
     apply (subst fix_eq, simp) back apply (simp add: below_trans[OF _ join_above2])
-    apply (subst fix_eq, simp)
-    apply (rule below_trans[OF monofun_cfun_arg join_above1])
-    apply (subst fix_eq, simp)
-    apply (rule below_trans[OF _ join_above2])
-    apply (rule below_trans[OF _ join_above2])
-    apply simp
-    apply (subst fix_eq, simp)
-    apply (rule below_trans[OF _ join_above2])
-    apply (rule below_trans[OF _ join_above2])
-    apply (rule below_trans[OF _ join_above2])
-    apply simp
     done
 
 lemma Afix_e_to_heap':

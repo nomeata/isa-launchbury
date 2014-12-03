@@ -1,5 +1,5 @@
 theory "FTree-HOLCF"
-imports FTree "HOLCF-Utils" "Set-Cpo"
+imports FTree "HOLCF-Utils" "Set-Cpo" "HOLCF-Join-Classes"
 begin
 
 instantiation ftree :: (type) below
@@ -35,14 +35,17 @@ lemma lub_is_either: "lub S = Either S"
 instance ftree :: (type) cpo
   by default (rule exI, rule is_lub_ftree)
 
-lemma minimal_ftree: "empty \<sqsubseteq> S"
+lemma minimal_ftree[simp, intro!]: "empty \<sqsubseteq> S"
   by transfer simp
 
 instance ftree :: (type) pcpo
-  by default (rule+, rule minimal_ftree)
+  by default (rule+)
 
 lemma empty_is_bottom: "empty = \<bottom>"
   by (metis below_bottom_iff minimal_ftree)
+
+lemma carrier_bottom[simp]: "carrier \<bottom> = {}"
+  unfolding empty_is_bottom[symmetric] by simp
 
 lemma both_above_arg1: "t \<sqsubseteq> both t t'"
   by transfer fastforce
@@ -158,5 +161,37 @@ lemma paths_many_calls_subset:
 lemma single_below:
   "[x] \<in> paths t \<Longrightarrow> single x \<sqsubseteq> t" by transfer auto
 
+lemma cont_ftree_restr[THEN cont_compose, cont2cont,simp]: "cont (ftree_restr S)"
+  sorry
+
+lemmas ftree_restr_mono = cont2monofunE[OF cont_ftree_restr[OF cont_id]]
+
+
+instance ftree :: (type) Finite_Join_cpo
+proof default
+  fix x y :: "'a ftree"
+  show "compatible x y"
+    unfolding compatible_def
+    apply (rule exI)
+    apply (rule is_lub_ftree)
+    done
+qed
+
+lemma ftree_join_is_either:
+   "t \<squnion> t' = t \<oplus>\<oplus> t'"
+proof-
+  have "t \<oplus>\<oplus> t' = Either {t, t'}" by transfer auto
+  thus "t \<squnion> t' = t \<oplus>\<oplus> t'" by (metis lub_is_join is_lub_ftree)
+qed  
+
+lemma ftree_join_transfer[transfer_rule]: "rel_fun (pcr_ftree op =) (rel_fun (pcr_ftree op =) (pcr_ftree op =)) op \<union> op \<squnion>"
+proof-
+  have "op \<squnion> = (op \<oplus>\<oplus> :: 'a ftree \<Rightarrow> 'a ftree \<Rightarrow> 'a ftree)" using ftree_join_is_either by blast
+  thus ?thesis using either.transfer  by metis
+qed
+
+lemma ftree_restr_join[simp]:
+  "ftree_restr S (t \<squnion> t') = ftree_restr S t \<squnion> ftree_restr S t'"
+  by transfer auto
 
 end

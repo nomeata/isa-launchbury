@@ -417,8 +417,7 @@ next
     by (rule Abinds_env_restr_cong) (simp add: env_restr_join)
   ultimately
   have "ABinds (\<Delta> @ \<Gamma>) \<cdot> (Aheap \<Delta> e\<cdot>a \<squnion> ae) \<squnion> Aexp e\<cdot>a = (ABinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a) \<squnion> Aexp e\<cdot>a) \<squnion> ABinds \<Gamma>\<cdot>ae"
-    apply (simp add: Abinds_append_disjoint[OF fresh_distinct[OF let\<^sub>1(1)]])
-    by (metis join_comm)
+    by (simp add: Abinds_append_disjoint[OF fresh_distinct[OF let\<^sub>1(1)]])
   moreover have "(ABinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a) \<squnion> Aexp e\<cdot>a) \<sqsubseteq> Aheap \<Delta> e\<cdot>a \<squnion> Aexp (Let \<Delta> e)\<cdot>a" by (rule Aexp_Let)
   moreover have " ABinds \<Gamma>\<cdot>ae \<squnion> Aexp (Let \<Delta> e)\<cdot>a \<sqsubseteq> ae" using let\<^sub>1 by auto
   ultimately

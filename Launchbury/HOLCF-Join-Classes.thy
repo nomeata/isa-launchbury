@@ -11,7 +11,11 @@ lemmas join_above2[simp] = all_compatible[THEN join_above2]
 lemmas join_below[simp] = all_compatible[THEN join_below]
 lemmas join_below_iff = all_compatible[THEN join_below_iff]
 lemmas join_assoc[simp] = join_assoc[OF all_compatible all_compatible all_compatible]
-lemmas join_comm = all_compatible[THEN join_commute]
+lemmas join_comm[simp] = all_compatible[THEN join_commute]
+
+lemma join_lc[simp]: "x \<squnion> (y \<squnion> z) = y \<squnion> (x \<squnion> (z::'a::Finite_Join_cpo))"
+  by (metis join_assoc join_comm)
+  
 
 
 lemma join_cont': "chain Y \<Longrightarrow> (\<Squnion> i. Y i) \<squnion> y = (\<Squnion> i. Y i \<squnion> (y::'a::Finite_Join_cpo))"
@@ -35,7 +39,6 @@ lemma join_cont2:
 
 lemma join_cont[cont2cont,simp]:"cont f \<Longrightarrow> cont g \<Longrightarrow> cont (\<lambda>x. (f x \<squnion> (g x::'a::Finite_Join_cpo)))"
   apply (rule cont2cont_case_prod[where g = "\<lambda> x. (f x, g x)" and f = "\<lambda> p x y . x \<squnion> y", simplified])
-  apply (rule join_cont1)
   apply (rule join_cont2)
   apply (metis cont2cont_Pair)
   done

@@ -100,11 +100,14 @@ next
   thus ?case by (auto intro!: env_restr_mono2 simp add: Abinds_reorder1[OF goal8(1)])
 next
   case goal9
+  thus ?case by (auto intro!: env_restr_mono2 simp add: Abinds_reorder1[OF goal9(1)])
+next
+  case goal10
   have "Aexp' e\<cdot>(ae x) \<sqsubseteq> Aexp e\<cdot>0" by (cases "ae x") (auto intro: monofun_cfun_arg)
   from edom_mono[OF this]
   show ?case by (auto intro!: env_restr_mono2 dest: set_mp[OF edom_mono[OF ABinds_delete_below]])
 next
-  case goal10
+  case goal11
   from `ae x = \<bottom>`
   have "ABinds (delete x \<Gamma>)\<cdot>ae = ABinds \<Gamma>\<cdot>ae" by (rule ABinds_delete_bot)
   thus ?case by simp
@@ -117,14 +120,14 @@ proof
   from set_mp[OF goal1(3)] fresh_distinct[OF goal1(1)] fresh_distinct_fv[OF goal1(2)]
   have  "ae f|` domA \<Delta> = \<bottom>"
     by (auto dest: set_mp[OF ups_fv_subset])
-  hence [simp]: "ABinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a \<squnion> ae) = ABinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)" by (simp cong: Abinds_env_restr_cong add: env_restr_join)
+  hence [simp]: "ABinds \<Delta>\<cdot>(ae \<squnion> Aheap \<Delta> e\<cdot>a) = ABinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)" by (simp cong: Abinds_env_restr_cong add: env_restr_join)
 
   from  fresh_distinct[OF goal1(1)]
   have "Aheap \<Delta> e\<cdot>a f|` domA \<Gamma> = \<bottom>" by (auto dest!: set_mp[OF edom_Aheap])
-  hence [simp]: "ABinds \<Gamma>\<cdot>(Aheap \<Delta> e\<cdot>a \<squnion> ae) = ABinds \<Gamma>\<cdot>ae" by (simp cong: Abinds_env_restr_cong add: env_restr_join)
+  hence [simp]: "ABinds \<Gamma>\<cdot>(ae \<squnion> Aheap \<Delta> e\<cdot>a) = ABinds \<Gamma>\<cdot>ae" by (simp cong: Abinds_env_restr_cong add: env_restr_join)
   
   have "edom (ABinds (\<Delta> @ \<Gamma>)\<cdot>(Aheap \<Delta> e\<cdot>a \<squnion> ae)) \<union> edom (Aexp e\<cdot>a)  = edom (ABinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) \<union> edom (ABinds \<Gamma>\<cdot>ae) \<union>  edom (Aexp e\<cdot>a) "
-    by (simp add: Abinds_append_disjoint[OF fresh_distinct[OF goal1(1)]])
+    by (simp add: Abinds_append_disjoint[OF fresh_distinct[OF goal1(1)]] Un_commute)
   also have "\<dots> = edom (ABinds \<Gamma>\<cdot>ae) \<union> edom (ABinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a) \<squnion> Aexp e\<cdot>a)"
     by force
   also have "\<dots> \<subseteq> edom (ABinds \<Gamma>\<cdot>ae) \<union> edom (Aheap \<Delta> e\<cdot>a \<squnion> Aexp (Let \<Delta> e)\<cdot>a)"

@@ -34,7 +34,7 @@ locale CorrectArityAnalysisAheap' = CorrectArityAnalysis' +
   assumes Aheap_subst: "x \<notin> domA \<Gamma> \<Longrightarrow> y \<notin> domA \<Gamma> \<Longrightarrow> Aheap \<Gamma>[x::h=y] e[x ::=y]  = Aheap \<Gamma> e"
 
 locale CorrectArityAnalysisLet' = CorrectArityAnalysisAheap' +
-  assumes Aexp_Let: "ABinds \<Gamma>\<cdot>(Aheap \<Gamma> e\<cdot>a) \<squnion> Aexp e\<cdot>a \<sqsubseteq> Aheap \<Gamma> e\<cdot>a \<squnion>  Aexp (Let \<Gamma> e)\<cdot>a"
+  assumes Aexp_Let: "ABinds \<Gamma>\<cdot>(Aheap \<Gamma> e\<cdot>a) \<squnion> Aexp e\<cdot>a \<sqsubseteq> Aheap \<Gamma> e\<cdot>a \<squnion> Aexp (Let \<Gamma> e)\<cdot>a"
 
 locale CorrectArityAnalysisLetNoCard = CorrectArityAnalysisLet' +
   assumes Aheap_heap3: "x \<in> thunks \<Gamma> \<Longrightarrow> (Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"

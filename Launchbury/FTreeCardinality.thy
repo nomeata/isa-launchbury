@@ -2,6 +2,7 @@ theory FTreeCardinality
 imports CardinalityAnalysis "FTree-Nominal-HOLCF" CallFutureCardinality AnalBinds
 begin
 
+
 locale FutureAnalysis =
  fixes Fexp :: "exp \<Rightarrow> Arity \<rightarrow> var ftree"
 begin
@@ -322,7 +323,7 @@ begin
 
     {
     fix x
-    have "(FBinds (\<Delta> @ \<Gamma>)\<cdot>(Aheap \<Delta> e\<cdot>a \<squnion> ae)) x = (FBinds \<Gamma>\<cdot>ae) x \<otimes>\<otimes> (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) x"
+    have "(FBinds (\<Delta> @ \<Gamma>)\<cdot>(ae \<squnion> Aheap \<Delta> e\<cdot>a)) x = (FBinds \<Gamma>\<cdot>ae) x \<otimes>\<otimes> (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) x"
     proof (cases "x \<in> domA \<Delta>")
       case True
       have "map_of \<Gamma> x = None" using True fresh_distinct[OF `atom \` domA \<Delta> \<sharp>* \<Gamma>`] by (metis disjoint_iff_not_equal domA_def map_of_eq_None_iff)

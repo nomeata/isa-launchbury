@@ -4,7 +4,8 @@ begin
 
 instantiation CoCalls :: pt
 begin
-  lift_definition permute_CoCalls :: "perm \<Rightarrow> CoCalls \<Rightarrow> CoCalls" is "permute".
+  lift_definition permute_CoCalls :: "perm \<Rightarrow> CoCalls \<Rightarrow> CoCalls" is "permute"
+    by (auto intro!: symI elim: symE simp add: mem_permute_set)
 instance
   apply default
   apply (transfer, simp)+

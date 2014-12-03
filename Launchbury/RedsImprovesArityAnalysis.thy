@@ -31,46 +31,57 @@ case (Variable \<Gamma> x e L \<Delta> z ae n)
 
   have "Afix ((x, z) # \<Delta>) \<cdot> (Aexp' z\<cdot>n \<squnion> ae)  f|` ?S = (\<mu> ae'. Aexp' z\<cdot>(ae' x) \<squnion> ABinds \<Delta> \<cdot> ae' \<squnion> Aexp' z\<cdot>n \<squnion> ae) f|` ?S"
     unfolding Afix_eq by simp
-  also have "\<dots> = (\<mu> ae'. ABinds \<Delta> \<cdot> ae' \<squnion> (Aexp' z\<cdot>n \<squnion> Aexp' z\<cdot>(ae' x) \<squnion> ae)) f|` ?S" by (metis (hide_lams, no_types) join_assoc join_comm)
   also have "\<dots> \<sqsubseteq> (\<mu> ae'. ABinds \<Delta> \<cdot> ae' \<squnion> (Aexp' z\<cdot>(n \<squnion> ae' x) \<squnion> ae)) f|` ?S"
     by (auto intro!: env_restr_mono monofun_cfun_arg cfun_belowI join_mono[OF below_refl] join_mono[OF _ below_refl] cfun_join_below simp del: join_assoc)
   also have "\<dots> = (\<mu> ae'. Afix \<Delta> \<cdot> ae' \<squnion> (Aexp' z\<cdot>(n \<squnion> ae' x) \<squnion> ae))  f|` ?S"
     apply (rule arg_cong[where f = "\<lambda> x. x f|` ?S"] )
-    apply (rule fix_eq_fix)
-    apply simp
-    apply (subst fix_eq) back back apply simp
-    apply (rule join_mono[OF _ below_refl])
-    apply (rule monofun_cfun_fun)
-    apply (rule Abinds_below_Afix)
+    apply (rule fix_eq_fix, simp_all)
 
-    apply simp
-    apply (rule join_below)
+    apply (subst fix_eq) back back apply simp_all
+    apply (intro join_below)
+    apply (simp add: below_trans[OF _ join_above2]  below_trans[OF _ join_above1])
+    apply (simp add: below_trans[OF _ join_above2]  below_trans[OF _ join_above1] monofun_cfun_fun[OF Abinds_below_Afix])
+    apply (simp add: below_trans[OF _ join_above2]  below_trans[OF _ join_above1])
+
+    apply (intro join_below)
+    apply (subst fix_eq, simp)
     apply (subst Afix_eq)
-    apply (rule fix_least_below)
-    apply simp
+    apply (rule fix_least_below, simp)
+    
     apply (subst fix_eq) back apply simp
+    apply (simp add: below_trans[OF _ join_above2]  below_trans[OF _ join_above1])
     apply (subst fix_eq) back apply simp
+    apply (simp add: below_trans[OF _ join_above2]  below_trans[OF _ join_above1])
     done
   also have "\<dots> = (\<mu> ae'. Afix \<Delta> \<cdot> (Aexp' z\<cdot>(n \<squnion> ae' x) \<squnion> ae)) f|` ?S"
     apply (rule arg_cong[where f = "\<lambda> x. x f|` ?S"] )
-    apply (rule fix_eq_fix)
-    apply simp
-    apply (rule join_below)
+    apply (rule fix_eq_fix, simp_all)
+    
+    apply (subst fix_eq) back back apply simp_all
+    apply (intro join_below)
+    apply (simp add: below_trans[OF _ join_above2]  below_trans[OF _ join_above1]  below_trans[OF _ Afix_above_arg])
+    
     apply (subst Afix_eq)
     apply (rule fix_least_below, simp)
-    apply (subst (1 2) fix_eq, simp)
-    apply (subst fix_eq, simp)back
-    apply (rule Afix_above_arg)
-
-    apply simp
-    apply (subst fix_eq, simp) back
-    apply (rule below_trans[OF monofun_cfun_arg join_above1])
     apply (rule join_below)
-    apply (subst fix_eq, simp) back
-    apply (rule below_trans[OF _ join_above2], simp)
+    apply (subst fix_eq, simp)
     
-    apply (subst fix_eq)  apply simp
-    apply (rule below_trans[OF _ join_above2], simp)
+    apply (simp add: below_trans[OF _ join_above2]  below_trans[OF _ join_above1] monofun_cfun_fun[OF Abinds_below_Afix])
+
+    apply (subst Afix_eq) back apply simp
+    apply (subst fix_eq, simp) back
+    apply (simp add: below_trans[OF _ join_above2]  below_trans[OF _ join_above1])
+
+    apply (subst fix_eq, simp) back 
+    apply (rule below_trans[OF _ join_above2])
+    apply (rule below_trans[OF _ join_above1])
+    apply (rule monofun_cfun_arg)
+    apply (intro join_below)
+    apply (subst fix_eq, simp)
+    apply (subst fix_eq, simp) back
+    apply (rule below_trans[OF _ join_above2])
+    apply (rule below_trans[OF _ join_above2])
+    apply rule
     done
     
   also have "\<dots> \<sqsubseteq> (\<mu> ae'. Afix (delete x \<Gamma>) \<cdot> (Aexp' e\<cdot>(n \<squnion> ae' x) \<squnion> ae)) f|` ?S"
@@ -90,7 +101,7 @@ case (Variable \<Gamma> x e L \<Delta> z ae n)
     apply (rule env_restr_mono)
     apply (rule monofun_cfun_arg)
     apply (rule cfun_belowI, simp)
-    apply (rule Afix_e_to_heap)
+    apply (rule Afix_e_to_heap[simplified])
     done
   also have "\<dots> = Afix ((x,e)#delete x \<Gamma>) \<cdot> (AE_singleton x\<cdot>n \<squnion> ae)  f|` ?S" by (rule arg_cong[OF Afix_repeat_singleton])
   also have "\<dots> \<sqsubseteq> Afix ((x,e)#delete x \<Gamma>) \<cdot> (Aexp' (Var x) \<cdot> n \<squnion> ae)  f|` ?S" by (intro Aexp'_Var monofun_cfun env_restr_mono join_mono below_refl)

@@ -104,7 +104,7 @@ case (thunk \<Gamma> x e S)
 
   
   from Abinds_reorder1[OF `map_of \<Gamma> x = Some e`] `ae x = up\<cdot>u`
-  have "ABinds (delete x \<Gamma>)\<cdot>ae \<squnion> Aexp e\<cdot>u = ABinds \<Gamma>\<cdot>ae" by (auto intro: join_comm)
+  have "ABinds (delete x \<Gamma>)\<cdot>ae \<squnion> Aexp e\<cdot>u = ABinds \<Gamma>\<cdot>ae" by auto
   also have "\<dots> \<sqsubseteq> ae" using thunk by (auto simp add: join_below_iff)
   finally have "ABinds (delete x \<Gamma>)\<cdot>ae \<squnion> Aexp e\<cdot>u \<sqsubseteq> ae".
   hence "consistent (ae, 0) (delete x \<Gamma>, e, Upd x # S)" using thunk `ae x = up\<cdot>u` `u = 0`
@@ -128,13 +128,13 @@ case (lamvar \<Gamma> x e S)
   then obtain u where "ae x = up\<cdot>u" and "a \<sqsubseteq> u" by (cases "ae x") auto
 
   from Abinds_reorder1[OF `map_of \<Gamma> x = Some e`] `ae x = up\<cdot>u`
-  have "ABinds (delete x \<Gamma>)\<cdot>ae \<squnion> Aexp e\<cdot>u = ABinds \<Gamma>\<cdot>ae" by (auto intro: join_comm)
+  have "ABinds (delete x \<Gamma>)\<cdot>ae \<squnion> Aexp e\<cdot>u = ABinds \<Gamma>\<cdot>ae" by auto
   also have "\<dots> \<sqsubseteq> ae" using lamvar by (auto simp add: join_below_iff)
   finally have "ABinds (delete x \<Gamma>)\<cdot>ae \<squnion> Aexp e\<cdot>u \<sqsubseteq> ae".
 
   have "consistent (ae, u) ((x, e) # delete x \<Gamma>, e, S)"
     using lamvar `ABinds (delete x \<Gamma>)\<cdot>ae \<squnion> Aexp e\<cdot>u \<sqsubseteq> ae`  `ae x = up\<cdot>u` 
-    by (auto simp add: join_below_iff split:if_splits intro: below_trans[OF _ `a \<sqsubseteq> u`] intro!: const_onI)
+    by (auto simp add: join_below_iff thunks_Cons split:if_splits intro: below_trans[OF _ `a \<sqsubseteq> u`] intro!: const_onI)
   moreover
 
   have "Astack S \<sqsubseteq> u" using lamvar  below_trans[OF _ `a \<sqsubseteq> u`] by auto
@@ -169,7 +169,7 @@ case (var\<^sub>2 \<Gamma> x e S)
   hence "a = 0" by auto
 
   have "consistent (ae, 0) ((x, e) # \<Gamma>, e, S)" using var\<^sub>2
-    by (auto simp add: join_below_iff split:if_splits)
+    by (auto simp add: join_below_iff thunks_Cons split:if_splits)
   moreover
   have "conf_transform (ae, a) (\<Gamma>, e, Upd x # S) \<Rightarrow> conf_transform (ae, 0) ((x, e) # \<Gamma>, e, S)"
     using `ae x = up\<cdot>a` `a = 0` var\<^sub>2
@@ -233,18 +233,12 @@ next
     by (rule Abinds_env_restr_cong) (simp add: env_restr_join)
   ultimately
   have "ABinds (\<Delta> @ \<Gamma>) \<cdot> (Aheap \<Delta> e\<cdot>a \<squnion> ae) \<squnion> Aexp e\<cdot>a = (ABinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a) \<squnion> Aexp e\<cdot>a) \<squnion> ABinds \<Gamma>\<cdot>ae"
-    apply (simp add: Abinds_append_disjoint[OF fresh_distinct[OF let\<^sub>1(1)]])
-    by (metis join_comm)
-  moreover have "(ABinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a) \<squnion> Aexp e\<cdot>a) \<sqsubseteq> Aheap \<Delta> e\<cdot>a \<squnion> Aexp (Let \<Delta> e)\<cdot>a" by (rule Aexp_Let)
-  moreover have " ABinds \<Gamma>\<cdot>ae \<squnion> Aexp (Let \<Delta> e)\<cdot>a \<sqsubseteq> ae" using let\<^sub>1 by auto
-  ultimately
-  have "ABinds (\<Delta> @ \<Gamma>) \<cdot> (Aheap \<Delta> e\<cdot>a \<squnion> ae) \<squnion> Aexp e\<cdot>a \<sqsubseteq> Aheap \<Delta> e\<cdot>a \<squnion> ae"
-    apply (simp only: join_assoc[symmetric])
-    apply (erule below_trans[OF join_mono[OF _ below_refl]])
-    apply (simp only: join_assoc)
-    apply (subst join_comm) back
-    apply (erule join_mono[OF  below_refl])
-    done
+    by (simp add: Abinds_append_disjoint[OF fresh_distinct[OF let\<^sub>1(1)]])
+  also have "\<dots> \<sqsubseteq> (Aheap \<Delta> e\<cdot>a \<squnion> Aexp (Let \<Delta> e)\<cdot>a) \<squnion> ABinds \<Gamma>\<cdot>ae" by (rule join_mono[OF Aexp_Let below_refl])
+  also have "\<dots> = Aheap \<Delta> e\<cdot>a \<squnion> (Aexp (Let \<Delta> e)\<cdot>a \<squnion> ABinds \<Gamma>\<cdot>ae)" by simp
+  also have "Aexp (Let \<Delta> e)\<cdot>a \<squnion> ABinds \<Gamma>\<cdot>ae \<sqsubseteq> ae" using let\<^sub>1 by auto
+  finally
+  have "ABinds (\<Delta> @ \<Gamma>) \<cdot> (Aheap \<Delta> e\<cdot>a \<squnion> ae) \<squnion> Aexp e\<cdot>a \<sqsubseteq> Aheap \<Delta> e\<cdot>a \<squnion> ae"  by this simp
   }
   ultimately
   have "consistent (?ae \<squnion> ae, a) (\<Delta> @ \<Gamma>, e, S) " by auto

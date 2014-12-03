@@ -2,9 +2,11 @@ theory CoCallGraph
 imports Main Vars "HOLCF-Join-Classes"
 begin
 
-typedef CoCalls = "UNIV :: (var \<times> var) set set"
+default_sort type
+
+typedef CoCalls = "{G :: (var \<times> var) set.  sym G}"
   morphisms Rep_CoCall Abs_CoCall
-  by auto
+  by (auto intro: exI[where x = "{}"] symI)
 
 setup_lifting type_definition_CoCalls
 
@@ -17,7 +19,8 @@ instance
   done
 end
 
-lift_definition coCallsLub :: "CoCalls set \<Rightarrow> CoCalls" is "\<lambda> S. \<Union> S".
+lift_definition coCallsLub :: "CoCalls set \<Rightarrow> CoCalls" is "\<lambda> S. \<Union> S"
+  by (auto intro: symI elim: symE)
 
 lemma coCallsLub_is_lub: "S <<| coCallsLub S"
 proof (rule is_lubI)
@@ -51,19 +54,17 @@ lift_definition is_cc_lub :: "CoCalls set \<Rightarrow> CoCalls \<Rightarrow> bo
 
 lemma ccis_lubTransfer[transfer_rule]: "(rel_set pcr_CoCalls  ===> pcr_CoCalls ===> op =) (\<lambda> S x . x = Union S) op <<|"
 proof-
-  have "is_cc_lub = op <<|"
-  apply (rule, rule, rule)
-  unfolding is_lub_def is_ub_def
-  apply transfer
-  apply auto
-  unfolding is_lub_def is_ub_def
-  apply transfer
-  apply blast
-  done
+  have "\<And> x xa . is_cc_lub x xa \<longleftrightarrow> xa = coCallsLub x" by transfer auto
+  hence "is_cc_lub = op <<|"
+  apply -
+  apply (rule, rule)
+  by (metis coCallsLub_is_lub is_lub_unique)
   thus ?thesis using is_cc_lub.transfer by simp
 qed
 
-lift_definition coCallsJoin :: "CoCalls \<Rightarrow> CoCalls  \<Rightarrow> CoCalls" is "op \<union>".
+lift_definition coCallsJoin :: "CoCalls \<Rightarrow> CoCalls  \<Rightarrow> CoCalls" is "op \<union>"
+    by (rule sym_Un)
+
 lemma ccJoinTransfer[transfer_rule]: "(pcr_CoCalls ===> pcr_CoCalls ===> pcr_CoCalls) op \<union> op \<squnion>"
 proof-
   have "op \<squnion> = coCallsJoin"
@@ -79,7 +80,10 @@ proof-
 qed
 
 
-lift_definition ccEmpty :: "CoCalls" is "{}".
+lift_definition ccEmpty :: "CoCalls" is "{}" by (auto intro: symI)
+
+lemma ccEmpty_below[simp]: "ccEmpty \<sqsubseteq> G"
+  by transfer auto
 
 instance CoCalls :: pcpo
 proof default
@@ -105,30 +109,71 @@ abbreviation notInCC :: "var \<Rightarrow> var \<Rightarrow> CoCalls \<Rightarro
 lemma notInCC_bot[simp]: "(x--y\<in>\<bottom>) \<longleftrightarrow> False"
   by transfer auto
 
+lemma below_CoCallsI:
+   "(\<And> x y. x--y\<in>G \<Longrightarrow> x--y\<in>G') \<Longrightarrow> G \<sqsubseteq> G'"
+  by transfer auto
+
+lemma CoCalls_eqI:
+   "(\<And> x y. (x--y\<in>G) \<longleftrightarrow> (x--y\<in>G')) \<Longrightarrow> G = G'"
+  by transfer auto
+
+lemma in_join[simp]:
+  "(x--y\<in>(G\<squnion>G')) \<longleftrightarrow>(x--y\<in>G) \<or> (x--y\<in>G')"
+by transfer auto
+
+lemma in_CoCallsLubI:
+  "(x--y\<in>G) \<Longrightarrow> G \<in> S \<Longrightarrow> (x--y\<in>(lub S))"
+by transfer auto
+
 lift_definition cc_delete :: "var \<Rightarrow> CoCalls \<Rightarrow> CoCalls"
-  is "\<lambda> z. Set.filter (\<lambda> (x,y) . x \<noteq> z \<and> y \<noteq> z)".
+  is "\<lambda> z. Set.filter (\<lambda> (x,y) . x \<noteq> z \<and> y \<noteq> z)"
+  by (auto intro!: symI elim: symE)
 
 lemma ccField_cc_delete: "ccField (cc_delete x S) \<subseteq> ccField S - {x}"
   by transfer (auto simp add: Field_def )
 
 lift_definition ccProd :: "var set \<Rightarrow> var set \<Rightarrow> CoCalls"
-  is "\<lambda> S1 S2. S1 \<times> S2 \<union> S2 \<times> S1".
+  is "\<lambda> S1 S2. S1 \<times> S2 \<union> S2 \<times> S1"
+  by (auto intro!: symI elim: symE)
 
 lemma ccProd_empty[simp]: "ccProd {} S = \<bottom>" by transfer auto
 
 lemma ccProd_empty'[simp]: "ccProd S {} = \<bottom>" by transfer auto
 
-lemma ccProd_union[simp]: "ccProd S (S' \<union> S'') = ccProd S S' \<squnion> ccProd S S''"
+lemma ccProd_union2[simp]: "ccProd S (S' \<union> S'') = ccProd S S' \<squnion> ccProd S S''"
   by transfer auto
 
-lemma ccProd_insert: "ccProd S (insert x S') = ccProd S {x} \<squnion> ccProd S S'"
+lemma in_ccProd[simp]: "(x--y\<in>(ccProd S S')) \<longleftrightarrow> x \<in> S \<and> y \<in> S' \<or> x \<in> S' \<and> y \<in> S"
+  by transfer auto
+
+lemma ccProd_union1[simp]: "ccProd (S' \<union> S'') S = ccProd S' S \<squnion> ccProd S'' S"
+  by transfer auto
+
+lemma ccProd_insert2: "ccProd S (insert x S') = ccProd S {x} \<squnion> ccProd S S'"
+  by transfer auto
+
+lemma ccProd_insert1: "ccProd (insert x S') S = ccProd {x} S \<squnion> ccProd S' S"
+  by transfer auto
+
+lemma ccProd_mono1: "S' \<subseteq> S'' \<Longrightarrow> ccProd S' S \<sqsubseteq> ccProd S'' S"
   by transfer auto
 
 lemma ccProd_mono2: "S' \<subseteq> S'' \<Longrightarrow> ccProd S S' \<sqsubseteq> ccProd S S''"
   by transfer auto
 
+lemma ccProd_comm: "ccProd S S' = ccProd S' S" by transfer auto
+
+lemma ccProd_belowI:
+   "(\<And> x y. x \<in> S \<Longrightarrow> y \<in> S' \<Longrightarrow> x--y\<in>G) \<Longrightarrow> ccProd S S' \<sqsubseteq> G"
+  by transfer (auto elim: symE)
+
+
 lift_definition cc_restr :: "var set \<Rightarrow> CoCalls \<Rightarrow> CoCalls"
-  is "\<lambda> S. Set.filter (\<lambda> (x,y) . x \<in> S \<and> y \<in> S)".
+  is "\<lambda> S. Set.filter (\<lambda> (x,y) . x \<in> S \<and> y \<in> S)"
+  by (auto intro!: symI elim: symE)
+
+lemma elem_cc_restr[simp]: "(x--y\<in>(cc_restr S G)) \<longleftrightarrow> (x--y\<in>G) \<and> x \<in> S \<and> y \<in> S"
+  by transfer auto
 
 lemma ccFieldd_cc_restr: "ccField (cc_restr S G) \<subseteq> ccField G \<inter> S"
   by transfer (auto simp add: Field_def)
@@ -172,6 +217,9 @@ lemma cont_ccProd_ccNeighbors:
 lemma ccNeighbors_join[simp]: "ccNeighbors S (G \<squnion> G') = ccNeighbors S G \<union> ccNeighbors S G'"
   by transfer auto
 
+lemma ccNeighbors_union[simp]: "ccNeighbors (S \<union> S') G = ccNeighbors S G \<union> ccNeighbors S' G"
+  by transfer auto
+
 lemma ccNeighbors_ccProd:
   "ccNeighbors S (ccProd S' S'') = (if S \<inter> S' = {} then {} else S'') \<union> (if S \<inter> S'' = {} then {} else S')"
 by transfer auto
@@ -205,5 +253,21 @@ lemma ccManyCalls_bot[simp]:
 lemma ccNeighbors_ccManyCalls[simp]: "x \<in> ccNeighbors {x} G \<longleftrightarrow> x \<in> ccManyCalls G"
   by transfer auto
 
+
+inductive list_pairs :: "'a list \<Rightarrow> ('a \<times> 'a) \<Rightarrow> bool"
+  where "list_pairs xs p \<Longrightarrow> list_pairs (x#xs) p"
+      | "y \<in> set xs \<Longrightarrow> list_pairs (x#xs) (x,y)"
+
+lift_definition ccFromList :: "var list \<Rightarrow> CoCalls" is "\<lambda> xs. {(x,y). list_pairs xs (x,y) \<or> list_pairs xs (y,x)}"
+  by (auto intro: symI)
+
+lemma ccFromList_Nil[simp]: "ccFromList [] = \<bottom>"
+  by transfer (auto elim: list_pairs.cases)
+
+lemma ccFromList_Cons[simp]: "ccFromList (x#xs) = ccProd {x} (set xs) \<squnion> ccFromList xs"
+  by transfer (auto elim: list_pairs.cases intro: list_pairs.intros)
+
+lemma ccFromList_append[simp]: "ccFromList (xs@ys) = ccFromList xs \<squnion> ccFromList ys \<squnion> ccProd (set xs) (set ys)"
+  by (induction xs) (auto simp add: ccProd_insert1[where S' = "set xs" for xs])
 
 end

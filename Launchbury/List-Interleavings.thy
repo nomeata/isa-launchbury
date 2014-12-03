@@ -35,6 +35,8 @@ lemma interleave_Nil2[simp]: "xs \<otimes> [] = {xs}"
 lemma interleave_nil_simp[simp]: "[] \<in> xs \<otimes> ys \<longleftrightarrow> xs = [] \<and> ys = []"
   by (auto elim: interleave_cases)
 
+lemma append_interleave: "xs @ ys \<in> xs \<otimes> ys"
+  by (induction xs) (auto intro: interleave_intros)
 
 lemma interleave_assoc1: "a \<in> xs \<otimes> ys \<Longrightarrow> b \<in> a \<otimes> zs \<Longrightarrow> \<exists> c. c \<in> ys \<otimes> zs \<and>  b \<in> xs  \<otimes> c"
   by (induction b arbitrary: a  xs ys zs)

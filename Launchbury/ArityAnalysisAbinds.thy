@@ -22,16 +22,10 @@ lemma ABinds_strict[simp]: "ABinds \<Gamma>\<cdot>\<bottom>=\<bottom>"
   by (induct \<Gamma> rule: ABinds.induct) auto
 
 lemma Abinds_reorder1: "map_of \<Gamma> v = Some e \<Longrightarrow> ABinds \<Gamma> = ABind v e \<squnion> ABinds (delete v \<Gamma>)"
-proof (induction \<Gamma> rule: ABinds.induct)
-  case 1 thus ?case by simp
-next
-  case (2 v' e' \<Gamma>)
-  thus ?case
-  apply (cases "v' = v")
-  apply auto
-  apply (metis (hide_lams, no_types) join_assoc delete_twist join_comm)
-  done
-qed
+  by (induction \<Gamma> rule: ABinds.induct) (auto simp add: delete_twist)
+
+lemma ABind_below_ABinds: "map_of \<Gamma> v = Some e \<Longrightarrow> ABind v e \<sqsubseteq> ABinds \<Gamma>"
+  by (metis "HOLCF-Join-Classes.join_above1" ArityAnalysis.Abinds_reorder1)
 
 lemma Abinds_reorder: "map_of \<Gamma> = map_of \<Delta> \<Longrightarrow> ABinds \<Gamma> = ABinds \<Delta>"
 proof (induction  \<Gamma> arbitrary: \<Delta> rule: ABinds.induct)
