@@ -1,5 +1,5 @@
 theory CoCallImplCorrect
-imports CoCallAnalysisImpl CardinalityAnalysis CallFutureCardinality 
+imports CoCallAnalysisImpl  CoCallCardinality 
 begin
 
 interpretation ArityAnalysis Aexp.
@@ -132,6 +132,10 @@ qed (simp_all add:Aexp_restr_subst)
 definition Aheap where
   "Aheap \<Gamma> e = (\<Lambda> a. (Afix \<Gamma> \<cdot> (Aexp e\<cdot>a, CCexp e\<cdot>a) f|` domA \<Gamma>))"
 
+lemma Aheap_simp:
+  "Aheap \<Gamma> e \<cdot> a= (Afix \<Gamma> \<cdot> (Aexp e\<cdot>a, CCexp e\<cdot>a) f|` domA \<Gamma>)"
+  unfolding Aheap_def by simp
+
 lemma Aheap_eqvt'[eqvt]:
   "\<pi> \<bullet> (Aheap \<Gamma> e) = Aheap (\<pi> \<bullet> \<Gamma>) (\<pi> \<bullet> e)"
   unfolding Aheap_def
@@ -172,49 +176,128 @@ next
     sorry
 qed
 
-definition ccCard :: "(AEnv \<times> CoCalls) \<rightarrow> (var \<Rightarrow> two)"
-  where "ccCard = (\<Lambda> (ae, G) . (\<lambda> _. once) f|` edom ae \<squnion> (\<lambda> _. many) f|`  (edom ae \<inter> ccManyCalls G))"
+definition calledOnce :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<Rightarrow> var set"
+  where "calledOnce \<Gamma> e a = (if \<forall> x e'. map_of \<Gamma> x = Some e' \<longrightarrow> edom (fup\<cdot>(Aexp e')\<cdot>((Aheap \<Gamma> e\<cdot>a) x)) \<inter> domA \<Gamma> = {} then domA \<Gamma> else {})"
 
-lemma ccCard_simp: "ccCard\<cdot>(ae, G) = (\<lambda> _. once) f|` edom ae \<squnion> (\<lambda> _. many) f|` (edom ae \<inter> ccManyCalls G)"
-  sorry
+definition ccHeap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> CoCalls"
+  where "ccHeap \<Gamma> e  = (\<Lambda> a. CCfix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a))"
 
-lemma ccCard_above_many[simp]: "many \<sqsubseteq> (ccCard\<cdot>aeG) x \<longleftrightarrow> x \<in> ccManyCalls (snd aeG) \<and> x \<in> edom (fst aeG)"
-  by (cases aeG) (auto simp add: ccCard_simp lookup_env_restr_eq)
+lemma ccHeap_eq:
+  "ccHeap \<Gamma> e\<cdot>a = CCfix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a)"
+unfolding ccHeap_def by simp
 
-lemma ccCard_edom[simp]: "edom (ccCard\<cdot>aeG) = edom (fst aeG)"
-  by (cases aeG) (auto simp add: ccCard_simp)
+definition isLinear :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<Rightarrow> bool"
+  where "isLinear \<Gamma> e a = ccLinear (domA \<Gamma>) (ccHeap \<Gamma> e\<cdot>a)"
 
-definition Cheap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> (var \<Rightarrow> two)" where
-  "Cheap \<Gamma> e = (\<Lambda> a. ccCard\<cdot>(cccFix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a)) f|` domA \<Gamma>)"
-
-lemma Cheap_simp: "Cheap \<Gamma> e\<cdot>a = ccCard\<cdot>(cccFix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a)) f|` domA \<Gamma>"
-  unfolding Cheap_def by (rule beta_cfun) simp
-
-lemma Cheap_eqvt[eqvt]: "\<pi> \<bullet> Cheap = Cheap"
-  sorry
-
-interpretation CardinalityHeap Aexp Aheap Cheap
+interpretation CoCallCardinality CCexp calledOnce isLinear ccHeap Aexp Aheap
 proof
+  fix e a x
+  show "CCexp e\<cdot>(inc\<cdot>a) \<squnion> ccProd {x} (insert x (fv e)) \<sqsubseteq> CCexp (App e x)\<cdot>a"
+    by simp
+next
+  fix y e n
+  show "cc_restr (fv (Lam [y]. e)) (CCexp e\<cdot>(pred\<cdot>n)) \<sqsubseteq> CCexp (Lam [y]. e)\<cdot>n"
+    by (auto simp add: predCC_eq dest!: set_mp[OF ccFieldd_cc_restr])
+next
+  fix x y :: var and S e a
+  assume "x \<notin> S" 
+  assume "y \<notin> S"
+  show "cc_restr S (CCexp e[y::=x]\<cdot>a) \<sqsubseteq> cc_restr S (CCexp e\<cdot>a)"
+    sorry
+next
+  fix e
+  assume "isLam e"
+  thus "CCexp  e\<cdot>0 = ccSquare (fv e)"
+    by (induction e rule: isLam.induct) (auto simp add: predCC_eq)
+next
+  fix \<Gamma> e a
+  have "ccHeap \<Gamma> e\<cdot>a = CCfix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a)" by (rule ccHeap_eq)
+
+  have "ccField  (ccHeap \<Gamma> e\<cdot>a) \<subseteq> fv \<Gamma> \<union> fv e" sorry
+  moreover
+  assume "isLinear \<Gamma> e a"
+  hence "ccField (ccHeap \<Gamma> e\<cdot>a) \<inter> domA \<Gamma> = {}" 
+    unfolding isLinear_def
+    sorry
+  ultimately
+  have "ccField (ccHeap \<Gamma> e\<cdot>a) \<subseteq> fv \<Gamma> \<union> fv e - domA \<Gamma>" by auto
+  thus "ccHeap \<Gamma> e\<cdot>a \<sqsubseteq> CCexp (Let \<Gamma> e)\<cdot>a"
+    by (simp add: ccHeap_eq[symmetric])
+next
+  fix \<Delta> :: heap and e a
+
+  show "CCexp e\<cdot>a \<sqsubseteq> ccHeap \<Delta> e\<cdot>a"
+    by (auto simp add: ccHeap_def arg_cong[OF CCfix_unroll, where f = "op \<sqsubseteq> x" for x ])
+
+  fix x e' a'
+  assume "map_of \<Delta> x = Some e'"
+  hence [simp]: "x \<in> domA \<Delta>" by (metis domI dom_map_of_conv_domA) 
+  assume "(Aheap \<Delta> e\<cdot>a) x = up\<cdot>a'"
+  hence "(Afix \<Delta>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a)) x = up\<cdot>a'" 
+    by (simp add: Aheap_def)
+  hence "CCexp e'\<cdot>a' \<sqsubseteq> ccBind x e'\<cdot>(Afix \<Delta>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a), CCfix \<Delta>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a))"
+    by (auto simp add: ccExp'_def dest: set_mp[OF ccField_CCexp])
+  also
+  have "ccBind x e'\<cdot>(Afix \<Delta>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a), CCfix \<Delta>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a)) \<sqsubseteq>  ccHeap \<Delta> e\<cdot>a"
+    using `map_of \<Delta> x = Some e'`
+    by (force simp add: ccHeap_def ccBindsExtra_simp  ccBinds_eq  arg_cong[OF CCfix_unroll, where f = "op \<sqsubseteq> x" for x ]
+                intro: below_trans[OF _ join_above2] 
+                simp del: ccBind_eq)
+  finally
+  show "CCexp e'\<cdot>a' \<sqsubseteq>  ccHeap \<Delta> e\<cdot>a" by this simp_all
+
+  show "ccProd (fv e') (ccNeighbors (domA \<Delta>) (ccHeap \<Delta> e\<cdot>a)) \<sqsubseteq> ccHeap \<Delta> e\<cdot>a" 
+    using `map_of \<Delta> x = Some e'`
+    by (force simp add: ccHeap_def ccBindsExtra_simp  ccBinds_eq  arg_cong[OF CCfix_unroll, where f = "op \<sqsubseteq> x" for x ]
+                intro: below_trans[OF _ join_above2]  below_trans[OF _ join_above1] 
+                simp del: ccBind_eq)
+next
   fix \<Delta> e a
-  show "edom (Cheap \<Delta> e\<cdot>a) = edom (Aheap \<Delta> e\<cdot>a)"
-    by (simp add: Cheap_simp Aheap_def Afix_def)
+  assume "isLinear \<Delta> e a"
+
+  from `isLinear _ _ _`
+  have linear: "ccLinear (domA \<Delta>) (CCfix \<Delta>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a))" unfolding isLinear_def ccHeap_eq.
+  hence "ccLinear (domA \<Delta>) (ccBindsExtra \<Delta>\<cdot>(Afix \<Delta>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a), CCfix \<Delta>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a)) \<squnion> CCexp e\<cdot>a)"
+    by (subst (asm) CCfix_unroll) simp
+  hence  *: "ccLinear (domA \<Delta>) (CCexp e\<cdot>a)" and **: "\<And> x e'. map_of \<Delta> x = Some e' \<Longrightarrow> ccLinear (domA \<Delta>) (ccBind x e'\<cdot>(Afix \<Delta>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a), CCfix \<Delta>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a)))"
+    by (auto simp add: ccBindsExtra_simp ccBinds_eq simp del: ccBind_eq)
+
+  show "ccLinear (domA \<Delta>) (CCexp e\<cdot>a)" by (rule *)
+
+  fix x e' a'
+  assume "map_of \<Delta> x = Some e'"
+  hence [simp]: "x \<in> domA \<Delta>" by (metis domI dom_map_of_conv_domA)
+  
+  assume "(Aheap \<Delta> e\<cdot>a) x = up\<cdot>a'"
+  hence "(Afix \<Delta>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a)) x = up\<cdot>a'" 
+    by (simp add: Aheap_def)
+  with linear
+  have "ccBind x e'\<cdot>(Afix \<Delta>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a), CCfix \<Delta>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a)) = CCexp e'\<cdot>a'"
+    unfolding ccLinear_def
+    by (auto simp add: ccExp'_def)
+  with **[OF `map_of \<Delta> x = Some e'`] 
+  show "ccLinear (domA \<Delta>) (CCexp e'\<cdot>a')" by simp
+
+
 next
   fix x \<Gamma> e a
   assume "x \<in> thunks \<Gamma>"
-  hence [simp]: "x \<in> domA \<Gamma>" sorry
-  
-  assume "many \<sqsubseteq> (Cheap \<Gamma> e\<cdot>a) x"
-  hence "x \<in> ccManyCalls (CCfix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a))"
-    unfolding Cheap_simp CCfix_def by simp
-  with `x \<in> thunks \<Gamma>`
-  have "(ABindsExtra \<Gamma>\<cdot>(CCfix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a))) x = up\<cdot>0"
-    by auto
-  thus "(Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
-    unfolding Aheap_def apply simp
-    by (subst Afix_unroll) simp
-next
-  fix \<pi> show "\<pi> \<bullet> Cheap = Cheap" by perm_simp rule
-qed
+  hence [simp]: "x \<in> domA \<Gamma>" by (rule set_mp[OF thunks_domA])
+  assume "x \<in> edom (Aheap \<Gamma> e\<cdot>a)"
 
+
+  assume "x \<notin> calledOnce \<Gamma> e a"
+  hence "\<not>  (\<forall> x e'. map_of \<Gamma> x = Some e' \<longrightarrow> edom (fup\<cdot>(Aexp e')\<cdot>((Aheap \<Gamma> e\<cdot>a) x)) \<inter> domA \<Gamma> = {})"
+    by (auto simp add: calledOnce_def split: if_splits)
+  hence "x \<in> ccManyCalls (CCfix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a))"sorry
+
+  from `x \<in> thunks \<Gamma>` and `x \<in> ccManyCalls _`
+  have "(Afix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a)) x = up\<cdot>0" 
+    by (subst Afix_unroll) (simp add: ABindsExtra_simp)
+ 
+  thus "(Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
+    by (simp add:  Aheap_simp)
+
+qed
 
 end

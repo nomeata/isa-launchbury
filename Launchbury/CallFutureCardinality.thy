@@ -10,10 +10,13 @@ fun one_call_in_path where
   "one_call_in_path x [] \<longleftrightarrow> True"
  | "one_call_in_path x (y#xs) \<longleftrightarrow> (if x = y then no_call_in_path x xs else one_call_in_path x xs)"
 
-
 lemma no_call_in_path_set_conv:
   "no_call_in_path x p \<longleftrightarrow> x \<notin> set p"
   by(induction p) auto 
+
+lemma one_call_in_path_filter_conv:
+  "one_call_in_path x p \<longleftrightarrow> length (filter (\<lambda> x'. x' = x) p) \<le> 1"
+  by(induction p) (auto simp add: no_call_in_path_set_conv filter_empty_conv)
 
 lemma no_call_in_tail: "no_call_in_path x (tl p) \<longleftrightarrow> (no_call_in_path x p \<or> one_call_in_path x p \<and> hd p = x)"
   by(induction p) auto
@@ -23,6 +26,10 @@ lemma no_imp_one: "no_call_in_path x p \<Longrightarrow> one_call_in_path x p"
 
 lemma one_imp_one_tail: "one_call_in_path x p \<Longrightarrow> one_call_in_path x (tl p)"
   by (induction p) (auto split: if_splits intro: no_imp_one)
+
+lemma more_than_one_setD:
+  "\<not> one_call_in_path x p \<Longrightarrow> x \<in> set p" 
+  by (induction p) (auto split: if_splits)
 
 (*
 lemma many_tail_imp_many: "\<not> one_call_in_path x (tl p) \<Longrightarrow> \<not> one_call_in_path x p"

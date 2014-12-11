@@ -69,6 +69,11 @@ lemma domA[eqvt]:
   "\<pi> \<bullet> domA \<Gamma> = domA (\<pi> \<bullet> \<Gamma>)"
   by (simp add: domA_def)
 
+lemma mapCollect[eqvt]:
+  "\<pi> \<bullet> mapCollect f m = mapCollect (\<pi> \<bullet> f) (\<pi> \<bullet> m)"
+unfolding mapCollect_def
+by perm_simp rule
+
 subsubsection {* Freshness and distinctness *}
 
 lemma fresh_distinct:

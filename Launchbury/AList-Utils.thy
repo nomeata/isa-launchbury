@@ -99,11 +99,13 @@ lemma map_add_domA[simp]:
     apply (metis dom_map_of_conv_domA map_add_dom_app_simps(3))
     done
 
-lemma map_of_empty[simp]:
-  "Map.empty = map_of \<Delta> \<longleftrightarrow> \<Delta> = []"
-  apply (cases \<Delta>)
-  apply auto
-  by (metis fun_upd_same option.distinct(1))
+
+lemma map_of_empty_iff1[simp]: "map_of \<Gamma> = empty \<longleftrightarrow> \<Gamma> = []"
+  by (cases "\<Gamma>") auto
+
+lemma map_of_empty_iff2[simp]: "empty = map_of \<Gamma> \<longleftrightarrow> \<Gamma> = []"
+  apply (subst eq_commute)
+  by (rule map_of_empty_iff1)
 
 lemma set_delete_subset: "set (delete k al) \<subseteq> set al"
   by (auto simp add: delete_eq)
@@ -136,5 +138,54 @@ lemma map_ran_restrictA:
 lemma map_ran_append:
   "map_ran f (\<Gamma>@\<Delta>) = map_ran f \<Gamma> @ map_ran f \<Delta>"
   by (induction \<Gamma>)  auto
+
+subsection {* Syntax for map comprehensions *}
+
+definition mapCollect :: "('a \<Rightarrow> 'b \<Rightarrow> 'c) \<Rightarrow> ('a \<rightharpoonup> 'b) \<Rightarrow> 'c set"
+  where "mapCollect f m = {f k v | k v . m k = Some v}"
+
+syntax
+ "_MapCollect" :: "'c \<Rightarrow> pttrn => pttrn \<Rightarrow> 'a \<rightharpoonup> 'b => 'c set"    ("(1{_ |/_/\<mapsto>/_/\<in>/_/})")
+translations
+  "{e | k\<mapsto>v \<in> m}" == "CONST mapCollect (\<lambda>k v. e) m"
+
+lemma mapCollect_empty[simp]: "{f k v | k \<mapsto> v \<in> empty} = {}"
+  unfolding mapCollect_def by simp
+
+lemma mapCollect_const[simp]:
+  "m \<noteq> empty \<Longrightarrow> {e | k\<mapsto>v\<in>m} = {e}"
+  unfolding mapCollect_def by auto
+
+lemma mapCollect_cong[fundef_cong]:
+  "(\<And> k v. m1 k = Some v \<Longrightarrow> f1 k v = f2 k v) \<Longrightarrow> m1 = m2 \<Longrightarrow> mapCollect f1 m1 = mapCollect f2 m2"
+  unfolding mapCollect_def by force
+
+lemma mapCollectE[elim!]:
+  assumes "x \<in> {f k v | k \<mapsto> v \<in> m}"
+  obtains k v where "m k = Some v" and "x = f k v"
+  using assms by (auto simp add: mapCollect_def)
+
+lemma ball_mapCollect[simp]:
+  "(\<forall> x \<in> {f k v | k \<mapsto> v \<in> m}. P x) \<longleftrightarrow> (\<forall> k v. m k = Some v \<longrightarrow> P (f k v))"
+  by (auto simp add: mapCollect_def)
+
+definition mapCollectFilter :: "('a \<Rightarrow> 'b \<Rightarrow> (bool \<times> 'c)) \<Rightarrow> ('a \<rightharpoonup> 'b) \<Rightarrow> 'c set"
+  where "mapCollectFilter f m = {snd (f k v) | k v . m k = Some v \<and> fst (f k v)}"
+
+syntax
+ "_MapCollectFilter" :: "'c \<Rightarrow> pttrn \<Rightarrow> pttrn \<Rightarrow> ('a \<rightharpoonup> 'b) \<Rightarrow> bool \<Rightarrow> 'c set"    ("(1{_ |/_/\<mapsto>/_/\<in>/_/./ _})")
+translations
+  "{e | k\<mapsto>v \<in> m . P }" == "CONST mapCollectFilter (\<lambda>k v. (P,e)) m"
+
+
+lemma mapCollectFilter_const_False[simp]:
+  "{e | k\<mapsto>v \<in> m . False } = {}"
+  unfolding mapCollect_def mapCollectFilter_def by simp
+
+lemma mapCollectFilter_const_True[simp]:
+  "{e | k\<mapsto>v \<in> m . True } = {e | k\<mapsto>v \<in> m}"
+  unfolding mapCollect_def mapCollectFilter_def by simp
+
+
 
 end

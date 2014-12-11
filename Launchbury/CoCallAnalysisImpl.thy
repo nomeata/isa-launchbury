@@ -60,14 +60,6 @@ lemma predCC_eqvt[eqvt, simp]: "\<pi> \<bullet> (predCC S f) = predCC (\<pi> \<b
   apply (auto dest: set_mp[OF ccFieldd_cc_restr])
   done
 
-lemma cc_restr_usless[simp]:
-  "ccField G \<subseteq> S \<Longrightarrow> cc_restr S G = G"
-  apply transfer
-  apply (auto simp add: Field_def)
-  apply (metis Domain.DomainI contra_subsetD)
-  apply (metis Range.intros subsetCE)
-  done
-
 lemma cc_restr_cc_restr[simp]:
   "cc_restr S (cc_restr S G) = cc_restr S G"
   by transfer auto
@@ -161,6 +153,16 @@ lemma CCexp_simps[simp]:
   "CCexp (App e x)\<cdot>n = CCexp e\<cdot>(inc\<cdot>n) \<squnion> ccProd {x} (insert x (fv e))"
   "CCexp (Let \<Gamma> e)\<cdot>n = cc_restr (fv (Let \<Gamma> e)) (CCfix \<Gamma>\<cdot>(Aexp e\<cdot>n, CCexp e\<cdot>n))"
 unfolding Aexp_def CCexp_def CCfix_def by (simp add: beta_cfun)+
+
+
+lemma ccField_CCexp:
+  "ccField (CCexp e\<cdot>n) \<subseteq> fv e"
+by (induction e arbitrary: n rule: exp_induct)
+   (auto simp add: ccField_ccProd predCC_eq dest: set_mp[OF ccFieldd_cc_restr])
+
+lemma cc_restr_CCexp[simp]:
+  "cc_restr (fv e) (CCexp e\<cdot>a) = CCexp e\<cdot>a"
+by (rule cc_restr_noop[OF ccField_CCexp])
 
 end
 

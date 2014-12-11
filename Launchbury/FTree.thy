@@ -529,7 +529,6 @@ lemma ftree_restr_both:
 lemma ftree_restr_nxt_subset: "x \<in> S \<Longrightarrow> paths (ftree_restr S (nxt t x)) \<subseteq> paths (nxt (ftree_restr S t) x)"
   by transfer (force simp add: image_iff)
 
-
 lemma ftree_restr_nxt_subset2: "x \<notin> S \<Longrightarrow> paths (ftree_restr S (nxt t x)) \<subseteq> paths (ftree_restr S t)"
   apply transfer
   apply auto
@@ -542,12 +541,49 @@ lemma ftree_restr_possible: "x \<in> S \<Longrightarrow> possible t x \<Longrigh
 lemma ftree_restr_possible2: "possible (ftree_restr S t') x \<Longrightarrow> x \<in> S" 
   by transfer (auto, metis filter_eq_Cons_iff)
 
+lemma carrier_ftree_restr[simp]:
+  "carrier (ftree_restr S t) = S \<inter> carrier t"
+  by transfer auto
+
 (*
 lemma intersect_many_among: "t \<inter>\<inter> many_among S = ftree_restr S t"
   apply transfer
   apply auto
 *)
 
+subsection {* Multiple variables, each called at most once *}
+
+lift_definition singles :: "'a set \<Rightarrow> 'a ftree" is "\<lambda> S. {xs. \<forall> x \<in> S. length (filter (\<lambda> x'. x' = x) xs) \<le> 1}"
+  apply auto
+  apply (rule downsetI)
+  apply auto
+  apply (subst (asm) append_butlast_last_id[symmetric]) back
+  apply simp
+  apply (subst (asm) filter_append)
+  apply auto
+  done
+
+lemma possible_singles[simp]: "possible (singles S) x' \<longleftrightarrow> True"
+  apply transfer
+  apply auto
+  sorry
+
+lemma nxt_singles[simp]: "nxt (singles S) x' =  (if x' \<in> S then without x' (singles S) else singles S)"
+  apply transfer'
+  apply auto
+  sorry
+
+lemma carrier_singles[simp]:
+  "carrier (singles S) = UNIV"
+  apply transfer
+  apply auto
+  apply (rule_tac x = "[x]" in exI)
+  apply auto
+  done
+
+lemma singles_mono:
+  "S \<subseteq> S' \<Longrightarrow> paths (singles S') \<subseteq> paths (singles S)"
+by transfer auto
 
 
 lemma paths_many_calls_subset:
@@ -577,6 +613,8 @@ definition f_nxt :: "('a \<Rightarrow> 'a ftree) \<Rightarrow> 'a set \<Rightarr
 lemma f_nxt_mono1: "(\<And> x. paths (f x) \<subseteq> paths (f' x)) \<Longrightarrow> paths (f_nxt f T x x') \<subseteq> paths (f_nxt f' T x x')"
   unfolding f_nxt_def by auto
   
+lemma f_nxt_empty_set[simp]: "f_nxt f {} x = f" by (simp add: f_nxt_def)
+
 fun substitute' :: "('a \<Rightarrow> 'a ftree) \<Rightarrow> 'a set \<Rightarrow> 'a ftree \<Rightarrow> 'a list \<Rightarrow> bool"
   where substitute'_Nil: "substitute' f T t [] \<longleftrightarrow> True"
      |  substitute'_Cons: "substitute' f T t (x#xs) \<longleftrightarrow> possible t x \<and> substitute' (f_nxt f T x) T (nxt t x \<otimes>\<otimes> f x) xs"

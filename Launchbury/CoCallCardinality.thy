@@ -1,5 +1,5 @@
 theory CoCallCardinality
-imports FTreeCardinality CoCallAnalysisBinds
+imports FTreeCardinality CoCallAnalysis
 begin
 
 lemma subset_ccNeighbors:
@@ -21,21 +21,45 @@ lift_definition ccApprox :: "var ftree \<Rightarrow> CoCalls"
 
 lemma ccApprox_paths: "ccApprox t = lub (ccFromList ` (paths t))" by transfer simp
 
-lemma in_ccAppox: "(x--y\<in>(ccApprox t)) \<longleftrightarrow> (\<exists> xs \<in> paths t. (x--y\<in>(ccFromList xs)))"
+lemma ccApprox_strict[simp]: "ccApprox \<bottom> = \<bottom>"
+  by (simp add: ccApprox_paths empty_is_bottom[symmetric])
+
+lemma in_ccApprox: "(x--y\<in>(ccApprox t)) \<longleftrightarrow> (\<exists> xs \<in> paths t. (x--y\<in>(ccFromList xs)))"
   unfolding ccApprox_paths
   by transfer auto
 
 lemma ccApprox_mono: "paths t \<subseteq> paths t' \<Longrightarrow> ccApprox t \<sqsubseteq> ccApprox t'"
-  by (rule below_CoCallsI) (auto simp add: in_ccAppox)
+  by (rule below_CoCallsI) (auto simp add: in_ccApprox)
 
+lemma ccApprox_mono': "t \<sqsubseteq>  t' \<Longrightarrow> ccApprox t \<sqsubseteq> ccApprox t'"
+  by (metis below_set_def ccApprox_mono paths_mono_iff)
+
+
+lemma ccApprox_belowI: "(\<And> xs. xs \<in> paths t \<Longrightarrow> ccFromList xs \<sqsubseteq> G) \<Longrightarrow> ccApprox t \<sqsubseteq> G"
+  unfolding ccApprox_paths
+  by transfer auto
+
+lemma ccApprox_below_iff: "ccApprox t \<sqsubseteq> G \<longleftrightarrow> (\<forall> xs \<in> paths t. ccFromList xs \<sqsubseteq> G)"
+  unfolding ccApprox_paths by transfer auto
+
+lemma cc_restr_lub[simp]: "cc_restr S (lub X) = (\<Squnion> G\<in>X. cc_restr S G)" sorry
+
+lemma cc_restr_ccApprox_below_iff: "cc_restr S (ccApprox t) \<sqsubseteq> G \<longleftrightarrow> (\<forall> xs \<in> paths t. cc_restr S (ccFromList xs) \<sqsubseteq> G)"
+  unfolding ccApprox_paths cc_restr_lub
+  by transfer auto
 
 lemma ccFromList_below_ccApprox:
   "xs \<in> paths t \<Longrightarrow> ccFromList xs \<sqsubseteq> ccApprox t" 
-by (rule below_CoCallsI)(auto simp add: in_ccAppox)
+by (rule below_CoCallsI)(auto simp add: in_ccApprox)
 
 lemma ccApprox_nxt_below:
   "ccApprox (nxt t x) \<sqsubseteq> ccApprox t"
-by (rule below_CoCallsI)(auto simp add: in_ccAppox paths_nxt_eq elim!:  bexI[rotated])
+by (rule below_CoCallsI)(auto simp add: in_ccApprox paths_nxt_eq elim!:  bexI[rotated])
+
+lemma ccApprox_ftree_restr_nxt_below:
+  "ccApprox (ftree_restr S (nxt t x)) \<sqsubseteq> ccApprox (ftree_restr S t)"
+ sorry
+
 
 lemma interleave_ccFromList:
   "xs \<in> interleave ys zs \<Longrightarrow> ccFromList xs = ccFromList ys \<squnion> ccFromList zs \<squnion> ccProd (set ys) (set zs)"
@@ -45,8 +69,8 @@ lemma interleave_ccFromList:
 lemma ccApprox_both: "ccApprox (t \<otimes>\<otimes> t') = ccApprox t \<squnion> ccApprox t' \<squnion> ccProd (carrier t) (carrier t')"
 proof (rule below_antisym)
   show "ccApprox (t \<otimes>\<otimes> t') \<sqsubseteq> ccApprox t \<squnion> ccApprox t' \<squnion> ccProd (carrier t) (carrier t')"
-    by (rule below_CoCallsI)
-       (auto 4 4  simp add: in_ccAppox paths_both Union_paths_carrier[symmetric]  interleave_ccFromList)
+  by (rule below_CoCallsI)
+     (auto 4 4  simp add: in_ccApprox paths_both Union_paths_carrier[symmetric]  interleave_ccFromList)
 next
   have "ccApprox t \<sqsubseteq> ccApprox (t \<otimes>\<otimes> t')"
     by (rule ccApprox_mono[OF both_contains_arg1])
@@ -65,7 +89,7 @@ next
     from `x \<in> set xs` `y \<in> set ys`
     have "x--y\<in>(ccFromList (xs@ys))" by simp
     ultimately
-    show "x--y\<in>(ccApprox (t \<otimes>\<otimes> t'))" by (auto simp add: in_ccAppox simp del: ccFromList_append)
+    show "x--y\<in>(ccApprox (t \<otimes>\<otimes> t'))" by (auto simp add: in_ccApprox simp del: ccFromList_append)
   qed
   ultimately
   show "ccApprox t \<squnion> ccApprox t' \<squnion> ccProd (carrier t) (carrier t') \<sqsubseteq> ccApprox (t \<otimes>\<otimes> t')"
@@ -497,11 +521,26 @@ locale CoCallCardinality = CoCallAnalysis + CoCallAnalyisHeap + CorrectArityAnal
   assumes ccExp_Lam: "cc_restr (fv (Lam [y]. e)) (ccExp e\<cdot>(pred\<cdot>n)) \<sqsubseteq> ccExp (Lam [y]. e)\<cdot>n"
   assumes ccExp_subst: "x \<notin>  S \<Longrightarrow> y \<notin> S \<Longrightarrow> cc_restr S (ccExp e[y::=x]\<cdot>a) \<sqsubseteq> cc_restr S (ccExp e\<cdot>a)"
   assumes ccExp_pap: "isLam e \<Longrightarrow> ccExp e\<cdot>0 = ccSquare (fv e)"
-  assumes ccExp_Let: "ccBindsExtra \<Gamma>\<cdot>(Aheap \<Gamma> e\<cdot>a, ccHeap \<Gamma> e\<cdot>a) \<squnion> ccExp e\<cdot>a \<sqsubseteq> ccHeap \<Gamma> e\<cdot>a \<squnion> ccExp (Let \<Gamma> e)\<cdot>a"
- 
-  assumes aHeap_thunks: "x \<in> thunks \<Gamma> \<Longrightarrow> x \<in> edom (Aheap \<Gamma> e\<cdot>a) \<Longrightarrow> x \<in> ccManyCalls (ccHeap \<Gamma> e\<cdot>a) \<Longrightarrow> (Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
+  assumes ccExp_Let_linear: "isLinear \<Gamma> e a \<Longrightarrow> ccHeap \<Gamma> e\<cdot>a \<sqsubseteq> ccExp (Let \<Gamma> e)\<cdot>a"
+  (*
+  assumes ccExp_ccField: "ccField (ccExp e\<cdot>a) \<subseteq> fv e"
+  *)
+
+  (*  assumes ccHeap_ccField: "ccField (ccHeap \<Gamma> e\<cdot>a) \<subseteq> domA \<Gamma>" *)
+  assumes linear_Exp: "isLinear \<Delta> e a \<Longrightarrow> ccLinear (domA \<Delta>) (ccExp e\<cdot>a)"
+  assumes linear_Heap: "isLinear \<Delta> e a \<Longrightarrow> map_of \<Delta> x = Some e' \<Longrightarrow> (Aheap \<Delta> e\<cdot>a) x= up\<cdot>a' \<Longrightarrow> ccLinear (domA \<Delta>) (ccExp e'\<cdot>a')"
+  assumes linear_Exp_contained: "isLinear \<Delta> e a \<Longrightarrow> ccExp e\<cdot>a \<sqsubseteq> ccHeap \<Delta> e\<cdot>a"
+  assumes linear_Heap_contained: "isLinear \<Delta> e a \<Longrightarrow> map_of \<Delta> x = Some e' \<Longrightarrow> (Aheap \<Delta> e\<cdot>a) x= up\<cdot>a' \<Longrightarrow> ccExp e'\<cdot>a' \<sqsubseteq> ccHeap \<Delta> e\<cdot>a"
+  assumes linear_extra_edges: "isLinear \<Delta> e a \<Longrightarrow>  map_of \<Delta> x = Some e' \<Longrightarrow> (Aheap \<Delta> e\<cdot>a) x = up\<cdot>a' \<Longrightarrow> ccProd (fv e') (ccNeighbors (domA \<Delta>) (ccHeap \<Delta> e\<cdot>a)) \<sqsubseteq> ccHeap \<Delta> e\<cdot>a"
+  
+  assumes aHeap_thunks: "x \<in> thunks \<Gamma> \<Longrightarrow> x \<in> edom (Aheap \<Gamma> e\<cdot>a) \<Longrightarrow> x \<notin> calledOnce \<Gamma> e a \<Longrightarrow> (Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
+
 begin
 
+(*
+lemma cc_restr_ccExp': "cc_restr (fv e) (ccExp e\<cdot>a) = ccExp e\<cdot>a"
+  by (rule cc_restr_noop[OF ccExp_ccField])
+*)
 
 definition Fexp :: "exp \<Rightarrow> Arity \<rightarrow> var ftree"
   where "Fexp e = (\<Lambda> a. ccFTree (edom (Aexp e \<cdot>a)) (ccExp e\<cdot>a))"
@@ -509,14 +548,14 @@ definition Fexp :: "exp \<Rightarrow> Arity \<rightarrow> var ftree"
 lemma Fexp_simp: "Fexp e\<cdot>a = ccFTree (edom (Aexp e \<cdot>a)) (ccExp e\<cdot>a)"
   unfolding Fexp_def sorry
 
-lemma carrier_Fexp: "carrier (Fexp e\<cdot>a) \<subseteq> fv e"
+lemma carrier_Fexp': "carrier (Fexp e\<cdot>a) \<subseteq> fv e"
   unfolding Fexp_simp carrier_ccFTree
   by (rule Aexp_edom)
 
 sublocale FutureAnalysis Fexp.
 
 sublocale FutureAnalysisCarrier Fexp
-  by default (rule carrier_Fexp)
+  by default (rule carrier_Fexp')
 
 sublocale FutureAnalysisCorrect Fexp
 proof default
@@ -612,13 +651,13 @@ next
 qed
 
 definition Fheap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> var ftree"
-  where "Fheap \<Gamma> e = (\<Lambda> a. ccFTree (edom (Aheap \<Gamma> e\<cdot>a)) (ccHeap \<Gamma> e\<cdot>a))"
+  where "Fheap \<Gamma> e = (\<Lambda> a. ftree_restr (edom (Aheap \<Gamma> e\<cdot>a)) (singles (calledOnce \<Gamma> e a)))"
 
-lemma Fheap_simp: "Fheap \<Gamma> e\<cdot>a = ccFTree (edom (Aheap \<Gamma> e\<cdot>a)) (ccHeap \<Gamma> e\<cdot>a)"
+lemma Fheap_simp: "Fheap \<Gamma> e\<cdot>a = ftree_restr (edom (Aheap \<Gamma> e\<cdot>a)) (singles (calledOnce \<Gamma> e a))"
   unfolding Fheap_def sorry
 
-lemma carrier_Fheap:"carrier (Fheap \<Gamma> e\<cdot>a) = edom (Aheap \<Gamma> e\<cdot>a)"
-    unfolding Fheap_simp carrier_ccFTree.. 
+lemma carrier_Fheap':"carrier (Fheap \<Gamma> e\<cdot>a) = edom (Aheap \<Gamma> e\<cdot>a)"
+    unfolding Fheap_simp carrier_ccFTree by simp
 
 lemma carrier_substitute_aux:
   assumes "xs \<in> paths (substitute f T t)"
@@ -632,9 +671,238 @@ lemma carrier_substitute_aux:
   apply (metis carrier_f_nxt carrier_nxt_subset carrier_possible_subset contra_subsetD order_trans)
   done
 
-term substitute''
-lemma ccApprox_substitute_aux:
+text {*
+It is tricky to relate @{term substitute} and @{term ccApprox}.
+We do this separately for no-recursive bindings, linearly-recursive bindings and others.
+*}
+
+ 
+lemma ccFromList_filter[simp]:
+  "ccFromList (filter P xs) = cc_restr {x. P x} (ccFromList xs)"
+by (induction xs) (auto simp add: Collect_conj_eq)
+
+lemma cc_restr_Compl_eq[simp]:
+  "cc_restr {x. x \<notin> S} = cc_restr (-S)"
+  by (metis Compl_eq)
+
+lemma ccLinear_ccApprox:
+  "ccLinear S (ccApprox t) \<longleftrightarrow> (\<forall>xs \<in> paths t. ccLinear S (ccFromList xs))"
+  sorry
+
+lemma ccApprox_nxt: 
+  "ccApprox (nxt t x) \<sqsubseteq> cc_restr (ccNeighbors {x} (ccApprox t)) (ccApprox t)"
+  apply transfer
+  sorry
+
+lemma linear_recursion:
+  assumes "ccLinear S (ccApprox t)"
+  assumes "ccApprox  t \<sqsubseteq> G"
+  assumes "\<And> x. x \<notin> S \<Longrightarrow> f x = empty"
+  assumes "\<And> x. x \<in> S \<Longrightarrow> ccLinear S (ccApprox (f x))"
+  assumes "\<And> x. x \<in> S \<Longrightarrow> ccApprox (f x) \<sqsubseteq> G"
+  assumes "\<And> x. x \<in> S \<Longrightarrow> ccProd (ccNeighbors S G) (carrier (f x)) \<sqsubseteq> G"
+  shows "ccApprox (ftree_restr (-S) (substitute f {} t)) \<sqsubseteq> G"
+proof(rule ccApprox_belowI)
+  fix xs
+
+  def seen \<equiv> "{} :: var set"
+
+  assume "xs \<in> paths (ftree_restr (- S) (substitute f {} t))"
+  then obtain xs' xs'' T where "xs = [x\<leftarrow>xs' . x \<notin> S]" and "substitute'' f T xs'' xs'" and "T = {}" and "xs'' \<in> paths t"
+    by (auto simp add: filter_paths_conv_free_restr2[symmetric] substitute_substitute'')
+ 
+  note this(2,3)
+  moreover
+  from `ccLinear S (ccApprox t)` and `ccApprox t \<sqsubseteq> G` and `xs'' \<in> paths t`
+  have "ccLinear S (ccFromList xs'')" and "ccFromList xs'' \<sqsubseteq> G"
+    by (auto simp add: ccLinear_ccApprox ccApprox_below_iff)
+  moreover
+  note assms(3)
+  moreover
+  from assms(4-6)
+  have "\<And> x ys. x \<in> S \<Longrightarrow> ys \<in> paths (f x) \<Longrightarrow> ccLinear S (ccFromList ys)"
+    and "\<And> x ys. x \<in> S \<Longrightarrow> ys \<in> paths (f x) \<Longrightarrow> ccFromList ys \<sqsubseteq> G"
+    and "\<And> x ys. x \<in> S \<Longrightarrow> ys \<in> paths (f x) \<Longrightarrow> ccProd (ccNeighbors S G) (set ys) \<sqsubseteq> G"
+    by (auto simp add: ccLinear_ccApprox ccApprox_below_iff Union_paths_carrier[symmetric] cc_lub_below_iff)
+  moreover
+  have "ccProd seen (set xs'') \<sqsubseteq> G" unfolding seen_def by simp
+  ultimately 
+  have "ccFromList [x\<leftarrow>xs' . x \<notin> S] \<sqsubseteq> G \<and> ccProd seen (set xs') \<sqsubseteq> G"
+  proof(induction f T xs'' xs' arbitrary: seen rule: substitute''.induct[case_names Nil Cons])
+  case Nil thus ?case by simp
+  next
+  case (Cons zs f x xs' xs T ys)
+    from `T = {}` have [simp]: "f_nxt f T x = f" by (simp add: f_nxt_def)
+
+    have seen_x: "ccProd seen {x} \<sqsubseteq> G"
+      using Cons.prems
+      by (auto simp add: ccProd_insert2[where S' = "set xs" for xs] join_below_iff)
+
+    show ?case
+    proof(cases "x \<in> S")
+      case True
+
+      from Cons.prems
+      have "ccProd {x} (set xs) \<sqsubseteq> G" by (auto simp add: join_below_iff)
+      with `x \<in> S`
+      have subset1: "set xs \<subseteq> ccNeighbors S G" by transfer auto
+
+      from Cons.prems
+      have "seen \<subseteq> ccNeighbors {x} G"
+        by (auto simp add: subset_ccNeighbors ccProd_insert2[where S' = "set xs" for xs] join_below_iff ccProd_comm)
+      hence subset2: "seen \<subseteq> ccNeighbors S G" 
+        by (rule order_trans[OF _ ccNeighbors_mono[OF insert_subsetI[OF  `x \<in> S`  empty_subsetI] below_refl]])
+        
+      from True Cons.prems Cons.hyps
+      have "ccFromList [x\<leftarrow>ys . x \<notin> S] \<sqsubseteq> G \<and> ccProd seen (set ys) \<sqsubseteq> G"
+        apply -
+        apply (rule Cons.IH)
+        apply (auto simp add: ccApprox_both join_below_iff ftree_restr_both interleave_ccFromList interleave_set  ccProd_insert2[where S' = "set xs" for xs]
+                   intro: below_trans[OF ccProd_mono1[OF subset1]]  below_trans[OF ccProd_mono1[OF subset2]])
+        done
+      with True seen_x
+      show "ccFromList [x\<leftarrow>x # ys . x \<notin> S] \<sqsubseteq> G  \<and> ccProd seen (set (x#ys)) \<sqsubseteq> G" 
+        by (auto simp add: ccProd_insert2[where S' = "set xs" for xs] join_below_iff)
+    next
+      case False
   
+      from False Cons.prems Cons.hyps
+      have "ccFromList [x\<leftarrow>ys . x \<notin> S] \<sqsubseteq> G \<and> ccProd (insert x seen) (set ys) \<sqsubseteq> G"
+        apply -
+        apply (rule Cons.IH[where seen = "insert x seen"])
+        apply (auto simp add: ccApprox_both join_below_iff ftree_restr_both interleave_ccFromList
+                   simp add:  ccProd_insert2[where S' = "set xs" for xs]
+                   simp add:  ccProd_insert1[where S' = "seen"])
+        done
+      moreover
+      from this
+      have "ccProd {x} (set ys) \<sqsubseteq>  G"
+        by (auto simp add: ccProd_insert1[where S' = "seen"] join_below_iff)
+      hence "ccProd {x} {x \<in> set ys. x \<notin> S} \<sqsubseteq> G"
+        by (rule below_trans[rotated, OF _ ccProd_mono2]) auto
+      moreover
+      note False seen_x
+      ultimately
+      show "ccFromList [x\<leftarrow>x # ys . x \<notin> S] \<sqsubseteq> G \<and> ccProd seen (set (x # ys)) \<sqsubseteq> G"
+        by (auto simp add: join_below_iff  simp add:  ccProd_insert2[where S' = "set xs" for xs]   ccProd_insert1[where S' = "seen"])
+    qed
+  qed
+  with `xs = _`
+  show "ccFromList xs \<sqsubseteq> G" by simp
+qed
+
+(*
+text {*
+It is tricky to relate @{term substitute} and @{term ccApprox}. This inductive definition
+should help separating this proof into several steps.
+*}
+
+inductive called_via :: "(var \<Rightarrow> var ftree) \<Rightarrow> var \<Rightarrow> var \<Rightarrow> bool"
+ where "y \<in> carrier (f x) \<Longrightarrow> called_via f x y"
+     | "called_via f x y \<Longrightarrow> called_via f y z \<Longrightarrow> called_via f x z"
+
+inductive
+  substitute_co_call :: "var \<Rightarrow> var \<Rightarrow> (var \<Rightarrow> var ftree) \<Rightarrow> var ftree \<Rightarrow> bool"
+where
+    "x--y\<in>(ccApprox t) \<Longrightarrow> called_via f x x' \<Longrightarrow> called_via f y y' \<Longrightarrow> substitute_co_call x' y' f t"
+
+thm substitute''.intros
+lemma ccApprox_substitute_co_call:
+  assumes "x--y\<in>(ccApprox (substitute f T t))"
+  shows   "substitute_co_call x y f t"
+proof-
+  from assms
+  obtain xs where "xs \<in> paths (substitute f T t)" and "x--y\<in>(ccFromList xs)"
+    by (auto simp add: in_ccApprox)
+  from this(1)
+  obtain xs' where "substitute'' f T xs' xs"  and "xs' \<in> paths t"  by (auto simp add: substitute_substitute'')
+  from this `x--y\<in>(ccFromList xs)`
+  show  "substitute_co_call x y f t"
+  proof(induction arbitrary: t rule: substitute''.induct[case_names Nil Cons])
+  case Nil thus ?case by simp
+  next
+  case (Cons zs f x' xs' xs T ys)
+    from `x' # xs \<in> paths t`
+    have "possible t x'" and  "xs \<in> paths (nxt t x')"
+      by (auto simp add: Cons_path)
+    
+    from this(2) and `xs' \<in> xs \<otimes> zs` and `zs \<in> paths (f x')`
+    have "xs' \<in> paths (nxt t x' \<otimes>\<otimes> f x')" by (auto simp add: paths_both)
+
+    {
+    assume "x--y\<in>(ccFromList ys)"
+    from Cons.IH[OF `xs' \<in> paths (nxt t x' \<otimes>\<otimes> f x')` this]
+    have "substitute_co_call x y (f_nxt f T x') (nxt t x' \<otimes>\<otimes> f x')".
+    
+    have ?case sorry
+    }
+    moreover
+    
+    ultimately
+    show ?case using  `x--y\<in>(ccFromList (x' # ys))`
+      apply auto
+
+    { assume "x' \<noteq> x" and "x' \<noteq> y"
+      with `x--y\<in>(ccFromList (x' # xs))`
+      have "x--y\<in>(ccFromList xs)" by simp
+      from Cons.IH[OF `xs \<in> _ ` this]
+      have "substitute_co_call x y (f_nxt f T x') (nxt t x' \<otimes>\<otimes> f x')".
+      then obtain x0 y0 where "x0--y0\<in>(ccApprox (nxt t x' \<otimes>\<otimes> f x'))"
+                          and "called_via (f_nxt f T x') x0 x"
+                          and "called_via (f_nxt f T x') y0 y" by (auto elim: substitute_co_call.cases)
+
+      from `called_via (f_nxt f T x') x0 x`
+      have "called_via f x0 x" sorry
+      from `called_via (f_nxt f T x') y0 y`
+      have "called_via f y0 y" sorry
+
+
+      from `x0--y0\<in>(ccApprox (nxt t x' \<otimes>\<otimes> f x'))`
+      have ?case
+      proof(auto simp add: ccApprox_both)
+        assume "x0--y0\<in>(ccApprox (f x'))"
+        show ?thesis   sorry
+      next
+        assume "x0--y0\<in>(ccApprox (nxt t x'))"
+        hence "x0--y0\<in>(ccApprox t)" sorry
+        moreover
+        note `called_via f x0 x`
+        moreover
+        note `called_via f y0 y`
+        ultimately
+        show ?thesis..
+     next
+       assume "x0 \<in> carrier (nxt t x')"
+       hence "x0--x' \<in>(ccApprox t)" sorry
+       moreover
+       note `called_via f x0 x`
+       moreover
+       assume "y0 \<in> carrier (f x')"
+       hence "called_via f x' y0" sorry
+       from this  `called_via f y0 y`
+       have "called_via f x' y" sorry
+       ultimately
+       show ?thesis..
+    next
+       assume "y0 \<in> carrier (nxt t x')"
+       hence "x'--y0 \<in>(ccApprox t)" sorry
+       moreover
+       assume "x0 \<in> carrier (f x')"
+       hence "called_via f x' x0" sorry
+       from this  `called_via f x0 x`
+       have "called_via f x' x" sorry
+       moreover
+       note `called_via f y0 y`
+       ultimately
+       show ?thesis..
+    qed
+    }
+    
+    show ?case
+oops
+*)
+
+lemma ccApprox_substitute_aux:
   assumes "substitute'' f T xs ys"
   assumes "ccFromList (prefix@xs) \<sqsubseteq> G"
   assumes "\<And> x. x \<in> set ys \<Longrightarrow> ccApprox (f x) \<sqsubseteq> G" 
@@ -683,9 +951,10 @@ next
 qed
 
 lemma ccFTree_Let:
- "ccFTree (edom (ABinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a) \<squnion> Aexp e\<cdot>a)) (ccBindsExtra \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a, ccHeap \<Delta> e\<cdot>a) \<squnion> ccExp e\<cdot>a) \<sqsubseteq>
-  ccFTree (edom (Aheap \<Delta> e\<cdot>a \<squnion> Aexp (Let \<Delta> e)\<cdot>a)) (ccHeap \<Delta> e\<cdot>a \<squnion> ccExp (Let \<Delta> e)\<cdot>a)"
- using Aexp_Let[of \<Delta> e a] ccExp_Let[of \<Delta> e a]
+  assumes "isLinear \<Delta> e a"
+  shows "ccFTree (edom (ABinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a) \<squnion> Aexp e\<cdot>a)) (ccHeap \<Delta> e\<cdot>a) \<sqsubseteq>
+         ccFTree (edom (Aheap \<Delta> e\<cdot>a \<squnion> Aexp (Let \<Delta> e)\<cdot>a)) (ccExp (Let \<Delta> e)\<cdot>a)"
+ using Aexp_Let[of \<Delta> e a]  ccExp_Let_linear[OF assms] 
  by (rule below_trans[OF ccFTree_mono1[OF edom_mono] ccFTree_mono2])
 
 lemma substitute'_valid_list:
@@ -741,62 +1010,99 @@ sublocale FutureAnalysisCardinalityHeap Fexp Aexp Aheap Fheap
 proof default
   fix \<Gamma> e a
   show "carrier (Fheap \<Gamma> e\<cdot>a) = edom (Aheap \<Gamma> e\<cdot>a)"
-    by (rule carrier_Fheap)
+    by (rule carrier_Fheap')
 next
   fix x \<Gamma> p e a
   assume "x \<in> thunks \<Gamma>"
   moreover
-  assume "p \<in> paths (Fheap \<Gamma> e\<cdot>a)" and "\<not> one_call_in_path x p"
-  hence "x \<in> edom (Aheap \<Gamma> e\<cdot>a)" and "x \<in> ccManyCalls (ccHeap \<Gamma> e\<cdot>a)"
+  assume "p \<in> paths (Fheap \<Gamma> e\<cdot>a)" "\<not> one_call_in_path x p"
+  hence "x \<in> edom (Aheap \<Gamma> e\<cdot>a)" and  "\<not> x\<in> calledOnce \<Gamma> e a"
     unfolding Fheap_simp
-    by (rule multi_calls_ccFTree)+
+    by (auto simp add: paths_ftree_restr_singles dest: more_than_one_setD)
   ultimately
   show "(Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
     by (rule aHeap_thunks)
 next
   fix \<Delta> e a
 
-  have "substitute (Fexp.AnalBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (thunks \<Delta>) (Fexp e\<cdot>a) \<sqsubseteq> 
-        ccFTree (edom (ABinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a) \<squnion> Aexp e\<cdot>a)) (ccBindsExtra \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a, ccHeap \<Delta> e\<cdot>a) \<squnion> ccExp e\<cdot>a)"
-  unfolding paths_mono_iff[symmetric] below_set_def
-  proof
-    fix xs
-    assume "xs \<in> paths (substitute (Fexp.AnalBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (thunks \<Delta>) (Fexp e\<cdot>a))"
-    hence "set xs \<subseteq> edom (ABinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a) \<squnion> Aexp e\<cdot>a)"
-    proof (rule carrier_substitute_aux)
-      show "carrier (Fexp e\<cdot>a) \<subseteq> edom (ABinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a) \<squnion> Aexp e\<cdot>a)"
-       by (auto simp add: Fexp_simp carrier_ccFTree)
+  have linear: "isLinear \<Delta> e a" sorry
+
+  show "ftree_restr (- domA \<Delta>) (substitute (Fexp.AnalBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (thunks \<Delta>)  (Fexp e\<cdot>a)) \<sqsubseteq> Fexp (Let \<Delta> e)\<cdot>a"
+  unfolding Fexp_simp
+  proof (rule below_ccFTreeI)
+    show "carrier (ftree_restr (- domA \<Delta>) (substitute (Fexp.AnalBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (thunks \<Delta>) (ccFTree (edom (Aexp e\<cdot>a)) (ccExp e\<cdot>a))))
+          \<subseteq> edom (Aexp (Terms.Let \<Delta> e)\<cdot>a)"
+     sorry
+  next
+    have "ccApprox (ftree_restr (- domA \<Delta>) (substitute (Fexp.AnalBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (thunks \<Delta>) (ccFTree (edom (Aexp e\<cdot>a)) (ccExp e\<cdot>a))))
+      \<sqsubseteq> ccApprox (ftree_restr (- domA \<Delta>) (substitute (Fexp.AnalBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) {} (ccFTree (edom (Aexp e\<cdot>a)) (ccExp e\<cdot>a))))"
+      sorry
+    also have "\<dots> \<sqsubseteq> ccHeap \<Delta> e\<cdot>a"
+    proof(rule linear_recursion)
+      have "ccLinear (domA \<Delta>) (ccExp e\<cdot>a)" using linear by (rule linear_Exp)
+      thus "ccLinear (domA \<Delta>) (ccApprox (ccFTree (edom (Aexp e\<cdot>a)) (ccExp e\<cdot>a)))"
+        by auto
+    next
+      have "ccExp e\<cdot>a \<sqsubseteq> ccHeap \<Delta> e\<cdot>a" using linear by (rule linear_Exp_contained)
+      thus "ccApprox (ccFTree (edom (Aexp e\<cdot>a)) (ccExp e\<cdot>a)) \<sqsubseteq> ccHeap \<Delta> e\<cdot>a"
+        by (auto intro: below_trans[OF cc_restr_below_arg])
     next
       fix x
-      have "carrier ((Fexp.AnalBinds  \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) x) \<subseteq> edom (ABinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a))"
-      apply (auto simp add: Fexp.AnalBinds_lookup Fexp_simp split: option.split)
-      apply (cases "(Aheap \<Delta> e\<cdot>a) x") 
-      apply (auto simp add: Fexp_simp carrier_ccFTree elim: set_mp[OF edom_mono[OF monofun_cfun_fun[OF ABind_below_ABinds]]])
-      done
-      thus "carrier ((Fexp.AnalBinds  \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) x) \<subseteq> edom (ABinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a) \<squnion> Aexp e\<cdot>a)" by auto
+      assume "x \<notin> domA \<Delta>"
+      thus "(Fexp.AnalBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) x = empty"
+        by (metis Fexp.AnalBinds_not_there empty_is_bottom)
+    next
+      fix x
+      assume "x \<in> domA \<Delta>"
+      then obtain e' where e': "map_of \<Delta> x = Some e'" by (metis domA_map_of_Some_the)
+      
+      thus "ccLinear (domA \<Delta>) (ccApprox ((Fexp.AnalBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) x))"
+      proof(cases "(Aheap \<Delta> e\<cdot>a) x")
+        case bottom thus ?thesis using e' by (simp add: Fexp.AnalBinds_lookup)
+      next
+        case (up a')
+        with linear e'
+        have "ccLinear (domA \<Delta>) (ccExp e'\<cdot>a')" by (rule linear_Heap)
+        thus ?thesis using up e' by (auto simp add: Fexp.AnalBinds_lookup Fexp_simp)
+      qed
+      
+      show "ccApprox ((Fexp.AnalBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) x) \<sqsubseteq> ccHeap \<Delta> e\<cdot>a"
+      proof(cases "(Aheap \<Delta> e\<cdot>a) x")
+        case bottom thus ?thesis using e' by (simp add: Fexp.AnalBinds_lookup)
+      next
+        case (up a')
+        with linear e'
+        have "ccExp e'\<cdot>a' \<sqsubseteq> ccHeap \<Delta> e\<cdot>a" by (rule linear_Heap_contained)
+        thus ?thesis using up e'
+          by (auto simp add: Fexp.AnalBinds_lookup Fexp_simp  intro: below_trans[OF cc_restr_below_arg])
+      qed
+
+      show "ccProd (ccNeighbors (domA \<Delta>) (ccHeap \<Delta> e\<cdot>a)) (carrier ((Fexp.AnalBinds  \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) x)) \<sqsubseteq> ccHeap \<Delta> e\<cdot>a"
+      proof(cases "(Aheap \<Delta> e\<cdot>a) x")
+        case bottom thus ?thesis using e' by (simp add: Fexp.AnalBinds_lookup)
+      next
+        case (up a')
+        have subset: "(carrier (fup\<cdot>(Fexp e')\<cdot>((Aheap \<Delta> e\<cdot>a) x))) \<subseteq> fv e'"
+          using up e' by (simp add: Fexp.AnalBinds_lookup carrier_Fexp)
+        
+        from linear e' up
+        have "ccProd (fv e') (ccNeighbors (domA \<Delta>) (ccHeap \<Delta> e\<cdot>a)) \<sqsubseteq> ccHeap \<Delta> e\<cdot>a"  
+          by (rule linear_extra_edges)
+        then
+        show ?thesis using e'
+          by (simp add: Fexp.AnalBinds_lookup  Fexp_simp ccProd_comm  below_trans[OF ccProd_mono2[OF subset]])
+      qed
     qed
+    also have "\<dots> \<sqsubseteq> ccExp (Let \<Delta> e)\<cdot>a"
+      by (rule ccExp_Let_linear[OF linear])
+    finally
+    show "ccApprox (ftree_restr (- domA \<Delta>) (substitute (ExpAnalysis.AnalBinds Fexp \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (thunks \<Delta>) (ccFTree (edom (Aexp e\<cdot>a)) (ccExp e\<cdot>a))))
+        \<sqsubseteq> ccExp (Terms.Let \<Delta> e)\<cdot>a" by this simp_all
 
-    have "xs \<in> valid_lists (edom (ABinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a) \<squnion> Aexp e\<cdot>a)) (ccBindsExtra \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a, ccHeap \<Delta> e\<cdot>a) \<squnion> ccExp e\<cdot>a)" sorry
-    thus "xs \<in> paths (ccFTree (edom (ABinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a) \<squnion> Aexp e\<cdot>a)) (ccBindsExtra \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a, ccHeap \<Delta> e\<cdot>a) \<squnion> ccExp e\<cdot>a))"
-      by (transfer fixing: ccExp Aexp Aheap ccHeap)
   qed
-  also
-  note ccFTree_Let
-  finally
-  have "substitute (ExpAnalysis.AnalBinds Fexp \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (thunks \<Delta>) (Fexp e\<cdot>a) \<sqsubseteq>
-        ccFTree (edom (Aheap \<Delta> e\<cdot>a \<squnion> Aexp (Terms.Let \<Delta> e)\<cdot>a)) (ccHeap \<Delta> e\<cdot>a \<squnion> ccExp (Terms.Let \<Delta> e)\<cdot>a)" (is "_ \<sqsubseteq> ?R") by this simp
-  
-  moreover
-  have  "ftree_restr (domA \<Delta>) ?R = Fheap \<Delta> e\<cdot>a"
-   and "ftree_restr (- domA \<Delta>) ?R = Fexp (Let \<Delta> e)\<cdot>a"
-   apply (auto simp add: Fheap_simp Fexp_simp)
-    sorry
-    by (auto intro!: ftree_restr_is_empty ftree_restr_noop  dest!: set_mp[OF carrier_Fexp] simp add: carrier_Fheap dest: set_mp[OF edom_Aheap])
-  ultimately
-  show "ftree_restr (domA \<Delta>) (substitute (Fexp.AnalBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (thunks \<Delta>)  (Fexp e\<cdot>a)) \<sqsubseteq> Fheap \<Delta> e\<cdot>a"
-  and  "ftree_restr (- domA \<Delta>) (substitute (Fexp.AnalBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (thunks \<Delta>)  (Fexp e\<cdot>a)) \<sqsubseteq> Fexp (Let \<Delta> e)\<cdot>a"
-    by (metis  ftree_restr_mono)+
-qed
 
+  show "ftree_restr (domA \<Delta>) (substitute (ExpAnalysis.AnalBinds Fexp \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (thunks \<Delta>) (Fexp e\<cdot>a)) \<sqsubseteq> Fheap \<Delta> e\<cdot>a" sorry
+qed
 end
 
+end

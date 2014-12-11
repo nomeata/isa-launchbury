@@ -23,6 +23,8 @@ instance CoCalls :: cont_pt
   apply simp
   done
 
+lemmas lub_eqvt[OF exists_lub, simp, eqvt]
+
 lemma cc_restr_perm:
   fixes G :: CoCalls
   assumes "supp p \<sharp>* S" and [simp]: "finite S"

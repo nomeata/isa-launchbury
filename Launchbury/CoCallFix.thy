@@ -27,6 +27,7 @@ definition cccFix ::  "heap \<Rightarrow> ((AEnv \<times> CoCalls) \<rightarrow>
 
 definition Afix :: "heap \<Rightarrow> (AEnv \<times> CoCalls \<rightarrow> AEnv)"
   where "Afix e = (\<Lambda> ae. fst (cccFix e \<cdot> ae))"
+
 definition CCfix :: "heap \<Rightarrow> (AEnv \<times> CoCalls \<rightarrow> CoCalls)"
   where "CCfix \<Gamma> = (\<Lambda> ae. snd (cccFix \<Gamma>\<cdot>ae))"
 
@@ -44,6 +45,11 @@ lemma cccfix_unroll: "cccFix \<Gamma>\<cdot>ae = (ABinds \<Gamma> \<cdot> (Afix 
 lemma Afix_unroll: "Afix \<Gamma>\<cdot>ae = ABinds \<Gamma> \<cdot> (Afix \<Gamma>\<cdot>ae) \<squnion> ABindsExtra \<Gamma>\<cdot>(CCfix \<Gamma>\<cdot>ae) \<squnion> fst ae"
   unfolding Afix_def CCfix_def cccFix_eq
   by (subst fix_eq) simp
+
+lemma CCfix_unroll: "CCfix \<Gamma>\<cdot>ae = ccBindsExtra \<Gamma>\<cdot>(Afix \<Gamma>\<cdot>ae, CCfix \<Gamma>\<cdot>ae) \<squnion> snd ae"
+  unfolding Afix_def CCfix_def
+  by (subst cccfix_unroll) simp
+  
 
 
 

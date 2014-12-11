@@ -16,8 +16,6 @@ lemmas join_comm[simp] = all_compatible[THEN join_commute]
 lemma join_lc[simp]: "x \<squnion> (y \<squnion> z) = y \<squnion> (x \<squnion> (z::'a::Finite_Join_cpo))"
   by (metis join_assoc join_comm)
   
-
-
 lemma join_cont': "chain Y \<Longrightarrow> (\<Squnion> i. Y i) \<squnion> y = (\<Squnion> i. Y i \<squnion> (y::'a::Finite_Join_cpo))"
 by (metis all_compatible join_cont1)
 
@@ -206,5 +204,45 @@ lemma join_self_below[iff]:
 lemma join_bottom_iff[iff]:
   "x \<squnion> y = \<bottom> \<longleftrightarrow> x = \<bottom> \<and> (y::'a::{Finite_Join_cpo,pcpo}) = \<bottom>"
   by (metis all_compatible join_bottom(2) join_comm join_idem)
+
+class Join_cpo = cpo +
+  assumes exists_lub: "\<exists>u. S <<| u"
+
+context Join_cpo
+begin
+  subclass   Finite_Join_cpo
+    apply default
+    unfolding compatible_def
+    apply (rule exists_lub)
+  done
+end
+
+lemma below_lubI[intro, simp]:
+  fixes x :: "'a :: Join_cpo"
+  shows  "x \<in> S \<Longrightarrow> x \<sqsubseteq> lub S"
+by (metis exists_lub is_ub_thelub_ex)
+
+lemma lub_belowI[intro, simp]:
+  fixes x :: "'a :: Join_cpo"
+  shows  "(\<And> y. y \<in> S \<Longrightarrow> y \<sqsubseteq> x) \<Longrightarrow> lub S \<sqsubseteq> x"
+by (metis exists_lub is_lub_thelub_ex is_ub_def)
+
+(* subclass (in Join_cpo)  pcpo *)
+instance Join_cpo \<subseteq> pcpo
+  apply default
+  apply (rule exI[where x = "lub {}"])
+  apply auto
+  done
+
+lemma lub_empty_set[simp]:
+  "lub {} = (\<bottom>::'a::Join_cpo)"
+  by (rule lub_eqI) simp
+
+
+lemma lub_insert[simp]:
+  fixes x :: "'a :: Join_cpo"
+  shows "lub (insert x S) = x \<squnion> lub S"
+by (rule lub_eqI) (auto intro: below_trans[OF _ join_above2] simp add: join_below_iff is_ub_def is_lub_def)
+
 
 end
