@@ -495,6 +495,21 @@ lift_definition without :: "'a \<Rightarrow> 'a ftree \<Rightarrow> 'a ftree" is
   apply (metis filter.simps(1) imageI)
   done
 
+lemma paths_withoutI:
+  assumes "xs \<in> paths t"
+  assumes "x \<notin> set xs"
+  shows "xs \<in> paths (without x t)"
+proof-
+  from assms(2)
+  have "filter (\<lambda> x'. x' \<noteq> x) xs = xs"  by (auto simp add: filter_id_conv)
+  with assms(1)
+  have "xs \<in> filter (\<lambda> x'. x' \<noteq> x)` paths t" by (metis imageI)
+  thus ?thesis by transfer
+qed
+
+lemma carrier_without[simp]: "carrier (without x t) = carrier t - {x}"
+  by transfer auto
+
 lift_definition ftree_restr :: "'a set \<Rightarrow> 'a ftree \<Rightarrow> 'a ftree" is "\<lambda> S xss. filter (\<lambda> x'. x' \<in> S) ` xss"
   apply (auto intro: downset_filter)
   apply (metis filter.simps(1) imageI)

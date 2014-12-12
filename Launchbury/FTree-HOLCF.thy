@@ -14,10 +14,12 @@ lemma paths_mono: "t \<sqsubseteq> t' \<Longrightarrow> paths t \<sqsubseteq> pa
 lemma paths_mono_iff: "paths t \<sqsubseteq> paths t' \<longleftrightarrow> t \<sqsubseteq> t'"
   by transfer (auto simp add: below_set_def)
 
+lemma ftree_belowI: "(\<And> xs. xs \<in> paths t \<Longrightarrow> xs \<in> paths t') \<Longrightarrow> t \<sqsubseteq> t'"
+  by transfer auto
+
 lemma paths_belowI: "(\<And> x xs. x#xs \<in> paths t \<Longrightarrow> x#xs \<in> paths t') \<Longrightarrow> t \<sqsubseteq> t'"
-  apply transfer
-  apply auto
-  apply (case_tac x)
+  apply (rule ftree_belowI)
+  apply (case_tac xs)
   apply auto
   done
 
@@ -46,6 +48,12 @@ lemma empty_is_bottom: "empty = \<bottom>"
 
 lemma carrier_bottom[simp]: "carrier \<bottom> = {}"
   unfolding empty_is_bottom[symmetric] by simp
+
+lemma carrier_mono: "t \<sqsubseteq> t' \<Longrightarrow> carrier t \<subseteq> carrier t'"
+  by transfer auto
+
+lemma nxt_mono: "t \<sqsubseteq> t' \<Longrightarrow> nxt t x \<sqsubseteq> nxt t' x"
+  by transfer auto
 
 lemma both_above_arg1: "t \<sqsubseteq> both t t'"
   by transfer fastforce

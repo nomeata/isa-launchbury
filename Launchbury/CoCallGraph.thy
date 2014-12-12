@@ -230,6 +230,9 @@ lemma cc_restr_mono2:
 lemma cc_restr_below_arg:
   "cc_restr S G \<sqsubseteq> G" by transfer auto
 
+lemma cc_restr_lub[simp]:
+  "cc_restr S (lub X) = (\<Squnion> G\<in>X. cc_restr S G)" by transfer auto
+
 definition ccSquare where "ccSquare S = ccProd S S"
 
 lemma ccField_ccSquare[simp]: "ccField (ccSquare S) = S"
@@ -287,6 +290,8 @@ lemma ccManyCalls_bot[simp]:
 lemma ccNeighbors_ccManyCalls[simp]: "x \<in> ccNeighbors {x} G \<longleftrightarrow> x \<in> ccManyCalls G"
   by transfer auto
 
+lemma in_ccManyCalls[simp]:
+  "x \<in> ccManyCalls G \<longleftrightarrow> x--x\<in>G" by transfer auto
 
 inductive list_pairs :: "'a list \<Rightarrow> ('a \<times> 'a) \<Rightarrow> bool"
   where "list_pairs xs p \<Longrightarrow> list_pairs (x#xs) p"
@@ -339,7 +344,11 @@ lemma ccLinear_ccProd[simp]:
   unfolding ccLinear_def
   by transfer auto
 
-lemma ccLinear_mono: "ccLinear S G' \<Longrightarrow> G \<sqsubseteq> G' \<Longrightarrow> ccLinear S G"
+lemma ccLinear_mono1: "ccLinear S' G \<Longrightarrow> S \<subseteq> S' \<Longrightarrow> ccLinear S G"
+  unfolding ccLinear_def
+  by transfer auto
+
+lemma ccLinear_mono2: "ccLinear S G' \<Longrightarrow> G \<sqsubseteq> G' \<Longrightarrow> ccLinear S G"
   unfolding ccLinear_def
   by transfer auto
 

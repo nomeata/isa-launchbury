@@ -177,7 +177,8 @@ next
 qed
 
 definition calledOnce :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<Rightarrow> var set"
-  where "calledOnce \<Gamma> e a = (if \<forall> x e'. map_of \<Gamma> x = Some e' \<longrightarrow> edom (fup\<cdot>(Aexp e')\<cdot>((Aheap \<Gamma> e\<cdot>a) x)) \<inter> domA \<Gamma> = {} then domA \<Gamma> else {})"
+  where "calledOnce \<Gamma> e a = {v. v \<notin> ccManyCalls (CCexp e\<cdot>a) \<and> (\<forall> x e'. map_of \<Gamma> x = Some e' \<longrightarrow> v \<notin>  edom (fup\<cdot>(Aexp e')\<cdot>((Aheap \<Gamma> e\<cdot>a) x)))}"
+
 
 definition ccHeap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> CoCalls"
   where "ccHeap \<Gamma> e  = (\<Lambda> a. CCfix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a))"
@@ -214,13 +215,9 @@ next
   have "ccHeap \<Gamma> e\<cdot>a = CCfix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a)" by (rule ccHeap_eq)
 
   have "ccField  (ccHeap \<Gamma> e\<cdot>a) \<subseteq> fv \<Gamma> \<union> fv e" sorry
-  moreover
-  assume "isLinear \<Gamma> e a"
-  hence "ccField (ccHeap \<Gamma> e\<cdot>a) \<inter> domA \<Gamma> = {}" 
-    unfolding isLinear_def
-    sorry
-  ultimately
-  have "ccField (ccHeap \<Gamma> e\<cdot>a) \<subseteq> fv \<Gamma> \<union> fv e - domA \<Gamma>" by auto
+  (* TODO: ccHeap should _not_ contain domA! But it has to! *)
+  
+  have "ccField (ccHeap \<Gamma> e\<cdot>a) \<subseteq> fv \<Gamma> \<union> fv e - domA \<Gamma>" sorry
   thus "ccHeap \<Gamma> e\<cdot>a \<sqsubseteq> CCexp (Let \<Gamma> e)\<cdot>a"
     by (simp add: ccHeap_eq[symmetric])
 next
@@ -287,9 +284,10 @@ next
 
 
   assume "x \<notin> calledOnce \<Gamma> e a"
-  hence "\<not>  (\<forall> x e'. map_of \<Gamma> x = Some e' \<longrightarrow> edom (fup\<cdot>(Aexp e')\<cdot>((Aheap \<Gamma> e\<cdot>a) x)) \<inter> domA \<Gamma> = {})"
+  hence "x--x\<in>CoCallArityAnalysis.CCexp cCCexp e\<cdot>a \<or> (\<exists> x' e' . map_of \<Gamma> x' = Some e' \<longrightarrow> x \<in> edom (fup\<cdot>(CoCallArityAnalysis.Aexp cCCexp e')\<cdot>((Aheap \<Gamma> e\<cdot>a) x')))"
     by (auto simp add: calledOnce_def split: if_splits)
-  hence "x \<in> ccManyCalls (CCfix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a))"sorry
+  hence "x \<in> ccManyCalls (CCfix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a))"
+    sorry (* TODO: non-trivial step here. The assumptions should show that eventually, we believe x is called twice *)
 
   from `x \<in> thunks \<Gamma>` and `x \<in> ccManyCalls _`
   have "(Afix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a)) x = up\<cdot>0" 
@@ -297,7 +295,16 @@ next
  
   thus "(Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
     by (simp add:  Aheap_simp)
-
+next
+  fix \<Delta> e a
+  show "calledOnce \<Delta> e a \<inter> ccManyCalls (CCexp e\<cdot>a) = {}"
+    by (auto simp add: calledOnce_def)
+    
+next
+  fix \<Delta> :: heap and x e' e a u'
+  assume a: "map_of \<Delta> x = Some e'"  "(Aheap \<Delta> e\<cdot>a) x = up\<cdot>u'"
+  thus "edom (Aexp e'\<cdot>u') \<inter> calledOnce \<Delta> e a = {}"
+    by (fastforce simp add: calledOnce_def)
 qed
 
 end

@@ -169,6 +169,10 @@ lemma ball_mapCollect[simp]:
   "(\<forall> x \<in> {f k v | k \<mapsto> v \<in> m}. P x) \<longleftrightarrow> (\<forall> k v. m k = Some v \<longrightarrow> P (f k v))"
   by (auto simp add: mapCollect_def)
 
+lemma image_mapCollect[simp]: 
+  "g ` {f k v | k \<mapsto> v \<in> m} = { g (f k v) | k \<mapsto> v \<in> m}"
+  by (auto simp add: mapCollect_def)
+
 definition mapCollectFilter :: "('a \<Rightarrow> 'b \<Rightarrow> (bool \<times> 'c)) \<Rightarrow> ('a \<rightharpoonup> 'b) \<Rightarrow> 'c set"
   where "mapCollectFilter f m = {snd (f k v) | k v . m k = Some v \<and> fst (f k v)}"
 
