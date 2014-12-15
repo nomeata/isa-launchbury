@@ -31,6 +31,19 @@ definition Afix :: "heap \<Rightarrow> (AEnv \<times> CoCalls \<rightarrow> AEnv
 definition CCfix :: "heap \<Rightarrow> (AEnv \<times> CoCalls \<rightarrow> CoCalls)"
   where "CCfix \<Gamma> = (\<Lambda> ae. snd (cccFix \<Gamma>\<cdot>ae))"
 
+(* This might work just as nicely:
+
+context
+  fixes \<Gamma> :: heap
+begin
+fixrec Afix :: "(AEnv \<times> CoCalls \<rightarrow> AEnv)" and CCfix :: " (AEnv \<times> CoCalls \<rightarrow> CoCalls)"
+  where "Afix\<cdot>ae = ABinds \<Gamma>\<cdot>(Afix\<cdot>ae) \<squnion>  ABindsExtra \<Gamma>\<cdot>(CCfix\<cdot>ae) \<squnion> fst ae"
+   |    "CCfix\<cdot>ae = ccBindsExtra \<Gamma>\<cdot>(Afix\<cdot>ae, CCfix\<cdot>ae) \<squnion> snd ae" 
+end
+lemmas Afix_unroll = Afix.simps[simp del]
+lemmas CCfix_unroll = CCfix.simps[simp del]
+*)
+
 lemma cccFix_eq: "cccFix \<Gamma> \<cdot> i = (\<mu>  i'. (ABinds \<Gamma> \<cdot> (fst i') \<squnion> ABindsExtra \<Gamma>\<cdot>(snd i'), ccBindsExtra \<Gamma> \<cdot> i') \<squnion> i)"
   unfolding cccFix_def by simp
 
@@ -49,9 +62,6 @@ lemma Afix_unroll: "Afix \<Gamma>\<cdot>ae = ABinds \<Gamma> \<cdot> (Afix \<Gam
 lemma CCfix_unroll: "CCfix \<Gamma>\<cdot>ae = ccBindsExtra \<Gamma>\<cdot>(Afix \<Gamma>\<cdot>ae, CCfix \<Gamma>\<cdot>ae) \<squnion> snd ae"
   unfolding Afix_def CCfix_def
   by (subst cccfix_unroll) simp
-  
-
-
 
 (*
 lemma cccFix_least_below: "Binds \<Gamma> \<cdot> (fst ae') \<sqsubseteq> fst ae' \<Longrightarrow> ae \<sqsubseteq> ae' \<Longrightarrow> cccFix \<Gamma> \<cdot> ae \<sqsubseteq> ae'"

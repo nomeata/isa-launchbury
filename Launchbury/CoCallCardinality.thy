@@ -845,16 +845,6 @@ lemma cc_restr_Compl_eq[simp]:
   "cc_restr {x. x \<notin> S} = cc_restr (-S)"
   by (metis Compl_eq)
 
-lemma ccLinear_ccApprox:
-  "ccLinear S (ccApprox t) \<longleftrightarrow> (\<forall>xs \<in> paths t. ccLinear S (ccFromList xs))"
-  sorry
-
-lemma ccApprox_nxt: 
-  "ccApprox (nxt t x) \<sqsubseteq> cc_restr (ccNeighbors {x} (ccApprox t)) (ccApprox t)"
-  apply transfer
-  sorry
-
-
 
 lemma substitute_not_carrier:
   assumes "x \<notin> carrier t"

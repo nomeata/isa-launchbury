@@ -154,7 +154,6 @@ lemma CCexp_simps[simp]:
   "CCexp (Let \<Gamma> e)\<cdot>n = cc_restr (fv (Let \<Gamma> e)) (CCfix \<Gamma>\<cdot>(Aexp e\<cdot>n, CCexp e\<cdot>n))"
 unfolding Aexp_def CCexp_def CCfix_def by (simp add: beta_cfun)+
 
-
 lemma ccField_CCexp:
   "ccField (CCexp e\<cdot>n) \<subseteq> fv e"
 by (induction e arbitrary: n rule: exp_induct)

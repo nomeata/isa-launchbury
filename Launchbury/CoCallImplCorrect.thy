@@ -9,6 +9,42 @@ lemma Aexp_edom': "edom (Aexp e\<cdot>a) \<subseteq> fv e"
 
 interpretation EdomArityAnalysis Aexp by default (rule Aexp_edom')
 
+lemma edom_Afix: "edom (Afix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp  e\<cdot>a)) \<subseteq> fv \<Gamma> \<union> fv e"
+proof-
+  {
+  fix x  :: var
+  assume "x \<notin> fv \<Gamma>" 
+  hence [simp]: "\<And> a. (ABinds  \<Gamma>\<cdot>a) x = \<bottom>"
+    apply (induction \<Gamma> rule: ABinds.induct)
+    apply auto
+    apply (auto simp add: Aexp'_def )
+    apply (case_tac "a v")
+    apply simp
+    apply auto
+    apply (metis (mono_tags) Aexp_edom' contra_subsetD edom_def mem_Collect_eq)
+    apply (metis contra_subsetD fv_delete_subset)
+    done
+  
+  from `x \<notin> fv \<Gamma>`
+  have "x \<notin> domA \<Gamma>" by (metis domA_fv_subset set_mp)
+  hence  "x \<notin> thunks \<Gamma>" by (metis set_mp thunks_domA)
+  hence [simp]: "\<And>a. (ABindsExtra \<Gamma>\<cdot>a) x = \<bottom>"
+    by (auto simp add: ABindsExtra_simp)
+  
+  assume "x \<notin> fv e"
+  hence "x \<notin> edom (Aexp e\<cdot>a)"  by (auto dest!: set_mp[OF Aexp_edom'])
+  hence [simp]: "(Aexp e\<cdot>a) x = \<bottom>" by (simp add: edom_def)
+
+  have "(Afix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp  e\<cdot>a)) x = \<bottom>"
+    unfolding Afix_def cccFix_eq
+    apply simp
+    apply (rule fix_ind)  
+    apply auto
+    done
+  }
+  thus ?thesis by (auto simp add: edom_def)    
+qed
+
 lemma Aexp_lam_simp[simp]: "Aexp (Lam [x]. e) \<cdot> n = env_delete x (Aexp e \<cdot> (pred \<cdot> n))"
 proof-
   have "Aexp (Lam [x]. e) \<cdot> n = Aexp e\<cdot>(pred\<cdot>n) f|` (fv e - {x})" by simp
@@ -158,7 +194,7 @@ next
   assume assms: "x \<notin> domA \<Gamma>"  "y \<notin> domA \<Gamma>"
   show "Aheap \<Gamma>[x::h=y] e[x::=y] = Aheap \<Gamma> e"
     apply (rule cfun_eqI)
-    unfolding Aheap_def
+    unfolding Aheap_simp
     apply simp
     sorry
     (*
@@ -171,9 +207,17 @@ next
     *)
 next
   fix \<Gamma> e a
-  show "ABinds \<Gamma>\<cdot>(Aheap \<Gamma> e\<cdot>a) \<squnion> Aexp e\<cdot>a \<sqsubseteq> Aheap \<Gamma> e\<cdot>a \<squnion> Aexp (Let \<Gamma> e)\<cdot>a"
-    (* by (auto simp add: Aheap_def join_below_iff env_restr_join2 Compl_partition intro:  below_trans[OF _ Afix_above_arg]) *)
-    sorry
+  have "ABinds \<Gamma>\<cdot>(Aheap \<Gamma> e\<cdot>a) \<squnion> Aexp e\<cdot>a \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a)"
+    apply (subst Afix_unroll)
+    unfolding Aheap_simp
+    by (simp add: below_trans[OF _ join_above1] below_trans[OF _ join_above2])
+  also have "\<dots> = \<dots> f|` (fv \<Gamma> \<union> fv e)"
+    by (rule env_restr_useless[symmetric, OF edom_Afix])
+ also have "\<dots> = Aheap \<Gamma> e\<cdot>a \<squnion> Aexp (Let \<Gamma> e)\<cdot>a"
+    using domA_fv_subset
+    by (auto simp add: Aheap_simp env_restr_join2 Un_absorb1[OF le_supI1[OF domA_fv_subset]])
+  finally
+  show "ABinds \<Gamma>\<cdot>(Aheap \<Gamma> e\<cdot>a) \<squnion> Aexp e\<cdot>a \<sqsubseteq> Aheap \<Gamma> e\<cdot>a \<squnion> Aexp (Let \<Gamma> e)\<cdot>a".
 qed
 
 definition calledOnce :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<Rightarrow> var set"
