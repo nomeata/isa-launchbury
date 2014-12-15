@@ -202,4 +202,22 @@ lemma ftree_restr_join[simp]:
   "ftree_restr S (t \<squnion> t') = ftree_restr S t \<squnion> ftree_restr S t'"
   by transfer auto
 
+lemma length_filter_mono[intro]:
+  assumes "(\<And> x. P x \<Longrightarrow> Q x)"
+  shows "length (filter P xs) \<le> length (filter Q xs)"
+by (induction xs) (auto dest: assms)
+
+lemma nxt_singles_below_singles:
+  "nxt (singles S) x \<sqsubseteq> singles S"
+  apply auto
+  apply transfer 
+  apply auto
+  apply (erule_tac x = xc in  ballE)
+  apply (erule order_trans[rotated])
+  apply (rule length_filter_mono)
+  apply simp
+  apply simp
+  done
+
+
 end

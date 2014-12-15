@@ -187,10 +187,12 @@ lemma ccHeap_eq:
   "ccHeap \<Gamma> e\<cdot>a = CCfix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a)"
 unfolding ccHeap_def by simp
 
+(*
 definition isLinear :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<Rightarrow> bool"
   where "isLinear \<Gamma> e a = ccLinear (domA \<Gamma>) (ccHeap \<Gamma> e\<cdot>a)"
+*)
 
-interpretation CoCallCardinality CCexp calledOnce isLinear ccHeap Aexp Aheap
+interpretation CoCallCardinality CCexp calledOnce (* isLinear *) ccHeap Aexp Aheap
 proof
   fix e a x
   show "CCexp e\<cdot>(inc\<cdot>a) \<squnion> ccProd {x} (insert x (fv e)) \<sqsubseteq> CCexp (App e x)\<cdot>a"
@@ -214,11 +216,11 @@ next
   fix \<Gamma> e a
   have "ccHeap \<Gamma> e\<cdot>a = CCfix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a)" by (rule ccHeap_eq)
 
-  have "ccField  (ccHeap \<Gamma> e\<cdot>a) \<subseteq> fv \<Gamma> \<union> fv e" sorry
-  (* TODO: ccHeap should _not_ contain domA! But it has to! *)
-  
-  have "ccField (ccHeap \<Gamma> e\<cdot>a) \<subseteq> fv \<Gamma> \<union> fv e - domA \<Gamma>" sorry
-  thus "ccHeap \<Gamma> e\<cdot>a \<sqsubseteq> CCexp (Let \<Gamma> e)\<cdot>a"
+  have "ccField  (ccHeap \<Gamma> e\<cdot>a) \<subseteq> fv \<Gamma> \<union> fv e"
+    sorry
+  hence "cc_restr (- domA \<Gamma>) (ccHeap \<Gamma> e\<cdot>a) = cc_restr ((fv \<Gamma> \<union> fv e) - domA \<Gamma>) (ccHeap \<Gamma> e\<cdot>a)"
+    by (auto intro: cc_restr_intersect)
+  thus "cc_restr (- domA \<Gamma>) (ccHeap \<Gamma> e\<cdot>a) \<sqsubseteq> CCexp (Let \<Gamma> e)\<cdot>a"
     by (simp add: ccHeap_eq[symmetric])
 next
   fix \<Delta> :: heap and e a
@@ -248,6 +250,7 @@ next
     by (force simp add: ccHeap_def ccBindsExtra_simp  ccBinds_eq  arg_cong[OF CCfix_unroll, where f = "op \<sqsubseteq> x" for x ]
                 intro: below_trans[OF _ join_above2]  below_trans[OF _ join_above1] 
                 simp del: ccBind_eq)
+(*
 next
   fix \<Delta> e a
   assume "isLinear \<Delta> e a"
@@ -259,7 +262,7 @@ next
   hence  *: "ccLinear (domA \<Delta>) (CCexp e\<cdot>a)" and **: "\<And> x e'. map_of \<Delta> x = Some e' \<Longrightarrow> ccLinear (domA \<Delta>) (ccBind x e'\<cdot>(Afix \<Delta>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a), CCfix \<Delta>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a)))"
     by (auto simp add: ccBindsExtra_simp ccBinds_eq simp del: ccBind_eq)
 
-  show "ccLinear (domA \<Delta>) (CCexp e\<cdot>a)" by (rule *)
+  show "ccLinear (domA \<Delta>) (CCexp e\<cdot>a)" by (rule * )
 
   fix x e' a'
   assume "map_of \<Delta> x = Some e'"
@@ -274,7 +277,7 @@ next
     by (auto simp add: ccExp'_def)
   with **[OF `map_of \<Delta> x = Some e'`] 
   show "ccLinear (domA \<Delta>) (CCexp e'\<cdot>a')" by simp
-
+*)
 
 next
   fix x \<Gamma> e a

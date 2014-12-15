@@ -233,6 +233,16 @@ lemma cc_restr_below_arg:
 lemma cc_restr_lub[simp]:
   "cc_restr S (lub X) = (\<Squnion> G\<in>X. cc_restr S G)" by transfer auto
 
+lemma elem_to_ccField: "x--y\<in>G \<Longrightarrow> x \<in> ccField G \<and> y \<in> ccField G"
+  by transfer (auto simp add: Field_def)
+
+lemma cc_restr_intersect: "ccField G \<inter> ((S - S') \<union> (S' - S)) = {} \<Longrightarrow> cc_restr S G = cc_restr S' G"
+  by (rule CoCalls_eqI) (auto dest: elem_to_ccField)
+
+lemma cc_restr_cc_restr[simp]: "cc_restr S (cc_restr S' G) = cc_restr (S \<inter> S') G"
+  by transfer auto
+
+
 definition ccSquare where "ccSquare S = ccProd S S"
 
 lemma ccField_ccSquare[simp]: "ccField (ccSquare S) = S"

@@ -24,7 +24,9 @@ locale CoCallAnalysis_ccField = CoCallAnalysis +
 
 locale CoCallAnalyisHeap = 
   fixes calledOnce :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<Rightarrow> var set"
+  (*
   fixes isLinear :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<Rightarrow> bool"
+  *)
   fixes ccHeap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> CoCalls"
 
 

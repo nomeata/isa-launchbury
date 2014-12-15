@@ -688,6 +688,31 @@ proof
   qed
 qed
 
+lemma substitute_monoT:
+  assumes "T \<subseteq> T'"
+  shows "paths (substitute f T' t) \<subseteq> paths (substitute f T t)"
+proof
+  fix xs
+  assume "xs \<in> paths (substitute f T' t)"
+  thus "xs \<in> paths (substitute f T t)"
+  using assms
+  proof(induction f T' t xs arbitrary: T rule: substitute_induct)
+  case Nil
+    thus ?case by simp
+  next
+  case (Cons f T' t x xs T)
+    from `x # xs \<in> paths (substitute f T' t)`
+    have [simp]: "possible t x" and "xs \<in> paths (substitute (f_nxt f T' x) T' (nxt t x \<otimes>\<otimes> f x))" by auto
+    from Cons.IH[OF this(2) Cons.prems(2)]
+    have "xs \<in> paths (substitute (f_nxt f T' x) T (nxt t x \<otimes>\<otimes> f x))".
+    hence "xs \<in> paths (substitute (f_nxt f T x) T (nxt t x \<otimes>\<otimes> f x))"
+      by (rule set_mp[OF substitute_mono1, rotated])
+         (auto simp add: f_nxt_def set_mp[OF Cons.prems(2)])
+    thus ?case by auto
+  qed
+qed
+
+
 lemma substitute_contains_arg: "paths t \<subseteq> paths (substitute f T t)"
 proof
   fix xs
@@ -967,6 +992,37 @@ lemma substitute_cong_induct:
   apply (metis assms(1,3))
   apply (metis assms(3))
   done
+
+lemma carrier_substitute_below:
+  assumes "\<And> x. x \<in> A \<Longrightarrow> carrier (f x) \<subseteq> A"
+  assumes "carrier t \<subseteq> A"
+  shows "carrier (substitute f T t) \<subseteq> A"
+proof-
+  {
+    fix xs
+    assume "xs \<in> paths (substitute f T t)"
+    from this assms
+    have "set xs \<subseteq> A"
+    proof (induction f T t xs rule:substitute_induct)
+    case Nil thus ?case by simp
+    next
+    case (Cons f T t x xs)
+      from `x # xs \<in> paths (substitute f T t)`
+      have [simp]: "possible t x" and "xs \<in> paths (substitute (f_nxt f T x) T (nxt t x \<otimes>\<otimes> f x))" by auto
+      from this(1) and Cons.prems(3) have "x \<in> A" by (metis carrier_possible_subset)
+
+      from `xs \<in> _`
+      have "set xs \<subseteq> A"
+        by (rule Cons.IH)
+           (auto simp add: f_nxt_def dest:  set_mp[OF Cons.prems(2)]
+              dest!:  set_mp[OF Cons.prems(2)[OF `x\<in>A`]]  set_mp[OF  Cons.prems(3)] set_mp[OF carrier_nxt_subset])
+      with `x \<in> A`
+      show "set (x # xs) \<subseteq> A" by auto
+    qed
+  }
+  thus ?thesis
+    by (auto simp add: Union_paths_carrier[symmetric])
+qed
 
 lemma f_nxt_eq_empty_iff:
   "f_nxt f T x x' = empty \<longleftrightarrow> f x' = empty \<or> (x' = x \<and> x \<in> T)"
