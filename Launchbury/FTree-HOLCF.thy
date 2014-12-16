@@ -160,7 +160,8 @@ lemma cont_intersect[cont2cont,simp]: "cont f \<Longrightarrow> cont g \<Longrig
   by (rule cont_compose2[OF cont_intersect1 cont_intersect2])
 
 lemma cont_without[THEN cont_compose, cont2cont,simp]: "cont (without x)"
-  sorry
+  by (rule ftree_contI2[where t = "\<lambda> xs.{filter (\<lambda> x'. x' \<noteq> x) xs}"])
+     (transfer, auto)
 
 lemma paths_many_calls_subset:
   "t \<sqsubseteq> many_calls x \<otimes>\<otimes> without x t"
@@ -170,7 +171,8 @@ lemma single_below:
   "[x] \<in> paths t \<Longrightarrow> single x \<sqsubseteq> t" by transfer auto
 
 lemma cont_ftree_restr[THEN cont_compose, cont2cont,simp]: "cont (ftree_restr S)"
-  sorry
+  by (rule ftree_contI2[where t = "\<lambda> xs.{filter (\<lambda> x'. x' \<in> S) xs}"])
+     (transfer, auto)
 
 lemmas ftree_restr_mono = cont2monofunE[OF cont_ftree_restr[OF cont_id]]
 
@@ -201,11 +203,6 @@ qed
 lemma ftree_restr_join[simp]:
   "ftree_restr S (t \<squnion> t') = ftree_restr S t \<squnion> ftree_restr S t'"
   by transfer auto
-
-lemma length_filter_mono[intro]:
-  assumes "(\<And> x. P x \<Longrightarrow> Q x)"
-  shows "length (filter P xs) \<le> length (filter Q xs)"
-by (induction xs) (auto dest: assms)
 
 lemma nxt_singles_below_singles:
   "nxt (singles S) x \<sqsubseteq> singles S"

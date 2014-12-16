@@ -578,15 +578,30 @@ lift_definition singles :: "'a set \<Rightarrow> 'a ftree" is "\<lambda> S. {xs.
   apply auto
   done
 
-lemma possible_singles[simp]: "possible (singles S) x' \<longleftrightarrow> True"
-  apply transfer
+lemma possible_singles[simp]: "possible (singles S) x"
+  apply transfer'
+  apply (rule_tac x = "[]" in exI)
   apply auto
-  sorry
+  done
+
+lemma length_filter_mono[intro]:
+  assumes "(\<And> x. P x \<Longrightarrow> Q x)"
+  shows "length (filter P xs) \<le> length (filter Q xs)"
+by (induction xs) (auto dest: assms)
 
 lemma nxt_singles[simp]: "nxt (singles S) x' =  (if x' \<in> S then without x' (singles S) else singles S)"
   apply transfer'
   apply auto
-  sorry
+  apply (rule rev_image_eqI[where x = "[]"], auto)[1]
+  apply (rule_tac x = x in rev_image_eqI)
+  apply (simp, rule ballI, erule_tac x = xa in ballE, auto)[1]
+  apply (rule sym)
+  apply (simp add: filter_id_conv filter_empty_conv)[1]
+  apply (erule_tac x = xb in ballE)
+  apply (erule order_trans[rotated])
+  apply (rule length_filter_mono)
+  apply auto
+  done
 
 lemma carrier_singles[simp]:
   "carrier (singles S) = UNIV"
