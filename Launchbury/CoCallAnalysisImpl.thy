@@ -49,7 +49,7 @@ lemma predCC_eq:
   unfolding predCC_def
   apply (rule beta_cfun)
   apply (rule cont_if_else_above)
-  apply (auto dest: set_mp[OF ccFieldd_cc_restr])
+  apply (auto dest: set_mp[OF ccField_cc_restr])
   done
 
 lemma predCC_eqvt[eqvt, simp]: "\<pi> \<bullet> (predCC S f) = predCC (\<pi> \<bullet> S) (\<pi> \<bullet> f)"
@@ -57,7 +57,7 @@ lemma predCC_eqvt[eqvt, simp]: "\<pi> \<bullet> (predCC S f) = predCC (\<pi> \<b
   apply perm_simp
   apply (rule Abs_cfun_eqvt)
   apply (rule cont_if_else_above)
-  apply (auto dest: set_mp[OF ccFieldd_cc_restr])
+  apply (auto dest: set_mp[OF ccField_cc_restr])
   done
 
 lemma cc_restr_cc_restr[simp]:
@@ -76,10 +76,10 @@ lemma cc_restr_predCC[simp]:
 nominal_function
   cCCexp :: "exp \<Rightarrow> (Arity \<rightarrow> AEnv \<times> CoCalls)" 
 where
-  "cCCexp (GVar b x) = (\<Lambda> n . (AE_singleton x \<cdot> (up \<cdot> n), \<bottom>))"
+  "cCCexp (GVar b x) =   (\<Lambda> n . (AE_singleton x \<cdot> (up \<cdot> n),                                   \<bottom>))"
 | "cCCexp (Lam [x]. e) = (\<Lambda> n . combined_restrict (fv (Lam [x]. e)) (fst (cCCexp e\<cdot>(pred\<cdot>n)), predCC (fv (Lam [x]. e)) (\<Lambda> a. snd(cCCexp e\<cdot>a))\<cdot>n))"
-| "cCCexp (App e x) = (\<Lambda> n . (fst (cCCexp e\<cdot>(inc\<cdot>n)) \<squnion> (AE_singleton x \<cdot> (up \<cdot> 0)), snd (cCCexp e\<cdot>(inc\<cdot>n)) \<squnion> ccProd {x} (insert x (fv e))))"
-| "cCCexp (Let \<Gamma> e) = (\<Lambda> n . combined_restrict (fv (Let \<Gamma> e)) (CoCallArityAnalysis.cccFix cCCexp \<Gamma> \<cdot> (cCCexp e \<cdot> n)))"
+| "cCCexp (App e x) =    (\<Lambda> n . (fst (cCCexp e\<cdot>(inc\<cdot>n)) \<squnion> (AE_singleton x \<cdot> (up \<cdot> 0)),        snd (cCCexp e\<cdot>(inc\<cdot>n)) \<squnion> ccProd {x} (insert x (fv e))))"
+| "cCCexp (Let \<Gamma> e) =    (\<Lambda> n . combined_restrict (fv (Let \<Gamma> e)) (CoCallArityAnalysis.cccFix cCCexp \<Gamma> \<cdot> (cCCexp e \<cdot> n)))"
 proof-
 case goal1
     show ?case
@@ -157,7 +157,7 @@ unfolding Aexp_def CCexp_def CCfix_def by (simp add: beta_cfun)+
 lemma ccField_CCexp:
   "ccField (CCexp e\<cdot>n) \<subseteq> fv e"
 by (induction e arbitrary: n rule: exp_induct)
-   (auto simp add: ccField_ccProd predCC_eq dest: set_mp[OF ccFieldd_cc_restr])
+   (auto simp add: ccField_ccProd predCC_eq dest: set_mp[OF ccField_cc_restr])
 
 lemma cc_restr_CCexp[simp]:
   "cc_restr (fv e) (CCexp e\<cdot>a) = CCexp e\<cdot>a"

@@ -1,5 +1,5 @@
 theory CoCallFix
-imports CoCallAnalysis CoCallAnalysisBinds ArityCorrect
+imports CoCallAnalysis CoCallAnalysisBinds ArityCorrect "Env-Nominal"
 begin
 
 locale CoCallArityAnalysis =
@@ -23,7 +23,7 @@ lemma ABindsExtra_eq_up0[intro!]: "x \<in> thunks \<Gamma> \<inter> ccManyCalls 
   unfolding ABindsExtra_simp by (auto simp add: lookup_env_restr_eq)
   
 definition cccFix ::  "heap \<Rightarrow> ((AEnv \<times> CoCalls) \<rightarrow> (AEnv \<times> CoCalls))"
-  where "cccFix \<Gamma> = (\<Lambda> i. (\<mu>  i'. (ABinds \<Gamma> \<cdot> (fst i') \<squnion> ABindsExtra \<Gamma>\<cdot>(snd i'), ccBindsExtra \<Gamma> \<cdot> i') \<squnion> i))"
+  where "cccFix \<Gamma> = (\<Lambda> i. (\<mu>  i'. (ABinds \<Gamma> \<cdot> (fst i') \<squnion> (\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>), ccBindsExtra \<Gamma> \<cdot> i') \<squnion> i))"
 
 definition Afix :: "heap \<Rightarrow> (AEnv \<times> CoCalls \<rightarrow> AEnv)"
   where "Afix e = (\<Lambda> ae. fst (cccFix e \<cdot> ae))"
@@ -44,18 +44,20 @@ lemmas Afix_unroll = Afix.simps[simp del]
 lemmas CCfix_unroll = CCfix.simps[simp del]
 *)
 
-lemma cccFix_eq: "cccFix \<Gamma> \<cdot> i = (\<mu>  i'. (ABinds \<Gamma> \<cdot> (fst i') \<squnion> ABindsExtra \<Gamma>\<cdot>(snd i'), ccBindsExtra \<Gamma> \<cdot> i') \<squnion> i)"
+lemma cccFix_eq: "cccFix \<Gamma> \<cdot> i = (\<mu>  i'. (ABinds \<Gamma> \<cdot> (fst i') \<squnion> (\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>), ccBindsExtra \<Gamma> \<cdot> i') \<squnion> i)"
   unfolding cccFix_def by simp
 
+(*
 lemma cccFix_strict[simp]: "cccFix \<Gamma> \<cdot> \<bottom> = \<bottom>"
   unfolding cccFix_eq
   by (rule fix_eqI) auto
+*)
 
-lemma cccfix_unroll: "cccFix \<Gamma>\<cdot>ae = (ABinds \<Gamma> \<cdot> (Afix \<Gamma>\<cdot>ae) \<squnion> ABindsExtra \<Gamma>\<cdot>(CCfix \<Gamma>\<cdot>ae), ccBindsExtra \<Gamma>\<cdot> (cccFix \<Gamma>\<cdot>ae)) \<squnion> ae"
+lemma cccfix_unroll: "cccFix \<Gamma>\<cdot>ae = (ABinds \<Gamma> \<cdot> (Afix \<Gamma>\<cdot>ae) \<squnion> (\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>), ccBindsExtra \<Gamma>\<cdot> (cccFix \<Gamma>\<cdot>ae)) \<squnion> ae"
   unfolding cccFix_eq Afix_def CCfix_def
   by (subst fix_eq) simp
 
-lemma Afix_unroll: "Afix \<Gamma>\<cdot>ae = ABinds \<Gamma> \<cdot> (Afix \<Gamma>\<cdot>ae) \<squnion> ABindsExtra \<Gamma>\<cdot>(CCfix \<Gamma>\<cdot>ae) \<squnion> fst ae"
+lemma Afix_unroll: "Afix \<Gamma>\<cdot>ae = ABinds \<Gamma> \<cdot> (Afix \<Gamma>\<cdot>ae) \<squnion> (\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>) \<squnion> fst ae"
   unfolding Afix_def CCfix_def cccFix_eq
   by (subst fix_eq) simp
 
@@ -109,6 +111,7 @@ lemma cccFix_eqvt[eqvt]: "\<pi> \<bullet> (CoCallArityAnalysis.cccFix cccExp \<G
 
 lemma Afix_eqvt[eqvt]:  "\<pi> \<bullet> (CoCallArityAnalysis.Afix cccExp \<Gamma>) = CoCallArityAnalysis.Afix (\<pi> \<bullet> cccExp) (\<pi> \<bullet> \<Gamma>)"
   unfolding CoCallArityAnalysis.Afix_def by perm_simp (simp_all add: Abs_cfun_eqvt)
+
 lemma CCfix_eqvt[eqvt]: "\<pi> \<bullet> (CoCallArityAnalysis.CCfix cccExp \<Gamma>) = CoCallArityAnalysis.CCfix (\<pi> \<bullet> cccExp) (\<pi> \<bullet> \<Gamma>)"
   unfolding CoCallArityAnalysis.CCfix_def by perm_simp (simp_all add: Abs_cfun_eqvt)
 

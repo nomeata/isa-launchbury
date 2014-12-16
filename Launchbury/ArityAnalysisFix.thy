@@ -188,10 +188,6 @@ lemma Afix_edom: "edom (Afix \<Gamma> \<cdot> ae) \<subseteq> fv \<Gamma> \<unio
   unfolding Afix_eq
   by (rule fix_ind[where P = "\<lambda> ae' . edom ae' \<subseteq> fv \<Gamma> \<union> edom ae"] )
      (auto dest: set_mp[OF ABinds_edom])
-end
-
-context CorrectArityAnalysis'
-begin
 
 lemma ABinds_lookup_fresh:
   "atom v \<sharp> \<Gamma> \<Longrightarrow> (ABinds \<Gamma>\<cdot>ae) v = \<bottom>"
@@ -205,13 +201,6 @@ lemma Afix_lookup_fresh:
   apply (rule fix_ind[where  P = "\<lambda> ae'. ae' v \<sqsubseteq> ae v"])
   apply (auto simp add: ABinds_lookup_fresh[OF assms] fun_belowD[OF Afix_above_arg])
   done
-
-lemma Afix_restr_subst:
-  assumes "x \<notin> S"
-  assumes "y \<notin> S"
-  assumes "domA \<Gamma> \<subseteq> S"
-  shows "Afix \<Gamma>[x::h=y]\<cdot>ae f|` S = Afix \<Gamma>\<cdot>(ae f|` S) f|` S"
-  by (rule Afix_restr_subst'[OF Aexp_subst_restr[OF assms(1,2)] assms])
 
 lemma Afix_comp2join_fresh:
   "atom ` (domA \<Delta>) \<sharp>* \<Gamma> \<Longrightarrow> ABinds \<Delta>\<cdot>(Afix \<Gamma>\<cdot>ae) = ABinds \<Delta>\<cdot>ae"
@@ -256,6 +245,7 @@ next
   qed
 qed
 
+
 lemma Afix_e_to_heap:
    "Afix (delete x \<Gamma>)\<cdot>(Aexp' e\<cdot>n \<squnion> ae) \<sqsubseteq> Afix ((x, e) # delete x \<Gamma>)\<cdot>(AE_singleton x\<cdot>n \<squnion> ae)"
     apply (simp add: Afix_eq)
@@ -279,8 +269,16 @@ using Afix_e_to_heap[where ae = \<bottom> and n = "up\<cdot>n"] by simp
 
 end
 
-locale CorrectArityAnalysisAfix = CorrectArityAnalysis' + 
-  assumes Aexp_Let: "Afix as\<cdot>(Aexp e\<cdot>n) f|` (- domA as) \<sqsubseteq> Aexp (Let as e)\<cdot>n"
+context SubstArityAnalysis
+begin
+
+lemma Afix_restr_subst:
+  assumes "x \<notin> S"
+  assumes "y \<notin> S"
+  assumes "domA \<Gamma> \<subseteq> S"
+  shows "Afix \<Gamma>[x::h=y]\<cdot>ae f|` S = Afix \<Gamma>\<cdot>(ae f|` S) f|` S"
+  by (rule Afix_restr_subst'[OF Aexp_subst_restr[OF assms(1,2)] assms])
+end
 
 end
 

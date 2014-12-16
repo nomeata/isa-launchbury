@@ -19,13 +19,15 @@ begin
 
 end
 
-locale CorrectArityAnalysis' = ArityAnalysis + EdomArityAnalysis +
+locale SubstArityAnalysis = EdomArityAnalysis + 
+  assumes Aexp_subst: "Aexp (e[y::=x])\<cdot>a \<sqsubseteq> env_delete y ((Aexp e)\<cdot>a) \<squnion> AE_singleton x\<cdot>(up\<cdot>0)"
+  assumes Aexp_subst_restr: "x \<notin> S \<Longrightarrow> y \<notin> S \<Longrightarrow> (Aexp e[x::=y] \<cdot> a) f|` S = (Aexp e\<cdot>a) f|` S"
+
+locale CorrectArityAnalysis' = SubstArityAnalysis +
 (*  assumes Aexp_eqvt: "\<pi> \<bullet> Aexp = Aexp" *)
   assumes Aexp_Var: "up \<cdot> n \<sqsubseteq> (Aexp (Var x)\<cdot>n) x"
   assumes Aexp_App: "Aexp e \<cdot>(inc\<cdot>n) \<squnion> AE_singleton x \<cdot> (up\<cdot>0) \<sqsubseteq>  Aexp (App e x) \<cdot> n"
   assumes Aexp_Lam: "env_delete y (Aexp e \<cdot>(pred\<cdot>n)) \<sqsubseteq> Aexp (Lam [y]. e) \<cdot> n"
-  assumes Aexp_subst: "Aexp (e[y::=x])\<cdot>a \<sqsubseteq> env_delete y ((Aexp e)\<cdot>a) \<squnion> AE_singleton x\<cdot>(up\<cdot>0)"
-  assumes Aexp_subst_restr: "x \<notin> S \<Longrightarrow> y \<notin> S \<Longrightarrow> (Aexp e[x::=y] \<cdot> a) f|` S = (Aexp e\<cdot>a) f|` S"
 
 locale CorrectArityAnalysisAheap' = CorrectArityAnalysis' + 
   fixes Aheap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> AEnv"
@@ -38,7 +40,13 @@ locale CorrectArityAnalysisLet' = CorrectArityAnalysisAheap' +
 
 locale CorrectArityAnalysisLetNoCard = CorrectArityAnalysisLet' +
   assumes Aheap_heap3: "x \<in> thunks \<Gamma> \<Longrightarrow> (Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
- 
+
+context EdomArityAnalysis
+begin
+lemma Aexp'_lookup_fresh: "atom v \<sharp> e \<Longrightarrow> (Aexp' e\<cdot>a) v = \<bottom>"
+  by (cases a) auto
+end 
+
 context CorrectArityAnalysis'
 begin
 
@@ -47,13 +55,6 @@ lemma Aexp_Var_singleton: "AE_singleton x \<cdot> (up\<cdot>n) \<sqsubseteq> Aex
 
 lemma Aexp'_Var: "AE_singleton x \<cdot> n \<sqsubseteq> Aexp' (Var x) \<cdot> n"
   by (cases n) (simp_all add: Aexp_Var)
-
-
-lemma Aexp_lookup_fresh: "atom v \<sharp> e \<Longrightarrow> (Aexp e\<cdot>a) v = \<bottom>"
-  using set_mp[OF Aexp_edom] unfolding edom_def by (auto simp add: fv_def fresh_def)
-
-lemma Aexp'_lookup_fresh: "atom v \<sharp> e \<Longrightarrow> (Aexp' e\<cdot>a) v = \<bottom>"
-  by (cases a) (auto simp add: Aexp_lookup_fresh)
 
 end
 

@@ -1,5 +1,5 @@
 theory CoCallGraph
-imports Main Vars "HOLCF-Join-Classes"
+imports Main Vars "HOLCF-Join-Classes" "Set-Cpo"
 begin
 
 default_sort type
@@ -104,7 +104,6 @@ lemma cc_lub_below_iff:
 
 lift_definition ccField :: "CoCalls \<Rightarrow> var set" is Field.
 
-term fun_upd
 lift_definition inCC :: "var \<Rightarrow> var \<Rightarrow> CoCalls \<Rightarrow> bool" ("_--_\<in>_" [1000, 1000, 900] 900)
   is "\<lambda> x y s. (x,y) \<in> s".
 
@@ -132,6 +131,11 @@ lemma in_lub[simp]: "x--y\<in>(lub S) \<longleftrightarrow> (\<exists> G\<in>S. 
 lemma in_CoCallsLubI:
   "x--y\<in>G \<Longrightarrow> G \<in> S \<Longrightarrow> x--y\<in>lub S"
 by transfer auto
+
+lemma adm_not_in[simp]:
+  assumes "cont t"
+  shows "adm (\<lambda>a. x--y\<notin>t a)"
+  by (rule admI) (auto simp add: cont2contlubE[OF assms])
 
 lift_definition cc_delete :: "var \<Rightarrow> CoCalls \<Rightarrow> CoCalls"
   is "\<lambda> z. Set.filter (\<lambda> (x,y) . x \<noteq> z \<and> y \<noteq> z)"
@@ -192,7 +196,7 @@ lift_definition cc_restr :: "var set \<Rightarrow> CoCalls \<Rightarrow> CoCalls
 lemma elem_cc_restr[simp]: "x--y\<in>(cc_restr S G) \<longleftrightarrow> (x--y\<in>G) \<and> x \<in> S \<and> y \<in> S"
   by transfer auto
 
-lemma ccFieldd_cc_restr: "ccField (cc_restr S G) \<subseteq> ccField G \<inter> S"
+lemma ccField_cc_restr: "ccField (cc_restr S G) \<subseteq> ccField G \<inter> S"
   by transfer (auto simp add: Field_def)
 
 lemma cc_restr_empty: "ccField G \<subseteq> -S \<Longrightarrow> cc_restr S G = \<bottom>"
@@ -235,6 +239,9 @@ lemma cc_restr_lub[simp]:
 
 lemma elem_to_ccField: "x--y\<in>G \<Longrightarrow> x \<in> ccField G \<and> y \<in> ccField G"
   by transfer (auto simp add: Field_def)
+
+lemma ccField_to_elem: "x \<in> ccField G \<Longrightarrow> \<exists> y. x--y\<in>G"
+  by transfer (auto simp add: Field_def dest: symD)
 
 lemma cc_restr_intersect: "ccField G \<inter> ((S - S') \<union> (S' - S)) = {} \<Longrightarrow> cc_restr S G = cc_restr S' G"
   by (rule CoCalls_eqI) (auto dest: elem_to_ccField)
@@ -365,6 +372,9 @@ lemma ccLinear_mono2: "ccLinear S G' \<Longrightarrow> G \<sqsubseteq> G' \<Long
 lemma ccField_join[simp]:
   "ccField (G \<squnion> G') = ccField G \<union> ccField G'" by transfer auto
 
+lemma ccField_lub[simp]:
+  "ccField (lub S) = \<Union>(ccField ` S)" by transfer auto
+
 lemma ccField_ccProd:
   "ccField (ccProd S S') = (if S = {} then {} else if S' = {} then {} else  S \<union> S')"
   by transfer (auto simp add: Field_def)
@@ -376,6 +386,10 @@ by transfer auto
 lemma cc_restr_ccProd[simp]:
   "cc_restr S (ccProd S\<^sub>1 S\<^sub>2) = ccProd (S\<^sub>1 \<inter> S) (S\<^sub>2 \<inter> S)"
   by transfer auto
+
+lemma cont_ccField[THEN cont_compose, simp, cont2cont]:
+  "cont ccField"
+  by (rule set_contI) auto
 
 
 end

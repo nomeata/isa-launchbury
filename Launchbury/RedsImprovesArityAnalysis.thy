@@ -2,7 +2,9 @@ theory RedsImprovesArityAnalysis
 imports ArityAnalysisFix Launchbury
 begin
 
-context CorrectArityAnalysisAfix
+locale CorrectArityAnalysisAfix = CorrectArityAnalysis' + 
+  assumes Aexp_Let: "Afix as\<cdot>(Aexp e\<cdot>n) f|` (- domA as) \<sqsubseteq> Aexp (Let as e)\<cdot>n"
+
 begin
 lemma Aexp'_Let: "Afix as\<cdot>(Aexp' e\<cdot>n) f|` (- domA as) \<sqsubseteq> Aexp' (Terms.Let as e)\<cdot>n"
   by (cases n) (simp_all add: Aexp_Let)

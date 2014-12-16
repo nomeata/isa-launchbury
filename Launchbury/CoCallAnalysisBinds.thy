@@ -14,7 +14,7 @@ lemma ccBind_eq[simp]: "ccBind v e \<cdot> (ae, G) = (if (v--v\<notin>G) \<or> \
   apply (rule cont_if_else_above)
   apply simp
   apply simp
-  apply (auto dest: set_mp[OF ccFieldd_cc_restr])[1]
+  apply (auto dest: set_mp[OF ccField_cc_restr])[1]
   (* Abstraction broken! Fix this. *)
   apply (case_tac p, auto, transfer, auto)[1]
   apply (rule adm_subst[OF cont_snd])

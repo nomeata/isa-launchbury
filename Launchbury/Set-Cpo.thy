@@ -43,4 +43,9 @@ lemma set_set_contI:
   shows "cont f"
   by (metis set_contI assms is_lub_set  lub_eqI)
 
+lemma adm_subseteq[simp]:
+  assumes "cont f"
+  shows "adm (\<lambda>a. f a \<subseteq> S)"
+by (rule admI)(auto simp add: cont2contlubE[OF assms] lub_set)
+
 end

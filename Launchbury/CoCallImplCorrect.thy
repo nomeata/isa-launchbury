@@ -27,9 +27,7 @@ proof-
   
   from `x \<notin> fv \<Gamma>`
   have "x \<notin> domA \<Gamma>" by (metis domA_fv_subset set_mp)
-  hence  "x \<notin> thunks \<Gamma>" by (metis set_mp thunks_domA)
-  hence [simp]: "\<And>a. (ABindsExtra \<Gamma>\<cdot>a) x = \<bottom>"
-    by (auto simp add: ABindsExtra_simp)
+  hence [simp]: "x \<notin> thunks \<Gamma>" by (metis set_mp thunks_domA)
   
   assume "x \<notin> fv e"
   hence "x \<notin> edom (Aexp e\<cdot>a)"  by (auto dest!: set_mp[OF Aexp_edom'])
@@ -44,6 +42,21 @@ proof-
   }
   thus ?thesis by (auto simp add: edom_def)    
 qed
+
+lemma ccNeighbors_ccField:
+  "ccNeighbors S G \<subseteq> ccField G" by transfer (auto simp add: Field_def)
+    
+lemma ccField_CCfix: "ccField (CCfix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp  e\<cdot>a)) \<subseteq> fv \<Gamma> \<union> fv e"
+  unfolding CCfix_def cccFix_eq
+  apply simp
+  apply (rule fix_ind)
+  apply (auto simp add: ccBindsExtra_simp ccBinds_eq ccField_cc_restr
+             dest: set_mp[OF ccField_CCexp]
+             dest!:set_mp[OF ccNeighbors_ccField]
+             dest: set_mp[OF map_of_Some_fv_subset]
+             dest!: set_mp[OF ccField_cc_restr]
+              simp add: ccField_ccProd split: if_splits)
+  done
 
 lemma Aexp_lam_simp[simp]: "Aexp (Lam [x]. e) \<cdot> n = env_delete x (Aexp e \<cdot> (pred \<cdot> n))"
 proof-
@@ -92,14 +105,15 @@ next
   finally show ?case.
 next
   case (Let \<Gamma> e)
-  (*
-  hence "x \<notin> domA \<Gamma> " and "y \<notin> domA \<Gamma>"
+   hence "x \<notin> domA \<Gamma> " and "y \<notin> domA \<Gamma>"
     by (metis (erased, hide_lams) bn_subst domA_not_fresh fresh_def fresh_star_at_base fresh_star_def obtain_fresh subst_is_fresh(2))+
   
   note this[simp] Let(1,2)[simp]
 
-  have "Aexp (Terms.Let \<Gamma> e)[y::=x]\<cdot>n \<sqsubseteq> Afix \<Gamma>[y::h=x]\<cdot>(Aexp e[y::=x]\<cdot>n \<squnion> thunks_AE \<Gamma>[y::h=x]) f|` ( - domA \<Gamma>)" by (simp add: fresh_star_Pair)
+  have "Aexp (Let \<Gamma> e)[y::=x]\<cdot>n \<sqsubseteq> Afix \<Gamma>[y::h=x]\<cdot>(Aexp e[y::=x]\<cdot>n, CCexp e[y::=x]\<cdot>n) f|` fv (Let (\<Gamma>[y::h=x]) (e[y::=x]))"
+    by (simp add: fresh_star_Pair)
   also have "(Aexp e[y::=x]\<cdot>n) \<sqsubseteq> (Aexp e\<cdot>n)(y := \<bottom>, x := up\<cdot>0)" by fact
+  (*
   also have "thunks_AE \<Gamma>[y::h=x] \<sqsubseteq> (thunks_AE \<Gamma>)(y := \<bottom>, x := up\<cdot>0)" by (rule thunks_AE_subst_approx[OF `y \<notin> domA \<Gamma>`])
   also have "(Aexp e\<cdot>n)(y := \<bottom>, x := up\<cdot>0) \<squnion> (thunks_AE \<Gamma>)(y := \<bottom>, x := up\<cdot>0) = (Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>)(y := \<bottom>, x := up\<cdot>0)" by simp
   also have "Afix \<Gamma>[y::h=x]\<cdot>((Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>)(y := \<bottom>, x := up\<cdot>0)) \<sqsubseteq> (Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>))(y := \<bottom>, x := up\<cdot>0)"
@@ -244,7 +258,7 @@ proof
 next
   fix y e n
   show "cc_restr (fv (Lam [y]. e)) (CCexp e\<cdot>(pred\<cdot>n)) \<sqsubseteq> CCexp (Lam [y]. e)\<cdot>n"
-    by (auto simp add: predCC_eq dest!: set_mp[OF ccFieldd_cc_restr])
+    by (auto simp add: predCC_eq dest!: set_mp[OF ccField_cc_restr])
 next
   fix x y :: var and S e a
   assume "x \<notin> S" 
@@ -261,7 +275,8 @@ next
   have "ccHeap \<Gamma> e\<cdot>a = CCfix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a)" by (rule ccHeap_eq)
 
   have "ccField  (ccHeap \<Gamma> e\<cdot>a) \<subseteq> fv \<Gamma> \<union> fv e"
-    sorry
+    unfolding ccHeap_eq
+    by (rule ccField_CCfix)
   hence "cc_restr (- domA \<Gamma>) (ccHeap \<Gamma> e\<cdot>a) = cc_restr ((fv \<Gamma> \<union> fv e) - domA \<Gamma>) (ccHeap \<Gamma> e\<cdot>a)"
     by (auto intro: cc_restr_intersect)
   thus "cc_restr (- domA \<Gamma>) (ccHeap \<Gamma> e\<cdot>a) \<sqsubseteq> CCexp (Let \<Gamma> e)\<cdot>a"
@@ -329,14 +344,15 @@ next
   hence [simp]: "x \<in> domA \<Gamma>" by (rule set_mp[OF thunks_domA])
   assume "x \<in> edom (Aheap \<Gamma> e\<cdot>a)"
 
-
+  (*
   assume "x \<notin> calledOnce \<Gamma> e a"
-  hence "x--x\<in>CoCallArityAnalysis.CCexp cCCexp e\<cdot>a \<or> (\<exists> x' e' . map_of \<Gamma> x' = Some e' \<longrightarrow> x \<in> edom (fup\<cdot>(CoCallArityAnalysis.Aexp cCCexp e')\<cdot>((Aheap \<Gamma> e\<cdot>a) x')))"
+  hence "x--x\<in>CCexp e\<cdot>a \<or> (\<exists> x' e' . map_of \<Gamma> x' = Some e' \<longrightarrow> x \<in> edom (fup\<cdot>(Aexp e')\<cdot>((Aheap \<Gamma> e\<cdot>a) x')))"
     by (auto simp add: calledOnce_def split: if_splits)
   hence "x \<in> ccManyCalls (CCfix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a))"
     sorry (* TODO: non-trivial step here. The assumptions should show that eventually, we believe x is called twice *)
+  *)
 
-  from `x \<in> thunks \<Gamma>` and `x \<in> ccManyCalls _`
+  from `x \<in> thunks \<Gamma>`
   have "(Afix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a)) x = up\<cdot>0" 
     by (subst Afix_unroll) (simp add: ABindsExtra_simp)
  
@@ -346,7 +362,6 @@ next
   fix \<Delta> e a
   show "calledOnce \<Delta> e a \<inter> ccManyCalls (CCexp e\<cdot>a) = {}"
     by (auto simp add: calledOnce_def)
-    
 next
   fix \<Delta> :: heap and x e' e a u'
   assume a: "map_of \<Delta> x = Some e'"  "(Aheap \<Delta> e\<cdot>a) x = up\<cdot>u'"

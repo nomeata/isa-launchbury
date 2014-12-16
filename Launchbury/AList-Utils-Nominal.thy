@@ -63,6 +63,9 @@ lemma domA_fv_subset: "domA \<Gamma> \<subseteq> fv \<Gamma>"
 lemma map_of_fv_subset: "x \<in> domA \<Gamma> \<Longrightarrow> fv (the (map_of \<Gamma> x)) \<subseteq> fv \<Gamma>"
   by (induction \<Gamma>) auto
 
+lemma map_of_Some_fv_subset: "map_of \<Gamma> x = Some e \<Longrightarrow> fv e \<subseteq> fv \<Gamma>"
+  by (metis domA_from_set map_of_fv_subset map_of_is_SomeD option.sel)
+
 subsubsection {* Equivariance lemmas *}
 
 lemma domA[eqvt]:
