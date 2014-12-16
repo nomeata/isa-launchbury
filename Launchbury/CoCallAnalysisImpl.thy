@@ -1,5 +1,5 @@
 theory CoCallAnalysisImpl
-imports CoCallFix  "Arity-Nominal" "Nominal-HOLCF" "Env-Nominal" "Env-HOLCF"
+imports CoCallFix "Arity-Nominal" "Nominal-HOLCF" "Env-Nominal" "Env-HOLCF"
 begin
 
 fun combined_restrict :: "var set \<Rightarrow> (AEnv \<times> CoCalls) \<Rightarrow> (AEnv \<times> CoCalls)"
@@ -79,7 +79,7 @@ where
   "cCCexp (GVar b x) =   (\<Lambda> n . (AE_singleton x \<cdot> (up \<cdot> n),                                   \<bottom>))"
 | "cCCexp (Lam [x]. e) = (\<Lambda> n . combined_restrict (fv (Lam [x]. e)) (fst (cCCexp e\<cdot>(pred\<cdot>n)), predCC (fv (Lam [x]. e)) (\<Lambda> a. snd(cCCexp e\<cdot>a))\<cdot>n))"
 | "cCCexp (App e x) =    (\<Lambda> n . (fst (cCCexp e\<cdot>(inc\<cdot>n)) \<squnion> (AE_singleton x \<cdot> (up \<cdot> 0)),        snd (cCCexp e\<cdot>(inc\<cdot>n)) \<squnion> ccProd {x} (insert x (fv e))))"
-| "cCCexp (Let \<Gamma> e) =    (\<Lambda> n . combined_restrict (fv (Let \<Gamma> e)) (CoCallArityAnalysis.cccFix cCCexp \<Gamma> \<cdot> (cCCexp e \<cdot> n)))"
+| "cCCexp (Let \<Gamma> e) =    (\<Lambda> n . combined_restrict (fv (Let \<Gamma> e)) (CoCallArityAnalysis.cccFix cCCexp \<Gamma> \<cdot> (cCCexp e\<cdot>n)))"
 proof-
 case goal1
     show ?case
@@ -144,15 +144,15 @@ lemma Aexp_simps[simp]:
   "Aexp (GVar b x)\<cdot>n = AE_singleton x\<cdot>(up\<cdot>n)"
   "Aexp (Lam [x]. e)\<cdot>n = Aexp e\<cdot>(pred\<cdot>n) f|` fv (Lam [x]. e)"
   "Aexp (App e x)\<cdot>n = Aexp e\<cdot>(inc\<cdot>n) \<squnion> AE_singleton x\<cdot>(up\<cdot>0)"
-  "Aexp (Let \<Gamma> e)\<cdot>n = Afix \<Gamma>\<cdot>(Aexp e\<cdot>n, CCexp e\<cdot>n) f|` fv (Let \<Gamma> e)"
-unfolding Aexp_def CCexp_def Afix_def by (simp add: beta_cfun)+
+  "Aexp (Let \<Gamma> e)\<cdot>n = (Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> (\<lambda>_.up\<cdot>0) f|` thunks \<Gamma>)) f|` (fv (Let \<Gamma> e))"
+unfolding Aexp_def CCexp_def  by (simp add: beta_cfun cccFix_def)+
 
 lemma CCexp_simps[simp]:
   "CCexp (GVar b x)\<cdot>n = \<bottom>"
   "CCexp (Lam [x]. e)\<cdot>n = predCC (fv (Lam [x]. e)) (CCexp e)\<cdot>n"
   "CCexp (App e x)\<cdot>n = CCexp e\<cdot>(inc\<cdot>n) \<squnion> ccProd {x} (insert x (fv e))"
-  "CCexp (Let \<Gamma> e)\<cdot>n = cc_restr (fv (Let \<Gamma> e)) (CCfix \<Gamma>\<cdot>(Aexp e\<cdot>n, CCexp e\<cdot>n))"
-unfolding Aexp_def CCexp_def CCfix_def by (simp add: beta_cfun)+
+  "CCexp (Let \<Gamma> e)\<cdot>n = cc_restr (fv (Let \<Gamma> e)) (CCfix \<Gamma>\<cdot>(Afix \<Gamma>\<cdot>(Aexp e\<cdot>n  \<squnion> (\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>)), CCexp e\<cdot>n))"
+unfolding Aexp_def CCexp_def  by (simp add: beta_cfun cccFix_def)+
 
 lemma ccField_CCexp:
   "ccField (CCexp e\<cdot>n) \<subseteq> fv e"
@@ -162,6 +162,8 @@ by (induction e arbitrary: n rule: exp_induct)
 lemma cc_restr_CCexp[simp]:
   "cc_restr (fv e) (CCexp e\<cdot>a) = CCexp e\<cdot>a"
 by (rule cc_restr_noop[OF ccField_CCexp])
+
+
 
 end
 

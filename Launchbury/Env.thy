@@ -152,8 +152,10 @@ lemma env_restr_mono: "m1 \<sqsubseteq> m2 \<Longrightarrow>  m1 f|` S \<sqsubse
 lemma env_restr_mono2: "S2 \<subseteq> S1  \<Longrightarrow> m f|` S2 \<sqsubseteq> m f|` S1"
   by (metis env_restr_below_self env_restr_env_restr_subset)
 
-
 lemmas cont_compose[OF env_restr_cont, cont2cont, simp]
+
+lemma env_restr_cong: "(\<And>x. edom m \<subseteq> S \<inter> S' \<union> -S \<inter> -S')  \<Longrightarrow> m f|` S = m f|` S'"
+  by (rule ext)(auto simp add: lookup_env_restr_eq edom_def)
 
 subsubsection {* Deleting *}
 

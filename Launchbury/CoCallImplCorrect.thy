@@ -7,8 +7,10 @@ interpretation ArityAnalysis Aexp.
 lemma Aexp_edom': "edom (Aexp e\<cdot>a) \<subseteq> fv e"
   by (nominal_induct arbitrary: a rule: exp_strong_induct) auto
 
+
 interpretation EdomArityAnalysis Aexp by default (rule Aexp_edom')
 
+(*
 lemma edom_Afix: "edom (Afix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp  e\<cdot>a)) \<subseteq> fv \<Gamma> \<union> fv e"
 proof-
   {
@@ -42,14 +44,16 @@ proof-
   }
   thus ?thesis by (auto simp add: edom_def)    
 qed
+*)
 
 lemma ccNeighbors_ccField:
   "ccNeighbors S G \<subseteq> ccField G" by transfer (auto simp add: Field_def)
     
-lemma ccField_CCfix: "ccField (CCfix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp  e\<cdot>a)) \<subseteq> fv \<Gamma> \<union> fv e"
-  unfolding CCfix_def cccFix_eq
+lemma ccField_CCfix: "ccField (CCfix \<Gamma>\<cdot>(ae, CCexp  e\<cdot>a)) \<subseteq> fv \<Gamma> \<union> fv e"
+  unfolding CCfix_def
   apply simp
   apply (rule fix_ind)
+  apply simp_all
   apply (auto simp add: ccBindsExtra_simp ccBinds_eq ccField_cc_restr
              dest: set_mp[OF ccField_CCexp]
              dest!:set_mp[OF ccNeighbors_ccField]
@@ -68,18 +72,20 @@ proof-
 qed
 declare Aexp_simps(2)[simp del]
 
-(*
-lemma Aexp_let_simp[simp]: "Aexp (Terms.Let \<Gamma> e) \<cdot> n = Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>) f|` (- domA \<Gamma>)"
-proof-
-  have "Aexp (Let \<Gamma> e) \<cdot> n  = Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>) f|` fv (Terms.Let \<Gamma> e)" by simp
-  also have "\<dots> = Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>) f|` (- domA \<Gamma>) f|` fv (Terms.Let \<Gamma> e)" by auto (metis Diff_eq Diff_idemp)
-  also have "\<dots> = Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>) f|` (- domA \<Gamma>)"
-     by (rule env_restr_useless)
-        (auto dest!: set_mp[OF Aexp_edom] set_mp[OF Afix_edom] set_mp[OF edom_thunks_AE])
-  finally show ?thesis.
-qed
-declare Aexp.simps(4)[simp del]
-*)
+lemma Aexp_Let_simp[simp]:
+  "Aexp (Let \<Gamma> e)\<cdot>n = (Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> (\<lambda>_.up\<cdot>0) f|` thunks \<Gamma>)) f|` (- domA \<Gamma>)"
+  unfolding Aexp_simps
+  by (rule env_restr_cong) (auto dest!: set_mp[OF Afix_edom] set_mp[OF Aexp_edom] set_mp[OF thunks_domA])
+
+declare Aexp_simps(4)[simp del]
+
+
+lemma CCexp_Let_simp[simp]:
+  "CCexp (Let \<Gamma> e)\<cdot>n = cc_restr (- domA \<Gamma>) (CCfix \<Gamma>\<cdot>(Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> (\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>)), CCexp e\<cdot>n))"
+  unfolding CCexp_simps
+  by (rule cc_restr_intersect)  (auto dest!: set_mp[OF ccField_CCfix])
+declare CCexp_simps(4)[simp del]
+
 
 lemma Aexp_subst_upd: "(Aexp e[y::=x]\<cdot>n) \<sqsubseteq> (Aexp e\<cdot>n)(y := \<bottom>, x := up\<cdot>0)"
 proof (nominal_induct e avoiding: x y  arbitrary: n rule: exp_strong_induct)
@@ -105,25 +111,26 @@ next
   finally show ?case.
 next
   case (Let \<Gamma> e)
-   hence "x \<notin> domA \<Gamma> " and "y \<notin> domA \<Gamma>"
+  hence "x \<notin> domA \<Gamma>" and "y \<notin> domA \<Gamma>"
     by (metis (erased, hide_lams) bn_subst domA_not_fresh fresh_def fresh_star_at_base fresh_star_def obtain_fresh subst_is_fresh(2))+
+  hence "x \<notin> thunks \<Gamma>" and  "y \<notin> thunks \<Gamma>"
+    by (metis contra_subsetD thunks_domA)+
   
   note this[simp] Let(1,2)[simp]
-
-  have "Aexp (Let \<Gamma> e)[y::=x]\<cdot>n \<sqsubseteq> Afix \<Gamma>[y::h=x]\<cdot>(Aexp e[y::=x]\<cdot>n, CCexp e[y::=x]\<cdot>n) f|` fv (Let (\<Gamma>[y::h=x]) (e[y::=x]))"
+  have "Aexp (Let \<Gamma> e)[y::=x]\<cdot>n \<sqsubseteq> Afix \<Gamma>[y::h=x]\<cdot>(Aexp e[y::=x]\<cdot>n \<squnion> (\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>[y::h=x])) f|` ( - domA \<Gamma>)"
     by (simp add: fresh_star_Pair)
-  also have "(Aexp e[y::=x]\<cdot>n) \<sqsubseteq> (Aexp e\<cdot>n)(y := \<bottom>, x := up\<cdot>0)" by fact
-  (*
-  also have "thunks_AE \<Gamma>[y::h=x] \<sqsubseteq> (thunks_AE \<Gamma>)(y := \<bottom>, x := up\<cdot>0)" by (rule thunks_AE_subst_approx[OF `y \<notin> domA \<Gamma>`])
-  also have "(Aexp e\<cdot>n)(y := \<bottom>, x := up\<cdot>0) \<squnion> (thunks_AE \<Gamma>)(y := \<bottom>, x := up\<cdot>0) = (Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>)(y := \<bottom>, x := up\<cdot>0)" by simp
-  also have "Afix \<Gamma>[y::h=x]\<cdot>((Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>)(y := \<bottom>, x := up\<cdot>0)) \<sqsubseteq> (Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>))(y := \<bottom>, x := up\<cdot>0)"
+  also have "(Aexp e[y::=x]\<cdot>n) \<sqsubseteq> (Aexp e\<cdot>n)(y := \<bottom>, x := up\<cdot>0)"
+    by fact
+  also have "(\<lambda>_.up\<cdot>0) f|` (thunks (\<Gamma>[y::h=x])) \<sqsubseteq> ((\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>))(y := \<bottom>, x := up\<cdot>0)"
+    by (auto intro: fun_belowI `y \<notin> thunks \<Gamma>`)
+  also have "(Aexp e\<cdot>n)(y := \<bottom>, x := up\<cdot>0) \<squnion> ((\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>))(y := \<bottom>, x := up\<cdot>0) = (Aexp e\<cdot>n \<squnion> ((\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>)))(y := \<bottom>, x := up\<cdot>0)" by simp
+  also have "Afix \<Gamma>[y::h=x]\<cdot>((Aexp e\<cdot>n \<squnion> ((\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>)))(y := \<bottom>, x := up\<cdot>0)) \<sqsubseteq> (Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> ((\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>))))(y := \<bottom>, x := up\<cdot>0)"
     by (rule Afix_subst_approx[OF Let(3) `x \<notin> domA \<Gamma>` `y \<notin> domA \<Gamma>`])
-  also have "(Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>))(y := \<bottom>, x := up\<cdot>0) f|` (- domA \<Gamma>) = (Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>) f|` (- domA \<Gamma>)) (y := \<bottom>, x := up\<cdot>0)" by auto
-  also have "(Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>) f|` (- domA \<Gamma>)) = Aexp (Terms.Let \<Gamma> e)\<cdot>n" by simp
-  finally
-  show ?case by this simp_all
-  *)
-  show ?case sorry
+  also have "(Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> ((\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>))))(y := \<bottom>, x := up\<cdot>0) f|` (- domA \<Gamma>) = (Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> ((\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>))) f|` (- domA \<Gamma>)) (y := \<bottom>, x := up\<cdot>0)"
+    by (auto simp add: `x \<notin> domA \<Gamma>` `y \<notin> domA \<Gamma>`)
+  also have "(Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> ((\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>))) f|` (- domA \<Gamma>)) = Aexp (Terms.Let \<Gamma> e)\<cdot>n"
+    by simp
+  finally show ?case by this simp_all
 qed
 
 lemma Aexp_restr_subst:
@@ -142,14 +149,13 @@ next
   by (auto simp add: env_restr_join env_delete_env_restr_swap[symmetric]  simp del: fun_meet_simp)
 next
   case (Let \<Gamma> e)
-  (*
   hence "x \<notin> domA \<Gamma> " and "y \<notin> domA \<Gamma>"
     by (metis (erased, hide_lams) bn_subst domA_not_fresh fresh_def fresh_star_at_base fresh_star_def obtain_fresh subst_is_fresh(2))+
   
   note this[simp] Let(1,2)[simp]
 
   from Let
-  have "Afix \<Gamma>[x::h=y]\<cdot>(Aexp e[x::=y]\<cdot>a \<squnion> thunks_AE \<Gamma>) f|` (S \<union> domA \<Gamma>) = Afix \<Gamma>\<cdot>(Aexp e\<cdot>a \<squnion> thunks_AE \<Gamma>) f|` (S \<union> domA \<Gamma>)"
+  have "Afix \<Gamma>[x::h=y]\<cdot>(Aexp e[x::=y]\<cdot>a \<squnion> (\<lambda>_. up\<cdot>0) f|` (thunks \<Gamma>)) f|` (S \<union> domA \<Gamma>) = Afix \<Gamma>\<cdot>(Aexp e\<cdot>a \<squnion> (\<lambda>_. up\<cdot>0) f|` (thunks \<Gamma>)) f|` (S \<union> domA \<Gamma>)"
     apply (auto simp add: fresh_star_Pair)
     apply (subst Afix_restr_subst')
     apply auto[1]
@@ -160,8 +166,6 @@ next
     apply (simp add: env_restr_join)
     done
   thus ?case using Let(1,2) by (auto simp add: fresh_star_Pair elim:env_restr_eq_subset[rotated])
-  *)
-  show ?case sorry
 qed
 
 interpretation CorrectArityAnalysis' Aexp
@@ -180,10 +184,10 @@ next
 qed (simp_all add:Aexp_restr_subst)
 
 definition Aheap where
-  "Aheap \<Gamma> e = (\<Lambda> a. (Afix \<Gamma> \<cdot> (Aexp e\<cdot>a, CCexp e\<cdot>a) f|` domA \<Gamma>))"
+  "Aheap \<Gamma> e = (\<Lambda> a. (Afix \<Gamma> \<cdot> (Aexp e\<cdot>a \<squnion> (\<lambda>_.up\<cdot>0) f|` thunks \<Gamma>)) f|` domA \<Gamma>)"
 
 lemma Aheap_simp:
-  "Aheap \<Gamma> e \<cdot> a= (Afix \<Gamma> \<cdot> (Aexp e\<cdot>a, CCexp e\<cdot>a) f|` domA \<Gamma>)"
+  "Aheap \<Gamma> e \<cdot> a=  (Afix \<Gamma> \<cdot> (Aexp e\<cdot>a \<squnion> (\<lambda>_.up\<cdot>0) f|` thunks \<Gamma>)) f|` domA \<Gamma>"
   unfolding Aheap_def by simp
 
 lemma Aheap_eqvt'[eqvt]:
@@ -208,30 +212,18 @@ next
   assume assms: "x \<notin> domA \<Gamma>"  "y \<notin> domA \<Gamma>"
   show "Aheap \<Gamma>[x::h=y] e[x::=y] = Aheap \<Gamma> e"
     apply (rule cfun_eqI)
-    unfolding Aheap_simp
+    unfolding Aheap_def
     apply simp
-    sorry
-    (*
     apply (subst Afix_restr_subst[OF assms subset_refl])
     apply (subst Afix_restr[OF  subset_refl]) back
     apply (simp add: env_restr_join)
     apply (subst Aexp_restr_subst[OF assms])
-    apply rule
+    apply simp
     done
-    *)
 next
   fix \<Gamma> e a
-  have "ABinds \<Gamma>\<cdot>(Aheap \<Gamma> e\<cdot>a) \<squnion> Aexp e\<cdot>a \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a)"
-    apply (subst Afix_unroll)
-    unfolding Aheap_simp
-    by (simp add: below_trans[OF _ join_above1] below_trans[OF _ join_above2])
-  also have "\<dots> = \<dots> f|` (fv \<Gamma> \<union> fv e)"
-    by (rule env_restr_useless[symmetric, OF edom_Afix])
- also have "\<dots> = Aheap \<Gamma> e\<cdot>a \<squnion> Aexp (Let \<Gamma> e)\<cdot>a"
-    using domA_fv_subset
-    by (auto simp add: Aheap_simp env_restr_join2 Un_absorb1[OF le_supI1[OF domA_fv_subset]])
-  finally
-  show "ABinds \<Gamma>\<cdot>(Aheap \<Gamma> e\<cdot>a) \<squnion> Aexp e\<cdot>a \<sqsubseteq> Aheap \<Gamma> e\<cdot>a \<squnion> Aexp (Let \<Gamma> e)\<cdot>a".
+  show "ABinds \<Gamma>\<cdot>(Aheap \<Gamma> e\<cdot>a) \<squnion> Aexp e\<cdot>a \<sqsubseteq> Aheap \<Gamma> e\<cdot>a \<squnion> Aexp (Let \<Gamma> e)\<cdot>a"
+    by (auto simp add: Aheap_def join_below_iff env_restr_join2 Compl_partition intro:  below_trans[OF _ Afix_above_arg])
 qed
 
 definition calledOnce :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<Rightarrow> var set"
@@ -239,10 +231,10 @@ definition calledOnce :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<Rightarro
 
 
 definition ccHeap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> CoCalls"
-  where "ccHeap \<Gamma> e  = (\<Lambda> a. CCfix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a))"
+  where "ccHeap \<Gamma> e  = (\<Lambda> a. CCfix \<Gamma>\<cdot>(Afix \<Gamma>\<cdot>(Aexp e\<cdot>a \<squnion> (\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>)), CCexp e\<cdot>a))"
 
 lemma ccHeap_eq:
-  "ccHeap \<Gamma> e\<cdot>a = CCfix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a)"
+  "ccHeap \<Gamma> e\<cdot>a = CCfix \<Gamma>\<cdot>(Afix \<Gamma>\<cdot>(Aexp e\<cdot>a \<squnion> (\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>)), CCexp e\<cdot>a)"
 unfolding ccHeap_def by simp
 
 (*
@@ -272,13 +264,11 @@ next
     by (induction e rule: isLam.induct) (auto simp add: predCC_eq)
 next
   fix \<Gamma> e a
-  have "ccHeap \<Gamma> e\<cdot>a = CCfix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a)" by (rule ccHeap_eq)
+  have "ccHeap \<Gamma> e\<cdot>a = CCfix \<Gamma>\<cdot>(Afix \<Gamma>\<cdot>(Aexp e\<cdot>a \<squnion> (\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>)), CCexp e\<cdot>a)" by (rule ccHeap_eq)
 
   have "ccField  (ccHeap \<Gamma> e\<cdot>a) \<subseteq> fv \<Gamma> \<union> fv e"
     unfolding ccHeap_eq
     by (rule ccField_CCfix)
-  hence "cc_restr (- domA \<Gamma>) (ccHeap \<Gamma> e\<cdot>a) = cc_restr ((fv \<Gamma> \<union> fv e) - domA \<Gamma>) (ccHeap \<Gamma> e\<cdot>a)"
-    by (auto intro: cc_restr_intersect)
   thus "cc_restr (- domA \<Gamma>) (ccHeap \<Gamma> e\<cdot>a) \<sqsubseteq> CCexp (Let \<Gamma> e)\<cdot>a"
     by (simp add: ccHeap_eq[symmetric])
 next
@@ -291,18 +281,18 @@ next
   assume "map_of \<Delta> x = Some e'"
   hence [simp]: "x \<in> domA \<Delta>" by (metis domI dom_map_of_conv_domA) 
   assume "(Aheap \<Delta> e\<cdot>a) x = up\<cdot>a'"
-  hence "(Afix \<Delta>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a)) x = up\<cdot>a'" 
+  hence "(Afix \<Delta>\<cdot>(Aexp e\<cdot>a \<squnion> (\<lambda>_.up\<cdot>0)f|` (thunks \<Delta>))) x = up\<cdot>a'" 
     by (simp add: Aheap_def)
-  hence "CCexp e'\<cdot>a' \<sqsubseteq> ccBind x e'\<cdot>(Afix \<Delta>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a), CCfix \<Delta>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a))"
+  hence "CCexp e'\<cdot>a' \<sqsubseteq> ccBind x e'\<cdot>(Afix \<Delta>\<cdot>(Aexp e\<cdot>a \<squnion> (\<lambda>_.up\<cdot>0)f|` (thunks \<Delta>)), CCfix \<Delta>\<cdot>(Afix \<Delta>\<cdot>(Aexp e\<cdot>a \<squnion> (\<lambda>_.up\<cdot>0)f|` (thunks \<Delta>)), CCexp e\<cdot>a))"
     by (auto simp add: ccExp'_def dest: set_mp[OF ccField_CCexp])
   also
-  have "ccBind x e'\<cdot>(Afix \<Delta>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a), CCfix \<Delta>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a)) \<sqsubseteq>  ccHeap \<Delta> e\<cdot>a"
+  have "ccBind x e'\<cdot>(Afix \<Delta>\<cdot>(Aexp e\<cdot>a \<squnion> (\<lambda>_.up\<cdot>0)f|` (thunks \<Delta>)), CCfix \<Delta>\<cdot>(Afix \<Delta>\<cdot>(Aexp e\<cdot>a \<squnion> (\<lambda>_.up\<cdot>0)f|` (thunks \<Delta>)), CCexp e\<cdot>a)) \<sqsubseteq>  ccHeap \<Delta> e\<cdot>a"
     using `map_of \<Delta> x = Some e'`
     by (force simp add: ccHeap_def ccBindsExtra_simp  ccBinds_eq  arg_cong[OF CCfix_unroll, where f = "op \<sqsubseteq> x" for x ]
-                intro: below_trans[OF _ join_above2] 
+                intro: below_trans[OF _ join_above2]
                 simp del: ccBind_eq)
   finally
-  show "CCexp e'\<cdot>a' \<sqsubseteq>  ccHeap \<Delta> e\<cdot>a" by this simp_all
+  show "CCexp e'\<cdot>a' \<sqsubseteq> ccHeap \<Delta> e\<cdot>a" by this simp_all
 
   show "ccProd (fv e') (ccNeighbors (domA \<Delta>) (ccHeap \<Delta> e\<cdot>a)) \<sqsubseteq> ccHeap \<Delta> e\<cdot>a" 
     using `map_of \<Delta> x = Some e'`
@@ -353,8 +343,8 @@ next
   *)
 
   from `x \<in> thunks \<Gamma>`
-  have "(Afix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a)) x = up\<cdot>0" 
-    by (subst Afix_unroll) (simp add: ABindsExtra_simp)
+  have "(Afix \<Gamma>\<cdot>(Aexp e\<cdot>a \<squnion> (\<lambda>_.up\<cdot>0)f|` (thunks \<Gamma>))) x = up\<cdot>0" 
+    by (subst Afix_unroll) simp
  
   thus "(Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
     by (simp add:  Aheap_simp)
