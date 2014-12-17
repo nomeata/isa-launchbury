@@ -165,6 +165,12 @@ lemma mapCollectE[elim!]:
   obtains k v where "m k = Some v" and "x = f k v"
   using assms by (auto simp add: mapCollect_def)
 
+lemma mapCollectI[intro]:
+  assumes  "m k = Some v"
+  shows "f k v \<in> {f k v | k \<mapsto> v \<in> m}"
+  using assms by (auto simp add: mapCollect_def)
+
+
 lemma ball_mapCollect[simp]:
   "(\<forall> x \<in> {f k v | k \<mapsto> v \<in> m}. P x) \<longleftrightarrow> (\<forall> k v. m k = Some v \<longrightarrow> P (f k v))"
   by (auto simp add: mapCollect_def)

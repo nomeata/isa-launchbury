@@ -230,6 +230,9 @@ lemma possible_anything[simp]: "possible anything x' \<longleftrightarrow> True"
 lemma nxt_anything[simp]: "nxt anything x = anything"
   by  transfer auto
 
+lemma paths_anything[simp]:
+  "paths anything = UNIV" by transfer auto
+
 lift_definition many_among :: "'a set \<Rightarrow> 'a ftree" is "\<lambda> S. {xs . set xs \<subseteq> S}"
   by (auto intro: downset_set_subset)
 
@@ -486,7 +489,12 @@ lemma carrier_intersect: "carrier (t \<inter>\<inter> t') \<subseteq> carrier t 
 lemma carrier_many_among[simp]: "carrier (many_among S) = S"
  by transfer (auto, metis List.set_insert bot.extremum insertCI insert_subset list.set(1))
 
-
+lemma carrier_anything[simp]:
+  "carrier anything = UNIV" 
+  apply (auto simp add: Union_paths_carrier[symmetric])
+  apply (rule_tac x = "[x]" in exI)
+  apply simp
+  done
 
 subsection {* Removing elements from a tree *}
 
@@ -536,6 +544,10 @@ lemma ftree_restr_noop: "carrier t \<subseteq> S \<Longrightarrow> ftree_restr S
   apply (metis SUP_upper contra_subsetD filter_True)
   apply assumption
   done
+
+lemma ftree_restr_tree_restr[simp]:
+  "ftree_restr S (ftree_restr S' t) = ftree_restr (S' \<inter> S) t"
+  by transfer (simp add: image_comp comp_def)
 
 lemma ftree_restr_both:
   "ftree_restr S (t \<otimes>\<otimes> t') = ftree_restr S t \<otimes>\<otimes> ftree_restr S t'"

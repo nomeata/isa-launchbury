@@ -11,6 +11,7 @@ definition CCexp :: "exp \<Rightarrow> (Arity \<rightarrow> CoCalls)" where "CCe
 sublocale ArityAnalysis Aexp.
 sublocale CoCallAnalysis CCexp.
 
+(*
 definition ABindsExtra :: "heap \<Rightarrow> CoCalls \<rightarrow> AEnv"
   where "ABindsExtra \<Gamma> = (\<Lambda> G. (\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma> \<inter> ccManyCalls G))"
 
@@ -21,6 +22,8 @@ lemma ABindsExtra_strict[simp]: "ABindsExtra \<Gamma>\<cdot>\<bottom> = \<bottom
 
 lemma ABindsExtra_eq_up0[intro!]: "x \<in> thunks \<Gamma> \<inter> ccManyCalls G \<Longrightarrow> (ABindsExtra \<Gamma>\<cdot>G) x = up\<cdot>0"
   unfolding ABindsExtra_simp by (auto simp add: lookup_env_restr_eq)
+*)
+
 
 (* This might work just as nicely:
 
@@ -82,6 +85,79 @@ lemma Abinds_Afix[simp]: "ABinds \<Gamma>\<cdot>(Afix \<Gamma>\<cdot>ae) = Afix 
 lemma Afix_reorder: "map_of \<Gamma> = map_of \<Delta> \<Longrightarrow> Afix \<Gamma> = Afix \<Delta>"
   by (intro cfun_eqI)(simp add: Afix_eq cong: Abinds_reorder)
 *)
+
+lemma map_of_subst:
+  "map_of (\<Gamma>[x::h=y]) k = map_option (\<lambda> e . e[x::=y]) (map_of \<Gamma> k)"
+by (induction \<Gamma> ) auto
+
+lemma mapCollect_subst[simp]:
+  "{e k v | k\<mapsto>v\<in>map_of \<Gamma>[x::h=y]} = {e k v[x::=y] | k\<mapsto>v\<in>map_of \<Gamma>}"
+  by (auto simp add: map_of_subst)
+
+lemma ccExp'_restr_subst': 
+  assumes "\<And> a. cc_restr S (CCexp e[x::=y]\<cdot>a) = cc_restr S (CCexp e\<cdot>a)"
+  shows "cc_restr (S \<inter> fv e) (ccExp' e[x::=y]\<cdot>a) = cc_restr (S \<inter> fv e) (ccExp' e\<cdot>a)"
+  unfolding ccExp'_def
+  using assms
+  apply (cases a)
+  apply (auto simp del: cc_restr_cc_restr simp add: cc_restr_cc_restr[symmetric])
+  by (metis cc_restr_cc_restr inf_commute)
+
+lemma ccBindsExtra_restr_subst': 
+  assumes "\<And> x' e a. (x',e) \<in> set \<Gamma> \<Longrightarrow> cc_restr S (CCexp e[x::=y]\<cdot>a) = cc_restr S (CCexp e\<cdot>a)"
+  assumes "x \<notin> S"
+  assumes "y \<notin> S"
+  assumes "domA \<Gamma> \<subseteq> S"
+  shows  "cc_restr S (ccBindsExtra  \<Gamma>[x::h=y]\<cdot>(ae, G)) 
+       = cc_restr S (ccBindsExtra  \<Gamma>\<cdot>(ae f|` S , cc_restr S G))"
+  apply (simp add: ccBindsExtra_simp ccBinds_eq Int_absorb2[OF assms(4)] fv_subst_int[OF assms(3,2)])
+  apply (intro arg_cong2[where f = "op \<squnion>"] refl  arg_cong[OF mapCollect_cong])
+  apply (subgoal_tac "k \<in> S")
+  apply (auto intro:  ccExp'_restr_subst'[OF assms(1)[OF map_of_SomeD]] simp add: fv_subst_int[OF assms(3,2)]   fv_subst_int2[OF assms(3,2)] ccSquare_def)
+  apply (metis assms(4) contra_subsetD domI dom_map_of_conv_domA)
+  done
+
+lemma ccBindsExtra_restr:
+  assumes "domA \<Gamma> \<subseteq> S"
+  shows "cc_restr S (ccBindsExtra \<Gamma>\<cdot>(ae, G)) = cc_restr S (ccBindsExtra \<Gamma>\<cdot>(ae f|` S, cc_restr S G))"
+  using assms
+  apply (simp add: ccBindsExtra_simp ccBinds_eq Int_absorb2)
+  apply (intro arg_cong2[where f = "op \<squnion>"] refl arg_cong[OF mapCollect_cong])
+  apply (subgoal_tac "k \<in> S")
+  apply simp
+  apply (metis contra_subsetD domI dom_map_of_conv_domA)
+  done
+
+lemma CCfix_restr:
+  assumes "domA \<Gamma> \<subseteq> S"
+  shows "cc_restr S (CCfix \<Gamma>\<cdot>(ae, G)) = cc_restr S (CCfix \<Gamma>\<cdot>(ae f|` S, cc_restr S G))"
+  unfolding CCfix_def
+  apply simp
+  apply (rule parallel_fix_ind[where P = "\<lambda> x y . cc_restr S x = cc_restr S y"])
+  apply simp
+  apply rule
+  apply simp
+  apply (subst (1 2) ccBindsExtra_restr[OF assms])
+  apply (auto)
+  done
+
+lemma CCfix_restr_subst':
+  assumes "\<And> x' e a. (x',e) \<in> set \<Gamma> \<Longrightarrow> cc_restr S (CCexp e[x::=y]\<cdot>a) = cc_restr S (CCexp e\<cdot>a)"
+  assumes "x \<notin> S"
+  assumes "y \<notin> S"
+  assumes "domA \<Gamma> \<subseteq> S"
+  shows "cc_restr S (CCfix \<Gamma>[x::h=y]\<cdot>(ae, G)) = cc_restr S (CCfix \<Gamma>\<cdot>(ae f|` S, cc_restr S G))"
+  unfolding CCfix_def
+  apply simp
+  apply (rule parallel_fix_ind[where P = "\<lambda> x y . cc_restr S x = cc_restr S y"])
+  apply simp
+  apply rule
+  apply simp
+  apply (subst  ccBindsExtra_restr_subst'[OF assms], assumption)
+  apply (subst ccBindsExtra_restr[OF assms(4)]) back 
+  apply (auto)
+  done
+
 
 end
 

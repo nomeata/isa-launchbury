@@ -68,7 +68,12 @@ lemma cc_restr_cc_square[simp]:
   "cc_restr S (ccSquare S) = ccSquare S"
   by simp
 
-lemma cc_restr_predCC[simp]:
+lemma cc_restr_predCC:
+  "cc_restr S (predCC S' f\<cdot>n) = (predCC (S' \<inter> S) (\<Lambda> n. cc_restr S (f\<cdot>n)))\<cdot>n"
+  unfolding predCC_eq
+  by (auto simp add: inf_commute ccSquare_def)
+
+lemma cc_restr_predCC'[simp]:
   "cc_restr S (predCC S f\<cdot>n) = predCC S f\<cdot>n"
   unfolding predCC_eq by simp
 

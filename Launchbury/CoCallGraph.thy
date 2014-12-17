@@ -250,6 +250,9 @@ lemma cc_restr_cc_restr[simp]: "cc_restr S (cc_restr S' G) = cc_restr (S \<inter
   by transfer auto
 
 
+lemma cc_restr_eq_subset: "S \<subseteq> S' \<Longrightarrow> cc_restr S' G = cc_restr S' G2 \<Longrightarrow> cc_restr S G = cc_restr S G2"
+  by transfer' (auto simp add: Set.filter_def)
+ 
 definition ccSquare where "ccSquare S = ccProd S S"
 
 lemma ccField_ccSquare[simp]: "ccField (ccSquare S) = S"
@@ -289,6 +292,7 @@ lemma ccNeighbors_cc_restr[simp]:
   "ccNeighbors S (cc_restr S' G) = ccNeighbors (S \<inter> S') G \<inter> S'"
 by transfer auto
 
+
 lemma ccNeighbors_mono:
   "S \<subseteq> S' \<Longrightarrow> G \<sqsubseteq> G' \<Longrightarrow> ccNeighbors S G \<subseteq> ccNeighbors S' G'"
   by transfer auto
@@ -297,6 +301,10 @@ lemmas cont_compose[OF cont_ccProd_ccNeighbors, cont2cont]
 
 instance CoCalls :: Join_cpo
   by default (metis coCallsLub_is_lub)
+
+lemma ccNeighbors_lub[simp]: "ccNeighbors S (lub Gs) = lub (ccNeighbors S ` Gs)"
+  by transfer (auto simp add: lub_set)
+
 
 lift_definition ccManyCalls:: "CoCalls \<Rightarrow> var set" 
   is "\<lambda> G. {y . (y,y) \<in> G}".

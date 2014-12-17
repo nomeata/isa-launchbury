@@ -197,6 +197,21 @@ lemma tranclp_eqvt[eqvt]: "\<pi> \<bullet> tranclp P v\<^sub>1 v\<^sub>2 = tranc
 lemma rtranclp_eqvt[eqvt]: "\<pi> \<bullet> rtranclp P v\<^sub>1 v\<^sub>2 = rtranclp (\<pi> \<bullet> P) (\<pi> \<bullet> v\<^sub>1) (\<pi> \<bullet> v\<^sub>2)" 
   unfolding rtranclp_def by perm_simp rule
 
+lemma Set_filter_eqvt[eqvt]: "\<pi> \<bullet> Set.filter P S = Set.filter (\<pi> \<bullet> P) (\<pi> \<bullet> S)"
+  unfolding Set.filter_def
+  by perm_simp rule
+
+
+lemma Sigma_eqvt'[eqvt]: "\<pi> \<bullet> Sigma = Sigma"
+  apply (rule ext)
+  apply (rule ext)
+  apply (subst permute_fun_def)
+  apply (subst permute_fun_def)
+  unfolding Sigma_def
+  apply perm_simp
+  apply (simp add: permute_self)
+  done
+
 subsubsection {* Freshness lemmas *}
 
 lemma fresh_list_elem:

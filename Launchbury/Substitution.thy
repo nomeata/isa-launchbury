@@ -223,6 +223,12 @@ by (nominal_induct  e  and \<Gamma> avoiding: x y rule:exp_heap_strong_induct)
 lemma fv_subst_subset: "fv (e[y ::= x]) \<subseteq> (fv e - {y}) \<union> {x}"
   using fv_subst_eq by auto
 
+lemma fv_subst_int: "x \<notin> S \<Longrightarrow> y \<notin> S \<Longrightarrow> fv (e[y ::= x]) \<inter> S = fv e \<inter> S"
+  by (auto simp add: fv_subst_eq)
+
+lemma fv_subst_int2: "x \<notin> S \<Longrightarrow> y \<notin> S \<Longrightarrow> S \<inter> fv (e[y ::= x]) = S \<inter> fv e"
+  by (auto simp add: fv_subst_eq)
+
 lemma fresh_star_at_base:
   fixes x :: "'a :: at_base"
   shows "S \<sharp>* x \<longleftrightarrow> atom x \<notin> S"

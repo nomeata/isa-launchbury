@@ -32,8 +32,11 @@ fun ccBinds :: "heap \<Rightarrow> ((AEnv \<times> CoCalls) \<rightarrow> CoCall
 term lub
 definition ccBinds :: "heap \<Rightarrow> ((AEnv \<times> CoCalls) \<rightarrow> CoCalls)"
   where "ccBinds \<Gamma> = (\<Lambda> i. (\<Squnion>v\<mapsto>e\<in>map_of \<Gamma>. ccBind v e\<cdot>i))"
+
 lemma ccBinds_eq:
-  "ccBinds \<Gamma>\<cdot>i = (\<Squnion>v\<mapsto>e\<in>map_of \<Gamma>. ccBind v e\<cdot>i)" sorry
+  "ccBinds \<Gamma>\<cdot>i = (\<Squnion>v\<mapsto>e\<in>map_of \<Gamma>. ccBind v e\<cdot>i)"
+  unfolding ccBinds_def
+  by simp
 
 lemma ccBinds_strict[simp]: "ccBinds \<Gamma>\<cdot>\<bottom>=\<bottom>"
   unfolding ccBinds_eq
@@ -42,9 +45,6 @@ lemma ccBinds_strict[simp]: "ccBinds \<Gamma>\<cdot>\<bottom>=\<bottom>"
 lemma ccBinds_strict'[simp]: "ccBinds \<Gamma>\<cdot>(\<bottom>,\<bottom>)=\<bottom>"
   by (metis CoCallAnalysis.ccBinds_strict Pair_bottom_iff)
 
-lemma ccBinds_fun_upd[simp]:
-  "(\<Squnion>k\<mapsto>v\<in>m(k' \<mapsto> v'). e k v) = e k' v' \<squnion> (\<Squnion>k\<mapsto>v\<in>m(k':=None). e k v)"
- sorry
 
 lemma ccBinds_reorder1:
   assumes "map_of \<Gamma> v = Some e"

@@ -49,6 +49,10 @@ lemma empty_is_bottom: "empty = \<bottom>"
 lemma carrier_bottom[simp]: "carrier \<bottom> = {}"
   unfolding empty_is_bottom[symmetric] by simp
 
+lemma below_anything[simp]:
+  "t \<sqsubseteq> anything"
+by transfer auto
+
 lemma carrier_mono: "t \<sqsubseteq> t' \<Longrightarrow> carrier t \<subseteq> carrier t'"
   by transfer auto
 
@@ -117,6 +121,7 @@ proof(rule contI)
   show "range (\<lambda>i. f (Y i)) <<| f (\<Squnion> i. Y i)" by (metis is_lub_ftree paths_inj)
 qed
 
+
 lemma cont_paths[THEN cont_compose, cont2cont, simp]:
   "cont paths"
   apply (rule set_contI)
@@ -125,6 +130,22 @@ lemma cont_paths[THEN cont_compose, cont2cont, simp]:
   apply transfer
   apply auto
   done
+
+lemma ftree_contI3:
+  assumes "cont (\<lambda> x. paths (f x))"
+  shows "cont f"
+  apply (rule contI2)
+  apply (rule monofunI)
+  apply (subst paths_mono_iff[symmetric])
+  apply (erule cont2monofunE[OF assms])
+  
+  apply (subst paths_mono_iff[symmetric]) 
+  apply (subst cont2contlubE[OF cont_paths[OF cont_id]], assumption)
+  apply (subst cont2contlubE[OF assms], assumption)
+  apply rule
+  done
+
+
 
 lemma cont_substitute[THEN cont_compose, cont2cont, simp]:
   "cont (substitute f T)"
@@ -175,6 +196,32 @@ lemma cont_ftree_restr[THEN cont_compose, cont2cont,simp]: "cont (ftree_restr S)
      (transfer, auto)
 
 lemmas ftree_restr_mono = cont2monofunE[OF cont_ftree_restr[OF cont_id]]
+
+(* Not true, it seems:
+
+lemma ftree_restr_mono1:
+  "S \<subseteq> S' \<Longrightarrow> ftree_restr S t \<sqsubseteq> ftree_restr S' t"
+apply transfer
+apply auto
+apply (erule rev_image_eqI)
+
+lemma cont_ccFTree1:
+  "cont (\<lambda> S. ftree_restr S G)"
+  (* Not true*)
+  apply (rule set_ftree_contI)
+  apply transfer'
+  apply (auto simp add: filter_empty_conv)
+  apply (erule_tac x = xb in ballE) 
+  apply auto
+  
+
+lemma cont_ccFTree2:
+  "cont (ftree_restr S)"
+  by (rule ftree_contI2[where t = "\<lambda> xs.{filter (\<lambda> x'. x' \<in> S) xs}"])
+     (transfer, auto)
+
+lemmas cont_ccFTree = cont_compose2[where c = ftree_restr, OF cont_ccFTree1 cont_ccFTree2, simp, cont2cont]
+*)
 
 
 instance ftree :: (type) Finite_Join_cpo

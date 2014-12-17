@@ -6,6 +6,7 @@ instantiation CoCalls :: pt
 begin
   lift_definition permute_CoCalls :: "perm \<Rightarrow> CoCalls \<Rightarrow> CoCalls" is "permute"
     by (auto intro!: symI elim: symE simp add: mem_permute_set)
+  print_theorems
 instance
   apply default
   apply (transfer, simp)+
@@ -39,10 +40,18 @@ lemma cc_restr_perm:
   apply assumption
   done
 
-lemma inCC_eqvt[eqvt]: "\<pi> \<bullet> inCC = inCC" sorry
-lemma cc_restr_eqvt[eqvt]: "\<pi> \<bullet> cc_restr = cc_restr" sorry
-lemma ccSquare_eqvt[eqvt]: "\<pi> \<bullet> ccSquare = ccSquare" sorry
-lemma ccProd_eqvt[eqvt]: "\<pi> \<bullet> ccProd = ccProd" sorry
-lemma ccNeighbors_eqvt[eqvt]: "\<pi> \<bullet> ccNeighbors = ccNeighbors" sorry
+
+
+lemma inCC_eqvt[eqvt]: "\<pi> \<bullet> (x--y\<in>G) = (\<pi>\<bullet>x)--(\<pi>\<bullet>y)\<in>(\<pi>\<bullet>G)"
+  by transfer auto
+lemma cc_restr_eqvt[eqvt]: "\<pi> \<bullet> cc_restr S G = cc_restr (\<pi> \<bullet> S) (\<pi> \<bullet> G)"
+  by transfer (perm_simp, rule)
+lemma ccProd_eqvt[eqvt]: "\<pi> \<bullet> ccProd S S' = ccProd (\<pi> \<bullet> S) (\<pi> \<bullet>  S')" 
+  by transfer (perm_simp, rule)
+lemma ccSquare_eqvt[eqvt]: "\<pi> \<bullet> ccSquare S = ccSquare (\<pi> \<bullet> S)"
+  unfolding ccSquare_def
+  by perm_simp rule
+lemma ccNeighbors_eqvt[eqvt]: "\<pi> \<bullet> ccNeighbors S G = ccNeighbors (\<pi> \<bullet> S) (\<pi> \<bullet> G)"
+  by transfer (perm_simp, rule)
 
 end

@@ -183,6 +183,7 @@ next
     done
 qed (simp_all add:Aexp_restr_subst)
 
+
 definition Aheap where
   "Aheap \<Gamma> e = (\<Lambda> a. (Afix \<Gamma> \<cdot> (Aexp e\<cdot>a \<squnion> (\<lambda>_.up\<cdot>0) f|` thunks \<Gamma>)) f|` domA \<Gamma>)"
 
@@ -242,6 +243,50 @@ definition isLinear :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<Rightarrow>
   where "isLinear \<Gamma> e a = ccLinear (domA \<Gamma>) (ccHeap \<Gamma> e\<cdot>a)"
 *)
 
+lemma CCexp_subst:
+  assumes "x \<notin> S" and "y \<notin> S"
+  shows "cc_restr S (CCexp e[y::=x]\<cdot>a) = cc_restr S (CCexp e\<cdot>a)"
+using assms
+proof (nominal_induct e avoiding: x y  arbitrary: a  S rule: exp_strong_induct_set)
+  case (Var v) 
+  thus ?case by auto
+next
+  case (App e v)
+  thus ?case
+    by (auto simp add: Int_insert_left fv_subst_int simp del: join_comm intro: join_mono)
+next
+  case (Lam v e)
+  thus ?case
+  by (auto simp add: cc_restr_predCC  Diff_Int_distrib2 fv_subst_int env_restr_join env_delete_env_restr_swap[symmetric])
+next
+  case (Let \<Gamma> e)
+  hence "x \<notin> domA \<Gamma> " and "y \<notin> domA \<Gamma>"
+    by (metis (erased, hide_lams) bn_subst domA_not_fresh fresh_def fresh_star_at_base fresh_star_def obtain_fresh subst_is_fresh(2))+
+  
+  note this[simp] Let(1,2)[simp]
+
+  have "cc_restr (S \<union> domA \<Gamma>) (CCfix \<Gamma>[y::h=x]\<cdot>(Afix \<Gamma>[y::h=x]\<cdot>(Aexp e[y::=x]\<cdot>a \<squnion> (\<lambda>_. up\<cdot>0) f|` thunks \<Gamma>), CCexp e[y::=x]\<cdot>a)) =
+        cc_restr (S \<union> domA \<Gamma>) (CCfix \<Gamma>\<cdot>        (Afix \<Gamma>\<cdot>        (Aexp e\<cdot>       a \<squnion> (\<lambda>_. up\<cdot>0) f|` thunks \<Gamma>), CCexp e\<cdot>       a))"
+    apply (subst CCfix_restr_subst')
+      apply (erule Let(3))
+      apply (auto simp add: Let(5,6))[5]
+    apply (subst CCfix_restr) back
+      apply simp
+    apply (subst Afix_restr_subst)
+      apply (auto simp add: Let(5,6))[3]
+    apply (subst Afix_restr) back
+      apply simp
+    apply (simp only: env_restr_join)
+    apply (subst Aexp_restr_subst)
+      apply (auto simp add: Let(5,6))[2]
+    apply (subst Let(4))
+      apply (auto simp add: Let(5,6))[2]
+    apply rule
+    done
+  thus ?case using Let(1,2)
+    by (auto simp add: fresh_star_Pair elim: cc_restr_eq_subset[rotated] )
+qed
+
 interpretation CoCallCardinality CCexp calledOnce (* isLinear *) ccHeap Aexp Aheap
 proof
   fix e a x
@@ -253,10 +298,9 @@ next
     by (auto simp add: predCC_eq dest!: set_mp[OF ccField_cc_restr])
 next
   fix x y :: var and S e a
-  assume "x \<notin> S" 
-  assume "y \<notin> S"
-  show "cc_restr S (CCexp e[y::=x]\<cdot>a) \<sqsubseteq> cc_restr S (CCexp e\<cdot>a)"
-    sorry
+  assume "x \<notin> S"  and "y \<notin> S"
+  thus "cc_restr S (CCexp e[y::=x]\<cdot>a) \<sqsubseteq> cc_restr S (CCexp e\<cdot>a)"
+    by (rule eq_imp_below[OF CCexp_subst])
 next
   fix e
   assume "isLam e"

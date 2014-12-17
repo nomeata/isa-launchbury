@@ -2,6 +2,8 @@ theory "Set-Cpo"
 imports HOLCF
 begin
 
+default_sort type
+
 instantiation set :: (type) below
 begin
   definition below_set where "op \<sqsubseteq> = op \<subseteq>"
@@ -47,5 +49,27 @@ lemma adm_subseteq[simp]:
   assumes "cont f"
   shows "adm (\<lambda>a. f a \<subseteq> S)"
 by (rule admI)(auto simp add: cont2contlubE[OF assms] lub_set)
+
+lemma finite_subset_chain:
+  fixes Y :: "nat \<Rightarrow> 'a set"
+  assumes "chain Y"
+  assumes "S \<subseteq> UNION UNIV Y"
+  assumes "finite S"
+  shows "\<exists>i. S \<subseteq> Y i"
+proof-
+  from assms(2)
+  have "\<forall>x \<in> S. \<exists> i. x \<in> Y i" by auto
+  then obtain f where f: "\<forall> x\<in> S. x \<in> Y (f x)" by metis
+
+  def i \<equiv> "Max (f ` S)"
+  from `finite S`
+  have "finite (f ` S)" by simp
+  hence "\<forall> x\<in>S. f x \<le> i" unfolding i_def by auto
+  with chain_mono[OF `chain Y`]
+  have "\<forall> x\<in>S. Y (f x) \<subseteq> Y i" by (auto simp add: below_set_def)
+  with f
+  have "S \<subseteq> Y i" by auto
+  thus ?thesis..
+qed
 
 end
