@@ -41,7 +41,7 @@ by (auto simp add: Fexp.AnalBinds_lookup Fexp_def split: option.splits
          elim!: set_mp[OF edom_mono[OF monofun_cfun_fun[OF ABind_below_ABinds]]])
 
 sublocale FutureAnalysisCarrier Fexp
-  by default (rule carrier_Fexp')
+  apply default unfolding Fexp_simp carrier_ccFTree..
 
 sublocale FutureAnalysisCorrect Fexp
 proof default
@@ -260,7 +260,7 @@ next
       next
         case (up a')
         have subset: "(carrier (fup\<cdot>(Fexp e')\<cdot>((Aheap \<Delta> e\<cdot>a) x))) \<subseteq> fv e'"
-          using up e' by (simp add: Fexp.AnalBinds_lookup carrier_Fexp)
+          using up e' by (auto simp add: Fexp.AnalBinds_lookup carrier_Fexp dest!: set_mp[OF Aexp_edom])
         
         from e' up
         have "ccProd (fv e') (ccNeighbors (domA \<Delta>) (ccHeap \<Delta> e\<cdot>a)) \<sqsubseteq> ccHeap \<Delta> e\<cdot>a"  

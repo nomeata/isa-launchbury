@@ -9,8 +9,8 @@ begin
   abbreviation "FBinds == Fexp.AnalBinds"
 end
 
-locale FutureAnalysisCarrier = FutureAnalysis +
-  assumes carrier_Fexp: "carrier (Fexp e\<cdot>a) \<subseteq> fv e"
+locale FutureAnalysisCarrier = FutureAnalysis + EdomArityAnalysis +
+  assumes carrier_Fexp: "carrier (Fexp e\<cdot>a) = edom (Aexp e\<cdot>a)"
 
 locale FutureAnalysisCorrect = FutureAnalysisCarrier +
   assumes Fexp_App: "many_calls x \<otimes>\<otimes> (Fexp e)\<cdot>(inc\<cdot>a) \<sqsubseteq> Fexp (App e x)\<cdot>a"
@@ -71,9 +71,8 @@ begin
   apply (simp add: Fexp.AnalBinds_lookup)
   apply (auto split: option.split simp add: empty_is_bottom[symmetric] )
   apply (case_tac "ae x")
-  apply (auto simp add: empty_is_bottom[symmetric] dest!: set_mp[OF carrier_Fexp])
+  apply (auto simp add: empty_is_bottom[symmetric] carrier_Fexp dest!: set_mp[OF Aexp_edom])
   by (metis (poly_guards_query) contra_subsetD domA_from_set map_of_fv_subset map_of_is_SomeD option.sel)
-
 end
 
 
