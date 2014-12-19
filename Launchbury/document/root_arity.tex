@@ -52,7 +52,15 @@
 
 % quench koma warnings
 \def\bf{\normalfont\bfseries}
+\def\it{\normalfont\itshape}
 
+% from http://tex.stackexchange.com/a/12931
+\begingroup
+  \catcode`\_=\active
+  \gdef_#1{\ensuremath{\sb{\mathrm{#1}}}}
+\endgroup
+\mathcode`\_=\string"8000
+\catcode`\_=12
 
 \begin{document}
 
@@ -64,6 +72,7 @@ Karlsruhe Institute for Technology\\
 \maketitle
 
 \tableofcontents
+
 
 %\newcommand{\theory}[1]{\subsection{#1}\label{sec_#1}\input{#1.tex}}
 
