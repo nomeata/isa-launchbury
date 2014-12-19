@@ -2,7 +2,6 @@ theory ArityAnalysisAbinds
 imports ArityAnalysis
 begin
 
-
 context ArityAnalysis
 begin
 

@@ -164,6 +164,24 @@ proof(rule paths_inj, rule set_eqI)
   qed
 qed
 
+subsection {* The carrier of a tree *}
+
+lift_definition carrier :: "'a ftree \<Rightarrow> 'a set" is "\<lambda> xss. \<Union>(set ` xss)".
+
+lemma carrier_mono: "paths t \<subseteq> paths t' \<Longrightarrow> carrier t \<subseteq> carrier t'" by transfer auto
+
+lemma carrier_possible:
+  "possible t x \<Longrightarrow> x \<in> carrier t" by transfer force
+
+lemma carrier_possible_subset:
+   "carrier t \<subseteq> A \<Longrightarrow> possible t x \<Longrightarrow> x \<in> A" by transfer force
+
+lemma carrier_nxt_subset:
+  "carrier (nxt t x) \<subseteq> carrier t"
+  by transfer auto
+
+lemma Union_paths_carrier: "(\<Union>x\<in>paths t. set x) = carrier t"
+  by transfer auto
 
 
 subsection {* Repeatable trees *}
@@ -185,6 +203,8 @@ lemma nxt_not_possible[simp]: "\<not> possible t x \<Longrightarrow> nxt t x = e
 
 lemma paths_empty[simp]: "paths empty = {[]}" by transfer auto
 
+lemma carrier_empty[simp]: "carrier empty = {}" by transfer auto
+
 lemma repeatable_empty[simp]: "repeatable empty" unfolding repeatable_def by transfer auto
   
 
@@ -196,6 +216,10 @@ lemma possible_single[simp]: "possible (single x) x' \<longleftrightarrow> x = x
 
 lemma nxt_single[simp]: "nxt (single x) x' =  empty"
   by transfer auto
+
+lemma carrier_single[simp]: "carrier (single y) = {y}"
+  by transfer auto
+
 
 lift_definition and_then :: "'a \<Rightarrow> 'a ftree \<Rightarrow> 'a ftree" is "\<lambda> x xss. insert [] (op # x ` xss)"
   by (auto intro!: downsetI split: if_splits)
@@ -221,6 +245,8 @@ lemma nxt_many_calls[simp]: "nxt (many_calls x) x' = (if x' =  x then many_calls
 lemma repeatable_many_calls: "repeatable (many_calls x)"
   unfolding repeatable_def by auto
 
+lemma carrier_many_calls[simp]: "carrier (many_calls x) = {x}" by transfer auto
+
 lift_definition anything :: "'a ftree" is "UNIV"
   by auto
 
@@ -233,8 +259,18 @@ lemma nxt_anything[simp]: "nxt anything x = anything"
 lemma paths_anything[simp]:
   "paths anything = UNIV" by transfer auto
 
+lemma carrier_anything[simp]:
+  "carrier anything = UNIV" 
+  apply (auto simp add: Union_paths_carrier[symmetric])
+  apply (rule_tac x = "[x]" in exI)
+  apply simp
+  done
+
 lift_definition many_among :: "'a set \<Rightarrow> 'a ftree" is "\<lambda> S. {xs . set xs \<subseteq> S}"
   by (auto intro: downset_set_subset)
+
+lemma carrier_many_among[simp]: "carrier (many_among S) = S"
+ by transfer (auto, metis List.set_insert bot.extremum insertCI insert_subset list.set(1))
 
 subsection {* Intersection of two trees *}
 
@@ -244,6 +280,11 @@ lift_definition intersect :: "'a ftree \<Rightarrow> 'a ftree \<Rightarrow> 'a f
 
 lemma paths_intersect[simp]: "paths (t \<inter>\<inter> t') = paths t \<inter> paths t'"
   by transfer auto
+
+lemma carrier_intersect: "carrier (t \<inter>\<inter> t') \<subseteq> carrier t \<inter> carrier t'"
+  unfolding Union_paths_carrier[symmetric]
+  by auto
+  
 
 subsection {* Disjoint union of trees *}
 
@@ -439,29 +480,6 @@ lemma repeatable_both_both_nxt:
   by (metis assms both_assoc both_comm)
 
 
-subsection {* The carrier of a tree *}
-
-lift_definition carrier :: "'a ftree \<Rightarrow> 'a set" is "\<lambda> xss. \<Union>(set ` xss)".
-
-lemma carrier_mono: "paths t \<subseteq> paths t' \<Longrightarrow> carrier t \<subseteq> carrier t'" by transfer auto
-
-lemma carrier_empty[simp]: "carrier empty = {}" by transfer auto
-
-lemma carrier_many_calls[simp]: "carrier (many_calls x) = {x}" by transfer auto
-
-lemma carrier_possible:
-  "possible t x \<Longrightarrow> x \<in> carrier t" by transfer force
-
-lemma carrier_possible_subset:
-   "carrier t \<subseteq> A \<Longrightarrow> possible t x \<Longrightarrow> x \<in> A" by transfer force
-
-lemma carrier_nxt_subset:
-  "carrier (nxt t x) \<subseteq> carrier t"
-  by transfer auto
-
-lemma Union_paths_carrier: "(\<Union>x\<in>paths t. set x) = carrier t"
-  by transfer auto
-
 lemma carrier_both[simp]:
   "carrier (t \<otimes>\<otimes> t') = carrier t \<union> carrier t'"
 proof-
@@ -481,20 +499,6 @@ proof-
   ultimately
   show ?thesis by auto
 qed
-
-lemma carrier_intersect: "carrier (t \<inter>\<inter> t') \<subseteq> carrier t \<inter> carrier t'"
-  unfolding Union_paths_carrier[symmetric]
-  by auto
-  
-lemma carrier_many_among[simp]: "carrier (many_among S) = S"
- by transfer (auto, metis List.set_insert bot.extremum insertCI insert_subset list.set(1))
-
-lemma carrier_anything[simp]:
-  "carrier anything = UNIV" 
-  apply (auto simp add: Union_paths_carrier[symmetric])
-  apply (rule_tac x = "[x]" in exI)
-  apply simp
-  done
 
 subsection {* Removing elements from a tree *}
 
@@ -789,6 +793,7 @@ proof-
   thus ?thesis by (auto intro: paths_inj)
 qed
 
+
 (*
 lemma substitute_both: "substitute f (t \<otimes>\<otimes> t') = substitute f t \<otimes>\<otimes> substitute f t'"
 proof (intro paths_inj set_eqI)
@@ -1020,35 +1025,26 @@ lemma substitute_cong_induct:
   apply (metis assms(3))
   done
 
+
+lemma carrier_substitute_aux:
+  assumes "xs \<in> paths (substitute f T t)"
+  assumes "carrier t \<subseteq> A"
+  assumes "\<And> x. x \<in> A \<Longrightarrow> carrier (f x) \<subseteq> A" 
+  shows   "set xs \<subseteq> A"
+  using assms
+  apply(induction  f T t xs rule: substitute_induct)
+  apply auto
+  apply (metis carrier_possible_subset)
+  apply (metis carrier_f_nxt carrier_nxt_subset carrier_possible_subset contra_subsetD order_trans)
+  done
+
 lemma carrier_substitute_below:
   assumes "\<And> x. x \<in> A \<Longrightarrow> carrier (f x) \<subseteq> A"
   assumes "carrier t \<subseteq> A"
   shows "carrier (substitute f T t) \<subseteq> A"
 proof-
-  {
-    fix xs
-    assume "xs \<in> paths (substitute f T t)"
-    from this assms
-    have "set xs \<subseteq> A"
-    proof (induction f T t xs rule:substitute_induct)
-    case Nil thus ?case by simp
-    next
-    case (Cons f T t x xs)
-      from `x # xs \<in> paths (substitute f T t)`
-      have [simp]: "possible t x" and "xs \<in> paths (substitute (f_nxt f T x) T (nxt t x \<otimes>\<otimes> f x))" by auto
-      from this(1) and Cons.prems(3) have "x \<in> A" by (metis carrier_possible_subset)
-
-      from `xs \<in> _`
-      have "set xs \<subseteq> A"
-        by (rule Cons.IH)
-           (auto simp add: f_nxt_def dest:  set_mp[OF Cons.prems(2)]
-              dest!:  set_mp[OF Cons.prems(2)[OF `x\<in>A`]]  set_mp[OF  Cons.prems(3)] set_mp[OF carrier_nxt_subset])
-      with `x \<in> A`
-      show "set (x # xs) \<subseteq> A" by auto
-    qed
-  }
-  thus ?thesis
-    by (auto simp add: Union_paths_carrier[symmetric])
+  have "\<And> xs. xs \<in> paths (substitute f T t) \<Longrightarrow> set xs \<subseteq> A" by (rule carrier_substitute_aux[OF _ assms(2,1)])
+  thus ?thesis by (auto simp add:  Union_paths_carrier[symmetric])
 qed
 
 lemma f_nxt_eq_empty_iff:

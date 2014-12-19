@@ -6,7 +6,6 @@ instantiation CoCalls :: pt
 begin
   lift_definition permute_CoCalls :: "perm \<Rightarrow> CoCalls \<Rightarrow> CoCalls" is "permute"
     by (auto intro!: symI elim: symE simp add: mem_permute_set)
-  print_theorems
 instance
   apply default
   apply (transfer, simp)+
@@ -53,5 +52,6 @@ lemma ccSquare_eqvt[eqvt]: "\<pi> \<bullet> ccSquare S = ccSquare (\<pi> \<bulle
   by perm_simp rule
 lemma ccNeighbors_eqvt[eqvt]: "\<pi> \<bullet> ccNeighbors S G = ccNeighbors (\<pi> \<bullet> S) (\<pi> \<bullet> G)"
   by transfer (perm_simp, rule)
+
 
 end

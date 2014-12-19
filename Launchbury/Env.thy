@@ -1,5 +1,5 @@
 theory Env
-  imports Main HOLCF
+  imports Main HOLCF  "HOLCF-Join-Classes"
 begin
 
 default_sort type
@@ -248,5 +248,57 @@ lemma env_restr_add: "(m1 ++\<^bsub>S2\<^esub> m2) f|` S = m1 f|` S ++\<^bsub>S2
 
 lemma env_delete_add: "env_delete x (m1 ++\<^bsub>S\<^esub> m2) = env_delete x m1 ++\<^bsub>S - {x}\<^esub> env_delete x m2"
   by (auto simp add: override_on_def  edom_def env_restr_def env_delete_def)
+
+subsubsection {* Environments with binary joins *}
+
+lemma edom_join[simp]: "edom (f \<squnion> (g::('a::type \<Rightarrow> 'b::{Finite_Join_cpo,pcpo}))) = edom f \<union> edom g"
+  unfolding edom_def by auto
+
+lemma env_delete_join[simp]: "env_delete x (f \<squnion> (g::('a::type \<Rightarrow> 'b::{Finite_Join_cpo,pcpo}))) = env_delete x f \<squnion> env_delete x g"
+  by (metis env_delete_def fun_upd_meet_simp)
+
+lemma env_restr_join:
+  fixes m1 m2 :: "'a::type \<Rightarrow> 'b::{Finite_Join_cpo,pcpo}"
+  shows "(m1 \<squnion> m2) f|` S = (m1 f|` S) \<squnion> (m2 f|` S )"
+  by (auto simp add: env_restr_def)
+
+lemma env_restr_join2:
+  fixes m :: "'a::type \<Rightarrow> 'b::{Finite_Join_cpo,pcpo}"
+  shows "m f|` S \<squnion> m f|` S' = m f|` (S \<union> S')"
+  by (auto simp add: env_restr_def)
+
+lemma join_env_restr_UNIV:
+  fixes m :: "'a::type \<Rightarrow> 'b::{Finite_Join_cpo,pcpo}"
+  shows "S1 \<union> S2 = UNIV \<Longrightarrow> (m f|` S1) \<squnion> (m f|` S2) = m"
+  by (fastforce simp add: env_restr_def)
+
+lemma env_restr_split:
+  fixes m :: "'a::type \<Rightarrow> 'b::{Finite_Join_cpo,pcpo}"
+  shows "m = m f|` S \<squnion> m f|` (- S)"
+by (simp add: env_restr_join2 Compl_partition)
+
+subsection {* Singleton environments *}
+
+definition esing :: "'a \<Rightarrow> 'b::{pcpo} \<rightarrow> ('a \<Rightarrow> 'b)"
+  where "esing x = (\<Lambda> a. (\<lambda> y . (if x = y then a else \<bottom>)))"
+
+lemma esing_bot[simp]: "esing x \<cdot> \<bottom> = \<bottom>"
+  by (rule ext)(simp add: esing_def)
+
+lemma esing_simps[simp]:
+  "(esing x \<cdot> n) x = n"
+  "x' \<noteq> x \<Longrightarrow> (esing x \<cdot> n) x' = \<bottom>"
+  by (simp_all add: esing_def)
+
+lemma esing_below_iff[simp]: "esing x \<cdot> a \<sqsubseteq> ae  \<longleftrightarrow> a \<sqsubseteq> ae x"
+  by (auto simp add: fun_below_iff esing_def)
+
+lemma edom_esing_up[simp]: "edom (esing x \<cdot> (up \<cdot> n)) = {x}"
+  unfolding edom_def esing_def by auto
+
+lemma env_delete_esing[simp]: "env_delete x (esing x \<cdot> n) = \<bottom>"
+  unfolding env_delete_def esing_def
+  by auto
+
 
 end

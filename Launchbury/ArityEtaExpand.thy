@@ -73,10 +73,10 @@ begin
   next
 case (app\<^sub>2 \<Gamma> y e x S)
   {
-  have "Aexp (e[y::=x])\<cdot>(pred\<cdot>a) \<sqsubseteq> env_delete y ((Aexp e)\<cdot>(pred\<cdot>a)) \<squnion> AE_singleton x\<cdot>(up\<cdot>0)" by (rule Aexp_subst)
+  have "Aexp (e[y::=x])\<cdot>(pred\<cdot>a) \<sqsubseteq> env_delete y ((Aexp e)\<cdot>(pred\<cdot>a)) \<squnion> esing x\<cdot>(up\<cdot>0)" by (rule Aexp_subst)
   also have "env_delete y ((Aexp e)\<cdot>(pred\<cdot>a)) \<sqsubseteq> Aexp (Lam [y]. e)\<cdot>a" by (rule Aexp_Lam)
   also have "\<dots> \<sqsubseteq> ae" using app\<^sub>2 by (auto simp add: join_below_iff)
-  also have "AE_singleton x\<cdot>(up\<cdot>0) \<sqsubseteq> ae" using app\<^sub>2 by auto
+  also have "esing x\<cdot>(up\<cdot>0) \<sqsubseteq> ae" using app\<^sub>2 by auto
   also have "ae \<squnion> ae = ae" by simp
   finally  have "Aexp (e[y::=x])\<cdot>(pred\<cdot>a) \<sqsubseteq> ae" by this simp_all
   }

@@ -216,6 +216,10 @@ lemma cc_restr_noop[simp]: "ccField G \<subseteq> S \<Longrightarrow> cc_restr S
 lemma cc_restr_bot[simp]: "cc_restr S \<bottom> = \<bottom>"
   by simp
 
+lemma cc_restr_join[simp]:
+  "cc_restr S (G \<squnion> G') = cc_restr S G \<squnion> cc_restr S G'"
+by transfer auto
+
 lemma cont_cc_restr: "cont (cc_restr S)"
   apply (rule contI)
   apply (thin_tac "chain ?x")
@@ -249,6 +253,13 @@ lemma cc_restr_intersect: "ccField G \<inter> ((S - S') \<union> (S' - S)) = {} 
 lemma cc_restr_cc_restr[simp]: "cc_restr S (cc_restr S' G) = cc_restr (S \<inter> S') G"
   by transfer auto
 
+lemma cc_restr_ccProd[simp]:
+  "cc_restr S (ccProd S\<^sub>1 S\<^sub>2) = ccProd (S\<^sub>1 \<inter> S) (S\<^sub>2 \<inter> S)"
+  by transfer auto
+
+lemma ccProd_below_cc_restr:
+  "ccProd S S' \<sqsubseteq> cc_restr S'' G \<longleftrightarrow> ccProd S S' \<sqsubseteq> G \<and> (S = {} \<or> S' = {} \<or> S \<subseteq> S'' \<and> S' \<subseteq> S'')"
+  by transfer auto
 
 lemma cc_restr_eq_subset: "S \<subseteq> S' \<Longrightarrow> cc_restr S' G = cc_restr S' G2 \<Longrightarrow> cc_restr S G = cc_restr S G2"
   by transfer' (auto simp add: Set.filter_def)
@@ -266,7 +277,7 @@ lift_definition ccNeighbors :: "var set \<Rightarrow> CoCalls \<Rightarrow> var 
 
 lemma ccNeighbors_bot[simp]: "ccNeighbors S \<bottom> = {}" by transfer auto
 
-lemma cont_ccProd_ccNeighbors:
+lemma cont_ccProd_ccNeighbors[THEN cont_compose, cont2cont]:
   "cont (\<lambda>x. ccProd S (ccNeighbors S' x))"
   apply (rule contI)
   apply (thin_tac "chain ?x")
@@ -292,12 +303,18 @@ lemma ccNeighbors_cc_restr[simp]:
   "ccNeighbors S (cc_restr S' G) = ccNeighbors (S \<inter> S') G \<inter> S'"
 by transfer auto
 
-
 lemma ccNeighbors_mono:
   "S \<subseteq> S' \<Longrightarrow> G \<sqsubseteq> G' \<Longrightarrow> ccNeighbors S G \<subseteq> ccNeighbors S' G'"
   by transfer auto
 
-lemmas cont_compose[OF cont_ccProd_ccNeighbors, cont2cont]
+lemma subset_ccNeighbors:
+  "S \<subseteq> ccNeighbors {x} G \<longleftrightarrow> ccProd {x} S \<sqsubseteq> G"
+  by transfer (auto simp add: sym_def)
+
+lemma elem_ccNeighbors:
+  "xa \<in> ccNeighbors {x} G \<longleftrightarrow> (xa--x\<in>G)"
+  by transfer (auto simp add: sym_def)
+
 
 instance CoCalls :: Join_cpo
   by default (metis coCallsLub_is_lub)
@@ -333,6 +350,13 @@ lemma ccFromList_Cons[simp]: "ccFromList (x#xs) = ccProd {x} (set xs) \<squnion>
 
 lemma ccFromList_append[simp]: "ccFromList (xs@ys) = ccFromList xs \<squnion> ccFromList ys \<squnion> ccProd (set xs) (set ys)"
   by (induction xs) (auto simp add: ccProd_insert1[where S' = "set xs" for xs])
+
+lemma ccFromList_filter[simp]:
+  "ccFromList (filter P xs) = cc_restr {x. P x} (ccFromList xs)"
+by (induction xs) (auto simp add: Collect_conj_eq)
+
+lemma ccFromList_replicate[simp]: "ccFromList (replicate n x) = (if n \<le> 1 then \<bottom>  else ccProd {x} {x})"
+  by (induction n) auto
 
 definition ccLinear :: "var set \<Rightarrow> CoCalls \<Rightarrow> bool"
   where "ccLinear S G = (\<forall> x\<in>S. \<forall> y\<in>S. x--y\<notin>G)"
@@ -387,13 +411,6 @@ lemma ccField_ccProd:
   "ccField (ccProd S S') = (if S = {} then {} else if S' = {} then {} else  S \<union> S')"
   by transfer (auto simp add: Field_def)
 
-lemma cc_restr_join[simp]:
-  "cc_restr S (G \<squnion> G') = cc_restr S G \<squnion> cc_restr S G'"
-by transfer auto
-
-lemma cc_restr_ccProd[simp]:
-  "cc_restr S (ccProd S\<^sub>1 S\<^sub>2) = ccProd (S\<^sub>1 \<inter> S) (S\<^sub>2 \<inter> S)"
-  by transfer auto
 
 lemma cont_ccField[THEN cont_compose, simp, cont2cont]:
   "cont ccField"

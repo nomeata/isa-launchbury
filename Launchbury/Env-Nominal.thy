@@ -31,6 +31,12 @@ lemma override_on_eqvt[eqvt]:
   shows "\<pi> \<bullet> m1 ++\<^bsub>S\<^esub> m2 = (\<pi> \<bullet> m1) ++\<^bsub>\<pi> \<bullet> S\<^esub> (\<pi> \<bullet> m2)"
   by (auto simp add: override_on_def )
 
+lemma esing_eqvt[eqvt]: "\<pi> \<bullet> (esing x) = esing (\<pi> \<bullet> x)"
+  unfolding esing_def
+  apply perm_simp
+  apply (simp add: Abs_cfun_eqvt)
+  done
+
 subsubsection {* Permutation and restriction *}
 
 lemma env_restr_perm:

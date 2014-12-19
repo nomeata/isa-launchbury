@@ -145,7 +145,9 @@ lemma Arity_up_zero_join[simp]: "(x :: Arity\<^sub>\<bottom>) \<squnion> up\<cdo
   by (cases x) auto
 lemma Arity_up_zero_join2[simp]: "up\<cdot>0 \<squnion> (x :: Arity\<^sub>\<bottom>) = up\<cdot>0"
   by (cases x) auto
-lemma Arity_above_up_top[simp]: "up \<cdot> 0 \<sqsubseteq> (a :: Arity\<^sub>\<bottom>) \<longleftrightarrow> a = up\<cdot>0"
+lemma up_zero_top[simp]: "x \<sqsubseteq> up\<cdot>(0::Arity)"
+  by (cases x) auto
+lemma Arity_above_up_top[simp]: "up\<cdot>0 \<sqsubseteq> (a :: Arity\<^sub>\<bottom>) \<longleftrightarrow> a = up\<cdot>0"
   by (metis Arity_up_zero_join2 join_self_below(4))
 
 

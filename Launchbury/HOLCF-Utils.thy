@@ -2,6 +2,7 @@ theory "HOLCF-Utils"
   imports HOLCF Pointwise
 begin
 
+
 default_sort type
 
 lemmas cont_fun[simp]
@@ -56,6 +57,16 @@ lemma fun_upd_cont[simp,cont2cont]:
   assumes "cont f" and "cont h"
   shows "cont (\<lambda> x. (f x)(v := h x) :: 'a \<Rightarrow> 'b::pcpo)"
   by (rule cont2cont_lambda)(auto simp add: assms)
+
+lemma fun_upd_belowI:
+  assumes "\<And> z . z \<noteq> x \<Longrightarrow> \<rho> z \<sqsubseteq> \<rho>' z" 
+  assumes "y \<sqsubseteq> \<rho>' x"
+  shows  "\<rho>(x := y) \<sqsubseteq> \<rho>'"
+  apply (rule fun_belowI)
+  using assms
+  apply (case_tac "xa = x")
+  apply auto
+  done
 
 
 lemma cont_if_else_above: 

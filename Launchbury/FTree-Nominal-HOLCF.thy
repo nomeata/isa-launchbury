@@ -19,6 +19,4 @@ proof default
     by (rule ftree_contI) (transfer, auto)
 qed
 
-instance lift :: (pt) pcpo_pt by default
-
 end

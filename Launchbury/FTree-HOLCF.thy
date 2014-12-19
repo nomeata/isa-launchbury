@@ -197,6 +197,24 @@ lemma cont_ftree_restr[THEN cont_compose, cont2cont,simp]: "cont (ftree_restr S)
 
 lemmas ftree_restr_mono = cont2monofunE[OF cont_ftree_restr[OF cont_id]]
 
+
+lemma range_filter[simp]: "range (filter P) = {xs. set xs \<subseteq> Collect P}"
+  apply auto
+  apply (rule_tac x = x in rev_image_eqI)
+  apply simp
+  apply (rule sym)
+  apply (auto simp add: filter_id_conv)
+  done
+
+lemma ftree_restr_anything_cont[THEN cont_compose, simp, cont2cont]:
+  "cont (\<lambda> S. ftree_restr S anything)"
+  apply (rule ftree_contI3)
+  apply (rule set_contI)
+  apply (auto simp add: filter_paths_conv_free_restr[symmetric] lub_set)
+  apply (rule finite_subset_chain)
+  apply auto
+  done
+
 (* Not true, it seems:
 
 lemma ftree_restr_mono1:
@@ -262,6 +280,10 @@ lemma nxt_singles_below_singles:
   apply simp
   apply simp
   done
+
+lemma in_carrier_fup[simp]:
+  "x' \<in> carrier (fup\<cdot>f\<cdot>u) \<longleftrightarrow> (\<exists> u'. u = up\<cdot>u' \<and> x' \<in> carrier (f\<cdot>u'))"
+  by (cases u) auto
 
 
 end

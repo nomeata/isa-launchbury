@@ -33,16 +33,6 @@ lemma override_on_mono:
   shows "x1 ++\<^bsub>S\<^esub> y1 \<sqsubseteq> x2 ++\<^bsub>S\<^esub> y2"
 by (rule below_trans[OF cont2monofunE[OF override_on_cont1 assms(1)] cont2monofunE[OF override_on_cont2 assms(2)]])
 
-lemma fun_upd_belowI:
-  assumes "\<And> z . z \<noteq> x \<Longrightarrow> \<rho> z \<sqsubseteq> \<rho>' z" 
-  assumes "y \<sqsubseteq> \<rho>' x"
-  shows  "\<rho>(x := y) \<sqsubseteq> \<rho>'"
-  apply (rule fun_belowI)
-  using assms
-  apply (case_tac "xa = x")
-  apply auto
-  done
-
 lemma fun_upd_below_env_deleteI:
   assumes "env_delete x \<rho> \<sqsubseteq> env_delete x \<rho>'" 
   assumes "y \<sqsubseteq> \<rho>' x"

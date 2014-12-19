@@ -32,9 +32,9 @@ begin
 nominal_function
   Aexp :: "exp \<Rightarrow> (Arity \<rightarrow> AEnv)"
 where
-  "Aexp (GVar b x) = (\<Lambda> n . AE_singleton x \<cdot> (up \<cdot> n))"
+  "Aexp (GVar b x) = (\<Lambda> n . esing x \<cdot> (up \<cdot> n))"
 | "Aexp (Lam [x]. e) = (\<Lambda> n . (Aexp e \<cdot> (pred \<cdot> n)  f|` (fv (Lam [x]. e))))"
-| "Aexp (App e x) = (\<Lambda> n . Aexp e  \<cdot> (inc \<cdot> n) \<squnion> (AE_singleton x \<cdot> (up \<cdot> 0)))"
+| "Aexp (App e x) = (\<Lambda> n . Aexp e  \<cdot> (inc \<cdot> n) \<squnion> (esing x \<cdot> (up \<cdot> 0)))"
 | "Aexp (Terms.Let as e) = (\<Lambda> n . (Afix Aexp as \<cdot> (Aexp e \<cdot> n \<squnion> thunks_AE as)) f|` (fv (Terms.Let as e)))"
 proof-
 case goal1

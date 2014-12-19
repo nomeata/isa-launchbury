@@ -48,13 +48,13 @@ next
     by (auto simp add: Trivial_Aexp_simp)
   also have "\<dots> \<sqsubseteq>  (\<lambda>x. up\<cdot>0) f|` (fv e - {y} \<union> {x})"
     by (rule env_restr_mono2[OF fv_subst_subset])
-  also have "\<dots> =  env_delete y (Trivial_Aexp e\<cdot>a) \<squnion> AE_singleton x\<cdot>(up\<cdot>0)"
+  also have "\<dots> =  env_delete y (Trivial_Aexp e\<cdot>a) \<squnion> esing x\<cdot>(up\<cdot>0)"
     by (auto simp add: Trivial_Aexp_simp env_delete_restr lookup_env_restr_eq)
   finally
-  show "Trivial_Aexp e[y::=x]\<cdot>a \<sqsubseteq> env_delete y (Trivial_Aexp e\<cdot>a) \<squnion> AE_singleton x\<cdot>(up\<cdot>0)".
+  show "Trivial_Aexp e[y::=x]\<cdot>a \<sqsubseteq> env_delete y (Trivial_Aexp e\<cdot>a) \<squnion> esing x\<cdot>(up\<cdot>0)".
 next
   fix e x n
-  show "Trivial_Aexp e\<cdot>(inc\<cdot>n) \<squnion> AE_singleton x\<cdot>(up\<cdot>0) \<sqsubseteq> Trivial_Aexp (App e x)\<cdot>n"
+  show "Trivial_Aexp e\<cdot>(inc\<cdot>n) \<squnion> esing x\<cdot>(up\<cdot>0) \<sqsubseteq> Trivial_Aexp (App e x)\<cdot>n"
     by (auto intro: fun_belowI simp add: Trivial_Aexp_def env_restr_def )
 next
   fix y e n

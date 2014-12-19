@@ -50,6 +50,9 @@ lemma adm_subseteq[simp]:
   shows "adm (\<lambda>a. f a \<subseteq> S)"
 by (rule admI)(auto simp add: cont2contlubE[OF assms] lub_set)
 
+lemma adm_Ball[simp]: "adm (\<lambda>S. \<forall>x\<in>S. P x)"
+  by (auto intro!: admI  simp add: lub_set)
+
 lemma finite_subset_chain:
   fixes Y :: "nat \<Rightarrow> 'a set"
   assumes "chain Y"
@@ -71,5 +74,6 @@ proof-
   have "S \<subseteq> Y i" by auto
   thus ?thesis..
 qed
+
 
 end

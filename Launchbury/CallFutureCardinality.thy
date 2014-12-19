@@ -31,11 +31,11 @@ lemma more_than_one_setD:
   "\<not> one_call_in_path x p \<Longrightarrow> x \<in> set p" 
   by (induction p) (auto split: if_splits)
 
-(*
-lemma many_tail_imp_many: "\<not> one_call_in_path x (tl p) \<Longrightarrow> \<not> one_call_in_path x p"
-  by (induction p) auto
-*)
+lemma no_call_in_path[eqvt]: "no_call_in_path p x \<Longrightarrow> no_call_in_path (\<pi> \<bullet> p) (\<pi> \<bullet> x)"
+  by (induction p x rule: no_call_in_path.induct) auto
 
+lemma one_call_in_path[eqvt]: "one_call_in_path p x \<Longrightarrow> one_call_in_path (\<pi> \<bullet> p) (\<pi> \<bullet> x)"
+  by (induction p x rule: one_call_in_path.induct) (auto dest: no_call_in_path)
 
 definition pathCard :: "var list  \<Rightarrow> (var \<Rightarrow> two)"
   where "pathCard p x = (if no_call_in_path x p then none else (if one_call_in_path x p then once else many))"
@@ -50,6 +50,11 @@ lemma pathCard_Cons[simp]: "pathCard (x#xs) x = two_add\<cdot>once\<cdot>(pathCa
 lemma pathCard_Cons_other[simp]: "x' \<noteq> x \<Longrightarrow> pathCard (x#xs) x' = pathCard xs x'"
   unfolding pathCard_def by auto
 
+lemma no_call_in_path_filter[simp]: "no_call_in_path x [x\<leftarrow>xs . x \<in> S] \<longleftrightarrow> no_call_in_path x xs \<or> x \<notin> S"
+  by (induction xs) auto
+
+lemma one_call_in_path_filter[simp]: "one_call_in_path x [x\<leftarrow>xs . x \<in> S] \<longleftrightarrow> one_call_in_path x xs \<or> x \<notin> S"
+  by (induction xs) auto
 
 definition pathsCard :: "var list set \<Rightarrow> (var \<Rightarrow> two)"
   where "pathsCard ps x = (if (\<forall> p \<in> ps. no_call_in_path x p) then none else (if (\<forall> p\<in>ps. one_call_in_path x p) then once else many))"
@@ -93,18 +98,9 @@ lemma pathCards_noneD:
   "pathsCard ps x = none \<Longrightarrow> x \<notin> \<Union>(set ` ps)"
   by (auto simp add: pathsCard_def no_call_in_path_set_conv split:if_splits)
 
-lemma adm_Ball[simp]: "adm (\<lambda>S. \<forall>x\<in>S. P x)"
-  by (auto intro!: admI  simp add: lub_set)
-
 lemma cont_pathsCard[THEN cont_compose, cont2cont, simp]:
   "cont pathsCard"
   by(fastforce intro!: cont2cont_lambda cont_if_else_above simp add: pathsCard_def below_set_def)
-
-lemma no_call_in_path[eqvt]: "no_call_in_path p x \<Longrightarrow> no_call_in_path (\<pi> \<bullet> p) (\<pi> \<bullet> x)"
-  by (induction p x rule: no_call_in_path.induct) auto
-
-lemma one_call_in_path[eqvt]: "one_call_in_path p x \<Longrightarrow> one_call_in_path (\<pi> \<bullet> p) (\<pi> \<bullet> x)"
-  by (induction p x rule: one_call_in_path.induct) (auto dest: no_call_in_path)
 
 lemma pathsCard_eqvt[eqvt]: "\<pi> \<bullet> pathsCard ps x = pathsCard (\<pi> \<bullet> ps) (\<pi> \<bullet> x)"
   unfolding pathsCard_def by perm_simp rule
@@ -113,13 +109,18 @@ lemma edom_pathsCard[simp]: "edom (pathsCard ps) = \<Union>(set ` ps)"
   unfolding edom_def pathsCard_def
   by (auto simp add:  no_call_in_path_set_conv)
 
-lemma no_call_in_path_filter[simp]: "no_call_in_path x [x\<leftarrow>xs . x \<in> S] \<longleftrightarrow> no_call_in_path x xs \<or> x \<notin> S"
-  by (induction xs) auto
-
-lemma one_call_in_path_filter[simp]: "one_call_in_path x [x\<leftarrow>xs . x \<in> S] \<longleftrightarrow> one_call_in_path x xs \<or> x \<notin> S"
-  by (induction xs) auto
-
 lemma env_restr_pathsCard[simp]: "pathsCard ps f|` S = pathsCard (filter (\<lambda> x. x \<in> S) ` ps)"
   by (auto simp add: pathsCard_def lookup_env_restr_eq)
+
+text {* This is here because it requires @{theory "Set-Cpo"} *}
+
+lemma cont_edom[THEN cont_compose, simp, cont2cont]:
+  "cont (\<lambda> f. edom f)"
+  apply (rule set_contI)
+  apply (auto simp add: edom_def)
+  apply (metis ch2ch_fun lub_eq_bottom_iff lub_fun)
+  apply (metis ch2ch_fun lub_eq_bottom_iff lub_fun)
+  done
+
 
 end

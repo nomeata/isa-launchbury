@@ -81,9 +81,9 @@ lemma cc_restr_predCC'[simp]:
 nominal_function
   cCCexp :: "exp \<Rightarrow> (Arity \<rightarrow> AEnv \<times> CoCalls)" 
 where
-  "cCCexp (GVar b x) =   (\<Lambda> n . (AE_singleton x \<cdot> (up \<cdot> n),                                   \<bottom>))"
+  "cCCexp (GVar b x) =   (\<Lambda> n . (esing x \<cdot> (up \<cdot> n),                                   \<bottom>))"
 | "cCCexp (Lam [x]. e) = (\<Lambda> n . combined_restrict (fv (Lam [x]. e)) (fst (cCCexp e\<cdot>(pred\<cdot>n)), predCC (fv (Lam [x]. e)) (\<Lambda> a. snd(cCCexp e\<cdot>a))\<cdot>n))"
-| "cCCexp (App e x) =    (\<Lambda> n . (fst (cCCexp e\<cdot>(inc\<cdot>n)) \<squnion> (AE_singleton x \<cdot> (up \<cdot> 0)),        snd (cCCexp e\<cdot>(inc\<cdot>n)) \<squnion> ccProd {x} (insert x (fv e))))"
+| "cCCexp (App e x) =    (\<Lambda> n . (fst (cCCexp e\<cdot>(inc\<cdot>n)) \<squnion> (esing x \<cdot> (up \<cdot> 0)),        snd (cCCexp e\<cdot>(inc\<cdot>n)) \<squnion> ccProd {x} (insert x (fv e))))"
 | "cCCexp (Let \<Gamma> e) =    (\<Lambda> n . combined_restrict (fv (Let \<Gamma> e)) (CoCallArityAnalysis.cccFix cCCexp \<Gamma> \<cdot> (cCCexp e\<cdot>n)))"
 proof-
 case goal1
@@ -146,9 +146,9 @@ nominal_termination (eqvt) by lexicographic_order
 interpretation CoCallArityAnalysis cCCexp.
 
 lemma Aexp_simps[simp]:
-  "Aexp (GVar b x)\<cdot>n = AE_singleton x\<cdot>(up\<cdot>n)"
+  "Aexp (GVar b x)\<cdot>n = esing x\<cdot>(up\<cdot>n)"
   "Aexp (Lam [x]. e)\<cdot>n = Aexp e\<cdot>(pred\<cdot>n) f|` fv (Lam [x]. e)"
-  "Aexp (App e x)\<cdot>n = Aexp e\<cdot>(inc\<cdot>n) \<squnion> AE_singleton x\<cdot>(up\<cdot>0)"
+  "Aexp (App e x)\<cdot>n = Aexp e\<cdot>(inc\<cdot>n) \<squnion> esing x\<cdot>(up\<cdot>0)"
   "Aexp (Let \<Gamma> e)\<cdot>n = (Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> (\<lambda>_.up\<cdot>0) f|` thunks \<Gamma>)) f|` (fv (Let \<Gamma> e))"
 unfolding Aexp_def CCexp_def  by (simp add: beta_cfun cccFix_def)+
 

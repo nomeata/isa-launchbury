@@ -53,7 +53,7 @@ lemma Abinds_Afix_below[simp]: "ABinds \<Gamma>\<cdot>(Afix \<Gamma>\<cdot>ae) \
 lemma Afix_reorder: "map_of \<Gamma> = map_of \<Delta> \<Longrightarrow> Afix \<Gamma> = Afix \<Delta>"
   by (intro cfun_eqI)(simp add: Afix_eq cong: Abinds_reorder)
 
-lemma Afix_repeat_singleton: "(\<mu> xa. Afix \<Gamma>\<cdot>(AE_singleton x\<cdot>(n \<squnion> xa x) \<squnion> ae)) = Afix \<Gamma>\<cdot>(AE_singleton x\<cdot>n \<squnion> ae)"
+lemma Afix_repeat_singleton: "(\<mu> xa. Afix \<Gamma>\<cdot>(esing x\<cdot>(n \<squnion> xa x) \<squnion> ae)) = Afix \<Gamma>\<cdot>(esing x\<cdot>n \<squnion> ae)"
   apply (rule below_antisym)
   defer
   apply (subst fix_eq, simp)
@@ -61,7 +61,7 @@ lemma Afix_repeat_singleton: "(\<mu> xa. Afix \<Gamma>\<cdot>(AE_singleton x\<cd
 
   apply (rule fix_least_below, simp)
   apply (rule Afix_least_below, simp)
-  apply (intro join_below below_refl iffD2[OF AE_singleton_below_iff] below_trans[OF _ fun_belowD[OF Afix_above_arg]]  below_trans[OF _ Afix_above_arg] join_above1)
+  apply (intro join_below below_refl iffD2[OF esing_below_iff] below_trans[OF _ fun_belowD[OF Afix_above_arg]]  below_trans[OF _ Afix_above_arg] join_above1)
   apply simp
   done
 
@@ -247,7 +247,7 @@ qed
 
 
 lemma Afix_e_to_heap:
-   "Afix (delete x \<Gamma>)\<cdot>(Aexp' e\<cdot>n \<squnion> ae) \<sqsubseteq> Afix ((x, e) # delete x \<Gamma>)\<cdot>(AE_singleton x\<cdot>n \<squnion> ae)"
+   "Afix (delete x \<Gamma>)\<cdot>(Aexp' e\<cdot>n \<squnion> ae) \<sqsubseteq> Afix ((x, e) # delete x \<Gamma>)\<cdot>(esing x\<cdot>n \<squnion> ae)"
     apply (simp add: Afix_eq)
     apply (rule fix_least_below, simp)
     apply (intro join_below)
@@ -264,7 +264,7 @@ lemma Afix_e_to_heap:
     done
 
 lemma Afix_e_to_heap':
-   "Afix (delete x \<Gamma>)\<cdot>(Aexp e\<cdot>n) \<sqsubseteq> Afix ((x, e) # delete x \<Gamma>)\<cdot>(AE_singleton x\<cdot>(up\<cdot>n))"
+   "Afix (delete x \<Gamma>)\<cdot>(Aexp e\<cdot>n) \<sqsubseteq> Afix ((x, e) # delete x \<Gamma>)\<cdot>(esing x\<cdot>(up\<cdot>n))"
 using Afix_e_to_heap[where ae = \<bottom> and n = "up\<cdot>n"] by simp
 
 end

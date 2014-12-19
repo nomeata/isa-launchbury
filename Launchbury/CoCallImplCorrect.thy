@@ -93,10 +93,10 @@ proof (nominal_induct e avoiding: x y  arbitrary: n rule: exp_strong_induct)
   thus ?case by auto
 next
   case (App e v x y n)
-  have "Aexp (App e v)[y::=x]\<cdot>n \<sqsubseteq> (Aexp e[y::=x]\<cdot>(inc\<cdot>n)) \<squnion> (AE_singleton (v[y::v=x])\<cdot>(up\<cdot>0))" by simp
+  have "Aexp (App e v)[y::=x]\<cdot>n \<sqsubseteq> (Aexp e[y::=x]\<cdot>(inc\<cdot>n)) \<squnion> (esing (v[y::v=x])\<cdot>(up\<cdot>0))" by simp
   also have "Aexp e[y::=x]\<cdot>(inc\<cdot>n) \<sqsubseteq> (Aexp e\<cdot>(inc\<cdot>n))(y := \<bottom>, x := up\<cdot>0)" by (rule App.hyps)
-  also have "(AE_singleton (v[y::v=x])\<cdot>(up\<cdot>0)) \<sqsubseteq> (AE_singleton v\<cdot>(up\<cdot>0))(y := \<bottom>, x := up\<cdot>0)" by simp
-  also have "(Aexp e\<cdot>(inc\<cdot>n))(y := \<bottom>, x := up\<cdot>0) \<squnion> (AE_singleton v\<cdot>(up\<cdot>0))(y := \<bottom>, x := up\<cdot>0) 
+  also have "(esing (v[y::v=x])\<cdot>(up\<cdot>0)) \<sqsubseteq> (esing v\<cdot>(up\<cdot>0))(y := \<bottom>, x := up\<cdot>0)" by simp
+  also have "(Aexp e\<cdot>(inc\<cdot>n))(y := \<bottom>, x := up\<cdot>0) \<squnion> (esing v\<cdot>(up\<cdot>0))(y := \<bottom>, x := up\<cdot>0) 
     = (Aexp (App e v)\<cdot>n)(y := \<bottom>, x := up\<cdot>0)" by auto
   finally show ?case by this simp_all
 next
@@ -176,7 +176,7 @@ proof default
 next
 *)
   fix x y :: var and e :: exp  and a 
-  show "Aexp e[y::=x]\<cdot>a \<sqsubseteq> env_delete y (Aexp e\<cdot>a) \<squnion> AE_singleton x\<cdot>(up\<cdot>0)"
+  show "Aexp e[y::=x]\<cdot>a \<sqsubseteq> env_delete y (Aexp e\<cdot>a) \<squnion> esing x\<cdot>(up\<cdot>0)"
     apply (rule below_trans[OF Aexp_subst_upd])
     apply (rule fun_belowI)
     apply auto

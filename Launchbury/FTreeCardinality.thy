@@ -2,35 +2,6 @@ theory FTreeCardinality
 imports CardinalityAnalysis "FTree-Nominal-HOLCF" CallFutureCardinality AnalBinds
 begin
 
-lemma paths_singles: "xs \<in> paths (singles S) \<longleftrightarrow> (\<forall>x \<in> S. one_call_in_path x xs)"
-  by transfer (auto simp add: one_call_in_path_filter_conv)
-
-lemma paths_singles': "xs \<in> paths (singles S) \<longleftrightarrow> (\<forall>x \<in> (set xs \<inter> S). one_call_in_path x xs)"
-  apply transfer
-  apply (auto simp add: one_call_in_path_filter_conv)
-  apply (erule_tac x = x in ballE)
-  apply auto
-  by (metis (poly_guards_query) filter_empty_conv le0 length_0_conv)
-
-lemma paths_ftree_restr_singles: "xs \<in> paths (ftree_restr S' (singles S)) \<longleftrightarrow> set xs \<subseteq> S' \<and> (\<forall>x \<in> S. one_call_in_path x xs)"
-proof
-  show "xs \<in> paths (ftree_restr S' (singles S)) \<Longrightarrow>  set xs \<subseteq> S' \<and> (\<forall>x \<in> S. one_call_in_path x xs)"
-    by (auto simp add: filter_paths_conv_free_restr[symmetric] paths_singles)
-next
-  assume *: "set xs \<subseteq> S' \<and> (\<forall>x\<in>S. one_call_in_path x xs)"
-  hence "set xs \<subseteq> S'" by auto
-  hence [simp]: "filter (\<lambda> x'. x' \<in> S') xs = xs" by (auto simp add: filter_id_conv)
-  
-  from *
-  have "xs \<in> paths (singles S)"
-     by (auto simp add: paths_singles')
-  hence "filter (\<lambda> x'. x' \<in> S') xs \<in> filter (\<lambda>x'. x' \<in> S') ` paths (singles S)"
-    by (rule imageI)
-  thus "xs \<in> paths (ftree_restr S' (singles S))"
-    by (auto simp add: filter_paths_conv_free_restr[symmetric] )
-qed
-
-
 locale FutureAnalysis =
  fixes Fexp :: "exp \<Rightarrow> Arity \<rightarrow> var ftree"
 begin
