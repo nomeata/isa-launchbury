@@ -60,14 +60,6 @@ lemma predCC_eqvt[eqvt, simp]: "\<pi> \<bullet> (predCC S f) = predCC (\<pi> \<b
   apply (auto dest: set_mp[OF ccField_cc_restr])
   done
 
-lemma cc_restr_cc_restr[simp]:
-  "cc_restr S (cc_restr S G) = cc_restr S G"
-  by transfer auto
-
-lemma cc_restr_cc_square[simp]:
-  "cc_restr S (ccSquare S) = ccSquare S"
-  by simp
-
 lemma cc_restr_predCC:
   "cc_restr S (predCC S' f\<cdot>n) = (predCC (S' \<inter> S) (\<Lambda> n. cc_restr S (f\<cdot>n)))\<cdot>n"
   unfolding predCC_eq
@@ -143,6 +135,7 @@ qed auto
 
 nominal_termination (eqvt) by lexicographic_order
 
+
 interpretation CoCallArityAnalysis cCCexp.
 
 lemma Aexp_simps[simp]:
@@ -167,7 +160,6 @@ by (induction e arbitrary: n rule: exp_induct)
 lemma cc_restr_CCexp[simp]:
   "cc_restr (fv e) (CCexp e\<cdot>a) = CCexp e\<cdot>a"
 by (rule cc_restr_noop[OF ccField_CCexp])
-
 
 
 end

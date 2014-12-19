@@ -179,6 +179,11 @@ lemma image_mapCollect[simp]:
   "g ` {f k v | k \<mapsto> v \<in> m} = { g (f k v) | k \<mapsto> v \<in> m}"
   by (auto simp add: mapCollect_def)
 
+lemma mapCollect_map_upd[simp]:
+  "mapCollect f (m(k\<mapsto>v)) = insert (f k v) (mapCollect f (m(k := None)))"
+unfolding mapCollect_def by auto
+
+
 definition mapCollectFilter :: "('a \<Rightarrow> 'b \<Rightarrow> (bool \<times> 'c)) \<Rightarrow> ('a \<rightharpoonup> 'b) \<Rightarrow> 'c set"
   where "mapCollectFilter f m = {snd (f k v) | k v . m k = Some v \<and> fst (f k v)}"
 
@@ -186,7 +191,6 @@ syntax
  "_MapCollectFilter" :: "'c \<Rightarrow> pttrn \<Rightarrow> pttrn \<Rightarrow> ('a \<rightharpoonup> 'b) \<Rightarrow> bool \<Rightarrow> 'c set"    ("(1{_ |/_/\<mapsto>/_/\<in>/_/./ _})")
 translations
   "{e | k\<mapsto>v \<in> m . P }" == "CONST mapCollectFilter (\<lambda>k v. (P,e)) m"
-
 
 lemma mapCollectFilter_const_False[simp]:
   "{e | k\<mapsto>v \<in> m . False } = {}"

@@ -24,4 +24,5 @@ lemma const_on_union[simp]: "const_on f (S \<union> S') y \<longleftrightarrow> 
 lemma const_on_subset[elim]: "const_on f S y \<Longrightarrow> S' \<subseteq> S \<Longrightarrow> const_on f S' y"
   by auto
 
+
 end

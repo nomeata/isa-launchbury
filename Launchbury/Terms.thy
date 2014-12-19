@@ -473,7 +473,7 @@ nominal_termination (eqvt) by lexicographic_order
 
 lemma isLam_Lam: "isLam (Lam [x]. e)" by simp
 
-subsection {* The notion of thunks *}
+subsubsection {* The notion of thunks *}
 (*
 fun thunks :: "heap \<Rightarrow> var set" where
   "thunks [] = {}"
@@ -510,5 +510,25 @@ lemma thunks_eqvt[eqvt]:
   "\<pi> \<bullet> thunks \<Gamma> = thunks (\<pi> \<bullet> \<Gamma>)"
     unfolding thunks_def
     by perm_simp rule
+
+subsubsection {* Renaming a lambda-bound variable *}
+
+lemma change_Lam_Variable:
+  assumes "y' \<noteq> y \<Longrightarrow> atom y' \<sharp> (e,  y)"
+  shows   "Lam [y]. e =  Lam [y']. ((y \<leftrightarrow> y') \<bullet> e)"
+proof(cases "y' = y")
+  case True thus ?thesis by simp
+next
+  case False
+  from assms[OF this]
+  have "(y \<leftrightarrow> y') \<bullet> (Lam [y]. e) = Lam [y]. e"
+    by -(rule flip_fresh_fresh, (simp add: fresh_Pair)+)
+  moreover
+  have "(y \<leftrightarrow> y') \<bullet> (Lam [y]. e) = Lam [y']. ((y \<leftrightarrow> y') \<bullet> e)"
+    by simp
+  ultimately
+  show "Lam [y]. e =  Lam [y']. ((y \<leftrightarrow> y') \<bullet> e)" by (simp add: fresh_Pair)
+qed
+
 
 end

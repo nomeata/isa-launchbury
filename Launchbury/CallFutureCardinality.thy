@@ -122,5 +122,4 @@ lemma cont_edom[THEN cont_compose, simp, cont2cont]:
   apply (metis ch2ch_fun lub_eq_bottom_iff lub_fun)
   done
 
-
 end

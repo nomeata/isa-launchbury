@@ -7,18 +7,6 @@ text {* Defining a substitution function on terms turned out to be slightly tric
 fun subst_var :: "var \<Rightarrow> var \<Rightarrow> var \<Rightarrow> var" ("_[_::v=_]" [1000,100,100] 1000)
   where "x[y ::v= z] = (if x = y then z else x)"
 
-(* Helper lemmas provided by Christian Urban *)
-
-lemma Projl_permute:
-  assumes a: "\<exists>y. f = Inl y"
-  shows "(p \<bullet> (Sum_Type.projl f)) = Sum_Type.projl (p \<bullet> f)"
-using a by auto
-
-lemma Projr_permute:
-  assumes a: "\<exists>y. f = Inr y"
-  shows "(p \<bullet> (Sum_Type.projr f)) = Sum_Type.projr (p \<bullet> f)"
-using a by auto
-
 nominal_function  (default "case_sum (\<lambda>x. Inl undefined) (\<lambda>x. Inr undefined)",
                   invariant "\<lambda> a r . (\<forall> as y z . ((a = Inr (as, y, z) \<and> atom ` domA as \<sharp>* (y, z)) \<longrightarrow> map (\<lambda>x . atom (fst x))  (Sum_Type.projr r) = map (\<lambda>x . atom (fst x)) as))")
   subst :: "exp \<Rightarrow> var \<Rightarrow> var \<Rightarrow> exp" ("_[_::=_]" [1000,100,100] 1000)
@@ -229,11 +217,6 @@ lemma fv_subst_int: "x \<notin> S \<Longrightarrow> y \<notin> S \<Longrightarro
 lemma fv_subst_int2: "x \<notin> S \<Longrightarrow> y \<notin> S \<Longrightarrow> S \<inter> fv (e[y ::= x]) = S \<inter> fv e"
   by (auto simp add: fv_subst_eq)
 
-lemma fresh_star_at_base:
-  fixes x :: "'a :: at_base"
-  shows "S \<sharp>* x \<longleftrightarrow> atom x \<notin> S"
-  by (metis fresh_at_base(2) fresh_star_def)
-
 lemma subst_swap_same: "atom x \<sharp> e \<Longrightarrow>  (x \<leftrightarrow> y) \<bullet> e = e[y ::=x]"
   and "atom x \<sharp> \<Gamma> \<Longrightarrow> atom `domA \<Gamma> \<sharp>* y \<Longrightarrow> (x \<leftrightarrow> y) \<bullet> \<Gamma> = \<Gamma>[y ::h= x]"
 by (nominal_induct  e and \<Gamma> avoiding: x y rule:exp_heap_strong_induct)
@@ -261,4 +244,13 @@ lemma isLam_subst[simp]: "isLam e[x::=y] = isLam e"
 lemma thunks_subst[simp]:
   "thunks \<Gamma>[y::h=x] = thunks \<Gamma>"
   by (induction \<Gamma>) (auto simp add: thunks_Cons)
+
+lemma map_of_subst:
+  "map_of (\<Gamma>[x::h=y]) k = map_option (\<lambda> e . e[x::=y]) (map_of \<Gamma> k)"
+by (induction \<Gamma> ) auto
+
+lemma mapCollect_subst[simp]:
+  "{e k v | k\<mapsto>v\<in>map_of \<Gamma>[x::h=y]} = {e k v[x::=y] | k\<mapsto>v\<in>map_of \<Gamma>}"
+  by (auto simp add: map_of_subst)
+
 end

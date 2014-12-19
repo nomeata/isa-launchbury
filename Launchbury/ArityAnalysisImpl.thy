@@ -175,6 +175,7 @@ next
     by (auto simp add: Aheap_def join_below_iff env_restr_join2 Compl_partition intro:  below_trans[OF _ Afix_above_arg])
 qed
 
+
 interpretation CorrectArityAnalysisLetNoCard Aexp Aheap
 proof default
   fix x \<Gamma> e a

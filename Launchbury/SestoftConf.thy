@@ -120,4 +120,5 @@ lemma fresh_star_restict_stack[intro]:
   "a \<sharp>* S \<Longrightarrow> a \<sharp>* restr_stack V S"
   by (induction V S rule: restr_stack.induct) (auto simp add: fresh_star_Cons)
 
+
 end

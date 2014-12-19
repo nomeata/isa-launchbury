@@ -45,10 +45,7 @@ proof-
   thus ?thesis by (auto simp add: edom_def)    
 qed
 *)
-
-lemma ccNeighbors_ccField:
-  "ccNeighbors S G \<subseteq> ccField G" by transfer (auto simp add: Field_def)
-    
+   
 lemma ccField_CCfix: "ccField (CCfix \<Gamma>\<cdot>(ae, CCexp  e\<cdot>a)) \<subseteq> fv \<Gamma> \<union> fv e"
   unfolding CCfix_def
   apply simp

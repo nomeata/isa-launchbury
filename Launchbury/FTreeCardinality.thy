@@ -1,5 +1,5 @@
 theory FTreeCardinality
-imports CardinalityAnalysis "FTree-Nominal-HOLCF" CallFutureCardinality AnalBinds
+imports CardinalityAnalysis "FTree-HOLCF" CallFutureCardinality AnalBinds
 begin
 
 locale FutureAnalysis =

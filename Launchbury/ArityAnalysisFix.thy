@@ -280,5 +280,6 @@ lemma Afix_restr_subst:
   by (rule Afix_restr_subst'[OF Aexp_subst_restr[OF assms(1,2)] assms])
 end
 
+
 end
 

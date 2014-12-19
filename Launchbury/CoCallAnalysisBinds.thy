@@ -109,10 +109,6 @@ lemma ccBinds_eqvt[eqvt]: "\<pi> \<bullet> (CoCallAnalysis.ccBinds cccExp \<Gamm
 lemma ccBindsExtra_eqvt[eqvt]: "\<pi> \<bullet> (CoCallAnalysis.ccBindsExtra cccExp \<Gamma>) = CoCallAnalysis.ccBindsExtra (\<pi> \<bullet> cccExp) (\<pi> \<bullet> \<Gamma>)"
   by (rule cfun_eqvtI) (simp add: CoCallAnalysis.ccBindsExtra_def)
 
-lemma ccExp'_cong: 
-  "cccexp1 e = cccexp2 e \<Longrightarrow> CoCallAnalysis.ccExp' cccexp1 e = CoCallAnalysis.ccExp' cccexp2 e"
-  unfolding CoCallAnalysis.ccExp'_def by simp
-
 lemma ccBind_cong[fundef_cong]:
   "cccexp1 e = cccexp2 e \<Longrightarrow> CoCallAnalysis.ccBind cccexp1 x e = CoCallAnalysis.ccBind cccexp2 x e "
   apply (rule cfun_eqI)
@@ -142,6 +138,5 @@ lemma ccBindsExtra_cong[fundef_cong]:
   apply simp+
   *)
   done
-
 
 end

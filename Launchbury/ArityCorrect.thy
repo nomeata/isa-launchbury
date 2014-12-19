@@ -57,4 +57,6 @@ lemma Aexp'_Var: "esing x \<cdot> n \<sqsubseteq> Aexp' (Var x) \<cdot> n"
 
 end
 
+
+
 end

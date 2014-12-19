@@ -2,6 +2,7 @@ theory CoCallFix
 imports CoCallAnalysis CoCallAnalysisBinds ArityCorrect "Env-Nominal"  ArityAnalysisFix
 begin
 
+
 locale CoCallArityAnalysis =
   fixes cccExp :: "exp \<Rightarrow> (Arity \<rightarrow> AEnv \<times> CoCalls)"
 begin
@@ -85,14 +86,6 @@ lemma Abinds_Afix[simp]: "ABinds \<Gamma>\<cdot>(Afix \<Gamma>\<cdot>ae) = Afix 
 lemma Afix_reorder: "map_of \<Gamma> = map_of \<Delta> \<Longrightarrow> Afix \<Gamma> = Afix \<Delta>"
   by (intro cfun_eqI)(simp add: Afix_eq cong: Abinds_reorder)
 *)
-
-lemma map_of_subst:
-  "map_of (\<Gamma>[x::h=y]) k = map_option (\<lambda> e . e[x::=y]) (map_of \<Gamma> k)"
-by (induction \<Gamma> ) auto
-
-lemma mapCollect_subst[simp]:
-  "{e k v | k\<mapsto>v\<in>map_of \<Gamma>[x::h=y]} = {e k v[x::=y] | k\<mapsto>v\<in>map_of \<Gamma>}"
-  by (auto simp add: map_of_subst)
 
 lemma ccExp'_restr_subst': 
   assumes "\<And> a. cc_restr S (CCexp e[x::=y]\<cdot>a) = cc_restr S (CCexp e\<cdot>a)"

@@ -2,7 +2,6 @@ theory "HOLCF-Utils"
   imports HOLCF Pointwise
 begin
 
-
 default_sort type
 
 lemmas cont_fun[simp]
@@ -134,6 +133,15 @@ lemma option2up_up2option[simp]:
 lemma up2option_option2up[simp]:
   "up2option (option2up x) = x"
   by (cases x) auto
+
+lemma adm_subst2: "cont f \<Longrightarrow> cont g \<Longrightarrow> adm (\<lambda>x. f (fst x) = g (snd x))"
+  apply (rule admI)
+  apply (simp add:
+      cont2contlubE[where f = f]  cont2contlubE[where f = g]
+      cont2contlubE[where f = snd]  cont2contlubE[where f = fst]
+      )
+  done
+
 
 subsubsection {* Composition of fun and cfun *}
 

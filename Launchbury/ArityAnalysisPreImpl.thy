@@ -95,4 +95,5 @@ qed auto
 nominal_termination (eqvt) by lexicographic_order
 end
 
+
 end

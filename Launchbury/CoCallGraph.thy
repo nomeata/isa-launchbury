@@ -315,6 +315,8 @@ lemma elem_ccNeighbors:
   "xa \<in> ccNeighbors {x} G \<longleftrightarrow> (xa--x\<in>G)"
   by transfer (auto simp add: sym_def)
 
+lemma ccNeighbors_ccField:
+  "ccNeighbors S G \<subseteq> ccField G" by transfer (auto simp add: Field_def)
 
 instance CoCalls :: Join_cpo
   by default (metis coCallsLub_is_lub)

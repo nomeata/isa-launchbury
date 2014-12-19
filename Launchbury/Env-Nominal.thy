@@ -26,11 +26,6 @@ lemma env_delete_eqvt[eqvt]:
   shows "\<pi> \<bullet> env_delete x m = env_delete (\<pi> \<bullet> x) (\<pi> \<bullet> m)"
   by (auto simp add: env_delete_def)
 
-lemma override_on_eqvt[eqvt]:
-  fixes m1 m2 :: "'a::pt \<Rightarrow> 'b::{cont_pt,pcpo}"
-  shows "\<pi> \<bullet> m1 ++\<^bsub>S\<^esub> m2 = (\<pi> \<bullet> m1) ++\<^bsub>\<pi> \<bullet> S\<^esub> (\<pi> \<bullet> m2)"
-  by (auto simp add: override_on_def )
-
 lemma esing_eqvt[eqvt]: "\<pi> \<bullet> (esing x) = esing (\<pi> \<bullet> x)"
   unfolding esing_def
   apply perm_simp
@@ -135,6 +130,5 @@ lemma domA_fresh_pure:
   unfolding domA_fv_pure[symmetric]
   by (auto simp add: fv_def fresh_def)
 *)
-
 
 end

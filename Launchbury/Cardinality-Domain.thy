@@ -76,4 +76,5 @@ lemma two_pred_two_add_once: "c \<sqsubseteq> two_pred\<cdot>(two_add\<cdot>once
   by (cases c rule: two_cases) (auto simp add: two_add_simp)
 
 
+
 end

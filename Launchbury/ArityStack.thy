@@ -12,4 +12,5 @@ lemma Astack_restr_stack_below:
   "Astack (restr_stack V S) \<sqsubseteq> Astack S"
   by (induction V S rule: restr_stack.induct) auto
 
+
 end

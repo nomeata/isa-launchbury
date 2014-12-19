@@ -150,15 +150,6 @@ instance "fun" :: (pt, cont_pt) cont_pt
   apply (rule cont_fun)
   done
 
-
-lemma adm_subst2: "cont f \<Longrightarrow> cont g \<Longrightarrow> adm (\<lambda>x. f (fst x) = g (snd x))"
-  apply (rule admI)
-  apply (simp add:
-      cont2contlubE[where f = f]  cont2contlubE[where f = g]
-      cont2contlubE[where f = snd]  cont2contlubE[where f = fst]
-      )
-  done
-
 lemma fix_eqvt[eqvt]:
   "\<pi> \<bullet> fix = (fix :: ('a \<rightarrow> 'a) \<rightarrow> 'a::{cont_pt,pcpo})"
 apply (rule cfun_eqI)
@@ -273,5 +264,6 @@ proof default
   moreover have "cont ..." by (intro cont2cont)
   ultimately show "cont (permute p :: ('a,'b) prod  \<Rightarrow> ('a,'b) prod)" by simp
 qed
+
 
 end

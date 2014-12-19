@@ -46,5 +46,5 @@ lemma edom_AnalBinds: "edom (AnalBinds \<Gamma>\<cdot>ae) \<subseteq> domA \<Gam
   by (induction \<Gamma> rule: AnalBinds.induct) (auto  simp add: edom_def)
 
 end
-end
 
+end

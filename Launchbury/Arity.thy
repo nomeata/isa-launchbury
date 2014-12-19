@@ -154,5 +154,4 @@ lemma Arity_above_up_top[simp]: "up\<cdot>0 \<sqsubseteq> (a :: Arity\<^sub>\<bo
 lemma Arity_exhaust: "(y = 0 \<Longrightarrow> P) \<Longrightarrow> (\<And>x. y = inc \<cdot> x \<Longrightarrow> P) \<Longrightarrow> P"
   by (metis Abs_cfun_inverse2 Arity.inc_def Rep_Arity_inverse inc_Arity.abs_eq inc_Arity_cont list_decode.cases zero_Arity_def)
 
-
 end

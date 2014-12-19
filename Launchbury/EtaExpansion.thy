@@ -38,23 +38,6 @@ lemma fresh_eta_expand[simp]: "a \<sharp> eta_expand n e \<longleftrightarrow> a
   apply  (clarsimp simp add: fresh_Pair fresh_at_base)
   by (metis fresh_var_fresh)
 
-lemma change_Lam_Variable:
-  assumes "y' \<noteq> y \<Longrightarrow> atom y' \<sharp> (e,  y)"
-  shows   "Lam [y]. e =  Lam [y']. ((y \<leftrightarrow> y') \<bullet> e)"
-proof(cases "y' = y")
-  case True thus ?thesis by simp
-next
-  case False
-  from assms[OF this]
-  have "(y \<leftrightarrow> y') \<bullet> (Lam [y]. e) = Lam [y]. e"
-    by -(rule flip_fresh_fresh, (simp add: fresh_Pair)+)
-  moreover
-  have "(y \<leftrightarrow> y') \<bullet> (Lam [y]. e) = Lam [y']. ((y \<leftrightarrow> y') \<bullet> e)"
-    by simp
-  ultimately
-  show "Lam [y]. e =  Lam [y']. ((y \<leftrightarrow> y') \<bullet> e)" by (simp add: fresh_Pair)
-qed
-
 lemma subst_eta_expand: "(eta_expand n e)[x ::= y] = eta_expand n (e[x ::= y])"
 proof (induction n arbitrary: e)
 case 0 thus ?case by simp
@@ -83,5 +66,6 @@ qed
 lemma isLam_eta_expand:
   "isLam e \<Longrightarrow> isLam (eta_expand n e)" and "n > 0 \<Longrightarrow> isLam (eta_expand n e)"
 by (induction n) auto
+
 
 end

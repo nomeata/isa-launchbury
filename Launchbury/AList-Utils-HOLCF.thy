@@ -20,10 +20,6 @@ lemma lubmap_const_bottom[simp]:
   "(\<Squnion> k\<mapsto>v\<in>m. \<bottom>) = (\<bottom>::'a::Join_cpo)"
   by (cases "m = empty") auto
 
-lemma mapCollect_map_upd[simp]:
-  "mapCollect f (m(k\<mapsto>v)) = insert (f k v) (mapCollect f (m(k := None)))"
-unfolding mapCollect_def by auto
-
 lemma lubmap_map_upd[simp]:
   fixes e :: "'a \<Rightarrow> 'b \<Rightarrow> ('c :: Join_cpo)"
   shows "(\<Squnion>k\<mapsto>v\<in>m(k' \<mapsto> v'). e k v) = e k' v' \<squnion> (\<Squnion>k\<mapsto>v\<in>m(k':=None). e k v)"
@@ -66,4 +62,6 @@ syntax
 translations
   "\<Squnion> k\<mapsto>v\<in>m. e | P" == "CONST lub (CONST mapCollectFilter (\<lambda>k v. (P,e)) m)"
 *)
+
+
 end

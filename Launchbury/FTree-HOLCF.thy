@@ -285,5 +285,4 @@ lemma in_carrier_fup[simp]:
   "x' \<in> carrier (fup\<cdot>f\<cdot>u) \<longleftrightarrow> (\<exists> u'. u = up\<cdot>u' \<and> x' \<in> carrier (f\<cdot>u'))"
   by (cases u) auto
 
-
 end

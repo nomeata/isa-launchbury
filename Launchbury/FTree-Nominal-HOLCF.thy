@@ -2,6 +2,8 @@ theory "FTree-Nominal-HOLCF"
 imports "FTree-HOLCF" "Nominal-Utils" "Nominal-HOLCF"
 begin
 
+(* TODO: This ssems to be unused *)
+
 instantiation ftree :: (pt) pt
 begin
   lift_definition permute_ftree :: "perm \<Rightarrow> 'a ftree \<Rightarrow> 'a ftree" is "\<lambda> p xss. map (\<lambda> xs. permute p xs) ` xss"

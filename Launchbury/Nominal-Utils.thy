@@ -201,7 +201,6 @@ lemma Set_filter_eqvt[eqvt]: "\<pi> \<bullet> Set.filter P S = Set.filter (\<pi>
   unfolding Set.filter_def
   by perm_simp rule
 
-
 lemma Sigma_eqvt'[eqvt]: "\<pi> \<bullet> Sigma = Sigma"
   apply (rule ext)
   apply (rule ext)
@@ -211,6 +210,23 @@ lemma Sigma_eqvt'[eqvt]: "\<pi> \<bullet> Sigma = Sigma"
   apply perm_simp
   apply (simp add: permute_self)
   done
+
+lemma override_on_eqvt[eqvt]:
+  "\<pi> \<bullet> (override_on m1 m2 S) = override_on (\<pi> \<bullet> m1) (\<pi> \<bullet> m2) (\<pi> \<bullet> S)"
+  by (auto simp add: override_on_def )
+
+(* Helper lemmas provided by Christian Urban *)
+
+lemma Projl_permute:
+  assumes a: "\<exists>y. f = Inl y"
+  shows "(p \<bullet> (Sum_Type.projl f)) = Sum_Type.projl (p \<bullet> f)"
+using a by auto
+
+lemma Projr_permute:
+  assumes a: "\<exists>y. f = Inr y"
+  shows "(p \<bullet> (Sum_Type.projr f)) = Sum_Type.projr (p \<bullet> f)"
+using a by auto
+
 
 subsubsection {* Freshness lemmas *}
 
@@ -233,6 +249,12 @@ lemma supp_set_mem: "x \<in> set L \<Longrightarrow> supp x \<subseteq> supp L"
 
 lemma set_supp_mono: "set L \<subseteq> set L2 \<Longrightarrow> supp L \<subseteq> supp L2"
   by (induct L)(auto simp add: supp_Cons supp_Nil dest:supp_set_mem)
+
+lemma fresh_star_at_base:
+  fixes x :: "'a :: at_base"
+  shows "S \<sharp>* x \<longleftrightarrow> atom x \<notin> S"
+  by (metis fresh_at_base(2) fresh_star_def)
+
 
 subsubsection {* Freshness and support for subsets of variables *}
 
@@ -346,7 +368,12 @@ lemma map_permute: "map (permute p) = permute p"
   apply (induct_tac x)
   apply auto
   done
-  
+
+lemma fresh_star_restrictA[intro]: "a \<sharp>* \<Gamma> \<Longrightarrow> a \<sharp>* AList.restrict V \<Gamma>"
+  by (induction \<Gamma>) (auto simp add: fresh_star_Cons)
+
+ 
+
 (* Unused. Still submit? *)
 lemma Abs_lst_Nil_eq[simp]: "[[]]lst. (x::'a::fs) = [xs]lst. x' \<longleftrightarrow> (([],x) = (xs, x'))"
   apply rule

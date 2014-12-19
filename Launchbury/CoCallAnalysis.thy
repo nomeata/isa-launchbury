@@ -20,6 +20,10 @@ lemma ccExp'_eqvt[eqvt]:
   unfolding CoCallAnalysis.ccExp'_def
   by perm_simp rule
 
+lemma ccExp'_cong: 
+  "cccexp1 e = cccexp2 e \<Longrightarrow> CoCallAnalysis.ccExp' cccexp1 e = CoCallAnalysis.ccExp' cccexp2 e"
+  unfolding CoCallAnalysis.ccExp'_def by simp
+
 locale CoCallAnalysis_ccField = CoCallAnalysis +
   assumes "ccField (ccExp e\<cdot>a) \<subseteq> fv e"
 
@@ -39,6 +43,5 @@ locale CorrectCoCallAnalysis = CoCallAnalysis_ccField +
   assumes Aexp_Lam1: "ccExp (Lam [y]. e) \<cdot> (inc\<cdot>n) = cc_delete y (ccExp e \<cdot>n)"
   assumes Aexp_App: "ccExp (App e x)\<cdot>n = ccExp e \<cdot>(inc\<cdot>n) \<squnion> ccProd (fv e) {x}"
   (* assumes Aexp_subst_restr: "x \<notin> S \<Longrightarrow> y \<notin> S \<Longrightarrow> (ccExp e[x::=y] \<cdot> a) f|` S = (ccExp e\<cdot>a) f|` S" *)
-
 
 end
