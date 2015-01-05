@@ -118,6 +118,10 @@ next
     by auto
 qed
 
+lemma ABinds_restrict_below: "ABinds (restrictA S \<Gamma>)\<cdot>ae \<sqsubseteq> ABinds \<Gamma>\<cdot>ae"
+  by (induct \<Gamma> rule: ABinds.induct)
+     (auto simp add: join_below_iff  restr_delete_twist intro: below_trans[OF _ join_above2] simp del: fun_meet_simp)
+
 lemma ABinds_delete_below: "ABinds (delete x \<Gamma>)\<cdot>ae \<sqsubseteq> ABinds \<Gamma>\<cdot>ae"
   by (induct \<Gamma> rule: ABinds.induct)
      (auto simp add: join_below_iff   delete_twist[where x = x] elim: below_trans simp del: fun_meet_simp)

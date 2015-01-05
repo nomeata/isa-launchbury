@@ -18,6 +18,10 @@ lemma bot_edom[simp]: "edom \<bottom> = {}" by (simp add: edom_def)
 lemma bot_edom2[simp]: "edom (\<lambda>_ . \<bottom>) = {}" by (simp add: edom_def)
 
 lemma edomIff: "(a \<in> edom m) = (m a \<noteq> \<bottom>)" by (simp add: edom_def)
+lemma edom_iff2: "(m a = \<bottom>) \<longleftrightarrow> (a \<notin> edom m)" by (simp add: edom_def)
+
+lemma edom_empty_iff_bot: "edom m = {} \<longleftrightarrow> m = \<bottom>"
+  by (metis below_bottom_iff bot_edom edomIff empty_iff fun_belowI)
 
 lemma lookup_not_edom: "x \<notin> edom m \<Longrightarrow> m x = \<bottom>"  by (auto iff:edomIff)
 

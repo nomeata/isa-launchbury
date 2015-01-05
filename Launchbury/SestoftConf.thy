@@ -76,6 +76,7 @@ fun heap_upds_ok where "heap_upds_ok (\<Gamma>,S) \<longleftrightarrow> domA \<G
 lemma heap_upds_okE: "heap_upds_ok (\<Gamma>, S) \<Longrightarrow> x \<in> domA \<Gamma> \<Longrightarrow> x \<notin> upds S"
   by auto
 
+lemma heap_upds_ok_Nil[simp]: "heap_upds_ok (\<Gamma>, [])" by auto
 lemma heap_upds_ok_app1: "heap_upds_ok (\<Gamma>, S) \<Longrightarrow> heap_upds_ok (\<Gamma>,Arg x # S)" by auto
 lemma heap_upds_ok_app2: "heap_upds_ok (\<Gamma>, Arg x # S) \<Longrightarrow> heap_upds_ok (\<Gamma>, S)" by auto
 

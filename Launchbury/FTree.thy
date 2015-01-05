@@ -220,6 +220,8 @@ lemma nxt_single[simp]: "nxt (single x) x' =  empty"
 lemma carrier_single[simp]: "carrier (single y) = {y}"
   by transfer auto
 
+lemma paths_single[simp]: "paths (single x) = {[], [x]}"
+  by transfer auto
 
 lift_definition and_then :: "'a \<Rightarrow> 'a ftree \<Rightarrow> 'a ftree" is "\<lambda> x xss. insert [] (op # x ` xss)"
   by (auto intro!: downsetI split: if_splits)
@@ -1088,7 +1090,7 @@ lemma carrier_substitute1: "carrier t \<subseteq> carrier (substitute f T t)"
     by (rule carrier_mono) (rule substitute_contains_arg)
 
 lemma substitute_cong:
-  assumes "\<And> x. x \<in> carrier (substitute f T t) \<Longrightarrow> f x= f' x"
+  assumes "\<And> x. x \<in> carrier (substitute f T t) \<Longrightarrow> f x = f' x"
   shows "substitute f T t = substitute f' T t"
 proof(rule substitute_cong_induct[OF _ _ assms])
   show "carrier t \<subseteq> carrier (substitute f T t)"

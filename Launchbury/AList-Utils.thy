@@ -12,6 +12,9 @@ abbreviation clearjunk where "clearjunk \<equiv> AList.clearjunk"
 lemma restrictA_append: "restrictA S (a@b) = restrictA S a @ restrictA S b"
   unfolding restrict_eq by (rule filter_append)
 
+lemma length_restrictA_le: "length (restrictA S a) \<le> length a"
+  by (metis length_filter_le restrict_eq)
+
 subsubsection {* The domain of an associative list *}
 
 definition domA

@@ -1,5 +1,5 @@
 theory FTreeAnalysis
-imports ArityCorrect  "FTree-HOLCF"  AnalBinds
+imports ArityCorrect  "FTree-HOLCF"  AnalBinds CallFutureCardinality
 begin
 
 locale FutureAnalysis =
