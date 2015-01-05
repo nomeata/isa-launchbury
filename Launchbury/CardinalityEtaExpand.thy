@@ -57,7 +57,7 @@ begin
     \<Longrightarrow> Astack (restr_stack (edom ae) S) \<sqsubseteq> a
     \<Longrightarrow> prognosis ae a (\<Gamma>, e, S) \<sqsubseteq> ce
     \<Longrightarrow> ABinds \<Gamma>\<cdot>ae \<squnion> Aexp e\<cdot>a \<sqsubseteq> ae
-    \<Longrightarrow> (\<And> x. x \<in> thunks \<Gamma> \<Longrightarrow>  many \<sqsubseteq> ce x \<Longrightarrow> ae x = up\<cdot>0)
+    \<Longrightarrow> (\<And> x. x \<in> thunks \<Gamma> \<Longrightarrow> many \<sqsubseteq> ce x \<Longrightarrow> ae x = up\<cdot>0)
     \<Longrightarrow> const_on ae (ap S) (up\<cdot>0)
     \<Longrightarrow> const_on ae (upds (restr_stack (edom ae) S)) (up\<cdot>0)
     \<Longrightarrow> consistent (ae, ce, a) (\<Gamma>, e, S)"  
