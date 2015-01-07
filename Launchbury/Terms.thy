@@ -516,12 +516,38 @@ subsubsection {* Non-recursive Let bindings *}
 definition nonrec :: "heap \<Rightarrow> bool" where
   "nonrec \<Gamma> = (\<exists> x e. \<Gamma> = [(x,e)] \<and> atom x \<sharp> e)"
 
+
 lemma nonrecE:
   assumes "nonrec \<Gamma>"
   obtains x e where "\<Gamma> = [(x,e)]" and "atom x \<sharp> e"
   using assms
   unfolding nonrec_def
   by blast
+
+lemma nonrec_eqvt[eqvt]:
+  "nonrec \<Gamma> \<Longrightarrow> nonrec (\<pi> \<bullet> \<Gamma>)"
+  by (erule nonrecE) (auto simp add: nonrec_def)
+
+lemma exp_induct_rec[case_names Var App Let Let_nonrec Lam]:
+  assumes "\<And>b var. P (GVar b var)"
+  assumes "\<And>exp var. P exp \<Longrightarrow> P (App exp var)"
+  assumes "\<And>\<Gamma> exp. \<not> nonrec \<Gamma> \<Longrightarrow> (\<And> x. x \<in> domA \<Gamma> \<Longrightarrow>  P (the (map_of \<Gamma> x))) \<Longrightarrow> P exp \<Longrightarrow> P (Let \<Gamma> exp)"
+  assumes "\<And>x e exp. atom x \<sharp> e \<Longrightarrow>P e \<Longrightarrow> P exp \<Longrightarrow> P (let x be e in exp)"
+  assumes "\<And>var exp.  P exp \<Longrightarrow> P (Lam [var]. exp)"
+  shows "P  exp"
+  apply (rule exp_heap_induct[of P "\<lambda> \<Gamma>. (\<forall>x \<in> domA \<Gamma>. P (the (map_of \<Gamma> x)))"])
+  apply (metis assms(1))
+  apply (metis assms(2))
+  apply (case_tac "nonrec \<Gamma>")
+  apply (erule nonrecE)
+  apply simp
+  apply (metis assms(4))
+  apply (metis assms(3))
+  apply (metis assms(5))
+  apply auto
+  done
+
+
 
 subsubsection {* Renaming a lambda-bound variable *}
 

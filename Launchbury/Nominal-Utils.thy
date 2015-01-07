@@ -120,6 +120,13 @@ lemma fresh_star_singleton: "{ x } \<sharp>* e \<longleftrightarrow> x \<sharp> 
 
 subsubsection {* Additional equivariance lemmas *}
 
+lemma eqvt_cases:
+  fixes f x \<pi>
+  assumes eqvt: "\<And>x. \<pi> \<bullet> f x = f (\<pi> \<bullet> x)"
+  obtains "f x" "f (\<pi> \<bullet> x)" | "\<not> f x " " \<not> f (\<pi> \<bullet> x)"
+  using assms[symmetric]
+   by (cases "f x") auto
+
 lemma range_eqvt: "\<pi> \<bullet> range Y = range (\<pi> \<bullet> Y)"
   unfolding image_eqvt UNIV_eqvt ..
 

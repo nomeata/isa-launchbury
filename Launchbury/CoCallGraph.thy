@@ -277,7 +277,7 @@ lift_definition ccNeighbors :: "var set \<Rightarrow> CoCalls \<Rightarrow> var 
 
 lemma ccNeighbors_bot[simp]: "ccNeighbors S \<bottom> = {}" by transfer auto
 
-lemma cont_ccProd_ccNeighbors[THEN cont_compose, cont2cont]:
+lemma cont_ccProd_ccNeighbors[THEN cont_compose, cont2cont, simp]:
   "cont (\<lambda>x. ccProd S (ccNeighbors S' x))"
   apply (rule contI)
   apply (thin_tac "chain ?x")

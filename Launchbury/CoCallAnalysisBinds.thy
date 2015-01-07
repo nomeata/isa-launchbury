@@ -8,7 +8,7 @@ definition ccBind :: "var \<Rightarrow> exp \<Rightarrow> ((AEnv \<times> CoCall
   where "ccBind v e = (\<Lambda> (ae, G).  if (v--v\<notin>G) \<or> \<not> isLam e then cc_restr (fv e) (ccExp' e \<cdot> (ae v)) else ccSquare (fv e))"
 (* paper has:  \<or> ae v = up\<cdot>0, but that is not monotone! But should give the same result. *)
 
-lemma ccBind_eq[simp]: "ccBind v e \<cdot> (ae, G) = (if (v--v\<notin>G) \<or> \<not> isLam e then cc_restr (fv e) (ccExp' e \<cdot> (ae v)) else ccSquare (fv e))"
+lemma ccBind_eq: "ccBind v e \<cdot> (ae, G) = (if (v--v\<notin>G) \<or> \<not> isLam e then cc_restr (fv e) (ccExp' e \<cdot> (ae v)) else ccSquare (fv e))"
   unfolding ccBind_def
   apply (rule cfun_beta_Pair)
   apply (rule cont_if_else_above)
@@ -22,7 +22,7 @@ lemma ccBind_eq[simp]: "ccBind v e \<cdot> (ae, G) = (if (v--v\<notin>G) \<or> \
   done
 
 lemma ccBind_strict[simp]: "ccBind v e \<cdot> \<bottom> = \<bottom>"
-  by (auto simp add: inst_prod_pcpo simp del: Pair_strict)
+  by (auto simp add: inst_prod_pcpo ccBind_eq simp del: Pair_strict)
 
 (*
 fun ccBinds :: "heap \<Rightarrow> ((AEnv \<times> CoCalls) \<rightarrow> CoCalls)"
