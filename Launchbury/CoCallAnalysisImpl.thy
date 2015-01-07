@@ -75,7 +75,7 @@ nominal_function
 where
   "cCCexp (GVar b x) =   (\<Lambda> n . (esing x \<cdot> (up \<cdot> n),                                   \<bottom>))"
 | "cCCexp (Lam [x]. e) = (\<Lambda> n . combined_restrict (fv (Lam [x]. e)) (fst (cCCexp e\<cdot>(pred\<cdot>n)), predCC (fv (Lam [x]. e)) (\<Lambda> a. snd(cCCexp e\<cdot>a))\<cdot>n))"
-| "cCCexp (App e x) =    (\<Lambda> n . (fst (cCCexp e\<cdot>(inc\<cdot>n)) \<squnion> (esing x \<cdot> (up \<cdot> 0)),        snd (cCCexp e\<cdot>(inc\<cdot>n)) \<squnion> ccProd {x} (insert x (fv e))))"
+| "cCCexp (App e x) =    (\<Lambda> n . (fst (cCCexp e\<cdot>(inc\<cdot>n)) \<squnion> (esing x \<cdot> (up\<cdot>0)),        snd (cCCexp e\<cdot>(inc\<cdot>n)) \<squnion> ccProd {x} (insert x (fv e))))"
 | "cCCexp (Let \<Gamma> e) =    (\<Lambda> n . combined_restrict (fv (Let \<Gamma> e)) (CoCallArityAnalysis.cccFix cCCexp \<Gamma> \<cdot> (cCCexp e\<cdot>n)))"
 proof-
 case goal1

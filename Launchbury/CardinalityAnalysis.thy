@@ -26,7 +26,7 @@ locale CardinalityPrognosisCorrect = CardinalityPrognosis +
   assumes prognosis_Var_thunk: "map_of \<Gamma> x = Some e \<Longrightarrow> ae x = up\<cdot>u \<Longrightarrow> \<not> isLam e \<Longrightarrow> prognosis ae u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))"
   assumes prognosis_Var2: "isLam e \<Longrightarrow> x \<notin> domA \<Gamma> \<Longrightarrow> prognosis ae 0 ((x, e) # \<Gamma>, e, S) \<sqsubseteq> prognosis ae 0 (\<Gamma>, e, Upd x # S)"
 
-  assumes prognosis_not_called: "prognosis ae a (\<Gamma>, e, S) x = none \<Longrightarrow> x \<notin> domA \<Gamma> \<Longrightarrow> prognosis ae a ((x, e') # \<Gamma>, e, S) = prognosis ae a (\<Gamma>, e, S)"
+  assumes prognosis_not_called: "ae x = \<bottom> \<Longrightarrow> prognosis ae a (\<Gamma>, e, S) \<sqsubseteq> prognosis ae a (delete x \<Gamma>, e, S)"
 
   assumes prognosis_called: "once \<sqsubseteq> prognosis ae a (\<Gamma>, Var x, S) x"
 

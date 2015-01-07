@@ -297,12 +297,20 @@ lemma esing_simps[simp]:
 lemma esing_below_iff[simp]: "esing x \<cdot> a \<sqsubseteq> ae  \<longleftrightarrow> a \<sqsubseteq> ae x"
   by (auto simp add: fun_below_iff esing_def)
 
+lemma edom_esing_subset: "edom (esing x\<cdot>n) \<subseteq> {x}"
+  unfolding edom_def esing_def by auto
+
 lemma edom_esing_up[simp]: "edom (esing x \<cdot> (up \<cdot> n)) = {x}"
   unfolding edom_def esing_def by auto
 
 lemma env_delete_esing[simp]: "env_delete x (esing x \<cdot> n) = \<bottom>"
   unfolding env_delete_def esing_def
   by auto
+
+lemma env_restr_esing[simp]:
+  "x\<in> S \<Longrightarrow> esing x\<cdot>v f|` S = esing x\<cdot>v" 
+  by (auto intro: env_restr_useless dest: set_mp[OF edom_esing_subset])
+
 
 
 end

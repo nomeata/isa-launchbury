@@ -107,22 +107,15 @@ next
   from edom_mono[OF this]
   show ?case by (auto intro!: env_restr_mono2 dest: set_mp[OF edom_mono[OF ABinds_delete_below]])
 next
+  case goal11
+  from `ae x = \<bottom>`
+  have "ABinds (delete x \<Gamma>)\<cdot>ae = ABinds \<Gamma>\<cdot>ae" by (rule ABinds_delete_bot)
+  thus ?case by simp
+next
   case goal12
   from Aexp_Var[where n = a and x = x]
   have "(Aexp (Var x)\<cdot>a) x \<noteq> \<bottom>" by auto
   hence "x \<in> edom (Aexp (Var x)\<cdot>a)" by (simp add: edomIff)
-  thus ?case by simp
-next
-  case goal11
-  thus ?case
-    apply (simp)
-    apply (rule env_restr_cong)
-    apply (auto dest: simp add: lookup_env_restr_eq split:if_splits)
-    
-
-  case goal11
-  from `ae x = \<bottom>`
-  have "ABinds (delete x \<Gamma>)\<cdot>ae = ABinds \<Gamma>\<cdot>ae" by (rule ABinds_delete_bot)
   thus ?case by simp
 qed
   

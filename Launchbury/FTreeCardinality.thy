@@ -201,20 +201,15 @@ begin
     fix \<Gamma> :: heap and e :: exp and ae :: AEnv and u S x
     show "prognosis ae u (\<Gamma>, e, S) \<sqsubseteq> prognosis ae u (\<Gamma>, e, Upd x # S)" by simp
   next
-    fix ae a \<Gamma> e S x e'
-    assume "prognosis ae a (\<Gamma>, e, S) x = none"
-    hence "x \<notin> carrier (substitute (FBinds \<Gamma>\<cdot>ae) (thunks \<Gamma>) (Fexp e\<cdot>a \<otimes>\<otimes> Fstack S))"
-      by (simp add: pathsCards_none)
+  fix \<Gamma> :: heap and e :: exp and ae :: AEnv and a S x
+  assume "ae x = \<bottom>"
 
-    assume "x \<notin> domA \<Gamma>"
-    hence [simp]: "(FBinds \<Gamma>\<cdot>ae) x = empty" by (metis ExpAnalysis.AnalBinds_not_there empty_is_bottom)
-
-    have *: "substitute (FBinds \<Gamma>\<cdot>ae) (thunks \<Gamma>) (Fexp e\<cdot>a \<otimes>\<otimes> Fstack S) = substitute (FBinds \<Gamma>\<cdot>ae) (thunks ((x, e') # \<Gamma>)) (Fexp e\<cdot>a \<otimes>\<otimes> Fstack S)"
-      by (rule fun_cong[OF substitute_cong_T]) (auto simp add: thunks_Cons )
-    also have "\<dots> = substitute (FBinds ((x, e') # \<Gamma>)\<cdot>ae) (thunks ((x, e') # \<Gamma>)) (Fexp e\<cdot>a \<otimes>\<otimes> Fstack S)"
-      using `x \<notin> carrier _`[unfolded *]
-      by (auto intro: substitute_cong simp add: thunks_Cons)
-    finally show "prognosis ae a ((x, e') # \<Gamma>, e, S) = prognosis ae a (\<Gamma>, e, S)" by simp
+  hence "FBinds (delete x \<Gamma>)\<cdot>ae = FBinds \<Gamma>\<cdot>ae" by (rule Fexp.AnalBinds_delete_bot)
+  moreover
+  hence "((FBinds \<Gamma>\<cdot>ae) x) = \<bottom>" by (metis Fexp.AnalBinds_delete_lookup)
+  ultimately
+  show "prognosis ae a (\<Gamma>, e, S) \<sqsubseteq> prognosis ae a (delete x \<Gamma>, e, S)"
+    by (simp add: substitute_T_delete empty_is_bottom)
   next
     fix ae a \<Gamma> x S
     have "once \<sqsubseteq> (pathCard [x]) x" by (simp add: two_add_simp)
