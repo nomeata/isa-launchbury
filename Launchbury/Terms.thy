@@ -511,6 +511,18 @@ lemma thunks_eqvt[eqvt]:
     unfolding thunks_def
     by perm_simp rule
 
+subsubsection {* Non-recursive Let bindings *}
+
+definition nonrec :: "heap \<Rightarrow> bool" where
+  "nonrec \<Gamma> = (\<exists> x e. \<Gamma> = [(x,e)] \<and> atom x \<sharp> e)"
+
+lemma nonrecE:
+  assumes "nonrec \<Gamma>"
+  obtains x e where "\<Gamma> = [(x,e)]" and "atom x \<sharp> e"
+  using assms
+  unfolding nonrec_def
+  by blast
+
 subsubsection {* Renaming a lambda-bound variable *}
 
 lemma change_Lam_Variable:
