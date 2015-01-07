@@ -125,9 +125,7 @@ lemma ABinds_restrict_below: "ABinds (restrictA S \<Gamma>)\<cdot>ae \<sqsubsete
 lemma ABinds_delete_below: "ABinds (delete x \<Gamma>)\<cdot>ae \<sqsubseteq> ABinds \<Gamma>\<cdot>ae"
   by (induct \<Gamma> rule: ABinds.induct)
      (auto simp add: join_below_iff   delete_twist[where x = x] elim: below_trans simp del: fun_meet_simp)
-
 end
-
 
 lemma ABind_eqvt[eqvt]: "\<pi> \<bullet> (ArityAnalysis.ABind Aexp v e) = ArityAnalysis.ABind (\<pi> \<bullet> Aexp) (\<pi> \<bullet> v) (\<pi> \<bullet> e)"
   unfolding ArityAnalysis.ABind_def
