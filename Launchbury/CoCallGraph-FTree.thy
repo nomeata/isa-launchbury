@@ -194,6 +194,168 @@ proof(rule ccApprox_belowI)
   show "ccFromList xs \<sqsubseteq> G" by simp
 qed
 
+lemma wild_recursion_thunked:
+  assumes "ccApprox  t \<sqsubseteq> G"
+  assumes "\<And> x. x \<notin> S \<Longrightarrow> f x = empty"
+  assumes "\<And> x. x \<in> S \<Longrightarrow> ccApprox (f x) \<sqsubseteq> G"
+  assumes "\<And> x. x \<in> S \<Longrightarrow> ccProd (ccNeighbors {x} G - {x} \<inter> T) (carrier (f x)) \<sqsubseteq> G"
+  shows "ccApprox (ftree_restr (-S) (substitute f T t)) \<sqsubseteq> G"
+proof(rule ccApprox_belowI)
+  fix xs
+
+  def seen \<equiv> "{} :: var set"
+  def seen_T \<equiv> "{} :: var set"
+
+  assume "xs \<in> paths (ftree_restr (- S) (substitute f T t))"
+  then obtain xs' xs'' where "xs = [x\<leftarrow>xs' . x \<notin> S]" and "substitute'' f T xs'' xs'" and "xs'' \<in> paths t"
+    by (auto simp add: filter_paths_conv_free_restr2[symmetric] substitute_substitute'')
+ 
+  note this(2)
+  moreover
+  from `ccApprox t \<sqsubseteq> G` and `xs'' \<in> paths t`
+  have  "ccFromList xs'' \<sqsubseteq> G"
+    by (auto simp add: ccApprox_below_iff)
+  hence  "cc_restr (-seen_T) (ccFromList xs'') \<sqsubseteq> G" unfolding seen_T_def by simp
+  moreover
+  note assms(2)
+  moreover
+  from assms(3,4)
+  have "\<And> x ys. x \<in> S \<Longrightarrow> ys \<in> paths (f x) \<Longrightarrow> ccFromList ys \<sqsubseteq> G"
+    and "\<And> x ys. x \<in> S \<Longrightarrow> ys \<in> paths (f x) \<Longrightarrow> ccProd (ccNeighbors {x} G - {x} \<inter> T) (set ys) \<sqsubseteq> G"
+    by (auto simp add: ccApprox_below_iff seen_T_def Union_paths_carrier[symmetric] cc_lub_below_iff)
+  moreover
+  have "ccProd seen (set xs'' - seen_T) \<sqsubseteq> G" unfolding seen_def seen_T_def by simp
+  moreover
+  have "seen \<inter> S = {}" unfolding seen_def by simp
+  moreover
+  have "seen_T \<subseteq> S" unfolding seen_T_def by simp
+  moreover
+  have "\<And> x. x \<in> seen_T \<Longrightarrow> f x = empty"  unfolding seen_T_def by simp
+  ultimately 
+  have "ccFromList [x\<leftarrow>xs' . x \<notin> S] \<sqsubseteq> G \<and> ccProd (seen) (set xs' - seen_T) \<sqsubseteq> G"
+  proof(induction f T xs'' xs' arbitrary: seen seen_T rule: substitute''.induct[case_names Nil Cons])
+  case Nil thus ?case by simp
+  next
+  case (Cons zs f x xs' xs T ys)
+
+    let  ?seen_T = "if x \<in> T then insert x seen_T else seen_T"
+    have subset: "- insert x seen_T \<subseteq> - seen_T" by auto
+    have subset2: "set xs \<inter> - insert x seen_T \<subseteq> insert x (set xs) \<inter> - seen_T" by auto
+    have subset3: "set zs \<inter> - insert x seen_T \<subseteq> set zs" by auto
+    have subset4: "set xs \<inter> - seen_T \<subseteq> insert x (set xs) \<inter> - seen_T" by auto
+    have subset5: "set zs \<inter> - seen_T \<subseteq> set zs" by auto
+    have subset6: "set ys - seen_T \<subseteq> (set ys - ?seen_T) \<union> {x}" by auto
+
+    show ?case
+    proof(cases "x \<in> seen_T")
+      assume "x \<in> seen_T"
+      
+      have [simp]: "f x = empty" using `x \<in> seen_T` Cons.prems by auto
+      have [simp]: "f_nxt f T x = f" by (auto simp add: f_nxt_def split:if_splits)
+      have [simp]: "zs = []" using `zs \<in> paths (f x)` by simp
+      have [simp]: "xs' = xs" using `xs' \<in> xs \<otimes> zs` by simp
+      have [simp]: "x \<in> S" using `x \<in> seen_T` Cons.prems by auto
+
+      from Cons.hyps Cons.prems
+      have "ccFromList [x\<leftarrow>ys . x \<notin> S] \<sqsubseteq> G \<and> ccProd seen (set ys - seen_T) \<sqsubseteq> G"
+        apply -
+        apply (rule Cons.IH[where seen_T = seen_T])
+        apply (auto simp add: join_below_iff Diff_eq)
+        apply (erule below_trans[OF ccProd_mono[OF order_refl subset4]])
+        done
+      thus ?thesis using `x \<in> seen_T`
+        by (auto simp add: insert_Diff_if  ccProd_insert2[where S' = "set xs - seen_T" for xs])
+    next
+      assume "x \<notin> seen_T"
+
+      have seen_x: "ccProd seen {x} \<sqsubseteq> G"
+        using `ccProd seen (set (x # xs) - seen_T) \<sqsubseteq> G` `x \<notin> seen_T`
+        by (auto simp add: insert_Diff_if ccProd_insert2[where S' = "set xs - seen_T" for xs] join_below_iff)
+  
+      show ?case
+      proof(cases "x \<in> S")
+        case True
+  
+        from `cc_restr (- seen_T) (ccFromList (x # xs)) \<sqsubseteq> G`
+        have "ccProd {x} (set xs - seen_T) \<sqsubseteq> G" using `x \<notin> seen_T`  by (auto simp add: join_below_iff Diff_eq)
+        hence "set xs - seen_T \<subseteq> ccNeighbors {x} G" by transfer auto
+        moreover
+        
+        
+        from seen_x
+        have "seen  \<subseteq> ccNeighbors {x} G" by (simp add: subset_ccNeighbors   ccProd_comm)
+        moreover
+        have "x \<notin>  seen" using True `seen \<inter> S = {}` by auto
+  
+        ultimately
+        have "seen \<union> (set xs \<inter> - ?seen_T) \<subseteq> ccNeighbors {x} G - {x}\<inter>T" by auto 
+        hence "ccProd (seen \<union> (set xs \<inter> - ?seen_T)) (set zs) \<sqsubseteq> ccProd (ccNeighbors {x} G  - {x}\<inter>T) (set zs)"
+          by (rule ccProd_mono1)
+        also
+        from `x \<in> S`  `zs \<in> paths (f x)`
+        have "\<dots> \<sqsubseteq> G"
+          by (rule Cons.prems(4))
+        finally
+        have "ccProd (seen \<union> (set xs \<inter> - ?seen_T)) (set zs) \<sqsubseteq> G" by this simp
+  
+        with `x \<in> S` Cons.prems Cons.hyps(1,2)
+        have "ccFromList [x\<leftarrow>ys . x \<notin> S] \<sqsubseteq> G \<and> ccProd (seen) (set ys - ?seen_T) \<sqsubseteq> G"
+            apply -
+            apply (rule Cons.IH[where seen_T = "?seen_T"])
+            apply (auto simp add: Un_Diff Int_Un_distrib2 Diff_eq f_nxt_def  join_below_iff  interleave_ccFromList interleave_set  ccProd_insert2[where S' = "set xs" for xs]
+                    split: if_splits)
+            apply (erule below_trans[OF cc_restr_mono1[OF subset]])
+            apply (rule below_trans[OF cc_restr_below_arg], simp)
+            apply (erule below_trans[OF ccProd_mono[OF order_refl Int_lower1]])
+            apply (rule below_trans[OF cc_restr_below_arg], simp)
+            apply (erule below_trans[OF ccProd_mono[OF order_refl Int_lower1]])
+            apply (erule below_trans[OF ccProd_mono[OF order_refl subset2]])
+            apply (erule below_trans[OF ccProd_mono[OF order_refl subset3]])
+            apply (erule below_trans[OF ccProd_mono[OF order_refl subset4]])
+            apply (erule below_trans[OF ccProd_mono[OF order_refl subset5]])
+            done
+        with  `x \<in> S`  seen_x `x \<notin> seen_T`
+        show "ccFromList [x\<leftarrow>x # ys . x \<notin> S] \<sqsubseteq> G  \<and> ccProd seen (set (x#ys) - seen_T) \<sqsubseteq> G" 
+            apply (auto simp add: insert_Diff_if ccProd_insert2[where S' = "set ys - seen_T" for xs] join_below_iff)
+            apply (rule below_trans[OF ccProd_mono[OF order_refl subset6]])
+            apply (subst ccProd_union2)
+            apply (auto simp add: join_below_iff)
+            done
+      next
+        case False
+  
+        from False Cons.prems Cons.hyps
+        have "ccFromList [x\<leftarrow>ys . x \<notin> S] \<sqsubseteq> G \<and> ccProd ((insert x seen)) (set ys - seen_T) \<sqsubseteq> G"
+          apply -
+          apply (rule Cons.IH[where seen = "insert x seen" and seen_T = seen_T])
+          apply (auto simp add: `x \<notin> seen_T` Diff_eq ccApprox_both join_below_iff ftree_restr_both interleave_ccFromList insert_Diff_if
+                     simp add:  ccProd_insert2[where S' = "set xs \<inter> - seen_T" for xs]
+                     simp add:  ccProd_insert1[where S' = "seen"])
+          done
+        moreover
+        {
+        from False this
+        have "ccProd {x} (set ys - seen_T) \<sqsubseteq>  G"
+          by (auto simp add: insert_Diff_if ccProd_insert1[where S' = "seen"] join_below_iff)
+        hence "ccProd {x} {x \<in> set ys - seen_T. x \<notin> S} \<sqsubseteq> G"
+          by (rule below_trans[rotated, OF _ ccProd_mono2]) auto
+        also have "{x \<in> set ys - seen_T. x \<notin> S} =  {x \<in> set ys. x \<notin> S}"
+          using `seen_T \<subseteq> S` by auto
+        finally
+        have "ccProd {x} {x \<in> set ys. x \<notin> S} \<sqsubseteq> G".
+        }
+        moreover
+        note False seen_x
+        ultimately
+        show "ccFromList [x\<leftarrow>x # ys . x \<notin> S] \<sqsubseteq> G \<and> ccProd (seen) (set (x # ys) - seen_T) \<sqsubseteq> G"
+          by (auto simp add: join_below_iff  simp add: insert_Diff_if  ccProd_insert2[where S' = "set ys - seen_T" for xs]   ccProd_insert1[where S' = "seen"])
+      qed
+    qed
+  qed
+  with `xs = _`
+  show "ccFromList xs \<sqsubseteq> G" by simp
+qed
+
 
 inductive_set valid_lists :: "var set \<Rightarrow> CoCalls \<Rightarrow> var list set"
   for S G
