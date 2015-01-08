@@ -170,10 +170,10 @@ lemma ccField_CCexp:
 by (induction e arbitrary: n rule: exp_induct_rec)
    (auto simp add: ccField_ccProd predCC_eq dest: set_mp[OF ccField_cc_restr])
 
-
 lemma cc_restr_CCexp[simp]:
   "cc_restr (fv e) (CCexp e\<cdot>a) = CCexp e\<cdot>a"
 by (rule cc_restr_noop[OF ccField_CCexp])
+
 
 
 end

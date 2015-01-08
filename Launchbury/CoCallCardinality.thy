@@ -1,6 +1,38 @@
 theory CoCallCardinality
-imports FTreeCardinality CoCallAnalysis "CoCallGraph-FTree"
+imports FTreeCardinality CoCallAnalysis "CoCallGraph-FTree" "/home/jojo/uni/info/isa-where-to-move/Where_To_Move"
 begin
+
+lemma valid_lists_many_calls:
+  assumes "\<not> one_call_in_path x p"
+  assumes "p \<in> valid_lists S G"
+  shows "x \<in> ccManyCalls G"
+using assms(2,1)
+proof(induction rule:valid_lists.induct[case_names Nil Cons])
+  case Nil thus ?case by simp
+next
+  case (Cons xs x')
+  show ?case
+  proof(cases "one_call_in_path x xs")
+    case False
+    from Cons.IH[OF this]
+    show ?thesis.
+  next
+    case True
+    with `\<not> one_call_in_path x (x' # xs)`
+    have [simp]: "x' = x" by (auto split: if_splits)
+
+    have "x \<in> set xs"
+    proof(rule ccontr)
+      assume "x \<notin> set xs"
+      hence "no_call_in_path x xs" by (metis no_call_in_path_set_conv)
+      hence "one_call_in_path x (x # xs)" by simp
+      with Cons show False by simp
+    qed
+    with `set xs \<subseteq> ccNeighbors {x'} G`
+    have "x \<in> ccNeighbors {x} G" by auto
+    thus ?thesis by (metis ccNeighbors_ccManyCalls)
+  qed
+qed
 
 
 locale CoCallCardinality = CoCallAnalysis + CoCallAnalyisHeap + CorrectArityAnalysisLet' +
@@ -13,14 +45,10 @@ locale CoCallCardinality = CoCallAnalysis + CoCallAnalyisHeap + CorrectArityAnal
   assumes ccHeap_Exp: "ccExp e\<cdot>a \<sqsubseteq> ccHeap \<Delta> e\<cdot>a"
   assumes ccHeap_Heap: "map_of \<Delta> x = Some e' \<Longrightarrow> (Aheap \<Delta> e\<cdot>a) x= up\<cdot>a' \<Longrightarrow> ccExp e'\<cdot>a' \<sqsubseteq> ccHeap \<Delta> e\<cdot>a"
   assumes ccHeap_Extra_Edges:
-    "map_of \<Delta> x = Some e' \<Longrightarrow> (Aheap \<Delta> e\<cdot>a) x = up\<cdot>a' \<Longrightarrow> ccProd (fv e') (ccNeighbors (domA \<Delta>) (ccHeap \<Delta> e\<cdot>a)) \<sqsubseteq> ccHeap \<Delta> e\<cdot>a"
-  
-  assumes aHeap_thunks: "x \<in> thunks \<Gamma> \<Longrightarrow> x \<in> edom (Aheap \<Gamma> e\<cdot>a) \<Longrightarrow> (* x \<notin> calledOnce \<Gamma> e a \<Longrightarrow> *) (Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
+    "map_of \<Delta> x = Some e' \<Longrightarrow> (Aheap \<Delta> e\<cdot>a) x = up\<cdot>a' \<Longrightarrow> ccProd (fv e') (ccNeighbors {x} (ccHeap \<Delta> e\<cdot>a)) \<sqsubseteq> ccHeap \<Delta> e\<cdot>a"
 
-  
-  assumes calledOnce_exp: "calledOnce \<Delta> e a \<inter> ccManyCalls (ccExp e\<cdot>a) = {}"
-  assumes calledOnce_heap: "map_of \<Delta> x = Some e' \<Longrightarrow> (Aheap \<Delta> e\<cdot>a) x = up\<cdot>u' \<Longrightarrow> edom (Aexp e'\<cdot>u') \<inter> calledOnce \<Delta> e a = {}"
-
+  assumes aHeap_thunks_rec: " \<not> nonrec \<Gamma> \<Longrightarrow> x \<in> thunks \<Gamma> \<Longrightarrow> x \<in> edom (Aheap \<Gamma> e\<cdot>a) \<Longrightarrow> (Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
+  assumes aHeap_thunks_nonrec: "nonrec \<Gamma> \<Longrightarrow> x \<in> thunks \<Gamma> \<Longrightarrow> x \<in> ccManyCalls (ccExp e\<cdot>a) \<Longrightarrow> (Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
 begin
 
 definition Fexp :: "exp \<Rightarrow> Arity \<rightarrow> var ftree"
@@ -137,9 +165,9 @@ next
 qed
 
 definition Fheap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> var ftree"
-  where "Fheap \<Gamma> e = (\<Lambda> a. ftree_restr (edom (Aheap \<Gamma> e\<cdot>a)) anything)"
+  where "Fheap \<Gamma> e = (\<Lambda> a. if nonrec \<Gamma> then ccFTree (edom (Aheap \<Gamma> e\<cdot>a)) (ccExp e\<cdot>a) else ftree_restr (edom (Aheap \<Gamma> e\<cdot>a)) anything)"
 
-lemma Fheap_simp: "Fheap \<Gamma> e\<cdot>a = ftree_restr (edom (Aheap \<Gamma> e\<cdot>a)) anything"
+lemma Fheap_simp: "Fheap \<Gamma> e\<cdot>a = (if nonrec \<Gamma> then ccFTree (edom (Aheap \<Gamma> e\<cdot>a)) (ccExp e\<cdot>a) else ftree_restr (edom (Aheap \<Gamma> e\<cdot>a)) anything)"
   unfolding Fheap_def by simp
 
 lemma carrier_Fheap':"carrier (Fheap \<Gamma> e\<cdot>a) = edom (Aheap \<Gamma> e\<cdot>a)"
@@ -153,17 +181,31 @@ proof default
 next
   fix x \<Gamma> p e a
   assume "x \<in> thunks \<Gamma>"
-  moreover
+  
   assume "\<not> one_call_in_path x p"
   hence "x \<in> set p" by (rule more_than_one_setD)
   
   assume "p \<in> paths (Fheap \<Gamma> e\<cdot>a)" with `x \<in> set p`
   have "x \<in> carrier (Fheap \<Gamma> e\<cdot>a)" by (auto simp add: Union_paths_carrier[symmetric])
   hence "x \<in> edom (Aheap \<Gamma> e\<cdot>a)"
-    unfolding Fheap_simp by auto
-  ultimately
+    unfolding Fheap_simp by (auto split: if_splits)
+  
   show "(Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
-    by (rule aHeap_thunks)
+  proof(cases "nonrec \<Gamma>")
+    case False
+    from False `x \<in> thunks \<Gamma>`  `x \<in> edom (Aheap \<Gamma> e\<cdot>a)`
+    show ?thesis  by (rule aHeap_thunks_rec)
+  next
+    case True
+    with `p \<in> paths (Fheap \<Gamma> e\<cdot>a)`
+    have "p \<in> valid_lists (edom (Aheap \<Gamma> e\<cdot>a)) (ccExp e\<cdot>a)" by (simp add: Fheap_simp)
+
+    with `\<not> one_call_in_path x p`
+    have "x \<in> ccManyCalls (ccExp e\<cdot>a)" by (rule valid_lists_many_calls)
+  
+    from True `x \<in> thunks \<Gamma>` this
+    show ?thesis by (rule aHeap_thunks_nonrec)
+  qed
 next
   fix \<Delta> e a
 
@@ -205,11 +247,9 @@ next
     show "carrier (ftree_restr (- domA \<Delta>) (substitute (Fexp.AnalBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (thunks \<Delta>) (ccFTree (edom (Aexp e\<cdot>a)) (ccExp e\<cdot>a))))
           \<subseteq> edom (Aexp (Terms.Let \<Delta> e)\<cdot>a)"  by this auto
   next
-
-    have "ccApprox (ftree_restr (- domA \<Delta>) (substitute (Fexp.AnalBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (thunks \<Delta>) (ccFTree (edom (Aexp e\<cdot>a)) (ccExp e\<cdot>a))))
-      \<sqsubseteq> ccApprox (ftree_restr (- domA \<Delta>) (substitute (Fexp.AnalBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) {} (ccFTree (edom (Aexp e\<cdot>a)) (ccExp e\<cdot>a))))"
-      by (intro ccApprox_mono ftree_restr_mono[folded paths_mono_iff, unfolded below_set_def] substitute_monoT) auto
-    also have "\<dots> = cc_restr (- domA \<Delta>) \<dots>"  by simp
+    let ?x = "ccApprox (ftree_restr (- domA \<Delta>) (substitute (Fexp.AnalBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (thunks \<Delta>) (ccFTree (edom (Aexp e\<cdot>a)) (ccExp e\<cdot>a))))"
+  
+    have "?x = cc_restr (- domA \<Delta>) ?x"  by simp
     also have "\<dots> \<sqsubseteq> cc_restr (- domA \<Delta>) (ccHeap \<Delta> e\<cdot>a)"
     proof(rule cc_restr_mono2[OF wild_recursion])
     (*
@@ -254,7 +294,7 @@ next
           by (auto simp add: Fexp.AnalBinds_lookup Fexp_simp  intro: below_trans[OF cc_restr_below_arg])
       qed
 
-      show "ccProd (ccNeighbors (domA \<Delta>) (ccHeap \<Delta> e\<cdot>a)) (carrier ((Fexp.AnalBinds  \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) x)) \<sqsubseteq> ccHeap \<Delta> e\<cdot>a"
+      show "ccProd (ccNeighbors {x} (ccHeap \<Delta> e\<cdot>a)) (carrier ((Fexp.AnalBinds  \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) x)) \<sqsubseteq> ccHeap \<Delta> e\<cdot>a"
       proof(cases "(Aheap \<Delta> e\<cdot>a) x")
         case bottom thus ?thesis using e' by (simp add: Fexp.AnalBinds_lookup)
       next
@@ -263,7 +303,7 @@ next
           using up e' by (auto simp add: Fexp.AnalBinds_lookup carrier_Fexp dest!: set_mp[OF Aexp_edom])
         
         from e' up
-        have "ccProd (fv e') (ccNeighbors (domA \<Delta>) (ccHeap \<Delta> e\<cdot>a)) \<sqsubseteq> ccHeap \<Delta> e\<cdot>a"  
+        have "ccProd (fv e') (ccNeighbors {x} (ccHeap \<Delta> e\<cdot>a)) \<sqsubseteq> ccHeap \<Delta> e\<cdot>a"  
           by (rule ccHeap_Extra_Edges)
         then
         show ?thesis using e'
@@ -329,11 +369,33 @@ next
       \<sqsubseteq> ftree_restr (edom (Aheap \<Delta> e\<cdot>a)) (singles (calledOnce \<Delta> e a))"
     by (rule ftree_restr_mono)
   *)
-  have "ftree_restr (edom (Aheap \<Delta> e\<cdot>a)) (substitute (Fexp.AnalBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (thunks \<Delta>) (Fexp e\<cdot>a))
+  have "\<dots> \<sqsubseteq> Fheap \<Delta> e \<cdot>a"
+  proof(cases "nonrec \<Delta>")
+    case False
+    have "ftree_restr (edom (Aheap \<Delta> e\<cdot>a)) (substitute (Fexp.AnalBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (thunks \<Delta>) (Fexp e\<cdot>a))
       \<sqsubseteq> ftree_restr (edom (Aheap \<Delta> e\<cdot>a)) anything"
     by (rule ftree_restr_mono) simp
-  also have "\<dots> = Fheap \<Delta> e\<cdot>a"
-    unfolding Fheap_simp..
+    also have "\<dots> = Fheap \<Delta> e\<cdot>a"
+      by (simp add:  Fheap_simp False)
+    finally show ?thesis.
+  next
+    case True[simp]
+
+    from True
+    have "ftree_restr (edom (Aheap \<Delta> e\<cdot>a)) (substitute (Fexp.AnalBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (thunks \<Delta>) (Fexp e\<cdot>a))
+       = ftree_restr (edom (Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)"
+      by (rule nonrecE) (rule ftree_rest_substitute, auto simp add: carrier_Fexp fv_def fresh_def dest!: set_mp[OF edom_Aheap] set_mp[OF Aexp_edom])
+    also have "\<dots> = ccFTree (edom (Aexp e\<cdot>a) \<inter> edom (Aheap \<Delta> e\<cdot>a)) (ccExp e\<cdot>a)"
+      by (simp add: Fexp_simp)
+    also have "\<dots> \<sqsubseteq> ccFTree (edom (Aexp e\<cdot>a) \<inter> domA \<Delta>) (ccExp e\<cdot>a)"
+      by (rule ccFTree_mono1[OF Int_mono[OF order_refl edom_Aheap]])
+    also have "\<dots> \<sqsubseteq> ccFTree (edom (Aheap \<Delta> e\<cdot>a)) (ccExp e\<cdot>a)"
+      by (rule ccFTree_mono1[OF edom_mono[OF Aheap_nonrec[OF True], simplified]])
+    also have "\<dots> \<sqsubseteq> Fheap \<Delta> e\<cdot>a"
+      by (simp add: Fheap_simp)
+    finally
+    show ?thesis by this simp_all
+  qed
   finally
   show "ftree_restr (domA \<Delta>) (substitute (ExpAnalysis.AnalBinds Fexp \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (thunks \<Delta>) (Fexp e\<cdot>a)) \<sqsubseteq> Fheap \<Delta> e\<cdot>a".
 

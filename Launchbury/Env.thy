@@ -281,6 +281,10 @@ lemma env_restr_split:
   shows "m = m f|` S \<squnion> m f|` (- S)"
 by (simp add: env_restr_join2 Compl_partition)
 
+lemma env_restr_below_split:
+  "m f|` S \<sqsubseteq> m' \<Longrightarrow> m f|` (- S) \<sqsubseteq> m' \<Longrightarrow> m \<sqsubseteq> m'"
+  by (metis ComplI fun_below_iff lookup_env_restr)
+
 subsection {* Singleton environments *}
 
 definition esing :: "'a \<Rightarrow> 'b::{pcpo} \<rightarrow> ('a \<Rightarrow> 'b)"
@@ -311,6 +315,9 @@ lemma env_restr_esing[simp]:
   "x\<in> S \<Longrightarrow> esing x\<cdot>v f|` S = esing x\<cdot>v" 
   by (auto intro: env_restr_useless dest: set_mp[OF edom_esing_subset])
 
+lemma esing_eq_iff[simp]:
+  "esing x\<cdot>v = esing x\<cdot>v' \<longleftrightarrow> v = v'"
+  by (metis esing_simps(1))
 
 
 end

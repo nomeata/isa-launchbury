@@ -534,8 +534,8 @@ lemma exp_induct_rec[case_names Var App Let Let_nonrec Lam]:
   assumes "\<And>\<Gamma> exp. \<not> nonrec \<Gamma> \<Longrightarrow> (\<And> x. x \<in> domA \<Gamma> \<Longrightarrow>  P (the (map_of \<Gamma> x))) \<Longrightarrow> P exp \<Longrightarrow> P (Let \<Gamma> exp)"
   assumes "\<And>x e exp. atom x \<sharp> e \<Longrightarrow>P e \<Longrightarrow> P exp \<Longrightarrow> P (let x be e in exp)"
   assumes "\<And>var exp.  P exp \<Longrightarrow> P (Lam [var]. exp)"
-  shows "P  exp"
-  apply (rule exp_heap_induct[of P "\<lambda> \<Gamma>. (\<forall>x \<in> domA \<Gamma>. P (the (map_of \<Gamma> x)))"])
+  shows "P exp"
+  apply (rule exp_induct[of P])
   apply (metis assms(1))
   apply (metis assms(2))
   apply (case_tac "nonrec \<Gamma>")
@@ -544,7 +544,44 @@ lemma exp_induct_rec[case_names Var App Let Let_nonrec Lam]:
   apply (metis assms(4))
   apply (metis assms(3))
   apply (metis assms(5))
-  apply auto
+  done
+
+lemma  exp_strong_induct_rec[case_names Var App Let Let_nonrec Lam]:
+  assumes "\<And>b var c. P c (GVar b var)"
+  assumes "\<And>exp var c. (\<And>c. P c exp) \<Longrightarrow> P c (App exp var)"
+  assumes "\<And>\<Gamma> exp c.
+    atom ` domA \<Gamma> \<sharp>* c \<Longrightarrow> \<not> nonrec \<Gamma> \<Longrightarrow> (\<And>c x. x \<in> domA \<Gamma> \<Longrightarrow>  P c (the (map_of \<Gamma> x))) \<Longrightarrow> (\<And>c. P c exp) \<Longrightarrow> P c (Let \<Gamma> exp)"
+  assumes "\<And>x e exp c. {atom x} \<sharp>* c \<Longrightarrow> atom x \<sharp> e \<Longrightarrow> (\<And> c. P c e) \<Longrightarrow> (\<And> c. P c exp) \<Longrightarrow> P c (let x be e in exp)"
+  assumes "\<And>var exp c. {atom var} \<sharp>* c \<Longrightarrow> (\<And>c. P c exp) \<Longrightarrow> P c (Lam [var]. exp)"
+  shows "P (c::'a::fs) exp"
+  apply (rule exp_strong_induct[of P])
+  apply (metis assms(1))
+  apply (metis assms(2))
+  apply (case_tac "nonrec \<Gamma>")
+  apply (erule nonrecE)
+  apply simp
+  apply (metis assms(4))
+  apply (metis assms(3))
+  apply (metis assms(5))
+  done
+
+lemma  exp_strong_induct_rec_set[case_names Var App Let Let_nonrec Lam]:
+  assumes "\<And>b var c. P c (GVar b var)"
+  assumes "\<And>exp var c. (\<And>c. P c exp) \<Longrightarrow> P c (App exp var)"
+  assumes "\<And>\<Gamma> exp c.
+    atom ` domA \<Gamma> \<sharp>* c \<Longrightarrow> \<not> nonrec \<Gamma> \<Longrightarrow> (\<And>c x e. (x,e) \<in> set \<Gamma> \<Longrightarrow>  P c e) \<Longrightarrow> (\<And>c. P c exp) \<Longrightarrow> P c (Let \<Gamma> exp)"
+  assumes "\<And>x e exp c. {atom x} \<sharp>* c \<Longrightarrow> atom x \<sharp> e \<Longrightarrow> (\<And> c. P c e) \<Longrightarrow> (\<And> c. P c exp) \<Longrightarrow> P c (let x be e in exp)"
+  assumes "\<And>var exp c. {atom var} \<sharp>* c \<Longrightarrow> (\<And>c. P c exp) \<Longrightarrow> P c (Lam [var]. exp)"
+  shows "P (c::'a::fs) exp"
+  apply (rule exp_strong_induct_set(1)[of P])
+  apply (metis assms(1))
+  apply (metis assms(2))
+  apply (case_tac "nonrec \<Gamma>")
+  apply (erule nonrecE)
+  apply simp
+  apply (metis assms(4))
+  apply (metis assms(3))
+  apply (metis assms(5))
   done
 
 

@@ -54,6 +54,13 @@ lemma env_restr_belowI:
   apply (rule fun_belowI)
   by (metis assms below_bottom_iff lookup_env_restr_not_there)
 
+lemma env_restr_belowI2:
+  assumes  "\<And> x. x \<in> S \<Longrightarrow> m1 x \<sqsubseteq> m2 x"
+  shows "m1 f|` S \<sqsubseteq> m2"
+  by (rule fun_belowI)
+     (simp add: assms env_restr_def)
+
+
 lemma env_restr_below_itself:
   shows "m f|` S \<sqsubseteq> m"
   apply (rule fun_belowI)

@@ -259,7 +259,9 @@ lemma ABind_nonrec_eqvt[eqvt]: "\<pi> \<bullet> (ABind_nonrec x e) = ABind_nonre
   unfolding ABind_nonrec_eq
   by perm_simp rule
 
-
+lemma ABind_nonrec_above_arg:
+  "ae x \<sqsubseteq> ABind_nonrec x e \<cdot> (ae, G)"
+unfolding ABind_nonrec_eq by auto
 
 context CoCallArityAnalysis
 begin

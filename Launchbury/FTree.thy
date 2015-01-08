@@ -1220,6 +1220,15 @@ inductive substitute'' :: "('a \<Rightarrow> 'a ftree) \<Rightarrow> 'a set \<Ri
 inductive_cases substitute''_NilE[elim]: "substitute'' f T xs []"  "substitute'' f T [] xs"
 inductive_cases substitute''_ConsE[elim]: "substitute'' f T (x#xs) ys"
 
+(*
+thm substitute''.induct[no_vars]
+lemma substitute''_thunk_induct[consumes 1, case_names Nil Val Thunk]:
+  assumes "substitute'' f T xs ys"
+  assumes "\<And> f T. P f T [] []"
+  assumes "\<And> zs f x xs' xs T ys. zs \<in> paths (f x) \<Longrightarrow> xs' \<in> xs \<otimes> zs \<Longrightarrow> substitute'' (f_nxt f T x) T xs' ys \<Longrightarrow> P (f_nxt f T x) T xs' ys \<Longrightarrow> P f T (x # xs) (x # ys)"
+  shows "P f T xs ys "
+*)
+
 lemma substitute_substitute'':
   "xs \<in> paths (substitute f T t) \<longleftrightarrow> (\<exists> xs' \<in> paths t. substitute'' f T xs' xs)"
 proof

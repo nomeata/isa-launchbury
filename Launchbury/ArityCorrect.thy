@@ -8,6 +8,9 @@ begin
 
   lemma Aexp'_edom: "edom (Aexp' e\<cdot>a) \<subseteq> fv e"
     by (cases a) (auto dest:set_mp[OF Aexp_edom])
+
+  lemma fup_Aexp_edom: "edom (fup\<cdot>(Aexp e)\<cdot>a) \<subseteq> fv e"
+    by (cases a) (auto dest:set_mp[OF Aexp_edom])
   
   lemma Aexp_fresh_bot[simp]: assumes "atom v \<sharp> e" shows "(Aexp e\<cdot>a) v = \<bottom>"
   proof-
@@ -61,6 +64,30 @@ lemma Aexp'_Var: "esing x \<cdot> n \<sqsubseteq> Aexp' (Var x) \<cdot> n"
 
 end
 
+
+context CorrectArityAnalysisLet'
+begin
+lemma Aheap_nonrec:
+  assumes "nonrec \<Delta>"
+  shows "Aexp e\<cdot>a f|` domA \<Delta> \<sqsubseteq> Aheap \<Delta> e\<cdot>a"
+proof-
+  have "ABinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a) \<squnion> Aexp e\<cdot>a \<sqsubseteq> Aheap \<Delta> e\<cdot>a \<squnion> Aexp (Let \<Delta> e)\<cdot>a" by (rule Aexp_Let)
+  note env_restr_mono[where S = "domA \<Delta>", OF this]
+  moreover
+  from assms
+  have "ABinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a) f|` domA \<Delta> = \<bottom>"
+    by (rule nonrecE) (auto simp add: fv_def fresh_def dest!: set_mp[OF Aexp'_edom])
+  moreover
+  have "Aheap \<Delta> e\<cdot>a f|` domA \<Delta> = Aheap \<Delta> e\<cdot>a" 
+    by (rule env_restr_useless[OF edom_Aheap])
+  moreover
+  have "(Aexp (Let \<Delta> e)\<cdot>a) f|` domA \<Delta> = \<bottom>" 
+    by (auto dest!: set_mp[OF Aexp_edom])
+  ultimately
+  show "Aexp e\<cdot>a f|` domA \<Delta> \<sqsubseteq> Aheap \<Delta> e\<cdot>a"
+    by (simp add: env_restr_join)
+qed
+end
 
 
 end

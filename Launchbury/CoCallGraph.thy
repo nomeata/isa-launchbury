@@ -104,6 +104,9 @@ lemma cc_lub_below_iff:
 
 lift_definition ccField :: "CoCalls \<Rightarrow> var set" is Field.
 
+lemma ccField_nil[simp]: "ccField \<bottom> = {}"
+  by transfer auto
+
 lift_definition inCC :: "var \<Rightarrow> var \<Rightarrow> CoCalls \<Rightarrow> bool" ("_--_\<in>_" [1000, 1000, 900] 900)
   is "\<lambda> x y s. (x,y) \<in> s".
 
@@ -206,10 +209,10 @@ lemma cc_restr_empty: "ccField G \<subseteq> -S \<Longrightarrow> cc_restr S G =
   apply (drule (1) set_mp)
   apply simp
   done
-  
-lemma ccField_nil[simp]: "ccField \<bottom> = {}"
-  by transfer auto
 
+lemma cc_restr_empty_set[simp]: "cc_restr {} G = \<bottom>"
+  by transfer auto
+  
 lemma cc_restr_noop[simp]: "ccField G \<subseteq> S \<Longrightarrow> cc_restr S G = G"
   by transfer (force simp add: Field_def dest: DomainI RangeI elim: set_mp)
 
@@ -277,6 +280,8 @@ lift_definition ccNeighbors :: "var set \<Rightarrow> CoCalls \<Rightarrow> var 
 
 lemma ccNeighbors_bot[simp]: "ccNeighbors S \<bottom> = {}" by transfer auto
 
+lemma ccNeighbors_empty[simp]: "ccNeighbors {} G = {}" by transfer auto
+
 lemma cont_ccProd_ccNeighbors[THEN cont_compose, cont2cont, simp]:
   "cont (\<lambda>x. ccProd S (ccNeighbors S' x))"
   apply (rule contI)
@@ -317,6 +322,10 @@ lemma elem_ccNeighbors:
 
 lemma ccNeighbors_ccField:
   "ccNeighbors S G \<subseteq> ccField G" by transfer (auto simp add: Field_def)
+
+lemma ccNeighbors_disjoint_empty:
+  "ccField G \<inter> S = {} \<Longrightarrow> ccNeighbors S G = {}"
+  by transfer (auto simp add: Field_def)
 
 instance CoCalls :: Join_cpo
   by default (metis coCallsLub_is_lub)

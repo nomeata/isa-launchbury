@@ -13,6 +13,7 @@ lemma ccExp'_simps[simp]:
   "ccExp' e \<cdot> \<bottom> = \<bottom>"
   "ccExp' e \<cdot> (up\<cdot>n) = ccExp e \<cdot> n"
   unfolding ccExp'_def by simp_all
+
 end
 
 lemma ccExp'_eqvt[eqvt]:
@@ -28,9 +29,7 @@ locale CoCallAnalysis_ccField = CoCallAnalysis +
   assumes "ccField (ccExp e\<cdot>a) \<subseteq> fv e"
 
 locale CoCallAnalyisHeap = 
-  fixes calledOnce :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<Rightarrow> var set"
   fixes ccHeap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> CoCalls"
-
 
 locale CorrectCoCallAnalysis = CoCallAnalysis_ccField +
   assumes Aexp_eqvt[eqvt]: "\<pi> \<bullet> ccExp = ccExp"
