@@ -106,12 +106,11 @@ lemma Afix_reorder: "map_of \<Gamma> = map_of \<Delta> \<Longrightarrow> Afix \<
 
 lemma ccExp'_restr_subst': 
   assumes "\<And> a. cc_restr S (CCexp e[x::=y]\<cdot>a) = cc_restr S (CCexp e\<cdot>a)"
-  shows "cc_restr (S \<inter> fv e) (ccExp' e[x::=y]\<cdot>a) = cc_restr (S \<inter> fv e) (ccExp' e\<cdot>a)"
+  shows "cc_restr S (ccExp' e[x::=y]\<cdot>a) = cc_restr S (ccExp' e\<cdot>a)"
   unfolding ccExp'_def
   using assms
-  apply (cases a)
-  apply (auto simp del: cc_restr_cc_restr simp add: cc_restr_cc_restr[symmetric])
-  by (metis cc_restr_cc_restr inf_commute)
+  by (cases a)
+     (auto simp del: cc_restr_cc_restr simp add: cc_restr_cc_restr[symmetric])
 
 lemma ccBindsExtra_restr_subst': 
   assumes "\<And> x' e a. (x',e) \<in> set \<Gamma> \<Longrightarrow> cc_restr S (CCexp e[x::=y]\<cdot>a) = cc_restr S (CCexp e\<cdot>a)"
@@ -126,7 +125,12 @@ lemma ccBindsExtra_restr_subst':
   apply (auto intro:  ccExp'_restr_subst'[OF assms(1)[OF map_of_SomeD]] simp add: fv_subst_int[OF assms(3,2)]   fv_subst_int2[OF assms(3,2)] ccSquare_def)[1]
   apply (metis assms(4) contra_subsetD domI dom_map_of_conv_domA)
   apply (subgoal_tac "k \<in> S")
-  apply (auto intro:  ccExp'_restr_subst'[OF assms(1)[OF map_of_SomeD]] simp add: fv_subst_int[OF assms(3,2)]   fv_subst_int2[OF assms(3,2)] ccSquare_def)[1]
+  apply (auto intro:  ccExp'_restr_subst'[OF assms(1)[OF map_of_SomeD]]
+              simp add: fv_subst_int[OF assms(3,2)]   fv_subst_int2[OF assms(3,2)] ccSquare_def cc_restr_twist[where S = S] simp del: cc_restr_cc_restr)[1]
+  apply (subst  ccExp'_restr_subst'[OF assms(1)[OF map_of_SomeD]], assumption)
+  apply (simp add: fv_subst_int[OF assms(3,2)]   fv_subst_int2[OF assms(3,2)] )
+  apply (subst  ccExp'_restr_subst'[OF assms(1)[OF map_of_SomeD]], assumption)
+  apply (simp add: fv_subst_int[OF assms(3,2)]   fv_subst_int2[OF assms(3,2)] )
   apply (metis assms(4) contra_subsetD domI dom_map_of_conv_domA)
   done
 
@@ -269,6 +273,24 @@ lemma ABind_nonrec_above_arg:
   "ae x \<sqsubseteq> ABind_nonrec x e \<cdot> (ae, G)"
 unfolding ABind_nonrec_eq by auto
 
+definition Aheap_nonrec where
+  "Aheap_nonrec x e = (\<Lambda> i. esing x\<cdot>(ABind_nonrec x e\<cdot>i))"
+
+lemma Aheap_nonrec_simp:
+  "Aheap_nonrec x e\<cdot>i = esing x\<cdot>(ABind_nonrec x e\<cdot>i)"
+  unfolding Aheap_nonrec_def by simp
+
+lemma Aheap_nonrec_lookup[simp]:
+  "(Aheap_nonrec x e\<cdot>i) x = ABind_nonrec x e\<cdot>i"
+  unfolding Aheap_nonrec_simp by simp
+
+lemma Aheap_nonrec_eqvt'[eqvt]:
+  "\<pi> \<bullet> (Aheap_nonrec x e) = Aheap_nonrec (\<pi> \<bullet> x) (\<pi> \<bullet> e)"
+  apply (rule cfun_eqvtI)
+  unfolding Aheap_nonrec_simp
+  by (perm_simp, rule)
+
+
 context CoCallArityAnalysis
 begin
 
@@ -281,10 +303,10 @@ begin
     by (rule beta_cfun) simp
 
   definition CCfix_nonrec
-   where "CCfix_nonrec x e = (\<Lambda> i. ccBind x e \<cdot> i  \<squnion> ccProd (fv e) (ccNeighbors {x} (snd i)) \<squnion> snd i)"
+   where "CCfix_nonrec x e = (\<Lambda> i. ccBind x e \<cdot> (Aheap_nonrec x e\<cdot>i, snd i)  \<squnion> ccProd (fv e) (ccNeighbors {x} (snd i) - (if isLam e then {} else {x})) \<squnion> snd i)"
 
   lemma CCfix_nonrec_eq[simp]:
-    "CCfix_nonrec x e \<cdot> i = ccBind x e \<cdot> i  \<squnion> ccProd (fv e) (ccNeighbors {x} (snd i)) \<squnion> snd i"
+    "CCfix_nonrec x e \<cdot> i = ccBind x e\<cdot>(Aheap_nonrec x e\<cdot>i, snd i)  \<squnion> ccProd (fv e) (ccNeighbors {x} (snd i) - (if isLam e then {} else {x})) \<squnion> snd i"
     unfolding CCfix_nonrec_def
     by (rule beta_cfun) (intro cont2cont)
 
@@ -350,7 +372,7 @@ lemma cccFix_nonrec_cong[fundef_cong]:
    unfolding CoCallArityAnalysis.Afix_nonrec_eq
    unfolding CoCallArityAnalysis.CCfix_nonrec_eq
    unfolding CoCallArityAnalysis.fup_Aexp_eq
-   apply (simp)
+   apply (simp only: )
    apply (rule arg_cong[OF ccBind_cong])
    apply simp
    unfolding CoCallArityAnalysis.CCexp_def

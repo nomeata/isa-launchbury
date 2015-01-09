@@ -162,7 +162,8 @@ lemma CCexp_simps[simp]:
   "CCexp (Lam [x]. e)\<cdot>n = predCC (fv (Lam [x]. e)) (CCexp e)\<cdot>n"
   "CCexp (App e x)\<cdot>n = CCexp e\<cdot>(inc\<cdot>n) \<squnion> ccProd {x} (insert x (fv e))"
   "\<not> nonrec \<Gamma> \<Longrightarrow> CCexp (Let \<Gamma> e)\<cdot>n = cc_restr (fv (Let \<Gamma> e)) (CCfix \<Gamma>\<cdot>(Afix \<Gamma>\<cdot>(Aexp e\<cdot>n  \<squnion> (\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>)), CCexp e\<cdot>n))"
-  "atom x \<sharp> e \<Longrightarrow> CCexp (let x be e in exp)\<cdot>n = cc_restr (fv (let x be e in exp)) (ccBind x e \<cdot>(Aexp exp\<cdot>n, CCexp exp\<cdot>n) \<squnion> ccProd (fv e) (ccNeighbors {x} (CCexp exp\<cdot>n)) \<squnion> CCexp exp\<cdot>n)"
+  "atom x \<sharp> e \<Longrightarrow> CCexp (let x be e in exp)\<cdot>n =
+    cc_restr (fv (let x be e in exp)) (ccBind x e \<cdot>(Aheap_nonrec x e\<cdot>(Aexp exp\<cdot>n, CCexp exp\<cdot>n), CCexp exp\<cdot>n) \<squnion> ccProd (fv e) (ccNeighbors {x} (CCexp exp\<cdot>n) - (if isLam e then {} else {x})) \<squnion> CCexp exp\<cdot>n)"
  by (simp add: cccFix_eq Aexp_eq fup_Aexp_eq CCexp_eq fup_CCexp_eq predCC_eq)+
 
 lemma ccField_CCexp:

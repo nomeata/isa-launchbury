@@ -256,6 +256,9 @@ lemma cc_restr_intersect: "ccField G \<inter> ((S - S') \<union> (S' - S)) = {} 
 lemma cc_restr_cc_restr[simp]: "cc_restr S (cc_restr S' G) = cc_restr (S \<inter> S') G"
   by transfer auto
 
+lemma cc_restr_twist: "cc_restr S (cc_restr S' G) = cc_restr S' (cc_restr S G) "
+  by transfer auto
+
 lemma cc_restr_ccProd[simp]:
   "cc_restr S (ccProd S\<^sub>1 S\<^sub>2) = ccProd (S\<^sub>1 \<inter> S) (S\<^sub>2 \<inter> S)"
   by transfer auto
@@ -274,6 +277,9 @@ lemma ccField_ccSquare[simp]: "ccField (ccSquare S) = S"
   
 lemma below_ccSquare[iff]: "G \<sqsubseteq> ccSquare S  \<longleftrightarrow> ccField G \<subseteq> S"
   unfolding ccSquare_def by transfer (auto simp add: Field_def)
+
+lemma cc_restr_ccSquare[simp]: "cc_restr S (ccSquare S') = ccSquare (S' \<inter> S)"
+  unfolding ccSquare_def by auto
 
 lift_definition ccNeighbors :: "var set \<Rightarrow> CoCalls \<Rightarrow> var set" 
   is "\<lambda> S G. {y . \<exists> x \<in> S. (y,x) \<in> G \<or> (x,y) \<in> G}".
