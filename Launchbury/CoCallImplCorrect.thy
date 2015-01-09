@@ -434,7 +434,7 @@ next
       by (simp add: ccHeap_simp1[OF False, symmetric])
   next
     case True
-    thus ?thesis  by (auto simp add: ccHeap_simp2 elim!: nonrecE)
+    thus ?thesis by (auto simp add: ccHeap_simp2 Diff_eq elim!: nonrecE)
   qed
 next
   fix \<Delta> :: heap and e a
@@ -466,9 +466,7 @@ next
 
     have "ccProd (fv e') (ccNeighbors {x} (ccHeap \<Delta> e\<cdot>a) - {x} \<inter> thunks \<Delta>) \<sqsubseteq> ccProd (fv e') (ccNeighbors {x} (ccHeap \<Delta> e\<cdot>a))"
       by (rule ccProd_mono2) auto
-    also have "\<dots> \<sqsubseteq> ccProd (fv e') (ccNeighbors (domA \<Delta>) (ccHeap \<Delta> e\<cdot>a))"
-      by (rule ccProd_mono2[OF ccNeighbors_mono]) auto
-    also have "\<dots> \<sqsubseteq> (\<Squnion>x\<mapsto>e'\<in>map_of \<Delta>. ccProd (fv e') (ccNeighbors (domA \<Delta>) (ccHeap \<Delta> e\<cdot>a)))" 
+    also have "\<dots> \<sqsubseteq> (\<Squnion>x\<mapsto>e'\<in>map_of \<Delta>. ccProd (fv e') (ccNeighbors {x} (ccHeap \<Delta> e\<cdot>a)))" 
       using `map_of \<Delta> x = Some e'` by (rule below_lubmapI)
     also have "\<dots> \<sqsubseteq> ccBindsExtra \<Delta>\<cdot>(Afix \<Delta>\<cdot>(Aexp e\<cdot>a \<squnion> (\<lambda>_.up\<cdot>0)f|` (thunks \<Delta>)), ccHeap \<Delta> e\<cdot>a)"
       by (simp add: ccBindsExtra_simp  below_trans[OF _ join_above2])

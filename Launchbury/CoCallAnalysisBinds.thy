@@ -77,10 +77,10 @@ qed
 *)     
 
 definition ccBindsExtra :: "heap \<Rightarrow> ((AEnv \<times> CoCalls) \<rightarrow> CoCalls)"
-  where "ccBindsExtra \<Gamma> = (\<Lambda> i.  snd i \<squnion> ccBinds \<Gamma> \<cdot> i  \<squnion> (\<Squnion>x\<mapsto>e\<in>map_of \<Gamma>. ccProd (fv e) (ccNeighbors (domA \<Gamma>) (snd i))))"
+  where "ccBindsExtra \<Gamma> = (\<Lambda> i.  snd i \<squnion> ccBinds \<Gamma> \<cdot> i  \<squnion> (\<Squnion>x\<mapsto>e\<in>map_of \<Gamma>. ccProd (fv e) (ccNeighbors {x} (snd i))))"
 
 
-lemma ccBindsExtra_simp: "ccBindsExtra \<Gamma> \<cdot> i = snd i \<squnion> ccBinds \<Gamma> \<cdot> i \<squnion> (\<Squnion>x\<mapsto>e\<in>map_of \<Gamma>. ccProd (fv e) (ccNeighbors (domA \<Gamma>) (snd i)))"
+lemma ccBindsExtra_simp: "ccBindsExtra \<Gamma> \<cdot> i = snd i \<squnion> ccBinds \<Gamma> \<cdot> i \<squnion> (\<Squnion>x\<mapsto>e\<in>map_of \<Gamma>. ccProd (fv e) (ccNeighbors {x} (snd i)))"
   unfolding ccBindsExtra_def by simp
 
 lemma ccBindsExtra_strict[simp]: "ccBindsExtra \<Gamma> \<cdot> \<bottom> = \<bottom>"

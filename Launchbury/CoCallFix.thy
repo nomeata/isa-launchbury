@@ -123,7 +123,10 @@ lemma ccBindsExtra_restr_subst':
   apply (simp add: ccBindsExtra_simp ccBinds_eq ccBind_eq Int_absorb2[OF assms(4)] fv_subst_int[OF assms(3,2)])
   apply (intro arg_cong2[where f = "op \<squnion>"] refl  arg_cong[OF mapCollect_cong])
   apply (subgoal_tac "k \<in> S")
-  apply (auto intro:  ccExp'_restr_subst'[OF assms(1)[OF map_of_SomeD]] simp add: fv_subst_int[OF assms(3,2)]   fv_subst_int2[OF assms(3,2)] ccSquare_def)
+  apply (auto intro:  ccExp'_restr_subst'[OF assms(1)[OF map_of_SomeD]] simp add: fv_subst_int[OF assms(3,2)]   fv_subst_int2[OF assms(3,2)] ccSquare_def)[1]
+  apply (metis assms(4) contra_subsetD domI dom_map_of_conv_domA)
+  apply (subgoal_tac "k \<in> S")
+  apply (auto intro:  ccExp'_restr_subst'[OF assms(1)[OF map_of_SomeD]] simp add: fv_subst_int[OF assms(3,2)]   fv_subst_int2[OF assms(3,2)] ccSquare_def)[1]
   apply (metis assms(4) contra_subsetD domI dom_map_of_conv_domA)
   done
 
@@ -133,6 +136,9 @@ lemma ccBindsExtra_restr:
   using assms
   apply (simp add: ccBindsExtra_simp ccBinds_eq ccBind_eq Int_absorb2)
   apply (intro arg_cong2[where f = "op \<squnion>"] refl arg_cong[OF mapCollect_cong])
+  apply (subgoal_tac "k \<in> S")
+  apply simp
+  apply (metis contra_subsetD domI dom_map_of_conv_domA)
   apply (subgoal_tac "k \<in> S")
   apply simp
   apply (metis contra_subsetD domI dom_map_of_conv_domA)
