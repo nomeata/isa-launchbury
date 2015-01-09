@@ -290,6 +290,14 @@ lemma cont_ccProd_ccNeighbors[THEN cont_compose, cont2cont, simp]:
   apply auto
   done
 
+lemma cont_ccProd_ccNeighbors_Diff[THEN cont_compose, cont2cont, simp]:
+  "cont (\<lambda>x. ccProd S (ccNeighbors S' x - S''))"
+  apply (rule contI)
+  apply (thin_tac "chain ?x")
+  apply transfer
+  apply auto
+  done
+
 lemma ccNeighbors_join[simp]: "ccNeighbors S (G \<squnion> G') = ccNeighbors S G \<union> ccNeighbors S G'"
   by transfer auto
 

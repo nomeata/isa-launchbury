@@ -45,7 +45,7 @@ locale CoCallCardinality = CoCallAnalysis + CoCallAnalyisHeap + CorrectArityAnal
   assumes ccHeap_Exp: "ccExp e\<cdot>a \<sqsubseteq> ccHeap \<Delta> e\<cdot>a"
   assumes ccHeap_Heap: "map_of \<Delta> x = Some e' \<Longrightarrow> (Aheap \<Delta> e\<cdot>a) x= up\<cdot>a' \<Longrightarrow> ccExp e'\<cdot>a' \<sqsubseteq> ccHeap \<Delta> e\<cdot>a"
   assumes ccHeap_Extra_Edges:
-    "map_of \<Delta> x = Some e' \<Longrightarrow> (Aheap \<Delta> e\<cdot>a) x = up\<cdot>a' \<Longrightarrow> ccProd (fv e') (ccNeighbors {x} (ccHeap \<Delta> e\<cdot>a)) \<sqsubseteq> ccHeap \<Delta> e\<cdot>a"
+    "map_of \<Delta> x = Some e' \<Longrightarrow> (Aheap \<Delta> e\<cdot>a) x = up\<cdot>a' \<Longrightarrow> ccProd (fv e') (ccNeighbors {x} (ccHeap \<Delta> e\<cdot>a) - {x} \<inter> thunks \<Delta>) \<sqsubseteq> ccHeap \<Delta> e\<cdot>a"
 
   assumes aHeap_thunks_rec: " \<not> nonrec \<Gamma> \<Longrightarrow> x \<in> thunks \<Gamma> \<Longrightarrow> x \<in> edom (Aheap \<Gamma> e\<cdot>a) \<Longrightarrow> (Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
   assumes aHeap_thunks_nonrec: "nonrec \<Gamma> \<Longrightarrow> x \<in> thunks \<Gamma> \<Longrightarrow> x \<in> ccManyCalls (ccExp e\<cdot>a) \<Longrightarrow> (Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
@@ -251,7 +251,7 @@ next
   
     have "?x = cc_restr (- domA \<Delta>) ?x"  by simp
     also have "\<dots> \<sqsubseteq> cc_restr (- domA \<Delta>) (ccHeap \<Delta> e\<cdot>a)"
-    proof(rule cc_restr_mono2[OF wild_recursion])
+    proof(rule cc_restr_mono2[OF wild_recursion_thunked])
     (*
       have "ccLinear (domA \<Delta>) (ccExp e\<cdot>a)" using linear by (rule linear_Exp)
       thus "ccLinear (domA \<Delta>) (ccApprox (ccFTree (edom (Aexp e\<cdot>a)) (ccExp e\<cdot>a)))"
@@ -294,7 +294,7 @@ next
           by (auto simp add: Fexp.AnalBinds_lookup Fexp_simp  intro: below_trans[OF cc_restr_below_arg])
       qed
 
-      show "ccProd (ccNeighbors {x} (ccHeap \<Delta> e\<cdot>a)) (carrier ((Fexp.AnalBinds  \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) x)) \<sqsubseteq> ccHeap \<Delta> e\<cdot>a"
+      show "ccProd (ccNeighbors {x} (ccHeap \<Delta> e\<cdot>a)- {x} \<inter> thunks \<Delta>) (carrier ((Fexp.AnalBinds  \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) x)) \<sqsubseteq> ccHeap \<Delta> e\<cdot>a"
       proof(cases "(Aheap \<Delta> e\<cdot>a) x")
         case bottom thus ?thesis using e' by (simp add: Fexp.AnalBinds_lookup)
       next
@@ -303,11 +303,11 @@ next
           using up e' by (auto simp add: Fexp.AnalBinds_lookup carrier_Fexp dest!: set_mp[OF Aexp_edom])
         
         from e' up
-        have "ccProd (fv e') (ccNeighbors {x} (ccHeap \<Delta> e\<cdot>a)) \<sqsubseteq> ccHeap \<Delta> e\<cdot>a"  
+        have "ccProd (fv e') (ccNeighbors {x} (ccHeap \<Delta> e\<cdot>a) - {x} \<inter> thunks \<Delta>) \<sqsubseteq> ccHeap \<Delta> e\<cdot>a"
           by (rule ccHeap_Extra_Edges)
         then
         show ?thesis using e'
-          by (simp add: Fexp.AnalBinds_lookup  Fexp_simp ccProd_comm  below_trans[OF ccProd_mono2[OF subset]])
+          by (simp add: Fexp.AnalBinds_lookup  Fexp_simp ccProd_comm  below_trans[OF ccProd_mono1[OF subset]])
       qed
     qed
     also have "\<dots> \<sqsubseteq> ccExp (Let \<Delta> e)\<cdot>a"
