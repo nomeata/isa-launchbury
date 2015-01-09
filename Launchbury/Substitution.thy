@@ -190,6 +190,13 @@ and
 by(induct e y z and \<Gamma> y z rule:subst_subst_heap.induct)
   (auto simp add:fresh_star_Pair exp_assn.bn_defs fresh_Cons)
 
+lemma subst_pres_fresh2:
+  "x \<sharp> y \<Longrightarrow> x \<sharp> z \<Longrightarrow> x \<sharp> e[y ::= z] \<longleftrightarrow> x \<sharp> e"
+and
+ "x \<sharp> y \<Longrightarrow> x \<sharp> z \<Longrightarrow> x \<notin> atom ` domA \<Gamma> \<Longrightarrow> x \<sharp> (\<Gamma>[y ::h= z]) \<longleftrightarrow> x \<sharp> \<Gamma>"
+by (induct e y z and \<Gamma> y z rule:subst_subst_heap.induct)
+   (auto simp add:fresh_star_Pair exp_assn.bn_defs fresh_Cons fresh_Pair)
+
 lemma subst_fresh_noop: "atom x \<sharp> e \<Longrightarrow> e[x ::= y] = e"
   and subst_heap_fresh_noop: "atom x \<sharp> \<Gamma> \<Longrightarrow>  \<Gamma>[x ::h= y] = \<Gamma>"
 by (nominal_induct  e and \<Gamma> avoiding: x y rule:exp_heap_strong_induct)
@@ -237,6 +244,10 @@ lemma subst_SmartLet[simp]:
   "atom ` domA as \<sharp>* (y,z) \<Longrightarrow> (SmartLet as body)[y ::= z] = SmartLet (as[y ::h= z]) (body[y ::= z])"
   unfolding SmartLet_def by auto
 
+lemma subst_let_be[simp]:
+  "atom x'  \<sharp> y \<Longrightarrow> atom x' \<sharp> x \<Longrightarrow> (let x' be e in exp )[y::=x] = (let x' be e[y::=x] in exp[y::=x])"
+  by (simp add: fresh_star_def fresh_Pair)
+
 lemma isLam_subst[simp]: "isLam e[x::=y] = isLam e"
   by (nominal_induct e avoiding: x y  rule: exp_strong_induct)
      (auto simp add: fresh_star_Pair)
@@ -252,5 +263,13 @@ by (induction \<Gamma> ) auto
 lemma mapCollect_subst[simp]:
   "{e k v | k\<mapsto>v\<in>map_of \<Gamma>[x::h=y]} = {e k v[x::=y] | k\<mapsto>v\<in>map_of \<Gamma>}"
   by (auto simp add: map_of_subst)
+
+lemma subst_eq_Cons:
+  "\<Gamma>[x::h=y] = (x', e)#\<Delta> \<longleftrightarrow> (\<exists> e' \<Gamma>'. \<Gamma> = (x',e')#\<Gamma>' \<and> e'[x::=y] = e \<and> \<Gamma>'[x::h=y] = \<Delta>)"
+  by (cases \<Gamma>) auto
+
+lemma nonrec_subst:
+  "atom ` domA \<Gamma> \<sharp>* x \<Longrightarrow> atom ` domA \<Gamma> \<sharp>* y \<Longrightarrow> nonrec \<Gamma>[x::h=y] \<longleftrightarrow> nonrec \<Gamma>"
+  by (auto simp add: nonrec_def subst_pres_fresh2 fresh_star_def subst_eq_Cons)
 
 end

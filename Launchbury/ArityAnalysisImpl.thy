@@ -45,46 +45,6 @@ proof-
 qed
 declare Aexp.simps(4)[simp del]
 
-lemma Aexp_subst_upd: "(Aexp e[y::=x]\<cdot>n) \<sqsubseteq> (Aexp e\<cdot>n)(y := \<bottom>, x := up\<cdot>0)"
-proof (nominal_induct e avoiding: x y  arbitrary: n rule: exp_strong_induct)
-  case (Var v) 
-  thus ?case by auto
-next
-  case (App e v x y n)
-  have "Aexp (App e v)[y::=x]\<cdot>n \<sqsubseteq> (Aexp e[y::=x]\<cdot>(inc\<cdot>n)) \<squnion> (esing (v[y::v=x])\<cdot>(up\<cdot>0))" by simp
-  also have "Aexp e[y::=x]\<cdot>(inc\<cdot>n) \<sqsubseteq> (Aexp e\<cdot>(inc\<cdot>n))(y := \<bottom>, x := up\<cdot>0)" by (rule App.hyps)
-  also have "(esing (v[y::v=x])\<cdot>(up\<cdot>0)) \<sqsubseteq> (esing v\<cdot>(up\<cdot>0))(y := \<bottom>, x := up\<cdot>0)" by simp
-  also have "(Aexp e\<cdot>(inc\<cdot>n))(y := \<bottom>, x := up\<cdot>0) \<squnion> (esing v\<cdot>(up\<cdot>0))(y := \<bottom>, x := up\<cdot>0) 
-    = (Aexp (App e v)\<cdot>n)(y := \<bottom>, x := up\<cdot>0)" by auto
-  finally show ?case by this simp_all
-next
-  case (Lam v e)
-  note Lam(1,2)[simp]
-  have "Aexp (Lam [v]. e)[y::=x]\<cdot>n = env_delete v (Aexp e[y::=x]\<cdot>(pred\<cdot>n))" by simp
-  also have "\<dots> \<sqsubseteq> env_delete v ((Aexp e\<cdot>(pred\<cdot>n))(y := \<bottom>, x := up\<cdot>0))"
-    by (rule cont2monofunE[OF env_delete_cont Lam(3)])
-  also have "\<dots> = (env_delete v (Aexp e\<cdot>(pred\<cdot>n)))(y := \<bottom>, x := up\<cdot>0)"
-    using Lam(1,2) by (auto simp add: fresh_at_base)
-  also have "\<dots> = (Aexp (Lam [v]. e)\<cdot>n)(y := \<bottom>, x := up\<cdot>0)" by simp
-  finally show ?case.
-next
-  case (Let \<Gamma> e)
-  hence "x \<notin> domA \<Gamma> " and "y \<notin> domA \<Gamma>"
-    by (metis (erased, hide_lams) bn_subst domA_not_fresh fresh_def fresh_star_at_base fresh_star_def obtain_fresh subst_is_fresh(2))+
-  
-  note this[simp] Let(1,2)[simp]
-
-  have "Aexp (Let \<Gamma> e)[y::=x]\<cdot>n \<sqsubseteq> Afix \<Gamma>[y::h=x]\<cdot>(Aexp e[y::=x]\<cdot>n \<squnion> thunks_AE \<Gamma>[y::h=x]) f|` ( - domA \<Gamma>)" by (simp add: fresh_star_Pair)
-  also have "(Aexp e[y::=x]\<cdot>n) \<sqsubseteq> (Aexp e\<cdot>n)(y := \<bottom>, x := up\<cdot>0)" by fact
-  also have "thunks_AE \<Gamma>[y::h=x] \<sqsubseteq> (thunks_AE \<Gamma>)(y := \<bottom>, x := up\<cdot>0)" by (rule thunks_AE_subst_approx[OF `y \<notin> domA \<Gamma>`])
-  also have "(Aexp e\<cdot>n)(y := \<bottom>, x := up\<cdot>0) \<squnion> (thunks_AE \<Gamma>)(y := \<bottom>, x := up\<cdot>0) = (Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>)(y := \<bottom>, x := up\<cdot>0)" by simp
-  also have "Afix \<Gamma>[y::h=x]\<cdot>((Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>)(y := \<bottom>, x := up\<cdot>0)) \<sqsubseteq> (Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>))(y := \<bottom>, x := up\<cdot>0)"
-    by (rule Afix_subst_approx[OF Let(3) `x \<notin> domA \<Gamma>` `y \<notin> domA \<Gamma>`])
-  also have "(Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>))(y := \<bottom>, x := up\<cdot>0) f|` (- domA \<Gamma>) = (Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>) f|` (- domA \<Gamma>)) (y := \<bottom>, x := up\<cdot>0)" by auto
-  also have "(Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> thunks_AE \<Gamma>) f|` (- domA \<Gamma>)) = Aexp (Terms.Let \<Gamma> e)\<cdot>n" by simp
-  finally show ?case by this simp_all
-qed
-
 lemma Aexp_restr_subst:
   assumes "x \<notin> S" and "y \<notin> S"
   shows "(Aexp e[x::=y]\<cdot>a) f|` S = (Aexp e\<cdot>a) f|` S"
@@ -121,20 +81,13 @@ next
 qed
 
 interpretation CorrectArityAnalysis' Aexp
-proof default
+  by default (simp_all add:Aexp_restr_subst)
 (*
   fix \<pi>
   show "\<pi> \<bullet> Aexp = Aexp"
     by (rule fun_eqvtI[OF Aexp.eqvt])
 next
 *)
-  fix x y :: var and e :: exp  and a 
-  show "Aexp e[y::=x]\<cdot>a \<sqsubseteq> env_delete y (Aexp e\<cdot>a) \<squnion> esing x\<cdot>(up\<cdot>0)"
-    apply (rule below_trans[OF Aexp_subst_upd])
-    apply (rule fun_belowI)
-    apply auto
-    done
-qed (simp_all add:Aexp_restr_subst)
 
 definition Aheap where
   "Aheap \<Gamma> e = (\<Lambda> a. (Afix \<Gamma> \<cdot> (Aexp e\<cdot>a \<squnion> thunks_AE \<Gamma>) f|` domA \<Gamma>))"

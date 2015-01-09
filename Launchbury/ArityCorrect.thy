@@ -22,7 +22,6 @@ begin
 end
 
 locale SubstArityAnalysis = EdomArityAnalysis + 
-  assumes Aexp_subst: "Aexp (e[y::=x])\<cdot>a \<sqsubseteq> env_delete y ((Aexp e)\<cdot>a) \<squnion> esing x\<cdot>(up\<cdot>0)"
   assumes Aexp_subst_restr: "x \<notin> S \<Longrightarrow> y \<notin> S \<Longrightarrow> (Aexp e[x::=y] \<cdot> a) f|` S = (Aexp e\<cdot>a) f|` S"
 
 locale CorrectArityAnalysis' = SubstArityAnalysis +
@@ -52,6 +51,43 @@ lemma edom_AnalBinds: "edom (ABinds \<Gamma>\<cdot>ae) \<subseteq> fv \<Gamma>"
   by (induction \<Gamma> rule: ABinds.induct)
      (auto simp del: fun_meet_simp dest: set_mp[OF Aexp'_edom] dest: set_mp[OF fv_delete_subset])
 end 
+
+context SubstArityAnalysis
+begin
+  lemma Aexp_subst_upd: "(Aexp e[y::=x]\<cdot>n) \<sqsubseteq> (Aexp e\<cdot>n)(y := \<bottom>, x := up\<cdot>0)"
+  proof-
+    have "Aexp e[y::=x]\<cdot>n f|`(-{x,y}) = Aexp e\<cdot>n f|` (-{x,y})" by (rule Aexp_subst_restr) auto
+  
+    show ?thesis
+    proof (rule fun_belowI)
+    fix x'
+      have "x' = x \<or> x' = y \<or> x' \<in> (-{x,y})" by auto
+      thus "(Aexp e[y::=x]\<cdot>n) x' \<sqsubseteq> ((Aexp e\<cdot>n)(y := \<bottom>, x := up\<cdot>0)) x'"
+      proof(elim disjE)
+        assume "x' \<in> (-{x,y})"
+        moreover
+        have "Aexp e[y::=x]\<cdot>n f|`(-{x,y}) = Aexp e\<cdot>n f|` (-{x,y})" by (rule Aexp_subst_restr) auto
+        note fun_cong[OF this, where x = x']
+        ultimately
+        show ?thesis by auto
+      next
+        assume "x' = x"
+        thus ?thesis by simp
+      next
+        assume "x' = y"
+        thus ?thesis
+        using [[simp_trace]]
+        by simp
+     qed
+   qed
+  qed
+
+  lemma Aexp_subst: "Aexp (e[y::=x])\<cdot>a \<sqsubseteq> env_delete y ((Aexp e)\<cdot>a) \<squnion> esing x\<cdot>(up\<cdot>0)"
+    apply (rule below_trans[OF Aexp_subst_upd])
+    apply (rule fun_belowI)
+    apply auto
+    done
+end
 
 context CorrectArityAnalysis'
 begin

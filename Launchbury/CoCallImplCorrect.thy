@@ -100,62 +100,6 @@ lemma CCexp_Let_simp2[simp]:
 declare CCexp_simps(4)[simp del]
 declare CCexp_simps(5)[simp del]
 
-
-lemma Aexp_subst_upd: "(Aexp e[y::=x]\<cdot>n) \<sqsubseteq> (Aexp e\<cdot>n)(y := \<bottom>, x := up\<cdot>0)"
-proof (nominal_induct e avoiding: x y  arbitrary: n rule: exp_strong_induct_rec)
-  case (Var v) 
-  thus ?case by auto
-next
-  case (App e v x y n)
-  have "Aexp (App e v)[y::=x]\<cdot>n \<sqsubseteq> (Aexp e[y::=x]\<cdot>(inc\<cdot>n)) \<squnion> (esing (v[y::v=x])\<cdot>(up\<cdot>0))" by simp
-  also have "Aexp e[y::=x]\<cdot>(inc\<cdot>n) \<sqsubseteq> (Aexp e\<cdot>(inc\<cdot>n))(y := \<bottom>, x := up\<cdot>0)" by (rule App.hyps)
-  also have "(esing (v[y::v=x])\<cdot>(up\<cdot>0)) \<sqsubseteq> (esing v\<cdot>(up\<cdot>0))(y := \<bottom>, x := up\<cdot>0)" by simp
-  also have "(Aexp e\<cdot>(inc\<cdot>n))(y := \<bottom>, x := up\<cdot>0) \<squnion> (esing v\<cdot>(up\<cdot>0))(y := \<bottom>, x := up\<cdot>0) 
-    = (Aexp (App e v)\<cdot>n)(y := \<bottom>, x := up\<cdot>0)" by auto
-  finally show ?case by this simp_all
-next
-  case (Lam v e)
-  note Lam(1,2)[simp]
-  have "Aexp (Lam [v]. e)[y::=x]\<cdot>n = env_delete v (Aexp e[y::=x]\<cdot>(pred\<cdot>n))" by simp
-  also have "\<dots> \<sqsubseteq> env_delete v ((Aexp e\<cdot>(pred\<cdot>n))(y := \<bottom>, x := up\<cdot>0))"
-    by (rule cont2monofunE[OF env_delete_cont Lam(3)])
-  also have "\<dots> = (env_delete v (Aexp e\<cdot>(pred\<cdot>n)))(y := \<bottom>, x := up\<cdot>0)"
-    using Lam(1,2) by (auto simp add: fresh_at_base)
-  also have "\<dots> = (Aexp (Lam [v]. e)\<cdot>n)(y := \<bottom>, x := up\<cdot>0)" by simp
-  finally show ?case.
-next
-  case (Let \<Gamma> e)
-  hence "x \<notin> domA \<Gamma>" and "y \<notin> domA \<Gamma>"
-    by (metis (erased, hide_lams) bn_subst domA_not_fresh fresh_def fresh_star_at_base fresh_star_def obtain_fresh subst_is_fresh(2))+
-  hence "x \<notin> thunks \<Gamma>" and  "y \<notin> thunks \<Gamma>"
-    by (metis contra_subsetD thunks_domA)+
-
-  note this[simp] Let(1,2)[simp]
-
-  note Let(3)
-  hence "\<not> nonrec (\<Gamma>[y::h=x])"
-    apply (auto elim!: nonrecE)
-    sorry
-
-  have "Aexp (Let \<Gamma> e)[y::=x]\<cdot>n \<sqsubseteq> Afix \<Gamma>[y::h=x]\<cdot>(Aexp e[y::=x]\<cdot>n \<squnion> (\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>[y::h=x])) f|` ( - domA \<Gamma>)"
-    by (simp add: fresh_star_Pair `\<not> nonrec (\<Gamma>[y::h=x])`)
-  also have "(Aexp e[y::=x]\<cdot>n) \<sqsubseteq> (Aexp e\<cdot>n)(y := \<bottom>, x := up\<cdot>0)"
-    by fact
-  also have "(\<lambda>_.up\<cdot>0) f|` (thunks (\<Gamma>[y::h=x])) \<sqsubseteq> ((\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>))(y := \<bottom>, x := up\<cdot>0)"
-    by (auto intro: fun_belowI `y \<notin> thunks \<Gamma>`)
-  also have "(Aexp e\<cdot>n)(y := \<bottom>, x := up\<cdot>0) \<squnion> ((\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>))(y := \<bottom>, x := up\<cdot>0) = (Aexp e\<cdot>n \<squnion> ((\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>)))(y := \<bottom>, x := up\<cdot>0)" by simp
-  also have "Afix \<Gamma>[y::h=x]\<cdot>((Aexp e\<cdot>n \<squnion> ((\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>)))(y := \<bottom>, x := up\<cdot>0)) \<sqsubseteq> (Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> ((\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>))))(y := \<bottom>, x := up\<cdot>0)"
-    by (rule Afix_subst_approx[OF Let(4) `x \<notin> domA \<Gamma>` `y \<notin> domA \<Gamma>`])
-  also have "(Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> ((\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>))))(y := \<bottom>, x := up\<cdot>0) f|` (- domA \<Gamma>) = (Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> ((\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>))) f|` (- domA \<Gamma>)) (y := \<bottom>, x := up\<cdot>0)"
-    by (auto simp add: `x \<notin> domA \<Gamma>` `y \<notin> domA \<Gamma>`)
-  also have "(Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> ((\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>))) f|` (- domA \<Gamma>)) = Aexp (Let \<Gamma> e)\<cdot>n"
-    by (simp add: `\<not> nonrec \<Gamma>`)
-  finally show ?case by this simp_all
-next
-  case (Let_nonrec x' e exp x y n)
-  show ?case sorry
-qed
-
 lemma Aexp_restr_subst:
   assumes "x \<notin> S" and "y \<notin> S"
   shows "(Aexp e[x::=y]\<cdot>a) f|` S = (Aexp e\<cdot>a) f|` S"
@@ -204,19 +148,27 @@ next
 qed
 
 interpretation CorrectArityAnalysis' Aexp
-proof default
-(*
-  fix \<pi>
-  show "\<pi> \<bullet> Aexp = Aexp" by perm_simp rule
+by default (simp_all add:Aexp_restr_subst)
+
+lemma CCexp_subst:
+  assumes "x \<notin> S" and "y \<notin> S"
+  shows "cc_restr S (CCexp e[y::=x]\<cdot>a) = cc_restr S (CCexp e\<cdot>a)"
+using assms
+proof (nominal_induct e avoiding: x y  arbitrary: a  S rule: exp_strong_induct_rec_set)
+  case (Var v) 
+  thus ?case by auto
 next
-*)
-  fix x y :: var and e :: exp  and a 
-  show "Aexp e[y::=x]\<cdot>a \<sqsubseteq> env_delete y (Aexp e\<cdot>a) \<squnion> esing x\<cdot>(up\<cdot>0)"
-    apply (rule below_trans[OF Aexp_subst_upd])
-    apply (rule fun_belowI)
-    apply auto
-    done
-qed (simp_all add:Aexp_restr_subst)
+  case (App e v)
+  thus ?case
+    by (auto simp add: Int_insert_left fv_subst_int simp del: join_comm intro: join_mono)
+next
+  case (Lam v e)
+  thus ?case
+  by (auto simp add: cc_restr_predCC  Diff_Int_distrib2 fv_subst_int env_restr_join env_delete_env_restr_swap[symmetric])
+next
+  case (Let \<Gamma> e)
+  hence "x \<notin> domA \<Gamma> " and "y \<notin> domA \<Gamma>"
+    by (metis (erased, hide_lams) bn_subst domA_not_fresh fresh_def fresh_star_at_base fresh_star_def obtain_fresh subst_is_fresh(2))+
 
 definition Aheap_nonrec where
   "Aheap_nonrec x e' e = (\<Lambda> a. esing x\<cdot>(ABind_nonrec x e'\<cdot>(CoCallArityAnalysis.Aexp cCCexp e\<cdot>a, CoCallArityAnalysis.CCexp cCCexp e\<cdot>a)))"

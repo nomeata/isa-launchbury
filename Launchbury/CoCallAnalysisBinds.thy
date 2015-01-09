@@ -29,7 +29,7 @@ fun ccBinds :: "heap \<Rightarrow> ((AEnv \<times> CoCalls) \<rightarrow> CoCall
   where "ccBinds [] = csnd"
      |  "ccBinds ((v,e)#binds) = ccBind v e \<squnion> ccBinds (delete v binds)"
 *)
-term lub
+
 definition ccBinds :: "heap \<Rightarrow> ((AEnv \<times> CoCalls) \<rightarrow> CoCalls)"
   where "ccBinds \<Gamma> = (\<Lambda> i. (\<Squnion>v\<mapsto>e\<in>map_of \<Gamma>. ccBind v e\<cdot>i))"
 
@@ -44,7 +44,6 @@ lemma ccBinds_strict[simp]: "ccBinds \<Gamma>\<cdot>\<bottom>=\<bottom>"
 
 lemma ccBinds_strict'[simp]: "ccBinds \<Gamma>\<cdot>(\<bottom>,\<bottom>)=\<bottom>"
   by (metis CoCallAnalysis.ccBinds_strict Pair_bottom_iff)
-
 
 lemma ccBinds_reorder1:
   assumes "map_of \<Gamma> v = Some e"
