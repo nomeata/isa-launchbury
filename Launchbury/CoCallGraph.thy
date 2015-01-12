@@ -281,15 +281,13 @@ lemma below_ccSquare[iff]: "G \<sqsubseteq> ccSquare S  \<longleftrightarrow> cc
 lemma cc_restr_ccSquare[simp]: "cc_restr S (ccSquare S') = ccSquare (S' \<inter> S)"
   unfolding ccSquare_def by auto
 
-lift_definition ccNeighbors :: "var set \<Rightarrow> CoCalls \<Rightarrow> var set" 
-  is "\<lambda> S G. {y . \<exists> x \<in> S. (y,x) \<in> G \<or> (x,y) \<in> G}".
+lift_definition ccNeighbors :: "var \<Rightarrow> CoCalls \<Rightarrow> var set" 
+  is "\<lambda> x G. {y .(y,x) \<in> G \<or> (x,y) \<in> G}".
 
-lemma ccNeighbors_bot[simp]: "ccNeighbors S \<bottom> = {}" by transfer auto
-
-lemma ccNeighbors_empty[simp]: "ccNeighbors {} G = {}" by transfer auto
+lemma ccNeighbors_bot[simp]: "ccNeighbors x \<bottom> = {}" by transfer auto
 
 lemma cont_ccProd_ccNeighbors[THEN cont_compose, cont2cont, simp]:
-  "cont (\<lambda>x. ccProd S (ccNeighbors S' x))"
+  "cont (\<lambda>y. ccProd S (ccNeighbors x y))"
   apply (rule contI)
   apply (thin_tac "chain ?x")
   apply transfer
@@ -297,65 +295,58 @@ lemma cont_ccProd_ccNeighbors[THEN cont_compose, cont2cont, simp]:
   done
 
 lemma cont_ccProd_ccNeighbors_Diff[THEN cont_compose, cont2cont, simp]:
-  "cont (\<lambda>x. ccProd S (ccNeighbors S' x - S''))"
+  "cont (\<lambda>y. ccProd S (ccNeighbors x y - S''))"
   apply (rule contI)
   apply (thin_tac "chain ?x")
   apply transfer
   apply auto
   done
 
-lemma ccNeighbors_join[simp]: "ccNeighbors S (G \<squnion> G') = ccNeighbors S G \<union> ccNeighbors S G'"
-  by transfer auto
-
-lemma ccNeighbors_union[simp]: "ccNeighbors (S \<union> S') G = ccNeighbors S G \<union> ccNeighbors S' G"
+lemma ccNeighbors_join[simp]: "ccNeighbors x (G \<squnion> G') = ccNeighbors x G \<union> ccNeighbors x G'"
   by transfer auto
 
 lemma ccNeighbors_ccProd:
-  "ccNeighbors S (ccProd S' S'') = (if S \<inter> S' = {} then {} else S'') \<union> (if S \<inter> S'' = {} then {} else S')"
+  "ccNeighbors x (ccProd S S') = (if x \<in> S then S' else {}) \<union> (if x \<in> S' then S else {})"
 by transfer auto
 
 lemma ccNeighbors_ccSquare: 
-  "ccNeighbors S (ccSquare S') = (if S \<inter> S' = {} then {} else S')"
+  "ccNeighbors x (ccSquare S) = (if x \<in> S then S else {})"
   unfolding ccSquare_def by (auto simp add: ccNeighbors_ccProd)
 
 lemma ccNeighbors_cc_restr[simp]:
-  "ccNeighbors S (cc_restr S' G) = ccNeighbors (S \<inter> S') G \<inter> S'"
+  "ccNeighbors x (cc_restr S G) = (if x \<in> S then ccNeighbors x G \<inter> S else {})"
 by transfer auto
 
 lemma ccNeighbors_mono:
-  "S \<subseteq> S' \<Longrightarrow> G \<sqsubseteq> G' \<Longrightarrow> ccNeighbors S G \<subseteq> ccNeighbors S' G'"
+  "G \<sqsubseteq> G' \<Longrightarrow> ccNeighbors x G \<subseteq> ccNeighbors x G'"
   by transfer auto
 
 lemma subset_ccNeighbors:
-  "S \<subseteq> ccNeighbors {x} G \<longleftrightarrow> ccProd {x} S \<sqsubseteq> G"
+  "S \<subseteq> ccNeighbors x G \<longleftrightarrow> ccProd {x} S \<sqsubseteq> G"
   by transfer (auto simp add: sym_def)
 
-lemma elem_ccNeighbors:
-  "xa \<in> ccNeighbors {x} G \<longleftrightarrow> (xa--x\<in>G)"
+lemma elem_ccNeighbors[simp]:
+  "y \<in> ccNeighbors x G \<longleftrightarrow> (y--x\<in>G)"
   by transfer (auto simp add: sym_def)
 
 lemma ccNeighbors_ccField:
-  "ccNeighbors S G \<subseteq> ccField G" by transfer (auto simp add: Field_def)
+  "ccNeighbors x G \<subseteq> ccField G" by transfer (auto simp add: Field_def)
 
-lemma ccNeighbors_disjoint_empty:
-  "ccField G \<inter> S = {} \<Longrightarrow> ccNeighbors S G = {}"
+lemma ccNeighbors_disjoint_empty[simp]:
+  "ccNeighbors x G = {} \<longleftrightarrow> x \<notin> ccField G"
   by transfer (auto simp add: Field_def)
 
 instance CoCalls :: Join_cpo
   by default (metis coCallsLub_is_lub)
 
-lemma ccNeighbors_lub[simp]: "ccNeighbors S (lub Gs) = lub (ccNeighbors S ` Gs)"
+lemma ccNeighbors_lub[simp]: "ccNeighbors x (lub Gs) = lub (ccNeighbors x ` Gs)"
   by transfer (auto simp add: lub_set)
-
 
 lift_definition ccManyCalls:: "CoCalls \<Rightarrow> var set" 
   is "\<lambda> G. {y . (y,y) \<in> G}".
 
 lemma ccManyCalls_bot[simp]:
   "ccManyCalls \<bottom> = {}" by transfer simp
-
-lemma ccNeighbors_ccManyCalls[simp]: "x \<in> ccNeighbors {x} G \<longleftrightarrow> x \<in> ccManyCalls G"
-  by transfer auto
 
 lemma in_ccManyCalls[simp]:
   "x \<in> ccManyCalls G \<longleftrightarrow> x--x\<in>G" by transfer auto
@@ -398,9 +389,11 @@ lemma ccLinear_lub[simp]:
   "ccLinear S (lub X) = (\<forall> G\<in>X. ccLinear S G)"
  unfolding ccLinear_def by auto
 
+(*
 lemma ccLinear_ccNeighbors:
   "ccLinear S G \<Longrightarrow> ccNeighbors S G \<inter> S = {}"
  unfolding ccLinear_def by transfer auto
+*)
 
 lemma ccLinear_cc_restr[intro]:
   "ccLinear S G \<Longrightarrow> ccLinear S (cc_restr S' G)"

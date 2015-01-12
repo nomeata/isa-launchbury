@@ -55,6 +55,14 @@ proof-
     by (auto intro: cfun_eqI simp add: ccBinds_eq delete_set_none)
 qed
 
+lemma ccBinds_Nil[simp]:
+  "ccBinds [] = \<bottom>"
+  unfolding ccBinds_def by simp
+
+lemma ccBinds_Cons[simp]:
+   "ccBinds ((x,e)#\<Gamma>) = ccBind x e \<squnion> ccBinds (delete x \<Gamma>)"
+   by (subst ccBinds_reorder1[where v = x and e = e]) auto
+
 lemma ccBind_below_ccBinds: "map_of \<Gamma> x = Some e \<Longrightarrow> ccBind x e\<cdot>ae \<sqsubseteq> (ccBinds \<Gamma>\<cdot>ae)"
   by (auto simp add: ccBinds_eq)
 
@@ -76,10 +84,10 @@ qed
 *)     
 
 definition ccBindsExtra :: "heap \<Rightarrow> ((AEnv \<times> CoCalls) \<rightarrow> CoCalls)"
-  where "ccBindsExtra \<Gamma> = (\<Lambda> i.  snd i \<squnion> ccBinds \<Gamma> \<cdot> i  \<squnion> (\<Squnion>x\<mapsto>e\<in>map_of \<Gamma>. ccProd (fv e) (ccNeighbors {x} (snd i))))"
+  where "ccBindsExtra \<Gamma> = (\<Lambda> i.  snd i \<squnion> ccBinds \<Gamma> \<cdot> i  \<squnion> (\<Squnion>x\<mapsto>e\<in>map_of \<Gamma>. ccProd (fv e) (ccNeighbors x (snd i))))"
 
 
-lemma ccBindsExtra_simp: "ccBindsExtra \<Gamma> \<cdot> i = snd i \<squnion> ccBinds \<Gamma> \<cdot> i \<squnion> (\<Squnion>x\<mapsto>e\<in>map_of \<Gamma>. ccProd (fv e) (ccNeighbors {x} (snd i)))"
+lemma ccBindsExtra_simp: "ccBindsExtra \<Gamma> \<cdot> i = snd i \<squnion> ccBinds \<Gamma> \<cdot> i \<squnion> (\<Squnion>x\<mapsto>e\<in>map_of \<Gamma>. ccProd (fv e) (ccNeighbors x (snd i)))"
   unfolding ccBindsExtra_def by simp
 
 lemma ccBindsExtra_strict[simp]: "ccBindsExtra \<Gamma> \<cdot> \<bottom> = \<bottom>"

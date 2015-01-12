@@ -303,10 +303,10 @@ begin
     by (rule beta_cfun) simp
 
   definition CCfix_nonrec
-   where "CCfix_nonrec x e = (\<Lambda> i. ccBind x e \<cdot> (Aheap_nonrec x e\<cdot>i, snd i)  \<squnion> ccProd (fv e) (ccNeighbors {x} (snd i) - (if isLam e then {} else {x})) \<squnion> snd i)"
+   where "CCfix_nonrec x e = (\<Lambda> i. ccBind x e \<cdot> (Aheap_nonrec x e\<cdot>i, snd i)  \<squnion> ccProd (fv e) (ccNeighbors x (snd i) - (if isLam e then {} else {x})) \<squnion> snd i)"
 
   lemma CCfix_nonrec_eq[simp]:
-    "CCfix_nonrec x e \<cdot> i = ccBind x e\<cdot>(Aheap_nonrec x e\<cdot>i, snd i)  \<squnion> ccProd (fv e) (ccNeighbors {x} (snd i) - (if isLam e then {} else {x})) \<squnion> snd i"
+    "CCfix_nonrec x e \<cdot> i = ccBind x e\<cdot>(Aheap_nonrec x e\<cdot>i, snd i)  \<squnion> ccProd (fv e) (ccNeighbors x (snd i) - (if isLam e then {} else {x})) \<squnion> snd i"
     unfolding CCfix_nonrec_def
     by (rule beta_cfun) (intro cont2cont)
 

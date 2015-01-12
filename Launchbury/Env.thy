@@ -315,6 +315,10 @@ lemma env_restr_esing[simp]:
   "x\<in> S \<Longrightarrow> esing x\<cdot>v f|` S = esing x\<cdot>v" 
   by (auto intro: env_restr_useless dest: set_mp[OF edom_esing_subset])
 
+lemma env_restr_esing2[simp]:
+  "x \<notin> S \<Longrightarrow> esing x\<cdot>v f|` S = \<bottom>" 
+  by (auto  dest: set_mp[OF edom_esing_subset])
+
 lemma esing_eq_iff[simp]:
   "esing x\<cdot>v = esing x\<cdot>v' \<longleftrightarrow> v = v'"
   by (metis esing_simps(1))
