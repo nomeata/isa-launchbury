@@ -24,12 +24,6 @@ lemma ccBind_eq: "ccBind v e \<cdot> (ae, G) = (if (v--v\<notin>G) \<or> \<not> 
 lemma ccBind_strict[simp]: "ccBind v e \<cdot> \<bottom> = \<bottom>"
   by (auto simp add: inst_prod_pcpo ccBind_eq simp del: Pair_strict)
 
-(*
-fun ccBinds :: "heap \<Rightarrow> ((AEnv \<times> CoCalls) \<rightarrow> CoCalls)"
-  where "ccBinds [] = csnd"
-     |  "ccBinds ((v,e)#binds) = ccBind v e \<squnion> ccBinds (delete v binds)"
-*)
-
 definition ccBinds :: "heap \<Rightarrow> ((AEnv \<times> CoCalls) \<rightarrow> CoCalls)"
   where "ccBinds \<Gamma> = (\<Lambda> i. (\<Squnion>v\<mapsto>e\<in>map_of \<Gamma>. ccBind v e\<cdot>i))"
 
@@ -65,23 +59,6 @@ lemma ccBinds_Cons[simp]:
 
 lemma ccBind_below_ccBinds: "map_of \<Gamma> x = Some e \<Longrightarrow> ccBind x e\<cdot>ae \<sqsubseteq> (ccBinds \<Gamma>\<cdot>ae)"
   by (auto simp add: ccBinds_eq)
-
-(*
-lemma ccBinds_lub: "ccBinds \<Gamma>\<cdot>(ae,G) = lub {ccBind x e\<cdot>(ae,G) | x e . map_of \<Gamma> x = Some e} \<squnion> G"
-proof (induction rule: ccBinds.induct[case_names Nil Cons])
-  case Nil thus ?case by simp
-next
-  case (Cons v e \<Gamma>)
-  have "{ccBind x ea\<cdot>(ae, G) |x ea. map_of ((v, e) # \<Gamma>) x = Some ea} =
-        insert (ccBind v e\<cdot>(ae, G)) {ccBind x ea\<cdot>(ae, G) |x ea. map_of (delete v \<Gamma>) x = Some ea}"
-    by auto
-  hence "lub {ccBind x ea\<cdot>(ae, G) |x ea. map_of ((v, e) # \<Gamma>) x = Some ea}
-     = ccBind v e\<cdot>(ae, G) \<squnion> lub {ccBind x ea\<cdot>(ae, G) |x ea. map_of (delete v \<Gamma>) x = Some ea}"
-     by (simp only: lub_insert)
-  thus ?case
-    using Cons by simp
-qed
-*)     
 
 definition ccBindsExtra :: "heap \<Rightarrow> ((AEnv \<times> CoCalls) \<rightarrow> CoCalls)"
   where "ccBindsExtra \<Gamma> = (\<Lambda> i.  snd i \<squnion> ccBinds \<Gamma> \<cdot> i  \<squnion> (\<Squnion>x\<mapsto>e\<in>map_of \<Gamma>. ccProd (fv e) (ccNeighbors x (snd i))))"
@@ -140,10 +117,6 @@ lemma ccBindsExtra_cong[fundef_cong]:
   unfolding CoCallAnalysis.ccBindsExtra_simp
   apply (rule arg_cong2[OF ccBinds_cong mapCollect_cong]) 
   apply simp+
-  (*
-  apply (rule arg_cong[OF ccBinds_cong])
-  apply simp+
-  *)
   done
 
 end
