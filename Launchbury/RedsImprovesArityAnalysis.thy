@@ -1,8 +1,12 @@
 theory RedsImprovesArityAnalysis
-imports ArityAnalysisFix Launchbury
+imports ArityAnalysisFixProps Launchbury
 begin
 
-locale CorrectArityAnalysisAfix = CorrectArityAnalysis' + 
+fixrec inc_bot :: "Arity\<^sub>\<bottom> \<rightarrow> Arity\<^sub>\<bottom>" ("inc\<^sub>\<bottom>")
+  where "inc\<^sub>\<bottom>\<cdot>(up\<cdot>n)=up\<cdot>(inc\<cdot>n)"
+
+
+locale CorrectArityAnalysisAfix = CorrectArityAnalysis + 
   assumes Aexp_Let: "Afix as\<cdot>(Aexp e\<cdot>n) f|` (- domA as) \<sqsubseteq> Aexp (Let as e)\<cdot>n"
 
 begin
@@ -129,7 +133,7 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' ae n)
     show ?thesis using bottom by simp
   next
     case (up n')
-    note IH1 = env_restr_below_subset[OF subset2 Application(3)[OF prem3, where n = "inc\<^sub>\<bottom>\<cdot>n"], unfolded up Aexp'_simps inc_bot_simps] 
+    note IH1 = env_restr_below_subset[OF subset2 Application(3)[OF prem3, where n = "inc\<^sub>\<bottom>\<cdot>n"], unfolded up Aexp'_simps inc_bot.simps] 
     note IH2 = env_restr_below_subset[OF subset1 Application(5)[OF prem1, where n = n], unfolded up Aexp'_simps]
     have "Afix \<Theta>\<cdot>(Aexp z\<cdot>n' \<squnion> ae)  f|` ?S  \<sqsubseteq> Afix \<Delta>\<cdot>(Aexp e'[y::=x]\<cdot>n' \<squnion> ae)  f|` ?S" by (rule IH2)
     also have "\<dots> \<sqsubseteq> Afix \<Delta>\<cdot>(env_delete y (Aexp e'\<cdot>n') \<squnion>  esing x \<cdot> (up\<cdot>0) \<squnion> ae)  f|` ?S"

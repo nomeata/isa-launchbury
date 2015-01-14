@@ -1,17 +1,9 @@
 theory TrivialArityAnal
-imports ArityCorrect "Arity-Nominal" "Env-Nominal"
+imports ArityAnalysisSpec "Env-Nominal"
 begin
 
 definition Trivial_Aexp :: "exp \<Rightarrow> Arity \<rightarrow> AEnv"
   where "Trivial_Aexp e = (\<Lambda> n. (\<lambda> x. up\<cdot>0) f|` fv e)"
-
-(*
-lemma Trivial_Aexp_eqvt[eqvt]: "\<pi> \<bullet>  (Trivial_Aexp e) = Trivial_Aexp (\<pi> \<bullet> e)"
-  unfolding Trivial_Aexp_def
-  apply perm_simp
-  apply (simp add: Abs_cfun_eqvt)
-  done
-*)
 
 lemma Trivial_Aexp_simp: "Trivial_Aexp e \<cdot> n = (\<lambda> x. up\<cdot>0) f|` fv e"
   unfolding Trivial_Aexp_def by simp
@@ -32,7 +24,7 @@ interpretation ArityAnalysis Trivial_Aexp.
 interpretation EdomArityAnalysis Trivial_Aexp  by default simp
 
 
-interpretation CorrectArityAnalysis' Trivial_Aexp
+interpretation CorrectArityAnalysis Trivial_Aexp
 proof default
 (*
   fix \<pi>
@@ -76,7 +68,7 @@ lemma Trivial_Abinds_below_fv: "ABinds \<Gamma>\<cdot>ae \<sqsubseteq> (\<lambda
   by (induction \<Gamma> rule:ABinds.induct)
      (auto simp add: join_below_iff intro!: below_trans[OF Trivial_Aexp'_below_fv] env_restr_mono2 elim: below_trans dest: set_mp[OF fv_delete_subset] simp del: fun_meet_simp)
 
-interpretation CorrectArityAnalysisLet' Trivial_Aexp Trivial_Aheap
+interpretation CorrectArityAnalysisLet Trivial_Aexp Trivial_Aheap
 proof default
   fix \<pi>
   show "\<pi> \<bullet> Trivial_Aheap = Trivial_Aheap" by perm_simp rule  

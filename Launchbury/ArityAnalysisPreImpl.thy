@@ -1,5 +1,5 @@
 theory ArityAnalysisPreImpl
-imports ArityAnalysis "Env-Nominal"
+imports ArityAnalysisSig "Env-Nominal"
 begin
 
 definition thunks_AE  :: "heap \<Rightarrow> AEnv" where

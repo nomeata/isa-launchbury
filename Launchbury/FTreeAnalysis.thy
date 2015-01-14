@@ -1,5 +1,5 @@
 theory FTreeAnalysis
-imports ArityCorrect  "FTree-HOLCF"  AnalBinds CallFutureCardinality
+imports ArityAnalysisSpec  "FTree-HOLCF"  AnalBinds CallFutureCardinality
 begin
 
 locale FutureAnalysis =
@@ -20,9 +20,8 @@ locale FutureAnalysisCorrect = FutureAnalysisCarrier +
   assumes Fun_repeatable: "isLam e \<Longrightarrow> repeatable (Fexp e\<cdot>0)"
 
 locale FutureAnalysisCardinalityHeap = 
-  FutureAnalysisCorrect + CorrectArityAnalysisLet' + 
+  FutureAnalysisCorrect + CorrectArityAnalysisLet + 
   fixes Fheap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> var ftree"
-  (* assumes Fheap_eqvt: "\<pi> \<bullet> Fheap = Fheap" *)
   assumes carrier_Fheap: "carrier (Fheap \<Gamma> e\<cdot>a) = edom (Aheap \<Gamma> e\<cdot>a)"
   assumes Fheap_thunk: "x \<in> thunks \<Gamma> \<Longrightarrow> p \<in> paths (Fheap \<Gamma> e\<cdot>a) \<Longrightarrow> \<not> one_call_in_path x p \<Longrightarrow> (Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
   assumes Fheap_substitute: "ftree_restr (domA \<Delta>) (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (thunks \<Delta>) (Fexp e\<cdot>a)) \<sqsubseteq> Fheap \<Delta> e\<cdot>a"

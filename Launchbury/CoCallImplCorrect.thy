@@ -1,5 +1,5 @@
 theory CoCallImplCorrect
-imports CoCallAnalysisImpl  CoCallCardinality 
+imports CoCallAnalysisImpl  CoCallCardinality ArityAnalysisFixProps
 begin
 
 lemma ccField_CCexp':
@@ -256,8 +256,8 @@ next
     by (simp add: env_restr_join env_delete_env_restr_swap[symmetric] ABind_nonrec_eq)
 qed
    
-interpretation CorrectArityAnalysis' Aexp
-by default (simp_all add:Aexp_restr_subst)
+interpretation CorrectArityAnalysis Aexp
+  by default (simp_all add:Aexp_restr_subst)
 
 definition Aheap where
   "Aheap \<Gamma> e = (\<Lambda> a. if nonrec \<Gamma> then (split Aheap_nonrec (hd \<Gamma>))\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a) else  (Afix \<Gamma> \<cdot> (Aexp e\<cdot>a \<squnion> (\<lambda>_.up\<cdot>0) f|` thunks \<Gamma>)) f|` domA \<Gamma>)"
@@ -282,7 +282,7 @@ lemma Aheap_eqvt'[eqvt]:
   apply (perm_simp, rule)
   done
 
-interpretation CorrectArityAnalysisLet' Aexp Aheap
+interpretation CorrectArityAnalysisLet Aexp Aheap
 proof default
   fix \<pi> show "\<pi> \<bullet> Aheap = Aheap"
     by perm_simp rule

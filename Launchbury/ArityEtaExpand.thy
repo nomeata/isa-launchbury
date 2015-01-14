@@ -1,5 +1,5 @@
 theory ArityEtaExpand
-imports ArityCorrect ArityEtaExpansionSestoft AbstractTransform ConstOn
+imports ArityAnalysisSpec ArityEtaExpansionSestoft AbstractTransform ConstOn
 begin
 
 locale CardinalityArityTransformation = CorrectArityAnalysisLetNoCard 

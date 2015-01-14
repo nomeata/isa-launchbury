@@ -25,9 +25,6 @@ lemma ccExp'_cong:
   "cccexp1 e = cccexp2 e \<Longrightarrow> CoCallAnalysis.ccExp' cccexp1 e = CoCallAnalysis.ccExp' cccexp2 e"
   unfolding CoCallAnalysis.ccExp'_def by simp
 
-locale CoCallAnalysis_ccField = CoCallAnalysis +
-  assumes "ccField (ccExp e\<cdot>a) \<subseteq> fv e"
-
 locale CoCallAnalyisHeap = 
   fixes ccHeap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> CoCalls"
 

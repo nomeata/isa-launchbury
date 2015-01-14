@@ -1,8 +1,8 @@
 theory CardinalityAnalysis
-imports ArityCorrect "Cardinality-Domain" "SestoftConf" ConstOn
+imports ArityAnalysisSpec "Cardinality-Domain" SestoftConf ConstOn
 begin
 
-locale CardinalityHeap = CorrectArityAnalysisLet' +
+locale CardinalityHeap = CorrectArityAnalysisLet +
   fixes cHeap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> (var \<Rightarrow> two)"
 
 (*   assumes cHeap: "\<pi> \<bullet> cHeap = cHeap" *)
@@ -36,7 +36,7 @@ locale CardinalityPrognosisCorrectLet = CardinalityPrognosisCorrect + Cardinalit
   assumes prognosis_Let:
   "atom ` domA \<Delta> \<sharp>* \<Gamma> \<Longrightarrow> atom ` domA \<Delta> \<sharp>* S \<Longrightarrow> edom ae \<subseteq> domA \<Gamma> \<union> upds S \<Longrightarrow> prognosis (Aheap \<Delta> e\<cdot>a \<squnion> ae) a (\<Delta> @ \<Gamma>, e, S) \<sqsubseteq> cHeap \<Delta> e\<cdot>a \<squnion> prognosis ae a (\<Gamma>, Terms.Let \<Delta> e, S)"
 
-locale CardinalityPrognosisEdom = CardinalityPrognosis + CorrectArityAnalysisAheap' +
+locale CardinalityPrognosisEdom = CardinalityPrognosis + CorrectArityAnalysisAheap +
   assumes edom_prognosis:
     "edom (prognosis ae a (\<Gamma>, e, S)) \<subseteq> fv \<Gamma> \<union> fv e \<union> fv S"
 

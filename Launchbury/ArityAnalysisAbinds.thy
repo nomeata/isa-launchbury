@@ -1,5 +1,5 @@
 theory ArityAnalysisAbinds
-imports ArityAnalysis
+imports ArityAnalysisSig
 begin
 
 context ArityAnalysis

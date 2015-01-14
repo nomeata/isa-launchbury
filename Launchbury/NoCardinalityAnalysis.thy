@@ -2,7 +2,7 @@ theory NoCardinalityAnalysis
 imports CardinalityAnalysis
 begin
 
-locale NoCardinalityAnalysis = CorrectArityAnalysisLet' +
+locale NoCardinalityAnalysis = CorrectArityAnalysisLet +
   assumes Aheap_thunk: "x \<in> thunks \<Gamma> \<Longrightarrow> (Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
 begin
 
