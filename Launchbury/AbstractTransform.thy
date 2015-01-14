@@ -1,5 +1,5 @@
 theory AbstractTransform
-imports Terms Up TransformTools
+imports Terms TransformTools
 begin
 
 locale AbstractAnalProp =
