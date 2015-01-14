@@ -1,5 +1,5 @@
 theory CoCallCardinality
-imports FTreeCardinality CoCallAnalysis "CoCallGraph-FTree" "/home/jojo/uni/info/isa-where-to-move/Where_To_Move"
+imports FTreeCardinality CoCallAnalysisSig "CoCallGraph-FTree"
 begin
 
 lemma valid_lists_many_calls:

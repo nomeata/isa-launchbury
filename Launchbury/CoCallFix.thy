@@ -1,5 +1,5 @@
 theory CoCallFix
-imports CoCallAnalysis CoCallAnalysisBinds ArityAnalysisSpec "Env-Nominal"  ArityAnalysisFix
+imports CoCallAnalysisSig CoCallAnalysisBinds ArityAnalysisSig "Env-Nominal"  ArityAnalysisFix
 begin
 
 

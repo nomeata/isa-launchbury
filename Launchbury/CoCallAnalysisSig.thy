@@ -1,4 +1,4 @@
-theory CoCallAnalysis
+theory CoCallAnalysisSig
 imports Terms Arity CoCallGraph
 begin
 
