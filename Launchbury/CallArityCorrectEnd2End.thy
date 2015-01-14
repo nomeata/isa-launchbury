@@ -2,10 +2,15 @@ theory CallArityCorrectEnd2End
 imports CardinalityEtaExpand CoCallImplCorrect CoCallImplFTreeCorrect FTreeCardinality "~~/src/Tools/Permanent_Interpretation" 
 begin
 
+interpretation CoCallImplCorrect.
+
 thm CardinalityArityTransformation.foo
 
 print_locales
+print_interps FTreeAnalysisCarrier
 print_interps CardinalityPrognosisCorrectLet
+print_interps CardinalityArityTransformation
+
 
 permanent_interpretation CardinalityArityTransformation prognosis Aexp Aheap cHeap
   defining final_consistent = consistent

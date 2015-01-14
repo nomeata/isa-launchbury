@@ -14,8 +14,9 @@ interpretation ArityAnalysis Aexp.
 lemma Aexp_edom': "edom (Aexp e\<cdot>a) \<subseteq> fv e"
   by (induction e arbitrary: a rule: exp_induct_rec)(auto)
 
-
-interpretation EdomArityAnalysis Aexp by default (rule Aexp_edom')
+locale CoCallImplCorrect
+begin
+sublocale EdomArityAnalysis Aexp by default (rule Aexp_edom')
  
 lemma ccField_CCfix: "ccField (CCfix \<Gamma>\<cdot>(ae, CCexp  e\<cdot>a)) \<subseteq> fv \<Gamma> \<union> fv e"
   unfolding CCfix_def
@@ -220,7 +221,7 @@ next
     by (simp add: env_restr_join env_delete_env_restr_swap[symmetric] ABind_nonrec_eq)
 qed
    
-interpretation CorrectArityAnalysis Aexp
+sublocale CorrectArityAnalysis Aexp
   by default (simp_all add:Aexp_restr_subst)
 
 definition Aheap where
@@ -246,7 +247,7 @@ lemma Aheap_eqvt'[eqvt]:
   apply (perm_simp, rule)
   done
 
-interpretation CorrectArityAnalysisLet Aexp Aheap
+sublocale CorrectArityAnalysisLet Aexp Aheap
 proof default
   fix \<pi> show "\<pi> \<bullet> Aheap = Aheap"
     by perm_simp rule
@@ -366,7 +367,7 @@ lemma ccHeap_simp2:
   by (simp add: ccHeap_def ccHeap_nonrec_eq nonrec_def)
 
 
-interpretation CoCallArityCorrect CCexp Aexp ccHeap Aheap
+sublocale CoCallArityCorrect CCexp Aexp ccHeap Aheap
 proof
   fix e a x
   show "CCexp e\<cdot>(inc\<cdot>a) \<squnion> ccProd {x} (insert x (fv e)) \<sqsubseteq> CCexp (App e x)\<cdot>a"
@@ -556,5 +557,6 @@ next
 
   show "(Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0" by (auto simp add: Aheap_nonrec_simp ABind_nonrec_eq)
 qed
+end
 
 end
