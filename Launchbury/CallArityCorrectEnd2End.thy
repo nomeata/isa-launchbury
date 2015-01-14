@@ -1,5 +1,5 @@
 theory CallArityCorrectEnd2End
-imports CardinalityEtaExpand CoCallImplCorrect "~~/src/Tools/Permanent_Interpretation" 
+imports CardinalityEtaExpand CoCallImplCorrect CoCallImplFTreeCorrect FTreeCardinality "~~/src/Tools/Permanent_Interpretation" 
 begin
 
 thm CardinalityArityTransformation.foo

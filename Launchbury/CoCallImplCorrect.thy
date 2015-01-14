@@ -1,5 +1,5 @@
 theory CoCallImplCorrect
-imports CoCallAnalysisImpl  CoCallCardinality ArityAnalysisFixProps
+imports CoCallAnalysisImpl CoCallAnalysisSpec ArityAnalysisFixProps
 begin
 
 lemma ccField_fup_CCexp:
@@ -366,7 +366,7 @@ lemma ccHeap_simp2:
   by (simp add: ccHeap_def ccHeap_nonrec_eq nonrec_def)
 
 
-interpretation CoCallCardinality CCexp ccHeap Aexp Aheap
+interpretation CoCallArityCorrect CCexp Aexp ccHeap Aheap
 proof
   fix e a x
   show "CCexp e\<cdot>(inc\<cdot>a) \<squnion> ccProd {x} (insert x (fv e)) \<sqsubseteq> CCexp (App e x)\<cdot>a"
