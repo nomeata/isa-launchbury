@@ -39,13 +39,11 @@ lemma CCfix_unroll: "CCfix \<Gamma>\<cdot>(ae,G) = ccBindsExtra \<Gamma>\<cdot>(
   apply simp
   done
 
-lemma ccExp'_restr_subst': 
+lemma fup_ccExp_restr_subst': 
   assumes "\<And> a. cc_restr S (CCexp e[x::=y]\<cdot>a) = cc_restr S (CCexp e\<cdot>a)"
-  shows "cc_restr S (ccExp' e[x::=y]\<cdot>a) = cc_restr S (ccExp' e\<cdot>a)"
-  unfolding ccExp'_def
+  shows "cc_restr S (fup\<cdot>(CCexp e[x::=y])\<cdot>a) = cc_restr S (fup\<cdot>(CCexp e)\<cdot>a)"
   using assms
-  by (cases a)
-     (auto simp del: cc_restr_cc_restr simp add: cc_restr_cc_restr[symmetric])
+  by (cases a) (auto simp del: cc_restr_cc_restr simp add: cc_restr_cc_restr[symmetric])
 
 lemma ccBindsExtra_restr_subst': 
   assumes "\<And> x' e a. (x',e) \<in> set \<Gamma> \<Longrightarrow> cc_restr S (CCexp e[x::=y]\<cdot>a) = cc_restr S (CCexp e\<cdot>a)"
@@ -57,14 +55,14 @@ lemma ccBindsExtra_restr_subst':
   apply (simp add: ccBindsExtra_simp ccBinds_eq ccBind_eq Int_absorb2[OF assms(4)] fv_subst_int[OF assms(3,2)])
   apply (intro arg_cong2[where f = "op \<squnion>"] refl  arg_cong[OF mapCollect_cong])
   apply (subgoal_tac "k \<in> S")
-  apply (auto intro:  ccExp'_restr_subst'[OF assms(1)[OF map_of_SomeD]] simp add: fv_subst_int[OF assms(3,2)]   fv_subst_int2[OF assms(3,2)] ccSquare_def)[1]
+  apply (auto intro: fup_ccExp_restr_subst'[OF assms(1)[OF map_of_SomeD]] simp add: fv_subst_int[OF assms(3,2)]   fv_subst_int2[OF assms(3,2)] ccSquare_def)[1]
   apply (metis assms(4) contra_subsetD domI dom_map_of_conv_domA)
   apply (subgoal_tac "k \<in> S")
-  apply (auto intro:  ccExp'_restr_subst'[OF assms(1)[OF map_of_SomeD]]
+  apply (auto intro: fup_ccExp_restr_subst'[OF assms(1)[OF map_of_SomeD]]
               simp add: fv_subst_int[OF assms(3,2)]   fv_subst_int2[OF assms(3,2)] ccSquare_def cc_restr_twist[where S = S] simp del: cc_restr_cc_restr)[1]
-  apply (subst  ccExp'_restr_subst'[OF assms(1)[OF map_of_SomeD]], assumption)
+  apply (subst fup_ccExp_restr_subst'[OF assms(1)[OF map_of_SomeD]], assumption)
   apply (simp add: fv_subst_int[OF assms(3,2)]   fv_subst_int2[OF assms(3,2)] )
-  apply (subst  ccExp'_restr_subst'[OF assms(1)[OF map_of_SomeD]], assumption)
+  apply (subst fup_ccExp_restr_subst'[OF assms(1)[OF map_of_SomeD]], assumption)
   apply (simp add: fv_subst_int[OF assms(3,2)]   fv_subst_int2[OF assms(3,2)] )
   apply (metis assms(4) contra_subsetD domI dom_map_of_conv_domA)
   done

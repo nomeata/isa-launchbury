@@ -2,12 +2,12 @@ theory CoCallImplCorrect
 imports CoCallAnalysisImpl  CoCallCardinality ArityAnalysisFixProps
 begin
 
-lemma ccField_CCexp':
-  "ccField (ccExp' e\<cdot>n) \<subseteq> fv e"
+lemma ccField_fup_CCexp:
+  "ccField (fup\<cdot>(CCexp e)\<cdot>n) \<subseteq> fv e"
 by (cases n) (auto dest: set_mp[OF ccField_CCexp])
 
-lemma cc_restr_ccExp'_useless[simp]: "cc_restr (fv e) (ccExp' e\<cdot>n) = ccExp' e\<cdot>n"
-  by (rule cc_restr_noop[OF ccField_CCexp'])
+lemma cc_restr_fup_ccExp_useless[simp]: "cc_restr (fv e) (fup\<cdot>(CCexp e)\<cdot>n) = fup\<cdot>(CCexp e)\<cdot>n"
+  by (rule cc_restr_noop[OF ccField_fup_CCexp])
 
 interpretation ArityAnalysis Aexp.
 
@@ -24,7 +24,7 @@ lemma ccField_CCfix: "ccField (CCfix \<Gamma>\<cdot>(ae, CCexp  e\<cdot>a)) \<su
   apply simp_all
   apply (auto simp add: ccBindsExtra_simp ccBinds_eq ccBind_eq ccField_ccProd
              dest: set_mp[OF ccField_CCexp]
-             dest!: set_mp[OF ccField_CCexp']
+             dest!: set_mp[OF ccField_fup_CCexp]
              dest: set_mp[OF map_of_Some_fv_subset]
              dest!: elem_to_ccField
              split: if_splits)
@@ -63,7 +63,7 @@ lemma CCexp_Let_simp2[simp]:
   "atom x \<sharp> e \<Longrightarrow> CCexp (let x be e in exp)\<cdot>n = cc_restr (- {x}) (ccBind x e \<cdot>(Aheap_nonrec x e\<cdot>(Aexp exp\<cdot>n, CCexp exp\<cdot>n), CCexp exp\<cdot>n) \<squnion> ccProd (fv e) (ccNeighbors x (CCexp exp\<cdot>n) - (if isLam e then {} else {x})) \<squnion> CCexp exp\<cdot>n)"
   unfolding CCexp_simps
   by (rule cc_restr_intersect)
-     (auto simp add: ccField_ccProd ccBind_eq dest!: set_mp[OF ccField_CCexp]  set_mp[OF ccField_CCexp'] set_mp[OF ccField_cc_restr] set_mp[OF ccNeighbors_ccField])
+     (auto simp add: ccField_ccProd ccBind_eq dest!: set_mp[OF ccField_CCexp]  set_mp[OF ccField_fup_CCexp] set_mp[OF ccField_cc_restr] set_mp[OF ccNeighbors_ccField])
 declare CCexp_simps(4)[simp del]
 declare CCexp_simps(5)[simp del]
 
@@ -183,8 +183,8 @@ next
   have [simp]:  "\<And> a. cc_restr S (CCexp e[y::=x]\<cdot>a) = cc_restr S (CCexp e\<cdot>a)"
     by (rule Let_nonrec(4)) auto
 
-  have [simp]: "\<And> a. cc_restr S (ccExp' e[y::=x]\<cdot>a) = cc_restr S (ccExp' e\<cdot>a)"
-    by (rule ccExp'_restr_subst') simp
+  have [simp]: "\<And> a. cc_restr S (fup\<cdot>(CCexp e[y::=x])\<cdot>a) = cc_restr S (fup\<cdot>(CCexp e)\<cdot>a)"
+    by (rule fup_ccExp_restr_subst') simp
 
   have [simp]: "fv e[y::=x] \<inter> S = fv e \<inter> S"
     by (auto simp add: fv_subst_eq)
@@ -419,7 +419,7 @@ next
     have "(Afix \<Delta>\<cdot>(Aexp e\<cdot>a \<squnion> (\<lambda>_.up\<cdot>0)f|` (thunks \<Delta>))) x = up\<cdot>a'" 
       by (simp add: Aheap_def)
     hence "CCexp e'\<cdot>a' \<sqsubseteq> ccBind x e'\<cdot>(Afix \<Delta>\<cdot>(Aexp e\<cdot>a \<squnion> (\<lambda>_.up\<cdot>0)f|` (thunks \<Delta>)), CCfix \<Delta>\<cdot>(Afix \<Delta>\<cdot>(Aexp e\<cdot>a \<squnion> (\<lambda>_.up\<cdot>0)f|` (thunks \<Delta>)), CCexp e\<cdot>a))"
-      by (auto simp add: ccBind_eq ccExp'_def dest: set_mp[OF ccField_CCexp])
+      by (auto simp add: ccBind_eq dest: set_mp[OF ccField_CCexp])
     also
     have "ccBind x e'\<cdot>(Afix \<Delta>\<cdot>(Aexp e\<cdot>a \<squnion> (\<lambda>_.up\<cdot>0)f|` (thunks \<Delta>)), CCfix \<Delta>\<cdot>(Afix \<Delta>\<cdot>(Aexp e\<cdot>a \<squnion> (\<lambda>_.up\<cdot>0)f|` (thunks \<Delta>)), CCexp e\<cdot>a)) \<sqsubseteq>  ccHeap \<Delta> e\<cdot>a"
       using `map_of \<Delta> x = Some e'` False
@@ -478,8 +478,8 @@ next
     have [simp]: "\<Delta> = [(x,e')]" "atom x \<sharp> e'" by (auto elim!: nonrecE split: if_splits)
     hence [simp]: "x \<notin> fv e'" by (auto simp add: fresh_def fv_def)
 
-    have [simp]: "(ccNeighbors x (ccBind  x e'\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a))) = {}"
-     by (auto simp add: ccBind_eq dest!: set_mp[OF ccField_cc_restr] set_mp[OF ccField_CCexp'])
+    have [simp]: "(ccNeighbors x (ccBind x e'\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a))) = {}"
+     by (auto simp add: ccBind_eq dest!: set_mp[OF ccField_cc_restr] set_mp[OF ccField_fup_CCexp])
 
     show ?thesis
     proof(cases "isLam e' \<and> x--x\<in>CCexp e\<cdot>a")
@@ -490,7 +490,7 @@ next
         ccNeighbors x (ccProd (fv e') (ccNeighbors x (CCexp e\<cdot>a) - (if isLam e' then {} else {x}))) \<union>
         ccNeighbors x (CCexp e\<cdot>a)" by (auto simp add: ccHeap_simp2 )
     also have "ccNeighbors x (ccBind  x e'\<cdot>(Aheap_nonrec x e'\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a), CCexp e\<cdot>a)) = {}"
-       by (auto simp add: ccBind_eq dest!: set_mp[OF ccField_cc_restr] set_mp[OF ccField_CCexp'])
+       by (auto simp add: ccBind_eq dest!: set_mp[OF ccField_cc_restr] set_mp[OF ccField_fup_CCexp])
     also have "ccNeighbors x (ccProd (fv e') (ccNeighbors x (CCexp e\<cdot>a) - (if isLam e' then {} else {x})))
       \<subseteq> ccNeighbors x (ccProd (fv e') (ccNeighbors x (CCexp e\<cdot>a)))" by (simp add: ccNeighbors_ccProd)
     also have "\<dots> \<subseteq> fv e'" by (simp add: ccNeighbors_ccProd)
@@ -514,7 +514,7 @@ next
         ccNeighbors x (ccProd (fv e') (ccNeighbors x (CCexp e\<cdot>a) - (if isLam e' then {} else {x}))) \<union>
         ccNeighbors x (CCexp e\<cdot>a)" by (auto simp add: ccHeap_simp2 )
     also have "ccNeighbors x (ccBind  x e'\<cdot>(Aheap_nonrec x e'\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a), CCexp e\<cdot>a)) = {}"
-       by (auto simp add: ccBind_eq dest!: set_mp[OF ccField_cc_restr] set_mp[OF ccField_CCexp'])
+       by (auto simp add: ccBind_eq dest!: set_mp[OF ccField_cc_restr] set_mp[OF ccField_fup_CCexp])
     also have  "ccNeighbors x (ccProd (fv e') (ccNeighbors x (CCexp e\<cdot>a) - (if isLam e' then {} else {x}) )) 
       = {}" using False by (auto simp add: ccNeighbors_ccProd)
     finally

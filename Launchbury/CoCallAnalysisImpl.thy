@@ -1,5 +1,5 @@
 theory CoCallAnalysisImpl
-imports CoCallFix "Arity-Nominal" "Nominal-HOLCF" "Env-Nominal" "Env-HOLCF"
+imports "Arity-Nominal" "Nominal-HOLCF" "Env-Nominal" "Env-HOLCF" CoCallFix
 begin
 
 fun combined_restrict :: "var set \<Rightarrow> (AEnv \<times> CoCalls) \<Rightarrow> (AEnv \<times> CoCalls)"
@@ -53,12 +53,9 @@ lemma predCC_eq:
   done
 
 lemma predCC_eqvt[eqvt, simp]: "\<pi> \<bullet> (predCC S f) = predCC (\<pi> \<bullet> S) (\<pi> \<bullet> f)"
-  unfolding predCC_def
-  apply perm_simp
-  apply (rule Abs_cfun_eqvt)
-  apply (rule cont_if_else_above)
-  apply (auto dest: set_mp[OF ccField_cc_restr])
-  done
+  apply (rule cfun_eqvtI)
+  unfolding predCC_eq
+  by perm_simp rule
 
 lemma cc_restr_predCC:
   "cc_restr S (predCC S' f\<cdot>n) = (predCC (S' \<inter> S) (\<Lambda> n. cc_restr S (f\<cdot>n)))\<cdot>n"
