@@ -1,8 +1,10 @@
 theory FTreeCardinality
-imports FTreeAnalysis CardinalityAnalysis CallFutureCardinality
+imports FTreeAnalysisSpec CardinalityAnalysis CallFutureCardinality
 begin
 
-context FutureAnalysis
+hide_const Multiset.single
+
+context FTreeAnalysis
 begin
 
 fun unstack :: "stack \<Rightarrow> exp \<Rightarrow> exp" where
@@ -39,7 +41,7 @@ lemma pathsCards_none: "pathsCard (paths t) x = none \<Longrightarrow> x \<notin
 lemma const_on_edom_disj: "const_on f S empty \<longleftrightarrow> edom f \<inter> S = {}"
   by (auto simp add: empty_is_bottom edom_def)
 
-context FutureAnalysisCarrier
+context FTreeAnalysisCarrier
 begin
   lemma carrier_FBinds: "carrier ((FBinds \<Gamma>\<cdot>ae) x) \<subseteq> fv \<Gamma>"
   apply (simp add: Fexp.AnalBinds_lookup)
@@ -52,7 +54,7 @@ end
 
 
 
-context FutureAnalysisCorrect
+context FTreeAnalysisCorrect
 begin
 
   sublocale CardinalityPrognosisCorrect prognosis
@@ -226,7 +228,7 @@ begin
   qed
 end
 
-context FutureAnalysisCardinalityHeap
+context FTreeAnalysisCardinalityHeap
 begin
 
   definition cHeap where

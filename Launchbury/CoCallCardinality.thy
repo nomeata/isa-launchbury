@@ -2,6 +2,8 @@ theory CoCallCardinality
 imports FTreeCardinality CoCallAnalysisSig "CoCallGraph-FTree"
 begin
 
+hide_const Multiset.single
+
 lemma valid_lists_many_calls:
   assumes "\<not> one_call_in_path x p"
   assumes "p \<in> valid_lists S G"
@@ -61,17 +63,17 @@ lemma carrier_Fexp': "carrier (Fexp e\<cdot>a) \<subseteq> fv e"
   unfolding Fexp_simp carrier_ccFTree
   by (rule Aexp_edom)
 
-sublocale FutureAnalysis Fexp.
+sublocale FTreeAnalysis Fexp.
 
 lemma carrier_AnalBinds_below:
   "carrier ((Fexp.AnalBinds  \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) x) \<subseteq> edom ((ABinds \<Delta>)\<cdot>(Aheap \<Delta> e\<cdot>a))"
 by (auto simp add: Fexp.AnalBinds_lookup Fexp_def split: option.splits 
          elim!: set_mp[OF edom_mono[OF monofun_cfun_fun[OF ABind_below_ABinds]]])
 
-sublocale FutureAnalysisCarrier Fexp
+sublocale FTreeAnalysisCarrier Fexp
   apply default unfolding Fexp_simp carrier_ccFTree..
 
-sublocale FutureAnalysisCorrect Fexp
+sublocale FTreeAnalysisCorrect Fexp
 proof default
   fix x e a
 
@@ -173,7 +175,7 @@ lemma Fheap_simp: "Fheap \<Gamma> e\<cdot>a = (if nonrec \<Gamma> then ccFTree (
 lemma carrier_Fheap':"carrier (Fheap \<Gamma> e\<cdot>a) = edom (Aheap \<Gamma> e\<cdot>a)"
     unfolding Fheap_simp carrier_ccFTree by simp
 
-sublocale FutureAnalysisCardinalityHeap Fexp Aexp Aheap Fheap
+sublocale FTreeAnalysisCardinalityHeap Fexp Aexp Aheap Fheap
 proof default
   fix \<Gamma> e a
   show "carrier (Fheap \<Gamma> e\<cdot>a) = edom (Aheap \<Gamma> e\<cdot>a)"
