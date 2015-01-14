@@ -6,9 +6,6 @@ locale EdomArityAnalysis = ArityAnalysis +
   assumes Aexp_edom: "edom (Aexp e\<cdot>a) \<subseteq> fv e"
 begin
 
-  lemma Aexp'_edom: "edom (Aexp' e\<cdot>a) \<subseteq> fv e"
-    by (cases a) (auto dest:set_mp[OF Aexp_edom])
-
   lemma fup_Aexp_edom: "edom (fup\<cdot>(Aexp e)\<cdot>a) \<subseteq> fv e"
     by (cases a) (auto dest:set_mp[OF Aexp_edom])
   
@@ -43,12 +40,12 @@ locale CorrectArityAnalysisLetNoCard = CorrectArityAnalysisLet +
 
 context EdomArityAnalysis
 begin
-  lemma Aexp'_lookup_fresh: "atom v \<sharp> e \<Longrightarrow> (Aexp' e\<cdot>a) v = \<bottom>"
+  lemma fup_Aexp_lookup_fresh: "atom v \<sharp> e \<Longrightarrow> (fup\<cdot>(Aexp e)\<cdot>a) v = \<bottom>"
     by (cases a) auto
   
   lemma edom_AnalBinds: "edom (ABinds \<Gamma>\<cdot>ae) \<subseteq> fv \<Gamma>"
     by (induction \<Gamma> rule: ABinds.induct)
-       (auto simp del: fun_meet_simp dest: set_mp[OF Aexp'_edom] dest: set_mp[OF fv_delete_subset])
+       (auto simp del: fun_meet_simp dest: set_mp[OF fup_Aexp_edom] dest: set_mp[OF fv_delete_subset])
 end 
 
 context SubstArityAnalysis
@@ -94,9 +91,8 @@ begin
 lemma Aexp_Var_singleton: "esing x \<cdot> (up\<cdot>n) \<sqsubseteq> Aexp (Var x) \<cdot> n"
   by (simp add: Aexp_Var)
 
-lemma Aexp'_Var: "esing x \<cdot> n \<sqsubseteq> Aexp' (Var x) \<cdot> n"
+lemma fup_Aexp_Var: "esing x \<cdot> n \<sqsubseteq> fup\<cdot>(Aexp (Var x))\<cdot>n"
   by (cases n) (simp_all add: Aexp_Var)
-
 end
 
 
@@ -111,7 +107,7 @@ begin
     moreover
     from assms
     have "ABinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a) f|` domA \<Delta> = \<bottom>"
-      by (rule nonrecE) (auto simp add: fv_def fresh_def dest!: set_mp[OF Aexp'_edom])
+      by (rule nonrecE) (auto simp add: fv_def fresh_def dest!: set_mp[OF fup_Aexp_edom])
     moreover
     have "Aheap \<Delta> e\<cdot>a f|` domA \<Delta> = Aheap \<Delta> e\<cdot>a" 
       by (rule env_restr_useless[OF edom_Aheap])

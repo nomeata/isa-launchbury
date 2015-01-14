@@ -16,43 +16,7 @@ lemma Aexp_edom': "edom (Aexp e\<cdot>a) \<subseteq> fv e"
 
 
 interpretation EdomArityAnalysis Aexp by default (rule Aexp_edom')
-
-(*
-lemma edom_Afix: "edom (Afix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp  e\<cdot>a)) \<subseteq> fv \<Gamma> \<union> fv e"
-proof-
-  {
-  fix x  :: var
-  assume "x \<notin> fv \<Gamma>" 
-  hence [simp]: "\<And> a. (ABinds  \<Gamma>\<cdot>a) x = \<bottom>"
-    apply (induction \<Gamma> rule: ABinds.induct)
-    apply auto
-    apply (auto simp add: Aexp'_def )
-    apply (case_tac "a v")
-    apply simp
-    apply auto
-    apply (metis (mono_tags) Aexp_edom' contra_subsetD edom_def mem_Collect_eq)
-    apply (metis contra_subsetD fv_delete_subset)
-    done
-  
-  from `x \<notin> fv \<Gamma>`
-  have "x \<notin> domA \<Gamma>" by (metis domA_fv_subset set_mp)
-  hence [simp]: "x \<notin> thunks \<Gamma>" by (metis set_mp thunks_domA)
-  
-  assume "x \<notin> fv e"
-  hence "x \<notin> edom (Aexp e\<cdot>a)"  by (auto dest!: set_mp[OF Aexp_edom'])
-  hence [simp]: "(Aexp e\<cdot>a) x = \<bottom>" by (simp add: edom_def)
-
-  have "(Afix \<Gamma>\<cdot>(Aexp e\<cdot>a, CCexp  e\<cdot>a)) x = \<bottom>"
-    unfolding Afix_def cccFix_eq
-    apply simp
-    apply (rule fix_ind)  
-    apply auto
-    done
-  }
-  thus ?thesis by (auto simp add: edom_def)    
-qed
-*)
-   
+ 
 lemma ccField_CCfix: "ccField (CCfix \<Gamma>\<cdot>(ae, CCexp  e\<cdot>a)) \<subseteq> fv \<Gamma> \<union> fv e"
   unfolding CCfix_def
   apply simp
@@ -367,7 +331,7 @@ next
     show ?thesis
       apply (rule env_restr_below_split[where S = "{x}"])
       apply (rule env_restr_belowI2)
-      apply (auto simp add:  Aheap_nonrec_simp Aexp'_def join_below_iff env_restr_join env_delete_restr)
+      apply (auto simp add:  Aheap_nonrec_simp  join_below_iff env_restr_join env_delete_restr)
       apply (rule ABind_nonrec_above_arg)
       apply (rule below_trans[OF _ join_above2])
       apply (rule below_trans[OF _ join_above2])
@@ -379,10 +343,6 @@ qed
 definition ccHeap_nonrec
   where "ccHeap_nonrec x e exp = (\<Lambda> n. CCfix_nonrec x e\<cdot>(Aexp exp\<cdot>n, CCexp exp\<cdot>n))"
 
-(*
-lemma ccHeap_nonrec_eq:
-   "ccHeap_nonrec x e exp \<cdot> n = ccBind x e \<cdot>(Aheap_nonrec x e exp\<cdot>n, CCexp exp\<cdot>n) \<squnion> ccProd (fv e) (ccNeighbors x (CCexp exp\<cdot>n) - (if isLam e then {} else {x})) \<squnion> CCexp exp\<cdot>n"
-*)
 lemma ccHeap_nonrec_eq:
    "ccHeap_nonrec x e exp\<cdot>n = CCfix_nonrec x e\<cdot>(Aexp exp\<cdot>n, CCexp exp\<cdot>n)"
 unfolding ccHeap_nonrec_def by (rule beta_cfun) (intro cont2cont)

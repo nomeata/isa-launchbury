@@ -10,13 +10,13 @@ locale CorrectArityAnalysisAfix = CorrectArityAnalysis +
   assumes Aexp_Let: "Afix as\<cdot>(Aexp e\<cdot>n) f|` (- domA as) \<sqsubseteq> Aexp (Let as e)\<cdot>n"
 
 begin
-lemma Aexp'_Let: "Afix as\<cdot>(Aexp' e\<cdot>n) f|` (- domA as) \<sqsubseteq> Aexp' (Terms.Let as e)\<cdot>n"
+lemma fup_Aexp_Let: "Afix as\<cdot>(fup\<cdot>(Aexp e)\<cdot>n) f|` (- domA as) \<sqsubseteq> fup\<cdot>(Aexp (Let as e))\<cdot>n"
   by (cases n) (simp_all add: Aexp_Let)
 
 lemma  reds_improves_arity':
        "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : v \<Longrightarrow>
         edom ae \<subseteq> set L \<Longrightarrow> 
-        Afix \<Delta> \<cdot> (Aexp' v \<cdot> n \<squnion> ae) f|` (- (domA \<Delta> - domA \<Gamma>)) \<sqsubseteq> Afix \<Gamma> \<cdot> (Aexp' e \<cdot> n \<squnion> ae) f|` (- (domA \<Delta> - domA \<Gamma>))"
+        Afix \<Delta> \<cdot> (fup\<cdot>(Aexp v)\<cdot>n \<squnion> ae) f|` (- (domA \<Delta> - domA \<Gamma>)) \<sqsubseteq> Afix \<Gamma> \<cdot> (fup\<cdot>(Aexp e)\<cdot>n \<squnion> ae) f|` (- (domA \<Delta> - domA \<Gamma>))"
 proof(induct arbitrary: ae n rule: reds.induct)
 case Lambda
   show ?case by simp
@@ -35,11 +35,11 @@ case (Variable \<Gamma> x e L \<Delta> z ae n)
   note IH =  Variable(3)
   let "?S" = "(- (domA ((x, z) # \<Delta>) - domA \<Gamma>))"
 
-  have "Afix ((x, z) # \<Delta>) \<cdot> (Aexp' z\<cdot>n \<squnion> ae)  f|` ?S = (\<mu> ae'. Aexp' z\<cdot>(ae' x) \<squnion> ABinds \<Delta> \<cdot> ae' \<squnion> Aexp' z\<cdot>n \<squnion> ae) f|` ?S"
+  have "Afix ((x, z) # \<Delta>) \<cdot> (fup\<cdot>(Aexp z)\<cdot>n \<squnion> ae)  f|` ?S = (\<mu> ae'. fup\<cdot>(Aexp z)\<cdot>(ae' x) \<squnion> ABinds \<Delta> \<cdot> ae' \<squnion> fup\<cdot>(Aexp z)\<cdot>n \<squnion> ae) f|` ?S"
     unfolding Afix_eq by simp
-  also have "\<dots> \<sqsubseteq> (\<mu> ae'. ABinds \<Delta> \<cdot> ae' \<squnion> (Aexp' z\<cdot>(n \<squnion> ae' x) \<squnion> ae)) f|` ?S"
+  also have "\<dots> \<sqsubseteq> (\<mu> ae'. ABinds \<Delta> \<cdot> ae' \<squnion> (fup\<cdot>(Aexp z)\<cdot>(n \<squnion> ae' x) \<squnion> ae)) f|` ?S"
     by (auto intro!: env_restr_mono monofun_cfun_arg cfun_belowI join_mono[OF below_refl] join_mono[OF _ below_refl] cfun_join_below simp del: join_assoc)
-  also have "\<dots> = (\<mu> ae'. Afix \<Delta> \<cdot> ae' \<squnion> (Aexp' z\<cdot>(n \<squnion> ae' x) \<squnion> ae))  f|` ?S"
+  also have "\<dots> = (\<mu> ae'. Afix \<Delta> \<cdot> ae' \<squnion> (fup\<cdot>(Aexp z)\<cdot>(n \<squnion> ae' x) \<squnion> ae))  f|` ?S"
     apply (rule arg_cong[where f = "\<lambda> x. x f|` ?S"] )
     apply (rule fix_eq_fix, simp_all)
 
@@ -59,7 +59,7 @@ case (Variable \<Gamma> x e L \<Delta> z ae n)
     apply (subst fix_eq) back apply simp
     apply (simp add: below_trans[OF _ join_above2]  below_trans[OF _ join_above1])
     done
-  also have "\<dots> = (\<mu> ae'. Afix \<Delta> \<cdot> (Aexp' z\<cdot>(n \<squnion> ae' x) \<squnion> ae)) f|` ?S"
+  also have "\<dots> = (\<mu> ae'. Afix \<Delta> \<cdot> (fup\<cdot>(Aexp z)\<cdot>(n \<squnion> ae' x) \<squnion> ae)) f|` ?S"
     apply (rule arg_cong[where f = "\<lambda> x. x f|` ?S"] )
     apply (rule fix_eq_fix, simp_all)
     
@@ -90,17 +90,17 @@ case (Variable \<Gamma> x e L \<Delta> z ae n)
     apply rule
     done
     
-  also have "\<dots> \<sqsubseteq> (\<mu> ae'. Afix (delete x \<Gamma>) \<cdot> (Aexp' e\<cdot>(n \<squnion> ae' x) \<squnion> ae)) f|` ?S"
+  also have "\<dots> \<sqsubseteq> (\<mu> ae'. Afix (delete x \<Gamma>) \<cdot> (fup\<cdot>(Aexp e)\<cdot>(n \<squnion> ae' x) \<squnion> ae)) f|` ?S"
   proof (induction rule: parallel_fix_ind[where P ="\<lambda> x y. x f|` ?S \<sqsubseteq> y f|` ?S"])
   case (goal3 aeL aeR)
     have "- (domA ((x, z) # \<Delta>) - domA \<Gamma>) \<subseteq> - (domA \<Delta> - domA (delete x \<Gamma>))"
       using `x \<notin> domA \<Delta>` by auto
     moreover
     note IH[OF prem]
-    ultimately have "(Afix \<Delta>\<cdot>(Aexp' z\<cdot>(n \<squnion> aeL x) \<squnion> ae)) f|` ?S \<sqsubseteq> (Afix (delete x \<Gamma>)\<cdot>(Aexp' e\<cdot>(n \<squnion> aeL x) \<squnion> ae)) f|` ?S"
+    ultimately have "(Afix \<Delta>\<cdot>(fup\<cdot>(Aexp z)\<cdot>(n \<squnion> aeL x) \<squnion> ae)) f|` ?S \<sqsubseteq> (Afix (delete x \<Gamma>)\<cdot>(fup\<cdot>(Aexp e)\<cdot>(n \<squnion> aeL x) \<squnion> ae)) f|` ?S"
       by (rule env_restr_below_subset)
     also from goal3 have "aeL x \<sqsubseteq>  aeR x" by (rule env_restr_belowD) simp
-    finally have "Afix \<Delta>\<cdot>(Aexp' z\<cdot>(n \<squnion> aeL x) \<squnion> ae) f|` ?S \<sqsubseteq> Afix (delete x \<Gamma>)\<cdot>(Aexp' e\<cdot>(n \<squnion> aeR x) \<squnion> ae) f|` ?S" by this simp_all
+    finally have "Afix \<Delta>\<cdot>(fup\<cdot>(Aexp z)\<cdot>(n \<squnion> aeL x) \<squnion> ae) f|` ?S \<sqsubseteq> Afix (delete x \<Gamma>)\<cdot>(fup\<cdot>(Aexp e)\<cdot>(n \<squnion> aeR x) \<squnion> ae) f|` ?S" by this simp_all
     thus ?case by simp
   qed simp_all
   also have "\<dots> \<sqsubseteq> (\<mu> ae'. Afix ((x,e)#delete x \<Gamma>) \<cdot> (esing x \<cdot> (n \<squnion> ae' x) \<squnion> ae))  f|` ?S"
@@ -110,9 +110,9 @@ case (Variable \<Gamma> x e L \<Delta> z ae n)
     apply (rule Afix_e_to_heap[simplified])
     done
   also have "\<dots> = Afix ((x,e)#delete x \<Gamma>) \<cdot> (esing x\<cdot>n \<squnion> ae)  f|` ?S" by (rule arg_cong[OF Afix_repeat_singleton])
-  also have "\<dots> \<sqsubseteq> Afix ((x,e)#delete x \<Gamma>) \<cdot> (Aexp' (Var x) \<cdot> n \<squnion> ae)  f|` ?S" by (intro Aexp'_Var monofun_cfun env_restr_mono join_mono below_refl)
-  also have "\<dots> = Afix \<Gamma> \<cdot> (Aexp' (Var x)\<cdot>n \<squnion> ae) f|` ?S" by (rule arg_cong[OF Afix_reorder[OF reorder]])
-  finally show "Afix ((x, z) # \<Delta>)\<cdot>(Aexp' z\<cdot>n \<squnion> ae) f|` ?S \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp' (Var x)\<cdot>n \<squnion> ae) f|` ?S"
+  also have "\<dots> \<sqsubseteq> Afix ((x,e)#delete x \<Gamma>) \<cdot> (fup\<cdot>(Aexp (Var x))\<cdot>n \<squnion> ae)  f|` ?S" by (intro fup_Aexp_Var monofun_cfun env_restr_mono join_mono below_refl)
+  also have "\<dots> = Afix \<Gamma> \<cdot> (fup\<cdot>(Aexp (Var x))\<cdot>n \<squnion> ae) f|` ?S" by (rule arg_cong[OF Afix_reorder[OF reorder]])
+  finally show "Afix ((x, z) # \<Delta>)\<cdot>(fup\<cdot>(Aexp z)\<cdot>n \<squnion> ae) f|` ?S \<sqsubseteq> Afix \<Gamma>\<cdot>(fup\<cdot>(Aexp (Var x))\<cdot>n \<squnion> ae) f|` ?S"
     by this simp_all
 next
 case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' ae n)
@@ -125,7 +125,7 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' ae n)
     using reds_doesnt_forget[OF Application(2)]  reds_doesnt_forget[OF Application(4)] by auto
   let "?S" = " (- (domA \<Theta> - domA \<Gamma>))"
 
-  show "Afix \<Theta>\<cdot>(Aexp' z\<cdot>n \<squnion> ae) f|` ?S \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp' (App e x)\<cdot>n \<squnion> ae)  f|` ?S"
+  show "Afix \<Theta>\<cdot>(fup\<cdot>(Aexp z)\<cdot>n \<squnion> ae) f|` ?S \<sqsubseteq> Afix \<Gamma>\<cdot>(fup\<cdot>(Aexp (App e x))\<cdot>n \<squnion> ae)  f|` ?S"
   proof(cases n)
     case bottom
     from env_restr_below_trans[OF env_restr_below_subset[OF subset1 Application(5)[OF prem1, where n = "\<bottom>"], simplified]
@@ -133,8 +133,9 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' ae n)
     show ?thesis using bottom by simp
   next
     case (up n')
-    note IH1 = env_restr_below_subset[OF subset2 Application(3)[OF prem3, where n = "inc\<^sub>\<bottom>\<cdot>n"], unfolded up Aexp'_simps inc_bot.simps] 
-    note IH2 = env_restr_below_subset[OF subset1 Application(5)[OF prem1, where n = n], unfolded up Aexp'_simps]
+    note IH1 = env_restr_below_subset[OF subset2 Application(3)[OF prem3, where n = "inc\<^sub>\<bottom>\<cdot>n"], unfolded up inc_bot.simps fup2] 
+    note IH2 = env_restr_below_subset[OF subset1 Application(5)[OF prem1, where n = n], unfolded up fup2]
+    find_theorems fup up
     have "Afix \<Theta>\<cdot>(Aexp z\<cdot>n' \<squnion> ae)  f|` ?S  \<sqsubseteq> Afix \<Delta>\<cdot>(Aexp e'[y::=x]\<cdot>n' \<squnion> ae)  f|` ?S" by (rule IH2)
     also have "\<dots> \<sqsubseteq> Afix \<Delta>\<cdot>(env_delete y (Aexp e'\<cdot>n') \<squnion>  esing x \<cdot> (up\<cdot>0) \<squnion> ae)  f|` ?S"
       by (intro monofun_cfun_arg monofun_cfun_fun env_restr_mono Aexp_subst join_mono below_refl)  
@@ -170,16 +171,16 @@ case (Let as \<Gamma> L e \<Delta> z ae n)
   moreover from reds_doesnt_forget[OF Let(2)] have "domA as \<subseteq> domA \<Delta>" by auto
   ultimately have ***: "((- domA \<Delta> \<union> domA \<Gamma>) \<inter> - domA as) = (- domA \<Delta> \<union> domA \<Gamma>)" by auto
 
-  have "Afix \<Delta>\<cdot>(Aexp' z\<cdot>n \<squnion> ae)  f|` ?S \<sqsubseteq> Afix (as @ \<Gamma>)\<cdot>(Aexp' e\<cdot>n \<squnion> ae)  f|` ?S" by (rule IH)
-  also have "\<dots> = Afix \<Gamma>\<cdot>(Afix as\<cdot>(Aexp' e\<cdot>n \<squnion> ae))  f|` ?S" by (rule arg_cong[OF Afix_append_fresh[OF *]])
-  also have "\<dots> = Afix \<Gamma>\<cdot>(Afix as\<cdot>(Aexp' e\<cdot>n) \<squnion> ae)  f|` ?S" by (rule arg_cong[OF Afix_join_fresh[OF **]])
-  also have "\<dots> = Afix \<Gamma>\<cdot>(Afix as\<cdot>(Aexp' e\<cdot>n) \<squnion> ae) f|` (- (domA as)) f|` ?S" by (simp add: ***)
-  also have "\<dots> = Afix \<Gamma>\<cdot>((Afix as\<cdot>(Aexp' e\<cdot>n) \<squnion> ae) f|` (- (domA as))) f|` (- (domA as)) f|` ?S" by (rule arg_cong[OF Afix_restr_fresh[OF *]])
-  also have "\<dots> = Afix \<Gamma>\<cdot>((Afix as\<cdot>(Aexp' e\<cdot>n) \<squnion> ae) f|` (- (domA as))) f|` ?S" by (simp add: ***)
-  also have "\<dots> = Afix \<Gamma>\<cdot>((Afix as\<cdot>(Aexp' e\<cdot>n)  f|` (- (domA as))) \<squnion> ae) f|` ?S" by (simp add: env_restr_join)
-  also have "\<dots> \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp' (Terms.Let as e)\<cdot>n \<squnion> ae) f|` ?S" by (intro monofun_cfun_arg join_mono env_restr_mono below_refl Aexp'_Let)
+  have "Afix \<Delta>\<cdot>(fup\<cdot>(Aexp z)\<cdot>n \<squnion> ae)  f|` ?S \<sqsubseteq> Afix (as @ \<Gamma>)\<cdot>(fup\<cdot>(Aexp e)\<cdot>n \<squnion> ae)  f|` ?S" by (rule IH)
+  also have "\<dots> = Afix \<Gamma>\<cdot>(Afix as\<cdot>(fup\<cdot>(Aexp e)\<cdot>n \<squnion> ae))  f|` ?S" by (rule arg_cong[OF Afix_append_fresh[OF *]])
+  also have "\<dots> = Afix \<Gamma>\<cdot>(Afix as\<cdot>(fup\<cdot>(Aexp e)\<cdot>n) \<squnion> ae)  f|` ?S" by (rule arg_cong[OF Afix_join_fresh[OF **]])
+  also have "\<dots> = Afix \<Gamma>\<cdot>(Afix as\<cdot>(fup\<cdot>(Aexp e)\<cdot>n) \<squnion> ae) f|` (- (domA as)) f|` ?S" by (simp add: ***)
+  also have "\<dots> = Afix \<Gamma>\<cdot>((Afix as\<cdot>(fup\<cdot>(Aexp e)\<cdot>n) \<squnion> ae) f|` (- (domA as))) f|` (- (domA as)) f|` ?S" by (rule arg_cong[OF Afix_restr_fresh[OF *]])
+  also have "\<dots> = Afix \<Gamma>\<cdot>((Afix as\<cdot>(fup\<cdot>(Aexp e)\<cdot>n) \<squnion> ae) f|` (- (domA as))) f|` ?S" by (simp add: ***)
+  also have "\<dots> = Afix \<Gamma>\<cdot>((Afix as\<cdot>(fup\<cdot>(Aexp e)\<cdot>n)  f|` (- (domA as))) \<squnion> ae) f|` ?S" by (simp add: env_restr_join)
+  also have "\<dots> \<sqsubseteq> Afix \<Gamma>\<cdot>(fup\<cdot>(Aexp (Let as e))\<cdot>n \<squnion> ae) f|` ?S" by (intro monofun_cfun_arg join_mono env_restr_mono below_refl fup_Aexp_Let)
   finally
-  show "Afix \<Delta>\<cdot>(Aexp' z\<cdot>n \<squnion> ae) f|` ?S \<sqsubseteq> Afix \<Gamma>\<cdot>(Aexp' (Terms.Let as e)\<cdot>n \<squnion> ae) f|` ?S" by this simp_all
+  show "Afix \<Delta>\<cdot>(fup\<cdot>(Aexp z)\<cdot>n \<squnion> ae) f|` ?S \<sqsubseteq> Afix \<Gamma>\<cdot>(fup\<cdot>(Aexp (Let as e))\<cdot>n \<squnion> ae) f|` ?S" by this simp_all
 qed
 
 corollary  reds_improves_arity'':
@@ -190,10 +191,9 @@ using reds_improves_arity'[OF assms, where n = "up\<cdot>n", simplified] by simp
 
 corollary  reds_improves_arity:
   assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : v"
-  shows "Afix \<Delta> \<cdot> (Aexp' v \<cdot> n) f|` (- (domA \<Delta> - domA \<Gamma>)) \<sqsubseteq> Afix \<Gamma> \<cdot> (Aexp' e \<cdot> n) f|` (- (domA \<Delta> - domA \<Gamma>))"
+  shows "Afix \<Delta> \<cdot> (fup\<cdot>(Aexp v) \<cdot> n) f|` (- (domA \<Delta> - domA \<Gamma>)) \<sqsubseteq> Afix \<Gamma> \<cdot> (fup\<cdot>(Aexp e) \<cdot> n) f|` (- (domA \<Delta> - domA \<Gamma>))"
   using reds_improves_arity'[where ae = \<bottom>, OF assms] by simp
 end
-
 
 
 end

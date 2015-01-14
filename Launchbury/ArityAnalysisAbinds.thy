@@ -8,9 +8,9 @@ begin
 subsection {* Lifting arity analysis to recursive groups *}
 
 definition ABind :: "var \<Rightarrow> exp \<Rightarrow> (AEnv \<rightarrow> AEnv)"
-  where "ABind v e = (\<Lambda> ae. Aexp' e \<cdot> (ae v))"
+  where "ABind v e = (\<Lambda> ae. fup\<cdot>(Aexp e)\<cdot>(ae v))"
 
-lemma ABind_eq[simp]: "ABind v e \<cdot> ae = Aexp' e \<cdot> (ae v)"
+lemma ABind_eq[simp]: "ABind v e \<cdot> ae = fup\<cdot>(Aexp e)\<cdot>(ae v)"
   unfolding ABind_def by (simp add: cont_fun)
 
 fun ABinds :: "heap \<Rightarrow> (AEnv \<rightarrow> AEnv)"
@@ -79,7 +79,7 @@ lemma ABinds_restr_fresh:
   apply (auto simp del: fun_meet_simp simp add: env_restr_join fresh_star_Pair fresh_star_Cons fresh_star_delete)
   apply (subst lookup_env_restr)
   apply (metis (no_types, hide_lams) ComplI fresh_at_base(2) fresh_star_def imageI)
-  apply rule
+  apply simp
   done
 
 lemma ABinds_restr:
@@ -96,7 +96,7 @@ lemma ABinds_restr_subst:
   shows "ABinds \<Gamma>[x::h=y]\<cdot>ae f|` S = ABinds \<Gamma>\<cdot>(ae  f|` S) f|` S"
   using assms
   apply (induction \<Gamma> rule:ABinds.induct)
-  apply (auto simp del: fun_meet_simp simp add: env_restr_join)
+  apply (auto simp del: fun_meet_simp join_comm simp add: env_restr_join)
   apply (rule arg_cong2[where f = join])
   apply (case_tac "ae v")
   apply (auto dest:  set_mp[OF set_delete_subset])
@@ -120,7 +120,7 @@ qed
 
 lemma ABinds_restrict_below: "ABinds (restrictA S \<Gamma>)\<cdot>ae \<sqsubseteq> ABinds \<Gamma>\<cdot>ae"
   by (induct \<Gamma> rule: ABinds.induct)
-     (auto simp add: join_below_iff  restr_delete_twist intro: below_trans[OF _ join_above2] simp del: fun_meet_simp)
+     (auto simp add: join_below_iff  restr_delete_twist intro: below_trans[OF _ join_above2] simp del: fun_meet_simp join_comm)
 
 lemma ABinds_delete_below: "ABinds (delete x \<Gamma>)\<cdot>ae \<sqsubseteq> ABinds \<Gamma>\<cdot>ae"
   by (induct \<Gamma> rule: ABinds.induct)
@@ -128,10 +128,12 @@ lemma ABinds_delete_below: "ABinds (delete x \<Gamma>)\<cdot>ae \<sqsubseteq> AB
 end
 
 lemma ABind_eqvt[eqvt]: "\<pi> \<bullet> (ArityAnalysis.ABind Aexp v e) = ArityAnalysis.ABind (\<pi> \<bullet> Aexp) (\<pi> \<bullet> v) (\<pi> \<bullet> e)"
-  unfolding ArityAnalysis.ABind_def
-  by perm_simp (simp add: Abs_cfun_eqvt)
+  apply (rule cfun_eqvtI)
+  unfolding ArityAnalysis.ABind_eq
+  by perm_simp rule
 
 lemma ABinds_eqvt[eqvt]: "\<pi> \<bullet> (ArityAnalysis.ABinds Aexp \<Gamma>) = ArityAnalysis.ABinds (\<pi> \<bullet> Aexp) (\<pi> \<bullet> \<Gamma>)"
+  apply (rule cfun_eqvtI)
   apply (induction \<Gamma> rule: ArityAnalysis.ABinds.induct)
   apply (simp add: ArityAnalysis.ABinds.simps)
   apply (simp add: ArityAnalysis.ABinds.simps)
@@ -152,7 +154,7 @@ case (goal2  v e as heap2)
   finally
   have "(\<And>e. e \<in> snd ` set (delete v as) \<Longrightarrow> aexp1 e = aexp2 e)" by -(rule goal2, auto)
   note goal2(1)[OF this refl] with goal2
-  show ?case by (auto simp add: ArityAnalysis.ABinds.simps ArityAnalysis.ABind_def ArityAnalysis.Aexp'_def)
+  show ?case by (auto simp add: ArityAnalysis.ABinds.simps ArityAnalysis.ABind_def)
 qed
 
 end

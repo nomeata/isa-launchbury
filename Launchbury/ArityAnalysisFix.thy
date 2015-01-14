@@ -144,7 +144,7 @@ next
   next
   case (goal2 v e \<Gamma>)
     have "\<And> n. Aexp e[y::=x]\<cdot>n \<sqsubseteq> (Aexp e\<cdot>n)(y := \<bottom>, x := up\<cdot>0)" using goal2(2)[where v = v] by auto
-    hence IH1: "\<And> n. Aexp' e[y::=x]\<cdot>n \<sqsubseteq> (Aexp' e\<cdot>n)(y := \<bottom>, x := up\<cdot>0)" unfolding Aexp'_def by (case_tac n) auto
+    hence IH1: "\<And> n. fup\<cdot>(Aexp e[y::=x])\<cdot>n \<sqsubseteq> (fup\<cdot>(Aexp e)\<cdot>n)(y := \<bottom>, x := up\<cdot>0)"  by (case_tac n) auto
 
     have "ABinds (delete v \<Gamma>)[y::h=x]\<cdot>(aeR(y := \<bottom>, x := up\<cdot>0)) \<sqsubseteq> (ABinds (delete v \<Gamma>)\<cdot>aeR)(y := \<bottom>, x := up\<cdot>0)"
       apply (rule goal2) using goal2(2,3,4) by fastforce+
@@ -153,7 +153,7 @@ next
     
     have [simp]: "(aeR(y := \<bottom>, x := up\<cdot>0)) v = aeR v" using goal2(3,4) by auto
    
-    show ?case by (simp del: fun_upd_apply) (rule join_mono[OF IH1 IH2])
+    show ?case by (simp del: fun_upd_apply join_comm) (rule join_mono[OF IH1 IH2])
   qed
   finally
   have "ABinds \<Gamma>[y::h=x]\<cdot>aeL \<sqsubseteq> (ABinds \<Gamma>\<cdot>aeR)(y := \<bottom>, x := up\<cdot>0)" by this simp

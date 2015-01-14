@@ -103,7 +103,7 @@ next
   thus ?case by (auto intro!: env_restr_mono2 simp add: Abinds_reorder1[OF goal9(1)])
 next
   case goal10
-  have "Aexp' e\<cdot>(ae x) \<sqsubseteq> Aexp e\<cdot>0" by (cases "ae x") (auto intro: monofun_cfun_arg)
+  have "fup\<cdot>(Aexp e)\<cdot>(ae x) \<sqsubseteq> Aexp e\<cdot>0" by (cases "ae x") (auto intro: monofun_cfun_arg)
   from edom_mono[OF this]
   show ?case by (auto intro!: env_restr_mono2 dest: set_mp[OF edom_mono[OF ABinds_delete_below]])
 next

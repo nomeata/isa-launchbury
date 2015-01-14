@@ -232,7 +232,7 @@ next
             by (simp add: Fexp.AnalBinds_lookup)
         also have "\<dots> \<subseteq> edom (fup\<cdot>(Aexp e')\<cdot>((Aheap \<Delta> e\<cdot>a) x))"
           by (auto simp add: Fexp_simp)
-        also have "\<dots> = edom (ABind x e'\<cdot>(Aheap \<Delta> e\<cdot>a))" by (simp add: ABind_def Aexp'_def)
+        also have "\<dots> = edom (ABind x e'\<cdot>(Aheap \<Delta> e\<cdot>a))" by (simp add: ABind_def)
         also have "\<dots> \<subseteq> edom (ABinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a))" using Some
           by (rule edom_mono[OF monofun_cfun_fun[OF ABind_below_ABinds]])
         also have "\<dots> \<subseteq> edom (ABinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a) \<squnion> Aexp e\<cdot>a)" by simp

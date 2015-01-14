@@ -5,22 +5,14 @@ begin
 context EdomArityAnalysis
 begin
 
-lemma ABinds_edom: "edom (ABinds \<Gamma> \<cdot> ae) \<subseteq> fv \<Gamma> \<union> edom ae"
-  apply (induct rule: ABinds.induct)
-  apply simp
-  apply (auto dest: set_mp[OF Aexp'_edom] simp del: fun_meet_simp)
-  apply (drule (1) set_mp)
-  apply (auto dest: set_mp[OF fv_delete_subset])
-  done
-
 lemma Afix_edom: "edom (Afix \<Gamma> \<cdot> ae) \<subseteq> fv \<Gamma> \<union> edom ae"
   unfolding Afix_eq
   by (rule fix_ind[where P = "\<lambda> ae' . edom ae' \<subseteq> fv \<Gamma> \<union> edom ae"] )
-     (auto dest: set_mp[OF ABinds_edom])
+     (auto dest: set_mp[OF edom_AnalBinds])
 
 lemma ABinds_lookup_fresh:
   "atom v \<sharp> \<Gamma> \<Longrightarrow> (ABinds \<Gamma>\<cdot>ae) v = \<bottom>"
-by (induct \<Gamma> rule: ABinds.induct) (auto simp add: fresh_Cons fresh_Pair Aexp'_lookup_fresh fresh_delete)
+by (induct \<Gamma> rule: ABinds.induct) (auto simp add: fresh_Cons fresh_Pair fup_Aexp_lookup_fresh fresh_delete)
 
 lemma Afix_lookup_fresh:
   assumes "atom v \<sharp> \<Gamma>"
@@ -76,7 +68,7 @@ qed
 
 
 lemma Afix_e_to_heap:
-   "Afix (delete x \<Gamma>)\<cdot>(Aexp' e\<cdot>n \<squnion> ae) \<sqsubseteq> Afix ((x, e) # delete x \<Gamma>)\<cdot>(esing x\<cdot>n \<squnion> ae)"
+   "Afix (delete x \<Gamma>)\<cdot>(fup\<cdot>(Aexp e)\<cdot>n \<squnion> ae) \<sqsubseteq> Afix ((x, e) # delete x \<Gamma>)\<cdot>(esing x\<cdot>n \<squnion> ae)"
     apply (simp add: Afix_eq)
     apply (rule fix_least_below, simp)
     apply (intro join_below)
@@ -85,7 +77,7 @@ lemma Afix_e_to_heap:
 
     apply (rule below_trans[OF _ join_above2])
     apply (rule below_trans[OF _ join_above2])
-    apply (rule below_trans[OF _ join_above1])
+    apply (rule below_trans[OF _ join_above2])
     apply (rule monofun_cfun_arg)
     apply (subst fix_eq, simp)
       
