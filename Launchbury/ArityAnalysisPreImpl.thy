@@ -36,6 +36,8 @@ where
 | "Aexp (Lam [x]. e) = (\<Lambda> n . (Aexp e \<cdot> (pred \<cdot> n)  f|` (fv (Lam [x]. e))))"
 | "Aexp (App e x) = (\<Lambda> n . Aexp e  \<cdot> (inc \<cdot> n) \<squnion> (esing x \<cdot> (up \<cdot> 0)))"
 | "Aexp (Terms.Let as e) = (\<Lambda> n . (Afix Aexp as \<cdot> (Aexp e \<cdot> n \<squnion> thunks_AE as)) f|` (fv (Terms.Let as e)))"
+| "Aexp Null = \<bottom>"
+| "Aexp (scrut ? e1 : e2) = \<bottom>"
 proof-
 case goal1
     note Afix_eqvt[eqvt]
@@ -48,8 +50,8 @@ case goal1
 next
 case goal3 thus ?case by (metis Terms.exp_strong_exhaust)
 next
-case (goal8 x e x' e')
-  from goal8(5)
+case (goal10 x e x' e')
+  from goal10(5)
   show ?case
   proof(rule eqvt_lam_case)
     fix \<pi> :: perm
@@ -59,16 +61,16 @@ case (goal8 x e x' e')
     have "Aexp_sumC (\<pi> \<bullet> e)\<cdot>(pred\<cdot>n)  f|` fv  (Lam [x]. e) = (-\<pi> \<bullet> Aexp_sumC (\<pi> \<bullet> e)\<cdot>(pred\<cdot>n)) f|` fv  (Lam [x]. e)"
       by (rule env_restr_perm[symmetric, OF *]) simp
     also have "\<dots> = ((Aexp_sumC e)\<cdot>(pred\<cdot>n)) f|` fv  (Lam [x]. e)"
-      by (simp add: eqvt_at_apply[OF goal8(1)] pemute_minus_self)
+      by (simp add: eqvt_at_apply[OF goal10(1)] pemute_minus_self)
     also note calculation
     }
     thus "(\<Lambda> n. Aexp_sumC (\<pi> \<bullet> e)\<cdot>(pred\<cdot>n) f|` fv (Lam [x]. e)) = (\<Lambda> n. Aexp_sumC e\<cdot>(pred\<cdot>n) f|` fv (Lam [x]. e))" by simp
   qed
 next
-case (goal13 as body as' body')
+case (goal19 as body as' body')
   note Afix_eqvt[eqvt]
 
-  from goal13(9)
+  from goal19(9)
   show ?case
   proof (rule eqvt_let_case)
     fix \<pi> :: perm
@@ -82,9 +84,9 @@ case (goal13 as body as' body')
                        Afix (- \<pi> \<bullet> Aexp_sumC) as\<cdot>((- \<pi> \<bullet> Aexp_sumC) body\<cdot>n \<squnion> thunks_AE as)"
         by (simp add: pemute_minus_self)
       also have "Afix (- \<pi> \<bullet> Aexp_sumC) as = Afix Aexp_sumC as"
-        by (rule Afix_cong[OF eqvt_at_apply[OF goal13(1)] refl])
+        by (rule Afix_cong[OF eqvt_at_apply[OF goal19(1)] refl])
       also have "(- \<pi> \<bullet> Aexp_sumC) body = Aexp_sumC body"
-        by (rule eqvt_at_apply[OF goal13(2)])
+        by (rule eqvt_at_apply[OF goal19(2)])
       also note calculation
     }
     thus "(\<Lambda> n. Afix Aexp_sumC (\<pi> \<bullet> as)\<cdot>(Aexp_sumC (\<pi> \<bullet> body)\<cdot>n \<squnion> thunks_AE (\<pi> \<bullet> as)) f|` fv (Terms.Let as body)) =

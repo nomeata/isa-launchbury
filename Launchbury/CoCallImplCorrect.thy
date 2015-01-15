@@ -183,7 +183,7 @@ next
 
   show "Aexp (let x' be e in exp )[y::=x]\<cdot>a f|` S = Aexp (let x' be e in exp )\<cdot>a f|` S"
     by (simp add: env_restr_join env_delete_env_restr_swap[symmetric] ABind_nonrec_eq)
-qed
+qed auto
    
 sublocale CorrectArityAnalysis Aexp
   by default (simp_all add:Aexp_restr_subst)

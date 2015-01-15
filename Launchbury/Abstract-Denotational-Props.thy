@@ -36,7 +36,7 @@ next
     by (rule HSem_restr_cong) (auto simp add: lookup_env_restr_eq)
   finally
   show ?case by simp
-qed
+qed auto
 
 sublocale has_ignore_fresh_ESem ESem
   by default (rule fv_supp_exp, rule ESem_considers_fv')
@@ -131,7 +131,7 @@ next
 case Cons
   from Cons(1,2)[OF Cons(3)] Cons(3)
   show ?case by auto
-qed
+qed auto
 
 lemma ESem_subst:
   assumes "x \<noteq> y"

@@ -54,7 +54,7 @@ next
   qed auto
   hence "\<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>as\<rbrace>\<rho>\<^esub> \<triangleleft>\<triangleright> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>as\<rbrace>\<sigma>\<^esub>)\<cdot>C\<^sup>\<infinity>" by (rule Let(2))
   thus ?case by simp
-qed
+qed auto
 
 corollary evalHeap_similar:
   "\<And>y z. y \<triangleleft>\<triangleright>\<^sup>* z \<Longrightarrow> \<^bold>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>y\<^esub> \<triangleleft>\<triangleright>\<^sup>* \<^bold>\<N>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>z\<^esub>"

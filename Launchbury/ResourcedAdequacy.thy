@@ -135,7 +135,7 @@ next
       unfolding CESem_simps
       by -(rule C_case_cong, simp)
   qed
-qed
+qed auto
 
 lemma can_restrict_env:
   "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)\<cdot>r"
@@ -252,6 +252,7 @@ proof(induction n arbitrary: \<Gamma> e S)
   thus ?case..
 next
   case (Suc n)
+  from Suc.prems
   show ?case
   proof(cases e rule:exp_strong_exhaust(1)[where c = "(\<Gamma>,S)", case_names Var App Let Lam])
   case (Var x)
@@ -332,7 +333,7 @@ next
     hence "\<Gamma> : Let as e' \<Down>\<^bsub>S\<^esub> \<Delta> : v"
       by (rule reds.Let[OF Let(1)])
     thus ?thesis using Let by auto
-  qed
+  qed auto
 qed
 
 theorem resourced_adequacy:

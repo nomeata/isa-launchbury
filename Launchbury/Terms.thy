@@ -15,11 +15,15 @@ and redo the various lemmas in terms of that, so that afterwards, the type @{tex
 referenced.
 *}
 
+term If
+
 nominal_datatype exp =
   Var var
 | App exp var
 | LetA as::assn body::exp binds "bn as" in body as
 | Lam x::var body::exp binds x in body  ("Lam [_]. _" [100, 100] 100)
+| Null
+| IfThenElse exp exp exp  ("((_)/ ? (_)/ : (_))" [0, 0, 10] 10)
 and assn =
   ANil | ACons var exp assn
 binder
@@ -152,6 +156,10 @@ lemma Let_distinct[simp]:
   "Lam [v]. e' \<noteq> Let \<Gamma> e"
   "Let \<Gamma> e \<noteq> Lam [v]. e'"
   "Let \<Gamma> e' \<noteq> App e v"
+  "Null \<noteq> Let \<Gamma> e"
+  "Let \<Gamma> e \<noteq> Null"
+  "(scrut ? e1 : e2) \<noteq> Let \<Gamma> e"
+  "Let \<Gamma> e \<noteq> (scrut ? e1 : e2)"
   unfolding Let_def by simp_all
 
 lemma Let_perm_simps[simp,eqvt]:
@@ -183,27 +191,33 @@ lemma Let_eq_iff[simp]:
 
 lemma exp_strong_exhaust:
   fixes c :: "'a :: fs"
-  assumes "(\<And>var. y = Var var \<Longrightarrow> P)"
+  assumes "\<And>var. y = Var var \<Longrightarrow> P"
   assumes "\<And>exp var. y = App exp var \<Longrightarrow> P"
   assumes "\<And>\<Gamma> exp. atom ` domA \<Gamma> \<sharp>* c \<Longrightarrow> y = Let \<Gamma> exp \<Longrightarrow> P"
   assumes "\<And>var exp. {atom var} \<sharp>* c \<Longrightarrow> y = Lam [var]. exp \<Longrightarrow> P"
+  assumes "(y = Null) \<Longrightarrow> P"
+  assumes "\<And> scrut e1 e2. y = (scrut ? e1 : e2) \<Longrightarrow> P"
   shows P
   apply (rule  exp_assn.strong_exhaust(1)[where y = y and c = c])
   apply (metis assms(1))
   apply (metis assms(2))
   apply (metis assms(3) set_bn_to_atom_domA Let_def heapToAssn_asToHeap)
   apply (metis assms(4))
+  apply (metis assms(5))
+  apply (metis assms(6))
   done
 
 text {*
 And finally the induction rules with @{term Let}.
 *}
 
-lemma exp_heap_induct[case_names Var App Let Lam Nil Cons]:
+lemma exp_heap_induct[case_names Var App Let Lam Null IfThenElse Nil Cons]:
   assumes "\<And>b var. P1 (Var var)"
   assumes "\<And>exp var. P1 exp \<Longrightarrow> P1 (App exp var)"
   assumes "\<And>\<Gamma> exp. P2 \<Gamma> \<Longrightarrow> P1 exp \<Longrightarrow> P1 (Let \<Gamma> exp)"
   assumes "\<And>var exp. P1 exp \<Longrightarrow> P1 (Lam [var]. exp)"
+  assumes "P1 Null"
+  assumes "\<And> scrut e1 e2. P1 scrut \<Longrightarrow> P1 e1 \<Longrightarrow> P1 e2 \<Longrightarrow> P1 (scrut ? e1 : e2)"
   assumes "P2 []"
   assumes "\<And>var exp \<Gamma>. P1 exp \<Longrightarrow> P2 \<Gamma> \<Longrightarrow> P2 ((var, exp)#\<Gamma>)"
   shows "P1 e" and "P2 \<Gamma>"
@@ -214,17 +228,21 @@ proof-
     apply (metis assms(2))
     apply (metis assms(3) Let_def heapToAssn_asToHeap )
     apply (metis assms(4))
-    apply (metis assms(5) asToHeap.simps(1))
-    apply (metis assms(6) asToHeap.simps(2))
+    apply (metis assms(5))
+    apply (metis assms(6))
+    apply (metis assms(7) asToHeap.simps(1))
+    apply (metis assms(8) asToHeap.simps(2))
     done
   thus "P1 e" and "P2 \<Gamma>" unfolding asToHeap_heapToAssn.
 qed
 
-lemma exp_heap_strong_induct[case_names Var App Let Lam Nil Cons]:
+lemma exp_heap_strong_induct[case_names Var App Let Lam Null IfThenElse Nil Cons]:
   assumes "\<And>var c. P1 c (Var var)"
   assumes "\<And>exp var c. (\<And>c. P1 c exp) \<Longrightarrow> P1 c (App exp var)"
   assumes "\<And>\<Gamma> exp c. atom ` domA \<Gamma> \<sharp>* c \<Longrightarrow> (\<And>c. P2 c \<Gamma>) \<Longrightarrow> (\<And>c. P1 c exp) \<Longrightarrow> P1 c (Let \<Gamma> exp)"
   assumes "\<And>var exp c. {atom var} \<sharp>* c \<Longrightarrow> (\<And>c. P1 c exp) \<Longrightarrow> P1 c (Lam [var]. exp)"
+  assumes "\<And> c. P1 c Null"
+  assumes "\<And> scrut e1 e2 c. (\<And> c. P1 c scrut) \<Longrightarrow> (\<And> c. P1 c e1) \<Longrightarrow> (\<And> c. P1 c e2) \<Longrightarrow> P1 c (scrut ? e1 : e2)"
   assumes "\<And>c. P2 c []"
   assumes "\<And>var exp \<Gamma> c. (\<And>c. P1 c exp) \<Longrightarrow> (\<And>c. P2 c \<Gamma>) \<Longrightarrow> P2 c ((var,exp)#\<Gamma>)"
   fixes c :: "'a :: fs"
@@ -236,8 +254,10 @@ proof-
     apply (metis assms(2))
     apply (metis assms(3) set_bn_to_atom_domA Let_def heapToAssn_asToHeap )
     apply (metis assms(4))
-    apply (metis assms(5) asToHeap.simps(1))
-    apply (metis assms(6) asToHeap.simps(2))
+    apply (metis assms(5))
+    apply (metis assms(6))
+    apply (metis assms(7) asToHeap.simps(1))
+    apply (metis assms(8) asToHeap.simps(2))
     done
   thus "P1 c e" and "P2 c \<Gamma>" unfolding asToHeap_heapToAssn.
 qed
@@ -249,48 +269,60 @@ These rules can be used instead of the original induction rules, which require a
 goal for @{typ assn}.
 *}
 
-lemma exp_induct[case_names Var App Let Lam]:
+lemma exp_induct[case_names Var App Let Lam  Null IfThenElse]:
   assumes "\<And>var. P (Var var)"
   assumes "\<And>exp var. P exp \<Longrightarrow> P (App exp var)"
   assumes "\<And>\<Gamma> exp. (\<And> x. x \<in> domA \<Gamma> \<Longrightarrow>  P (the (map_of \<Gamma> x))) \<Longrightarrow> P exp \<Longrightarrow> P (Let \<Gamma> exp)"
   assumes "\<And>var exp.  P exp \<Longrightarrow> P (Lam [var]. exp)"
+  assumes "P Null"
+  assumes "\<And> scrut e1 e2. P scrut \<Longrightarrow> P e1 \<Longrightarrow> P e2 \<Longrightarrow> P (scrut ? e1 : e2)"
   shows "P  exp"
   apply (rule exp_heap_induct[of P "\<lambda> \<Gamma>. (\<forall>x \<in> domA \<Gamma>. P (the (map_of \<Gamma> x)))"])
   apply (metis assms(1))
   apply (metis assms(2))
   apply (metis assms(3))
   apply (metis assms(4))
+  apply (metis assms(5))
+  apply (metis assms(6))
   apply auto
   done
 
-lemma  exp_strong_induct_set[case_names Var App Let Lam]:
+lemma  exp_strong_induct_set[case_names Var App Let Lam Null IfThenElse]:
   assumes "\<And>var c. P c (Var var)"
   assumes "\<And>exp var c. (\<And>c. P c exp) \<Longrightarrow> P c (App exp var)"
   assumes "\<And>\<Gamma> exp c.
     atom ` domA \<Gamma> \<sharp>* c \<Longrightarrow> (\<And>c x e. (x,e) \<in> set \<Gamma> \<Longrightarrow>  P c e) \<Longrightarrow> (\<And>c. P c exp) \<Longrightarrow> P c (Let \<Gamma> exp)"
   assumes "\<And>var exp c. {atom var} \<sharp>* c \<Longrightarrow> (\<And>c. P c exp) \<Longrightarrow> P c (Lam [var]. exp)"
+  assumes "\<And> c. P c Null"
+  assumes "\<And> scrut e1 e2 c. (\<And> c. P c scrut) \<Longrightarrow> (\<And> c. P c e1) \<Longrightarrow> (\<And> c. P c e2) \<Longrightarrow> P c (scrut ? e1 : e2)"
   shows "P (c::'a::fs) exp"
   apply (rule exp_heap_strong_induct(1)[of P "\<lambda> c \<Gamma>. (\<forall>(x,e) \<in> set \<Gamma>. P c e)"])
   apply (metis assms(1))
   apply (metis assms(2))
   apply (metis assms(3) split_conv)
   apply (metis assms(4))
+  apply (metis assms(5))
+  apply (metis assms(6))
   apply auto
   done
 
 
-lemma  exp_strong_induct[case_names Var App Let Lam]:
+lemma  exp_strong_induct[case_names Var App Let Lam Null IfThenElse]:
   assumes "\<And>var c. P c (Var var)"
   assumes "\<And>exp var c. (\<And>c. P c exp) \<Longrightarrow> P c (App exp var)"
   assumes "\<And>\<Gamma> exp c.
     atom ` domA \<Gamma> \<sharp>* c \<Longrightarrow> (\<And>c x. x \<in> domA \<Gamma> \<Longrightarrow>  P c (the (map_of \<Gamma> x))) \<Longrightarrow> (\<And>c. P c exp) \<Longrightarrow> P c (Let \<Gamma> exp)"
   assumes "\<And>var exp c. {atom var} \<sharp>* c \<Longrightarrow> (\<And>c. P c exp) \<Longrightarrow> P c (Lam [var]. exp)"
+  assumes "\<And> c. P c Null"
+  assumes "\<And> scrut e1 e2 c. (\<And> c. P c scrut) \<Longrightarrow> (\<And> c. P c e1) \<Longrightarrow> (\<And> c. P c e2) \<Longrightarrow> P c (scrut ? e1 : e2)"
   shows "P (c::'a::fs) exp"
   apply (rule exp_heap_strong_induct(1)[of P "\<lambda> c \<Gamma>. (\<forall>x \<in> domA \<Gamma>. P c (the (map_of \<Gamma> x)))"])
   apply (metis assms(1))
   apply (metis assms(2))
   apply (metis assms(3))
   apply (metis assms(4))
+  apply (metis assms(5))
+  apply (metis assms(6))
   apply auto
   done
 
@@ -329,6 +361,10 @@ lemma fv_App[simp]: "fv (App e x) = insert x (fv e)"
   unfolding fv_def by (auto simp add: exp_assn.supp supp_at_base)
 lemma fv_Let[simp]: "fv (Let \<Gamma> e) = (fv \<Gamma> \<union> fv e) - domA \<Gamma>"
   unfolding fv_def by (auto simp add: Let_supp exp_assn.supp supp_at_base set_bn_to_atom_domA)
+lemma fv_Null[simp]: "fv Null = {}"
+  unfolding fv_def by (auto simp add: exp_assn.supp)
+lemma fv_IfThenElse[simp]: "fv (scrut ? e1 : e2)  = fv scrut \<union> fv e1 \<union> fv e2"
+  unfolding fv_def by (auto simp add: exp_assn.supp)
 
 lemma finite_fv_exp[simp]: "finite (fv (e::exp) :: var set)"
   and finite_fv_heap[simp]: "finite (fv (\<Gamma> :: heap) :: var set)"
@@ -459,7 +495,9 @@ nominal_function isLam :: "exp \<Rightarrow> bool" where
   "isLam (Var x) = False" |
   "isLam (Lam [x]. e) = True" |
   "isLam (App e x) = False" |
-  "isLam (Let as e) = False"
+  "isLam (Let as e) = False" |
+  "isLam Null = False" |
+  "isLam (scrut ? e1 : e2) = False"
   unfolding isLam_graph_aux_def eqvt_def
   apply simp
   apply simp
@@ -525,12 +563,14 @@ lemma nonrec_eqvt[eqvt]:
   "nonrec \<Gamma> \<Longrightarrow> nonrec (\<pi> \<bullet> \<Gamma>)"
   by (erule nonrecE) (auto simp add: nonrec_def)
 
-lemma exp_induct_rec[case_names Var App Let Let_nonrec Lam]:
+lemma exp_induct_rec[case_names Var App Let Let_nonrec Lam Null IfThenElse]:
   assumes "\<And>var. P (Var var)"
   assumes "\<And>exp var. P exp \<Longrightarrow> P (App exp var)"
   assumes "\<And>\<Gamma> exp. \<not> nonrec \<Gamma> \<Longrightarrow> (\<And> x. x \<in> domA \<Gamma> \<Longrightarrow>  P (the (map_of \<Gamma> x))) \<Longrightarrow> P exp \<Longrightarrow> P (Let \<Gamma> exp)"
-  assumes "\<And>x e exp. atom x \<sharp> e \<Longrightarrow>P e \<Longrightarrow> P exp \<Longrightarrow> P (let x be e in exp)"
+  assumes "\<And>x e exp. atom x \<sharp> e \<Longrightarrow> P e \<Longrightarrow> P exp \<Longrightarrow> P (let x be e in exp)"
   assumes "\<And>var exp.  P exp \<Longrightarrow> P (Lam [var]. exp)"
+  assumes "P Null"
+  assumes "\<And> scrut e1 e2. P scrut \<Longrightarrow> P e1 \<Longrightarrow> P e2 \<Longrightarrow> P (scrut ? e1 : e2)"
   shows "P exp"
   apply (rule exp_induct[of P])
   apply (metis assms(1))
@@ -541,15 +581,19 @@ lemma exp_induct_rec[case_names Var App Let Let_nonrec Lam]:
   apply (metis assms(4))
   apply (metis assms(3))
   apply (metis assms(5))
+  apply (metis assms(6))
+  apply (metis assms(7))
   done
 
-lemma  exp_strong_induct_rec[case_names Var App Let Let_nonrec Lam]:
+lemma  exp_strong_induct_rec[case_names Var App Let Let_nonrec Lam Null IfThenElse]:
   assumes "\<And>var c. P c (Var var)"
   assumes "\<And>exp var c. (\<And>c. P c exp) \<Longrightarrow> P c (App exp var)"
   assumes "\<And>\<Gamma> exp c.
     atom ` domA \<Gamma> \<sharp>* c \<Longrightarrow> \<not> nonrec \<Gamma> \<Longrightarrow> (\<And>c x. x \<in> domA \<Gamma> \<Longrightarrow>  P c (the (map_of \<Gamma> x))) \<Longrightarrow> (\<And>c. P c exp) \<Longrightarrow> P c (Let \<Gamma> exp)"
   assumes "\<And>x e exp c. {atom x} \<sharp>* c \<Longrightarrow> atom x \<sharp> e \<Longrightarrow> (\<And> c. P c e) \<Longrightarrow> (\<And> c. P c exp) \<Longrightarrow> P c (let x be e in exp)"
   assumes "\<And>var exp c. {atom var} \<sharp>* c \<Longrightarrow> (\<And>c. P c exp) \<Longrightarrow> P c (Lam [var]. exp)"
+  assumes "\<And> c. P c Null"
+  assumes "\<And> scrut e1 e2 c. (\<And> c. P c scrut) \<Longrightarrow> (\<And> c. P c e1) \<Longrightarrow> (\<And> c. P c e2) \<Longrightarrow> P c (scrut ? e1 : e2)"
   shows "P (c::'a::fs) exp"
   apply (rule exp_strong_induct[of P])
   apply (metis assms(1))
@@ -560,15 +604,19 @@ lemma  exp_strong_induct_rec[case_names Var App Let Let_nonrec Lam]:
   apply (metis assms(4))
   apply (metis assms(3))
   apply (metis assms(5))
+  apply (metis assms(6))
+  apply (metis assms(7))
   done
 
-lemma  exp_strong_induct_rec_set[case_names Var App Let Let_nonrec Lam]:
+lemma  exp_strong_induct_rec_set[case_names Var App Let Let_nonrec Lam Null IfThenElse]:
   assumes "\<And>var c. P c (Var var)"
   assumes "\<And>exp var c. (\<And>c. P c exp) \<Longrightarrow> P c (App exp var)"
   assumes "\<And>\<Gamma> exp c.
     atom ` domA \<Gamma> \<sharp>* c \<Longrightarrow> \<not> nonrec \<Gamma> \<Longrightarrow> (\<And>c x e. (x,e) \<in> set \<Gamma> \<Longrightarrow>  P c e) \<Longrightarrow> (\<And>c. P c exp) \<Longrightarrow> P c (Let \<Gamma> exp)"
   assumes "\<And>x e exp c. {atom x} \<sharp>* c \<Longrightarrow> atom x \<sharp> e \<Longrightarrow> (\<And> c. P c e) \<Longrightarrow> (\<And> c. P c exp) \<Longrightarrow> P c (let x be e in exp)"
   assumes "\<And>var exp c. {atom var} \<sharp>* c \<Longrightarrow> (\<And>c. P c exp) \<Longrightarrow> P c (Lam [var]. exp)"
+  assumes "\<And> c. P c Null"
+  assumes "\<And> scrut e1 e2 c. (\<And> c. P c scrut) \<Longrightarrow> (\<And> c. P c e1) \<Longrightarrow> (\<And> c. P c e2) \<Longrightarrow> P c (scrut ? e1 : e2)"
   shows "P (c::'a::fs) exp"
   apply (rule exp_strong_induct_set(1)[of P])
   apply (metis assms(1))
@@ -579,6 +627,8 @@ lemma  exp_strong_induct_rec_set[case_names Var App Let Let_nonrec Lam]:
   apply (metis assms(4))
   apply (metis assms(3))
   apply (metis assms(5))
+  apply (metis assms(6))
+  apply (metis assms(7))
   done
 
 

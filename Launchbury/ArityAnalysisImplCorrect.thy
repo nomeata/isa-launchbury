@@ -58,7 +58,7 @@ next
     apply (simp add: env_restr_join)
     done
   thus ?case using Let(1,2) by (auto simp add: fresh_star_Pair elim:env_restr_eq_subset[rotated])
-qed
+qed auto
 
 interpretation CorrectArityAnalysis Aexp
   by default (simp_all add:Aexp_restr_subst)

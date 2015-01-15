@@ -11,6 +11,8 @@ where
 | "remove_dead_code (Let as e) =
     (if domA as \<inter> fv e = {} then remove_dead_code e
                            else Let (map_ran (\<lambda> _ e. remove_dead_code e) as) (remove_dead_code e))"
+| "remove_dead_code Null = Null"
+| "remove_dead_code (scrut ? e1 : e2) = (remove_dead_code scrut ? remove_dead_code e1 : remove_dead_code e2)"
 proof-
 case goal1 thus ?case
   unfolding remove_dead_code_graph_aux_def eqvt_def 
@@ -37,13 +39,13 @@ case (goal4 x e x' e')
     finally show  "Lam [(\<pi> \<bullet> x)]. remove_dead_code_sumC (\<pi> \<bullet> e) = Lam [x]. remove_dead_code_sumC e".
   qed
 next
-case (goal13 as body as' body')
-  from goal13(13)
+case (goal19 as body as' body')
+  from goal19(13)
   show ?case
   proof (rule eqvt_let_case)
     fix \<pi> :: perm
   
-    from goal13(1,3) have eqvt_at1: "eqvt_at remove_dead_code_sumC body" by auto
+    from goal19(1,3) have eqvt_at1: "eqvt_at remove_dead_code_sumC body" by auto
 
     assume assm: "supp \<pi> \<sharp>* Let as body"
 
@@ -54,7 +56,7 @@ case (goal13 as body as' body')
         by (metis empty_eqvt permute_eq_iff inter_eqvt fv_eqvt domA)
     next
       assume "domA as \<inter> fv body \<noteq> {}"
-      from goal13(2)[OF this]
+      from goal19(2)[OF this]
       have eqvt_at2: "eqvt_at (map_ran (\<lambda>_. remove_dead_code_sumC)) as" by (induction as) (fastforce simp add: eqvt_at_def)+
 
       have *: "supp \<pi> \<sharp>* Let (map_ran (\<lambda>_. remove_dead_code_sumC) as) (remove_dead_code_sumC body)" using assm

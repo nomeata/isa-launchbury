@@ -92,6 +92,8 @@ where
 | "remove_dead_code (App e x) = App (remove_dead_code e) x"
 | "remove_dead_code (Var x) = Var x"
 | "remove_dead_code (Terms.Let as e) = SmartLet (restrict_reachable (map_ran (\<lambda> _ e. remove_dead_code e) as) (remove_dead_code e)) (remove_dead_code e)"
+| "remove_dead_code Null = Null"
+| "remove_dead_code (scrut ? e1 : e2) = (remove_dead_code scrut ? remove_dead_code e1 : remove_dead_code e2)"
 proof-
 case goal1 thus ?case
   unfolding remove_dead_code_graph_aux_def eqvt_def 
@@ -118,14 +120,14 @@ case (goal4 x e x' e')
     finally show  "Lam [(\<pi> \<bullet> x)]. remove_dead_code_sumC (\<pi> \<bullet> e) = Lam [x]. remove_dead_code_sumC e".
   qed
 next
-case (goal13 as body as' body')
-  from goal13(13)
+case (goal19 as body as' body')
+  from goal19(13)
   show ?case
   proof (rule eqvt_let_case)
     fix \<pi> :: perm
   
-    from goal13(2) have eqvt_at1: "eqvt_at remove_dead_code_sumC body" by auto
-    from goal13(1)
+    from goal19(2) have eqvt_at1: "eqvt_at remove_dead_code_sumC body" by auto
+    from goal19(1)
     have eqvt_at2: "eqvt_at (map_ran (\<lambda>_. remove_dead_code_sumC)) as" by (induction as) (fastforce simp add: eqvt_at_def)+
 
     assume assm: "supp \<pi> \<sharp>* Terms.Let as body"

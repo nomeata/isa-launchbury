@@ -17,6 +17,8 @@ where
  |"(App e v)[y ::= z] = App (e[y ::= z]) (v[y ::v= z])"
  |"atom ` domA as \<sharp>* (y,z) \<Longrightarrow> (Let as body)[y ::= z] = Let (as[y ::h= z]) (body[y ::= z])" 
  |"atom x \<sharp> (y,z) \<Longrightarrow> (Lam [x].e)[y ::= z] = Lam [x].(e[y::=z])"
+ |"Null[y ::= z] = Null"
+ |"(scrut ? e1 : e2)[y ::= z] = (scrut[y ::= z] ? e1[y ::= z] : e2[y ::= z])"
  |"[][y ::h= z] = []"
  |"((v,e)# as)[y ::h= z] = (v, e[y ::= z])# (as[y ::h= z])"
 proof-
@@ -35,6 +37,16 @@ have eqvt_at_subst: "\<And> e y z . eqvt_at subst_subst_heap_sumC (Inl (e, y, z)
   apply simp
   apply(cases rule: subst_subst_heap_graph.cases)
   apply(assumption)
+  apply(rule_tac x="Sum_Type.projl x" in exI)
+  apply(clarify)
+  apply (rule the1_equality)
+  apply blast 
+  apply(simp (no_asm) only: sum.sel)
+  apply(rule_tac x="Sum_Type.projl x" in exI)
+  apply(clarify)
+  apply (rule the1_equality)
+  apply blast 
+  apply(simp (no_asm) only: sum.sel)
   apply(rule_tac x="Sum_Type.projl x" in exI)
   apply(clarify)
   apply (rule the1_equality)
@@ -125,7 +137,7 @@ next case (goal3 P x) show ?case
   qed
 qed
 
-next case (goal15 e y2 z2 as e2 y z as2) thus ?case
+next case (goal19 e y2 z2 as e2 y z as2) thus ?case
   apply -
   apply (drule eqvt_at_subst)+
   apply (drule eqvt_at_subst_heap)+
@@ -146,7 +158,7 @@ next case (goal15 e y2 z2 as e2 y z as2) thus ?case
   apply (simp add: eqvt_at_def)
   done
 
-next case (goal19 x2 y2 z2 e2 x y z e) thus ?case
+next case (goal25 x2 y2 z2 e2 x y z e) thus ?case
   apply -
   apply (drule eqvt_at_subst)+
   apply (simp only: Abs_fresh_iff meta_eq_to_obj_eq[OF subst_def, symmetric, unfolded fun_eq_iff])
