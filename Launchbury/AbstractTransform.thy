@@ -190,6 +190,10 @@ begin
   lemma isLam_transform[simp]:
     "isLam (transform a e) \<longleftrightarrow> isLam e"
     by (induction e rule:isLam.induct) auto
+
+  lemma isVal_transform[simp]:
+    "isVal (transform a e) \<longleftrightarrow> isVal e"
+    by (induction e rule:isLam.induct) auto
 end
 
 locale AbstractTransformBoundSubst = AbstractAnalPropSubst + AbstractTransformBound + 

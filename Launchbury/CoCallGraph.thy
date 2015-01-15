@@ -281,6 +281,9 @@ lemma below_ccSquare[iff]: "G \<sqsubseteq> ccSquare S  \<longleftrightarrow> cc
 lemma cc_restr_ccSquare[simp]: "cc_restr S (ccSquare S') = ccSquare (S' \<inter> S)"
   unfolding ccSquare_def by auto
 
+lemma ccSquare_empty[simp]: "ccSquare {} = \<bottom>"
+  unfolding ccSquare_def by simp
+
 lift_definition ccNeighbors :: "var \<Rightarrow> CoCalls \<Rightarrow> var set" 
   is "\<lambda> x G. {y .(y,x) \<in> G \<or> (x,y) \<in> G}".
 

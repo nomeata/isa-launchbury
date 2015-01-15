@@ -5,6 +5,7 @@ begin
 fun Astack :: "stack \<Rightarrow> Arity"
   where "Astack [] = 0"
       | "Astack (Arg x # S) = inc\<cdot>(Astack S)"
+      | "Astack (Alts e1 e2 # S) = 0"
       | "Astack (Upd x # S) = 0"
       | "Astack (Dummy x # S) = 0"
 

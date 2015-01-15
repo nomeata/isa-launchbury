@@ -146,7 +146,7 @@ begin
       hence "x \<notin> ap S" using prognosis_ap[of ae a \<Gamma> "(Var x)" S] by auto
       
   
-      from `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u` `\<not> isLam e`
+      from `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u` `\<not> isVal e`
       have *: "prognosis ae u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))"
         by (rule prognosis_Var_thunk)
   
@@ -214,7 +214,7 @@ begin
     next
       case many
   
-      from `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u` `\<not> isLam e`
+      from `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u` `\<not> isVal e`
       have "prognosis ae u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))"
         by (rule prognosis_Var_thunk)
       also note record_call_below_arg
@@ -235,7 +235,7 @@ begin
       from  `map_of \<Gamma> x = Some e` `ae x = up\<cdot>0` many
       have "map_of (map_transform Aeta_expand ae (map_transform ccTransform ae \<Gamma>)) x = Some (transform 0 e)"
         by (simp add: map_of_map_transform)
-      with `\<not> isLam e`
+      with `\<not> isVal e`
       have "conf_transform (ae, ce, a) (\<Gamma>, Var x, S) \<Rightarrow>\<^sub>G conf_transform (ae, ce, 0) (delete x \<Gamma>, e, Upd x # S)"
         by (auto simp add: map_transform_delete restr_delete_twist intro!: step.intros  simp del: restr_delete)
       ultimately
@@ -265,7 +265,7 @@ begin
     have "prognosis ae u ((x, e) # delete x \<Gamma>, e, S) = prognosis ae u (\<Gamma>, e, S)"
       using `map_of \<Gamma> x = Some e` by (auto intro!: prognosis_reorder)
     also have "\<dots> \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))"
-       using `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u` `isLam e`  by (rule prognosis_Var_lam)
+       using `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u` `isVal e`  by (rule prognosis_Var_lam)
     also have "\<dots> \<sqsubseteq> prognosis ae a (\<Gamma>, Var x, S)" by (rule record_call_below_arg)
     finally have *: "prognosis ae u ((x, e) # delete x \<Gamma>, e, S) \<sqsubseteq> prognosis ae a (\<Gamma>, Var x, S)" by this simp_all
   
@@ -277,11 +277,11 @@ begin
     have "Astack (restr_stack (edom ce) S) \<sqsubseteq> u" using lamvar below_trans[OF _ `a \<sqsubseteq> u`] by auto
   
     {
-    from `isLam e`
-    have "isLam (transform u e)" by simp
-    hence "isLam (Aeta_expand u (transform u e))" by (rule isLam_Aeta_expand)
+    from `isVal e`
+    have "isVal (transform u e)" by simp
+    hence "isVal (Aeta_expand u (transform u e))" by (rule isVal_Aeta_expand)
     moreover
-    from  `map_of \<Gamma> x = Some e`  `ae x = up \<cdot> u` `ce x = up\<cdot>c` `isLam (transform u e)`
+    from  `map_of \<Gamma> x = Some e`  `ae x = up \<cdot> u` `ce x = up\<cdot>c` `isVal (transform u e)`
     have "map_of (restrictA (edom ce) (map_transform Aeta_expand ae (map_transform transform ae \<Gamma>))) x = Some (Aeta_expand u (transform u e))"
       by (simp add: map_of_map_transform)
     ultimately
@@ -289,7 +289,7 @@ begin
           ((x, Aeta_expand u (transform u e)) # delete x (restrictA (edom ce) (map_transform Aeta_expand ae (map_transform transform ae \<Gamma>))), Aeta_expand u  (transform u e), restr_stack (edom ce) S)"
        by (auto intro: lambda_var simp add: map_transform_delete simp del: restr_delete)
     also have "\<dots> = (restrictA (edom ce) ((map_transform Aeta_expand ae (map_transform transform ae ((x,e) # delete x \<Gamma>)))), Aeta_expand u  (transform u e), restr_stack (edom ce) S)"
-      using `ae x = up \<cdot> u` `ce x = up\<cdot>c` `isLam (transform u e)`
+      using `ae x = up \<cdot> u` `ce x = up\<cdot>c` `isVal (transform u e)`
       by (simp add: map_transform_Cons map_transform_delete restr_delete_twist del: restr_delete)
     also(subst[rotated]) have "\<dots> \<Rightarrow>\<^sup>* conf_transform (ae, ce, u) ((x, e) # delete x \<Gamma>, e, S)"
       by simp (rule Aeta_expand_correct[OF `Astack (restr_stack (edom ce) S) \<sqsubseteq> u`])
@@ -310,7 +310,7 @@ begin
       have "Astack (Upd x # S) \<sqsubseteq> a" using var\<^sub>2 by auto
       hence "a = 0" by auto
   
-      from `isLam e` `x \<notin> domA \<Gamma>`
+      from `isVal e` `x \<notin> domA \<Gamma>`
       have *: "prognosis ae 0 ((x, e) # \<Gamma>, e, S) \<sqsubseteq> prognosis ae 0 (\<Gamma>, e, Upd x # S)" by (rule prognosis_Var2)
 
       have "consistent (ae, ce, 0) ((x, e) # \<Gamma>, e, S)"

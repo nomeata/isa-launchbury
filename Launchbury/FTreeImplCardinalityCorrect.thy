@@ -135,7 +135,7 @@ begin
     have "\<dots> = record_call x\<cdot>(pathsCard (paths (and_then x (substitute (FBinds \<Gamma>\<cdot>ae) (thunks \<Gamma>) (Fstack S  \<otimes>\<otimes> (FBinds \<Gamma>\<cdot>ae) x)))))"
       using `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u` by (simp add: Fexp.AnalBinds_lookup)
     also
-    assume "isLam e"
+    assume "isVal e"
     hence "x \<notin> thunks \<Gamma>" using `map_of \<Gamma> x = Some e` by (metis thunksE)
     hence "FBinds \<Gamma>\<cdot>ae = f_nxt (FBinds \<Gamma>\<cdot>ae) (thunks \<Gamma>) x" by (auto simp add: f_nxt_def)
     hence "and_then x (substitute (FBinds \<Gamma>\<cdot>ae) (thunks \<Gamma>) (Fstack S  \<otimes>\<otimes> (FBinds \<Gamma>\<cdot>ae) x)) = substitute (FBinds \<Gamma>\<cdot>ae) (thunks \<Gamma>) (and_then x (Fstack S))"
@@ -154,7 +154,7 @@ begin
     fix \<Gamma> :: heap and e :: exp and x :: var and ae :: AEnv and u a S
     assume "map_of \<Gamma> x = Some e"
     assume "ae x = up\<cdot>u"
-    assume "\<not> isLam e"
+    assume "\<not> isVal e"
     hence "x \<in> thunks \<Gamma>" using `map_of \<Gamma> x = Some e` by (metis thunksI)
     hence [simp]: "f_nxt (FBinds \<Gamma>\<cdot>ae) (thunks \<Gamma>) x = FBinds (delete x \<Gamma>)\<cdot>ae" 
       by (auto simp add: f_nxt_def Fexp.AnalBinds_delete_to_fun_upd empty_is_bottom)
@@ -189,13 +189,13 @@ begin
     thus "prognosis ae u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> record_call x\<cdot>(prognosis ae a (\<Gamma>, Var x, S))" by simp
   next
     fix \<Gamma> :: heap and e :: exp and ae :: AEnv and  x :: var and  S
-    assume "isLam e"
+    assume "isVal e"
     hence "repeatable (Fexp e\<cdot>0)" by (rule Fun_repeatable)
 
     assume [simp]: "x \<notin> domA \<Gamma>"
 
     have [simp]: "thunks ((x, e) # \<Gamma>) = thunks \<Gamma>" 
-      using `isLam e`
+      using `isVal e`
       by (auto simp add: thunks_Cons dest: set_mp[OF thunks_domA])
 
     have "fup\<cdot>(Fexp e)\<cdot>(ae x) \<sqsubseteq> Fexp e\<cdot>0" by (metis fup2 monofun_cfun_arg up_zero_top)

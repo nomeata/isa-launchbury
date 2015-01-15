@@ -25,7 +25,7 @@ lemma CCexp_Let_simp1[simp]:
   by (rule cc_restr_intersect)  (auto dest!: set_mp[OF ccField_CCfix])
 
 lemma CCexp_Let_simp2[simp]:
-  "atom x \<sharp> e \<Longrightarrow> CCexp (let x be e in exp)\<cdot>n = cc_restr (- {x}) (ccBind x e \<cdot>(Aheap_nonrec x e\<cdot>(Aexp exp\<cdot>n, CCexp exp\<cdot>n), CCexp exp\<cdot>n) \<squnion> ccProd (fv e) (ccNeighbors x (CCexp exp\<cdot>n) - (if isLam e then {} else {x})) \<squnion> CCexp exp\<cdot>n)"
+  "atom x \<sharp> e \<Longrightarrow> CCexp (let x be e in exp)\<cdot>n = cc_restr (- {x}) (ccBind x e \<cdot>(Aheap_nonrec x e\<cdot>(Aexp exp\<cdot>n, CCexp exp\<cdot>n), CCexp exp\<cdot>n) \<squnion> ccProd (fv e) (ccNeighbors x (CCexp exp\<cdot>n) - (if isVal e then {} else {x})) \<squnion> CCexp exp\<cdot>n)"
   unfolding CCexp_simps
   by (rule cc_restr_intersect)
      (auto simp add: ccField_ccProd ccBind_eq dest!: set_mp[OF ccField_CCexp]  set_mp[OF ccField_fup_CCexp] set_mp[OF ccField_cc_restr] set_mp[OF ccNeighbors_ccField])
@@ -322,9 +322,9 @@ next
     by (rule eq_imp_below[OF CCexp_subst])
 next
   fix e
-  assume "isLam e"
-  thus "CCexp  e\<cdot>0 = ccSquare (fv e)"
-    by (induction e rule: isLam.induct) (auto simp add: predCC_eq)
+  assume "isVal e"
+  thus "CCexp e\<cdot>0 = ccSquare (fv e)"
+    by (induction e rule: isVal.induct) (auto simp add: predCC_eq)
 next
   fix \<Gamma> e a
   show "cc_restr (- domA \<Gamma>) (ccHeap \<Gamma> e\<cdot>a) \<sqsubseteq> CCexp (Let \<Gamma> e)\<cdot>a"
@@ -374,7 +374,7 @@ next
     hence [simp]: "x \<notin> fv e'" by (auto simp add: fresh_def fv_def)
 
     show ?thesis
-    proof(cases "x--x\<notin>CCexp e\<cdot>a \<or> isLam e'")
+    proof(cases "x--x\<notin>CCexp e\<cdot>a \<or> isVal e'")
       case True
       with `(Aheap \<Delta> e\<cdot>a) x = up\<cdot>a'`
       have [simp]: "(CoCallArityAnalysis.Aexp cCCexp e\<cdot>a) x = up\<cdot>a'"
@@ -422,20 +422,20 @@ next
      by (auto simp add: ccBind_eq dest!: set_mp[OF ccField_cc_restr] set_mp[OF ccField_fup_CCexp])
 
     show ?thesis
-    proof(cases "isLam e' \<and> x--x\<in>CCexp e\<cdot>a")
+    proof(cases "isVal e' \<and> x--x\<in>CCexp e\<cdot>a")
     case True
 
     have "ccNeighbors x (ccHeap \<Delta> e\<cdot>a) =
         ccNeighbors x (ccBind x e'\<cdot>(Aheap_nonrec x e'\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a), CCexp e\<cdot>a)) \<union>
-        ccNeighbors x (ccProd (fv e') (ccNeighbors x (CCexp e\<cdot>a) - (if isLam e' then {} else {x}))) \<union>
+        ccNeighbors x (ccProd (fv e') (ccNeighbors x (CCexp e\<cdot>a) - (if isVal e' then {} else {x}))) \<union>
         ccNeighbors x (CCexp e\<cdot>a)" by (auto simp add: ccHeap_simp2 )
     also have "ccNeighbors x (ccBind  x e'\<cdot>(Aheap_nonrec x e'\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a), CCexp e\<cdot>a)) = {}"
        by (auto simp add: ccBind_eq dest!: set_mp[OF ccField_cc_restr] set_mp[OF ccField_fup_CCexp])
-    also have "ccNeighbors x (ccProd (fv e') (ccNeighbors x (CCexp e\<cdot>a) - (if isLam e' then {} else {x})))
+    also have "ccNeighbors x (ccProd (fv e') (ccNeighbors x (CCexp e\<cdot>a) - (if isVal e' then {} else {x})))
       \<subseteq> ccNeighbors x (ccProd (fv e') (ccNeighbors x (CCexp e\<cdot>a)))" by (simp add: ccNeighbors_ccProd)
     also have "\<dots> \<subseteq> fv e'" by (simp add: ccNeighbors_ccProd)
     finally
-    have "ccNeighbors x (ccHeap \<Delta> e\<cdot>a)  - {x} \<inter> thunks \<Delta> \<subseteq> ccNeighbors x (CCexp e\<cdot>a) \<union> fv e'" by auto
+    have "ccNeighbors x (ccHeap \<Delta> e\<cdot>a) - {x} \<inter> thunks \<Delta> \<subseteq> ccNeighbors x (CCexp e\<cdot>a) \<union> fv e'" by auto
     hence "ccProd (fv e') (ccNeighbors x (ccHeap \<Delta> e\<cdot>a) - {x} \<inter> thunks \<Delta>) \<sqsubseteq> ccProd (fv e') (ccNeighbors x (CCexp e\<cdot>a) \<union> fv e')" by (rule ccProd_mono2)
     also have "\<dots> \<sqsubseteq> ccProd (fv e') (ccNeighbors x (CCexp e\<cdot>a)) \<squnion> ccProd (fv e') (fv e')" by simp
     also have "ccProd (fv e') (ccNeighbors x (CCexp e\<cdot>a)) \<sqsubseteq> ccHeap \<Delta> e\<cdot>a"
@@ -451,11 +451,11 @@ next
     case False
     have "ccNeighbors x (ccHeap \<Delta> e\<cdot>a) =
         ccNeighbors x (ccBind x e'\<cdot>(Aheap_nonrec x e'\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a), CCexp e\<cdot>a)) \<union>
-        ccNeighbors x (ccProd (fv e') (ccNeighbors x (CCexp e\<cdot>a) - (if isLam e' then {} else {x}))) \<union>
+        ccNeighbors x (ccProd (fv e') (ccNeighbors x (CCexp e\<cdot>a) - (if isVal e' then {} else {x}))) \<union>
         ccNeighbors x (CCexp e\<cdot>a)" by (auto simp add: ccHeap_simp2 )
     also have "ccNeighbors x (ccBind  x e'\<cdot>(Aheap_nonrec x e'\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a), CCexp e\<cdot>a)) = {}"
        by (auto simp add: ccBind_eq dest!: set_mp[OF ccField_cc_restr] set_mp[OF ccField_fup_CCexp])
-    also have  "ccNeighbors x (ccProd (fv e') (ccNeighbors x (CCexp e\<cdot>a) - (if isLam e' then {} else {x}) )) 
+    also have  "ccNeighbors x (ccProd (fv e') (ccNeighbors x (CCexp e\<cdot>a) - (if isVal e' then {} else {x}) )) 
       = {}" using False by (auto simp add: ccNeighbors_ccProd)
     finally
     have "ccNeighbors x (ccHeap \<Delta> e\<cdot>a) \<subseteq> ccNeighbors x (CCexp e\<cdot>a)" by auto
@@ -485,7 +485,7 @@ next
   assume "nonrec \<Gamma>"
   then obtain x' e' where [simp]: "\<Gamma> = [(x',e')]" "atom x' \<sharp> e'" by (auto elim: nonrecE)
   assume "x \<in> thunks \<Gamma>"
-  hence [simp]: "x = x'" "\<not> isLam e'" by (auto simp add: thunks_Cons split: if_splits)
+  hence [simp]: "x = x'" "\<not> isVal e'" by (auto simp add: thunks_Cons split: if_splits)
 
   assume "x \<in> ccManyCalls (CCexp e\<cdot>a)"
   hence [simp]: "x'--x'\<in> CCexp  e\<cdot>a" by simp

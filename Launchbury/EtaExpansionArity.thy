@@ -25,6 +25,9 @@ lemma subst_Aeta_expand:
 lemma isLam_Aeta_expand: "isLam e \<Longrightarrow> isLam (Aeta_expand a e)"
   by transfer (rule isLam_eta_expand)
 
+lemma isVal_Aeta_expand: "isVal e \<Longrightarrow> isVal (Aeta_expand a e)"
+  by transfer (rule isVal_eta_expand)
+
 lemma Aeta_expand_fresh[simp]: "a \<sharp> Aeta_expand n e = a \<sharp> e" by transfer simp
 lemma Aeta_expand_fresh_star[simp]: "a \<sharp>* Aeta_expand n e = a \<sharp>* e" by (auto simp add: fresh_star_def)
 

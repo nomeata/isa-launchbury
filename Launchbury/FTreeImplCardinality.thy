@@ -9,12 +9,14 @@ begin
 
 fun unstack :: "stack \<Rightarrow> exp \<Rightarrow> exp" where
   "unstack [] e = e"
+| "unstack (Alts e1 e2 # S) e = unstack S e"
 | "unstack (Upd x # S) e = unstack S e"
 | "unstack (Arg x # S) e = unstack S (App e x)"
 | "unstack (Dummy x # S) e = unstack S e"
 
 fun Fstack :: "stack \<Rightarrow> var ftree"
   where "Fstack [] = \<bottom>"
+  | "Fstack (Alts e1 e2 # S) = Fstack S"
   | "Fstack (Upd x # S) = Fstack S"
   | "Fstack (Arg x # S) = many_calls x \<otimes>\<otimes> Fstack S"
   | "Fstack (Dummy x # S) = Fstack S"

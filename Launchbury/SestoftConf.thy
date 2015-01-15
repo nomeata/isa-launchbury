@@ -2,26 +2,31 @@ theory SestoftConf
 imports Terms Substitution
 begin
 
-datatype stack_elem = Arg var | Upd var | Dummy var
+datatype stack_elem = Alts exp exp | Arg var | Upd var | Dummy var
 
 instantiation stack_elem :: pt
 begin
-definition  "\<pi> \<bullet> x = (case x of (Arg v) \<Rightarrow> Arg (\<pi> \<bullet> v) | (Upd v) \<Rightarrow> Upd (\<pi> \<bullet> v) | (Dummy v) \<Rightarrow> Dummy (\<pi> \<bullet> v))"
+definition  "\<pi> \<bullet> x = (case x of (Alts e1 e2) \<Rightarrow> Alts (\<pi> \<bullet> e1) (\<pi> \<bullet> e2) | (Arg v) \<Rightarrow> Arg (\<pi> \<bullet> v) | (Upd v) \<Rightarrow> Upd (\<pi> \<bullet> v) | (Dummy v) \<Rightarrow> Dummy (\<pi> \<bullet> v))"
 instance
   by default (auto simp add: permute_stack_elem_def split:stack_elem.split)
 end
 
-lemma Arg_eqvt[eqvt]: "\<pi> \<bullet> (Arg v) = Arg (\<pi> \<bullet> v)"
+lemma Alts_eqvt[eqvt]: "\<pi> \<bullet> (Alts e1 e2) = Alts (\<pi> \<bullet> e1) (\<pi> \<bullet> e2)"
+  and Arg_eqvt[eqvt]: "\<pi> \<bullet> (Arg v) = Arg (\<pi> \<bullet> v)"
   and Upd_eqvt[eqvt]: "\<pi> \<bullet> (Upd v) = Upd (\<pi> \<bullet> v)"
   and Dummy_eqvt[eqvt]: "\<pi> \<bullet> (Dummy v) = Dummy (\<pi> \<bullet> v)"
   by (auto simp add: permute_stack_elem_def split:stack_elem.split)
 
+find_theorems supp name:Pair
+lemma supp_Alts[simp]: "supp (Alts e1 e2) = supp e1 \<union> supp e2" unfolding supp_def by (auto simp add: Collect_imp_eq Collect_neg_eq)
 lemma supp_Arg[simp]: "supp (Arg v) = supp v"  unfolding supp_def by auto
 lemma supp_Upd[simp]: "supp (Upd v) = supp v"  unfolding supp_def by auto
 lemma supp_Dummy[simp]: "supp (Dummy v) = supp v"  unfolding supp_def by auto
+lemma fresh_Alts[simp]: "a \<sharp> Alts e1 e2 = (a \<sharp> e1 \<and> a \<sharp> e2)" unfolding fresh_def by auto
 lemma fresh_Arg[simp]: "a \<sharp> Arg v = a \<sharp> v" unfolding fresh_def by auto
 lemma fresh_Upd[simp]: "a \<sharp> Upd v = a \<sharp> v" unfolding fresh_def by auto
 lemma fresh_Dummy[simp]: "a \<sharp> Dummy v = a \<sharp> v" unfolding fresh_def by auto
+lemma fv_Alts[simp]: "fv (Alts e1 e2) = fv e1 \<union> fv e2"  unfolding fv_def by auto
 lemma fv_Arg[simp]: "fv (Arg v) = fv v"  unfolding fv_def by auto
 lemma fv_Upd[simp]: "fv (Upd v) = fv v"  unfolding fv_def by auto
 
@@ -29,24 +34,27 @@ instance stack_elem :: fs  by (default, case_tac x) (auto simp add: finite_supp)
 
 type_synonym stack = "stack_elem list"
 
-
 fun ap :: "stack \<Rightarrow> var set" where
   "ap [] = {}"
+| "ap (Alts e1 e2 # S) = ap S"
 | "ap (Arg x # S) = insert x (ap S)"
 | "ap (Upd x # S) = ap S"
 | "ap (Dummy x # S) = ap S"
 fun upds :: "stack \<Rightarrow> var set" where
   "upds [] = {}"
+| "upds (Alts e1 e2 # S) = upds S"
 | "upds (Upd x # S) = insert x (upds S)"
 | "upds (Arg x # S) = upds S"
 | "upds (Dummy x # S) = upds S"
 fun flattn :: "stack \<Rightarrow> var list" where
   "flattn [] = []"
+| "flattn (Alts e1 e2 # S) = fv_list e1 @ fv_list e2 @ flattn S"
 | "flattn (Upd x # S) = x # flattn S"
 | "flattn (Arg x # S) = x # flattn S"
 | "flattn (Dummy x # S) = x # flattn S"
 fun upds_list :: "stack \<Rightarrow> var list" where
   "upds_list [] = []"
+| "upds_list (Alts e1 e2 # S) = upds_list S"
 | "upds_list (Upd x # S) = x # upds_list S"
 | "upds_list (Arg x # S) = upds_list S"
 | "upds_list (Dummy x # S) = upds_list S"
@@ -60,15 +68,15 @@ lemma ups_fv_subset: "upds S \<subseteq> fv S"
 lemma ap_fv_subset: "ap S \<subseteq> fv S"
   by (induction S rule: upds.induct) auto
 
-lemma fresh_flattn[simp]: "a \<sharp> flattn S \<longleftrightarrow> a \<sharp> S"
-  by (induction S rule:flattn.induct) (auto simp add: fresh_Nil fresh_Cons)
-lemma fresh_star_flattn[simp]: "a \<sharp>* flattn S \<longleftrightarrow> a \<sharp>* S"
+lemma fresh_flattn[simp]: "atom (a::var) \<sharp> flattn S \<longleftrightarrow> atom a \<sharp> S"
+  by (induction S rule:flattn.induct) (auto simp add: fresh_Nil fresh_Cons fresh_append fresh_fv[OF finite_fv])
+lemma fresh_star_flattn[simp]: "atom ` (as:: var set) \<sharp>* flattn S \<longleftrightarrow> atom ` as \<sharp>* S"
   by (auto simp add: fresh_star_def)
 
 type_synonym conf = "(heap \<times> exp \<times> stack)"
 
 inductive boring_step where
-  "isLam e \<Longrightarrow> boring_step (\<Gamma>, e, Upd x # S)"
+  "isVal e \<Longrightarrow> boring_step (\<Gamma>, e, Upd x # S)"
 
 
 fun heap_upds_ok where "heap_upds_ok (\<Gamma>,S) \<longleftrightarrow> domA \<Gamma> \<inter> upds S = {} \<and> distinct (upds_list S)"
@@ -106,6 +114,7 @@ lemmas heap_upds_ok.simps[simp del]
 
 fun restr_stack :: "var set \<Rightarrow> stack \<Rightarrow> stack"
   where "restr_stack V [] = []"
+      | "restr_stack V (Alts e1 e2 # S) = Alts e1 e2 # restr_stack V S"
       | "restr_stack V (Arg x # S) = Arg x # restr_stack V S"
       | "restr_stack V (Upd x # S) = (if x \<in> V then Upd x # restr_stack V S else restr_stack V S)"
       | "restr_stack V (Dummy x # S) = Dummy x # restr_stack V S"

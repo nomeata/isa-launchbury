@@ -25,6 +25,7 @@ qed
 fun arg_prefix :: "stack \<Rightarrow> nat" where
   "arg_prefix [] = 0"
 | "arg_prefix (Arg x # S) = Suc (arg_prefix S)"
+| "arg_prefix (Alts e1 e2 # S) = 0"
 | "arg_prefix (Upd x # S) = 0"
 | "arg_prefix (Dummy x # S) = 0"
 
@@ -63,7 +64,7 @@ theorem bound_eta_expansion_correct:
   fixes exp :: "var \<Rightarrow> nat"
   assumes "(\<Gamma>, e, S) \<Rightarrow>\<^sup>* (\<Delta>, z, S')"
   assumes "\<not> boring_step (\<Delta>, z, S')"
-  assumes "\<And> x e'. e = Var x \<Longrightarrow> map_of \<Gamma> x = Some e' \<Longrightarrow> (if isLam e' then exp x \<le> arg_prefix S else exp x = 0)"
+  assumes "\<And> x e'. e = Var x \<Longrightarrow> map_of \<Gamma> x = Some e' \<Longrightarrow> (if isVal e' then exp x \<le> arg_prefix S else exp x = 0)"
   assumes "exp ` (- domA \<Gamma>) \<subseteq> {0}"
   shows "(eta_expand_heap exp \<Gamma>, e, S) \<Rightarrow>\<^sup>* (eta_expand_heap exp \<Delta>, z, S')"
 using assms
@@ -95,7 +96,7 @@ case (lamvar \<Gamma> x e S)
     by (rule step.var\<^sub>1)
   hence "(eta_expand_heap exp \<Gamma>, Var x, S) \<Rightarrow>\<^sup>* (delete x (eta_expand_heap exp \<Gamma>), eta_expand (exp x) e, Upd x # S)"..
   also have "\<dots> \<Rightarrow> ((x, eta_expand (exp x) e) # delete x (eta_expand_heap exp \<Gamma>), eta_expand (exp x) e, S)"
-    using isLam_eta_expand(1)[OF `isLam _`] by (auto intro: var\<^sub>2)
+    using isVal_eta_expand(1)[OF `isVal _`] by (auto intro: var\<^sub>2)
   also have "\<dots> \<Rightarrow>\<^sup>* ((x, eta_expand (exp x) e) # delete x (eta_expand_heap exp \<Gamma>), e, S)"
      by (rule eta_expansion_correct') fact
   also have "delete x (eta_expand_heap exp \<Gamma>) = eta_expand_heap exp (delete x \<Gamma>)" 

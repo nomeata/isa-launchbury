@@ -56,7 +56,7 @@ lemma example1:
   assumes Aexp_e: "\<And>a. Aexp e\<cdot>a = esing x\<cdot>(up\<cdot>a) \<squnion> esing y\<cdot>(up\<cdot>a)"
   assumes ccExp_e: "\<And>a. CCexp e\<cdot>a = \<bottom>"
   assumes [simp]: "transform 1 e = e"
-  assumes "isLam e"
+  assumes "isVal e"
   assumes disj: "y \<noteq> f" "y \<noteq> g" "x \<noteq> y" "z \<noteq> f" "z \<noteq> g" "y \<noteq> x"
   assumes fresh: "atom z \<sharp> e"
   shows "transform 1 (let y be  App (Var f) g in (let x be e in (Var x))) = 
@@ -68,7 +68,7 @@ proof-
   hence [simp]: "\<not> nonrec [(x,e)]"
     by (simp add: nonrec_def)
  
-  from `isLam e`
+  from `isVal e`
   have [simp]: "thunks [(x, e)] = {}"
     by (simp add: thunks_Cons)
 

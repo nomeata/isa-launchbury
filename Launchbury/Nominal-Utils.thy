@@ -313,6 +313,41 @@ lemma fresh_fv: "finite (fv e :: 'a set) \<Longrightarrow>  atom (x :: ('a::at_b
   unfolding fv_def fresh_def
   by (auto simp add: supp_finite_set_at_base)
 
+lemma finite_fv[simp]: "finite (fv (e::'a::fs) :: ('b::at_base) set)"
+proof-
+  have "finite (supp e)" by (metis finite_supp)
+  hence "finite (atom -` supp e :: 'b set)" 
+    apply (rule finite_vimageI)
+    apply (rule inj_onI)
+    apply (simp)
+    done
+  moreover
+  have "(atom -` supp e  :: 'b set) = fv e"   unfolding fv_def by auto
+  ultimately
+  show ?thesis by simp
+qed
+
+definition fv_list :: "'a::fs \<Rightarrow> 'b::at_base list"
+  where "fv_list e = (SOME l. set l = fv e)"
+
+lemma set_fv_list[simp]: "set (fv_list e) = (fv e :: ('b::at_base) set)"
+proof-
+  have "finite (fv e :: 'b set)" by (rule finite_fv)
+  from finite_list[OF finite_fv]
+  obtain l where "set l = (fv e :: 'b set)"..
+  thus ?thesis
+    unfolding fv_list_def by (rule someI)
+qed
+
+lemma fresh_fv_list[simp]:
+  "a \<sharp> (fv_list e :: 'b::at_base list) \<longleftrightarrow> a \<sharp> (fv e :: 'b::at_base set)"
+proof-
+  have "a \<sharp> (fv_list e :: 'b::at_base list) \<longleftrightarrow> a \<sharp> set (fv_list e :: 'b::at_base list)"
+    by (rule fresh_set[symmetric])
+  also have "\<dots> \<longleftrightarrow> a \<sharp> (fv e :: 'b::at_base set)" by simp
+  finally show ?thesis.
+qed
+
 
 subsubsection {* Other useful lemmas *}
 

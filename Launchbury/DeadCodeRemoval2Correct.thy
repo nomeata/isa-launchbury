@@ -20,9 +20,6 @@ lemma delete_rdcH[simp]: "delete x (rdcH S \<Gamma>) = rdcH S (delete x \<Gamma>
   by (induction \<Gamma> rule:clearjunk.induct) 
      (auto simp add: rdcH_def  delete_twist split: if_splits)
 
-lemma map_ran_append[simp]: "map_ran f (\<Gamma>1 @ \<Gamma>2) = map_ran f \<Gamma>1 @ map_ran f \<Gamma>2"
-  by (induction \<Gamma>1) auto
-
 lemma restrictA_UNIV[simp]: "restrictA UNIV \<Gamma> = \<Gamma>"
   by (induction \<Gamma>) auto
 
@@ -35,11 +32,8 @@ lemma clearjunk_append: "clearjunk (\<Gamma>1 @ \<Gamma>2) = clearjunk \<Gamma>1
 lemma restrictA_clearjunk: "restrictA S (clearjunk \<Gamma>) = clearjunk (restrictA S \<Gamma>)"
   by (induction \<Gamma>  rule:clearjunk.induct) (auto simp add: Compl_insert)
 
-lemma restrictA_append[simp]: "restrictA S (\<Gamma>1 @ \<Gamma>2) = restrictA S \<Gamma>1 @ restrictA S \<Gamma>2"
-  by (induction \<Gamma>1) auto
-
 lemma rdcH_append[simp]: "domA as \<inter> domA \<Gamma> = {} \<Longrightarrow> rdcH S (as @ \<Gamma>) = rdcH S as @ rdcH S \<Gamma>"
-  unfolding rdcH_def apply (simp add: clearjunk_append restrictA_clearjunk)
+  unfolding rdcH_def apply (simp add: clearjunk_append restrictA_clearjunk map_ran_append restrictA_append)
   apply (rule arg_cong) back
   apply (rule restrictA_cong)
   apply auto

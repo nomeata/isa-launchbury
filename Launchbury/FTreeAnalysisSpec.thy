@@ -12,7 +12,7 @@ locale FTreeAnalysisCorrect = FTreeAnalysisCarrier +
   assumes Fexp_Lam: "without y (Fexp e\<cdot>(pred\<cdot>n)) \<sqsubseteq> Fexp (Lam [y]. e) \<cdot> n"
   assumes Fexp_subst: "Fexp (e[y::=x])\<cdot>a \<sqsubseteq> many_calls x \<otimes>\<otimes> without y ((Fexp e)\<cdot>a)"
   assumes Fexp_Var: "single v \<sqsubseteq> Fexp (Var v)\<cdot>a"
-  assumes Fun_repeatable: "isLam e \<Longrightarrow> repeatable (Fexp e\<cdot>0)"
+  assumes Fun_repeatable: "isVal e \<Longrightarrow> repeatable (Fexp e\<cdot>0)"
 
 locale FTreeAnalysisCardinalityHeap = 
   FTreeAnalysisCorrect + CorrectArityAnalysisLet + 

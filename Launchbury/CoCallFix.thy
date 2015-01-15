@@ -163,10 +163,10 @@ subsubsection {* The non-recursive case *}
 
 definition ABind_nonrec :: "var \<Rightarrow> exp \<Rightarrow> AEnv \<times> CoCalls \<rightarrow> Arity\<^sub>\<bottom>"
 where
-  "ABind_nonrec x e = (\<Lambda> i. (if isLam e \<or> x--x\<notin>(snd i) then fst i x else up\<cdot>0))"
+  "ABind_nonrec x e = (\<Lambda> i. (if isVal e \<or> x--x\<notin>(snd i) then fst i x else up\<cdot>0))"
 
 lemma ABind_nonrec_eq:
-  "ABind_nonrec x e \<cdot> i = (if isLam e \<or> x--x\<notin>(snd i) then fst i x else up\<cdot>0)"
+  "ABind_nonrec x e \<cdot> i = (if isVal e \<or> x--x\<notin>(snd i) then fst i x else up\<cdot>0)"
   unfolding ABind_nonrec_def
   apply (rule beta_cfun)
   apply (rule cont_if_else_above)
@@ -212,10 +212,10 @@ begin
     by (rule beta_cfun) simp
 
   definition CCfix_nonrec
-   where "CCfix_nonrec x e = (\<Lambda> i. ccBind x e \<cdot> (Aheap_nonrec x e\<cdot>i, snd i)  \<squnion> ccProd (fv e) (ccNeighbors x (snd i) - (if isLam e then {} else {x})) \<squnion> snd i)"
+   where "CCfix_nonrec x e = (\<Lambda> i. ccBind x e \<cdot> (Aheap_nonrec x e\<cdot>i, snd i)  \<squnion> ccProd (fv e) (ccNeighbors x (snd i) - (if isVal e then {} else {x})) \<squnion> snd i)"
 
   lemma CCfix_nonrec_eq[simp]:
-    "CCfix_nonrec x e \<cdot> i = ccBind x e\<cdot>(Aheap_nonrec x e\<cdot>i, snd i)  \<squnion> ccProd (fv e) (ccNeighbors x (snd i) - (if isLam e then {} else {x})) \<squnion> snd i"
+    "CCfix_nonrec x e \<cdot> i = ccBind x e\<cdot>(Aheap_nonrec x e\<cdot>i, snd i)  \<squnion> ccProd (fv e) (ccNeighbors x (snd i) - (if isVal e then {} else {x})) \<squnion> snd i"
     unfolding CCfix_nonrec_def
     by (rule beta_cfun) (intro cont2cont)
 

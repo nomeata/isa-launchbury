@@ -144,7 +144,7 @@ next
     unfolding Fexp_simp by (auto intro: single_below)
 next
   fix e
-  assume "isLam e"
+  assume "isVal e"
   hence [simp]: "ccExp e\<cdot>0 = ccSquare (fv e)" by (rule ccExp_pap)
   thus "repeatable (Fexp e\<cdot>0)"
     unfolding Fexp_simp by (auto intro: repeatable_ccFTree_ccSquare[OF Aexp_edom])

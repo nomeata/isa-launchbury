@@ -102,7 +102,7 @@ case (thunk \<Gamma> x e S)
   from  `map_of \<Gamma> x = Some e` `ae x = up\<cdot>0`
   have "map_of (map_transform Aeta_expand ae (map_transform transform ae \<Gamma>)) x = Some (transform 0 e)"
     by (simp add: map_of_map_transform)
-  with `\<not> isLam e`
+  with `\<not> isVal e`
   have "conf_transform (ae, a) (\<Gamma>, Var x, S) \<Rightarrow> conf_transform (ae, 0) (delete x \<Gamma>, e, Upd x # S)"
     by (auto simp add: map_transform_delete restr_delete_twist intro!: step.intros  simp del: restr_delete)
   ultimately
@@ -128,11 +128,11 @@ case (lamvar \<Gamma> x e S)
   have "Astack S \<sqsubseteq> u" using lamvar  below_trans[OF _ `a \<sqsubseteq> u`] by auto
 
   {
-  from `isLam e`
-  have "isLam (transform u e)" by simp
-  hence "isLam (Aeta_expand u (transform u e))" by (rule isLam_Aeta_expand)
+  from `isVal e`
+  have "isVal (transform u e)" by simp
+  hence "isVal (Aeta_expand u (transform u e))" by (rule isVal_Aeta_expand)
   moreover
-  from  `map_of \<Gamma> x = Some e`  `ae x = up \<cdot> u`  `isLam (transform u e)`
+  from  `map_of \<Gamma> x = Some e`  `ae x = up \<cdot> u`  `isVal (transform u e)`
   have "map_of (map_transform Aeta_expand ae (map_transform transform ae \<Gamma>)) x = Some (Aeta_expand u (transform u e))"
     by (simp add: map_of_map_transform)
   ultimately
@@ -140,7 +140,7 @@ case (lamvar \<Gamma> x e S)
         ((x, Aeta_expand u (transform u e)) # delete x (map_transform Aeta_expand ae (map_transform transform ae \<Gamma>)), Aeta_expand u  (transform u e), S)"
      by (auto intro: lambda_var simp add: map_transform_delete simp del: restr_delete)
   also have "\<dots> = ((map_transform Aeta_expand ae (map_transform transform ae ((x,e) # delete x \<Gamma>))), Aeta_expand u (transform u e), S)"
-    using `ae x = up \<cdot> u` `isLam (transform u e)`
+    using `ae x = up \<cdot> u` `isVal (transform u e)`
     by (simp add: map_transform_Cons map_transform_delete restr_delete_twist del: restr_delete)
   also(subst[rotated]) have "\<dots> \<Rightarrow>\<^sup>* conf_transform (ae, u) ((x, e) # delete x \<Gamma>, e, S)"
     by simp (rule Aeta_expand_correct[OF `Astack S \<sqsubseteq> u`])

@@ -366,10 +366,6 @@ lemma fv_Null[simp]: "fv Null = {}"
 lemma fv_IfThenElse[simp]: "fv (scrut ? e1 : e2)  = fv scrut \<union> fv e1 \<union> fv e2"
   unfolding fv_def by (auto simp add: exp_assn.supp)
 
-lemma finite_fv_exp[simp]: "finite (fv (e::exp) :: var set)"
-  and finite_fv_heap[simp]: "finite (fv (\<Gamma> :: heap) :: var set)"
-  by (induction e rule:exp_heap_induct) auto
-
 
 lemma fv_delete_heap:
   assumes "map_of \<Gamma> x = Some e"
@@ -508,6 +504,25 @@ nominal_termination (eqvt) by lexicographic_order
 
 lemma isLam_Lam: "isLam (Lam [x]. e)" by simp
 
+nominal_function isVal :: "exp \<Rightarrow> bool" where
+  "isVal (Var x) = False" |
+  "isVal (Lam [x]. e) = True" |
+  "isVal (App e x) = False" |
+  "isVal (Let as e) = False" |
+  "isVal Null = True" |
+  "isVal (scrut ? e1 : e2) = False"
+  unfolding isVal_graph_aux_def eqvt_def
+  apply simp
+  apply simp
+  apply (metis exp_strong_exhaust)
+  apply auto
+  done
+nominal_termination (eqvt) by lexicographic_order
+
+lemma isVal_Lam: "isVal (Lam [x]. e)" by simp
+lemma isVal_Null: "isVal Null" by simp
+
+
 subsubsection {* The notion of thunks *}
 (*
 fun thunks :: "heap \<Rightarrow> var set" where
@@ -516,14 +531,14 @@ fun thunks :: "heap \<Rightarrow> var set" where
 *)
 
 definition thunks :: "heap \<Rightarrow> var set" where
-  "thunks \<Gamma> = {x . case map_of \<Gamma> x of Some e \<Rightarrow> \<not> isLam e | None \<Rightarrow> False}"
+  "thunks \<Gamma> = {x . case map_of \<Gamma> x of Some e \<Rightarrow> \<not> isVal e | None \<Rightarrow> False}"
 
 lemma thunks_Nil[simp]: "thunks [] = {}" by (auto simp add: thunks_def)
 
 lemma thunks_domA: "thunks \<Gamma> \<subseteq> domA \<Gamma>"
   by (induction \<Gamma> ) (auto simp add: thunks_def)
 
-lemma thunks_Cons: "thunks ((x,e)#\<Gamma>) = (if isLam e then thunks \<Gamma> - {x} else insert x (thunks \<Gamma>))"
+lemma thunks_Cons: "thunks ((x,e)#\<Gamma>) = (if isVal e then thunks \<Gamma> - {x} else insert x (thunks \<Gamma>))"
   by (auto simp add: thunks_def )
 
 lemma thunks_append[simp]: "thunks (\<Delta>@\<Gamma>) = thunks \<Delta> \<union> (thunks \<Gamma> - domA \<Delta>)"
@@ -532,10 +547,10 @@ lemma thunks_append[simp]: "thunks (\<Delta>@\<Gamma>) = thunks \<Delta> \<union
 lemma thunks_delete[simp]: "thunks (delete x \<Gamma>) = thunks \<Gamma> - {x}"
   by (induction \<Gamma>) (auto simp add: thunks_def )
 
-lemma thunksI[intro]: "map_of \<Gamma> x = Some e \<Longrightarrow> \<not> isLam e \<Longrightarrow> x \<in> thunks \<Gamma>"
+lemma thunksI[intro]: "map_of \<Gamma> x = Some e \<Longrightarrow> \<not> isVal e \<Longrightarrow> x \<in> thunks \<Gamma>"
   by (induction \<Gamma>) (auto simp add: thunks_def )
 
-lemma thunksE[intro]: "x \<in> thunks \<Gamma> \<Longrightarrow> map_of \<Gamma> x = Some e \<Longrightarrow> \<not> isLam e"
+lemma thunksE[intro]: "x \<in> thunks \<Gamma> \<Longrightarrow> map_of \<Gamma> x = Some e \<Longrightarrow> \<not> isVal e"
   by (induction \<Gamma>) (auto simp add: thunks_def )
 
 lemma thunks_cong: "map_of \<Gamma> = map_of \<Delta> \<Longrightarrow> thunks \<Gamma> = thunks \<Delta>"

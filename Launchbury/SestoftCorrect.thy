@@ -33,10 +33,12 @@ case (Variable \<Gamma> x e L \<Delta> z S)
 
   note `L = flattn S`[simp]
 
+  from `isLam z` have "isVal z" by (induction z rule:exp_induct) auto
+
   from `map_of \<Gamma> x = Some e`
   have "(\<Gamma>, Var x, S) \<Rightarrow> (delete x \<Gamma>, e, Upd x # S)"..
   also have "\<dots> \<Rightarrow>\<^sup>* (\<Delta>, z, Upd x # S)" by (rule Variable) simp
-  also have "\<dots> \<Rightarrow> ((x,z)#\<Delta>, z, S)" using `x \<notin> domA \<Delta>` `isLam z` by (rule var\<^sub>2)
+  also have "\<dots> \<Rightarrow> ((x,z)#\<Delta>, z, S)" using `x \<notin> domA \<Delta>` `isVal z` by (rule var\<^sub>2)
   finally show ?case.
 next
 case (Let as \<Gamma> L body \<Delta> z S)
@@ -68,7 +70,7 @@ interpretation balance_trace step  stack
 abbreviation bal_syn ("_ \<Rightarrow>\<^sup>b\<^sup>*\<^bsub>_\<^esub> _" [50,50,50] 50) where "bal_syn \<equiv> bal"
 
 lemma lambda_stop:
-  assumes "isLam e"
+  assumes "isVal e"
   assumes "(\<Gamma>, e, S) \<Rightarrow>\<^sup>b\<^sup>*\<^bsub>T\<^esub> (\<Delta>, z, S)"
   shows "T=[]"
   using assms
@@ -79,7 +81,7 @@ lemma lambda_stop:
   apply auto
   apply (auto elim!: step.cases)
   done
-  
+
 lemma lemma_3:
   assumes "(\<Gamma>, e, S) \<Rightarrow>\<^sup>b\<^sup>*\<^bsub>T\<^esub> (\<Delta>, z, S)"
   assumes "isLam z"
@@ -147,10 +149,10 @@ proof(induction T arbitrary: \<Gamma> e S \<Delta> z rule: measure_induct_rule[w
       moreover
       note `c\<^sub>3 \<Rightarrow> c\<^sub>4`
       ultimately
-      obtain \<Delta>' z' where "c\<^sub>3 = (\<Delta>', z', Upd x # S)" and "c\<^sub>4 = ((x,z')#\<Delta>', z', S)" and "isLam z'"
+      obtain \<Delta>' z' where "c\<^sub>3 = (\<Delta>', z', Upd x # S)" and "c\<^sub>4 = ((x,z')#\<Delta>', z', S)" and "isVal z'"
         by (auto elim!: step.cases simp del: exp_assn.eq_iff)
 
-      from `isLam z'` and prem2[unfolded `c\<^sub>4 = _`]
+      from `isVal z'` and prem2[unfolded `c\<^sub>4 = _`]
       have "T\<^sub>2 = []" by (rule lambda_stop)
       with prem2 `c\<^sub>4 = _`
       have "z' = z" and "\<Delta> = (x,z)#\<Delta>'" by auto

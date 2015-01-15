@@ -6,8 +6,9 @@ inductive step :: "conf \<Rightarrow> conf \<Rightarrow> bool" (infix "\<Rightar
   app\<^sub>1:  "(\<Gamma>, App e x, S) \<Rightarrow> (\<Gamma>, e , Arg x # S)"
 | app\<^sub>2:  "(\<Gamma>, Lam [y]. e, Arg x # S) \<Rightarrow> (\<Gamma>, e[y ::= x] , S)"
 | var\<^sub>1:  "map_of \<Gamma> x = Some e \<Longrightarrow> (\<Gamma>, Var x, S) \<Rightarrow> (delete x \<Gamma>, e , Upd x # S)"
-| var\<^sub>2:  "x \<notin> domA \<Gamma> \<Longrightarrow> isLam e \<Longrightarrow> (\<Gamma>, e, Upd x # S) \<Rightarrow> ((x,e)# \<Gamma>, e , S)"
+| var\<^sub>2:  "x \<notin> domA \<Gamma> \<Longrightarrow> isVal e \<Longrightarrow> (\<Gamma>, e, Upd x # S) \<Rightarrow> ((x,e)# \<Gamma>, e , S)"
 | let\<^sub>1:  "atom ` domA \<Delta> \<sharp>* \<Gamma> \<Longrightarrow> atom ` domA \<Delta> \<sharp>* S \<Longrightarrow> (\<Gamma>, Let \<Delta> e, S) \<Rightarrow> (\<Delta>@\<Gamma>, e , S)"
+(* | if\<^sub>1:  "(\<Gamma>, scrut ? e1 : e2, S) \<Rightarrow> (\<Gamma>, scrut, Alts e1 e2 # S)" *)
 
 abbreviation steps (infix "\<Rightarrow>\<^sup>*" 50) where "steps \<equiv> step\<^sup>*\<^sup>*"
 
@@ -15,7 +16,7 @@ lemma SmartLet_stepI:
    "atom ` domA \<Delta> \<sharp>* \<Gamma> \<Longrightarrow> atom ` domA \<Delta> \<sharp>* S \<Longrightarrow> (\<Gamma>, SmartLet \<Delta> e, S) \<Rightarrow>\<^sup>*  (\<Delta>@\<Gamma>, e , S)"
 unfolding SmartLet_def by (auto intro: let\<^sub>1)
 
-lemma lambda_var: "map_of \<Gamma> x = Some e \<Longrightarrow> isLam e  \<Longrightarrow> (\<Gamma>, Var x, S) \<Rightarrow>\<^sup>* ((x,e) # delete x \<Gamma>, e , S)"
+lemma lambda_var: "map_of \<Gamma> x = Some e \<Longrightarrow> isVal e  \<Longrightarrow> (\<Gamma>, Var x, S) \<Rightarrow>\<^sup>* ((x,e) # delete x \<Gamma>, e , S)"
   by (rule rtranclp_trans[OF r_into_rtranclp r_into_rtranclp])
      (auto intro: var\<^sub>1 var\<^sub>2)
 
@@ -26,9 +27,9 @@ lemma step_induction[consumes 2, case_names app\<^sub>1 app\<^sub>2 thunk lamvar
   assumes "\<not> boring_step c'"
   assumes app\<^sub>1:  "\<And> \<Gamma> e x S . P (\<Gamma>, App e x, S)  (\<Gamma>, e , Arg x # S)"
   assumes app\<^sub>2:  "\<And> \<Gamma> y e x S . P (\<Gamma>, Lam [y]. e, Arg x # S) (\<Gamma>, e[y ::= x] , S)"
-  assumes thunk:  "\<And> \<Gamma> x e S . map_of \<Gamma> x = Some e \<Longrightarrow> \<not> isLam e \<Longrightarrow> P (\<Gamma>, Var x, S) (delete x \<Gamma>, e , Upd x # S)"
-  assumes lamvar:  "\<And> \<Gamma> x e S . map_of \<Gamma> x = Some e \<Longrightarrow> isLam e \<Longrightarrow> P (\<Gamma>, Var x, S) ((x,e) # delete x \<Gamma>, e , S)"
-  assumes var\<^sub>2:  "\<And> \<Gamma> x e S . x \<notin> domA \<Gamma> \<Longrightarrow> isLam e \<Longrightarrow> P (\<Gamma>, e, Upd x # S) ((x,e)# \<Gamma>, e , S)"
+  assumes thunk:  "\<And> \<Gamma> x e S . map_of \<Gamma> x = Some e \<Longrightarrow> \<not> isVal e \<Longrightarrow> P (\<Gamma>, Var x, S) (delete x \<Gamma>, e , Upd x # S)"
+  assumes lamvar:  "\<And> \<Gamma> x e S . map_of \<Gamma> x = Some e \<Longrightarrow> isVal e \<Longrightarrow> P (\<Gamma>, Var x, S) ((x,e) # delete x \<Gamma>, e , S)"
+  assumes var\<^sub>2:  "\<And> \<Gamma> x e S . x \<notin> domA \<Gamma> \<Longrightarrow> isVal e \<Longrightarrow> P (\<Gamma>, e, Upd x # S) ((x,e)# \<Gamma>, e , S)"
   assumes let\<^sub>1:  "\<And> \<Delta> \<Gamma> e S . atom ` domA \<Delta> \<sharp>* \<Gamma> \<Longrightarrow> atom ` domA \<Delta> \<sharp>* S \<Longrightarrow> P (\<Gamma>, Let \<Delta> e, S) (\<Delta>@\<Gamma>, e, S)"
   assumes refl: "\<And> c. P c c"
   assumes trans[trans]: "\<And> c c' c''. c \<Rightarrow>\<^sup>* c' \<Longrightarrow> c' \<Rightarrow>\<^sup>* c'' \<Longrightarrow> P c c' \<Longrightarrow> P c' c'' \<Longrightarrow> P c c''"
@@ -60,7 +61,7 @@ proof-
       next
         case (var\<^sub>1 \<Gamma> x e S)
         show ?thesis
-        proof (cases "isLam e")
+        proof (cases "isVal e")
           case False with var\<^sub>1 have "P y z" using assms(5) by metis
           with `P c y` show ?thesis by (metis t)
         next

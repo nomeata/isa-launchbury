@@ -67,5 +67,9 @@ lemma isLam_eta_expand:
   "isLam e \<Longrightarrow> isLam (eta_expand n e)" and "n > 0 \<Longrightarrow> isLam (eta_expand n e)"
 by (induction n) auto
 
+lemma isVal_eta_expand:
+  "isVal e \<Longrightarrow> isVal (eta_expand n e)" and "n > 0 \<Longrightarrow> isVal (eta_expand n e)"
+by (induction n) auto
+
 
 end

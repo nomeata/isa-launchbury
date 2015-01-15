@@ -5,6 +5,9 @@ begin
 lemma isLam_remove_dead_code[simp]: "isLam e \<Longrightarrow> isLam (remove_dead_code e)"
   by (induction e rule:isLam.induct) auto
 
+lemma isVal_remove_dead_code[simp]: "isVal e \<Longrightarrow> isVal (remove_dead_code e)"
+  by (induction e rule:isLam.induct) auto
+
 definition rdcH :: "var set \<Rightarrow> heap \<Rightarrow> heap"
   where "rdcH S \<Gamma> = restrictA (-S) (clearjunk (map_ran (\<lambda> _ e . remove_dead_code e) \<Gamma>))" 
 
@@ -195,7 +198,7 @@ proof(rule dc_rel_elim)
     with `x \<notin> domA \<Gamma>`
     have  "rdcH V ((x, z) # \<Gamma>) = (x,remove_dead_code z) # rdcH V \<Gamma>" by simp
 
-    note `x \<notin> domA \<Gamma>` [simp] and `isLam e` [simp]
+    note `x \<notin> domA \<Gamma>` [simp] and `isVal e` [simp]
 
 
     from V\<^sub>1 V\<^sub>2

@@ -5,10 +5,10 @@ begin
 context CoCallAnalysis
 begin
 definition ccBind :: "var \<Rightarrow> exp \<Rightarrow> ((AEnv \<times> CoCalls) \<rightarrow> CoCalls)"
-  where "ccBind v e = (\<Lambda> (ae, G).  if (v--v\<notin>G) \<or> \<not> isLam e then cc_restr (fv e) (fup\<cdot>(ccExp e)\<cdot>(ae v)) else ccSquare (fv e))"
+  where "ccBind v e = (\<Lambda> (ae, G).  if (v--v\<notin>G) \<or> \<not> isVal e then cc_restr (fv e) (fup\<cdot>(ccExp e)\<cdot>(ae v)) else ccSquare (fv e))"
 (* paper has:  \<or> ae v = up\<cdot>0, but that is not monotone! But should give the same result. *)
 
-lemma ccBind_eq: "ccBind v e \<cdot> (ae, G) = (if (v--v\<notin>G) \<or> \<not> isLam e then cc_restr (fv e) (fup\<cdot>(ccExp e)\<cdot>(ae v)) else ccSquare (fv e))"
+lemma ccBind_eq: "ccBind v e \<cdot> (ae, G) = (if (v--v\<notin>G) \<or> \<not> isVal e then cc_restr (fv e) (fup\<cdot>(ccExp e)\<cdot>(ae v)) else ccSquare (fv e))"
   unfolding ccBind_def
   apply (rule cfun_beta_Pair)
   apply (rule cont_if_else_above)
