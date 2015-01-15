@@ -22,14 +22,11 @@ lemma CESem_simps:
   "\<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub>  = (\<Lambda> (C\<cdot>r). CFn\<cdot>(\<Lambda> v. (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x := v|\<^bsub>r\<^esub>)\<^esub>)|\<^bsub>r\<^esub>))"
   "\<N>\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>\<^esub>     = (\<Lambda> (C\<cdot>r). ((\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r \<down>CFn \<rho> x|\<^bsub>r\<^esub>)\<cdot>r)"
   "\<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub>       = (\<Lambda> (C\<cdot>r). (\<rho>  x) \<cdot> r)"
-  "\<N>\<lbrakk> Var1 x \<rbrakk>\<^bsub>\<rho>\<^esub>      = \<bottom>"
   "\<N>\<lbrakk> Let as body \<rbrakk>\<^bsub>\<rho>\<^esub> = (\<Lambda> (C \<cdot> r). (\<N>\<lbrakk>body\<rbrakk>\<^bsub>\<N>\<lbrace>as\<rbrace>\<rho>\<^esub>) \<cdot> r)"
   by (auto simp add: eta_cfun)
 
 lemma CESem_bot[simp]:"(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>\<bottom> = \<bottom>"
-  apply (nominal_induct e arbitrary: \<sigma> rule: exp_strong_induct)
-  apply (case_tac b)
-  by auto
+  by (nominal_induct e arbitrary: \<sigma> rule: exp_strong_induct) auto
 
 lemma CHSem_bot[simp]:"((\<N>\<lbrace> \<Gamma> \<rbrace>) x)\<cdot>\<bottom> = \<bottom>"
   by (cases "x \<in> domA \<Gamma>") (auto simp add: lookup_HSem_heap lookup_HSem_other)

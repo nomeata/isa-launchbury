@@ -7,7 +7,7 @@ nominal_function
 where
   "remove_dead_code (Lam [x]. e) = Lam [x]. remove_dead_code e"
 | "remove_dead_code (App e x) = App (remove_dead_code e) x"
-| "remove_dead_code (GVar b x) = GVar b x"
+| "remove_dead_code (Var x) = Var x"
 | "remove_dead_code (Let as e) =
     (if domA as \<inter> fv e = {} then remove_dead_code e
                            else Let (map_ran (\<lambda> _ e. remove_dead_code e) as) (remove_dead_code e))"

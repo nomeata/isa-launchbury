@@ -13,7 +13,7 @@ nominal_function  (default "case_sum (\<lambda>x. Inl undefined) (\<lambda>x. In
 and
   subst_heap :: "heap \<Rightarrow> var \<Rightarrow> var \<Rightarrow> heap" ("_[_::h=_]" [1000,100,100] 1000)
 where
-  "(GVar b x)[y ::= z] = GVar b (x[y ::v= z])"
+  "(Var x)[y ::= z] = Var (x[y ::v= z])"
  |"(App e v)[y ::= z] = App (e[y ::= z]) (v[y ::v= z])"
  |"atom ` domA as \<sharp>* (y,z) \<Longrightarrow> (Let as body)[y ::= z] = Let (as[y ::h= z]) (body[y ::= z])" 
  |"atom x \<sharp> (y,z) \<Longrightarrow> (Lam [x].e)[y ::= z] = Lam [x].(e[y::=z])"

@@ -74,7 +74,7 @@ proof-
     by (rule ESem_fresh_cong) (auto simp add: lookup_env_restr_eq)
   finally show ?thesis.
 qed
-declare ESem.simps(5)[simp del]
+declare ESem.simps(4)[simp del]
 
 
 subsubsection {* Denotation of Substitution *}

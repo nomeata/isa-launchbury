@@ -13,15 +13,9 @@ theorem denotational_semantics_similar:
   shows "\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub> \<triangleleft>\<triangleright> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>C\<^sup>\<infinity>"
 using assms
 proof(induct e arbitrary: \<rho> \<sigma> rule:exp_induct)
-  case (Var b v)
-  show ?case
-  proof(cases b)
-    case False hence "b = False" by simp
-    from Var have "\<rho> v \<triangleleft>\<triangleright> (\<sigma> v)\<cdot>C\<^sup>\<infinity>" by cases auto
-    thus ?thesis unfolding `b = False` by simp
-  next
-    case True thus ?thesis by simp
-  qed
+  case (Var v)
+  from Var have "\<rho> v \<triangleleft>\<triangleright> (\<sigma> v)\<cdot>C\<^sup>\<infinity>" by cases auto
+  thus ?case by simp
 next
   case (Lam v e)
   { fix x y

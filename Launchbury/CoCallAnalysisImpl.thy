@@ -70,7 +70,7 @@ lemma cc_restr_predCC'[simp]:
 nominal_function
   cCCexp :: "exp \<Rightarrow> (Arity \<rightarrow> AEnv \<times> CoCalls)" 
 where
-  "cCCexp (GVar b x) =   (\<Lambda> n . (esing x \<cdot> (up \<cdot> n),                                   \<bottom>))"
+  "cCCexp (Var x) =      (\<Lambda> n . (esing x \<cdot> (up \<cdot> n),                                   \<bottom>))"
 | "cCCexp (Lam [x]. e) = (\<Lambda> n . combined_restrict (fv (Lam [x]. e)) (fst (cCCexp e\<cdot>(pred\<cdot>n)), predCC (fv (Lam [x]. e)) (\<Lambda> a. snd(cCCexp e\<cdot>a))\<cdot>n))"
 | "cCCexp (App e x) =    (\<Lambda> n . (fst (cCCexp e\<cdot>(inc\<cdot>n)) \<squnion> (esing x \<cdot> (up\<cdot>0)),          snd (cCCexp e\<cdot>(inc\<cdot>n)) \<squnion> ccProd {x} (insert x (fv e))))"
 | "cCCexp (Let \<Gamma> e) =    (\<Lambda> n . combined_restrict (fv (Let \<Gamma> e)) (CoCallArityAnalysis.cccFix_choose cCCexp \<Gamma> \<cdot> (cCCexp e\<cdot>n)))"
@@ -139,7 +139,7 @@ sublocale CoCallArityAnalysis cCCexp.
 sublocale ArityAnalysis Aexp.
 
 lemma cCCexp_eq[simp]:
-  "cCCexp (GVar b x)\<cdot>n =   (esing x \<cdot> (up \<cdot> n),                                   \<bottom>)"
+  "cCCexp (Var x)\<cdot>n =      (esing x \<cdot> (up \<cdot> n),                                   \<bottom>)"
   "cCCexp (Lam [x]. e)\<cdot>n = combined_restrict (fv (Lam [x]. e)) (fst (cCCexp e\<cdot>(pred\<cdot>n)), predCC (fv (Lam [x]. e)) (\<Lambda> a. snd(cCCexp e\<cdot>a))\<cdot>n)"
   "cCCexp (App e x)\<cdot>n =    (fst (cCCexp e\<cdot>(inc\<cdot>n)) \<squnion> (esing x \<cdot> (up\<cdot>0)),          snd (cCCexp e\<cdot>(inc\<cdot>n)) \<squnion> ccProd {x} (insert x (fv e)))"
   "cCCexp (Let \<Gamma> e)\<cdot>n =    combined_restrict (fv (Let \<Gamma> e)) (CoCallArityAnalysis.cccFix_choose cCCexp \<Gamma> \<cdot> (cCCexp e\<cdot>n))"
@@ -148,7 +148,7 @@ declare cCCexp.simps[simp del]
 
 
 lemma Aexp_simps[simp]:
-  "Aexp (GVar b x)\<cdot>n = esing x\<cdot>(up\<cdot>n)"
+  "Aexp (Var x)\<cdot>n = esing x\<cdot>(up\<cdot>n)"
   "Aexp (Lam [x]. e)\<cdot>n = Aexp e\<cdot>(pred\<cdot>n) f|` fv (Lam [x]. e)"
   "Aexp (App e x)\<cdot>n = Aexp e\<cdot>(inc\<cdot>n) \<squnion> esing x\<cdot>(up\<cdot>0)"
   "\<not> nonrec \<Gamma> \<Longrightarrow> Aexp (Let \<Gamma> e)\<cdot>n = (Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> (\<lambda>_.up\<cdot>0) f|` thunks \<Gamma>)) f|` (fv (Let \<Gamma> e))"
@@ -157,7 +157,7 @@ lemma Aexp_simps[simp]:
 
 
 lemma CCexp_simps[simp]:
-  "CCexp (GVar b x)\<cdot>n = \<bottom>"
+  "CCexp (Var x)\<cdot>n = \<bottom>"
   "CCexp (Lam [x]. e)\<cdot>n = predCC (fv (Lam [x]. e)) (CCexp e)\<cdot>n"
   "CCexp (App e x)\<cdot>n = CCexp e\<cdot>(inc\<cdot>n) \<squnion> ccProd {x} (insert x (fv e))"
   "\<not> nonrec \<Gamma> \<Longrightarrow> CCexp (Let \<Gamma> e)\<cdot>n = cc_restr (fv (Let \<Gamma> e)) (CCfix \<Gamma>\<cdot>(Afix \<Gamma>\<cdot>(Aexp e\<cdot>n  \<squnion> (\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>)), CCexp e\<cdot>n))"

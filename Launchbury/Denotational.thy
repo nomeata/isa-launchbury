@@ -18,7 +18,7 @@ lemma ESem_simps_as_defined:
   "\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>\<^esub>    =  \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> \<down>Fn \<rho> x"
   "\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub>      =  \<rho>  x"
   "\<lbrakk> Let as body \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk>body\<rbrakk>\<^bsub>\<lbrace>as\<rbrace>(\<rho> f|` fv (Let as body))\<^esub>"
-  by (simp_all del: ESem_Lam ESem_Let add: ESem.simps(1,5) )
+  by (simp_all del: ESem_Lam ESem_Let add: ESem.simps(1,4) )
 
 lemma ESem_simps:
   "\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub> =  Fn\<cdot>(\<Lambda> v. \<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x := v)\<^esub>)"
