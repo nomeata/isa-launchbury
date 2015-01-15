@@ -1,5 +1,5 @@
 theory CallArityEnd2End
-imports ArityEtaExpand CoCallAnalysisImpl  CoCallImplFTree FTreeImplCardinality 
+imports ArityEtaExpand CoCallAnalysisImpl
 begin
 
 locale CallArityEnd2End

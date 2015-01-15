@@ -1,5 +1,5 @@
 theory CoCallImplFTree
-imports FTreeAnalysisSpec CoCallAritySig "CoCallGraph-FTree"
+imports FTreeAnalysisSig "Env-Set-Cpo" CoCallAritySig "CoCallGraph-FTree"
 begin
 
 context CoCallArity
@@ -8,7 +8,8 @@ begin
     where "Fexp e = (\<Lambda> a. ccFTree (edom (Aexp e \<cdot>a)) (ccExp e\<cdot>a))"
   
   lemma Fexp_simp: "Fexp e\<cdot>a = ccFTree (edom (Aexp e \<cdot>a)) (ccExp e\<cdot>a)"
-    unfolding Fexp_def by simp
+    unfolding Fexp_def
+    by simp
 
   sublocale FTreeAnalysis Fexp.
 end

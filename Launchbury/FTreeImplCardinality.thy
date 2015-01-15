@@ -1,5 +1,5 @@
 theory FTreeImplCardinality
-imports FTreeAnalysisSpec CardinalityAnalysisSpec CallFutureCardinality
+imports FTreeAnalysisSig CardinalityAnalysisSig CallFutureCardinality
 begin
 
 hide_const Multiset.single

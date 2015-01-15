@@ -1,5 +1,5 @@
 theory Env
-  imports Main HOLCF  "HOLCF-Join-Classes"
+  imports Main HOLCF "HOLCF-Join-Classes"
 begin
 
 default_sort type

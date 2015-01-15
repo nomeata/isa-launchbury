@@ -1,5 +1,5 @@
 theory CallFutureCardinality
-imports Vars "Nominal-HOLCF" Env "Cardinality-Domain" "Set-Cpo"
+imports Vars "Nominal-HOLCF" Env "Cardinality-Domain" "Set-Cpo" "Env-Set-Cpo"
 begin
 
 fun no_call_in_path where
@@ -112,14 +112,5 @@ lemma edom_pathsCard[simp]: "edom (pathsCard ps) = \<Union>(set ` ps)"
 lemma env_restr_pathsCard[simp]: "pathsCard ps f|` S = pathsCard (filter (\<lambda> x. x \<in> S) ` ps)"
   by (auto simp add: pathsCard_def lookup_env_restr_eq)
 
-text {* This is here because it requires @{theory "Set-Cpo"} *}
-
-lemma cont_edom[THEN cont_compose, simp, cont2cont]:
-  "cont (\<lambda> f. edom f)"
-  apply (rule set_contI)
-  apply (auto simp add: edom_def)
-  apply (metis ch2ch_fun lub_eq_bottom_iff lub_fun)
-  apply (metis ch2ch_fun lub_eq_bottom_iff lub_fun)
-  done
 
 end

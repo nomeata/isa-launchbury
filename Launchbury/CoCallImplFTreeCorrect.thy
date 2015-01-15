@@ -1,5 +1,5 @@
 theory CoCallImplFTreeCorrect
-imports CoCallImplFTree CoCallAnalysisSpec
+imports CoCallImplFTree CoCallAnalysisSpec FTreeAnalysisSpec CallFutureCardinality
 begin
 
 hide_const Multiset.single
@@ -522,31 +522,6 @@ proof(rule ftree_belowI)
     qed
   qed
 qed
-
-(* TODO: Unused. Remove? *)
-lemma multi_calls_ccFTree:
-  assumes "xs \<in> paths (ccFTree S G)"
-  assumes "\<not> one_call_in_path x xs"
-  shows "x \<in> S" and "x \<in> ccManyCalls G"
-proof-
-  from assms(1) have "xs \<in> valid_lists S G" by simp 
-
-  have "x \<in> set xs" by (metis assms(2) filter_True one_call_in_path_filter)
-  with `xs \<in> valid_lists S G`
-  show "x \<in> S" by (metis  subsetCE valid_lists_subset)
-
-  show "x \<in> ccManyCalls G"
-  proof(rule ccontr)
-    assume "x \<notin> ccManyCalls G"
-    with `xs \<in> valid_lists S G` 
-    have "one_call_in_path x xs"
-    by (induction rule: valid_lists.induct) (auto simp add: no_call_in_path_set_conv)
-    with assms(2)
-    show False..
-  qed
-qed
-
-
 
 end
 
