@@ -1,21 +1,9 @@
-theory ArityEtaExpand
-imports ArityAnalysisSpec ArityEtaExpansionSestoft AbstractTransform ConstOn
+theory ArityEtaExpandCorrect
+imports ArityEtaExpand  ArityAnalysisSpec ArityEtaExpansionSestoft AbstractTransform ConstOn
 begin
 
-locale CardinalityArityTransformation = CorrectArityAnalysisLetNoCard 
+locale CardinalityArityTransformation = CorrectArityAnalysisLetNoCard
 begin
-
-  sublocale AbstractTransformBound
-    "\<lambda> a . inc\<cdot>a"
-    "\<lambda> a . pred\<cdot>a"
-    "\<lambda> \<Delta> e a . (a, Aheap \<Delta> e\<cdot>a)"
-    "fst"
-    "snd"
-    "Aeta_expand"
-    "snd"
-  apply default
-  apply (((rule eq_reflection)?, perm_simp, rule)+)[7]
-  done
 
   sublocale AbstractTransformBoundSubst
     "\<lambda> a . inc\<cdot>a"

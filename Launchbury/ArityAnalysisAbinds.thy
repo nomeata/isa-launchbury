@@ -157,4 +157,14 @@ case (goal2  v e as heap2)
   show ?case by (auto simp add: ArityAnalysis.ABinds.simps ArityAnalysis.ABind_def)
 qed
 
+context EdomArityAnalysis
+begin
+  lemma fup_Aexp_lookup_fresh: "atom v \<sharp> e \<Longrightarrow> (fup\<cdot>(Aexp e)\<cdot>a) v = \<bottom>"
+    by (cases a) auto
+  
+  lemma edom_AnalBinds: "edom (ABinds \<Gamma>\<cdot>ae) \<subseteq> fv \<Gamma>"
+    by (induction \<Gamma> rule: ABinds.induct)
+       (auto simp del: fun_meet_simp dest: set_mp[OF fup_Aexp_edom] dest: set_mp[OF fv_delete_subset])
+end 
+
 end

@@ -1,31 +1,6 @@
-theory FTreeCardinality
-imports FTreeAnalysisSpec CardinalityAnalysis CallFutureCardinality
+theory FTreeImplCardinalityCorrect
+imports FTreeImplCardinality FTreeAnalysisSpec CardinalityAnalysisSpec CallFutureCardinality
 begin
-
-hide_const Multiset.single
-
-context FTreeAnalysis
-begin
-
-fun unstack :: "stack \<Rightarrow> exp \<Rightarrow> exp" where
-  "unstack [] e = e"
-| "unstack (Upd x # S) e = unstack S e"
-| "unstack (Arg x # S) e = unstack S (App e x)"
-| "unstack (Dummy x # S) e = unstack S e"
-
-fun Fstack :: "stack \<Rightarrow> var ftree"
-  where "Fstack [] = \<bottom>"
-  | "Fstack (Upd x # S) = Fstack S"
-  | "Fstack (Arg x # S) = many_calls x \<otimes>\<otimes> Fstack S"
-  | "Fstack (Dummy x # S) = Fstack S"
-
-lemma carrier_Fstack[simp]: "carrier (Fstack S) = ap S"
-  by (induction S rule: Fstack.induct) (auto simp add: empty_is_bottom[symmetric])
-
-fun prognosis :: "AEnv \<Rightarrow> Arity \<Rightarrow> conf \<Rightarrow> var \<Rightarrow> two"
-   where "prognosis ae a (\<Gamma>, e, S) = pathsCard (paths (substitute (FBinds \<Gamma>\<cdot>ae) (thunks \<Gamma>) (Fexp e\<cdot>a \<otimes>\<otimes> Fstack S)))"
-end
-
 
 lemma pathsCard_paths_nxt:  "pathsCard (paths (nxt f x)) \<sqsubseteq> record_call x\<cdot>(pathsCard (paths f))"
   apply transfer
@@ -51,13 +26,10 @@ begin
   by (metis (poly_guards_query) contra_subsetD domA_from_set map_of_fv_subset map_of_is_SomeD option.sel)
 end
 
-
-
-
 context FTreeAnalysisCorrect
 begin
 
-  sublocale CardinalityPrognosisCorrect prognosis
+  sublocale CardinalityPrognosisShape prognosis
   proof
     fix \<Gamma> :: heap and ae ae' :: AEnv and u e S
     assume "ae f|` domA \<Gamma> = ae' f|` domA \<Gamma>"
@@ -84,12 +56,55 @@ begin
         by (auto intro: below_antisym)
     qed
   next
+    fix \<Gamma> \<Delta> :: heap and e :: exp and ae :: AEnv and u S
+    assume "map_of \<Gamma> = map_of \<Delta>"
+    hence "FBinds \<Gamma> = FBinds \<Delta>" and "thunks \<Gamma> = thunks \<Delta>" by (auto intro!: cfun_eqI  thunks_cong simp add: Fexp.AnalBinds_lookup)
+    thus "prognosis ae u (\<Gamma>, e, S) = prognosis ae u (\<Delta>, e, S)"  by simp
+  next
+    fix \<Gamma> :: heap and e :: exp and ae :: AEnv and u S x
+
+    show "prognosis ae u (delete x \<Gamma>, e, S) \<sqsubseteq> prognosis ae u (\<Gamma>, e, S)"
+      by (simp add: substitute_T_delete empty_is_bottom)
+         (intro pathsCard_mono' paths_mono substitute_mono1' Fexp.AnalBinds_delete_below)
+  next
+    fix \<Gamma> :: heap and e :: exp and ae :: AEnv and u S x
+    show "prognosis ae u (\<Gamma>, e, S) \<sqsubseteq> prognosis ae u (\<Gamma>, e, Upd x # S)" by simp
+  next
+  fix \<Gamma> :: heap and e :: exp and ae :: AEnv and a S x
+  assume "ae x = \<bottom>"
+
+  hence "FBinds (delete x \<Gamma>)\<cdot>ae = FBinds \<Gamma>\<cdot>ae" by (rule Fexp.AnalBinds_delete_bot)
+  moreover
+  hence "((FBinds \<Gamma>\<cdot>ae) x) = \<bottom>" by (metis Fexp.AnalBinds_delete_lookup)
+  ultimately
+  show "prognosis ae a (\<Gamma>, e, S) \<sqsubseteq> prognosis ae a (delete x \<Gamma>, e, S)"
+    by (simp add: substitute_T_delete empty_is_bottom)
+  next
+    fix ae a \<Gamma> x S
+    have "once \<sqsubseteq> (pathCard [x]) x" by (simp add: two_add_simp)
+    also have "pathCard [x] \<sqsubseteq> pathsCard ({[],[x]})"
+      by (rule paths_Card_above) simp
+    also have "\<dots> = pathsCard (paths (single x))" by simp
+    also have "single x \<sqsubseteq> (Fexp (Var x)\<cdot>a)" by (rule Fexp_Var)
+    also have "\<dots> \<sqsubseteq> Fexp (Var x)\<cdot>a \<otimes>\<otimes> Fstack S" by (rule both_above_arg1)
+    also have "\<dots> \<sqsubseteq> substitute  (FBinds \<Gamma>\<cdot>ae) (thunks \<Gamma>) (Fexp (Var x)\<cdot>a \<otimes>\<otimes> Fstack S)" by (rule substitute_above_arg)
+    also have "pathsCard (paths \<dots>) x =  prognosis ae a (\<Gamma>, Var x, S) x" by simp
+    finally
+    show "once \<sqsubseteq> prognosis ae a (\<Gamma>, Var x, S) x"
+      by this (rule cont2cont_fun, intro cont2cont)+
+  qed
+
+  sublocale CardinalityPrognosisApp prognosis
+  proof default
     fix ae a \<Gamma> e x S
     have "Fexp e\<cdot>(inc\<cdot>a)  \<otimes>\<otimes> many_calls x \<otimes>\<otimes> Fstack S = many_calls x  \<otimes>\<otimes> (Fexp e)\<cdot>(inc\<cdot>a) \<otimes>\<otimes> Fstack S"
       by (metis both_assoc both_comm)
     thus "prognosis ae (inc\<cdot>a) (\<Gamma>, e, Arg x # S) \<sqsubseteq> prognosis ae a (\<Gamma>, App e x, S)"
       by simp (intro pathsCard_mono' paths_mono substitute_mono2' both_mono1' Fexp_App)
-  next
+  qed
+
+  sublocale CardinalityPrognosisLam prognosis
+  proof default
     fix ae a \<Gamma> e y x S
     have "Fexp e[y::=x]\<cdot>(pred\<cdot>a) \<sqsubseteq> many_calls x  \<otimes>\<otimes> Fexp (Lam [y]. e)\<cdot>a"
       by (rule below_trans[OF Fexp_subst both_mono2'[OF Fexp_Lam]])
@@ -98,7 +113,10 @@ begin
     ultimately  
     show "prognosis ae (pred\<cdot>a) (\<Gamma>, e[y::=x], S) \<sqsubseteq> prognosis ae a (\<Gamma>, Lam [y]. e, Arg x # S)"
       by simp (intro pathsCard_mono' paths_mono substitute_mono2' both_mono1')
-  next
+  qed
+
+  sublocale CardinalityPrognosisVar prognosis
+  proof default
     fix \<Gamma> :: heap and e :: exp and x :: var and ae :: AEnv and u a S
     assume "map_of \<Gamma> x = Some e"
     assume "ae x = up\<cdot>u"
@@ -188,43 +206,6 @@ begin
     finally
     show "prognosis ae 0 ((x, e) # \<Gamma>, e, S) \<sqsubseteq> prognosis ae 0 (\<Gamma>, e, Upd x # S)"
       by (simp, intro pathsCard_mono' paths_mono)
-  next
-    fix \<Gamma> \<Delta> :: heap and e :: exp and ae :: AEnv and u S
-    assume "map_of \<Gamma> = map_of \<Delta>"
-    hence "FBinds \<Gamma> = FBinds \<Delta>" and "thunks \<Gamma> = thunks \<Delta>" by (auto intro!: cfun_eqI  thunks_cong simp add: Fexp.AnalBinds_lookup)
-    thus "prognosis ae u (\<Gamma>, e, S) = prognosis ae u (\<Delta>, e, S)"  by simp
-  next
-    fix \<Gamma> :: heap and e :: exp and ae :: AEnv and u S x
-
-    show "prognosis ae u (delete x \<Gamma>, e, S) \<sqsubseteq> prognosis ae u (\<Gamma>, e, S)"
-      by (simp add: substitute_T_delete empty_is_bottom)
-         (intro pathsCard_mono' paths_mono substitute_mono1' Fexp.AnalBinds_delete_below)
-  next
-    fix \<Gamma> :: heap and e :: exp and ae :: AEnv and u S x
-    show "prognosis ae u (\<Gamma>, e, S) \<sqsubseteq> prognosis ae u (\<Gamma>, e, Upd x # S)" by simp
-  next
-  fix \<Gamma> :: heap and e :: exp and ae :: AEnv and a S x
-  assume "ae x = \<bottom>"
-
-  hence "FBinds (delete x \<Gamma>)\<cdot>ae = FBinds \<Gamma>\<cdot>ae" by (rule Fexp.AnalBinds_delete_bot)
-  moreover
-  hence "((FBinds \<Gamma>\<cdot>ae) x) = \<bottom>" by (metis Fexp.AnalBinds_delete_lookup)
-  ultimately
-  show "prognosis ae a (\<Gamma>, e, S) \<sqsubseteq> prognosis ae a (delete x \<Gamma>, e, S)"
-    by (simp add: substitute_T_delete empty_is_bottom)
-  next
-    fix ae a \<Gamma> x S
-    have "once \<sqsubseteq> (pathCard [x]) x" by (simp add: two_add_simp)
-    also have "pathCard [x] \<sqsubseteq> pathsCard ({[],[x]})"
-      by (rule paths_Card_above) simp
-    also have "\<dots> = pathsCard (paths (single x))" by simp
-    also have "single x \<sqsubseteq> (Fexp (Var x)\<cdot>a)" by (rule Fexp_Var)
-    also have "\<dots> \<sqsubseteq> Fexp (Var x)\<cdot>a \<otimes>\<otimes> Fstack S" by (rule both_above_arg1)
-    also have "\<dots> \<sqsubseteq> substitute  (FBinds \<Gamma>\<cdot>ae) (thunks \<Gamma>) (Fexp (Var x)\<cdot>a \<otimes>\<otimes> Fstack S)" by (rule substitute_above_arg)
-    also have "pathsCard (paths \<dots>) x =  prognosis ae a (\<Gamma>, Var x, S) x" by simp
-    finally
-    show "once \<sqsubseteq> prognosis ae a (\<Gamma>, Var x, S) x"
-      by this (rule cont2cont_fun, intro cont2cont)+
   qed
 end
 
@@ -237,23 +218,10 @@ begin
   lemma cHeap_simp: "(cHeap \<Gamma> e)\<cdot>a = pathsCard (paths (Fheap \<Gamma> e\<cdot>a))"
     unfolding cHeap_def  by (rule beta_cfun) (intro cont2cont)
   
-  (*
-  lemma cHeap_eqvt: "\<pi> \<bullet> (cHeap \<Gamma> e) = cHeap (\<pi> \<bullet> \<Gamma>) (\<pi> \<bullet> e)"
-    unfolding cHeap_def
-    apply perm_simp
-    apply (simp add: Fheap_eqvt)
-    apply (rule Abs_cfun_eqvt)
-    apply (intro cont2cont)
-    done
-  *)
-
-  sublocale CardinalityHeap Aexp Aheap cHeap
+  sublocale CardinalityHeap cHeap.
+ 
+  sublocale CardinalityHeapCorrect cHeap Aheap
   proof
-  (*
-    note cHeap_eqvt[eqvt]
-    fix \<pi> show "\<pi> \<bullet> cHeap = cHeap" by perm_simp rule
-  next
-  *)
     fix x \<Gamma> e a
     assume "x \<in> thunks \<Gamma>"
     moreover
@@ -270,7 +238,7 @@ begin
     by (simp add: cHeap_def Union_paths_carrier carrier_Fheap)
   qed
 
-  sublocale CardinalityPrognosisEdom prognosis Aexp Aheap
+  sublocale CardinalityPrognosisEdom prognosis 
   proof
     fix ae a \<Gamma> e S
     show "edom (prognosis ae a (\<Gamma>, e, S)) \<subseteq> fv \<Gamma> \<union> fv e \<union> fv S"
@@ -280,7 +248,7 @@ begin
       done
   qed
   
-  sublocale CardinalityPrognosisCorrectLet prognosis Aexp Aheap cHeap
+  sublocale CardinalityPrognosisLet prognosis cHeap
   proof
     fix \<Delta> \<Gamma> :: heap and e :: exp and S :: stack and  ae :: AEnv and a :: Arity
     assume "atom ` domA \<Delta> \<sharp>* \<Gamma>"
@@ -369,6 +337,8 @@ begin
     show "prognosis (Aheap \<Delta> e\<cdot>a \<squnion> ae) a (\<Delta> @ \<Gamma>, e, S) \<sqsubseteq> cHeap \<Delta> e\<cdot>a \<squnion> prognosis ae a (\<Gamma>, Terms.Let \<Delta> e, S)"
       by (simp add: cHeap_def del: fun_meet_simp) 
   qed
+
+  sublocale CardinalityPrognosisCorrect prognosis cHeap Aheap Aexp by default
 end
 
 

@@ -1,5 +1,5 @@
 theory NoCardinalityAnalysis
-imports CardinalityAnalysis
+imports CardinalityAnalysisSpec
 begin
 
 locale NoCardinalityAnalysis = CorrectArityAnalysisLet +
@@ -41,26 +41,13 @@ definition cHeap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> (v
 lemma cHeap_simp[simp]: "cHeap \<Gamma> e\<cdot>a = ae2ce (Aheap \<Gamma> e\<cdot>a)"
   unfolding cHeap_def by simp
 
-(*
-lemma cHeap_eqvt[eqvt]: "\<pi> \<bullet> cHeap \<Gamma> e = cHeap (\<pi> \<bullet> \<Gamma>) (\<pi> \<bullet> e)"
-  unfolding cHeap_def
-  apply perm_simp
-  apply (rule Abs_cfun_eqvt)
-  apply simp
-  done
-*)
+sublocale CardinalityHeap cHeap.
 
-sublocale CardinalityHeap Aexp Aheap cHeap
+sublocale CardinalityHeapCorrect cHeap Aheap
   apply default
-(*  apply (perm_simp, rule) *)
   apply (erule Aheap_thunk)
   apply simp
   done
-  
-(*
-fun prognosis where 
-  "prognosis ae a (\<Gamma>, e, S) = ae2ce (ABinds \<Gamma>\<cdot>ae \<squnion> Aexp e\<cdot>a) \<squnion> ((\<lambda>_. many) f|` ap S)"
-*)
 
 fun prognosis where 
   "prognosis ae a (\<Gamma>, e, S) = ((\<lambda>_. many) f|` (edom (ABinds \<Gamma>\<cdot>ae) \<union> edom (Aexp e\<cdot>a) \<union> ap S))"
@@ -71,7 +58,7 @@ lemma record_all_noop[simp]:
 
 sublocale CardinalityPrognosis prognosis.
 
-sublocale CardinalityPrognosisCorrect prognosis
+sublocale CardinalityPrognosisShape prognosis
 proof
   case goal1 thus ?case by (simp cong: Abinds_env_restr_cong)
 next
@@ -81,45 +68,52 @@ next
 next
   case goal4 thus ?case by auto
 next
-  case goal5 thus ?case
-    using edom_mono[OF Aexp_App] by (auto intro!: env_restr_mono2)
+  case goal5
+  show ?case by (auto intro: env_restr_mono2 )
 next
   case goal6
-  from edom_mono[OF Aexp_App]
-  have "insert x (edom (Aexp e\<cdot>(inc\<cdot>a))) \<subseteq> edom (Aexp (App e x)\<cdot>a)" by auto
-  thus ?case by (auto intro: env_restr_mono2 )
-next
-  case goal7
-  have "edom (Aexp e[y::=x]\<cdot>(pred\<cdot>a)) \<subseteq> insert x (edom (env_delete y (Aexp e\<cdot>(pred\<cdot>a))))"
-    by (auto dest: set_mp[OF edom_mono[OF Aexp_subst]] )
-  also have "\<dots> \<subseteq> insert x (edom (Aexp (Lam [y]. e)\<cdot>a))"
-    using edom_mono[OF Aexp_Lam] by auto
-  finally show ?case by (auto intro!: env_restr_mono2)
-next
-  case goal8
-  thus ?case by (auto intro!: env_restr_mono2 simp add: Abinds_reorder1[OF goal8(1)])
-next
-  case goal9
-  thus ?case by (auto intro!: env_restr_mono2 simp add: Abinds_reorder1[OF goal9(1)])
-next
-  case goal10
-  have "fup\<cdot>(Aexp e)\<cdot>(ae x) \<sqsubseteq> Aexp e\<cdot>0" by (cases "ae x") (auto intro: monofun_cfun_arg)
-  from edom_mono[OF this]
-  show ?case by (auto intro!: env_restr_mono2 dest: set_mp[OF edom_mono[OF ABinds_delete_below]])
-next
-  case goal11
   from `ae x = \<bottom>`
   have "ABinds (delete x \<Gamma>)\<cdot>ae = ABinds \<Gamma>\<cdot>ae" by (rule ABinds_delete_bot)
   thus ?case by simp
 next
-  case goal12
+  case goal7
   from Aexp_Var[where n = a and x = x]
   have "(Aexp (Var x)\<cdot>a) x \<noteq> \<bottom>" by auto
   hence "x \<in> edom (Aexp (Var x)\<cdot>a)" by (simp add: edomIff)
   thus ?case by simp
 qed
+
+sublocale CardinalityPrognosisApp prognosis
+proof
+  case goal1 thus ?case
+    using edom_mono[OF Aexp_App] by (auto intro!: env_restr_mono2)
+qed
+
+sublocale CardinalityPrognosisLam prognosis
+proof
+  case goal1
+  have "edom (Aexp e[y::=x]\<cdot>(pred\<cdot>a)) \<subseteq> insert x (edom (env_delete y (Aexp e\<cdot>(pred\<cdot>a))))"
+    by (auto dest: set_mp[OF edom_mono[OF Aexp_subst]] )
+  also have "\<dots> \<subseteq> insert x (edom (Aexp (Lam [y]. e)\<cdot>a))"
+    using edom_mono[OF Aexp_Lam] by auto
+  finally show ?case by (auto intro!: env_restr_mono2)
+qed
+
+sublocale CardinalityPrognosisVar prognosis
+proof
+  case goal1
+  thus ?case by (auto intro!: env_restr_mono2 simp add: Abinds_reorder1[OF goal1(1)])
+next
+  case goal2
+  thus ?case by (auto intro!: env_restr_mono2 simp add: Abinds_reorder1[OF goal2(1)])
+next
+  case goal3
+  have "fup\<cdot>(Aexp e)\<cdot>(ae x) \<sqsubseteq> Aexp e\<cdot>0" by (cases "ae x") (auto intro: monofun_cfun_arg)
+  from edom_mono[OF this]
+  show ?case by (auto intro!: env_restr_mono2 dest: set_mp[OF edom_mono[OF ABinds_delete_below]])
+qed
   
-sublocale CardinalityPrognosisCorrectLet prognosis Aexp Aheap cHeap
+sublocale CardinalityPrognosisLet prognosis  cHeap Aheap
 proof
   case goal1
 
@@ -146,9 +140,11 @@ proof
   thus ?case by (simp add: ae2ce_to_env_restr env_restr_join2 Un_assoc[symmetric] env_restr_mono2)
 qed
 
-sublocale CardinalityPrognosisEdom prognosis Aexp Aheap
+sublocale CardinalityPrognosisEdom prognosis
   by default (auto dest: set_mp[OF Aexp_edom] set_mp[OF ap_fv_subset] set_mp[OF edom_AnalBinds])
 
+
+sublocale CardinalityPrognosisCorrect prognosis cHeap Aheap Aexp..
 end
 
 end

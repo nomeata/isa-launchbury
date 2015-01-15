@@ -1,22 +1,9 @@
-theory CardinalityEtaExpand
-imports CardinalityAnalysis AbstractTransform Sestoft SestoftGC ArityEtaExpansionSestoft
+theory CardinalityEtaExpandCorrect
+imports ArityEtaExpand CardinalityAnalysisSpec AbstractTransform Sestoft SestoftGC ArityEtaExpansionSestoft
 begin
 
-locale CardinalityArityTransformation = CardinalityPrognosisCorrectLet + CardinalityPrognosisEdom
+context CardinalityPrognosisCorrect
 begin
-
-  sublocale AbstractTransformBound
-    "\<lambda> a . inc\<cdot>a"
-    "\<lambda> a . pred\<cdot>a"
-    "\<lambda> \<Delta> e a . (a, Aheap \<Delta> e\<cdot>a)"
-    "fst"
-    "snd"
-    "Aeta_expand"
-    "snd"
-  apply default
-  apply (((rule eq_reflection)?, perm_simp, rule)+)[7]
-  done
-
   sublocale AbstractTransformBoundSubst
     "\<lambda> a . inc\<cdot>a"
     "\<lambda> a . pred\<cdot>a"
@@ -371,7 +358,7 @@ begin
     let ?ce = "cHeap \<Delta> e\<cdot>a"
   
     have "domA \<Delta> \<inter> upds S = {}" using fresh_distinct_fv[OF let\<^sub>1(2)] by (auto dest: set_mp[OF ups_fv_subset])
-    hence *: "\<And> x. x \<in> upds S \<Longrightarrow> x \<notin> edom ?ce" by (auto simp add: edom_cHeap  dest!: set_mp[OF edom_Aheap])
+    hence *: "\<And> x. x \<in> upds S \<Longrightarrow> x \<notin> edom ?ce" by (auto simp add: edom_cHeap dest!: set_mp[OF edom_Aheap])
   
     have restr_stack_simp2: "restr_stack (edom (?ce \<squnion> ce)) S = restr_stack (edom ce) S"
       by (auto intro: restr_stack_cong dest!: *)

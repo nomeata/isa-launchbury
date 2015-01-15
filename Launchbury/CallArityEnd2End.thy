@@ -1,51 +1,10 @@
-theory CallArityCorrectEnd2End
-imports CallArityEnd2End CardinalityEtaExpandCorrect CoCallImplCorrect CoCallImplFTreeCorrect FTreeImplCardinalityCorrect
+theory CallArityEnd2End
+imports ArityEtaExpand CoCallAnalysisImpl  CoCallImplFTree FTreeImplCardinality 
 begin
 
-locale CallArityCorrectEnd2End
+locale CallArityEnd2End
 begin
-sublocale CoCallImplCorrect.
-sublocale CallArityEnd2End.
-
-lemma end2end:
-  "c \<Rightarrow>\<^sup>* c' \<Longrightarrow>
-  \<not> boring_step c' \<Longrightarrow>
-  consistent (ae, ce, a) c \<Longrightarrow>
-  \<exists>ae' ce' a'. consistent  (ae', ce', a') c' \<and> conf_transform  (ae, ce, a) c \<Rightarrow>\<^sub>G\<^sup>* conf_transform  (ae', ce', a') c'"
-  by (rule foo)
-
-lemma end2end_closed:
-  assumes closed: "fv e = ({} :: var set)"
-  assumes "([], e, []) \<Rightarrow>\<^sup>* (\<Gamma>,v,[])"
-  assumes "isLam v"
-  shows "\<exists> \<Gamma>' v'. length \<Gamma>' \<le> length \<Gamma> \<and> isLam v' \<and> ([], transform 0 e, []) \<Rightarrow>\<^sub>G\<^sup>* (\<Gamma>',v',[])"
-proof-
-  note assms(2)
-  moreover
-  have "\<not> boring_step (\<Gamma>,v,[])" by (simp add: boring_step.simps)
-  moreover
-  have "consistent (\<bottom>,\<bottom>,0) ([], e, [])" using closed by (rule closed_consistent)
-  ultimately
-  obtain ae ce a where
-    *: "consistent  (ae, ce, a) (\<Gamma>,v,[])" and
-    **: "conf_transform  (\<bottom>, \<bottom>, 0) ([],e,[]) \<Rightarrow>\<^sub>G\<^sup>* conf_transform (ae, ce, a) (\<Gamma>,v,[])"
-    by (metis end2end)
-
-  let ?\<Gamma> = "restrictA (edom ce) (map_transform Aeta_expand ae (map_transform transform ae \<Gamma>))"
-  let ?v = "transform a v"
-
-  show ?thesis
-  proof(intro exI conjI)
-    show "length (restrictA (edom ce) (map_transform Aeta_expand ae (map_transform transform ae \<Gamma>))) \<le> length \<Gamma>"
-      by (rule order_trans[OF length_restrictA_le]) simp
-
-    have "conf_transform  (\<bottom>, \<bottom>, 0) ([],e,[]) = ([],transform 0 e,[])" by simp
-    with **
-    show "([], transform 0 e, []) \<Rightarrow>\<^sub>G\<^sup>* (?\<Gamma>, ?v, [])" by simp
-
-    show "isLam (transform a v)" using `isLam v` by simp
-  qed
-qed
+sublocale CoCallAnalysisImpl.
 
 lemma fresh_var_eqE[elim_format]: "fresh_var e = x \<Longrightarrow> x \<notin>  fv e"
   by (metis fresh_var_not_free)
@@ -113,7 +72,6 @@ proof-
   show ?thesis
     by (simp del: Let_eq_iff add: map_transform_Cons map_transform_Nil disj[symmetric])
 qed
-
 
 end
 end

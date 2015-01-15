@@ -2,22 +2,10 @@ theory CoCallImplCorrect
 imports CoCallAnalysisImpl CoCallAnalysisSpec ArityAnalysisFixProps
 begin
 
-lemma ccField_fup_CCexp:
-  "ccField (fup\<cdot>(CCexp e)\<cdot>n) \<subseteq> fv e"
-by (cases n) (auto dest: set_mp[OF ccField_CCexp])
-
-lemma cc_restr_fup_ccExp_useless[simp]: "cc_restr (fv e) (fup\<cdot>(CCexp e)\<cdot>n) = fup\<cdot>(CCexp e)\<cdot>n"
-  by (rule cc_restr_noop[OF ccField_fup_CCexp])
-
-interpretation ArityAnalysis Aexp.
-
-lemma Aexp_edom': "edom (Aexp e\<cdot>a) \<subseteq> fv e"
-  by (induction e arbitrary: a rule: exp_induct_rec)(auto)
-
 locale CoCallImplCorrect
 begin
-sublocale EdomArityAnalysis Aexp by default (rule Aexp_edom')
- 
+sublocale CoCallAnalysisImpl.
+
 lemma ccField_CCfix: "ccField (CCfix \<Gamma>\<cdot>(ae, CCexp  e\<cdot>a)) \<subseteq> fv \<Gamma> \<union> fv e"
   unfolding CCfix_def
   apply simp
@@ -30,30 +18,6 @@ lemma ccField_CCfix: "ccField (CCfix \<Gamma>\<cdot>(ae, CCexp  e\<cdot>a)) \<su
              dest!: elem_to_ccField
              split: if_splits)
   done
-
-lemma Aexp_lam_simp[simp]: "Aexp (Lam [x]. e) \<cdot> n = env_delete x (Aexp e \<cdot> (pred \<cdot> n))"
-proof-
-  have "Aexp (Lam [x]. e) \<cdot> n = Aexp e\<cdot>(pred\<cdot>n) f|` (fv e - {x})" by simp
-  also have "... = env_delete x (Aexp e\<cdot>(pred\<cdot>n)) f|` (fv e - {x})" by simp
-  also have "\<dots> = env_delete x (Aexp e\<cdot>(pred\<cdot>n))"
-     by (rule env_restr_useless) (auto dest: set_mp[OF Aexp_edom])
-  finally show ?thesis.
-qed
-declare Aexp_simps(2)[simp del]
-
-lemma Aexp_Let_simp1[simp]:
-  "\<not> nonrec \<Gamma> \<Longrightarrow> Aexp (Let \<Gamma> e)\<cdot>n = (Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> (\<lambda>_.up\<cdot>0) f|` thunks \<Gamma>)) f|` (- domA \<Gamma>)"
-  unfolding Aexp_simps
-  by (rule env_restr_cong) (auto dest!: set_mp[OF Afix_edom] set_mp[OF Aexp_edom] set_mp[OF thunks_domA])
-
-lemma Aexp_Let_simp2[simp]:
-  "atom x \<sharp> e \<Longrightarrow> Aexp (let x be e in exp)\<cdot>n = env_delete x (fup\<cdot>(Aexp e)\<cdot>(ABind_nonrec x e \<cdot> (Aexp exp\<cdot>n, CCexp exp\<cdot>n)) \<squnion> Aexp exp\<cdot>n)"
-  unfolding Aexp_simps env_delete_restr
-  by (rule env_restr_cong) (auto dest!: set_mp[OF fup_Aexp_edom]  set_mp[OF Aexp_edom])
-
-declare Aexp_simps(4)[simp del]
-declare Aexp_simps(5)[simp del]
-
 
 lemma CCexp_Let_simp1[simp]:
   "\<not> nonrec \<Gamma> \<Longrightarrow> CCexp (Let \<Gamma> e)\<cdot>n = cc_restr (- domA \<Gamma>) (CCfix \<Gamma>\<cdot>(Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> (\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>)), CCexp e\<cdot>n))"
@@ -224,34 +188,9 @@ qed
 sublocale CorrectArityAnalysis Aexp
   by default (simp_all add:Aexp_restr_subst)
 
-definition Aheap where
-  "Aheap \<Gamma> e = (\<Lambda> a. if nonrec \<Gamma> then (split Aheap_nonrec (hd \<Gamma>))\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a) else  (Afix \<Gamma> \<cdot> (Aexp e\<cdot>a \<squnion> (\<lambda>_.up\<cdot>0) f|` thunks \<Gamma>)) f|` domA \<Gamma>)"
-
-lemma Aheap_simp1[simp]:
-  "\<not> nonrec \<Gamma> \<Longrightarrow> Aheap \<Gamma> e \<cdot>a = (Afix \<Gamma> \<cdot> (Aexp e\<cdot>a \<squnion> (\<lambda>_.up\<cdot>0) f|` thunks \<Gamma>)) f|` domA \<Gamma>"
-  unfolding Aheap_def by simp
-
-lemma Aheap_simp2[simp]:
-  "atom x \<sharp> e' \<Longrightarrow> Aheap [(x,e')] e \<cdot>a = Aheap_nonrec x e'\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a)"
-  unfolding Aheap_def by (simp add: nonrec_def)
-
-lemma Aheap_eqvt'[eqvt]:
-  "\<pi> \<bullet> (Aheap \<Gamma> e) = Aheap (\<pi> \<bullet> \<Gamma>) (\<pi> \<bullet> e)"
-  apply (rule cfun_eqvtI)
-  apply (cases nonrec \<pi> rule: eqvt_cases[where x = \<Gamma>])
-  apply simp
-  apply (erule nonrecE)
-  apply simp
-  apply (perm_simp, rule)
-  apply simp
-  apply (perm_simp, rule)
-  done
 
 sublocale CorrectArityAnalysisLet Aexp Aheap
 proof default
-  fix \<pi> show "\<pi> \<bullet> Aheap = Aheap"
-    by perm_simp rule
-next
   fix \<Gamma> e a
   show "edom (Aheap \<Gamma> e\<cdot>a) \<subseteq> domA \<Gamma>"
     by (cases "nonrec \<Gamma>")
