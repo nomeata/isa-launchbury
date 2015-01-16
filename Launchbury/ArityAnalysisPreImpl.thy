@@ -36,7 +36,7 @@ where
 | "Aexp (Lam [x]. e) = (\<Lambda> n . (Aexp e \<cdot> (pred \<cdot> n)  f|` (fv (Lam [x]. e))))"
 | "Aexp (App e x) = (\<Lambda> n . Aexp e  \<cdot> (inc \<cdot> n) \<squnion> (esing x \<cdot> (up \<cdot> 0)))"
 | "Aexp (Terms.Let as e) = (\<Lambda> n . (Afix Aexp as \<cdot> (Aexp e \<cdot> n \<squnion> thunks_AE as)) f|` (fv (Terms.Let as e)))"
-| "Aexp Null = \<bottom>"
+| "Aexp (Bool b) = \<bottom>"
 | "Aexp (scrut ? e1 : e2) = \<bottom>"
 proof-
 case goal1

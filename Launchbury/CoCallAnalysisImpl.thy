@@ -74,7 +74,7 @@ where
 | "cCCexp (Lam [x]. e) = (\<Lambda> n . combined_restrict (fv (Lam [x]. e)) (fst (cCCexp e\<cdot>(pred\<cdot>n)), predCC (fv (Lam [x]. e)) (\<Lambda> a. snd(cCCexp e\<cdot>a))\<cdot>n))"
 | "cCCexp (App e x) =    (\<Lambda> n . (fst (cCCexp e\<cdot>(inc\<cdot>n)) \<squnion> (esing x \<cdot> (up\<cdot>0)),          snd (cCCexp e\<cdot>(inc\<cdot>n)) \<squnion> ccProd {x} (insert x (fv e))))"
 | "cCCexp (Let \<Gamma> e) =    (\<Lambda> n . combined_restrict (fv (Let \<Gamma> e)) (CoCallArityAnalysis.cccFix_choose cCCexp \<Gamma> \<cdot> (cCCexp e\<cdot>n)))"
-| "cCCexp Null =         \<bottom>"
+| "cCCexp (Bool b) =     \<bottom>"
 | "cCCexp (scrut ? e1 : e2) = \<bottom>"
 proof-
 case goal1
@@ -145,7 +145,7 @@ lemma cCCexp_eq[simp]:
   "cCCexp (Lam [x]. e)\<cdot>n = combined_restrict (fv (Lam [x]. e)) (fst (cCCexp e\<cdot>(pred\<cdot>n)), predCC (fv (Lam [x]. e)) (\<Lambda> a. snd(cCCexp e\<cdot>a))\<cdot>n)"
   "cCCexp (App e x)\<cdot>n =    (fst (cCCexp e\<cdot>(inc\<cdot>n)) \<squnion> (esing x \<cdot> (up\<cdot>0)),          snd (cCCexp e\<cdot>(inc\<cdot>n)) \<squnion> ccProd {x} (insert x (fv e)))"
   "cCCexp (Let \<Gamma> e)\<cdot>n =    combined_restrict (fv (Let \<Gamma> e)) (CoCallArityAnalysis.cccFix_choose cCCexp \<Gamma> \<cdot> (cCCexp e\<cdot>n))"
-  "cCCexp Null\<cdot>n = \<bottom>"
+  "cCCexp (Bool b)\<cdot>n = \<bottom>"
   "cCCexp (scrut ? e1 : e2)\<cdot>n = \<bottom>"
 by (simp_all)
 declare cCCexp.simps[simp del]
@@ -157,7 +157,7 @@ lemma Aexp_simps[simp]:
   "Aexp (App e x)\<cdot>n = Aexp e\<cdot>(inc\<cdot>n) \<squnion> esing x\<cdot>(up\<cdot>0)"
   "\<not> nonrec \<Gamma> \<Longrightarrow> Aexp (Let \<Gamma> e)\<cdot>n = (Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> (\<lambda>_.up\<cdot>0) f|` thunks \<Gamma>)) f|` (fv (Let \<Gamma> e))"
   "atom x \<sharp> e \<Longrightarrow> Aexp (let x be e in exp)\<cdot>n = (fup\<cdot>(Aexp e)\<cdot>(ABind_nonrec x e \<cdot> (Aexp exp\<cdot>n, CCexp exp\<cdot>n)) \<squnion> Aexp exp\<cdot>n) f|` (fv (let x be e in exp))"
-  "Aexp Null\<cdot>n = \<bottom>"
+  "Aexp (Bool b)\<cdot>n = \<bottom>"
   "Aexp (scrut ? e1 : e2)\<cdot>n = \<bottom>"
  by (simp add: cccFix_eq Aexp_eq fup_Aexp_eq CCexp_eq fup_CCexp_eq)+
 
@@ -169,7 +169,7 @@ lemma CCexp_simps[simp]:
   "\<not> nonrec \<Gamma> \<Longrightarrow> CCexp (Let \<Gamma> e)\<cdot>n = cc_restr (fv (Let \<Gamma> e)) (CCfix \<Gamma>\<cdot>(Afix \<Gamma>\<cdot>(Aexp e\<cdot>n  \<squnion> (\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>)), CCexp e\<cdot>n))"
   "atom x \<sharp> e \<Longrightarrow> CCexp (let x be e in exp)\<cdot>n =
     cc_restr (fv (let x be e in exp)) (ccBind x e \<cdot>(Aheap_nonrec x e\<cdot>(Aexp exp\<cdot>n, CCexp exp\<cdot>n), CCexp exp\<cdot>n) \<squnion> ccProd (fv e) (ccNeighbors x (CCexp exp\<cdot>n) - (if isVal e then {} else {x})) \<squnion> CCexp exp\<cdot>n)"
-  "CCexp Null\<cdot>n = \<bottom>"
+  "CCexp (Bool b)\<cdot>n = \<bottom>"
   "CCexp (scrut ? e1 : e2)\<cdot>n = \<bottom>"
  by (simp add: cccFix_eq Aexp_eq fup_Aexp_eq CCexp_eq fup_CCexp_eq predCC_eq)+
 

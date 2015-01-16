@@ -17,7 +17,7 @@ where
  |"(App e v)[y ::= z] = App (e[y ::= z]) (v[y ::v= z])"
  |"atom ` domA as \<sharp>* (y,z) \<Longrightarrow> (Let as body)[y ::= z] = Let (as[y ::h= z]) (body[y ::= z])" 
  |"atom x \<sharp> (y,z) \<Longrightarrow> (Lam [x].e)[y ::= z] = Lam [x].(e[y::=z])"
- |"Null[y ::= z] = Null"
+ |"(Bool b)[y ::= z] = Bool b"
  |"(scrut ? e1 : e2)[y ::= z] = (scrut[y ::= z] ? e1[y ::= z] : e2[y ::= z])"
  |"[][y ::h= z] = []"
  |"((v,e)# as)[y ::h= z] = (v, e[y ::= z])# (as[y ::h= z])"

@@ -37,7 +37,7 @@ begin
   | "transform a (Let \<Gamma> e) = TransLet (AnalLet \<Gamma> e a)
         (map_transform transform (PropLetHeap (AnalLet \<Gamma> e a)) \<Gamma>)
         (transform (PropLetBody (AnalLet \<Gamma> e a)) e)"
-  | "transform a Null = Null"
+  | "transform a (Bool b) = (Bool b)"
   | "transform a (scrut ? e1 : e2)  = (transform a scrut ? transform a e1 : transform a e2)"
 proof-
 case goal1

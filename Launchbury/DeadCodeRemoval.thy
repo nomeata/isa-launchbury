@@ -11,7 +11,7 @@ where
 | "remove_dead_code (Let as e) =
     (if domA as \<inter> fv e = {} then remove_dead_code e
                            else Let (map_ran (\<lambda> _ e. remove_dead_code e) as) (remove_dead_code e))"
-| "remove_dead_code Null = Null"
+| "remove_dead_code (Bool b) = Bool b"
 | "remove_dead_code (scrut ? e1 : e2) = (remove_dead_code scrut ? remove_dead_code e1 : remove_dead_code e2)"
 proof-
 case goal1 thus ?case

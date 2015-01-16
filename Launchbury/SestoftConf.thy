@@ -87,6 +87,8 @@ lemma heap_upds_okE: "heap_upds_ok (\<Gamma>, S) \<Longrightarrow> x \<in> domA 
 lemma heap_upds_ok_Nil[simp]: "heap_upds_ok (\<Gamma>, [])" by auto
 lemma heap_upds_ok_app1: "heap_upds_ok (\<Gamma>, S) \<Longrightarrow> heap_upds_ok (\<Gamma>,Arg x # S)" by auto
 lemma heap_upds_ok_app2: "heap_upds_ok (\<Gamma>, Arg x # S) \<Longrightarrow> heap_upds_ok (\<Gamma>, S)" by auto
+lemma heap_upds_ok_alts1: "heap_upds_ok (\<Gamma>, S) \<Longrightarrow> heap_upds_ok (\<Gamma>,Alts e1 e2 # S)" by auto
+lemma heap_upds_ok_alts2: "heap_upds_ok (\<Gamma>, Alts e1 e2 # S) \<Longrightarrow> heap_upds_ok (\<Gamma>, S)" by auto
 
 lemma heap_upds_ok_append:
   assumes "domA \<Delta> \<inter> domA \<Gamma> = {}"
@@ -109,7 +111,7 @@ lemma heap_upds_ok_reorder:
   "x \<in> domA \<Gamma> \<Longrightarrow> heap_upds_ok (\<Gamma>, S) \<Longrightarrow> heap_upds_ok ((x,e) # delete x \<Gamma>, S)"
   by (intro heap_upds_ok_to_heap heap_upds_ok_to_stack)
 
-lemmas heap_upds_ok_intros[intro] = heap_upds_ok_to_heap heap_upds_ok_to_stack heap_upds_ok_reorder heap_upds_ok_app1 heap_upds_ok_app2
+lemmas heap_upds_ok_intros[intro] = heap_upds_ok_to_heap heap_upds_ok_to_stack heap_upds_ok_reorder heap_upds_ok_app1 heap_upds_ok_app2 heap_upds_ok_alts1 heap_upds_ok_alts2
 lemmas heap_upds_ok.simps[simp del]
 
 fun restr_stack :: "var set \<Rightarrow> stack \<Rightarrow> stack"

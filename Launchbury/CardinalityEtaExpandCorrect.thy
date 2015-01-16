@@ -41,6 +41,7 @@ begin
     | "stack_consistent as S \<Longrightarrow> stack_consistent as (Arg x # S)"
   inductive_simps stack_consistent_foo[simp]:
     "stack_consistent [] []" "stack_consistent (a#as) (Alts e1 e2 # S)" "stack_consistent as (Upd x # S)" "stack_consistent as (Arg x # S)"
+  inductive_cases [elim!]: "stack_consistent as (Alts e1 e2 # S)"
 
   fun AEstack :: "Arity list \<Rightarrow> stack \<Rightarrow> AEnv"
     where 
@@ -502,16 +503,39 @@ begin
     show ?case by (blast del: consistentI consistentE)
   next
     case (if\<^sub>1 \<Gamma> scrut e1 e2 S)
-    show ?case
-    sorry
+    {
+    have "Aexp (scrut ? e1 : e2)\<cdot>a f|` edom ce \<sqsubseteq> ae" using if\<^sub>1 by (auto simp add: env_restr_join join_below_iff)
+    hence "(Aexp scrut\<cdot>0 \<squnion> Aexp e1\<cdot>a \<squnion> Aexp e2\<cdot>a) f|` edom ce \<sqsubseteq> ae"
+      by (rule below_trans[OF env_restr_mono[OF Aexp_IfThenElse]])
+    moreover
+    have "prognosis ae a (\<Gamma>, scrut ? e1 : e2, S) \<sqsubseteq> ce" using if\<^sub>1 by auto
+    hence "prognosis ae 0 (\<Gamma>, scrut, Alts e1 e2 # S) \<sqsubseteq> ce"
+      by (rule below_trans[OF prognosis_IfThenElse])
+    ultimately
+    have "consistent (ae, ce, 0, a#as) (\<Gamma>, scrut, Alts e1 e2 # S)"
+      using if\<^sub>1  by (auto simp add: env_restr_join join_below_iff)
+    }
+    moreover
+    have "conf_transform (ae, ce, a, as) (\<Gamma>, scrut ? e1 : e2, S) \<Rightarrow>\<^sub>G\<^sup>* conf_transform (ae, ce, 0, a#as) (\<Gamma>, scrut, Alts e1 e2 # S)"
+      sorry
+    ultimately
+    show ?case by (blast del: consistentI consistentE)
   next
-    case (if\<^sub>t \<Gamma> x e e1 e2 S)
-    show ?case
-    sorry
-  next
-    case (if\<^sub>f \<Gamma> e1 e2 S)
-    show ?case
-    sorry
+    case (if\<^sub>2 \<Gamma> b e1 e2 S)
+    from if\<^sub>2 obtain a' as' where [simp]: "as = a' # as'" by auto
+    from if\<^sub>2 have [simp]: "a = 0" by auto
+
+    {
+    have "prognosis ae 0 (\<Gamma>, Bool b, Alts e1 e2 # S) \<sqsubseteq> ce" using if\<^sub>2 by auto
+    hence "prognosis ae a' (\<Gamma>, if b then e1 else e2, S) \<sqsubseteq> ce" by (rule below_trans[OF prognosis_Alts])
+    then
+    have "consistent (ae, ce, a', as') (\<Gamma>, if b then e1 else e2, S)" 
+      using if\<^sub>2 by (auto simp add: env_restr_join join_below_iff)
+    }
+    moreover
+    have "conf_transform (ae, ce, a, as) (\<Gamma>, Bool b, Alts e1 e2 # S) \<Rightarrow>\<^sub>G\<^sup>* conf_transform (ae, ce, a', as') (\<Gamma>, if b then e1 else e2, S)" sorry
+    ultimately
+    show ?case by (blast del: consistentI consistentE)
   next
     case refl thus ?case by auto
   next

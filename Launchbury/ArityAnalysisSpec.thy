@@ -9,6 +9,7 @@ locale CorrectArityAnalysis = SubstArityAnalysis +
   assumes Aexp_Var: "up \<cdot> n \<sqsubseteq> (Aexp (Var x)\<cdot>n) x"
   assumes Aexp_App: "Aexp e \<cdot>(inc\<cdot>n) \<squnion> esing x \<cdot> (up\<cdot>0) \<sqsubseteq>  Aexp (App e x) \<cdot> n"
   assumes Aexp_Lam: "env_delete y (Aexp e \<cdot>(pred\<cdot>n)) \<sqsubseteq> Aexp (Lam [y]. e) \<cdot> n"
+  assumes Aexp_IfThenElse: "Aexp scrut\<cdot>0 \<squnion> Aexp e1\<cdot>a \<squnion> Aexp e2\<cdot>a \<sqsubseteq> Aexp (scrut ? e1 : e2)\<cdot>a"
 
 locale CorrectArityAnalysisHeap = CorrectArityAnalysis + ArityAnalysisHeapEqvt +
   assumes edom_Aheap: "edom (Aheap \<Gamma> e\<cdot> a) \<subseteq> domA \<Gamma>"

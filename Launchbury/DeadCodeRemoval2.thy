@@ -92,7 +92,7 @@ where
 | "remove_dead_code (App e x) = App (remove_dead_code e) x"
 | "remove_dead_code (Var x) = Var x"
 | "remove_dead_code (Terms.Let as e) = SmartLet (restrict_reachable (map_ran (\<lambda> _ e. remove_dead_code e) as) (remove_dead_code e)) (remove_dead_code e)"
-| "remove_dead_code Null = Null"
+| "remove_dead_code (Bool b) = Bool b"
 | "remove_dead_code (scrut ? e1 : e2) = (remove_dead_code scrut ? remove_dead_code e1 : remove_dead_code e2)"
 proof-
 case goal1 thus ?case

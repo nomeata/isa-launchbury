@@ -26,6 +26,10 @@ locale CardinalityPrognosisVar = CardinalityPrognosis +
   assumes prognosis_Var_thunk: "map_of \<Gamma> x = Some e \<Longrightarrow> ae x = up\<cdot>u \<Longrightarrow> \<not> isVal e \<Longrightarrow> prognosis ae u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))"
   assumes prognosis_Var2: "isVal e \<Longrightarrow> x \<notin> domA \<Gamma> \<Longrightarrow> prognosis ae 0 ((x, e) # \<Gamma>, e, S) \<sqsubseteq> prognosis ae 0 (\<Gamma>, e, Upd x # S)"
 
+locale CardinalityPrognosisIfThenElse = CardinalityPrognosis +
+  assumes prognosis_IfThenElse: "prognosis ae 0 (\<Gamma>, scrut, Alts e1 e2 # S) \<sqsubseteq> prognosis ae a (\<Gamma>, scrut ? e1 : e2, S)"
+  assumes prognosis_Alts: "prognosis ae a' (\<Gamma>, if b then e1 else e2, S) \<sqsubseteq> prognosis ae 0 (\<Gamma>, Bool b, Alts e1 e2 # S)"
+
 locale CardinalityPrognosisLet = CardinalityPrognosis + CardinalityHeap + ArityAnalysisHeap +
   assumes prognosis_Let:
   "atom ` domA \<Delta> \<sharp>* \<Gamma> \<Longrightarrow> atom ` domA \<Delta> \<sharp>* S \<Longrightarrow> edom ae \<subseteq> domA \<Gamma> \<union> upds S \<Longrightarrow> prognosis (Aheap \<Delta> e\<cdot>a \<squnion> ae) a (\<Delta> @ \<Gamma>, e, S) \<sqsubseteq> cHeap \<Delta> e\<cdot>a \<squnion> prognosis ae a (\<Gamma>, Terms.Let \<Delta> e, S)"
@@ -41,6 +45,7 @@ locale CardinalityPrognosisCorrect =
   CardinalityPrognosisLam + 
   CardinalityPrognosisVar +
   CardinalityPrognosisLet +
+  CardinalityPrognosisIfThenElse +
   CardinalityHeapCorrect +
   CorrectArityAnalysisLet
 
