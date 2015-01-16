@@ -111,7 +111,7 @@ case (let\<^sub>1 \<Delta> \<Gamma> S e)
   with let\<^sub>1
   show ?case by (fastforce intro: step.intros simp add: fresh_star_def )
 next
-case (refl)
+case refl
   show ?case..
 next
 case trans

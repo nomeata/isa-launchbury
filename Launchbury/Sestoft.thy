@@ -8,7 +8,9 @@ inductive step :: "conf \<Rightarrow> conf \<Rightarrow> bool" (infix "\<Rightar
 | var\<^sub>1:  "map_of \<Gamma> x = Some e \<Longrightarrow> (\<Gamma>, Var x, S) \<Rightarrow> (delete x \<Gamma>, e , Upd x # S)"
 | var\<^sub>2:  "x \<notin> domA \<Gamma> \<Longrightarrow> isVal e \<Longrightarrow> (\<Gamma>, e, Upd x # S) \<Rightarrow> ((x,e)# \<Gamma>, e , S)"
 | let\<^sub>1:  "atom ` domA \<Delta> \<sharp>* \<Gamma> \<Longrightarrow> atom ` domA \<Delta> \<sharp>* S \<Longrightarrow> (\<Gamma>, Let \<Delta> e, S) \<Rightarrow> (\<Delta>@\<Gamma>, e , S)"
-(* | if\<^sub>1:  "(\<Gamma>, scrut ? e1 : e2, S) \<Rightarrow> (\<Gamma>, scrut, Alts e1 e2 # S)" *)
+| if\<^sub>1:  "(\<Gamma>, scrut ? e1 : e2, S) \<Rightarrow> (\<Gamma>, scrut, Alts e1 e2 # S)"
+| if\<^sub>t:  "(\<Gamma>, (Lam [x].e), Alts e1 e2 # S) \<Rightarrow> (\<Gamma>, e1, S)"
+| if\<^sub>f:  "(\<Gamma>, Null, Alts e1 e2 # S) \<Rightarrow> (\<Gamma>, e2, S)"
 
 abbreviation steps (infix "\<Rightarrow>\<^sup>*" 50) where "steps \<equiv> step\<^sup>*\<^sup>*"
 
@@ -22,7 +24,9 @@ lemma lambda_var: "map_of \<Gamma> x = Some e \<Longrightarrow> isVal e  \<Longr
 
 text {* An induction rule that skips the annoying case of a lambda taken off the heap *}
 
-lemma step_induction[consumes 2, case_names app\<^sub>1 app\<^sub>2 thunk lamvar var\<^sub>2 let\<^sub>1 refl trans]:
+thm step.induct[no_vars]
+
+lemma step_induction[consumes 2, case_names app\<^sub>1 app\<^sub>2 thunk lamvar var\<^sub>2 let\<^sub>1 if\<^sub>1 if\<^sub>t if\<^sub>f refl trans]:
   assumes "c \<Rightarrow>\<^sup>* c'"
   assumes "\<not> boring_step c'"
   assumes app\<^sub>1:  "\<And> \<Gamma> e x S . P (\<Gamma>, App e x, S)  (\<Gamma>, e , Arg x # S)"
@@ -31,6 +35,9 @@ lemma step_induction[consumes 2, case_names app\<^sub>1 app\<^sub>2 thunk lamvar
   assumes lamvar:  "\<And> \<Gamma> x e S . map_of \<Gamma> x = Some e \<Longrightarrow> isVal e \<Longrightarrow> P (\<Gamma>, Var x, S) ((x,e) # delete x \<Gamma>, e , S)"
   assumes var\<^sub>2:  "\<And> \<Gamma> x e S . x \<notin> domA \<Gamma> \<Longrightarrow> isVal e \<Longrightarrow> P (\<Gamma>, e, Upd x # S) ((x,e)# \<Gamma>, e , S)"
   assumes let\<^sub>1:  "\<And> \<Delta> \<Gamma> e S . atom ` domA \<Delta> \<sharp>* \<Gamma> \<Longrightarrow> atom ` domA \<Delta> \<sharp>* S \<Longrightarrow> P (\<Gamma>, Let \<Delta> e, S) (\<Delta>@\<Gamma>, e, S)"
+  assumes if\<^sub>1:   "\<And>\<Gamma> scrut e1 e2 S. P (\<Gamma>, scrut ? e1 : e2, S) (\<Gamma>, scrut, Alts e1 e2 # S)"
+  assumes if\<^sub>t:   "\<And>\<Gamma> x e e1 e2 S. P (\<Gamma>, Lam [x]. e, Alts e1 e2 # S) (\<Gamma>, e1, S)"
+  assumes if\<^sub>f:   "\<And>\<Gamma> e1 e2 S. P (\<Gamma>, Null, Alts e1 e2 # S) (\<Gamma>, e2, S)"
   assumes refl: "\<And> c. P c c"
   assumes trans[trans]: "\<And> c c' c''. c \<Rightarrow>\<^sup>* c' \<Longrightarrow> c' \<Rightarrow>\<^sup>* c'' \<Longrightarrow> P c c' \<Longrightarrow> P c' c'' \<Longrightarrow> P c c''"
   shows "P c c'"
@@ -80,6 +87,15 @@ proof-
         with `P c y` show ?thesis by (metis t)
       next
         case let\<^sub>1 hence "P y z" using assms(8) by metis
+        with `P c y` show ?thesis by (metis t)
+      next
+        case if\<^sub>1 hence "P y z" using assms(9) by metis
+        with `P c y` show ?thesis by (metis t)
+      next
+        case if\<^sub>t hence "P y z" using assms(10) by metis
+        with `P c y` show ?thesis by (metis t)
+      next
+        case if\<^sub>f hence "P y z" using assms(11) by metis
         with `P c y` show ?thesis by (metis t)
       qed
     next
