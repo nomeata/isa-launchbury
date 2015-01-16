@@ -311,6 +311,15 @@ lemma nxt_either[simp]: "nxt (t \<oplus>\<oplus> t') x = nxt t x \<oplus>\<oplus
 lemma paths_either[simp]: "paths (t \<oplus>\<oplus> t') = paths t \<union> paths t'"
   by transfer simp
 
+lemma carrier_either[simp]:
+  "carrier (t \<oplus>\<oplus> t') = carrier t \<union> carrier t'"
+  by transfer simp
+
+lemma either_contains_arg1: "paths t \<subseteq> paths (t \<oplus>\<oplus> t')"
+  by transfer fastforce
+
+lemma either_contains_arg2: "paths t' \<subseteq> paths (t \<oplus>\<oplus> t')"
+  by transfer fastforce
 
 lift_definition Either :: "'a ftree set \<Rightarrow> 'a ftree"  is "\<lambda> S. insert [] (\<Union>S)"
   by (auto simp add: downset_def)

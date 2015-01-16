@@ -1,5 +1,5 @@
 theory NoCardinalityAnalysis
-imports CardinalityAnalysisSpec
+imports CardinalityAnalysisSpec ArityAnalysisStack
 begin
 
 locale NoCardinalityAnalysis = CorrectArityAnalysisLet +
@@ -50,11 +50,19 @@ sublocale CardinalityHeapCorrect cHeap Aheap
   done
 
 fun prognosis where 
-  "prognosis ae a (\<Gamma>, e, S) = ((\<lambda>_. many) f|` (edom (ABinds \<Gamma>\<cdot>ae) \<union> edom (Aexp e\<cdot>a) \<union> ap S))"
+  "prognosis ae as a (\<Gamma>, e, S) = ((\<lambda>_. many) f|` (edom (ABinds \<Gamma>\<cdot>ae) \<union> edom (Aexp e\<cdot>a) \<union> edom (AEstack as S)))"
 
 lemma record_all_noop[simp]:
   "record_call x\<cdot>((\<lambda>_. many) f|` S) = (\<lambda>_. many) f|` S"
   by (auto simp add: record_call_def lookup_env_restr_eq)
+
+lemma const_on_restr_constI[intro]:
+  "S' \<subseteq> S \<Longrightarrow> const_on ((\<lambda> _. x) f|` S) S' x"
+  by fastforce
+
+lemma ap_subset_edom_AEstack: "ap S \<subseteq> edom (AEstack as S)"
+  by (induction as S rule:AEstack.induct) (auto simp del: fun_meet_simp)
+  
 
 sublocale CardinalityPrognosis prognosis.
 
@@ -64,19 +72,19 @@ proof
 next
   case goal2 thus ?case by (simp cong: Abinds_reorder)
 next
-  case goal3 thus ?case by (auto intro!: env_restr_mono2 dest: set_mp[OF edom_mono[OF ABinds_delete_below]])
+  case goal3
+  thus ?case 
+  by (auto dest: set_mp[OF ap_subset_edom_AEstack])
 next
-  case goal4 thus ?case by auto
+  case goal4
+  thus ?case by (auto intro: env_restr_mono2 )
 next
   case goal5
-  show ?case by (auto intro: env_restr_mono2 )
-next
-  case goal6
   from `ae x = \<bottom>`
   have "ABinds (delete x \<Gamma>)\<cdot>ae = ABinds \<Gamma>\<cdot>ae" by (rule ABinds_delete_bot)
   thus ?case by simp
 next
-  case goal7
+  case goal6
   from Aexp_Var[where n = a and x = x]
   have "(Aexp (Var x)\<cdot>a) x \<noteq> \<bottom>" by auto
   hence "x \<in> edom (Aexp (Var x)\<cdot>a)" by (simp add: edomIff)
@@ -105,13 +113,28 @@ proof
   thus ?case by (auto intro!: env_restr_mono2 simp add: Abinds_reorder1[OF goal1(1)])
 next
   case goal2
-  thus ?case by (auto intro!: env_restr_mono2 simp add: Abinds_reorder1[OF goal2(1)])
+  thus ?case
+    by (auto intro!: env_restr_mono2 simp add: Abinds_reorder1[OF goal2(1)])
+       (metis Aexp_Var edomIff not_up_less_UU)
 next
   case goal3
   have "fup\<cdot>(Aexp e)\<cdot>(ae x) \<sqsubseteq> Aexp e\<cdot>0" by (cases "ae x") (auto intro: monofun_cfun_arg)
   from edom_mono[OF this]
   show ?case by (auto intro!: env_restr_mono2 dest: set_mp[OF edom_mono[OF ABinds_delete_below]])
 qed
+thm  edom_mono[OF Aexp_IfThenElse, no_vars]
+sublocale CardinalityPrognosisIfThenElse prognosis
+proof default
+  case goal1
+  have "edom (Aexp scrut\<cdot>0 \<squnion> Aexp e1\<cdot>a \<squnion> Aexp e2\<cdot>a) \<subseteq> edom (Aexp (scrut ? e1 : e2)\<cdot>a)"
+    by (rule edom_mono[OF Aexp_IfThenElse])
+  thus ?case
+    by (auto intro!: env_restr_mono2)
+next
+  case goal2
+  show ?case by (auto intro!: env_restr_mono2)
+qed
+
   
 sublocale CardinalityPrognosisLet prognosis  cHeap Aheap
 proof
@@ -135,13 +158,13 @@ proof
   also have "\<dots> = edom (Aheap \<Delta> e\<cdot>a) \<union> edom (ABinds \<Gamma>\<cdot>ae) \<union> edom (Aexp (Let \<Delta> e)\<cdot>a)"
     by auto
   finally
-  have "edom (ABinds (\<Delta> @ \<Gamma>)\<cdot>(Aheap \<Delta> e\<cdot>a \<squnion> ae)) \<union> edom (Aexp e\<cdot>a) \<subseteq> edom (Aheap \<Delta> e\<cdot>a) \<union> edom (ABinds \<Gamma>\<cdot>ae) \<union> edom (Aexp (Terms.Let \<Delta> e)\<cdot>a)".
-  hence "edom (ABinds (\<Delta> @ \<Gamma>)\<cdot>(Aheap \<Delta> e\<cdot>a \<squnion> ae)) \<union> edom (Aexp e\<cdot>a) \<union> ap S \<subseteq> edom (Aheap \<Delta> e\<cdot>a) \<union> edom (ABinds \<Gamma>\<cdot>ae) \<union> edom (Aexp (Terms.Let \<Delta> e)\<cdot>a) \<union> ap S" by auto
+  have "edom (ABinds (\<Delta> @ \<Gamma>)\<cdot>(Aheap \<Delta> e\<cdot>a \<squnion> ae)) \<union> edom (Aexp e\<cdot>a) \<subseteq> edom (Aheap \<Delta> e\<cdot>a) \<union> edom (ABinds \<Gamma>\<cdot>ae) \<union> edom (Aexp (Let \<Delta> e)\<cdot>a)".
+  hence "edom (ABinds (\<Delta> @ \<Gamma>)\<cdot>(Aheap \<Delta> e\<cdot>a \<squnion> ae)) \<union> edom (Aexp e\<cdot>a) \<union> edom (AEstack as S) \<subseteq> edom (Aheap \<Delta> e\<cdot>a) \<union> edom (ABinds \<Gamma>\<cdot>ae) \<union> edom (Aexp (Let \<Delta> e)\<cdot>a) \<union> edom (AEstack as S)" by auto
   thus ?case by (simp add: ae2ce_to_env_restr env_restr_join2 Un_assoc[symmetric] env_restr_mono2)
 qed
 
 sublocale CardinalityPrognosisEdom prognosis
-  by default (auto dest: set_mp[OF Aexp_edom] set_mp[OF ap_fv_subset] set_mp[OF edom_AnalBinds])
+  by default (auto dest: set_mp[OF Aexp_edom] set_mp[OF ap_fv_subset] set_mp[OF edom_AnalBinds]  set_mp[OF edom_AEstack])
 
 
 sublocale CardinalityPrognosisCorrect prognosis cHeap Aheap Aexp..

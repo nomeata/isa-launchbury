@@ -23,6 +23,7 @@ lemma supp_Arg[simp]: "supp (Arg v) = supp v"  unfolding supp_def by auto
 lemma supp_Upd[simp]: "supp (Upd v) = supp v"  unfolding supp_def by auto
 lemma supp_Dummy[simp]: "supp (Dummy v) = supp v"  unfolding supp_def by auto
 lemma fresh_Alts[simp]: "a \<sharp> Alts e1 e2 = (a \<sharp> e1 \<and> a \<sharp> e2)" unfolding fresh_def by auto
+lemma fresh_star_Alts[simp]: "a \<sharp>* Alts e1 e2 = (a \<sharp>* e1 \<and> a \<sharp>* e2)" unfolding fresh_star_def by auto
 lemma fresh_Arg[simp]: "a \<sharp> Arg v = a \<sharp> v" unfolding fresh_def by auto
 lemma fresh_Upd[simp]: "a \<sharp> Upd v = a \<sharp> v" unfolding fresh_def by auto
 lemma fresh_Dummy[simp]: "a \<sharp> Dummy v = a \<sharp> v" unfolding fresh_def by auto

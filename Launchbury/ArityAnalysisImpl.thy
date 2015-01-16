@@ -20,6 +20,6 @@ interpretation ArityAnalysisPreImpl ArityAnalysis.Afix where "Aexp = ArityAnalys
 interpretation ArityAnalysis Aexp.
 
 lemma Aexp_edom': "edom (Aexp e\<cdot>a) \<subseteq> fv e"
-  by (nominal_induct arbitrary: a rule: exp_strong_induct) auto
+  by (nominal_induct arbitrary: a rule: exp_strong_induct) fastforce+
 
 end

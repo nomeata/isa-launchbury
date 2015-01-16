@@ -660,6 +660,11 @@ lemma ccFTree_mono2:
   apply (erule (1) order_trans[OF _ ccNeighbors_mono])
   done
 
+lemma ccFTree_mono:
+  "S \<subseteq> S' \<Longrightarrow> G \<sqsubseteq> G' \<Longrightarrow> ccFTree S G \<sqsubseteq> ccFTree S' G'"
+  by (metis below_trans[OF ccFTree_mono1 ccFTree_mono2])
+
+
 lemma cont_ccFTree2:
   "cont (ccFTree S)"
   apply (rule contI2)
@@ -718,6 +723,11 @@ lemma ccFTree_cong_below: "cc_restr S G \<sqsubseteq> cc_restr S G' \<Longrighta
   
 lemma ccFTree_cong: "cc_restr S G = cc_restr S G' \<Longrightarrow> ccFTree S G = ccFTree S G'"
   by (metis ccFTree_cc_restr)
+
+lemma either_ccFTree:
+  "ccFTree S G \<oplus>\<oplus> ccFTree S' G' \<sqsubseteq> ccFTree (S \<union> S') (G \<squnion> G')"
+  by (auto intro!: either_belowI ccFTree_mono)
+ 
 
 lemma interleave_ccFTree: 
    "ccFTree S G \<otimes>\<otimes> ccFTree S' G' \<sqsubseteq> ccFTree (S \<union> S') (G \<squnion> G' \<squnion> ccProd S S')"

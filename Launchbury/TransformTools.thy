@@ -105,6 +105,12 @@ begin
   unfolding map_transform_def
      by (induction \<Gamma>) (auto simp add: supp_Pair supp_Cons dest!: set_mp[OF supp_lift_transform])
 
+  lemma fresh_transform[intro]: "a \<sharp> e \<Longrightarrow> a \<sharp> trans n e"
+    by (auto simp add: fresh_def) (auto dest!: set_mp[OF supp_trans])
+
+  lemma fresh_star_transform[intro]: "a \<sharp>* e \<Longrightarrow> a \<sharp>* trans n e"
+    by (auto simp add: fresh_star_def)
+
   lemma fresh_map_transform[intro]: "a \<sharp> \<Gamma> \<Longrightarrow> a \<sharp> map_transform trans ae \<Gamma>"
     unfolding fresh_def using supp_map_transform by auto
 

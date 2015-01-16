@@ -78,12 +78,33 @@ lemma rdch_Cons[simp]:
   unfolding rdcH_def
   by (auto simp add: clearjunk_restrict[symmetric] delete_map_ran[symmetric] simp del: delete_map_ran)
 
+fun rdcS :: "stack \<Rightarrow> stack" where
+  "rdcS [] = []"
+| "rdcS (Alts e1 e2 # S) = (Alts (remove_dead_code e1) (remove_dead_code e2) # rdcS S)"
+| "rdcS (x # S) = x # rdcS S"
+
+lemma rdcS_fresh[intro]: "a \<sharp> S \<Longrightarrow> a \<sharp> rdcS S"
+  by (induction S rule: rdcS.induct)
+     (auto simp add:  fresh_Cons  eqvt_fresh_cong1[OF remove_dead_code.eqvt])
+
+lemma fv_rdcS: "fv (rdcS S) \<subseteq> fv S"
+    using rdcS_fresh by (auto simp add: fresh_def fv_def)
+
+lemma rdcS_Dummy[simp]: "rdcS (map Dummy L) = map Dummy L" 
+  by (induction L) auto
+     
 inductive dc_rel :: "(heap \<times> exp \<times> stack) \<Rightarrow> (heap \<times> exp \<times> stack) \<Rightarrow>  bool" ("_ \<triangleright> _" [50,50] 50 )
-  where "V \<subseteq> domA \<Gamma> \<union> fv S \<Longrightarrow> V \<inter> fv (rdcH V \<Gamma>, remove_dead_code e, S) = {} \<Longrightarrow> (\<Gamma>, e, S) \<triangleright> (rdcH V \<Gamma>, remove_dead_code e, S)"
+  where "V \<subseteq> domA \<Gamma> \<union> upds S \<Longrightarrow> V \<inter> fv (rdcH V \<Gamma>, remove_dead_code e, rdcS S) = {} \<Longrightarrow> (\<Gamma>, e, S) \<triangleright> (rdcH V \<Gamma>, remove_dead_code e, rdcS S)"
 
 inductive_cases dc_rel_elim: "(\<Gamma>, e, S) \<triangleright> (\<Gamma>', e', S')"
 
-lemma dc_relI: "V \<subseteq> domA \<Gamma> \<union> fv S \<Longrightarrow> V \<inter> fv (rdcH V \<Gamma>, remove_dead_code e, S) = {} \<Longrightarrow> \<Gamma>' = rdcH V \<Gamma> \<Longrightarrow> e' = remove_dead_code e \<Longrightarrow> S' = S \<Longrightarrow>  (\<Gamma>, e, S) \<triangleright> (\<Gamma>', e', S')"
+lemma dc_relI:
+  "V \<subseteq> domA \<Gamma> \<union> upds S \<Longrightarrow>
+   V \<inter> fv (rdcH V \<Gamma>, remove_dead_code e, rdcS S) = {} \<Longrightarrow>
+  \<Gamma>' = rdcH V \<Gamma> \<Longrightarrow>
+  e' = remove_dead_code e \<Longrightarrow>
+  S' = rdcS S \<Longrightarrow> 
+  (\<Gamma>, e, S) \<triangleright> (\<Gamma>', e', S')"
   by (auto intro!: dc_rel.intros)
 
 
@@ -144,29 +165,29 @@ theorem DeadCodeRemovalCorrectStep:
 using assms(2)
 proof(rule dc_rel_elim)
   fix V
-  assume V\<^sub>1: "V \<subseteq> domA \<Gamma> \<union> fv S"
-  assume V\<^sub>2: "V \<inter> (fv (rdcH V \<Gamma>) \<union> (fv (remove_dead_code e) \<union> fv S)) = {}"
-  assume eqs: "\<Gamma>' = rdcH V \<Gamma>" "e' = remove_dead_code e" "S' = S"
+  assume V\<^sub>1: "V \<subseteq> domA \<Gamma> \<union> upds S"
+  assume V\<^sub>2: "V \<inter> (fv (rdcH V \<Gamma>) \<union> (fv (remove_dead_code e) \<union> fv (rdcS S))) = {}"
+  assume eqs: "\<Gamma>' = rdcH V \<Gamma>" "e' = remove_dead_code e" "S' = rdcS S"
 
-  have "\<exists> \<Delta>' z' T'. (\<Delta>, z, T) \<triangleright> (\<Delta>', z', T') \<and> (rdcH V \<Gamma>, remove_dead_code e, S) \<Rightarrow>\<^sup>* (\<Delta>', z', T')"
+  have "\<exists> \<Delta>' z' T'. (\<Delta>, z, T) \<triangleright> (\<Delta>', z', T') \<and> (rdcH V \<Gamma>, remove_dead_code e, rdcS S) \<Rightarrow>\<^sup>* (\<Delta>', z', T')"
   using assms(1)
   proof(cases rule: step.cases)
   case (app\<^sub>1 x)
     from V\<^sub>1 V\<^sub>2
-    have "(\<Gamma>, z, Arg x # S) \<triangleright> (rdcH V \<Gamma>, remove_dead_code z, Arg x # S)"
-      unfolding app\<^sub>1  by -(rule dc_relI[where V = V], auto)
+    have "(\<Gamma>, z, Arg x # S) \<triangleright> (rdcH V \<Gamma>, remove_dead_code z, Arg x # rdcS S)"
+      unfolding app\<^sub>1 by -(rule dc_relI[where V = V], auto)
     moreover
-    have "(rdcH V \<Gamma>, remove_dead_code (App z x), S) \<Rightarrow> (rdcH V \<Gamma>, remove_dead_code z, Arg x # S)"
+    have "(rdcH V \<Gamma>, remove_dead_code (App z x), rdcS S) \<Rightarrow> (rdcH V \<Gamma>, remove_dead_code z, Arg x # rdcS S)"
       by simp rule
     ultimately
     show ?thesis unfolding app\<^sub>1 by blast
   next
   case (app\<^sub>2 y e' x)
     from V\<^sub>1 V\<^sub>2
-    have "(\<Gamma>, e'[y::=x], T) \<triangleright> (rdcH V \<Gamma>, remove_dead_code (e'[y::=x]), T)"
+    have "(\<Gamma>, e'[y::=x], T) \<triangleright> (rdcH V \<Gamma>, remove_dead_code (e'[y::=x]), rdcS T)"
       unfolding app\<^sub>2 eqs by -(rule dc_relI[where V = V], auto simp add: fv_subst_eq subst_remove_dead_code[symmetric])
     moreover
-    have "(rdcH V \<Gamma>, remove_dead_code (Lam [y]. e'), Arg x # T) \<Rightarrow> (rdcH V \<Gamma>, remove_dead_code (e'[y::=x]), T)"
+    have "(rdcH V \<Gamma>, remove_dead_code (Lam [y]. e'), rdcS (Arg x # T)) \<Rightarrow> (rdcH V \<Gamma>, remove_dead_code (e'[y::=x]), rdcS T)"
       by (simp add: subst_remove_dead_code[symmetric]) rule
     ultimately
     show ?thesis unfolding app\<^sub>2 by blast
@@ -183,12 +204,12 @@ proof(rule dc_rel_elim)
     have **: "fv (remove_dead_code z) \<subseteq> fv (rdcH V \<Gamma>)" by (metis domA_from_set map_of_fv_subset map_of_is_SomeD option.sel)
 
     from V\<^sub>1 V\<^sub>2
-    have "(delete x \<Gamma>, z, Upd x # S) \<triangleright> (rdcH V (delete x \<Gamma>), remove_dead_code z, Upd x # S)"
+    have "(delete x \<Gamma>, z, Upd x # S) \<triangleright> (rdcH V (delete x \<Gamma>), remove_dead_code z, rdcS (Upd x # S))"
       unfolding var\<^sub>1(1)
       by -(rule dc_relI[where V = V], auto dest: set_mp[OF *] set_mp[OF **])
     moreover
     from  `map_of (rdcH V \<Gamma>) x = Some (remove_dead_code z)`
-    have "(rdcH V \<Gamma>, remove_dead_code (Var x), S) \<Rightarrow> (rdcH V (delete x \<Gamma>), remove_dead_code z, Upd x # S)"
+    have "(rdcH V \<Gamma>, remove_dead_code (Var x), rdcS S) \<Rightarrow> (rdcH V (delete x \<Gamma>), remove_dead_code z, rdcS (Upd x # S))"
       by (simp add: delete_rdcH[symmetric] del: delete_rdcH) rule
     ultimately
     show ?thesis unfolding var\<^sub>1 by blast
@@ -202,12 +223,14 @@ proof(rule dc_rel_elim)
 
 
     from V\<^sub>1 V\<^sub>2
-    have "((x, e) # \<Gamma>, e, T) \<triangleright> ((x,remove_dead_code e) # rdcH V \<Gamma>, remove_dead_code e, T)"
+    have "((x, e) # \<Gamma>, e, T) \<triangleright> ((x,remove_dead_code e) # rdcH V \<Gamma>, remove_dead_code e, rdcS T)"
       unfolding var\<^sub>2(1-1)
       by -(rule dc_relI[where V = V], auto)
     moreover
-    have "(rdcH V \<Gamma>, remove_dead_code e, Upd x # T) \<Rightarrow> ((x,remove_dead_code e) # rdcH V \<Gamma>, remove_dead_code e, T)"
+    have "(rdcH V \<Gamma>, remove_dead_code e, Upd x # rdcS T) \<Rightarrow> ((x,remove_dead_code e) # rdcH V \<Gamma>, remove_dead_code e, rdcS T)"
       by rule simp_all
+    hence "(rdcH V \<Gamma>, remove_dead_code e, rdcS (Upd x # T)) \<Rightarrow> ((x,remove_dead_code e) # rdcH V \<Gamma>, remove_dead_code e, rdcS T)"
+      by simp
     ultimately
     show ?thesis unfolding eqs var\<^sub>2 by blast
   next
@@ -215,7 +238,7 @@ proof(rule dc_rel_elim)
     let "(?\<Delta>', ?body')" = "((restrict_reachable (map_ran (\<lambda>_. remove_dead_code) \<Delta>) (remove_dead_code z)), (remove_dead_code z))"
     let "?V'" = "domA \<Delta> - reachable (map_ran (\<lambda>_. remove_dead_code) \<Delta>) ?body'"
 
-    from fresh_distinct[OF let\<^sub>1(4)] fresh_distinct_fv[OF let\<^sub>1(5)] V\<^sub>1
+    from fresh_distinct[OF let\<^sub>1(4)] fresh_distinct_fv[OF let\<^sub>1(5)] V\<^sub>1 ups_fv_subset
     have "V \<inter> domA \<Delta> = {}" by blast
     hence [simp]: "(rdcH (?V' \<union> V) \<Delta>) = ?\<Delta>'"
       unfolding restrict_reachable_def rdcH_def
@@ -225,7 +248,7 @@ proof(rule dc_rel_elim)
       using fresh_distinct[OF let\<^sub>1(4)]
       by (auto intro: rdcH_cong_set simp add: fresh_star_at_base)
 
-    have "?V' \<union> V \<subseteq> domA (\<Delta> @ \<Gamma>) \<union> fv S" using V\<^sub>1 by auto
+    have "?V' \<union> V \<subseteq> domA (\<Delta> @ \<Gamma>) \<union> upds S" using V\<^sub>1 by auto
     moreover
     {
     have "?V' \<inter> fv ?\<Delta>' = {}" using fv_heap_reachable by auto
@@ -237,7 +260,7 @@ proof(rule dc_rel_elim)
     moreover
     have "?V' \<inter> fv ?body' = {}" using fv_e_reachable by auto
     moreover
-    have "?V' \<inter> fv S = {}" using fresh_distinct_fv[OF let\<^sub>1(5)] by auto
+    have "?V' \<inter> fv (rdcS S) = {}" using fresh_distinct_fv[OF let\<^sub>1(5)] by (auto dest: set_mp[OF fv_rdcS])
     moreover
     have "V \<inter> fv ?\<Delta>' = {}" using V\<^sub>2 `V \<inter> domA \<Delta> = {}` unfolding let\<^sub>1 by auto
     moreover
@@ -245,21 +268,41 @@ proof(rule dc_rel_elim)
     moreover
     have "V \<inter> fv ?body' = {}" using V\<^sub>2  `V \<inter> domA \<Delta> = {}` unfolding let\<^sub>1 by auto
     moreover
-    have "V \<inter> fv S = {}"  using V\<^sub>2 by auto
+    have "V \<inter> fv (rdcS S) = {}"  using V\<^sub>2 by auto
     ultimately
-    have "(?V' \<union> V) \<inter> fv (rdcH (?V' \<union> V) (\<Delta> @ \<Gamma>), ?body', S) = {}"
-      using fresh_distinct[OF let\<^sub>1(4)] by auto
+    have "(?V' \<union> V) \<inter> fv (rdcH (?V' \<union> V) (\<Delta> @ \<Gamma>), ?body', rdcS S) = {}"
+      using fresh_distinct[OF let\<^sub>1(4)] by (auto )
     }
     ultimately
-    have "(\<Delta> @ \<Gamma>, z, S) \<triangleright> (rdcH (?V' \<union> V) (\<Delta> @ \<Gamma>), ?body', S)"..
+    have "(\<Delta> @ \<Gamma>, z, S) \<triangleright> (rdcH (?V' \<union> V) (\<Delta> @ \<Gamma>), ?body', rdcS S)"..
     also
-    have "atom ` domA ?\<Delta>' \<sharp>* rdcH V \<Gamma>" and  "atom ` domA ?\<Delta>' \<sharp>* S"
+    have "atom ` domA ?\<Delta>' \<sharp>* rdcH V \<Gamma>" and  "atom ` domA ?\<Delta>' \<sharp>* rdcS S"
       using let\<^sub>1(4,5) by (auto simp add: fresh_star_def fresh_Pair)
     from SmartLet_stepI[OF this]
-    have "(rdcH V \<Gamma>, remove_dead_code (Terms.Let \<Delta> z), S) \<Rightarrow>\<^sup>* (rdcH (?V' \<union> V) (\<Delta> @ \<Gamma>), ?body', S)"
+    have "(rdcH V \<Gamma>, remove_dead_code (Terms.Let \<Delta> z), rdcS S) \<Rightarrow>\<^sup>* (rdcH (?V' \<union> V) (\<Delta> @ \<Gamma>), ?body', rdcS S)"
       using fresh_distinct[OF let\<^sub>1(4)] by simp
     ultimately
     show ?thesis unfolding let\<^sub>1 by blast
+  next
+    case (if\<^sub>1 e1 e2)
+    from V\<^sub>1 V\<^sub>2
+    have "(\<Gamma>, z, Alts e1 e2 # S) \<triangleright> (rdcH V \<Gamma>, remove_dead_code z, Alts (remove_dead_code e1) (remove_dead_code e2) # rdcS S)"
+      unfolding if\<^sub>1 by -(rule dc_relI[where V = V], auto)
+    moreover
+    have "(rdcH V \<Gamma>, remove_dead_code (z ? e1 : e2), rdcS S) \<Rightarrow> (rdcH V \<Gamma>, remove_dead_code z,  Alts (remove_dead_code e1) (remove_dead_code e2) # rdcS S)"
+      by simp rule
+    ultimately
+    show ?thesis unfolding if\<^sub>1 by blast
+  next
+    case (if\<^sub>2 b e1 e2)
+    from V\<^sub>1 V\<^sub>2
+    have "(\<Gamma>, (if b then e1 else e2), T) \<triangleright> (rdcH V \<Gamma>, (if b then remove_dead_code e1 else remove_dead_code e2), rdcS T)"
+      unfolding if\<^sub>2 by -(rule dc_relI[where V = V],auto)
+    moreover
+    have "(rdcH V \<Gamma>, remove_dead_code (Bool b), rdcS (Alts e1 e2 # T)) \<Rightarrow> (rdcH V \<Gamma>, (if b then remove_dead_code e1 else remove_dead_code e2), rdcS T)"
+      by (auto intro:  step.if\<^sub>2[where b = True, simplified] step.if\<^sub>2[where b = False, simplified])
+    ultimately
+    show ?thesis unfolding if\<^sub>2 by blast
   qed
   thus ?thesis unfolding eqs.
 qed
@@ -276,27 +319,27 @@ corollary
    shows  "\<exists> \<Delta>' z'. [] : remove_dead_code e \<Down>\<^bsub>L\<^esub> \<Delta>' : z'"
 proof-
   let "?S" = "map Dummy L"
-  have *: "set (map Dummy L) \<subseteq> range Dummy" by auto
+  have *: "set (rdcS ?S) \<subseteq> range Dummy" by auto
 
   have "L = flattn ?S" by (induction L) auto
   from lemma_2[OF assms(1) this]
   have "([], e, ?S) \<Rightarrow>\<^sup>* (\<Delta>, z, ?S)".
   moreover
-  have "([], e, ?S) \<triangleright> (rdcH {} [], remove_dead_code e, ?S)" by (rule dc_rel.intros) auto
-  hence "([], e, ?S) \<triangleright> ([], remove_dead_code e, ?S)" by simp
+  have "([], e, ?S) \<triangleright> (rdcH {} [], remove_dead_code e, rdcS ?S)" by (rule dc_rel.intros) auto
+  hence "([], e, ?S) \<triangleright> ([], remove_dead_code e, rdcS  ?S)" by simp
   ultimately
-  obtain \<Delta>' z' T' where "(\<Delta>, z, ?S) \<triangleright> (\<Delta>', z', T')" and "([], remove_dead_code e, ?S) \<Rightarrow>\<^sup>* (\<Delta>', z', T')"
+  obtain \<Delta>' z' T' where "(\<Delta>, z, ?S) \<triangleright> (\<Delta>', z', T')" and "([], remove_dead_code e, rdcS  ?S) \<Rightarrow>\<^sup>* (\<Delta>', z', T')"
     by (metis DeadCodeRemovalCorrectSteps)
-  hence "([], remove_dead_code e, ?S) \<Rightarrow>\<^sup>* (\<Delta>', remove_dead_code z, ?S)" by (auto elim: dc_rel.cases)
+  hence "([], remove_dead_code e, rdcS ?S) \<Rightarrow>\<^sup>* (\<Delta>', remove_dead_code z, rdcS ?S)" by (auto elim: dc_rel.cases)
   from dummy_stack_balanced[OF * this]
-  obtain T where "bal ([], remove_dead_code e, map Dummy L) T (\<Delta>', remove_dead_code z, map Dummy L)".
+  obtain T where "bal ([], remove_dead_code e, rdcS ?S) T (\<Delta>', remove_dead_code z, rdcS ?S)".
   moreover
   have "isLam z" using assms(1) by (induction) simp
   hence "isLam (remove_dead_code z)" by (rule isLam_remove_dead_code)
   ultimately
-  have "[] : remove_dead_code e \<Down>\<^bsub>flattn ?S\<^esub> \<Delta>' : remove_dead_code z"
+  have "[] : remove_dead_code e \<Down>\<^bsub>flattn (rdcS ?S)\<^esub> \<Delta>' : remove_dead_code z"
     by (rule lemma_3)
-  also have "flattn ?S = L" by (induction L) auto
+  also have "flattn (rdcS ?S) = L" by (induction L) auto
   finally
   show ?thesis by blast
 qed

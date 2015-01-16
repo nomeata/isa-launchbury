@@ -166,7 +166,6 @@ case (goal19 as body as' body')
 qed auto
 nominal_termination (eqvt) by lexicographic_order
 
-
 lemma subst_restrictA[simp]:
   "(restrictA S \<Gamma>)[y::h=x] = restrictA S (\<Gamma>[y::h=x])"
   by (induction \<Gamma>) auto
@@ -252,6 +251,5 @@ case (Let \<Gamma> e y x)
   thus ?case
   by (auto simp add: fresh_star_at_base fv_subst_eq fresh_star_Pair pure_fresh simp del: Let_eq_iff)
 qed auto
-
 
 end

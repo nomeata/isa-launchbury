@@ -12,6 +12,7 @@ locale CoCallArityCorrect = CoCallArity + CoCallAnalyisHeap + CorrectArityAnalys
   assumes ccExp_subst: "x \<notin>  S \<Longrightarrow> y \<notin> S \<Longrightarrow> cc_restr S (ccExp e[y::=x]\<cdot>a) \<sqsubseteq> cc_restr S (ccExp e\<cdot>a)"
   assumes ccExp_pap: "isVal e \<Longrightarrow> ccExp e\<cdot>0 = ccSquare (fv e)"
   assumes ccExp_Let: "cc_restr (-domA \<Gamma>) (ccHeap \<Gamma> e\<cdot>a) \<sqsubseteq> ccExp (Let \<Gamma> e)\<cdot>a"
+  assumes ccExp_IfThenElse: "ccExp scrut\<cdot>0 \<squnion> (ccExp e1\<cdot>a \<squnion> ccExp e2\<cdot>a) \<squnion> ccProd (edom (Aexp scrut\<cdot>0)) (edom (Aexp e1\<cdot>a) \<union> edom (Aexp e2\<cdot>a)) \<sqsubseteq> ccExp (scrut ? e1 : e2)\<cdot>a"
 
   assumes ccHeap_Exp: "ccExp e\<cdot>a \<sqsubseteq> ccHeap \<Delta> e\<cdot>a"
   assumes ccHeap_Heap: "map_of \<Delta> x = Some e' \<Longrightarrow> (Aheap \<Delta> e\<cdot>a) x= up\<cdot>a' \<Longrightarrow> ccExp e'\<cdot>a' \<sqsubseteq> ccHeap \<Delta> e\<cdot>a"

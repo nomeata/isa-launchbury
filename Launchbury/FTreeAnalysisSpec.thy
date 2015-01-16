@@ -13,6 +13,7 @@ locale FTreeAnalysisCorrect = FTreeAnalysisCarrier +
   assumes Fexp_subst: "Fexp (e[y::=x])\<cdot>a \<sqsubseteq> many_calls x \<otimes>\<otimes> without y ((Fexp e)\<cdot>a)"
   assumes Fexp_Var: "single v \<sqsubseteq> Fexp (Var v)\<cdot>a"
   assumes Fun_repeatable: "isVal e \<Longrightarrow> repeatable (Fexp e\<cdot>0)"
+  assumes Fexp_IfThenElse: "Fexp scrut\<cdot>0 \<otimes>\<otimes> (Fexp e1\<cdot>a \<oplus>\<oplus> Fexp e2\<cdot>a) \<sqsubseteq> Fexp (scrut ? e1 : e2)\<cdot>a"
 
 locale FTreeAnalysisCardinalityHeap = 
   FTreeAnalysisCorrect + CorrectArityAnalysisLet + 

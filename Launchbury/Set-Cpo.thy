@@ -75,5 +75,10 @@ proof-
   thus ?thesis..
 qed
 
+lemma diff_cont[THEN cont_compose, simp, cont2cont]:
+  fixes S' :: "'a set"
+  shows  "cont (\<lambda>S. S - S')"
+by (rule set_set_contI) simp
+
 
 end

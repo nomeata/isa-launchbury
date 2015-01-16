@@ -8,11 +8,13 @@ locale AbstractAnalProp =
   fixes AnalLet :: "heap \<Rightarrow> exp \<Rightarrow> 'a \<Rightarrow> 'b::cont_pt"
   fixes PropLetBody :: "'b \<Rightarrow> 'a"
   fixes PropLetHeap :: "'b\<Rightarrow> var \<Rightarrow> 'a\<^sub>\<bottom>"
+  fixes PropIfScrut :: "'a \<Rightarrow> 'a"
   assumes PropApp_eqvt: "\<pi> \<bullet> PropApp \<equiv> PropApp"
   assumes PropLam_eqvt: "\<pi> \<bullet> PropLam \<equiv> PropLam"
   assumes AnalLet_eqvt: "\<pi> \<bullet> AnalLet \<equiv> AnalLet"
   assumes PropLetBody_eqvt: "\<pi> \<bullet> PropLetBody \<equiv> PropLetBody"
   assumes PropLetHeap_eqvt: "\<pi> \<bullet> PropLetHeap \<equiv> PropLetHeap"
+  assumes PropIfScrut_eqvt: "\<pi> \<bullet> PropIfScrut \<equiv> PropIfScrut"
 
 locale AbstractAnalPropSubst = AbstractAnalProp +
   assumes AnalLet_subst:  "x \<notin> domA \<Gamma> \<Longrightarrow> y \<notin> domA \<Gamma> \<Longrightarrow> AnalLet (\<Gamma>[x::h=y]) (e[x::=y]) a = AnalLet \<Gamma> e a"
@@ -38,7 +40,7 @@ begin
         (map_transform transform (PropLetHeap (AnalLet \<Gamma> e a)) \<Gamma>)
         (transform (PropLetBody (AnalLet \<Gamma> e a)) e)"
   | "transform a (Bool b) = (Bool b)"
-  | "transform a (scrut ? e1 : e2)  = (transform a scrut ? transform a e1 : transform a e2)"
+  | "transform a (scrut ? e1 : e2)  = (transform (PropIfScrut a) scrut ? transform a e1 : transform a e2)"
 proof-
 case goal1
   note PropApp_eqvt[eqvt_raw] PropLam_eqvt[eqvt_raw] PropLetBody_eqvt[eqvt_raw] PropLetHeap_eqvt[eqvt_raw] AnalLet_eqvt[eqvt_raw] TransVar_eqvt[eqvt]  TransApp_eqvt[eqvt]  TransLam_eqvt[eqvt] TransLet_eqvt[eqvt]
@@ -171,13 +173,14 @@ locale AbstractTransformBound = AbstractAnalProp + supp_bounded_transform  +
   assumes PropLetHeapTrans_eqvt: "\<pi> \<bullet> PropLetHeapTrans = PropLetHeapTrans"
   assumes TransBound_eqvt: "\<pi> \<bullet> trans = trans"
 begin
-  sublocale AbstractTransform PropApp PropLam AnalLet PropLetBody PropLetHeap
+  sublocale AbstractTransform PropApp PropLam AnalLet PropLetBody PropLetHeap PropIfScrut
       "(\<lambda> a. Var)"
       "(\<lambda> a. App)"
       "(\<lambda> a. Terms.Lam)"
       "(\<lambda> b \<Gamma> e . Let (map_transform trans (PropLetHeapTrans b) \<Gamma>) e)"
   proof-
-  note PropApp_eqvt[eqvt_raw] PropLam_eqvt[eqvt_raw] PropLetBody_eqvt[eqvt_raw] PropLetHeap_eqvt[eqvt_raw] AnalLet_eqvt[eqvt_raw] PropLetHeapTrans_eqvt[eqvt] TransBound_eqvt[eqvt]
+  note PropApp_eqvt[eqvt_raw] PropLam_eqvt[eqvt_raw] PropLetBody_eqvt[eqvt_raw] PropLetHeap_eqvt[eqvt_raw] PropIfScrut_eqvt[eqvt_raw]
+      AnalLet_eqvt[eqvt_raw] PropLetHeapTrans_eqvt[eqvt] TransBound_eqvt[eqvt]
   case goal1
   show ?case
   apply default
@@ -199,13 +202,14 @@ end
 locale AbstractTransformBoundSubst = AbstractAnalPropSubst + AbstractTransformBound + 
   assumes TransBound_subst: "(trans a e)[x::=y] = trans a e[x::=y]"
 begin
-  sublocale AbstractTransformSubst PropApp PropLam AnalLet PropLetBody PropLetHeap
+  sublocale AbstractTransformSubst PropApp PropLam AnalLet PropLetBody PropLetHeap PropIfScrut
       "(\<lambda> a. Var)"
       "(\<lambda> a. App)"
       "(\<lambda> a. Terms.Lam)"
       "(\<lambda> b \<Gamma> e . Let (map_transform trans (PropLetHeapTrans b) \<Gamma>) e)"
   proof-
-  note PropApp_eqvt[eqvt_raw] PropLam_eqvt[eqvt_raw] PropLetBody_eqvt[eqvt_raw] PropLetHeap_eqvt[eqvt_raw] TransBound_eqvt[eqvt]
+  note PropApp_eqvt[eqvt_raw] PropLam_eqvt[eqvt_raw] PropLetBody_eqvt[eqvt_raw] PropLetHeap_eqvt[eqvt_raw] PropIfScrut_eqvt[eqvt_raw]
+       TransBound_eqvt[eqvt]
   case goal1
   show ?case
   apply default

@@ -183,6 +183,16 @@ next
 
   show "Aexp (let x' be e in exp )[y::=x]\<cdot>a f|` S = Aexp (let x' be e in exp )\<cdot>a f|` S"
     by (simp add: env_restr_join env_delete_env_restr_swap[symmetric] ABind_nonrec_eq)
+next
+  case (IfThenElse scrut e1 e2)
+  case 2[simp]
+    from IfThenElse
+    show "cc_restr S (CCexp (scrut ? e1 : e2)[y::=x]\<cdot>a) = cc_restr S (CCexp (scrut ? e1 : e2)\<cdot>a)"
+      by (auto simp del: edom_env env_restr_empty env_restr_empty_iff simp  add: edom_env[symmetric])
+
+    from IfThenElse(2,4,6)
+    show "Aexp (scrut ? e1 : e2)[y::=x]\<cdot>a f|` S = Aexp (scrut ? e1 : e2)\<cdot>a f|` S"
+       by (auto simp add: env_restr_join simp del: fun_meet_simp)
 qed auto
    
 sublocale CorrectArityAnalysis Aexp
@@ -495,6 +505,10 @@ next
     by (subst Afix_unroll) simp
 
   show "(Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0" by (auto simp add: Aheap_nonrec_simp ABind_nonrec_eq)
+next
+  fix scrut e1 a e2
+  show "CCexp scrut\<cdot>0 \<squnion> (CCexp e1\<cdot>a \<squnion> CCexp e2\<cdot>a) \<squnion> ccProd (edom (Aexp scrut\<cdot>0)) (edom (Aexp e1\<cdot>a) \<union> edom (Aexp e2\<cdot>a)) \<sqsubseteq> CCexp (scrut ? e1 : e2)\<cdot>a"
+    by simp
 qed
 end
 

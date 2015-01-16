@@ -1,5 +1,5 @@
 theory CardinalityEtaExpandCorrect
-imports ArityEtaExpand CardinalityAnalysisSpec AbstractTransform Sestoft SestoftGC ArityEtaExpansionSestoft
+imports ArityEtaExpand CardinalityAnalysisSpec AbstractTransform Sestoft SestoftGC ArityEtaExpansionSestoft ArityAnalysisStack 
 begin
 
 context CardinalityPrognosisCorrect
@@ -10,6 +10,7 @@ begin
     "\<lambda> \<Delta> e a . (a, Aheap \<Delta> e\<cdot>a)"
     "fst"
     "snd"
+    "\<lambda> _. 0"
     "Aeta_expand"
     "snd"
   apply default
@@ -27,11 +28,27 @@ begin
 
   type_synonym tstate = "(AEnv \<times> (var \<Rightarrow> two) \<times> Arity \<times> Arity list)"
 
+  fun transform_alts :: "Arity list \<Rightarrow> stack \<Rightarrow> stack"
+    where 
+      "transform_alts _ [] = []"
+    | "transform_alts (a#as) (Alts e1 e2 # S) = (Alts (ccTransform a e1) (ccTransform a e2)) # transform_alts as S"
+    | "transform_alts as (x # S) = x # transform_alts as S"
+
+  lemma transform_alts_Nil[simp]: "transform_alts [] S = S"
+    by (induction  S) auto
+
+  lemma Astack_transform_alts[simp]:
+    "Astack (transform_alts as S) = Astack S"
+   by (induction rule: transform_alts.induct) auto
+
+  lemma fresh_star_transform_alts[intro]: "a \<sharp>* S \<Longrightarrow> a \<sharp>* transform_alts as S"
+   by (induction as S  rule: transform_alts.induct) (auto simp add: fresh_star_Cons)
+
   fun conf_transform :: "tstate \<Rightarrow> conf \<Rightarrow> conf"
   where "conf_transform (ae, ce, a, as) (\<Gamma>, e, S) =
     (restrictA (edom ce) (map_transform Aeta_expand ae (map_transform ccTransform ae \<Gamma>)), 
      ccTransform a e,
-     restr_stack (edom ce) S)"
+     transform_alts as (restr_stack (edom ce) S))"
 
   inductive stack_consistent :: "Arity list \<Rightarrow> stack \<Rightarrow> bool"
     where 
@@ -43,25 +60,13 @@ begin
     "stack_consistent [] []" "stack_consistent (a#as) (Alts e1 e2 # S)" "stack_consistent as (Upd x # S)" "stack_consistent as (Arg x # S)"
   inductive_cases [elim!]: "stack_consistent as (Alts e1 e2 # S)"
 
-  fun AEstack :: "Arity list \<Rightarrow> stack \<Rightarrow> AEnv"
-    where 
-      "AEstack _ [] = \<bottom>"
-    | "AEstack (a#as) (Alts e1 e2 # S) = Aexp e1\<cdot>a \<squnion> Aexp e2\<cdot>a \<squnion> AEstack as S"
-    | "AEstack as (Upd x # S) = esing x\<cdot>(up\<cdot>0) \<squnion> AEstack as S"
-    | "AEstack as (Arg x # S) = esing x\<cdot>(up\<cdot>0) \<squnion> AEstack as S"
-    | "AEstack as (_ # S) = AEstack as S"
-
-  lemma edom_AEstack: "edom (AEstack as S) \<subseteq> fv S"
-    by (induction as S rule: AEstack.induct) (auto simp del: fun_meet_simp dest!: set_mp[OF Aexp_edom])
-    
-
   inductive consistent :: "tstate \<Rightarrow> conf \<Rightarrow> bool" where
     consistentI[intro!]: 
     "edom ce \<subseteq> domA \<Gamma> \<union> upds S
     \<Longrightarrow> heap_upds_ok (\<Gamma>, S)
     \<Longrightarrow> edom ae = edom ce
     \<Longrightarrow> Astack (restr_stack (edom ce) S) \<sqsubseteq> a
-    \<Longrightarrow> prognosis ae a (\<Gamma>, e, S) \<sqsubseteq> ce
+    \<Longrightarrow> prognosis ae as a (\<Gamma>, e, S) \<sqsubseteq> ce
     \<Longrightarrow> (ABinds \<Gamma>\<cdot>ae \<squnion> Aexp e\<cdot>a \<squnion> AEstack as S) f|` edom ce \<sqsubseteq> ae
     \<Longrightarrow> (\<And> x. x \<in> thunks \<Gamma> \<Longrightarrow> many \<sqsubseteq> ce x \<Longrightarrow> ae x = up\<cdot>0)
     \<Longrightarrow> stack_consistent as (restr_stack (edom ce) S)
@@ -77,7 +82,7 @@ begin
       by (auto dest!: set_mp[OF Aexp_edom])
     moreover
     from assms
-    have "edom (prognosis \<bottom> 0 ([], e, [])) = {}"
+    have "edom (prognosis \<bottom> [] 0 ([], e, [])) = {}"
      by (auto dest!: set_mp[OF edom_prognosis])
     ultimately
     show ?thesis
@@ -91,7 +96,7 @@ begin
   using assms
   proof(induction c c' arbitrary: ae ce a as rule:step_induction)
   case (app\<^sub>1 \<Gamma> e x S)
-    have "prognosis ae (inc\<cdot>a) (\<Gamma>, e, Arg x # S) \<sqsubseteq> prognosis ae a (\<Gamma>, App e x, S)" by (rule prognosis_App)
+    have "prognosis ae as (inc\<cdot>a) (\<Gamma>, e, Arg x # S) \<sqsubseteq> prognosis ae as a (\<Gamma>, App e x, S)" by (rule prognosis_App)
     with app\<^sub>1 have "consistent (ae, ce, inc\<cdot>a, as) (\<Gamma>, e, Arg x # S)"
       by (cases "x \<in> edom ce") (auto simp add: join_below_iff env_restr_join dest!: below_trans[OF env_restr_mono[OF Aexp_App]] elim: below_trans)
     moreover
@@ -101,7 +106,7 @@ begin
     show ?case by (blast del: consistentI consistentE)
   next
   case (app\<^sub>2 \<Gamma> y e x S)
-    have "prognosis ae (pred\<cdot>a) (\<Gamma>, e[y::=x], S) \<sqsubseteq> prognosis ae a (\<Gamma>, (Lam [y]. e), Arg x # S)"
+    have "prognosis ae as (pred\<cdot>a) (\<Gamma>, e[y::=x], S) \<sqsubseteq> prognosis ae as a (\<Gamma>, (Lam [y]. e), Arg x # S)"
        by (rule prognosis_subst_Lam)
     moreover
     {
@@ -127,7 +132,7 @@ begin
     hence [simp]: "x \<in> domA \<Gamma>" by (rule set_mp[OF thunks_domA])
     hence "x \<notin> upds S" using thunk by (auto elim!: heap_upds_okE)
 
-    from thunk have "prognosis ae a (\<Gamma>, Var x, S) \<sqsubseteq> ce" by auto
+    from thunk have "prognosis ae as a (\<Gamma>, Var x, S) \<sqsubseteq> ce" by auto
     from below_trans[OF prognosis_called fun_belowD[OF this] ]
     have [simp]: "x \<in> edom ce" by (auto simp add: edom_def)
   
@@ -158,30 +163,30 @@ begin
       note `ae x = up\<cdot>u` 
       moreover
   
-      from `prognosis ae a (\<Gamma>, Var x, S) \<sqsubseteq> ce`
-      have "prognosis ae a (\<Gamma>, Var x, S) x \<sqsubseteq> once"
+      from `prognosis ae as a (\<Gamma>, Var x, S) \<sqsubseteq> ce`
+      have "prognosis ae as a (\<Gamma>, Var x, S) x \<sqsubseteq> once"
         using once by (metis (mono_tags) fun_belowD)
-      hence "x \<notin> ap S" using prognosis_ap[of ae a \<Gamma> "(Var x)" S] by auto
+      hence "x \<notin> ap S" using prognosis_ap[of ae as a \<Gamma> "(Var x)" S] by auto
       
   
       from `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u` `\<not> isVal e`
-      have *: "prognosis ae u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))"
+      have *: "prognosis ae as u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> record_call x \<cdot> (prognosis ae as a (\<Gamma>, Var x, S))"
         by (rule prognosis_Var_thunk)
   
-      from `prognosis ae a (\<Gamma>, Var x, S) x \<sqsubseteq> once`
-      have "(record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))) x = none"
+      from `prognosis ae as a (\<Gamma>, Var x, S) x \<sqsubseteq> once`
+      have "(record_call x \<cdot> (prognosis ae as a (\<Gamma>, Var x, S))) x = none"
         by (simp add: two_pred_none)
-      hence **: "prognosis ae u (delete x \<Gamma>, e, Upd x # S) x = none" using fun_belowD[OF *, where x = x] by auto
+      hence **: "prognosis ae as u (delete x \<Gamma>, e, Upd x # S) x = none" using fun_belowD[OF *, where x = x] by auto
 
-      have eq: "prognosis (env_delete x ae) u (delete x \<Gamma>, e, Upd x # S) = prognosis ae u (delete x \<Gamma>, e, Upd x # S)"
+      have eq: "prognosis (env_delete x ae) as u (delete x \<Gamma>, e, Upd x # S) = prognosis ae as u (delete x \<Gamma>, e, Upd x # S)"
         by (rule prognosis_env_cong) simp
 
       have [simp]: "restr_stack (edom ce - {x}) S = restr_stack (edom ce) S" 
         using `x \<notin> upds S` by (auto intro: restr_stack_cong)
     
-      have "prognosis (env_delete x ae) u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> env_delete x ce"
+      have "prognosis (env_delete x ae) as u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> env_delete x ce"
         unfolding eq
-        using ** below_trans[OF below_trans[OF * Cfun.monofun_cfun_arg[OF `prognosis ae a (\<Gamma>, Var x, S) \<sqsubseteq> ce`]] record_call_below_arg]
+        using ** below_trans[OF below_trans[OF * Cfun.monofun_cfun_arg[OF `prognosis ae as a (\<Gamma>, Var x, S) \<sqsubseteq> ce`]] record_call_below_arg]
         by (rule below_env_deleteI)
       moreover
 
@@ -199,20 +204,23 @@ begin
         
         
       moreover
+
+      from `Astack (restr_stack (edom ce) S) \<sqsubseteq> u`
+      have "Astack (transform_alts as (restr_stack (edom ce) S)) \<sqsubseteq> u" by simp
       
       {
       from  `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u` once
       have "map_of (map_transform Aeta_expand ae (map_transform ccTransform ae \<Gamma>)) x = Some (Aeta_expand u (transform u e))"
         by (simp add: map_of_map_transform)
       hence "conf_transform (ae, ce, a, as) (\<Gamma>, Var x, S) \<Rightarrow>\<^sub>G
-             (restrictA (edom ce) (delete x (map_transform Aeta_expand ae (map_transform ccTransform ae \<Gamma>))), Aeta_expand u (ccTransform u e), Upd x # restr_stack (edom ce) S)"
+             (restrictA (edom ce) (delete x (map_transform Aeta_expand ae (map_transform ccTransform ae \<Gamma>))), Aeta_expand u (ccTransform u e), Upd x # transform_alts as (restr_stack (edom ce) S))"
           by (auto simp add:  map_transform_delete delete_map_transform_env_delete insert_absorb restr_delete_twist simp del: restr_delete)
       also
-      have "\<dots> \<Rightarrow>\<^sub>G\<^sup>* (restrictA (edom ce) (delete x (map_transform Aeta_expand ae (map_transform ccTransform ae \<Gamma>))), Aeta_expand u (ccTransform u e), restr_stack (edom ce) S)"
+      have "\<dots> \<Rightarrow>\<^sub>G\<^sup>* (restrictA (edom ce) (delete x (map_transform Aeta_expand ae (map_transform ccTransform ae \<Gamma>))), Aeta_expand u (ccTransform u e), transform_alts as (restr_stack (edom ce) S))"
         by (rule r_into_rtranclp, rule)
       also
-      have "\<dots> \<Rightarrow>\<^sub>G\<^sup>* (restrictA (edom ce)  (delete x (map_transform Aeta_expand ae (map_transform ccTransform ae \<Gamma>))), ccTransform u e, restr_stack (edom ce) S)"
-        by (intro normal_trans Aeta_expand_correct `Astack (restr_stack (edom ce) S) \<sqsubseteq> u`)
+      have "\<dots> \<Rightarrow>\<^sub>G\<^sup>* (restrictA (edom ce)  (delete x (map_transform Aeta_expand ae (map_transform ccTransform ae \<Gamma>))), ccTransform u e, transform_alts as (restr_stack (edom ce) S))"
+        by (intro normal_trans Aeta_expand_correct `Astack (transform_alts as (restr_stack (edom ce) S)) \<sqsubseteq> u`)
       also(rtranclp_trans)
       have "\<dots> = conf_transform (env_delete x ae, env_delete x ce, u, as) (delete x \<Gamma>, e, Upd x # S)" 
         by (auto simp add:  map_transform_delete delete_map_transform_env_delete insert_absorb restr_delete_twist)
@@ -226,17 +234,17 @@ begin
       case many
   
       from `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u` `\<not> isVal e`
-      have "prognosis ae u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))"
+      have "prognosis ae as u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> record_call x \<cdot> (prognosis ae as a (\<Gamma>, Var x, S))"
         by (rule prognosis_Var_thunk)
       also note record_call_below_arg
       finally
-      have *: "prognosis ae u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> prognosis ae a (\<Gamma>, Var x, S)" by this simp_all
+      have *: "prognosis ae as u (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> prognosis ae as a (\<Gamma>, Var x, S)" by this simp_all
   
       have "ae x = up\<cdot>0" using thunk many `x \<in> thunks \<Gamma>` by (auto)
       hence "u = 0" using `ae x = up\<cdot>u` by simp
   
       
-      have "prognosis ae 0 (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> ce" using *[unfolded `u=0`] thunk by (auto elim: below_trans)
+      have "prognosis ae as 0 (delete x \<Gamma>, e, Upd x # S) \<sqsubseteq> ce" using *[unfolded `u=0`] thunk by (auto elim: below_trans)
       moreover
       note `(ABinds (delete x \<Gamma>)\<cdot>ae \<squnion> Aexp e\<cdot>u  \<squnion> AEstack as S) f|\` edom ce \<sqsubseteq> ae`
       ultimately
@@ -255,7 +263,7 @@ begin
     qed
   next
   case (lamvar \<Gamma> x e S)
-    from lamvar have "prognosis ae a (\<Gamma>, Var x, S) \<sqsubseteq> ce" by auto
+    from lamvar have "prognosis ae as a (\<Gamma>, Var x, S) \<sqsubseteq> ce" by auto
     from below_trans[OF prognosis_called fun_belowD[OF this] ]
     have [simp]: "x \<in> edom ce" by (auto simp add: edom_def)
     then obtain c where "ce x = up\<cdot>c" by (cases "ce x") (auto simp add: edom_def)
@@ -274,19 +282,19 @@ begin
     moreover have "\<dots> f|` edom ce \<sqsubseteq> ae" using lamvar by (auto simp add: join_below_iff env_restr_join)
     ultimately have "(ABinds (delete x \<Gamma>)\<cdot>ae \<squnion> Aexp e\<cdot>u) f|` edom ce \<sqsubseteq> ae" by simp
 
-    have "prognosis ae u ((x, e) # delete x \<Gamma>, e, S) = prognosis ae u (\<Gamma>, e, S)"
+    have "prognosis ae as u ((x, e) # delete x \<Gamma>, e, S) = prognosis ae as u (\<Gamma>, e, S)"
       using `map_of \<Gamma> x = Some e` by (auto intro!: prognosis_reorder)
-    also have "\<dots> \<sqsubseteq> record_call x \<cdot> (prognosis ae a (\<Gamma>, Var x, S))"
+    also have "\<dots> \<sqsubseteq> record_call x \<cdot> (prognosis ae as a (\<Gamma>, Var x, S))"
        using `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u` `isVal e`  by (rule prognosis_Var_lam)
-    also have "\<dots> \<sqsubseteq> prognosis ae a (\<Gamma>, Var x, S)" by (rule record_call_below_arg)
-    finally have *: "prognosis ae u ((x, e) # delete x \<Gamma>, e, S) \<sqsubseteq> prognosis ae a (\<Gamma>, Var x, S)" by this simp_all
+    also have "\<dots> \<sqsubseteq> prognosis ae as a (\<Gamma>, Var x, S)" by (rule record_call_below_arg)
+    finally have *: "prognosis ae as u ((x, e) # delete x \<Gamma>, e, S) \<sqsubseteq> prognosis ae as a (\<Gamma>, Var x, S)" by this simp_all
   
     have "consistent (ae, ce, u, as) ((x, e) # delete x \<Gamma>, e, S)"
       using lamvar `(ABinds (delete x \<Gamma>)\<cdot>ae \<squnion> Aexp e\<cdot>u) f|\` edom ce \<sqsubseteq> ae`   `ae x = up\<cdot>u` edom_mono[OF *]
       by (auto simp add: join_below_iff env_restr_join thunks_Cons restr_delete_twist split:if_splits intro: below_trans[OF _ `a \<sqsubseteq> u`] below_trans[OF *])
     moreover
   
-    have "Astack (restr_stack (edom ce) S) \<sqsubseteq> u" using lamvar below_trans[OF _ `a \<sqsubseteq> u`] by auto
+    have "Astack (transform_alts as (restr_stack (edom ce) S)) \<sqsubseteq> u" using lamvar below_trans[OF _ `a \<sqsubseteq> u`] by auto
   
     {
     from `isVal e`
@@ -298,13 +306,13 @@ begin
       by (simp add: map_of_map_transform)
     ultimately
     have "conf_transform (ae, ce, a, as) (\<Gamma>, Var x, S) \<Rightarrow>\<^sup>*
-          ((x, Aeta_expand u (transform u e)) # delete x (restrictA (edom ce) (map_transform Aeta_expand ae (map_transform transform ae \<Gamma>))), Aeta_expand u  (transform u e), restr_stack (edom ce) S)"
+          ((x, Aeta_expand u (transform u e)) # delete x (restrictA (edom ce) (map_transform Aeta_expand ae (map_transform transform ae \<Gamma>))), Aeta_expand u  (transform u e), transform_alts as (restr_stack (edom ce) S))"
        by (auto intro: lambda_var simp add: map_transform_delete simp del: restr_delete)
-    also have "\<dots> = (restrictA (edom ce) ((map_transform Aeta_expand ae (map_transform transform ae ((x,e) # delete x \<Gamma>)))), Aeta_expand u  (transform u e), restr_stack (edom ce) S)"
+    also have "\<dots> = (restrictA (edom ce) ((map_transform Aeta_expand ae (map_transform transform ae ((x,e) # delete x \<Gamma>)))), Aeta_expand u  (transform u e), transform_alts as (restr_stack (edom ce) S))"
       using `ae x = up \<cdot> u` `ce x = up\<cdot>c` `isVal (transform u e)`
       by (simp add: map_transform_Cons map_transform_delete restr_delete_twist del: restr_delete)
     also(subst[rotated]) have "\<dots> \<Rightarrow>\<^sup>* conf_transform (ae, ce, u, as) ((x, e) # delete x \<Gamma>, e, S)"
-      by simp (rule Aeta_expand_correct[OF `Astack (restr_stack (edom ce) S) \<sqsubseteq> u`])
+      by simp (rule Aeta_expand_correct[OF `Astack _ \<sqsubseteq> u`])
     finally(rtranclp_trans)
     have "conf_transform (ae, ce, a, as) (\<Gamma>, Var x, S) \<Rightarrow>\<^sup>* conf_transform (ae, ce, u, as) ((x, e) # delete x \<Gamma>, e, S)".
     }
@@ -323,7 +331,7 @@ begin
       hence "a = 0" by auto
   
       from `isVal e` `x \<notin> domA \<Gamma>`
-      have *: "prognosis ae 0 ((x, e) # \<Gamma>, e, S) \<sqsubseteq> prognosis ae 0 (\<Gamma>, e, Upd x # S)" by (rule prognosis_Var2)
+      have *: "prognosis ae as 0 ((x, e) # \<Gamma>, e, S) \<sqsubseteq> prognosis ae as 0 (\<Gamma>, e, Upd x # S)" by (rule prognosis_Var2)
 
       have "consistent (ae, ce, 0, as) ((x, e) # \<Gamma>, e, S)"
         using var\<^sub>2
@@ -341,15 +349,15 @@ begin
       hence [simp]: "ae x = \<bottom>" by (auto simp add: edom_def)
 
       
-      have "prognosis ae a ((x, e) # \<Gamma>, e, S) \<sqsubseteq> prognosis ae a ((x, e) # \<Gamma>, e, Upd x # S)" by (rule prognosis_upd)
+      have "prognosis ae as a ((x, e) # \<Gamma>, e, S) \<sqsubseteq> prognosis ae as a ((x, e) # \<Gamma>, e, Upd x # S)" by (rule prognosis_upd)
       also
        
       from `ae x = \<bottom>`
-      have "prognosis ae a ((x, e) # \<Gamma>, e, Upd x # S) \<sqsubseteq> prognosis ae a (delete x ((x,e) # \<Gamma>), e, Upd x # S)"
+      have "prognosis ae as a ((x, e) # \<Gamma>, e, Upd x # S) \<sqsubseteq> prognosis ae as a (delete x ((x,e) # \<Gamma>), e, Upd x # S)"
         by (rule prognosis_not_called)
       also have  "delete x ((x,e)#\<Gamma>) = \<Gamma>" using `x \<notin> domA \<Gamma>` by simp
       finally
-      have *: "prognosis ae a ((x, e) # \<Gamma>, e, S) \<sqsubseteq> prognosis ae a (\<Gamma>, e, Upd x # S)" by this simp
+      have *: "prognosis ae as a ((x, e) # \<Gamma>, e, S) \<sqsubseteq> prognosis ae as a (\<Gamma>, e, Upd x # S)" by this simp
 
       have "consistent (ae, ce, a, as) ((x, e) # \<Gamma>, e, S)" using var\<^sub>2
         by (auto simp add: join_below_iff env_restr_join `ce x = \<bottom>` thunks_Cons split:if_splits elim:below_trans[OF *])
@@ -436,9 +444,9 @@ begin
     moreover
     {
     from let\<^sub>1(1,2) `edom ae \<subseteq> domA \<Gamma> \<union> upds S`
-    have "prognosis (?ae \<squnion> ae) a (\<Delta> @ \<Gamma>, e, S) \<sqsubseteq> ?ce \<squnion> prognosis ae a (\<Gamma>, Let \<Delta> e, S)" by (rule prognosis_Let)
-    also have "prognosis ae a (\<Gamma>, Let \<Delta> e, S) \<sqsubseteq> ce" using let\<^sub>1 by auto
-    finally have "prognosis (?ae \<squnion> ae) a (\<Delta> @ \<Gamma>, e, S) \<sqsubseteq> ?ce \<squnion> ce" by this simp
+    have "prognosis (?ae \<squnion> ae) as a (\<Delta> @ \<Gamma>, e, S) \<sqsubseteq> ?ce \<squnion> prognosis ae as a (\<Gamma>, Let \<Delta> e, S)" by (rule prognosis_Let)
+    also have "prognosis ae as a (\<Gamma>, Let \<Delta> e, S) \<sqsubseteq> ce" using let\<^sub>1 by auto
+    finally have "prognosis (?ae \<squnion> ae) as a (\<Delta> @ \<Gamma>, e, S) \<sqsubseteq> ?ce \<squnion> ce" by this simp
     }
     moreover
     have "heap_upds_ok (\<Gamma>, S)" using let\<^sub>1 by auto
@@ -508,16 +516,16 @@ begin
     hence "(Aexp scrut\<cdot>0 \<squnion> Aexp e1\<cdot>a \<squnion> Aexp e2\<cdot>a) f|` edom ce \<sqsubseteq> ae"
       by (rule below_trans[OF env_restr_mono[OF Aexp_IfThenElse]])
     moreover
-    have "prognosis ae a (\<Gamma>, scrut ? e1 : e2, S) \<sqsubseteq> ce" using if\<^sub>1 by auto
-    hence "prognosis ae 0 (\<Gamma>, scrut, Alts e1 e2 # S) \<sqsubseteq> ce"
+    have "prognosis ae as a (\<Gamma>, scrut ? e1 : e2, S) \<sqsubseteq> ce" using if\<^sub>1 by auto
+    hence "prognosis ae (a#as) 0 (\<Gamma>, scrut, Alts e1 e2 # S) \<sqsubseteq> ce"
       by (rule below_trans[OF prognosis_IfThenElse])
     ultimately
     have "consistent (ae, ce, 0, a#as) (\<Gamma>, scrut, Alts e1 e2 # S)"
       using if\<^sub>1  by (auto simp add: env_restr_join join_below_iff)
     }
     moreover
-    have "conf_transform (ae, ce, a, as) (\<Gamma>, scrut ? e1 : e2, S) \<Rightarrow>\<^sub>G\<^sup>* conf_transform (ae, ce, 0, a#as) (\<Gamma>, scrut, Alts e1 e2 # S)"
-      sorry
+    have "conf_transform (ae, ce, a, as) (\<Gamma>, scrut ? e1 : e2, S) \<Rightarrow>\<^sub>G conf_transform (ae, ce, 0, a#as) (\<Gamma>, scrut, Alts e1 e2 # S)"
+      by (auto intro: normal step.intros)
     ultimately
     show ?case by (blast del: consistentI consistentE)
   next
@@ -526,14 +534,15 @@ begin
     from if\<^sub>2 have [simp]: "a = 0" by auto
 
     {
-    have "prognosis ae 0 (\<Gamma>, Bool b, Alts e1 e2 # S) \<sqsubseteq> ce" using if\<^sub>2 by auto
-    hence "prognosis ae a' (\<Gamma>, if b then e1 else e2, S) \<sqsubseteq> ce" by (rule below_trans[OF prognosis_Alts])
+    have "prognosis ae (a'#as') 0 (\<Gamma>, Bool b, Alts e1 e2 # S) \<sqsubseteq> ce" using if\<^sub>2 by auto
+    hence "prognosis ae as' a' (\<Gamma>, if b then e1 else e2, S) \<sqsubseteq> ce" by (rule below_trans[OF prognosis_Alts])
     then
     have "consistent (ae, ce, a', as') (\<Gamma>, if b then e1 else e2, S)" 
       using if\<^sub>2 by (auto simp add: env_restr_join join_below_iff)
     }
     moreover
-    have "conf_transform (ae, ce, a, as) (\<Gamma>, Bool b, Alts e1 e2 # S) \<Rightarrow>\<^sub>G\<^sup>* conf_transform (ae, ce, a', as') (\<Gamma>, if b then e1 else e2, S)" sorry
+    have "conf_transform (ae, ce, a, as) (\<Gamma>, Bool b, Alts e1 e2 # S) \<Rightarrow>\<^sub>G conf_transform (ae, ce, a', as') (\<Gamma>, if b then e1 else e2, S)"
+      by (auto intro:normal  step.if\<^sub>2[where b = True, simplified] step.if\<^sub>2[where b = False, simplified])
     ultimately
     show ?case by (blast del: consistentI consistentE)
   next

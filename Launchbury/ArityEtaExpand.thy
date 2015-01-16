@@ -1,5 +1,5 @@
 theory ArityEtaExpand
-imports ArityAnalysisSig AbstractTransform  ArityEtaExpansionSestoft
+imports ArityAnalysisSig AbstractTransform ArityEtaExpansionSestoft
 begin
 
 context ArityAnalysisHeapEqvt
@@ -10,10 +10,11 @@ begin
     "\<lambda> \<Delta> e a . (a, Aheap \<Delta> e\<cdot>a)"
     "fst"
     "snd"
+    "\<lambda> _. 0"
     "Aeta_expand"
     "snd"
   apply default
-  apply (((rule eq_reflection)?, perm_simp, rule)+)[7]
+  apply (((rule eq_reflection)?, perm_simp, rule)+)
   done
 end
 

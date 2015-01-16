@@ -143,6 +143,29 @@ next
   thus "single v \<sqsubseteq> Fexp (Var v)\<cdot>a"
     unfolding Fexp_simp by (auto intro: single_below)
 next
+  fix scrut e1 a e2
+  have "ccFTree (edom (Aexp e1\<cdot>a)) (ccExp e1\<cdot>a) \<oplus>\<oplus> ccFTree (edom (Aexp e2\<cdot>a)) (ccExp e2\<cdot>a)
+    \<sqsubseteq> ccFTree (edom (Aexp e1\<cdot>a) \<union> edom (Aexp e2\<cdot>a)) (ccExp e1\<cdot>a \<squnion> ccExp e2\<cdot>a)"
+      by (rule either_ccFTree)
+  note both_mono2'[OF this]
+  also
+  have "ccFTree (edom (Aexp scrut\<cdot>0)) (ccExp scrut\<cdot>0) \<otimes>\<otimes> ccFTree (edom (Aexp e1\<cdot>a) \<union> edom (Aexp e2\<cdot>a)) (ccExp e1\<cdot>a \<squnion> ccExp e2\<cdot>a)
+    \<sqsubseteq> ccFTree (edom (Aexp scrut\<cdot>0) \<union> (edom (Aexp e1\<cdot>a) \<union> edom (Aexp e2\<cdot>a))) (ccExp scrut\<cdot>0 \<squnion> (ccExp e1\<cdot>a \<squnion> ccExp e2\<cdot>a) \<squnion> ccProd (edom (Aexp scrut\<cdot>0)) (edom (Aexp e1\<cdot>a) \<union> edom (Aexp e2\<cdot>a)))"
+    by (rule interleave_ccFTree)
+  also
+  have "edom (Aexp scrut\<cdot>0) \<union> (edom (Aexp e1\<cdot>a) \<union> edom (Aexp e2\<cdot>a)) = edom (Aexp scrut\<cdot>0 \<squnion> Aexp e1\<cdot>a \<squnion> Aexp e2\<cdot>a)" by auto
+  also
+  have "Aexp scrut\<cdot>0 \<squnion> Aexp e1\<cdot>a \<squnion> Aexp e2\<cdot>a \<sqsubseteq> Aexp (scrut ? e1 : e2)\<cdot>a"
+    by (rule Aexp_IfThenElse)
+  also
+  have "ccExp scrut\<cdot>0 \<squnion> (ccExp e1\<cdot>a \<squnion> ccExp e2\<cdot>a) \<squnion> ccProd (edom (Aexp scrut\<cdot>0)) (edom (Aexp e1\<cdot>a) \<union> edom (Aexp e2\<cdot>a)) \<sqsubseteq>
+        ccExp (scrut ? e1 : e2)\<cdot>a"
+    by (rule ccExp_IfThenElse)
+  finally
+  show "Fexp scrut\<cdot>0 \<otimes>\<otimes> (Fexp e1\<cdot>a \<oplus>\<oplus> Fexp e2\<cdot>a) \<sqsubseteq> Fexp (scrut ? e1 : e2)\<cdot>a"
+    unfolding Fexp_simp
+    by this simp_all
+next
   fix e
   assume "isVal e"
   hence [simp]: "ccExp e\<cdot>0 = ccSquare (fv e)" by (rule ccExp_pap)

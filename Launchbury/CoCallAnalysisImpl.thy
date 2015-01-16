@@ -1,5 +1,5 @@
 theory CoCallAnalysisImpl
-imports "Arity-Nominal" "Nominal-HOLCF" "Env-Nominal" "Env-HOLCF" CoCallFix
+imports "Arity-Nominal" "Nominal-HOLCF" "Env-Nominal"  "Env-Set-Cpo" "Env-HOLCF" CoCallFix "/home/jojo/uni/info/isa-where-to-move/Where_To_Move"
 begin
 
 fun combined_restrict :: "var set \<Rightarrow> (AEnv \<times> CoCalls) \<Rightarrow> (AEnv \<times> CoCalls)"
@@ -75,7 +75,8 @@ where
 | "cCCexp (App e x) =    (\<Lambda> n . (fst (cCCexp e\<cdot>(inc\<cdot>n)) \<squnion> (esing x \<cdot> (up\<cdot>0)),          snd (cCCexp e\<cdot>(inc\<cdot>n)) \<squnion> ccProd {x} (insert x (fv e))))"
 | "cCCexp (Let \<Gamma> e) =    (\<Lambda> n . combined_restrict (fv (Let \<Gamma> e)) (CoCallArityAnalysis.cccFix_choose cCCexp \<Gamma> \<cdot> (cCCexp e\<cdot>n)))"
 | "cCCexp (Bool b) =     \<bottom>"
-| "cCCexp (scrut ? e1 : e2) = \<bottom>"
+| "cCCexp (scrut ? e1 : e2) = (\<Lambda> n. (fst (cCCexp scrut\<cdot>0) \<squnion> fst (cCCexp e1\<cdot>n) \<squnion> fst (cCCexp e2\<cdot>n),
+     snd (cCCexp scrut\<cdot>0) \<squnion> (snd (cCCexp e1\<cdot>n) \<squnion> snd (cCCexp e2\<cdot>n)) \<squnion> ccProd (edom (fst (cCCexp scrut\<cdot>0))) (edom (fst (cCCexp e1\<cdot>n)) \<union> edom (fst (cCCexp e2\<cdot>n)))))"
 proof-
 case goal1
     show ?case
@@ -146,7 +147,8 @@ lemma cCCexp_eq[simp]:
   "cCCexp (App e x)\<cdot>n =    (fst (cCCexp e\<cdot>(inc\<cdot>n)) \<squnion> (esing x \<cdot> (up\<cdot>0)),          snd (cCCexp e\<cdot>(inc\<cdot>n)) \<squnion> ccProd {x} (insert x (fv e)))"
   "cCCexp (Let \<Gamma> e)\<cdot>n =    combined_restrict (fv (Let \<Gamma> e)) (CoCallArityAnalysis.cccFix_choose cCCexp \<Gamma> \<cdot> (cCCexp e\<cdot>n))"
   "cCCexp (Bool b)\<cdot>n = \<bottom>"
-  "cCCexp (scrut ? e1 : e2)\<cdot>n = \<bottom>"
+  "cCCexp (scrut ? e1 : e2)\<cdot>n = (fst (cCCexp scrut\<cdot>0) \<squnion> fst (cCCexp e1\<cdot>n) \<squnion> fst (cCCexp e2\<cdot>n),
+        snd (cCCexp scrut\<cdot>0) \<squnion> (snd (cCCexp e1\<cdot>n) \<squnion> snd (cCCexp e2\<cdot>n)) \<squnion> ccProd (edom (fst (cCCexp scrut\<cdot>0))) (edom (fst (cCCexp e1\<cdot>n)) \<union> edom (fst (cCCexp e2\<cdot>n))))"
 by (simp_all)
 declare cCCexp.simps[simp del]
 
@@ -158,7 +160,7 @@ lemma Aexp_simps[simp]:
   "\<not> nonrec \<Gamma> \<Longrightarrow> Aexp (Let \<Gamma> e)\<cdot>n = (Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> (\<lambda>_.up\<cdot>0) f|` thunks \<Gamma>)) f|` (fv (Let \<Gamma> e))"
   "atom x \<sharp> e \<Longrightarrow> Aexp (let x be e in exp)\<cdot>n = (fup\<cdot>(Aexp e)\<cdot>(ABind_nonrec x e \<cdot> (Aexp exp\<cdot>n, CCexp exp\<cdot>n)) \<squnion> Aexp exp\<cdot>n) f|` (fv (let x be e in exp))"
   "Aexp (Bool b)\<cdot>n = \<bottom>"
-  "Aexp (scrut ? e1 : e2)\<cdot>n = \<bottom>"
+  "Aexp (scrut ? e1 : e2)\<cdot>n = Aexp scrut\<cdot>0 \<squnion> Aexp e1\<cdot>n \<squnion> Aexp e2\<cdot>n"
  by (simp add: cccFix_eq Aexp_eq fup_Aexp_eq CCexp_eq fup_CCexp_eq)+
 
 
@@ -170,13 +172,15 @@ lemma CCexp_simps[simp]:
   "atom x \<sharp> e \<Longrightarrow> CCexp (let x be e in exp)\<cdot>n =
     cc_restr (fv (let x be e in exp)) (ccBind x e \<cdot>(Aheap_nonrec x e\<cdot>(Aexp exp\<cdot>n, CCexp exp\<cdot>n), CCexp exp\<cdot>n) \<squnion> ccProd (fv e) (ccNeighbors x (CCexp exp\<cdot>n) - (if isVal e then {} else {x})) \<squnion> CCexp exp\<cdot>n)"
   "CCexp (Bool b)\<cdot>n = \<bottom>"
-  "CCexp (scrut ? e1 : e2)\<cdot>n = \<bottom>"
- by (simp add: cccFix_eq Aexp_eq fup_Aexp_eq CCexp_eq fup_CCexp_eq predCC_eq)+
+  "CCexp (scrut ? e1 : e2)\<cdot>n = CCexp scrut\<cdot>0 \<squnion> (CCexp e1\<cdot>n \<squnion> CCexp e2\<cdot>n) \<squnion> ccProd (edom (Aexp scrut\<cdot>0)) (edom (Aexp e1\<cdot>n) \<union> edom (Aexp e2\<cdot>n))"
+by (simp add: cccFix_eq Aexp_eq fup_Aexp_eq CCexp_eq fup_CCexp_eq predCC_eq)+
 
-lemma ccField_CCexp:
-  "ccField (CCexp e\<cdot>n) \<subseteq> fv e"
-by (induction e arbitrary: n rule: exp_induct_rec)
-   (auto simp add: ccField_ccProd predCC_eq dest: set_mp[OF ccField_cc_restr])
+lemma 
+  shows ccField_CCexp: "ccField (CCexp e\<cdot>n) \<subseteq> fv e" and Aexp_edom': "edom (Aexp e\<cdot>n) \<subseteq> fv e"
+  apply (induction e arbitrary: n rule: exp_induct_rec)
+  apply (auto simp add: predCC_eq dest!: set_mp[OF ccField_cc_restr] set_mp[OF ccField_ccProd_subset])
+  apply fastforce+
+  done
 
 lemma cc_restr_CCexp[simp]:
   "cc_restr (fv e) (CCexp e\<cdot>a) = CCexp e\<cdot>a"
@@ -189,10 +193,6 @@ by (cases n) (auto dest: set_mp[OF ccField_CCexp])
 lemma cc_restr_fup_ccExp_useless[simp]: "cc_restr (fv e) (fup\<cdot>(CCexp e)\<cdot>n) = fup\<cdot>(CCexp e)\<cdot>n"
   by (rule cc_restr_noop[OF ccField_fup_CCexp])
 
-
-
-lemma Aexp_edom': "edom (Aexp e\<cdot>a) \<subseteq> fv e"
-  by (induction e arbitrary: a rule: exp_induct_rec)(auto)
 
 sublocale EdomArityAnalysis Aexp by default (rule Aexp_edom')
 

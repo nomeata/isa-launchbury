@@ -70,7 +70,7 @@ lemma env_restr_empty_iff[simp]: "m f|` S = \<bottom> \<longleftrightarrow> edom
   apply metis
   apply (fastforce simp add: edom_def env_restr_def lambda_strict[symmetric]  split:if_splits)
   done
-lemmas iffD2[OF env_restr_empty_iff, simp]
+lemmas env_restr_empty = iffD2[OF env_restr_empty_iff, simp]
 
 lemma lookup_env_restr[simp]: "x \<in> S \<Longrightarrow> (m f|` S) x = m x"
   by (fastforce simp add: env_restr_def)

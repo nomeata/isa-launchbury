@@ -58,6 +58,9 @@ next
     apply (simp add: env_restr_join)
     done
   thus ?case using Let(1,2) by (auto simp add: fresh_star_Pair elim:env_restr_eq_subset[rotated])
+next
+  case (IfThenElse \<Gamma> e)
+  then show ?case by (auto simp add: env_restr_join simp del: fun_meet_simp)
 qed auto
 
 interpretation CorrectArityAnalysis Aexp

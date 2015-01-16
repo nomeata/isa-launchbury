@@ -59,18 +59,27 @@ lemma carrier_mono: "t \<sqsubseteq> t' \<Longrightarrow> carrier t \<subseteq> 
 lemma nxt_mono: "t \<sqsubseteq> t' \<Longrightarrow> nxt t x \<sqsubseteq> nxt t' x"
   by transfer auto
 
-lemma both_above_arg1: "t \<sqsubseteq> both t t'"
+lemma either_above_arg1: "t \<sqsubseteq> t \<oplus>\<oplus> t'"
   by transfer fastforce
 
-lemma both_above_arg2: "t' \<sqsubseteq> both t t'"
+lemma either_above_arg2: "t' \<sqsubseteq> t \<oplus>\<oplus> t'"
+  by transfer fastforce
+
+lemma either_belowI: "t \<sqsubseteq> t'' \<Longrightarrow> t' \<sqsubseteq> t'' \<Longrightarrow> t \<oplus>\<oplus> t' \<sqsubseteq> t''"
+  by transfer auto
+
+lemma both_above_arg1: "t \<sqsubseteq> t \<otimes>\<otimes> t'"
+  by transfer fastforce
+
+lemma both_above_arg2: "t' \<sqsubseteq> t \<otimes>\<otimes> t'"
   by transfer fastforce
 
 lemma both_mono1':
-  "t \<sqsubseteq> t' \<Longrightarrow> both t t'' \<sqsubseteq> both t' t''"
+  "t \<sqsubseteq> t' \<Longrightarrow> t \<otimes>\<otimes> t'' \<sqsubseteq> t' \<otimes>\<otimes> t''"
   using  both_mono1[folded below_set_def, unfolded paths_mono_iff].
 
 lemma both_mono2':
-  "t \<sqsubseteq> t' \<Longrightarrow> both t'' t \<sqsubseteq> both t'' t'"
+  "t \<sqsubseteq> t' \<Longrightarrow> t'' \<otimes>\<otimes> t \<sqsubseteq> t'' \<otimes>\<otimes> t'"
   using  both_mono2[folded below_set_def, unfolded paths_mono_iff].
 
 lemma substitute_mono1': "f \<sqsubseteq> f'\<Longrightarrow> substitute f T t \<sqsubseteq> substitute f' T t"

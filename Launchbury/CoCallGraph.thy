@@ -1,5 +1,5 @@
 theory CoCallGraph
-imports Main Vars "HOLCF-Join-Classes" "Set-Cpo"
+imports Main Vars "HOLCF-Join-Classes" "HOLCF-Utils" "Set-Cpo"
 begin
 
 default_sort type
@@ -289,21 +289,34 @@ lift_definition ccNeighbors :: "var \<Rightarrow> CoCalls \<Rightarrow> var set"
 
 lemma ccNeighbors_bot[simp]: "ccNeighbors x \<bottom> = {}" by transfer auto
 
-lemma cont_ccProd_ccNeighbors[THEN cont_compose, cont2cont, simp]:
-  "cont (\<lambda>y. ccProd S (ccNeighbors x y))"
+lemma cont_ccProd1:
+  "cont (\<lambda> S. ccProd S S')"
   apply (rule contI)
   apply (thin_tac "chain ?x")
+  apply (subst lub_set)
   apply transfer
   apply auto
   done
 
-lemma cont_ccProd_ccNeighbors_Diff[THEN cont_compose, cont2cont, simp]:
-  "cont (\<lambda>y. ccProd S (ccNeighbors x y - S''))"
+lemma cont_ccProd2:
+  "cont (\<lambda> S'. ccProd S S')"
   apply (rule contI)
   apply (thin_tac "chain ?x")
+  apply (subst lub_set)
   apply transfer
   apply auto
   done
+
+lemmas cont_compose2[OF cont_ccProd1 cont_ccProd2, simp, cont2cont]
+
+lemma cont_ccNeighbors[THEN cont_compose, cont2cont, simp]:
+  "cont (\<lambda>y. ccNeighbors x y)"
+  apply (rule set_contI)
+  apply (thin_tac "chain ?x")
+  apply transfer
+  apply auto
+  done 
+
 
 lemma ccNeighbors_join[simp]: "ccNeighbors x (G \<squnion> G') = ccNeighbors x G \<union> ccNeighbors x G'"
   by transfer auto
@@ -432,6 +445,9 @@ lemma ccField_ccProd:
   "ccField (ccProd S S') = (if S = {} then {} else if S' = {} then {} else  S \<union> S')"
   by transfer (auto simp add: Field_def)
 
+lemma ccField_ccProd_subset:
+  "ccField (ccProd S S') \<subseteq>  S \<union> S'"
+  by (simp add: ccField_ccProd)
 
 lemma cont_ccField[THEN cont_compose, simp, cont2cont]:
   "cont ccField"
