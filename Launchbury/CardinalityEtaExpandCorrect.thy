@@ -60,7 +60,6 @@ begin
   inductive consistent :: "tstate \<Rightarrow> conf \<Rightarrow> bool" where
     consistentI[intro!]: 
     "a_consistent (ae, a, as) (restr_conf (edom ce) (\<Gamma>, e, S))
-    \<Longrightarrow> heap_upds_ok (\<Gamma>, S)
     \<Longrightarrow> edom ae = edom ce
     \<Longrightarrow> prognosis ae as a (\<Gamma>, e, S) \<sqsubseteq> ce
     \<Longrightarrow> (\<And> x. x \<in> thunks \<Gamma> \<Longrightarrow> many \<sqsubseteq> ce x \<Longrightarrow> ae x = up\<cdot>0)
@@ -108,11 +107,12 @@ begin
   case (thunk \<Gamma> x e S)
     hence "x \<in> thunks \<Gamma>" by auto
     hence [simp]: "x \<in> domA \<Gamma>" by (rule set_mp[OF thunks_domA])
-    hence "x \<notin> upds S" using thunk by (auto elim!: heap_upds_okE)
 
     from thunk have "prognosis ae as a (\<Gamma>, Var x, S) \<sqsubseteq> ce" by auto
     from below_trans[OF prognosis_called fun_belowD[OF this] ]
     have [simp]: "x \<in> edom ce" by (auto simp add: edom_def)
+
+    have "x \<notin> upds S" using thunk by (auto dest!: a_consistent_heap_upds_okD  heap_upds_okE)
 
     have "x \<in> edom ae" using thunk by auto
     then obtain u where "ae x = up\<cdot>u" by (cases "ae x") (auto simp add: edom_def)
@@ -379,10 +379,6 @@ begin
     also have "prognosis ae as a (\<Gamma>, Let \<Delta> e, S) \<sqsubseteq> ce" using let\<^sub>1 by auto
     finally have "prognosis (?ae \<squnion> ae) as a (\<Delta> @ \<Gamma>, e, S) \<sqsubseteq> ?ce \<squnion> ce" by this simp
     }
-    moreover
-    have "heap_upds_ok (\<Gamma>, S)" using let\<^sub>1 by auto
-    with fresh_distinct[OF let\<^sub>1(1)]  `domA \<Delta> \<inter> upds S = {}`
-    have "heap_upds_ok (\<Delta> @ \<Gamma>, S)" by (rule heap_upds_ok_append)
     moreover
     
     have "a_consistent (ae, a, as) (restrictA (edom ce) \<Gamma>, Let \<Delta> e, restr_stack (edom ce) S)"

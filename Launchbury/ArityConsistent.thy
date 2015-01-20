@@ -49,6 +49,10 @@ lemma a_consistent_stackD:
   "a_consistent (ae, a, as) (\<Gamma>, e, S) \<Longrightarrow> Astack S \<sqsubseteq> a"
   by (rule a_consistentE)
 
+lemma a_consistent_heap_upds_okD:
+  "a_consistent (ae, a, as) (\<Gamma>, e, S) \<Longrightarrow> heap_upds_ok (\<Gamma>, S)"
+  by (rule a_consistentE)
+
 lemma a_consistent_app\<^sub>1:
   "a_consistent (ae, a, as) (\<Gamma>, App e x, S) \<Longrightarrow> a_consistent (ae, inc\<cdot>a, as) (\<Gamma>, e, Arg x # S)"
   by (auto simp add: join_below_iff env_restr_join a_consistent.simps

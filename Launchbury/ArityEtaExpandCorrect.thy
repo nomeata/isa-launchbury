@@ -54,7 +54,6 @@ begin
   inductive consistent :: "astate \<Rightarrow> conf \<Rightarrow> bool" where
     consistentI[intro!]: 
     "a_consistent (ae, a, as) (\<Gamma>, e, S)
-    \<Longrightarrow> heap_upds_ok (\<Gamma>, S)
     \<Longrightarrow> (\<And> x. x \<in> thunks \<Gamma> \<Longrightarrow>  ae x = up\<cdot>0)
     \<Longrightarrow> consistent (ae, a, as) (\<Gamma>, e, S)"  
   inductive_cases consistentE[elim!]: "consistent (ae, a, as) (\<Gamma>, e, S)"
@@ -90,10 +89,10 @@ begin
   case (thunk \<Gamma> x e S)
     hence "x \<in> thunks \<Gamma>" by auto
     hence [simp]: "x \<in> domA \<Gamma>" by (rule set_mp[OF thunks_domA])
-    hence "x \<notin> upds S" using thunk by (auto elim!: heap_upds_okE)
+
+    have "x \<notin> upds S" using thunk by (auto dest!: a_consistent_heap_upds_okD  heap_upds_okE)
     
     have "x \<in> edom ae" using thunk by auto
-  
     have "ae x = up\<cdot>0" using thunk `x \<in> thunks \<Gamma>` by (auto)
 
     have "a_consistent (ae, 0, as) (delete x \<Gamma>, e, Upd x # S)" using thunk `ae x = up\<cdot>0`
@@ -194,10 +193,6 @@ begin
       assume "x \<in> thunks \<Delta>" 
       hence "(?ae \<squnion> ae) x = up\<cdot>0" by (auto simp add: Aheap_heap3)
     }
-    moreover
-    have "heap_upds_ok (\<Gamma>, S)" using let\<^sub>1 by auto
-    with fresh_distinct[OF let\<^sub>1(1)]  `domA \<Delta> \<inter> upds S = {}`
-    have "heap_upds_ok (\<Delta> @ \<Gamma>, S)" by (rule heap_upds_ok_append)
     moreover
     
     have "a_consistent (ae, a, as) (\<Gamma>, Let \<Delta> e, S)"
