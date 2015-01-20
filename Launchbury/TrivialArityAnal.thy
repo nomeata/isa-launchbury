@@ -47,6 +47,10 @@ next
   assume "x \<notin> S" and "y \<notin> S"
   thus "Trivial_Aexp e[x::=y]\<cdot>a f|` S = Trivial_Aexp e\<cdot>a f|` S"
     by (auto simp add: Trivial_Aexp_simp fv_subst_eq intro!: arg_cong[where f = "\<lambda> S. env_restr S e" for e])
+next
+  fix scrut e1 a e2
+  show "Trivial_Aexp scrut\<cdot>0 \<squnion> Trivial_Aexp e1\<cdot>a \<squnion> Trivial_Aexp e2\<cdot>a \<sqsubseteq> Trivial_Aexp (scrut ? e1 : e2)\<cdot>a"
+    by (auto intro: env_restr_mono2 simp add: Trivial_Aexp_simp join_below_iff )
 qed
 
 definition Trivial_Aheap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> AEnv" where

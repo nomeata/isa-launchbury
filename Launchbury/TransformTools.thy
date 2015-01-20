@@ -50,7 +50,7 @@ lemma delete_map_transform_env_delete:
   "delete x (map_transform t (env_delete x ae) \<Gamma>) = delete x (map_transform t ae \<Gamma>)"
   unfolding map_transform_def by (induction \<Gamma>) auto
 
-lemma map_transform_Nil:
+lemma map_transform_Nil[simp]:
   "map_transform t ae [] = []"
   unfolding map_transform_def by simp
 

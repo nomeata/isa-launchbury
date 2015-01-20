@@ -118,6 +118,13 @@ next
     by auto
 qed
 
+lemma ABinds_restr_subset: "S \<subseteq> S' \<Longrightarrow> ABinds (restrictA S \<Gamma>)\<cdot>ae \<sqsubseteq> ABinds (restrictA S' \<Gamma>)\<cdot>ae"
+  by (induct \<Gamma> rule: ABinds.induct)
+     (auto simp add: join_below_iff  restr_delete_twist intro: below_trans[OF _ join_above2])
+
+lemma ABinds_restrict_edom: "ABinds (restrictA (edom ae) \<Gamma>)\<cdot>ae = ABinds \<Gamma>\<cdot>ae"
+  by (induct \<Gamma> rule: ABinds.induct) (auto simp add: edom_def restr_delete_twist)
+  
 lemma ABinds_restrict_below: "ABinds (restrictA S \<Gamma>)\<cdot>ae \<sqsubseteq> ABinds \<Gamma>\<cdot>ae"
   by (induct \<Gamma> rule: ABinds.induct)
      (auto simp add: join_below_iff  restr_delete_twist intro: below_trans[OF _ join_above2] simp del: fun_meet_simp join_comm)

@@ -314,8 +314,21 @@ theorem DeadCodeRemovalCorrectSteps:
 using assms
   by (induction rule: rtranclp_induct)(fastforce dest: DeadCodeRemovalCorrectStep)+
 
+
+lemma set_clearjunk: "set (clearjunk \<Gamma>) \<subseteq> set \<Gamma>"
+  by (induction \<Gamma>) (auto simp add: clearjunk_delete dest: set_mp[OF set_delete_subset])
+
+lemma set_map_run: "set (map_ran f \<Gamma>) = (\<lambda> (x,e). (x,f x e)) ` set \<Gamma>"
+  by (induction \<Gamma>) auto
+
+lemma remove_dead_code_bool_free:
+  "bool_free e \<Longrightarrow> bool_free (remove_dead_code e)"
+by (nominal_induct e rule: exp_strong_induct_set)
+   (auto 4 3 simp add: restrict_reachable_def set_map_run dest!: set_mp[OF set_restrictA] set_mp[OF set_clearjunk])
+
 corollary
   assumes "[] : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
+  assumes "bool_free e"
    shows  "\<exists> \<Delta>' z'. [] : remove_dead_code e \<Down>\<^bsub>L\<^esub> \<Delta>' : z'"
 proof-
   let "?S" = "map Dummy L"
@@ -326,13 +339,17 @@ proof-
   have "([], e, ?S) \<Rightarrow>\<^sup>* (\<Delta>, z, ?S)".
   moreover
   have "([], e, ?S) \<triangleright> (rdcH {} [], remove_dead_code e, rdcS ?S)" by (rule dc_rel.intros) auto
-  hence "([], e, ?S) \<triangleright> ([], remove_dead_code e, rdcS  ?S)" by simp
+  hence "([], e, ?S) \<triangleright> ([], remove_dead_code e, rdcS ?S)" by simp
   ultimately
   obtain \<Delta>' z' T' where "(\<Delta>, z, ?S) \<triangleright> (\<Delta>', z', T')" and "([], remove_dead_code e, rdcS  ?S) \<Rightarrow>\<^sup>* (\<Delta>', z', T')"
     by (metis DeadCodeRemovalCorrectSteps)
   hence "([], remove_dead_code e, rdcS ?S) \<Rightarrow>\<^sup>* (\<Delta>', remove_dead_code z, rdcS ?S)" by (auto elim: dc_rel.cases)
   from dummy_stack_balanced[OF * this]
   obtain T where "bal ([], remove_dead_code e, rdcS ?S) T (\<Delta>', remove_dead_code z, rdcS ?S)".
+  moreover
+  have "bool_free_stack ?S" by (induction L) (auto intro: bool_free_stack.intros)
+  with remove_dead_code_bool_free[OF assms(2)]
+  have "bool_free_conf ([], remove_dead_code e, rdcS ?S)" by auto
   moreover
   have "isLam z" using assms(1) by (induction) simp
   hence "isLam (remove_dead_code z)" by (rule isLam_remove_dead_code)

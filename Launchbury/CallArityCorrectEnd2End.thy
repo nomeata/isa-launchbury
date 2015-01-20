@@ -10,8 +10,8 @@ sublocale CallArityEnd2End.
 lemma end2end:
   "c \<Rightarrow>\<^sup>* c' \<Longrightarrow>
   \<not> boring_step c' \<Longrightarrow>
-  consistent (ae, ce, a) c \<Longrightarrow>
-  \<exists>ae' ce' a'. consistent  (ae', ce', a') c' \<and> conf_transform  (ae, ce, a) c \<Rightarrow>\<^sub>G\<^sup>* conf_transform  (ae', ce', a') c'"
+  consistent (ae, ce, a, as) c \<Longrightarrow>
+  \<exists>ae' ce' a' as'. consistent  (ae', ce', a', as') c' \<and> conf_transform  (ae, ce, a, as) c \<Rightarrow>\<^sub>G\<^sup>* conf_transform  (ae', ce', a', as') c'"
   by (rule foo)
 
 lemma end2end_closed:
@@ -24,22 +24,22 @@ proof-
   moreover
   have "\<not> boring_step (\<Gamma>,v,[])" by (simp add: boring_step.simps)
   moreover
-  have "consistent (\<bottom>,\<bottom>,0) ([], e, [])" using closed by (rule closed_consistent)
+  have "consistent (\<bottom>,\<bottom>,0,[]) ([], e, [])" using closed by (rule closed_consistent)
   ultimately
-  obtain ae ce a where
-    *: "consistent  (ae, ce, a) (\<Gamma>,v,[])" and
-    **: "conf_transform  (\<bottom>, \<bottom>, 0) ([],e,[]) \<Rightarrow>\<^sub>G\<^sup>* conf_transform (ae, ce, a) (\<Gamma>,v,[])"
+  obtain ae ce a as where
+    *: "consistent  (ae, ce, a, as) (\<Gamma>,v,[])" and
+    **: "conf_transform  (\<bottom>, \<bottom>, 0, []) ([],e,[]) \<Rightarrow>\<^sub>G\<^sup>* conf_transform (ae, ce, a, as) (\<Gamma>,v,[])"
     by (metis end2end)
 
-  let ?\<Gamma> = "restrictA (edom ce) (map_transform Aeta_expand ae (map_transform transform ae \<Gamma>))"
+  let ?\<Gamma> = "map_transform Aeta_expand ae (map_transform transform ae (restrictA (edom ce) \<Gamma>))"
   let ?v = "transform a v"
 
   show ?thesis
   proof(intro exI conjI)
-    show "length (restrictA (edom ce) (map_transform Aeta_expand ae (map_transform transform ae \<Gamma>))) \<le> length \<Gamma>"
-      by (rule order_trans[OF length_restrictA_le]) simp
+    show "length ?\<Gamma> \<le> length \<Gamma>"
+      by (simp add:  order_trans[OF length_restrictA_le])
 
-    have "conf_transform  (\<bottom>, \<bottom>, 0) ([],e,[]) = ([],transform 0 e,[])" by simp
+    have "conf_transform  (\<bottom>, \<bottom>, 0, []) ([],e,[]) = ([],transform 0 e,[])" by simp
     with **
     show "([], transform 0 e, []) \<Rightarrow>\<^sub>G\<^sup>* (?\<Gamma>, ?v, [])" by simp
 
