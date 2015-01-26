@@ -80,7 +80,53 @@ inductive boring_step where
   "isVal e \<Longrightarrow> boring_step (\<Gamma>, e, Upd x # S)"
 
 
+fun restr_stack :: "var set \<Rightarrow> stack \<Rightarrow> stack"
+  where "restr_stack V [] = []"
+      | "restr_stack V (Alts e1 e2 # S) = Alts e1 e2 # restr_stack V S"
+      | "restr_stack V (Arg x # S) = Arg x # restr_stack V S"
+      | "restr_stack V (Upd x # S) = (if x \<in> V then Upd x # restr_stack V S else restr_stack V S)"
+      | "restr_stack V (Dummy x # S) = Dummy x # restr_stack V S"
+
+lemma restr_stack_cong:
+  "(\<And> x. x \<in> upds S \<Longrightarrow> x \<in> V \<longleftrightarrow> x \<in> V') \<Longrightarrow> restr_stack V S = restr_stack V' S"
+  by (induction V S rule: restr_stack.induct) auto
+
+lemma upds_restr_stack[simp]: "upds (restr_stack V S) = upds S \<inter> V"
+  by (induction V S rule: restr_stack.induct) auto
+
+lemma fresh_star_restict_stack[intro]:
+  "a \<sharp>* S \<Longrightarrow> a \<sharp>* restr_stack V S"
+  by (induction V S rule: restr_stack.induct) (auto simp add: fresh_star_Cons)
+
+lemma restr_stack_restr_stack[simp]:
+  "restr_stack V (restr_stack V' S) = restr_stack (V \<inter> V') S"
+  by (induction V S rule: restr_stack.induct) auto
+
+lemma Upd_eq_restr_stackD:
+  assumes "Upd x # S = restr_stack V S'"
+  shows "x \<in> V"
+  using arg_cong[where f = upds, OF assms]
+  by auto
+lemma Upd_eq_restr_stackD2:
+  assumes "restr_stack V S' = Upd x # S"
+  shows "x \<in> V"
+  using arg_cong[where f = upds, OF assms]
+  by auto
+
+
+lemma restr_stack_noop[simp]:
+  "restr_stack V S = S \<longleftrightarrow> upds S \<subseteq> V"
+  by (induction V S rule: restr_stack.induct)
+     (auto dest: Upd_eq_restr_stackD2)
+  
+
+  
+
+
 fun heap_upds_ok where "heap_upds_ok (\<Gamma>,S) \<longleftrightarrow> domA \<Gamma> \<inter> upds S = {} \<and> distinct (upds_list S)"
+
+abbreviation heap_upds_ok_conf :: "conf \<Rightarrow> bool"
+  where "heap_upds_ok_conf c \<equiv> heap_upds_ok (fst c, snd (snd c))"
 
 lemma heap_upds_okE: "heap_upds_ok (\<Gamma>, S) \<Longrightarrow> x \<in> domA \<Gamma> \<Longrightarrow> x \<notin> upds S"
   by auto
@@ -104,6 +150,10 @@ lemma heap_upds_ok_to_stack:
   "x \<in> domA \<Gamma> \<Longrightarrow> heap_upds_ok (\<Gamma>, S) \<Longrightarrow> heap_upds_ok (delete x \<Gamma>, Upd x #S)"
   by (auto)
 
+lemma heap_upds_ok_to_stack':
+  "map_of \<Gamma> x = Some e \<Longrightarrow> heap_upds_ok (\<Gamma>, S) \<Longrightarrow> heap_upds_ok (delete x \<Gamma>, Upd x #S)"
+  by (metis Domain.DomainI domA_def fst_eq_Domain heap_upds_ok_to_stack map_of_is_SomeD)
+
 lemma heap_upds_ok_delete:
   "heap_upds_ok (\<Gamma>, S) \<Longrightarrow> heap_upds_ok (delete x \<Gamma>, S)"
   by auto
@@ -111,6 +161,11 @@ lemma heap_upds_ok_delete:
 lemma heap_upds_ok_restrictA:
   "heap_upds_ok (\<Gamma>, S) \<Longrightarrow> heap_upds_ok (restrictA V \<Gamma>, S)"
   by auto
+
+lemma heap_upds_ok_restr_stack:
+  "heap_upds_ok (\<Gamma>, S) \<Longrightarrow> heap_upds_ok (\<Gamma>, restr_stack V S)"
+  apply auto
+  by (induction V S rule: restr_stack.induct) auto
 
 lemma heap_upds_ok_to_heap:
   "heap_upds_ok (\<Gamma>, Upd x # S) \<Longrightarrow> heap_upds_ok ((x,e) # \<Gamma>, S)"
@@ -120,26 +175,16 @@ lemma heap_upds_ok_reorder:
   "x \<in> domA \<Gamma> \<Longrightarrow> heap_upds_ok (\<Gamma>, S) \<Longrightarrow> heap_upds_ok ((x,e) # delete x \<Gamma>, S)"
   by (intro heap_upds_ok_to_heap heap_upds_ok_to_stack)
 
-lemmas heap_upds_ok_intros[intro] = heap_upds_ok_to_heap heap_upds_ok_to_stack heap_upds_ok_reorder heap_upds_ok_app1 heap_upds_ok_app2 heap_upds_ok_alts1 heap_upds_ok_alts2 heap_upds_ok_delete heap_upds_ok_restrictA
+lemma heap_upds_ok_upd:
+"heap_upds_ok (\<Gamma>, Upd x # S) \<Longrightarrow> x \<notin> domA \<Gamma> \<and> x \<notin> upds S"
+  by auto
+
+
+lemmas heap_upds_ok_intros[intro] =
+  heap_upds_ok_to_heap heap_upds_ok_to_stack heap_upds_ok_to_stack' heap_upds_ok_reorder
+  heap_upds_ok_app1 heap_upds_ok_app2 heap_upds_ok_alts1 heap_upds_ok_alts2 heap_upds_ok_delete
+  heap_upds_ok_restrictA heap_upds_ok_restr_stack
 lemmas heap_upds_ok.simps[simp del]
-
-fun restr_stack :: "var set \<Rightarrow> stack \<Rightarrow> stack"
-  where "restr_stack V [] = []"
-      | "restr_stack V (Alts e1 e2 # S) = Alts e1 e2 # restr_stack V S"
-      | "restr_stack V (Arg x # S) = Arg x # restr_stack V S"
-      | "restr_stack V (Upd x # S) = (if x \<in> V then Upd x # restr_stack V S else restr_stack V S)"
-      | "restr_stack V (Dummy x # S) = Dummy x # restr_stack V S"
-
-lemma restr_stack_cong:
-  "(\<And> x. x \<in> upds S \<Longrightarrow> x \<in> V \<longleftrightarrow> x \<in> V') \<Longrightarrow> restr_stack V S = restr_stack V' S"
-  by (induction V S rule: restr_stack.induct) auto
-
-lemma upds_restr_stack[simp]: "upds (restr_stack V S) = upds S \<inter> V"
-  by (induction V S rule: restr_stack.induct) auto
-
-lemma fresh_star_restict_stack[intro]:
-  "a \<sharp>* S \<Longrightarrow> a \<sharp>* restr_stack V S"
-  by (induction V S rule: restr_stack.induct) (auto simp add: fresh_star_Cons)
 
 
 end

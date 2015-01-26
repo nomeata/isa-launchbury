@@ -178,7 +178,6 @@ qed
 
 lemma 
   assumes "a_consistent (ae, a, as) (\<Gamma>, e, Upd x # S)"
-  and "x \<in> edom ae"
   shows a_consistent_var\<^sub>2: "a_consistent (ae, a, as) ((x, e) # \<Gamma>, e, S)" 
     and a_consistent_UpdD: "ae x = up\<cdot>0""a = 0"
     using assms

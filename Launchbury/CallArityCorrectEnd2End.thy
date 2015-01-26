@@ -10,41 +10,54 @@ sublocale CallArityEnd2End.
 lemma end2end:
   "c \<Rightarrow>\<^sup>* c' \<Longrightarrow>
   \<not> boring_step c' \<Longrightarrow>
-  consistent (ae, ce, a, as) c \<Longrightarrow>
-  \<exists>ae' ce' a' as'. consistent  (ae', ce', a', as') c' \<and> conf_transform  (ae, ce, a, as) c \<Rightarrow>\<^sub>G\<^sup>* conf_transform  (ae', ce', a', as') c'"
+  consistent (ae, ce, a, as, r) c \<Longrightarrow>
+  \<exists>ae' ce' a' as' r'. consistent  (ae', ce', a', as', r') c' \<and> conf_transform  (ae, ce, a, as, r) c \<Rightarrow>\<^sub>G\<^sup>* conf_transform  (ae', ce', a', as', r') c'"
   by (rule foo)
 
 lemma end2end_closed:
   assumes closed: "fv e = ({} :: var set)"
   assumes "([], e, []) \<Rightarrow>\<^sup>* (\<Gamma>,v,[])"
-  assumes "isLam v"
-  shows "\<exists> \<Gamma>' v'. length \<Gamma>' \<le> length \<Gamma> \<and> isLam v' \<and> ([], transform 0 e, []) \<Rightarrow>\<^sub>G\<^sup>* (\<Gamma>',v',[])"
+  assumes "isVal v"
+  shows "\<exists> \<Gamma>' v' r. card (domA \<Gamma>) = card (domA \<Gamma>') \<and> isVal v' \<and> ([], transform 0 e, []) \<Rightarrow>\<^sup>* (\<Gamma>',v',[])"
 proof-
   note assms(2)
   moreover
   have "\<not> boring_step (\<Gamma>,v,[])" by (simp add: boring_step.simps)
   moreover
-  have "consistent (\<bottom>,\<bottom>,0,[]) ([], e, [])" using closed by (rule closed_consistent)
+  have "consistent (\<bottom>,\<bottom>,0,[],[]) ([], e, [])" using closed by (rule closed_consistent)
   ultimately
-  obtain ae ce a as where
-    *: "consistent  (ae, ce, a, as) (\<Gamma>,v,[])" and
-    **: "conf_transform  (\<bottom>, \<bottom>, 0, []) ([],e,[]) \<Rightarrow>\<^sub>G\<^sup>* conf_transform (ae, ce, a, as) (\<Gamma>,v,[])"
+  obtain ae ce a as r where
+    *: "consistent  (ae, ce, a, as, r) (\<Gamma>,v,[])" and
+    **: "conf_transform  (\<bottom>, \<bottom>, 0, [], []) ([],e,[]) \<Rightarrow>\<^sub>G\<^sup>* conf_transform (ae, ce, a, as, r) (\<Gamma>,v,[])"
     by (metis end2end)
 
-  let ?\<Gamma> = "map_transform Aeta_expand ae (map_transform transform ae (restrictA (edom ce) \<Gamma>))"
+  let ?\<Gamma> = "map_transform Aeta_expand ae (map_transform transform ae (restrictA (-set r) \<Gamma>))"
   let ?v = "transform a v"
 
-  show ?thesis
-  proof(intro exI conjI)
-    show "length ?\<Gamma> \<le> length \<Gamma>"
-      by (simp add:  order_trans[OF length_restrictA_le])
+  from * have "set r \<subseteq> domA \<Gamma>" by auto
 
-    have "conf_transform  (\<bottom>, \<bottom>, 0, []) ([],e,[]) = ([],transform 0 e,[])" by simp
-    with **
-    show "([], transform 0 e, []) \<Rightarrow>\<^sub>G\<^sup>* (?\<Gamma>, ?v, [])" by simp
+  have "conf_transform  (\<bottom>, \<bottom>, 0, [], []) ([],e,[]) = ([], [],transform 0 e,[])" by simp
+  with **
+  have "([], [], transform 0 e, []) \<Rightarrow>\<^sub>G\<^sup>* (r, ?\<Gamma>, ?v, [])" by simp
 
-    show "isLam (transform a v)" using `isLam v` by simp
-  qed
+  have "isVal ?v" using `isVal v` by simp
+
+  note sestoftUnGC'[OF `([], [], transform 0 e, []) \<Rightarrow>\<^sub>G\<^sup>* (r, ?\<Gamma>, ?v, [])` `isVal ?v`]
+  then obtain \<Gamma>' where "([], transform 0 e, []) \<Rightarrow>\<^sup>* (\<Gamma>', ?v, [])" and "?\<Gamma> = restrictA (- set r) \<Gamma>'" and "set r \<subseteq> domA \<Gamma>'" by auto
+
+  have "card (domA \<Gamma>) = card (domA ?\<Gamma> \<union> (set r \<inter> domA \<Gamma>))"
+    by (rule arg_cong[where f = card]) auto
+  also have "\<dots> = card (domA ?\<Gamma>) + card (set r \<inter> domA \<Gamma>)"
+    by (rule card_Un_disjoint) auto
+  also have "set r \<inter> domA \<Gamma> = set r \<inter> domA \<Gamma>'"
+    using `set r \<subseteq> domA \<Gamma>` `set r \<subseteq> domA \<Gamma>'` by auto
+  also note `?\<Gamma> = restrictA (- set r) \<Gamma>'`
+  also have "card (domA (restrictA (- set r) \<Gamma>')) + card (set r \<inter> domA \<Gamma>') = card (domA \<Gamma>')"
+    by (subst card_Un_disjoint[symmetric]) (auto intro: arg_cong[where f = card])
+  finally
+  have "card (domA \<Gamma>) = card (domA \<Gamma>')".
+  with `([], transform 0 e, []) \<Rightarrow>\<^sup>* (\<Gamma>', ?v, [])` `isVal ?v`
+  show ?thesis by blast
 qed
 
 lemma fresh_var_eqE[elim_format]: "fresh_var e = x \<Longrightarrow> x \<notin>  fv e"
