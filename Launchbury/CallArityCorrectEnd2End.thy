@@ -10,6 +10,7 @@ sublocale CallArityEnd2End.
 lemma end2end:
   "c \<Rightarrow>\<^sup>* c' \<Longrightarrow>
   \<not> boring_step c' \<Longrightarrow>
+  heap_upds_ok_conf c \<Longrightarrow>
   consistent (ae, ce, a, as, r) c \<Longrightarrow>
   \<exists>ae' ce' a' as' r'. consistent  (ae', ce', a', as', r') c' \<and> conf_transform  (ae, ce, a, as, r) c \<Rightarrow>\<^sub>G\<^sup>* conf_transform  (ae', ce', a', as', r') c'"
   by (rule foo)
@@ -24,6 +25,8 @@ proof-
   moreover
   have "\<not> boring_step (\<Gamma>,v,[])" by (simp add: boring_step.simps)
   moreover
+  have "heap_upds_ok_conf ([], e, [])" by simp
+  moreover
   have "consistent (\<bottom>,\<bottom>,0,[],[]) ([], e, [])" using closed by (rule closed_consistent)
   ultimately
   obtain ae ce a as r where
@@ -36,27 +39,34 @@ proof-
 
   from * have "set r \<subseteq> domA \<Gamma>" by auto
 
-  have "conf_transform  (\<bottom>, \<bottom>, 0, [], []) ([],e,[]) = ([], [],transform 0 e,[])" by simp
+  have "conf_transform  (\<bottom>, \<bottom>, 0, [], []) ([],e,[]) = ([],transform 0 e,[])" by simp
   with **
-  have "([], [], transform 0 e, []) \<Rightarrow>\<^sub>G\<^sup>* (r, ?\<Gamma>, ?v, [])" by simp
+  have "([], transform 0 e, []) \<Rightarrow>\<^sub>G\<^sup>* (?\<Gamma>, ?v, map Dummy (rev r))" by simp
 
   have "isVal ?v" using `isVal v` by simp
 
-  note sestoftUnGC'[OF `([], [], transform 0 e, []) \<Rightarrow>\<^sub>G\<^sup>* (r, ?\<Gamma>, ?v, [])` `isVal ?v`]
-  then obtain \<Gamma>' where "([], transform 0 e, []) \<Rightarrow>\<^sup>* (\<Gamma>', ?v, [])" and "?\<Gamma> = restrictA (- set r) \<Gamma>'" and "set r \<subseteq> domA \<Gamma>'" by auto
+  have "fv (transform 0 e) = ({} :: var set)" using closed
+    by (auto dest: set_mp[OF fv_transform])
+
+  note sestoftUnGC'[OF `([], transform 0 e, []) \<Rightarrow>\<^sub>G\<^sup>* (?\<Gamma>, ?v, map Dummy (rev r))` `isVal ?v` `fv (transform 0 e) = {}`]
+  then obtain \<Gamma>'
+    where "([], transform 0 e, []) \<Rightarrow>\<^sup>* (\<Gamma>', ?v, [])"
+    and "?\<Gamma> = restrictA (- set r) \<Gamma>'"
+    and "set r \<subseteq> domA \<Gamma>'"
+    by auto
 
   have "card (domA \<Gamma>) = card (domA ?\<Gamma> \<union> (set r \<inter> domA \<Gamma>))"
     by (rule arg_cong[where f = card]) auto
   also have "\<dots> = card (domA ?\<Gamma>) + card (set r \<inter> domA \<Gamma>)"
     by (rule card_Un_disjoint) auto
-  also have "set r \<inter> domA \<Gamma> = set r \<inter> domA \<Gamma>'"
-    using `set r \<subseteq> domA \<Gamma>` `set r \<subseteq> domA \<Gamma>'` by auto
   also note `?\<Gamma> = restrictA (- set r) \<Gamma>'`
+  also have "set r \<inter> domA \<Gamma> = set r \<inter> domA \<Gamma>'"
+    using `set r \<subseteq> domA \<Gamma>`  `set r \<subseteq> domA \<Gamma>'` by auto
   also have "card (domA (restrictA (- set r) \<Gamma>')) + card (set r \<inter> domA \<Gamma>') = card (domA \<Gamma>')"
     by (subst card_Un_disjoint[symmetric]) (auto intro: arg_cong[where f = card])
   finally
   have "card (domA \<Gamma>) = card (domA \<Gamma>')".
-  with `([], transform 0 e, []) \<Rightarrow>\<^sup>* (\<Gamma>', ?v, [])` `isVal ?v`
+  with `([], transform 0 e, []) \<Rightarrow>\<^sup>* (\<Gamma>', ?v, [])`  `isVal ?v`
   show ?thesis by blast
 qed
 
@@ -109,22 +119,20 @@ proof-
   have [simp]: "Aheap [(x, e)] (Var x)\<cdot>1 = esing x\<cdot>(up\<cdot>1)"
     by (simp add: env_restr_join disj)
 
-  have 1: "1 = inc\<cdot>0" apply (simp add: inc_def) apply transfer apply simp done
-  
   have [simp]: "Aeta_expand 1 (App (Var f) g) = (Lam [z]. App (App (Var f) g) z)"
-    apply (simp add: 1 del: exp_assn.eq_iff)
+    apply (simp add: one_is_inc_zero del: exp_assn.eq_iff)
     apply (subst change_Lam_Variable[of z "fresh_var (App (Var f) g)"])
     apply (auto simp add: fresh_Pair fresh_at_base pure_fresh disj intro!: flip_fresh_fresh  elim!: fresh_var_eqE)
     done
 
   have [simp]: "Aeta_expand 1 e = (Lam [z]. App e z)"
-    apply (simp add: 1 del: exp_assn.eq_iff)
+    apply (simp add: one_is_inc_zero del: exp_assn.eq_iff)
     apply (subst change_Lam_Variable[of z "fresh_var e"])
     apply (auto simp add: fresh_Pair fresh_at_base pure_fresh disj fresh intro!: flip_fresh_fresh  elim!: fresh_var_eqE)
     done
 
   show ?thesis
-    by (simp del: Let_eq_iff add: map_transform_Cons map_transform_Nil disj[symmetric])
+    by (simp del: Let_eq_iff add: map_transform_Cons disj[symmetric])
 qed
 
 

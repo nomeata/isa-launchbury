@@ -141,6 +141,22 @@ case (goal19 a as body a' as' body')
     qed
   qed auto
   nominal_termination by lexicographic_order
+
+  lemma supp_transform: "supp (transform a e) \<subseteq> supp e"
+  proof-
+    note PropApp_eqvt[eqvt_raw] PropLam_eqvt[eqvt_raw] PropLetBody_eqvt[eqvt_raw]  AnalLet_eqvt[eqvt_raw] PropLetHeap_eqvt[eqvt_raw] TransVar_eqvt[eqvt]  TransApp_eqvt[eqvt]  TransLam_eqvt[eqvt] TransLet_eqvt[eqvt]
+    note transform.eqvt[eqvt]
+    show ?thesis
+      apply (rule supp_fun_app_eqvt)
+      apply (rule eqvtI)
+      apply perm_simp
+      apply (rule reflexive)
+      done
+   qed
+
+  lemma fv_transform: "fv (transform a e) \<subseteq> fv e"
+    unfolding fv_def by (auto dest: set_mp[OF supp_transform])
+
 end
 
 locale AbstractTransformSubst = AbstractTransform + AbstractAnalPropSubst +
@@ -197,6 +213,7 @@ begin
   lemma isVal_transform[simp]:
     "isVal (transform a e) \<longleftrightarrow> isVal e"
     by (induction e rule:isLam.induct) auto
+
 end
 
 locale AbstractTransformBoundSubst = AbstractAnalPropSubst + AbstractTransformBound + 

@@ -20,7 +20,6 @@ inductive_cases [elim!]: "stack_consistent as (Alts e1 e2 # S)"
 inductive a_consistent :: "astate \<Rightarrow> conf \<Rightarrow> bool" where
   a_consistentI:
   "edom ae \<subseteq> domA \<Gamma> \<union> upds S
-  \<Longrightarrow> heap_upds_ok (\<Gamma>, S)
   \<Longrightarrow> Astack S \<sqsubseteq> a
   \<Longrightarrow> (ABinds \<Gamma>\<cdot>ae \<squnion> Aexp e\<cdot>a \<squnion> AEstack as S) f|` (domA \<Gamma> \<union> upds S) \<sqsubseteq> ae
   \<Longrightarrow> stack_consistent as S
@@ -49,9 +48,6 @@ lemma a_consistent_stackD:
   "a_consistent (ae, a, as) (\<Gamma>, e, S) \<Longrightarrow> Astack S \<sqsubseteq> a"
   by (rule a_consistentE)
 
-lemma a_consistent_heap_upds_okD:
-  "a_consistent (ae, a, as) (\<Gamma>, e, S) \<Longrightarrow> heap_upds_ok (\<Gamma>, S)"
-  by (rule a_consistentE)
 
 lemma a_consistent_app\<^sub>1:
   "a_consistent (ae, a, as) (\<Gamma>, App e x, S) \<Longrightarrow> a_consistent (ae, inc\<cdot>a, as) (\<Gamma>, e, Arg x # S)"
@@ -107,6 +103,7 @@ lemma a_consistent_thunk_once:
   assumes "a_consistent (ae, a, as) (\<Gamma>, Var x, S)"
   assumes "map_of \<Gamma> x = Some e"
   assumes [simp]: "ae x = up\<cdot>u"
+  assumes "heap_upds_ok (\<Gamma>, S)"
   shows "a_consistent (env_delete x ae, u, as) (delete x \<Gamma>, e, S)"
 proof-
   from assms(2)
@@ -118,7 +115,7 @@ proof-
   from below_trans[OF Aexp_Var this]
   have "a \<sqsubseteq> u" by simp
 
-  from assms(1)
+  from `heap_upds_ok (\<Gamma>, S)`
   have "x \<notin> upds S" by (auto simp add: a_consistent.simps elim!: heap_upds_okE)
   hence [simp]: "(- {x} \<inter> (domA \<Gamma> \<union> upds S)) = (domA \<Gamma> - {x} \<union> upds S)" by auto
 

@@ -53,8 +53,11 @@ begin
   fun restr_conf :: "var set \<Rightarrow> conf \<Rightarrow> conf"
     where "restr_conf V (\<Gamma>, e, S) = (restrictA V \<Gamma>, e, restr_stack V S)"
 
-  fun conf_transform :: "tstate \<Rightarrow> conf \<Rightarrow> (var list \<times> conf)"
-  where "conf_transform (ae, ce, a, as, r) c = (r, a_transform (ae, a, as) (restr_conf (- set r) c))"
+  fun add_dummies_conf :: "var list \<Rightarrow> conf \<Rightarrow> conf"
+    where "add_dummies_conf l (\<Gamma>, e, S) = (\<Gamma>, e, S @ map Dummy (rev l))"
+
+  fun conf_transform :: "tstate \<Rightarrow> conf \<Rightarrow> conf"
+  where "conf_transform (ae, ce, a, as, r) c = add_dummies_conf r ((a_transform (ae, a, as) (restr_conf (- set r) c)))"
 
   inductive consistent :: "tstate \<Rightarrow> conf \<Rightarrow> bool" where
     consistentI[intro!]: 
@@ -81,10 +84,10 @@ begin
 
   lemma foo:
     fixes c c'
-    assumes "c \<Rightarrow>\<^sup>* c'" and "\<not> boring_step c'" and "consistent (ae,ce,a,as,r) c"
+    assumes "c \<Rightarrow>\<^sup>* c'" and "\<not> boring_step c'" and "heap_upds_ok_conf c" and "consistent (ae,ce,a,as,r) c"
     shows "\<exists>ae' ce' a' as' r'. consistent (ae',ce',a',as',r') c' \<and> conf_transform (ae,ce,a,as,r) c \<Rightarrow>\<^sub>G\<^sup>* conf_transform (ae',ce',a',as',r') c'"
-  using assms
-  proof(induction c c' arbitrary: ae ce a as r rule:step_induction)
+  using assms(1,2) heap_upds_ok_invariant assms(3-)
+  proof(induction c c' arbitrary: ae ce a as r rule:step_invariant_induction)
   case (app\<^sub>1 \<Gamma> e x S)
     have "prognosis ae as (inc\<cdot>a) (\<Gamma>, e, Arg x # S) \<sqsubseteq> prognosis ae as a (\<Gamma>, App e x, S)" by (rule prognosis_App)
     with app\<^sub>1 have "consistent (ae, ce, inc\<cdot>a, as, r) (\<Gamma>, e, Arg x # S)"
@@ -115,7 +118,8 @@ begin
     have [simp]: "x \<in> edom ce" by (auto simp add: edom_def)
     hence [simp]: "x \<notin> set r" using thunk by auto
 
-    have "x \<notin> upds S" using thunk by (auto dest!: a_consistent_heap_upds_okD  heap_upds_okE)
+    from `heap_upds_ok_conf (\<Gamma>, Var x, S)`
+    have "x \<notin> upds S" by (auto dest!:  heap_upds_okE)
 
     have "x \<in> edom ae" using thunk by auto
     then obtain u where "ae x = up\<cdot>u" by (cases "ae x") (auto simp add: edom_def)
@@ -166,21 +170,24 @@ begin
       moreover
 
       from *
-      have "Astack (transform_alts as (restr_stack (- set r) S)) \<sqsubseteq> u" by (auto elim: a_consistent_stackD)
+      have **: "Astack (transform_alts as (restr_stack (- set r) S) @ map Dummy (rev r) @ [Dummy x]) \<sqsubseteq> u" by (auto elim: a_consistent_stackD)
       
       {
       from  `map_of \<Gamma> x = Some e` `ae x = up\<cdot>u` once
       have "map_of (map_transform Aeta_expand ae (map_transform ccTransform ae (restrictA (- set r) \<Gamma>))) x = Some (Aeta_expand u (transform u e))"
         by (simp add: map_of_map_transform)
       hence "conf_transform (ae, ce, a, as, r) (\<Gamma>, Var x, S) \<Rightarrow>\<^sub>G
-             (r, delete x (map_transform Aeta_expand ae (map_transform ccTransform ae (restrictA (- set r) \<Gamma>))), Aeta_expand u (ccTransform u e), Upd x # transform_alts as (restr_stack (- set r) S))"
+             add_dummies_conf r (delete x (map_transform Aeta_expand ae (map_transform ccTransform ae (restrictA (- set r) \<Gamma>))), Aeta_expand u (ccTransform u e), Upd x # transform_alts as (restr_stack (- set r) S))"
           by (auto simp add:  map_transform_delete delete_map_transform_env_delete insert_absorb restr_delete_twist simp del: restr_delete)
       also
-      have "\<dots> \<Rightarrow>\<^sub>G\<^sup>* (x # r, delete x (map_transform Aeta_expand ae (map_transform ccTransform ae (restrictA (- set r) \<Gamma>))), Aeta_expand u (ccTransform u e), transform_alts as (restr_stack (- set r) S))"
-        by (rule r_into_rtranclp, rule)
+      have "\<dots> \<Rightarrow>\<^sub>G\<^sup>* add_dummies_conf (x # r) (delete x (map_transform Aeta_expand ae (map_transform ccTransform ae (restrictA (- set r) \<Gamma>))), Aeta_expand u (ccTransform u e), transform_alts as (restr_stack (- set r) S))"
+        apply (rule r_into_rtranclp)
+        apply (simp add: append_assoc[symmetric] del: append_assoc)
+        apply (rule dropUpd)
+        done
       also
-      have "\<dots> \<Rightarrow>\<^sub>G\<^sup>* (x # r, delete x (map_transform Aeta_expand ae (map_transform ccTransform ae  (restrictA (- set r) \<Gamma>))), ccTransform u e, transform_alts as (restr_stack (- set r) S))"
-        by (intro normal_trans Aeta_expand_correct `Astack (transform_alts as (restr_stack (- set r) S)) \<sqsubseteq> u`)
+      have "\<dots> \<Rightarrow>\<^sub>G\<^sup>* add_dummies_conf (x # r) (delete x (map_transform Aeta_expand ae (map_transform ccTransform ae  (restrictA (- set r) \<Gamma>))), ccTransform u e, transform_alts as (restr_stack (- set r) S))"
+        by simp (intro  normal_trans Aeta_expand_correct **)
       also(rtranclp_trans)
       have "\<dots> = conf_transform (env_delete x ae, env_delete x ce, u, as, x # r) (delete x \<Gamma>, e, Upd x # S)" 
         by (auto intro!: map_transform_cong simp add:  map_transform_delete[symmetric]  restr_delete_twist Compl_insert)
@@ -218,7 +225,7 @@ begin
         by (simp add: map_of_map_transform)
       with `\<not> isVal e`
       have "conf_transform (ae, ce, a, as, r) (\<Gamma>, Var x, S) \<Rightarrow>\<^sub>G conf_transform (ae, ce, 0, as, r) (delete x \<Gamma>, e, Upd x # S)"
-        by (auto simp add: map_transform_delete restr_delete_twist intro!: step.intros  simp del: restr_delete)
+        by (auto intro: gc_step.intros simp add: map_transform_delete restr_delete_twist intro!: step.intros  simp del: restr_delete)
       ultimately
       show ?thesis by (blast del: consistentI consistentE)
     qed
@@ -253,8 +260,8 @@ begin
     moreover
 
     from `a_consistent _ _`
-    have "Astack (transform_alts as (restr_stack (- set r) S)) \<sqsubseteq> u" by (auto elim: a_consistent_stackD)
-  
+    have **: "Astack (transform_alts as (restr_stack (- set r) S) @ map Dummy (rev r)) \<sqsubseteq> u" by (auto elim: a_consistent_stackD) 
+
     {
     from `isVal e`
     have "isVal (transform u e)" by simp
@@ -265,17 +272,17 @@ begin
       by (simp add: map_of_map_transform)
     ultimately
     have "conf_transform (ae, ce, a, as, r) (\<Gamma>, Var x, S) \<Rightarrow>\<^sub>G\<^sup>*
-          (r, (x, Aeta_expand u (transform u e)) # delete x (map_transform Aeta_expand ae (map_transform transform ae (restrictA (- set r) \<Gamma>))), Aeta_expand u (transform u e), transform_alts as (restr_stack (- set r) S))"
+          add_dummies_conf r ((x, Aeta_expand u (transform u e)) # delete x (map_transform Aeta_expand ae (map_transform transform ae (restrictA (- set r) \<Gamma>))), Aeta_expand u (transform u e), transform_alts as (restr_stack (- set r) S))"
        by (auto intro!: normal_trans[OF lambda_var] simp add: map_transform_delete simp del: restr_delete)
-    also have "\<dots> = (r, (map_transform Aeta_expand ae (map_transform transform ae ((x,e) # delete x (restrictA (- set r) \<Gamma>)))), Aeta_expand u  (transform u e), transform_alts as (restr_stack (- set r) S))"
+    also have "\<dots> = add_dummies_conf r ((map_transform Aeta_expand ae (map_transform transform ae ((x,e) # delete x (restrictA (- set r) \<Gamma>)))), Aeta_expand u  (transform u e), transform_alts as (restr_stack (- set r) S))"
       using `ae x = up \<cdot> u` `ce x = up\<cdot>c` `isVal (transform u e)`
       by (simp add: map_transform_Cons map_transform_delete restr_delete_twist del: restr_delete)
     also(subst[rotated]) have "\<dots> \<Rightarrow>\<^sub>G\<^sup>* conf_transform (ae, ce, u, as, r) ((x, e) # delete x \<Gamma>, e, S)"
-      by (simp add: restr_delete_twist) (rule normal_trans[OF Aeta_expand_correct[OF `Astack _ \<sqsubseteq> u`]])
+      by (simp add: restr_delete_twist) (rule normal_trans[OF Aeta_expand_correct[OF ** ]])
     finally(rtranclp_trans)
     have "conf_transform (ae, ce, a, as, r) (\<Gamma>, Var x, S) \<Rightarrow>\<^sub>G\<^sup>* conf_transform (ae, ce, u, as, r) ((x, e) # delete x \<Gamma>, e, S)".
     }
-    ultimately show ?case by (blast intro: normal_trans del: consistentI consistentE)
+    ultimately show ?case by (blast del: consistentI consistentE)
   next
   case (var\<^sub>2 \<Gamma> x e S)
     show ?case
@@ -300,7 +307,7 @@ begin
       moreover
       have "conf_transform (ae, ce, a, as, r) (\<Gamma>, e, Upd x # S) \<Rightarrow>\<^sub>G conf_transform (ae, ce, 0, as, r) ((x, e) # \<Gamma>, e, S)"
         using `ae x = up\<cdot>0` `a = 0` var\<^sub>2 
-        by (auto intro!: step.intros simp add: map_transform_Cons)
+        by (auto intro: gc_step.intros simp add: map_transform_Cons)
       ultimately show ?thesis by (blast del: consistentI consistentE)
     next
       case False[simp]
@@ -357,7 +364,7 @@ begin
 
     {
     have "edom (?ae \<squnion> ae) = edom (?ce \<squnion> ce)"
-      using let\<^sub>1(3) by (auto simp add: edom_cHeap)
+      using let\<^sub>1(4) by (auto simp add: edom_cHeap)
     moreover
     { fix x e'
       assume "x \<in> thunks \<Gamma>"
@@ -417,19 +424,30 @@ begin
   
       from `edom ae \<subseteq> domA \<Gamma> \<union> upds S` `edom ce = edom ae`
       have "\<And> x. x \<in> domA \<Delta> \<Longrightarrow> x \<notin> edom ce" and  "\<And> x. x \<in> domA \<Delta> \<Longrightarrow> x \<notin> edom ae"
-         using fresh_distinct[OF let\<^sub>1(1)] fresh_distinct_fv[OF let\<^sub>1(2)] 
-         by (auto dest!:  set_mp[OF ups_fv_subset])
+         using fresh_distinct[OF let\<^sub>1(1)] fresh_distinct_ups[OF let\<^sub>1(2)]  by auto
       hence "map_transform Aeta_expand (?ae \<squnion> ae) (map_transform transform (?ae \<squnion> ae) (restrictA (- set r) \<Delta>))
          = map_transform Aeta_expand ?ae (map_transform transform ?ae (restrictA (- set r) \<Delta>))"
          by (auto intro!: map_transform_cong restrictA_cong simp add: edomIff)
+      moreover
+            
+      from  `domA \<Delta> \<inter> domA \<Gamma> = {}`   `domA \<Delta> \<inter> upds S = {}`
+      have "atom ` domA \<Delta> \<sharp>* set r"
+        by (auto simp add: fresh_star_def fresh_at_base fresh_finite_set_at_base dest!: set_mp[OF `set r \<subseteq> domA \<Gamma> \<union> upds S`])
+      hence "atom ` domA \<Delta> \<sharp>* map Dummy (rev r)" 
+        apply -
+        apply (rule eqvt_fresh_star_cong1[where f = "map Dummy"], perm_simp, rule)
+        apply (rule eqvt_fresh_star_cong1[where f = "rev"], perm_simp, rule)
+        apply (auto simp add: fresh_star_def fresh_set)
+        done
       ultimately
       
       
       have "conf_transform (ae, ce, a, as, r) (\<Gamma>, Let \<Delta> e, S) \<Rightarrow>\<^sub>G conf_transform (?ae \<squnion> ae, ?ce \<squnion> ce, a, as, r) (\<Delta> @ \<Gamma>, e, S)"
-        using restr_stack_simp2 let\<^sub>1(1,2) `edom ce = edom ae`
+        using restr_stack_simp2 let\<^sub>1(1,2)  `edom ce = edom ae`
         apply (auto simp add: map_transform_append restrictA_append edom_cHeap restr_stack_simp2[simplified] )
-        apply (rule normal[OF  step.let\<^sub>1])
-        apply (auto dest: set_mp[OF edom_Aheap])
+        apply (rule normal)
+        apply (rule step.let\<^sub>1)
+        apply (auto intro: normal step.let\<^sub>1 dest: set_mp[OF edom_Aheap] simp add: fresh_star_list)
         done
     }
     ultimately
@@ -461,7 +479,7 @@ begin
     }
     moreover
     have "conf_transform (ae, ce, a, as, r) (\<Gamma>, Bool b, Alts e1 e2 # S) \<Rightarrow>\<^sub>G conf_transform (ae, ce, a', as', r) (\<Gamma>, if b then e1 else e2, S)"
-      by (auto intro:normal  step.if\<^sub>2[where b = True, simplified] step.if\<^sub>2[where b = False, simplified])
+      by (auto intro: normal step.if\<^sub>2[where b = True, simplified] step.if\<^sub>2[where b = False, simplified])
     ultimately
     show ?case by (blast del: consistentI consistentE)
   next

@@ -116,7 +116,9 @@ lift_definition one_Arity :: Arity is 1.
 instance ..
 end
 
-
+lemma one_is_inc_zero: "1 = inc\<cdot>0"
+  by (simp add: inc_def, transfer, simp)
+  
 lemma Arity_ind:  "P 0 \<Longrightarrow> (\<And> n. P n \<Longrightarrow> P (inc\<cdot>n)) \<Longrightarrow> P n"
   apply (simp add: inc_def)
   apply transfer

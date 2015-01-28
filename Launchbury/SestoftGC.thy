@@ -2,36 +2,41 @@ theory SestoftGC
 imports Sestoft 
 begin
 
-inductive gc_step :: "(var list \<times> conf) \<Rightarrow> (var list \<times> conf) \<Rightarrow> bool" (infix "\<Rightarrow>\<^sub>G" 50) where
-  normal:  "c \<Rightarrow> c' \<Longrightarrow> (r, c) \<Rightarrow>\<^sub>G (r, c')"
-| dropUpd: "(r, \<Gamma>, e, Upd x # S) \<Rightarrow>\<^sub>G (x # r, \<Gamma>, e, S)"
+inductive gc_step :: "conf \<Rightarrow> conf \<Rightarrow> bool" (infix "\<Rightarrow>\<^sub>G" 50) where
+  normal:  "c \<Rightarrow> c' \<Longrightarrow> c \<Rightarrow>\<^sub>G c'"
+| dropUpd: "(\<Gamma>, e, Upd x # S) \<Rightarrow>\<^sub>G (\<Gamma>, e, S @ [Dummy x])"
 
 lemmas gc_step_intros[intro] =
   normal[OF step.intros(1)] normal[OF step.intros(2)] normal[OF step.intros(3)]
   normal[OF step.intros(4)] normal[OF step.intros(5)]  dropUpd
-
 
 abbreviation gc_steps (infix "\<Rightarrow>\<^sub>G\<^sup>*" 50) where "gc_steps \<equiv> gc_step\<^sup>*\<^sup>*"
 lemmas converse_rtranclp_into_rtranclp[of gc_step, OF _ r_into_rtranclp, trans]
 
 lemma var_onceI:
   assumes "map_of \<Gamma> x = Some e"
-  shows "(r, \<Gamma>, Var x, S) \<Rightarrow>\<^sub>G\<^sup>* (x#r, delete x \<Gamma>, e , S)"
+  shows "(\<Gamma>, Var x, S) \<Rightarrow>\<^sub>G\<^sup>* (delete x \<Gamma>, e , S@[Dummy x])"
 proof-
   from assms 
-  have "(r, \<Gamma>, Var x, S) \<Rightarrow>\<^sub>G (r, delete x \<Gamma>, e , Upd x # S)"..
+  have "(\<Gamma>, Var x, S) \<Rightarrow>\<^sub>G (delete x \<Gamma>, e , Upd x # S)"..
   moreover
-  have "\<dots> \<Rightarrow>\<^sub>G  (x #r, delete x \<Gamma>, e , S)"..
+  have "\<dots> \<Rightarrow>\<^sub>G  (delete x \<Gamma>, e, S@[Dummy x])"..
   ultimately
   show ?thesis by (rule converse_rtranclp_into_rtranclp[OF _ r_into_rtranclp])
 qed
 
-lemma normal_trans:  "c \<Rightarrow>\<^sup>* c' \<Longrightarrow> (r, c) \<Rightarrow>\<^sub>G\<^sup>* (r, c')"
+lemma normal_trans:  "c \<Rightarrow>\<^sup>* c' \<Longrightarrow> c \<Rightarrow>\<^sub>G\<^sup>* c'"
   by (induction rule:rtranclp_induct)
      (simp, metis normal rtranclp.rtrancl_into_rtrancl)
 
 fun to_gc_conf :: "var list \<Rightarrow> conf \<Rightarrow> conf"
-  where "to_gc_conf r (\<Gamma>, e, S) = (restrictA (- set r) \<Gamma>, e, restr_stack (- set r) S)"
+  where "to_gc_conf r (\<Gamma>, e, S) = (restrictA (- set r) \<Gamma>, e, restr_stack (- set r) S @ (map Dummy (rev r)))"
+
+lemma restr_stack_map_Dummy[simp]: "restr_stack V (map Dummy l) = map Dummy l"
+  by (induction l) auto
+
+lemma restr_stack_append[simp]: "restr_stack V (l@l') = restr_stack V l @ restr_stack V l'"
+  by (induction l rule: restr_stack.induct) auto
 
 lemma to_gc_conf_append[simp]:
   "to_gc_conf (r@r') c = to_gc_conf r (to_gc_conf r' c)"
@@ -39,9 +44,8 @@ lemma to_gc_conf_append[simp]:
 
 lemma to_gc_conf_eqE[elim!]:
   assumes  "to_gc_conf r c = (\<Gamma>, e, S)"
-  obtains \<Gamma>' S' where "c = (\<Gamma>', e, S')" and "\<Gamma> = restrictA (- set r) \<Gamma>'" and "S = restr_stack (- set r) S'"
-  using assms
-  by (cases c) auto
+  obtains \<Gamma>' S' where "c = (\<Gamma>', e, S')" and "\<Gamma> = restrictA (- set r) \<Gamma>'" and "S = restr_stack (- set r) S' @ map Dummy (rev r)"
+  using assms by (cases c) auto
 
 fun safe_hd :: "'a list \<Rightarrow> 'a option"
  where  "safe_hd (x#_) = Some x"
@@ -50,22 +54,33 @@ fun safe_hd :: "'a list \<Rightarrow> 'a option"
 lemma safe_hd_None[simp]: "safe_hd xs = None \<longleftrightarrow> xs = []"
   by (cases xs) auto
 
-abbreviation r_ok :: "(var list \<times> conf) \<Rightarrow> bool"
-  where "r_ok c \<equiv> set (fst c) \<subseteq> domA (fst (snd c)) \<union> upds (snd (snd (snd c)))"
+abbreviation r_ok :: "var list \<Rightarrow> conf \<Rightarrow> bool"
+  where "r_ok r c \<equiv> set r \<subseteq> domA (fst c) \<union> upds (snd (snd c))"
 
+lemma subset_bound_invariant:
+  "invariant step (r_ok r)"
+proof
+  fix x y
+  assume "x \<Rightarrow> y" and "r_ok r x" thus "r_ok r y"
+  by (induction) auto
+qed
+
+lemma safe_hd_restr_stack[simp]:
+  "Some a = safe_hd (restr_stack V (a # S)) \<longleftrightarrow> restr_stack V (a # S) = a # restr_stack V S"
+  using assms
+  apply (cases a)
+  apply (auto split: if_splits)
+  apply (thin_tac "?P a")
+  apply (induction S rule: restr_stack.induct)
+  apply (auto split: if_splits)
+  done
 
 lemma sestoftUnGCStack:
   assumes "heap_upds_ok (\<Gamma>, S)"
-  assumes "set r \<subseteq> domA \<Gamma> \<union> upds S"
   obtains \<Gamma>' S' where
     "(\<Gamma>, e, S) \<Rightarrow>\<^sup>* (\<Gamma>', e, S')"
-    "heap_upds_ok (\<Gamma>', S')"
     "to_gc_conf r (\<Gamma>, e, S) = to_gc_conf r (\<Gamma>', e, S')"
     "\<not> isVal e \<or> safe_hd S' = safe_hd (restr_stack (- set r) S')"
-    "set r \<subseteq> domA \<Gamma>' \<union> upds S'"
-(*proof(atomize_elim)
-  show "\<exists>\<Gamma>' S'. (\<Gamma>, e, S) \<Rightarrow>\<^sup>* (\<Gamma>', e, S') \<and> heap_upds_ok (\<Gamma>', S') \<and> to_gc_conf r (\<Gamma>, e, S) = to_gc_conf r (\<Gamma>', e, S') \<and> (\<not> isVal e \<or>  safe_hd S' = safe_hd (restr_stack (- set r) S'))"
-*)
 proof-
   show ?thesis
   proof(cases "isVal e")
@@ -84,7 +99,7 @@ proof-
       proof(cases "Some s = safe_hd (restr_stack (- set r) (s#S))")
         case True
         thus ?thesis
-          using `isVal e` `heap_upds_ok (\<Gamma>, s # S)` `set r \<subseteq> domA \<Gamma> \<union> upds (s # S)`
+          using `isVal e` `heap_upds_ok (\<Gamma>, s # S)`
           apply auto
           apply (intro exI conjI)
           apply (rule rtranclp.intros(1))
@@ -99,18 +114,13 @@ proof-
         have [simp]: "x \<notin> domA \<Gamma>" and "heap_upds_ok ((x,e) # \<Gamma>, S)"
           by (auto dest: heap_upds_okE) 
 
-        from `set r \<subseteq> domA \<Gamma> \<union> upds (s # S)`
-        have "set r \<subseteq> domA ((x,e) # \<Gamma>) \<union> upds S" by auto
-        
         have "(\<Gamma>, e, s # S) \<Rightarrow>\<^sup>* (\<Gamma>, e, Upd x # S)" unfolding `s = _` ..
-        also have "\<dots> \<Rightarrow> ((x,e) # \<Gamma>, e, S)" by (rule var\<^sub>2[OF `x \<notin> domA \<Gamma>` `isVal e`])
+        also have "\<dots> \<Rightarrow> ((x,e) # \<Gamma>, e, S)" by (rule step.var\<^sub>2[OF `x \<notin> domA \<Gamma>` `isVal e`])
         also
-        from Cons.IH[OF `heap_upds_ok ((x,e) # \<Gamma>, S)`  `set r \<subseteq> domA ((x,e) # \<Gamma>) \<union> upds S`]
+        from Cons.IH[OF `heap_upds_ok ((x,e) # \<Gamma>, S)` ]
         obtain \<Gamma>' S' where  "((x,e) # \<Gamma>, e, S) \<Rightarrow>\<^sup>* (\<Gamma>', e, S')"
-            and res: "heap_upds_ok (\<Gamma>', S')"
-                     "to_gc_conf r ((x,e) # \<Gamma>, e, S) = to_gc_conf r (\<Gamma>', e, S')"
+            and res: "to_gc_conf r ((x,e) # \<Gamma>, e, S) = to_gc_conf r (\<Gamma>', e, S')"
                      "(\<not> isVal e \<or> safe_hd S' = safe_hd (restr_stack (- set r) S'))"
-                     "set r \<subseteq> domA \<Gamma>' \<union> upds S'"
           by blast
         note this(1)
         finally
@@ -120,196 +130,259 @@ proof-
     qed
   qed
 qed
-  
+
+lemma perm_exI_trivial:
+  "P x x \<Longrightarrow> \<exists> \<pi>. P (\<pi> \<bullet> x) x"
+by (rule exI[where x = "0::perm"]) auto
+
+lemma upds_list_restr_stack[simp]:
+  "upds_list (restr_stack V S) = filter (\<lambda> x. x\<in>V) (upds_list S)"
+by (induction S rule: restr_stack.induct) auto
+
+lemma heap_upd_ok_to_gc_conf:
+  "heap_upds_ok (\<Gamma>, S) \<Longrightarrow> to_gc_conf r (\<Gamma>, e, S) = (\<Gamma>'', e'', S'') \<Longrightarrow> heap_upds_ok (\<Gamma>'', S'')"
+by (auto simp add: heap_upds_ok.simps)
 
 lemma sestoftUnGCstep:
-  assumes "to_gc_conf r c \<Rightarrow> d"
+  assumes "to_gc_conf r c \<Rightarrow>\<^sub>G d"
   assumes "heap_upds_ok_conf c"
-  assumes "r_ok (r, c)"
-  shows   "\<exists> c'. c \<Rightarrow>\<^sup>* c' \<and> d = to_gc_conf r c' \<and> heap_upds_ok_conf c' \<and> r_ok (r, c')"
+  assumes "closed c"
+  and "r_ok r c"
+  shows   "\<exists> r' c'. c \<Rightarrow>\<^sup>* c' \<and> d = to_gc_conf r' c' \<and> r_ok r' c'"
 proof-
   obtain \<Gamma> e S where "c = (\<Gamma>, e, S)" by (cases c) auto
   with assms
-  have "heap_upds_ok (\<Gamma>,S)" and "set r \<subseteq> domA \<Gamma> \<union> upds S" by auto
-  from sestoftUnGCStack[OF this]
+  have "heap_upds_ok (\<Gamma>,S)" and "closed (\<Gamma>, e, S)" and "r_ok r (\<Gamma>, e, S)" by auto
+  from sestoftUnGCStack[OF this(1)]
   obtain \<Gamma>' S' where
     "(\<Gamma>, e, S) \<Rightarrow>\<^sup>* (\<Gamma>', e, S')"
     and *: "to_gc_conf r (\<Gamma>, e, S) = to_gc_conf r (\<Gamma>', e, S')"
     and disj: "\<not> isVal e \<or> safe_hd S' = safe_hd (restr_stack (- set r) S')"
-    and "heap_upds_ok (\<Gamma>', S')"
-    and "set r \<subseteq> domA \<Gamma>' \<union> upds S'" by metis
-  note this(1)
-  also
+    by metis
+
+  from invariant_starE[OF `_ \<Rightarrow>\<^sup>* _` heap_upds_ok_invariant]  `heap_upds_ok (\<Gamma>,S)`
+  have "heap_upds_ok (\<Gamma>', S')" by auto
+
+  from invariant_starE[OF `_ \<Rightarrow>\<^sup>* _` closed_invariant  `closed (\<Gamma>, e, S)` ]
+  have "closed (\<Gamma>', e, S')" by auto
+
+  from invariant_starE[OF `_ \<Rightarrow>\<^sup>* _` subset_bound_invariant `r_ok r (\<Gamma>, e, S)` ]
+  have "r_ok r (\<Gamma>', e, S')" by auto
 
   from assms(1)[unfolded `c =_ ` *]
-  have "\<exists> \<Gamma>'' e'' S''. (\<Gamma>', e, S') \<Rightarrow> (\<Gamma>'', e'', S'')  \<and> d = to_gc_conf r (\<Gamma>'', e'', S'') \<and> heap_upds_ok (\<Gamma>'', S'') \<and> set r \<subseteq> domA \<Gamma>'' \<union> upds S''"
-  proof(cases rule: step.cases)
-    case app\<^sub>1
-    thus ?thesis
-      using `heap_upds_ok (\<Gamma>', S')` and `set r \<subseteq> domA \<Gamma>' \<union> upds S'`
-      apply auto
-      apply (intro exI conjI)
-      apply (rule step.intros)
-      apply auto
-      done
+  have "\<exists> r' \<Gamma>'' e'' S''. (\<Gamma>', e, S') \<Rightarrow>\<^sup>* (\<Gamma>'', e'', S'') \<and> d = to_gc_conf r' (\<Gamma>'', e'', S'') \<and> r_ok r' (\<Gamma>'', e'', S'')"
+  proof(cases rule: gc_step.cases)
+    case normal
+    hence "\<exists> \<Gamma>'' e'' S''. (\<Gamma>', e, S') \<Rightarrow> (\<Gamma>'', e'', S'') \<and> d = to_gc_conf r (\<Gamma>'', e'', S'')"
+    proof(cases rule: step.cases)
+      case app\<^sub>1
+      thus ?thesis
+        apply auto
+        apply (intro exI conjI)
+        apply (rule  step.intros)
+        apply auto
+        done
+    next
+      case (app\<^sub>2 \<Gamma> y ea x S)
+      thus ?thesis
+        using disj 
+        apply (cases S')
+        apply auto
+        apply (intro exI conjI)
+        apply (rule step.intros)
+        apply auto
+        done
+    next
+      case var\<^sub>1
+      thus ?thesis
+        apply auto
+        apply (intro  exI conjI)
+        apply (rule step.intros)
+        apply (auto simp add: restr_delete_twist)
+        done
+    next
+      case var\<^sub>2
+      thus ?thesis
+        using disj 
+        apply (cases S')
+        apply auto
+        apply (intro exI conjI)
+        apply (rule step.intros)
+        apply (auto split: if_splits dest: Upd_eq_restr_stackD2)
+        done
+    next
+      case (let\<^sub>1 \<Delta>'' \<Gamma>'' S'' e')
+
+      from `closed (\<Gamma>', e, S')` let\<^sub>1
+      have "closed (\<Gamma>', Let \<Delta>'' e', S')" by simp
+
+      from fresh_distinct[OF let\<^sub>1(3)] fresh_distinct_fv[OF let\<^sub>1(4)]
+      have "domA \<Delta>'' \<inter> domA \<Gamma>'' = {}" and "domA \<Delta>'' \<inter> upds S'' = {}"  and "domA \<Delta>'' \<inter> dummies S'' = {}" 
+        by (auto dest: set_mp[OF ups_fv_subset] set_mp[OF dummies_fv_subset])
+      moreover
+      from let\<^sub>1(1)
+      have "domA \<Gamma>' \<union> upds S' \<subseteq> domA \<Gamma>'' \<union> upds S'' \<union> dummies S''"
+        by auto
+      ultimately
+      have disj: "domA \<Delta>'' \<inter> domA \<Gamma>' = {}" "domA \<Delta>'' \<inter> upds S' = {}"
+        by auto
+      
+      from `domA \<Delta>'' \<inter> dummies S'' = {}` let\<^sub>1(1)
+      have "domA \<Delta>'' \<inter> set r = {}" by auto
+      hence [simp]: "restrictA (- set r) \<Delta>'' = \<Delta>''"
+        by (auto intro: restrictA_noop)
+
+      from let\<^sub>1(1-3)
+      show ?thesis
+        apply auto
+        apply (intro  exI[where x = "r"] exI[where x = "\<Delta>'' @ \<Gamma>'"] exI[where x = "S'"] conjI)
+        apply (rule let\<^sub>1_closed[OF `closed (\<Gamma>', Let \<Delta>'' e', S')` disj])
+        apply (auto simp add: restrictA_append)
+        done
+    next
+      case if\<^sub>1
+      thus ?thesis
+        apply auto
+        apply (intro exI[where x = "0::perm"] exI conjI)
+        unfolding permute_zero
+        apply (rule step.intros)
+        apply (auto)
+        done
+    next
+      case if\<^sub>2
+      thus ?thesis
+        using disj
+        apply (cases S')
+        apply auto
+        apply (intro exI exI conjI)
+        apply (rule step.if\<^sub>2[where b = True, simplified] step.if\<^sub>2[where b = False, simplified])
+        apply (auto split: if_splits dest: Upd_eq_restr_stackD2)
+        apply (intro exI conjI)
+        apply (rule step.if\<^sub>2[where b = True, simplified] step.if\<^sub>2[where b = False, simplified])
+        apply (auto split: if_splits dest: Upd_eq_restr_stackD2)
+        done
+    qed
+    with invariantE[OF subset_bound_invariant _ `r_ok r (\<Gamma>', e, S')`]
+    show ?thesis by blast
   next
-    case app\<^sub>2
-    thus ?thesis
-      using disj  `heap_upds_ok (\<Gamma>', S')` `set r \<subseteq> domA \<Gamma>' \<union> upds S'`
-      apply (cases S')
-      apply auto
-      apply (intro exI conjI)
-      apply (rule step.intros)
-      apply auto
-      done
-  next
-    case var\<^sub>1
-    thus ?thesis
-      using `heap_upds_ok (\<Gamma>', S')` `set r \<subseteq> domA \<Gamma>' \<union> upds S'`
-      apply auto
-      apply (intro exI conjI)
-      apply (rule step.intros)
-      apply (auto simp add: restr_delete_twist)
-      done
-  next
-    case var\<^sub>2
-    thus ?thesis
-      using disj `heap_upds_ok (\<Gamma>', S')` `set r \<subseteq> domA \<Gamma>' \<union> upds S'`
-      apply (cases S')
-      apply auto
-      apply (intro exI conjI)
-      apply (rule step.intros)
-      apply (auto split: if_splits dest: Upd_eq_restr_stackD2)
-      done
-  next
-    case (let\<^sub>1 \<Delta>'' \<Gamma>'' S'' e')
-    thus ?thesis
-      using `heap_upds_ok (\<Gamma>', S')` `set r \<subseteq> domA \<Gamma>' \<union> upds S'`
-      apply auto
-      apply (intro exI conjI)
-      apply (rule step.intros)
-      apply (auto simp add: restrictA_append)
-      sorry
-  next
-    case if\<^sub>1
-    thus ?thesis
-      using `heap_upds_ok (\<Gamma>', S')` `set r \<subseteq> domA \<Gamma>' \<union> upds S'`
-      apply auto
-      apply (intro exI conjI)
-      apply (rule step.intros)
-      apply (auto)
-      done
-  next
-    case if\<^sub>2
-    thus ?thesis
-      using disj `heap_upds_ok (\<Gamma>', S')` `set r \<subseteq> domA \<Gamma>' \<union> upds S'`
-      apply (cases S')
-      apply auto
-      apply (intro exI conjI)
-      apply (rule step.if\<^sub>2[where b = True, simplified] step.if\<^sub>2[where b = False, simplified])
-      apply (auto split: if_splits dest: Upd_eq_restr_stackD2)
-      apply (intro exI conjI)
-      apply (rule step.if\<^sub>2[where b = True, simplified] step.if\<^sub>2[where b = False, simplified])
-      apply (auto split: if_splits dest: Upd_eq_restr_stackD2)
-      done
+  case (dropUpd \<Gamma>'' e'' x S'')
+    from `to_gc_conf r (\<Gamma>', e, S') = (\<Gamma>'', e'', Upd x # S'')`
+    have "x \<notin> set r" by (auto dest!: arg_cong[where f = upds])
+    
+    from `heap_upds_ok (\<Gamma>', S')` and `to_gc_conf r (\<Gamma>', e, S') = (\<Gamma>'', e'', Upd x # S'')`
+    have "heap_upds_ok (\<Gamma>'', Upd x # S'')" by (rule heap_upd_ok_to_gc_conf)
+    hence [simp]: "x \<notin> domA \<Gamma>''" "x \<notin> upds S''" by (auto dest: heap_upds_ok_upd)
+
+    have "to_gc_conf (x # r) (\<Gamma>', e, S') = to_gc_conf ([x]@ r) (\<Gamma>', e, S')" by simp
+    also have "\<dots> = to_gc_conf [x] (to_gc_conf r (\<Gamma>', e, S'))" by (rule to_gc_conf_append)
+    also have "\<dots> = to_gc_conf [x] (\<Gamma>'', e'', Upd x # S'')" unfolding `to_gc_conf r (\<Gamma>', e, S') = _`..
+    also have "\<dots> = (\<Gamma>'', e'', S''@[Dummy x])" by (auto intro: restrictA_noop)
+    also have "\<dots> = d" using ` d= _` by simp
+    finally have "to_gc_conf (x # r) (\<Gamma>', e, S') = d".
+    moreover
+    from `to_gc_conf r (\<Gamma>', e, S') = (\<Gamma>'', e'', Upd x # S'')`
+    have "x \<in> upds S'" by (auto dest!: arg_cong[where f = upds])
+    with `r_ok r (\<Gamma>', e, S')`
+    have "r_ok (x # r) (\<Gamma>', e, S')" by auto
+    moreover
+    note `to_gc_conf r (\<Gamma>', e, S') = (\<Gamma>'', e'', Upd x # S'')`
+    ultimately
+    show ?thesis by fastforce
   qed
-  then obtain \<Gamma>'' e'' S''
-    where "(\<Gamma>', e, S') \<Rightarrow> (\<Gamma>'', e'', S'')"
-    and "d = to_gc_conf r (\<Gamma>'', e'', S'')"
-    and "heap_upds_ok (\<Gamma>'', S'')"
-    and "set r \<subseteq> domA \<Gamma>'' \<union> upds S''"
-    by blast
-  note this(1)
-  finally
-  have "(\<Gamma>, e, S) \<Rightarrow>\<^sup>* (\<Gamma>'', e'', S'')".
-  with `d = _` `heap_upds_ok (\<Gamma>'', S'')` `set r \<subseteq> domA \<Gamma>'' \<union> upds S''`
+  then obtain r' \<Gamma>'' e'' S''
+    where "(\<Gamma>', e, S') \<Rightarrow>\<^sup>* (\<Gamma>'', e'', S'')"
+    and "d = to_gc_conf r' (\<Gamma>'', e'', S'')"
+    and "r_ok r' (\<Gamma>'', e'', S'')"
+    by metis 
+
+  from  `(\<Gamma>, e, S) \<Rightarrow>\<^sup>* (\<Gamma>', e, S')` and `(\<Gamma>', e, S') \<Rightarrow>\<^sup>* (\<Gamma>'', e'', S'')`
+  have "(\<Gamma>, e, S) \<Rightarrow>\<^sup>* (\<Gamma>'', e'', S'')" by (rule rtranclp_trans)
+  with `d = _` `r_ok r' _`
   show ?thesis unfolding `c = _` by auto
 qed
 
 
 lemma sestoftUnGC:
-  assumes "(r, to_gc_conf r c) \<Rightarrow>\<^sub>G\<^sup>* (r', d)" and "heap_upds_ok_conf c" and "r_ok (r, c)"
-  shows   "\<exists> c'. c \<Rightarrow>\<^sup>* c' \<and> d = to_gc_conf r' c' \<and> heap_upds_ok_conf c' \<and> r_ok (r', c')"
+  assumes "(to_gc_conf r c) \<Rightarrow>\<^sub>G\<^sup>* d" and "heap_upds_ok_conf c" and "closed c" and "r_ok r c"
+  shows   "\<exists> r' c'. c \<Rightarrow>\<^sup>* c' \<and> d = to_gc_conf r' c' \<and> r_ok r' c'"
 using assms
-proof(induction r' "d"  rule: rtranclp_induct2)
-  case refl
+proof(induction rule: rtranclp_induct)
+  case base
   thus ?case by blast
 next
-  case (step r' d' r'' d'')
-  then obtain c' where "c \<Rightarrow>\<^sup>* c'" and "d' = to_gc_conf r' c'" and "heap_upds_ok_conf c'" and "r_ok (r', c')" by auto
-  with step
-  have "(r', to_gc_conf r' c') \<Rightarrow>\<^sub>G (r'', d'')" by simp
-  hence "\<exists> c''. c' \<Rightarrow>\<^sup>* c'' \<and> d'' = to_gc_conf r'' c'' \<and> heap_upds_ok_conf c'' \<and> r_ok (r'', c'')"
-  proof(cases rule: gc_step.cases)
-    case normal
-    from sestoftUnGCstep[OF normal(2) `heap_upds_ok_conf c'` `r_ok (r',c')`] `r'' = r'`
-    show ?thesis by auto
-  next
-    case (dropUpd \<Gamma> e x S)
-    from `to_gc_conf r' c' = (\<Gamma>, e, Upd x # S)`
-    have "x \<notin> set r'" by (auto dest: Upd_eq_restr_stackD)
-    
-    from `heap_upds_ok_conf c'` and `to_gc_conf r' c' = (\<Gamma>, e, Upd x # S)`
-    have "heap_upds_ok (\<Gamma>, Upd x # S)" by fastforce
-    hence [simp]: "x \<notin> domA \<Gamma>" "x \<notin> upds S" by (auto dest: heap_upds_ok_upd)
+  case (step d' d'')
+  then obtain r' c' where "c \<Rightarrow>\<^sup>*  c'" and "d' = to_gc_conf r' c'" and "r_ok r' c'"  by auto
 
-    from `to_gc_conf r' c' = (\<Gamma>, e, Upd x # S)`
-    have "Upd x # S = restr_stack (- set r') (snd (snd c'))"  by auto
-    from arg_cong[where f = upds, OF this]
-    have "x \<in> upds (snd (snd c'))" by auto
-    with `r_ok (r', c')` have "r_ok (x # r', c')" by auto
+  from invariant_starE[OF `_ \<Rightarrow>\<^sup>* _` heap_upds_ok_invariant]  `heap_upds_ok _`
+  have "heap_upds_ok_conf c'".
 
-    have "to_gc_conf (x # r') c' = to_gc_conf ([x]@ r') c'" by simp
-    also have "\<dots> = to_gc_conf [x] (to_gc_conf r' c')" by (rule to_gc_conf_append)
-    also have "\<dots> = to_gc_conf [x] (\<Gamma>, e, Upd x # S)" unfolding `to_gc_conf r' c' = _`..
-    also have "\<dots> = (\<Gamma>, e, S)" by (auto intro: restrictA_noop)
-    finally have "to_gc_conf (x # r') c' = (\<Gamma>, e, S)".
-    with dropUpd  `heap_upds_ok_conf c'` `r_ok (x # r', c')`
-    show ?thesis by fastforce
-  qed
-  then obtain c'' where "c' \<Rightarrow>\<^sup>* c''" and "d'' = to_gc_conf r'' c''" and "heap_upds_ok_conf c''" and "r_ok (r'', c'')" by auto
-  with `c \<Rightarrow>\<^sup>* c'` `c' \<Rightarrow>\<^sup>* c''`
+  from invariant_starE[OF `_ \<Rightarrow>\<^sup>* _` closed_invariant]  `closed _` 
+  have "closed c'".
+
+  from step `d' = to_gc_conf r' c'`
+  have "to_gc_conf r' c' \<Rightarrow>\<^sub>G d''" by simp
+  from this `heap_upds_ok_conf c'` `closed c'` `r_ok r' c'`
+  have "\<exists> r'' c''. c' \<Rightarrow>\<^sup>* c'' \<and> d'' = to_gc_conf r'' c'' \<and> r_ok r'' c''"
+    by (rule sestoftUnGCstep)
+  then obtain r'' c'' where "c' \<Rightarrow>\<^sup>* c''" and "d'' = to_gc_conf r'' c''" and "r_ok r'' c''" by auto
+  
+  from `c' \<Rightarrow>\<^sup>*  c''` `c \<Rightarrow>\<^sup>*  c'`
   have "c \<Rightarrow>\<^sup>* c''" by auto
-  with `d'' = _` `heap_upds_ok_conf c''` `r_ok (r'', c'')`
+  with `d'' = _` `r_ok r'' c''`
   show ?case by blast
+qed
+
+lemma dummies_unchanged_invariant:
+  "invariant step (\<lambda> (\<Gamma>, e, S) . dummies S = V)" (is "invariant _ ?I")
+proof
+  fix c c'
+  assume "c \<Rightarrow> c'" and "?I c"
+  thus "?I c'" by (induction) auto
 qed
   
 lemma sestoftUnGC':
-  assumes "([], [], e, []) \<Rightarrow>\<^sub>G\<^sup>* (r, \<Gamma>, e', [])"
+  assumes "([], e, []) \<Rightarrow>\<^sub>G\<^sup>* (\<Gamma>, e', map Dummy r)"
   assumes "isVal e'"
+  assumes "fv e = ({}::var set)"
   shows   "\<exists> \<Gamma>''. ([], e, []) \<Rightarrow>\<^sup>* (\<Gamma>'', e', []) \<and> \<Gamma> = restrictA (- set r) \<Gamma>'' \<and> set r \<subseteq> domA \<Gamma>''"
 proof-
- from sestoftUnGC[where r = "[]" and c = "([], e, [])", simplified, OF assms(1)]
- obtain \<Gamma>' S'
+ from sestoftUnGC[where r = "[]" and c = "([], e, [])", simplified, OF assms(1,3)]
+ obtain r' \<Gamma>' S'
   where "([], e, []) \<Rightarrow>\<^sup>* (\<Gamma>', e', S')"
-    and "\<Gamma> = restrictA (- set r) \<Gamma>'"
-    and "restr_stack (- set r) S' = []"
-    and "heap_upds_ok (\<Gamma>', S')"
-    and "set r \<subseteq> domA \<Gamma>' \<union> upds S'"
+    and "\<Gamma> = restrictA (- set r') \<Gamma>'"
+    and "map Dummy r = restr_stack (- set r') S' @ map Dummy (rev r')"
+    and "r_ok r' (\<Gamma>', e', S')"
     by auto
+
+  from invariant_starE[OF `([], e, []) \<Rightarrow>\<^sup>* (\<Gamma>', e', S')` dummies_unchanged_invariant]
+  have "dummies S' = {}" by auto
+  with  `map Dummy r = restr_stack (- set r') S' @ map Dummy (rev r')`
+  have "restr_stack (- set r') S' = []" and [simp]: "r = rev r'"
+  by (induction S' rule: restr_stack.induct) (auto split: if_splits)
+  
+  from invariant_starE[OF `_ \<Rightarrow>\<^sup>* _` heap_upds_ok_invariant]
+  have "heap_upds_ok (\<Gamma>', S')" by auto
  
-  from `isVal e'` sestoftUnGCStack[where e = e', OF `heap_upds_ok (\<Gamma>', S')` `set r \<subseteq> domA \<Gamma>' \<union> upds S'`]
+  from `isVal e'` sestoftUnGCStack[where e = e', OF `heap_upds_ok (\<Gamma>', S')` ]
   obtain \<Gamma>'' S''
     where "(\<Gamma>', e', S') \<Rightarrow>\<^sup>* (\<Gamma>'', e', S'')"
-    and   "heap_upds_ok (\<Gamma>'', S'')"
     and "to_gc_conf r (\<Gamma>', e', S') = to_gc_conf r (\<Gamma>'', e', S'')"
     and "safe_hd S'' = safe_hd (restr_stack (- set r) S'')"
-    and "set r \<subseteq> domA \<Gamma>'' \<union> upds S''"
     by metis
-  from this (3,4) `restr_stack (- set r) S' = []`
+
+  from this (2,3) `restr_stack (- set r') S' = []`
   have "S'' = []" by auto
- 
-  from `([], e, []) \<Rightarrow>\<^sup>* (\<Gamma>', e', S')` and `(\<Gamma>', e', S') \<Rightarrow>\<^sup>* (\<Gamma>'', e', S'')` and `S'' = []`
-  have "([], e, []) \<Rightarrow>\<^sup>* (\<Gamma>'', e', [])" by auto
+
+  from  `([], e, []) \<Rightarrow>\<^sup>* (\<Gamma>', e', S')`  and `(\<Gamma>', e', S') \<Rightarrow>\<^sup>* (\<Gamma>'', e', S'')` and `S'' = []`
+  have "([], e, []) \<Rightarrow>\<^sup>*  (\<Gamma>'', e', [])" by auto
   moreover
   have "\<Gamma> = restrictA (- set r) \<Gamma>''" using `to_gc_conf r _ = _` `\<Gamma> = _` by auto
   moreover
-  from `set r \<subseteq> domA \<Gamma>'' \<union> upds S''` `S'' = []`
-  have "set r \<subseteq> domA \<Gamma>''" by simp
+  from invariant_starE[OF `(\<Gamma>', e', S') \<Rightarrow>\<^sup>* (\<Gamma>'', e', S'')` subset_bound_invariant `r_ok r' (\<Gamma>', e', S')`]
+  have "set r \<subseteq> domA \<Gamma>''" using `S'' = []` by auto
   ultimately
   show ?thesis by blast
 qed
-
 
 end
 

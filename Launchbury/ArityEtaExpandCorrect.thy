@@ -64,11 +64,11 @@ begin
   by (auto simp add: edom_empty_iff_bot closed_a_consistent[OF assms])
 
   lemma foo:
-    fixes c c' R 
-    assumes "c \<Rightarrow>\<^sup>* c'" and "\<not> boring_step c'" and "consistent (ae,a,as) c"
+    fixes c c'
+    assumes "c \<Rightarrow>\<^sup>* c'" and "\<not> boring_step c'" and "heap_upds_ok_conf c" and "consistent (ae,a,as) c"
     shows "\<exists>ae' a' as'. consistent (ae',a',as') c' \<and> a_transform (ae,a,as) c \<Rightarrow>\<^sup>* a_transform (ae',a',as') c'"
-  using assms
-  proof(induction c c' arbitrary: ae a as rule:step_induction)
+  using assms(1,2) heap_upds_ok_invariant assms(3-)
+  proof(induction c c' arbitrary: ae a as rule:step_invariant_induction)
   case (app\<^sub>1 \<Gamma> e x S)
     from app\<^sub>1 have "consistent (ae, inc\<cdot>a, as) (\<Gamma>, e, Arg x # S)"
       by (auto intro: a_consistent_app\<^sub>1)
@@ -90,7 +90,8 @@ begin
     hence "x \<in> thunks \<Gamma>" by auto
     hence [simp]: "x \<in> domA \<Gamma>" by (rule set_mp[OF thunks_domA])
 
-    have "x \<notin> upds S" using thunk by (auto dest!: a_consistent_heap_upds_okD  heap_upds_okE)
+    from `heap_upds_ok_conf (\<Gamma>, Var x, S)`
+    have "x \<notin> upds S"  by (auto dest!: heap_upds_okE)
     
     have "x \<in> edom ae" using thunk by auto
     have "ae x = up\<cdot>0" using thunk `x \<in> thunks \<Gamma>` by (auto)
@@ -152,15 +153,13 @@ begin
     ultimately show ?case by (blast del: consistentI consistentE)
   next
   case (var\<^sub>2 \<Gamma> x e S)
-    have "x \<in> edom ae" using var\<^sub>2 by (auto simp add: a_consistent.simps env_restr_join join_below_iff)
-
     from var\<^sub>2
     have "a_consistent (ae, a, as) (\<Gamma>, e, Upd x # S)" by auto
-    from a_consistent_UpdD[OF this  `x \<in> edom ae`]
+    from a_consistent_UpdD[OF this]
     have "ae x = up\<cdot>0" and "a = 0".
 
     have "a_consistent (ae, a, as) ((x, e) # \<Gamma>, e, S)"
-      using var\<^sub>2 `x \<in> edom ae` by (auto intro!: a_consistent_var\<^sub>2)
+      using var\<^sub>2 by (auto intro!: a_consistent_var\<^sub>2)
     hence "consistent (ae, 0, as) ((x, e) # \<Gamma>, e, S)"
       using var\<^sub>2 `a = 0`
       by (auto simp add: thunks_Cons elim: below_trans)

@@ -222,6 +222,10 @@ lemma override_on_eqvt[eqvt]:
   "\<pi> \<bullet> (override_on m1 m2 S) = override_on (\<pi> \<bullet> m1) (\<pi> \<bullet> m2) (\<pi> \<bullet> S)"
   by (auto simp add: override_on_def )
 
+lemma card_eqvt[eqvt]:
+  "\<pi> \<bullet> (card S) = card (\<pi> \<bullet> S)"
+by (cases "finite S", induct rule: finite_induct) (auto simp add: card_insert_if mem_permute_iff permute_pure)
+
 (* Helper lemmas provided by Christian Urban *)
 
 lemma Projl_permute:

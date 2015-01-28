@@ -30,6 +30,7 @@ lemma fresh_Dummy[simp]: "a \<sharp> Dummy v = a \<sharp> v" unfolding fresh_def
 lemma fv_Alts[simp]: "fv (Alts e1 e2) = fv e1 \<union> fv e2"  unfolding fv_def by auto
 lemma fv_Arg[simp]: "fv (Arg v) = fv v"  unfolding fv_def by auto
 lemma fv_Upd[simp]: "fv (Upd v) = fv v"  unfolding fv_def by auto
+lemma fv_Dummy[simp]: "fv (Dummy v) = fv v"  unfolding fv_def by auto
 
 instance stack_elem :: fs  by (default, case_tac x) (auto simp add: finite_supp)
 
@@ -47,6 +48,12 @@ fun upds :: "stack \<Rightarrow> var set" where
 | "upds (Upd x # S) = insert x (upds S)"
 | "upds (Arg x # S) = upds S"
 | "upds (Dummy x # S) = upds S"
+fun dummies :: "stack \<Rightarrow> var set" where
+  "dummies [] = {}"
+| "dummies (Alts e1 e2 # S) = dummies S"
+| "dummies (Upd x # S) = dummies S"
+| "dummies (Arg x # S) = dummies S"
+| "dummies (Dummy x # S) = insert x (dummies S)"
 fun flattn :: "stack \<Rightarrow> var list" where
   "flattn [] = []"
 | "flattn (Alts e1 e2 # S) = fv_list e1 @ fv_list e2 @ flattn S"
@@ -66,13 +73,38 @@ lemma set_upds_list[simp]:
 
 lemma ups_fv_subset: "upds S \<subseteq> fv S"
   by (induction S rule: upds.induct) auto
+lemma fresh_distinct_ups: "atom ` V \<sharp>* S \<Longrightarrow> V \<inter> upds S = {}"
+   by (auto dest!: fresh_distinct_fv set_mp[OF ups_fv_subset])
 lemma ap_fv_subset: "ap S \<subseteq> fv S"
   by (induction S rule: upds.induct) auto
+lemma dummies_fv_subset: "dummies S \<subseteq> fv S"
+  by (induction S rule: dummies.induct) auto
 
 lemma fresh_flattn[simp]: "atom (a::var) \<sharp> flattn S \<longleftrightarrow> atom a \<sharp> S"
   by (induction S rule:flattn.induct) (auto simp add: fresh_Nil fresh_Cons fresh_append fresh_fv[OF finite_fv])
 lemma fresh_star_flattn[simp]: "atom ` (as:: var set) \<sharp>* flattn S \<longleftrightarrow> atom ` as \<sharp>* S"
   by (auto simp add: fresh_star_def)
+
+lemma upds_append[simp]: "upds (S@S') = upds S \<union> upds S'"
+  by (induction S rule: upds.induct) auto
+lemma upds_map_Dummy[simp]: "upds (map Dummy l) = {}"
+  by (induction l) auto
+
+lemma upds_list_append[simp]: "upds_list (S@S') = upds_list S @ upds_list S'"
+  by (induction S rule: upds.induct) auto
+lemma upds_list_map_Dummy[simp]: "upds_list (map Dummy l) = []"
+  by (induction l) auto
+
+lemma dummies_append[simp]: "dummies (S@S') = dummies S \<union> dummies S'"
+  by (induction S rule: dummies.induct) auto
+lemma dummies_map_Dummy[simp]: "dummies (map Dummy l) = set l"
+  by (induction l) auto
+
+lemma map_Dummy_inj[simp]: "map Dummy l = map Dummy l' \<longleftrightarrow> l = l'"
+  apply (induction l arbitrary: l')
+  apply (case_tac [!] l')
+  apply auto
+  done
 
 type_synonym conf = "(heap \<times> exp \<times> stack)"
 
@@ -120,8 +152,61 @@ lemma restr_stack_noop[simp]:
      (auto dest: Upd_eq_restr_stackD2)
   
 
-  
+subsubsection {* Invariants of the semantics *}
 
+inductive invariant :: "('a \<Rightarrow> 'a \<Rightarrow> bool) \<Rightarrow> ('a \<Rightarrow> bool) \<Rightarrow> bool"
+  where "(\<And> x y. rel x y \<Longrightarrow> I x \<Longrightarrow> I y) \<Longrightarrow> invariant rel I"
+
+lemmas invariant.intros[case_names step]
+
+lemma invariantE:
+  "invariant rel I \<Longrightarrow> rel x y \<Longrightarrow> I x \<Longrightarrow> I y" by (auto elim: invariant.cases)
+
+lemma invariant_starE:
+  "rtranclp rel x y \<Longrightarrow> invariant rel I \<Longrightarrow>  I x \<Longrightarrow> I y"
+  by (induction rule: rtranclp.induct) (auto elim: invariantE)
+
+lemma invariant_True:
+  "invariant rel (\<lambda> _. True)"
+by (auto intro: invariant.intros)
+
+lemma invariant_conj:
+  "invariant rel I1 \<Longrightarrow> invariant rel I2 \<Longrightarrow> invariant rel (\<lambda> x. I1 x \<and> I2 x)"
+by (auto simp add: invariant.simps)
+
+
+thm rtranclp_induct[no_vars]
+
+lemma rtranclp_invariant_induct[consumes 3, case_names base step]:
+  assumes "r\<^sup>*\<^sup>* a b"
+  assumes "invariant r I"
+  assumes "I a"
+  assumes "P a"
+  assumes "(\<And>y z. r\<^sup>*\<^sup>* a y \<Longrightarrow> r y z \<Longrightarrow> I y \<Longrightarrow> I z \<Longrightarrow> P y \<Longrightarrow> P z)"
+  shows "P b"
+proof-
+  from assms(1,3)
+  have "P b" and "I b"
+  proof(induction)
+    case base
+    from `P a` show "P a".
+    from `I a` show "I a".
+  next
+    case (step y z)
+    with `I a` have "P y" and "I y" by auto
+
+    from assms(2) `r y z` `I y`
+    show "I z" by (rule invariantE)
+
+    from `r\<^sup>*\<^sup>* a y` `r y z` `I y` `I z` `P y`
+    show "P z" by (rule assms(5))
+  qed
+  thus "P b" by-
+qed
+
+
+fun closed :: "conf \<Rightarrow> bool"
+  where "closed (\<Gamma>, e, S) \<longleftrightarrow> fv (\<Gamma>, e, S) \<subseteq> domA \<Gamma> \<union> upds S"
 
 fun heap_upds_ok where "heap_upds_ok (\<Gamma>,S) \<longleftrightarrow> domA \<Gamma> \<inter> upds S = {} \<and> distinct (upds_list S)"
 
@@ -138,13 +223,19 @@ lemma heap_upds_ok_alts1: "heap_upds_ok (\<Gamma>, S) \<Longrightarrow> heap_upd
 lemma heap_upds_ok_alts2: "heap_upds_ok (\<Gamma>, Alts e1 e2 # S) \<Longrightarrow> heap_upds_ok (\<Gamma>, S)" by auto
 
 lemma heap_upds_ok_append:
-  assumes "domA \<Delta> \<inter> domA \<Gamma> = {}"
   assumes "domA \<Delta> \<inter> upds S = {}"
   assumes "heap_upds_ok (\<Gamma>,S)"
   shows "heap_upds_ok (\<Delta>@\<Gamma>, S)"
   using assms
   unfolding heap_upds_ok.simps
   by auto
+
+lemma heap_upds_ok_let:
+  assumes "atom ` domA \<Delta> \<sharp>* S"
+  assumes "heap_upds_ok (\<Gamma>, S)"
+  shows "heap_upds_ok (\<Delta> @ \<Gamma>, S)"
+using assms(2) fresh_distinct_fv[OF assms(1)]
+by (auto intro: heap_upds_ok_append dest: set_mp[OF ups_fv_subset])
 
 lemma heap_upds_ok_to_stack:
   "x \<in> domA \<Gamma> \<Longrightarrow> heap_upds_ok (\<Gamma>, S) \<Longrightarrow> heap_upds_ok (delete x \<Gamma>, Upd x #S)"
@@ -184,6 +275,7 @@ lemmas heap_upds_ok_intros[intro] =
   heap_upds_ok_to_heap heap_upds_ok_to_stack heap_upds_ok_to_stack' heap_upds_ok_reorder
   heap_upds_ok_app1 heap_upds_ok_app2 heap_upds_ok_alts1 heap_upds_ok_alts2 heap_upds_ok_delete
   heap_upds_ok_restrictA heap_upds_ok_restr_stack
+  heap_upds_ok_let
 lemmas heap_upds_ok.simps[simp del]
 
 
