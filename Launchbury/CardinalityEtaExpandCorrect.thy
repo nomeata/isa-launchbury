@@ -65,8 +65,7 @@ begin
     \<Longrightarrow> edom ae = edom ce
     \<Longrightarrow> prognosis ae as a (\<Gamma>, e, S) \<sqsubseteq> ce
     \<Longrightarrow> (\<And> x. x \<in> thunks \<Gamma> \<Longrightarrow> many \<sqsubseteq> ce x \<Longrightarrow> ae x = up\<cdot>0)
-    \<Longrightarrow> set r \<inter> edom ce = {}
-    \<Longrightarrow> set r \<subseteq> domA \<Gamma> \<union> upds S
+    \<Longrightarrow> set r \<subseteq> (domA \<Gamma> \<union> upds S) - edom ce
     \<Longrightarrow> upds S - edom ce \<subseteq> set r
     \<Longrightarrow> consistent (ae, ce, a, as, r) (\<Gamma>, e, S)"  
   inductive_cases consistentE[elim!]: "consistent (ae, ce, a, as) (\<Gamma>, e, S)"

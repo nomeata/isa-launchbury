@@ -5,6 +5,7 @@ begin
 inductive gc_step :: "conf \<Rightarrow> conf \<Rightarrow> bool" (infix "\<Rightarrow>\<^sub>G" 50) where
   normal:  "c \<Rightarrow> c' \<Longrightarrow> c \<Rightarrow>\<^sub>G c'"
 | dropUpd: "(\<Gamma>, e, Upd x # S) \<Rightarrow>\<^sub>G (\<Gamma>, e, S @ [Dummy x])"
+| drop: "x \<in> domA \<Gamma>  \<Longrightarrow> (\<Gamma>, e, S) \<Rightarrow>\<^sub>G (delete x \<Gamma>, e, S @ [Dummy x])"
 
 lemmas gc_step_intros[intro] =
   normal[OF step.intros(1)] normal[OF step.intros(2)] normal[OF step.intros(3)]
@@ -142,6 +143,10 @@ by (induction S rule: restr_stack.induct) auto
 lemma heap_upd_ok_to_gc_conf:
   "heap_upds_ok (\<Gamma>, S) \<Longrightarrow> to_gc_conf r (\<Gamma>, e, S) = (\<Gamma>'', e'', S'') \<Longrightarrow> heap_upds_ok (\<Gamma>'', S'')"
 by (auto simp add: heap_upds_ok.simps)
+
+lemma delete_restrictA_conv:
+  "delete x \<Gamma> = restrictA (-{x}) \<Gamma>"
+by (induction \<Gamma>) auto
 
 lemma sestoftUnGCstep:
   assumes "to_gc_conf r c \<Rightarrow>\<^sub>G d"
@@ -286,6 +291,32 @@ proof-
     have "r_ok (x # r) (\<Gamma>', e, S')" by auto
     moreover
     note `to_gc_conf r (\<Gamma>', e, S') = (\<Gamma>'', e'', Upd x # S'')`
+    ultimately
+    show ?thesis by fastforce
+  next
+    case (drop x \<Gamma>'' e'' S'')
+    from `to_gc_conf r (\<Gamma>', e, S') = (\<Gamma>'', e'', S'')` and `x \<in> domA \<Gamma>''`
+    have "x \<notin> set r" by auto
+
+    from `heap_upds_ok (\<Gamma>', S')` and  `to_gc_conf r (\<Gamma>', e, S') = (\<Gamma>'', e'', S'')`
+    have "heap_upds_ok (\<Gamma>'', S'')" by (rule heap_upd_ok_to_gc_conf)
+    with `x \<in> domA \<Gamma>''`
+    have [simp]: "x \<notin> upds S''" by (metis heap_upds_okE)
+
+
+    have "to_gc_conf (x # r) (\<Gamma>', e, S') = to_gc_conf ([x]@ r) (\<Gamma>', e, S')" by simp
+    also have "\<dots> = to_gc_conf [x] (to_gc_conf r (\<Gamma>', e, S'))" by (rule to_gc_conf_append)
+    also have "\<dots> = to_gc_conf [x] (\<Gamma>'', e'', S'')" unfolding `to_gc_conf r (\<Gamma>', e, S') = _`..
+    also have "\<dots> = (delete x \<Gamma>'', e'', S''@[Dummy x])" by (auto  simp add: delete_restrictA_conv)
+    also have "\<dots> = d" using ` d= _` by simp
+    finally have "to_gc_conf (x # r) (\<Gamma>', e, S') = d".
+    moreover
+    from `to_gc_conf r (\<Gamma>', e, S') = _` `x \<in> domA \<Gamma>''`
+    have "x \<in> domA \<Gamma>'" by auto
+    with `r_ok r (\<Gamma>', e, S')`
+    have "r_ok (x # r) (\<Gamma>', e, S')" by auto
+    moreover
+    note `to_gc_conf r (\<Gamma>', e, S') = _`
     ultimately
     show ?thesis by fastforce
   qed
