@@ -66,7 +66,6 @@ begin
     \<Longrightarrow> prognosis ae as a (\<Gamma>, e, S) \<sqsubseteq> ce
     \<Longrightarrow> (\<And> x. x \<in> thunks \<Gamma> \<Longrightarrow> many \<sqsubseteq> ce x \<Longrightarrow> ae x = up\<cdot>0)
     \<Longrightarrow> set r \<subseteq> (domA \<Gamma> \<union> upds S) - edom ce
-    \<Longrightarrow> upds S - edom ce \<subseteq> set r
     \<Longrightarrow> consistent (ae, ce, a, as, r) (\<Gamma>, e, S)"  
   inductive_cases consistentE[elim!]: "consistent (ae, ce, a, as) (\<Gamma>, e, S)"
 
@@ -285,9 +284,8 @@ begin
   next
   case (var\<^sub>2 \<Gamma> x e S)
     show ?case
-    proof(cases "x \<in> edom ce")
-      case True[simp]
-      hence [simp]: "x \<notin> set r" using var\<^sub>2 by auto
+    proof(cases "x \<in> set r")
+      case False[simp]
 
       from var\<^sub>2
       have "a_consistent (ae, a, as) (restrictA (- set r) \<Gamma>, e, Upd x # restr_stack (-set r) S)" by auto
@@ -309,13 +307,13 @@ begin
         by (auto intro: gc_step.intros simp add: map_transform_Cons)
       ultimately show ?thesis by (blast del: consistentI consistentE)
     next
-      case False[simp]
+      case True
       hence "ce x = \<bottom>" using var\<^sub>2 by (auto simp add: edom_def)
-
-      from False have "x \<notin> edom ae" using var\<^sub>2 by auto
+      hence "x \<notin> edom ce" by (simp add: edomIff)
+      hence "x \<notin> edom ae" using var\<^sub>2 by auto
       hence [simp]: "ae x = \<bottom>" by (auto simp add: edom_def)
 
-      from False have [simp]: "x \<in> set r" using var\<^sub>2 by auto
+      note  `x \<in> set r`[simp]
       
       have "prognosis ae as a ((x, e) # \<Gamma>, e, S) \<sqsubseteq> prognosis ae as a ((x, e) # \<Gamma>, e, Upd x # S)" by (rule prognosis_upd)
       also have "\<dots> \<sqsubseteq> prognosis ae as a (delete x ((x,e) # \<Gamma>), e, Upd x # S)"
@@ -404,10 +402,12 @@ begin
     hence "a_consistent (?ae \<squnion> ae, a, as) (restrictA (- set r) (\<Delta> @ \<Gamma>), e, restr_stack (- set r) S)"
       by (simp add: restrictA_append)
     moreover
-    have "set r \<inter> edom ce = {}" and "upds S - edom ce \<subseteq> set r" and "set r \<subseteq> domA \<Gamma> \<union> upds S" using let\<^sub>1 by auto
-    hence "set r \<inter> edom (?ce \<squnion> ce) = {}" and "upds S - edom (?ce \<squnion> ce) \<subseteq> set r"  and "set r \<subseteq> domA \<Gamma> \<union> upds S"
+    have  "set r \<subseteq> (domA \<Gamma> \<union> upds S) - edom ce" using let\<^sub>1 by auto
+    hence  "set r \<subseteq> (domA \<Gamma> \<union> upds S) - edom (?ce \<squnion> ce)"
+      apply (rule order_trans)
+      using `domA \<Delta> \<inter> domA \<Gamma> = {}` `domA \<Delta> \<inter> upds S = {}` 
       apply (auto simp add: edom_cHeap dest!: set_mp[OF edom_Aheap])
-      by (metis IntI UnE `domA \<Delta> \<inter> domA \<Gamma> = {}` `domA \<Delta> \<inter> upds S = {}` contra_subsetD empty_iff)
+      done
     ultimately
     have "consistent (?ae \<squnion> ae, ?ce \<squnion> ce, a, as, r) (\<Delta> @ \<Gamma>, e, S)" by auto
     }
