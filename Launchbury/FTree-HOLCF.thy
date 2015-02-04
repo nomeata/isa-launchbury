@@ -82,6 +82,16 @@ lemma both_mono2':
   "t \<sqsubseteq> t' \<Longrightarrow> t'' \<otimes>\<otimes> t \<sqsubseteq> t'' \<otimes>\<otimes> t'"
   using  both_mono2[folded below_set_def, unfolded paths_mono_iff].
 
+lemma nxt_both_left:
+  "possible t x \<Longrightarrow> nxt t x \<otimes>\<otimes> t' \<sqsubseteq> nxt (t \<otimes>\<otimes> t') x"
+  by (auto simp add: nxt_both either_above_arg2)
+
+lemma nxt_both_right:
+  "possible t' x \<Longrightarrow> t \<otimes>\<otimes> nxt t' x \<sqsubseteq> nxt (t \<otimes>\<otimes> t') x"
+  by (auto simp add: nxt_both either_above_arg1)
+
+
+
 lemma substitute_mono1': "f \<sqsubseteq> f'\<Longrightarrow> substitute f T t \<sqsubseteq> substitute f' T t"
   using  substitute_mono1[folded below_set_def, unfolded paths_mono_iff] fun_belowD
   by metis
@@ -91,9 +101,6 @@ lemma substitute_mono2': "t \<sqsubseteq> t'\<Longrightarrow> substitute f T t \
 
 lemma substitute_above_arg: "t \<sqsubseteq> substitute f T t"
   using  substitute_contains_arg[folded below_set_def, unfolded paths_mono_iff].
-
-lemma and_then_both_single': "and_then x t \<sqsubseteq> both (single x) t"
-  using and_then_both_single[folded below_set_def, unfolded paths_mono_iff].
 
 lemma ftree_contI:
   assumes  "\<And> S. f (Either S) = Either (f ` S)"

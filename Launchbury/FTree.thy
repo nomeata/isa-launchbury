@@ -223,18 +223,6 @@ lemma carrier_single[simp]: "carrier (single y) = {y}"
 lemma paths_single[simp]: "paths (single x) = {[], [x]}"
   by transfer auto
 
-lift_definition and_then :: "'a \<Rightarrow> 'a ftree \<Rightarrow> 'a ftree" is "\<lambda> x xss. insert [] (op # x ` xss)"
-  by (auto intro!: downsetI split: if_splits)
-
-lemma possible_and_then[simp]: "possible (and_then x t) x' \<longleftrightarrow> x = x'"
-  by transfer auto
-
-lemma nxt_and_then[simp]: "nxt (and_then x t) x = t"
-  by transfer auto
-
-lemma paths_and_then_Cons[simp]: "x'#xs \<in> paths (and_then x t) \<longleftrightarrow> x' = x \<and> xs \<in> paths t"
- by transfer force
- 
 lift_definition many_calls :: "'a \<Rightarrow> 'a ftree" is "\<lambda> x. range (\<lambda> n. replicate n x)"
   by (auto simp add: downset_def)
 
@@ -432,27 +420,6 @@ lemma nxt_both_repeatable[simp]:
 
 lemma nxt_both_many_calls[simp]: "nxt (many_calls x \<otimes>\<otimes> t) x = many_calls x \<otimes>\<otimes> (t  \<oplus>\<oplus> nxt t x)"
   by (simp add: repeatable_many_calls)
-
-lemma and_then_both_single:
-  "paths (and_then x t) \<subseteq> paths (single x \<otimes>\<otimes> t)"
-proof
-  fix xs
-  assume "xs \<in> paths (and_then x t)"
-  show "xs \<in> paths (single x \<otimes>\<otimes> t)"
-  proof(cases "xs = []")
-    case True thus ?thesis by simp
-  next
-    have "[x] \<in> paths (single x)" by transfer auto
-    moreover
-    case False
-    with `xs \<in> paths (and_then x t)`
-    obtain xs' where "xs = x # xs'" and "xs' \<in> paths t" by transfer auto
-    moreover
-    have "x # xs' \<in> interleave [x] xs'" by (auto intro: interleave_intros)
-    ultimately
-    show ?thesis by (auto simp add: paths_both)
-  qed
-qed
 
 lemma repeatable_both_self[simp]:
   assumes [simp]: "repeatable t"
@@ -927,12 +894,6 @@ proof (intro paths_inj set_eqI)
   qed
 qed
   
-
-
-lemma substitute_and_then:
-  "substitute f T (and_then x t) = and_then x (substitute (f_nxt f T x) T (t \<otimes>\<otimes> f x))"
-  by (rule ftree_eqI) auto
-
 lemma f_nxt_upd_empty[simp]:
   "f_nxt (f(x' := empty)) T x = (f_nxt f T x)(x' := empty)"
   by (auto simp add: f_nxt_def)
