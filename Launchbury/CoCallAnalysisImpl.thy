@@ -158,7 +158,7 @@ lemma Aexp_simps[simp]:
   "Aexp (Lam [x]. e)\<cdot>n = Aexp e\<cdot>(pred\<cdot>n) f|` fv (Lam [x]. e)"
   "Aexp (App e x)\<cdot>n = Aexp e\<cdot>(inc\<cdot>n) \<squnion> esing x\<cdot>(up\<cdot>0)"
   "\<not> nonrec \<Gamma> \<Longrightarrow> Aexp (Let \<Gamma> e)\<cdot>n = (Afix \<Gamma>\<cdot>(Aexp e\<cdot>n \<squnion> (\<lambda>_.up\<cdot>0) f|` thunks \<Gamma>)) f|` (fv (Let \<Gamma> e))"
-  "atom x \<sharp> e \<Longrightarrow> Aexp (let x be e in exp)\<cdot>n = (fup\<cdot>(Aexp e)\<cdot>(ABind_nonrec x e \<cdot> (Aexp exp\<cdot>n, CCexp exp\<cdot>n)) \<squnion> Aexp exp\<cdot>n) f|` (fv (let x be e in exp))"
+  "x \<notin> fv e \<Longrightarrow> Aexp (let x be e in exp)\<cdot>n = (fup\<cdot>(Aexp e)\<cdot>(ABind_nonrec x e \<cdot> (Aexp exp\<cdot>n, CCexp exp\<cdot>n)) \<squnion> Aexp exp\<cdot>n) f|` (fv (let x be e in exp))"
   "Aexp (Bool b)\<cdot>n = \<bottom>"
   "Aexp (scrut ? e1 : e2)\<cdot>n = Aexp scrut\<cdot>0 \<squnion> Aexp e1\<cdot>n \<squnion> Aexp e2\<cdot>n"
  by (simp add: cccFix_eq Aexp_eq fup_Aexp_eq CCexp_eq fup_CCexp_eq)+
@@ -169,7 +169,7 @@ lemma CCexp_simps[simp]:
   "CCexp (Lam [x]. e)\<cdot>n = predCC (fv (Lam [x]. e)) (CCexp e)\<cdot>n"
   "CCexp (App e x)\<cdot>n = CCexp e\<cdot>(inc\<cdot>n) \<squnion> ccProd {x} (insert x (fv e))"
   "\<not> nonrec \<Gamma> \<Longrightarrow> CCexp (Let \<Gamma> e)\<cdot>n = cc_restr (fv (Let \<Gamma> e)) (CCfix \<Gamma>\<cdot>(Afix \<Gamma>\<cdot>(Aexp e\<cdot>n  \<squnion> (\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>)), CCexp e\<cdot>n))"
-  "atom x \<sharp> e \<Longrightarrow> CCexp (let x be e in exp)\<cdot>n =
+  "x \<notin> fv e \<Longrightarrow> CCexp (let x be e in exp)\<cdot>n =
     cc_restr (fv (let x be e in exp)) (ccBind x e \<cdot>(Aheap_nonrec x e\<cdot>(Aexp exp\<cdot>n, CCexp exp\<cdot>n), CCexp exp\<cdot>n) \<squnion> ccProd (fv e) (ccNeighbors x (CCexp exp\<cdot>n) - (if isVal e then {} else {x})) \<squnion> CCexp exp\<cdot>n)"
   "CCexp (Bool b)\<cdot>n = \<bottom>"
   "CCexp (scrut ? e1 : e2)\<cdot>n = CCexp scrut\<cdot>0 \<squnion> (CCexp e1\<cdot>n \<squnion> CCexp e2\<cdot>n) \<squnion> ccProd (edom (Aexp scrut\<cdot>0)) (edom (Aexp e1\<cdot>n) \<union> edom (Aexp e2\<cdot>n))"
@@ -206,13 +206,15 @@ lemma Aheap_simp1[simp]:
   unfolding Aheap_def by simp
 
 lemma Aheap_simp2[simp]:
-  "atom x \<sharp> e' \<Longrightarrow> Aheap [(x,e')] e \<cdot>a = Aheap_nonrec x e'\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a)"
+  "x \<notin> fv e' \<Longrightarrow> Aheap [(x,e')] e \<cdot>a = Aheap_nonrec x e'\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a)"
   unfolding Aheap_def by (simp add: nonrec_def)
 
 lemma Aheap_eqvt'[eqvt]:
   "\<pi> \<bullet> (Aheap \<Gamma> e) = Aheap (\<pi> \<bullet> \<Gamma>) (\<pi> \<bullet> e)"
   apply (rule cfun_eqvtI)
   apply (cases nonrec \<pi> rule: eqvt_cases[where x = \<Gamma>])
+  apply simp
+  apply (erule nonrecE)
   apply simp
   apply (erule nonrecE)
   apply simp
@@ -245,7 +247,7 @@ lemma Aexp_Let_simp1[simp]:
   by (rule env_restr_cong) (auto dest!: set_mp[OF Afix_edom] set_mp[OF Aexp_edom] set_mp[OF thunks_domA])
 
 lemma Aexp_Let_simp2[simp]:
-  "atom x \<sharp> e \<Longrightarrow> Aexp (let x be e in exp)\<cdot>n = env_delete x (fup\<cdot>(Aexp e)\<cdot>(ABind_nonrec x e \<cdot> (Aexp exp\<cdot>n, CCexp exp\<cdot>n)) \<squnion> Aexp exp\<cdot>n)"
+  "x \<notin> fv e \<Longrightarrow> Aexp (let x be e in exp)\<cdot>n = env_delete x (fup\<cdot>(Aexp e)\<cdot>(ABind_nonrec x e \<cdot> (Aexp exp\<cdot>n, CCexp exp\<cdot>n)) \<squnion> Aexp exp\<cdot>n)"
   unfolding Aexp_simps env_delete_restr
   by (rule env_restr_cong) (auto dest!: set_mp[OF fup_Aexp_edom]  set_mp[OF Aexp_edom])
 

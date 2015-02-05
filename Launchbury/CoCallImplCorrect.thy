@@ -25,7 +25,7 @@ lemma CCexp_Let_simp1[simp]:
   by (rule cc_restr_intersect)  (auto dest!: set_mp[OF ccField_CCfix])
 
 lemma CCexp_Let_simp2[simp]:
-  "atom x \<sharp> e \<Longrightarrow> CCexp (let x be e in exp)\<cdot>n = cc_restr (- {x}) (ccBind x e \<cdot>(Aheap_nonrec x e\<cdot>(Aexp exp\<cdot>n, CCexp exp\<cdot>n), CCexp exp\<cdot>n) \<squnion> ccProd (fv e) (ccNeighbors x (CCexp exp\<cdot>n) - (if isVal e then {} else {x})) \<squnion> CCexp exp\<cdot>n)"
+  "x \<notin> fv e \<Longrightarrow> CCexp (let x be e in exp)\<cdot>n = cc_restr (- {x}) (ccBind x e \<cdot>(Aheap_nonrec x e\<cdot>(Aexp exp\<cdot>n, CCexp exp\<cdot>n), CCexp exp\<cdot>n) \<squnion> ccProd (fv e) (ccNeighbors x (CCexp exp\<cdot>n) - (if isVal e then {} else {x})) \<squnion> CCexp exp\<cdot>n)"
   unfolding CCexp_simps
   by (rule cc_restr_intersect)
      (auto simp add: ccField_ccProd ccBind_eq dest!: set_mp[OF ccField_CCexp]  set_mp[OF ccField_fup_CCexp] set_mp[OF ccField_cc_restr] set_mp[OF ccNeighbors_ccField])
@@ -114,12 +114,15 @@ next
   case (Let_nonrec x' e exp x y)
 
   from Let_nonrec(1,2)
-  have [simp]: "x \<noteq> x'" "y \<noteq> x'" by (simp_all add: fresh_at_base)
+  have  "x \<noteq> x'" "y \<noteq> x'" by (simp_all add: fresh_at_base)
 
-  note Let_nonrec(1,2,3)[simp]
+  note Let_nonrec(1,2)[simp]
   
-  have [simp]: "atom x' \<sharp> e[y::=x]"
-    by (simp add: subst_pres_fresh2)
+  from `x' \<notin> fv e` `y \<noteq> x'` `x \<noteq> x'`
+  have [simp]: "x' \<notin> fv (e[y::=x])"
+    by (auto simp add: fv_subst_eq)
+
+  note `x' \<notin> fv e`[simp] `y \<noteq> x'` [simp]`x \<noteq> x'`  [simp]
 
   case 1[simp]
 
@@ -241,9 +244,9 @@ next
     have *: "nonrec (\<Gamma>[x::h=y])" by (simp add: nonrec_subst)
 
     from True
-    obtain x' e' where [simp]: "\<Gamma> = [(x',e')]" "atom x' \<sharp> e'" by (auto elim: nonrecE)
+    obtain x' e' where [simp]: "\<Gamma> = [(x',e')]" "x' \<notin> fv e'" by (auto elim: nonrecE)
 
-    from * have [simp]: "atom x' \<sharp> e'[x::=y]"
+    from * have [simp]: "x' \<notin> fv (e'[x::=y])"
       by (auto simp add: nonrec_def)
 
     from fun_cong[OF **, where x = x']
@@ -269,10 +272,7 @@ next
       by (auto simp add: Aheap_def join_below_iff env_restr_join2 Compl_partition intro:  below_trans[OF _ Afix_above_arg])
   next
     case True
-    then obtain x e' where [simp]: "\<Gamma> = [(x,e')]" "atom x \<sharp> e'" by (auto elim: nonrecE)
-
-    from `atom x \<sharp> e'`
-    have "x \<notin> fv e'" by (simp add: fv_def fresh_def)
+    then obtain x e' where [simp]: "\<Gamma> = [(x,e')]" "x \<notin> fv e'" by (auto elim: nonrecE)
 
     hence "\<And> a. x \<notin> edom (fup\<cdot>(Aexp e')\<cdot>a)"
       by (auto dest:set_mp[OF fup_Aexp_edom])
@@ -312,7 +312,7 @@ lemma ccHeap_simp1:
   by (simp add: ccHeap_def ccHeap_rec_eq)
 
 lemma ccHeap_simp2:
-  "atom x \<sharp> e \<Longrightarrow> ccHeap [(x,e)] exp\<cdot>n = CCfix_nonrec x e\<cdot>(Aexp exp\<cdot>n, CCexp exp\<cdot>n)"
+  "x \<notin> fv e \<Longrightarrow> ccHeap [(x,e)] exp\<cdot>n = CCfix_nonrec x e\<cdot>(Aexp exp\<cdot>n, CCexp exp\<cdot>n)"
   by (simp add: ccHeap_def ccHeap_nonrec_eq nonrec_def)
 
 
@@ -380,8 +380,7 @@ next
   next
     case True
     with `map_of \<Delta> x = Some e'`
-    have [simp]: "\<Delta> = [(x,e')]" "atom x \<sharp> e'" by (auto elim!: nonrecE split: if_splits)
-    hence [simp]: "x \<notin> fv e'" by (auto simp add: fresh_def fv_def)
+    have [simp]: "\<Delta> = [(x,e')]" "x \<notin> fv e'" by (auto elim!: nonrecE split: if_splits)
 
     show ?thesis
     proof(cases "x--x\<notin>CCexp e\<cdot>a \<or> isVal e'")
@@ -425,8 +424,7 @@ next
   next
     case True
     with `map_of \<Delta> x = Some e'`
-    have [simp]: "\<Delta> = [(x,e')]" "atom x \<sharp> e'" by (auto elim!: nonrecE split: if_splits)
-    hence [simp]: "x \<notin> fv e'" by (auto simp add: fresh_def fv_def)
+    have [simp]: "\<Delta> = [(x,e')]" "x \<notin> fv e'" by (auto elim!: nonrecE split: if_splits)
 
     have [simp]: "(ccNeighbors x (ccBind x e'\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a))) = {}"
      by (auto simp add: ccBind_eq dest!: set_mp[OF ccField_cc_restr] set_mp[OF ccField_fup_CCexp])
@@ -493,7 +491,7 @@ next
 next
   fix x \<Gamma> e a
   assume "nonrec \<Gamma>"
-  then obtain x' e' where [simp]: "\<Gamma> = [(x',e')]" "atom x' \<sharp> e'" by (auto elim: nonrecE)
+  then obtain x' e' where [simp]: "\<Gamma> = [(x',e')]" "x' \<notin> fv e'" by (auto elim: nonrecE)
   assume "x \<in> thunks \<Gamma>"
   hence [simp]: "x = x'" "\<not> isVal e'" by (auto simp add: thunks_Cons split: if_splits)
 

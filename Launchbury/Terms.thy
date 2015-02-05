@@ -564,25 +564,28 @@ lemma thunks_eqvt[eqvt]:
 subsubsection {* Non-recursive Let bindings *}
 
 definition nonrec :: "heap \<Rightarrow> bool" where
-  "nonrec \<Gamma> = (\<exists> x e. \<Gamma> = [(x,e)] \<and> atom x \<sharp> e)"
+  "nonrec \<Gamma> = (\<exists> x e. \<Gamma> = [(x,e)] \<and> x \<notin> fv e)"
 
 
 lemma nonrecE:
   assumes "nonrec \<Gamma>"
-  obtains x e where "\<Gamma> = [(x,e)]" and "atom x \<sharp> e"
+  obtains x e where "\<Gamma> = [(x,e)]" and "x \<notin> fv e"
   using assms
   unfolding nonrec_def
   by blast
 
 lemma nonrec_eqvt[eqvt]:
   "nonrec \<Gamma> \<Longrightarrow> nonrec (\<pi> \<bullet> \<Gamma>)"
-  by (erule nonrecE) (auto simp add: nonrec_def)
+  apply (erule nonrecE)
+  apply (auto simp add: nonrec_def fv_def fresh_def )
+  apply (metis fresh_at_base_permute_iff fresh_def)
+  done
 
 lemma exp_induct_rec[case_names Var App Let Let_nonrec Lam Bool IfThenElse]:
   assumes "\<And>var. P (Var var)"
   assumes "\<And>exp var. P exp \<Longrightarrow> P (App exp var)"
   assumes "\<And>\<Gamma> exp. \<not> nonrec \<Gamma> \<Longrightarrow> (\<And> x. x \<in> domA \<Gamma> \<Longrightarrow>  P (the (map_of \<Gamma> x))) \<Longrightarrow> P exp \<Longrightarrow> P (Let \<Gamma> exp)"
-  assumes "\<And>x e exp. atom x \<sharp> e \<Longrightarrow> P e \<Longrightarrow> P exp \<Longrightarrow> P (let x be e in exp)"
+  assumes "\<And>x e exp. x \<notin> fv e \<Longrightarrow> P e \<Longrightarrow> P exp \<Longrightarrow> P (let x be e in exp)"
   assumes "\<And>var exp.  P exp \<Longrightarrow> P (Lam [var]. exp)"
   assumes "\<And>b. P (Bool b)"
   assumes "\<And> scrut e1 e2. P scrut \<Longrightarrow> P e1 \<Longrightarrow> P e2 \<Longrightarrow> P (scrut ? e1 : e2)"
@@ -605,7 +608,7 @@ lemma  exp_strong_induct_rec[case_names Var App Let Let_nonrec Lam Bool IfThenEl
   assumes "\<And>exp var c. (\<And>c. P c exp) \<Longrightarrow> P c (App exp var)"
   assumes "\<And>\<Gamma> exp c.
     atom ` domA \<Gamma> \<sharp>* c \<Longrightarrow> \<not> nonrec \<Gamma> \<Longrightarrow> (\<And>c x. x \<in> domA \<Gamma> \<Longrightarrow>  P c (the (map_of \<Gamma> x))) \<Longrightarrow> (\<And>c. P c exp) \<Longrightarrow> P c (Let \<Gamma> exp)"
-  assumes "\<And>x e exp c. {atom x} \<sharp>* c \<Longrightarrow> atom x \<sharp> e \<Longrightarrow> (\<And> c. P c e) \<Longrightarrow> (\<And> c. P c exp) \<Longrightarrow> P c (let x be e in exp)"
+  assumes "\<And>x e exp c. {atom x} \<sharp>* c \<Longrightarrow> x \<notin> fv e \<Longrightarrow> (\<And> c. P c e) \<Longrightarrow> (\<And> c. P c exp) \<Longrightarrow> P c (let x be e in exp)"
   assumes "\<And>var exp c. {atom var} \<sharp>* c \<Longrightarrow> (\<And>c. P c exp) \<Longrightarrow> P c (Lam [var]. exp)"
   assumes "\<And>b c. P c (Bool b)"
   assumes "\<And> scrut e1 e2 c. (\<And> c. P c scrut) \<Longrightarrow> (\<And> c. P c e1) \<Longrightarrow> (\<And> c. P c e2) \<Longrightarrow> P c (scrut ? e1 : e2)"
@@ -628,7 +631,7 @@ lemma  exp_strong_induct_rec_set[case_names Var App Let Let_nonrec Lam Bool IfTh
   assumes "\<And>exp var c. (\<And>c. P c exp) \<Longrightarrow> P c (App exp var)"
   assumes "\<And>\<Gamma> exp c.
     atom ` domA \<Gamma> \<sharp>* c \<Longrightarrow> \<not> nonrec \<Gamma> \<Longrightarrow> (\<And>c x e. (x,e) \<in> set \<Gamma> \<Longrightarrow>  P c e) \<Longrightarrow> (\<And>c. P c exp) \<Longrightarrow> P c (Let \<Gamma> exp)"
-  assumes "\<And>x e exp c. {atom x} \<sharp>* c \<Longrightarrow> atom x \<sharp> e \<Longrightarrow> (\<And> c. P c e) \<Longrightarrow> (\<And> c. P c exp) \<Longrightarrow> P c (let x be e in exp)"
+  assumes "\<And>x e exp c. {atom x} \<sharp>* c \<Longrightarrow> x \<notin> fv e \<Longrightarrow> (\<And> c. P c e) \<Longrightarrow> (\<And> c. P c exp) \<Longrightarrow> P c (let x be e in exp)"
   assumes "\<And>var exp c. {atom var} \<sharp>* c \<Longrightarrow> (\<And>c. P c exp) \<Longrightarrow> P c (Lam [var]. exp)"
   assumes "\<And>b c. P c (Bool b)"
   assumes "\<And> scrut e1 e2 c. (\<And> c. P c scrut) \<Longrightarrow> (\<And> c. P c e1) \<Longrightarrow> (\<And> c. P c e2) \<Longrightarrow> P c (scrut ? e1 : e2)"

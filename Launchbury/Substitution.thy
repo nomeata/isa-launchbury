@@ -286,6 +286,6 @@ lemma subst_eq_Cons:
 
 lemma nonrec_subst:
   "atom ` domA \<Gamma> \<sharp>* x \<Longrightarrow> atom ` domA \<Gamma> \<sharp>* y \<Longrightarrow> nonrec \<Gamma>[x::h=y] \<longleftrightarrow> nonrec \<Gamma>"
-  by (auto simp add: nonrec_def subst_pres_fresh2 fresh_star_def subst_eq_Cons)
+  by (auto simp add: nonrec_def  fresh_star_def subst_eq_Cons fv_subst_eq)
 
 end

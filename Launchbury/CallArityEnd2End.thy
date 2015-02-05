@@ -23,7 +23,6 @@ lemma example1:
 proof-
   from arg_cong[where f = edom, OF Aexp_e]
   have "x \<in> fv e" by simp (metis Aexp_edom' insert_subset)
-  hence "\<not> atom x \<sharp> e" by (simp add:fresh_def fv_def)
   hence [simp]: "\<not> nonrec [(x,e)]"
     by (simp add: nonrec_def)
  

@@ -258,7 +258,7 @@ begin
   unfolding cccFix_choose_def by simp
 
   lemma cccFix_choose_simp2[simp]:
-    "atom x \<sharp> e \<Longrightarrow> cccFix_choose [(x,e)] = cccFix_nonrec x e"
+    "x \<notin> fv e \<Longrightarrow> cccFix_choose [(x,e)] = cccFix_nonrec x e"
   unfolding cccFix_choose_def nonrec_def by auto
 
 end
