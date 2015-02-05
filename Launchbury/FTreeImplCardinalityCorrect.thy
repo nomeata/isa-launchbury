@@ -185,7 +185,7 @@ begin
 
     have "fup\<cdot>(Fexp e)\<cdot>(ae x) \<sqsubseteq> Fexp e\<cdot>0" by (metis fup2 monofun_cfun_arg up_zero_top)
     hence "substitute ((FBinds \<Gamma>\<cdot>ae)(x := fup\<cdot>(Fexp e)\<cdot>(ae x))) (thunks \<Gamma>) (Fexp e\<cdot>0 \<otimes>\<otimes> Fstack as S) \<sqsubseteq> substitute ((FBinds \<Gamma>\<cdot>ae)(x := Fexp e\<cdot>0)) (thunks \<Gamma>) (Fexp e\<cdot>0 \<otimes>\<otimes> Fstack as S)"
-      by (intro substitute_mono1' fun_upd_mono below_refl)
+      by (intro substitute_mono1' fun_upd_mono below_refl monofun_cfun_arg)
     also have "\<dots> = substitute (((FBinds \<Gamma>\<cdot>ae)(x := Fexp e\<cdot>0))(x := empty)) (thunks \<Gamma>) (Fexp e\<cdot>0 \<otimes>\<otimes> Fstack as S)"
       using `repeatable (Fexp e\<cdot>0)` by (rule substitute_remove_anyways, simp)
     also have "((FBinds \<Gamma>\<cdot>ae)(x := Fexp e\<cdot>0))(x := empty) = FBinds \<Gamma>\<cdot>ae"
@@ -309,7 +309,7 @@ begin
     qed
     }
     note FBinds = ext[OF this]
-
+    
     {
     have "pathsCard (paths (substitute (FBinds (\<Delta> @ \<Gamma>)\<cdot>(Aheap \<Delta> e\<cdot>a \<squnion> ae)) (thunks (\<Delta> @ \<Gamma>)) (Fexp e\<cdot>a \<otimes>\<otimes> Fstack as S)))
       = pathsCard (paths (substitute (FBinds \<Gamma>\<cdot>ae) (thunks (\<Delta> @ \<Gamma>)) (substitute (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a))  (thunks (\<Delta> @ \<Gamma>))  (Fexp e\<cdot>a \<otimes>\<otimes> Fstack as S))))"

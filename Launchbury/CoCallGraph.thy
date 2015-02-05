@@ -358,15 +358,6 @@ instance CoCalls :: Join_cpo
 lemma ccNeighbors_lub[simp]: "ccNeighbors x (lub Gs) = lub (ccNeighbors x ` Gs)"
   by transfer (auto simp add: lub_set)
 
-lift_definition ccManyCalls:: "CoCalls \<Rightarrow> var set" 
-  is "\<lambda> G. {y . (y,y) \<in> G}".
-
-lemma ccManyCalls_bot[simp]:
-  "ccManyCalls \<bottom> = {}" by transfer simp
-
-lemma in_ccManyCalls[simp]:
-  "x \<in> ccManyCalls G \<longleftrightarrow> x--x\<in>G" by transfer auto
-
 inductive list_pairs :: "'a list \<Rightarrow> ('a \<times> 'a) \<Rightarrow> bool"
   where "list_pairs xs p \<Longrightarrow> list_pairs (x#xs) p"
       | "y \<in> set xs \<Longrightarrow> list_pairs (x#xs) (x,y)"

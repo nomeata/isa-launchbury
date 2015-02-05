@@ -497,7 +497,7 @@ next
   assume "x \<in> thunks \<Gamma>"
   hence [simp]: "x = x'" "\<not> isVal e'" by (auto simp add: thunks_Cons split: if_splits)
 
-  assume "x \<in> ccManyCalls (CCexp e\<cdot>a)"
+  assume "x--x \<in> CCexp e\<cdot>a"
   hence [simp]: "x'--x'\<in> CCexp  e\<cdot>a" by simp
 
   from `x \<in> thunks \<Gamma>`

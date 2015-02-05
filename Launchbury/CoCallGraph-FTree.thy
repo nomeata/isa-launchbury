@@ -679,37 +679,16 @@ lemma cont_ccFTree2:
 
 lemmas cont_ccFTree = cont_compose2[where c = ccFTree, OF cont_ccFTree1 cont_ccFTree2, simp, cont2cont]
 
-
-
 lemma ccFTree_below_singleI:
-  assumes "S \<inter> S' \<inter> ccManyCalls G = {}"
+  assumes "S \<inter> S' = {}"
   shows "ccFTree S G \<sqsubseteq> singles S'"
 proof-
   {
   fix xs x
-  assume "x \<in> S'"
-
-  assume "xs \<in> valid_lists S G"
-  hence "length [x'\<leftarrow>xs . x' = x] \<le> Suc 0"
-  proof(induction rule: valid_lists.induct[case_names Nil Cons])
-    case Nil thus ?case by simp
-  next
-    case (Cons xs x')
-    show ?case
-    proof(cases "x' = x")
-      case True with `x' \<in> S`
-      have "x \<in> S" by simp
-      from this `x \<in> S'`
-      have "x--x\<notin>G" using assms by auto
-      hence "x \<notin> ccNeighbors x G" by (metis elem_ccNeighbors)
-      with Cons
-      show ?thesis by (auto simp add: filter_empty_conv)
-    next
-      case False
-      with Cons
-      show ?thesis by auto
-    qed
-  qed
+  assume "xs \<in> valid_lists S G" and "x \<in> S'"
+  from this assms
+  have "length [x'\<leftarrow>xs . x' = x] \<le> Suc 0"
+  by(induction rule: valid_lists.induct[case_names Nil Cons]) auto
   }
   thus ?thesis by transfer auto
 qed

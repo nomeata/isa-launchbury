@@ -20,7 +20,7 @@ locale CoCallArityCorrect = CoCallArity + CoCallAnalyisHeap + CorrectArityAnalys
     "map_of \<Delta> x = Some e' \<Longrightarrow> (Aheap \<Delta> e\<cdot>a) x = up\<cdot>a' \<Longrightarrow> ccProd (fv e') (ccNeighbors x (ccHeap \<Delta> e\<cdot>a) - {x} \<inter> thunks \<Delta>) \<sqsubseteq> ccHeap \<Delta> e\<cdot>a"
 
   assumes aHeap_thunks_rec: " \<not> nonrec \<Gamma> \<Longrightarrow> x \<in> thunks \<Gamma> \<Longrightarrow> x \<in> edom (Aheap \<Gamma> e\<cdot>a) \<Longrightarrow> (Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
-  assumes aHeap_thunks_nonrec: "nonrec \<Gamma> \<Longrightarrow> x \<in> thunks \<Gamma> \<Longrightarrow> x \<in> ccManyCalls (ccExp e\<cdot>a) \<Longrightarrow> (Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
+  assumes aHeap_thunks_nonrec: "nonrec \<Gamma> \<Longrightarrow> x \<in> thunks \<Gamma> \<Longrightarrow> x--x \<in> ccExp e\<cdot>a \<Longrightarrow> (Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
 
 
 end

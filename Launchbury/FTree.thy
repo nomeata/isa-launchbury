@@ -1110,7 +1110,7 @@ lemma substitute_substitute:
   shows "substitute f T (substitute f' T t) = substitute (\<lambda> x. f x \<otimes>\<otimes> f' x) T t"
 proof (rule paths_inj, rule set_eqI)
   fix xs
-  have [simp]: "\<And> f f' x'. f_nxt (\<lambda>x. f x \<otimes>\<otimes> f' x) T x' =   (\<lambda>x. f_nxt f T x' x \<otimes>\<otimes> f_nxt f' T x' x)"
+  have [simp]: "\<And> f f' x'. f_nxt (\<lambda>x. f x \<otimes>\<otimes> f' x) T x' = (\<lambda>x. f_nxt f T x' x \<otimes>\<otimes> f_nxt f' T x' x)"
     by (auto simp add: f_nxt_def)
 
   from  assms

@@ -7,7 +7,7 @@ hide_const Multiset.single
 lemma valid_lists_many_calls:
   assumes "\<not> one_call_in_path x p"
   assumes "p \<in> valid_lists S G"
-  shows "x \<in> ccManyCalls G"
+  shows "x--x \<in> G"
 using assms(2,1)
 proof(induction rule:valid_lists.induct[case_names Nil Cons])
   case Nil thus ?case by simp
@@ -210,7 +210,7 @@ next
     have "p \<in> valid_lists (edom (Aheap \<Gamma> e\<cdot>a)) (ccExp e\<cdot>a)" by (simp add: Fheap_simp)
 
     with `\<not> one_call_in_path x p`
-    have "x \<in> ccManyCalls (ccExp e\<cdot>a)" by (rule valid_lists_many_calls)
+    have "x--x\<in> (ccExp e\<cdot>a)" by (rule valid_lists_many_calls)
   
     from True `x \<in> thunks \<Gamma>` this
     show ?thesis by (rule aHeap_thunks_nonrec)
