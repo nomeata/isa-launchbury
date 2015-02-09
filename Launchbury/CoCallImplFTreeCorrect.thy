@@ -62,57 +62,38 @@ proof default
   fix x e a
 
   from edom_mono[OF Aexp_App]
-  have *: "{x} \<union> edom (Aexp e\<cdot>(inc\<cdot>a)) \<subseteq> edom (Aexp (App e x)\<cdot>a)" by auto
-
-  have **: "{x} \<union> edom (Aexp e\<cdot>(inc\<cdot>a)) \<subseteq> insert x (fv e)"
-    by (intro subset_trans[OF *] subset_trans[OF Aexp_edom]) auto
-
-  have "many_calls x \<otimes>\<otimes> Fexp e\<cdot>(inc\<cdot>a) = many_calls x \<otimes>\<otimes> ccFTree (edom (Aexp e\<cdot>(inc\<cdot>a))) (ccExp e\<cdot>(inc\<cdot>a))"
-    unfolding Fexp_simp..
-  also have "\<dots> = ccFTree {x} (ccProd {x} {x}) \<otimes>\<otimes> ccFTree (edom (Aexp e\<cdot>(inc\<cdot>a))) (ccExp e\<cdot>(inc\<cdot>a))"
-    unfolding many_calls_ccFTree..
-  also have "\<dots> \<sqsubseteq> ccFTree ({x} \<union> edom (Aexp e\<cdot>(inc\<cdot>a))) (ccProd {x} {x} \<squnion> ccExp e\<cdot>(inc\<cdot>a) \<squnion> ccProd {x} (edom (Aexp e\<cdot>(inc\<cdot>a))))"
-    by (rule interleave_ccFTree)
-  also have "\<dots> \<sqsubseteq> ccFTree (edom (Aexp (App e x)\<cdot>a)) (ccProd {x} {x} \<squnion> ccExp e\<cdot>(inc\<cdot>a) \<squnion> ccProd {x} (edom (Aexp e\<cdot>(inc\<cdot>a))))"
-    by (rule ccFTree_mono1[OF *])
-  also have "ccProd {x} {x} \<squnion> ccExp e\<cdot>(inc\<cdot>a) \<squnion> ccProd {x} (edom (Aexp e\<cdot>(inc\<cdot>a))) = ccExp e\<cdot>(inc\<cdot>a) \<squnion> ccProd {x} ({x} \<union> (edom (Aexp e\<cdot>(inc\<cdot>a))))"
-    by (simp add: ccProd_union2[symmetric] del: ccProd_union2)
-  also have "ccProd {x} ({x} \<union> (edom (Aexp e\<cdot>(inc\<cdot>a)))) \<sqsubseteq> ccProd {x} (insert x (fv e))"
-    by (rule ccProd_mono2[OF **])
-  also have "ccExp e\<cdot>(inc\<cdot>a) \<squnion> ccProd {x} (insert x (fv e)) \<sqsubseteq> ccExp (App e x)\<cdot>a"
+  have "{x} \<union> edom (Aexp e\<cdot>(inc\<cdot>a)) \<subseteq> edom (Aexp (App e x)\<cdot>a)" by auto
+  moreover
+  {
+  have "ccApprox (many_calls x \<otimes>\<otimes> ccFTree (edom (Aexp e\<cdot>(inc\<cdot>a))) (ccExp e\<cdot>(inc\<cdot>a))) 
+    = cc_restr (edom (Aexp e\<cdot>(inc\<cdot>a))) (ccExp e\<cdot>(inc\<cdot>a)) \<squnion> ccProd {x} (insert x (edom (Aexp e\<cdot>(inc\<cdot>a))))"
+    by (simp add: ccApprox_both ccProd_insert2[where S' = "edom e" for e])
+  also
+  have "edom (Aexp e\<cdot>(inc\<cdot>a)) \<subseteq> fv e"
+    by (rule Aexp_edom)
+  also(below_trans[OF eq_imp_below join_mono[OF below_refl ccProd_mono2[OF insert_mono] ]])
+  have "cc_restr (edom (Aexp e\<cdot>(inc\<cdot>a))) (ccExp e\<cdot>(inc\<cdot>a)) \<sqsubseteq> ccExp e\<cdot>(inc\<cdot>a)"
+    by (rule cc_restr_below_arg)
+  also
+  have "ccExp e\<cdot>(inc\<cdot>a) \<squnion> ccProd {x} (insert x (fv e)) \<sqsubseteq> ccExp (App e x)\<cdot>a" 
     by (rule ccExp_App)
-  also have "ccFTree (edom (Aexp (App e x)\<cdot>a)) (ccExp (App e x)\<cdot>a) =  Fexp (App e x)\<cdot>a"
-    unfolding Fexp_simp..
   finally
+  have "ccApprox (many_calls x \<otimes>\<otimes> ccFTree (edom (Aexp e\<cdot>(inc\<cdot>a))) (ccExp e\<cdot>(inc\<cdot>a))) \<sqsubseteq> ccExp (App e x)\<cdot>a" by this simp_all
+  }
+  ultimately
   show "many_calls x \<otimes>\<otimes> Fexp e\<cdot>(inc\<cdot>a) \<sqsubseteq> Fexp (App e x)\<cdot>a"
-    by this simp_all
+    unfolding Fexp_simp by (auto intro!: below_ccFTreeI)
 next
   fix y e n
-  from edom_mono[OF Aexp_Lam]
-  have *: "edom (Aexp e\<cdot>(pred\<cdot>n)) - {y} \<subseteq> edom (Aexp (Lam [y]. e)\<cdot>n)" by auto
-
-  have "without y (Fexp e\<cdot>(pred\<cdot>n)) = without y (ccFTree (edom (Aexp e\<cdot>(pred\<cdot>n))) (ccExp e\<cdot>(pred\<cdot>n)))"
-    unfolding Fexp_simp..
-  also have "\<dots> = ccFTree (edom (Aexp e\<cdot>(pred\<cdot>n)) - {y}) (ccExp e\<cdot>(pred\<cdot>n))"
-    by (rule  without_ccFTree)
-  also have "\<dots> \<sqsubseteq> ccFTree (edom (Aexp (Lam [y]. e)\<cdot>n)) (ccExp e\<cdot>(pred\<cdot>n))"
-    by (rule ccFTree_mono1[OF *])
-  also have "\<dots> = ccFTree (edom (Aexp (Lam [y]. e)\<cdot>n)) (cc_restr ((edom (Aexp (Lam [y]. e)\<cdot>n))) (ccExp e\<cdot>(pred\<cdot>n)))"
-    by (rule ccFTree_cc_restr)
-  also have "(cc_restr ((edom (Aexp (Lam [y]. e)\<cdot>n))) (ccExp e\<cdot>(pred\<cdot>n))) \<sqsubseteq> (cc_restr (fv (Lam [y]. e)) (ccExp e\<cdot>(pred\<cdot>n)))"
-    by (rule cc_restr_mono1[OF Aexp_edom])
-  also have "\<dots> \<sqsubseteq> ccExp (Lam [y]. e)\<cdot>n"
-    by (rule ccExp_Lam)
-  also have "ccFTree (edom (Aexp (Lam [y]. e)\<cdot>n)) (ccExp (Lam [y]. e)\<cdot>n) = Fexp (Lam [y]. e)\<cdot>n"
-    unfolding Fexp_simp..
-  finally
-  show "without y (Fexp e\<cdot>(pred\<cdot>n)) \<sqsubseteq> Fexp (Lam [y]. e)\<cdot>n" by this simp_all
+  show "without y (Fexp e\<cdot>(pred\<cdot>n)) \<sqsubseteq> Fexp (Lam [y]. e)\<cdot>n"
+    unfolding Fexp_simp
+    by (auto dest: set_mp[OF Aexp_edom]
+             intro!: below_ccFTreeI  below_trans[OF _ ccExp_Lam] cc_restr_mono1 set_mp[OF edom_mono[OF Aexp_Lam]])
 next
   fix e y x a
 
   from edom_mono[OF Aexp_subst]
   have *: "edom (Aexp e[y::=x]\<cdot>a) \<subseteq> insert x (edom (Aexp e\<cdot>a) - {y})" by simp
-
 
   have "Fexp e[y::=x]\<cdot>a = ccFTree (edom (Aexp e[y::=x]\<cdot>a)) (ccExp e[y::=x]\<cdot>a)"
     unfolding Fexp_simp..
@@ -138,10 +119,9 @@ next
   fix v a
   have "up\<cdot>a \<sqsubseteq> (Aexp (Var v)\<cdot>a) v" by (rule Aexp_Var)
   hence "v \<in> edom (Aexp (Var v)\<cdot>a)" by (auto simp add: edom_def)
-  hence "[v] \<in> valid_lists (edom (Aexp (Var v)\<cdot>a)) (ccExp (Var v)\<cdot>a)"
-    by auto
   thus "single v \<sqsubseteq> Fexp (Var v)\<cdot>a"
-    unfolding Fexp_simp by (auto intro: single_below)
+    unfolding Fexp_simp
+    by (auto intro: below_ccFTreeI)
 next
   fix scrut e1 a e2
   have "ccFTree (edom (Aexp e1\<cdot>a)) (ccExp e1\<cdot>a) \<oplus>\<oplus> ccFTree (edom (Aexp e2\<cdot>a)) (ccExp e2\<cdot>a)
@@ -161,10 +141,12 @@ next
   have "ccExp scrut\<cdot>0 \<squnion> (ccExp e1\<cdot>a \<squnion> ccExp e2\<cdot>a) \<squnion> ccProd (edom (Aexp scrut\<cdot>0)) (edom (Aexp e1\<cdot>a) \<union> edom (Aexp e2\<cdot>a)) \<sqsubseteq>
         ccExp (scrut ? e1 : e2)\<cdot>a"
     by (rule ccExp_IfThenElse)
-  finally
+  
   show "Fexp scrut\<cdot>0 \<otimes>\<otimes> (Fexp e1\<cdot>a \<oplus>\<oplus> Fexp e2\<cdot>a) \<sqsubseteq> Fexp (scrut ? e1 : e2)\<cdot>a"
     unfolding Fexp_simp
-    by this simp_all
+    by (auto simp add: ccApprox_both join_below_iff  below_trans[OF _ join_above2]
+             intro!: below_ccFTreeI below_trans[OF cc_restr_below_arg]
+                     below_trans[OF _ ccExp_IfThenElse]  set_mp[OF edom_mono[OF Aexp_IfThenElse]])
 next
   fix e
   assume "isVal e"
@@ -261,12 +243,6 @@ next
     have "?x = cc_restr (- domA \<Delta>) ?x"  by simp
     also have "\<dots> \<sqsubseteq> cc_restr (- domA \<Delta>) (ccHeap \<Delta> e\<cdot>a)"
     proof(rule cc_restr_mono2[OF wild_recursion_thunked])
-    (*
-      have "ccLinear (domA \<Delta>) (ccExp e\<cdot>a)" using linear by (rule linear_Exp)
-      thus "ccLinear (domA \<Delta>) (ccApprox (ccFTree (edom (Aexp e\<cdot>a)) (ccExp e\<cdot>a)))"
-        by auto
-    next
-    *)
       have "ccExp e\<cdot>a \<sqsubseteq> ccHeap \<Delta> e\<cdot>a" by (rule ccHeap_Exp)
       thus "ccApprox (ccFTree (edom (Aexp e\<cdot>a)) (ccExp e\<cdot>a)) \<sqsubseteq> ccHeap \<Delta> e\<cdot>a"
         by (auto intro: below_trans[OF cc_restr_below_arg])
