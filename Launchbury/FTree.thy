@@ -98,6 +98,8 @@ lemma paths_injs_simps[simp]: "paths t = paths t' \<longleftrightarrow> t = t'" 
 
 lemma paths_Nil[simp]: "[] \<in> paths t" by transfer simp
 
+lemma paths_not_empty[simp]: "(paths t = {}) \<longleftrightarrow> False" by transfer auto
+
 lemma paths_Cons_nxt:
   "possible t x \<Longrightarrow> xs \<in> paths (nxt t x) \<Longrightarrow> (x#xs) \<in> paths t"
   by transfer auto
@@ -510,6 +512,9 @@ lemma filter_paths_conv_free_restr:
 
 lemma filter_paths_conv_free_restr2:
   "filter (\<lambda> x' . x' \<notin> S) ` paths t = paths (ftree_restr (- S) t)" by transfer auto
+
+lemma filter_paths_conv_free_without:
+  "filter (\<lambda> x' . x' \<noteq> y) ` paths t = paths (without y t)" by transfer auto
 
 lemma ftree_restr_is_empty: "carrier t \<inter> S = {} \<Longrightarrow> ftree_restr S t = empty"
   apply transfer
