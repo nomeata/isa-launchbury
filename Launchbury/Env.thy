@@ -308,6 +308,9 @@ lemma esing_simps[simp]:
   "x' \<noteq> x \<Longrightarrow> (esing x \<cdot> n) x' = \<bottom>"
   by (simp_all add: esing_def)
 
+lemma esing_eq_up_iff[simp]: "(esing x\<cdot>(up\<cdot>a)) y = up\<cdot>a' \<longleftrightarrow> (x = y \<and> a = a')"
+  by (auto simp add: fun_below_iff esing_def)
+
 lemma esing_below_iff[simp]: "esing x \<cdot> a \<sqsubseteq> ae  \<longleftrightarrow> a \<sqsubseteq> ae x"
   by (auto simp add: fun_below_iff esing_def)
 

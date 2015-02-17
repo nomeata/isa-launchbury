@@ -79,30 +79,21 @@ definition
   pred  :: "Arity -> Arity" where
   "pred = (\<Lambda> x. pred_Arity x)"
 
+lemma inc_inj[simp]: "inc\<cdot>n = inc\<cdot>n' \<longleftrightarrow> n = n'"
+  by (simp add: inc_def pred_def, transfer, simp)
+
 lemma pred_inc[simp]: "pred\<cdot>(inc\<cdot>n) = n" 
-  apply (simp add: inc_def pred_def)
-  apply transfer
-  apply simp  
-  done
+  by (simp add: inc_def pred_def, transfer, simp)
 
 lemma inc_below_inc[simp]: "inc\<cdot>a \<sqsubseteq> inc\<cdot>b \<longleftrightarrow> a \<sqsubseteq> b"
-  apply (simp add: inc_def pred_def)
-  apply transfer
-  apply simp
-  done
+  by (simp add: inc_def pred_def, transfer, simp)
 
 lemma inc_below_below_pred[elim]:
   "inc\<cdot>a \<sqsubseteq> b \<Longrightarrow> a \<sqsubseteq> pred \<cdot> b"
-  apply (simp add: inc_def pred_def)
-  apply transfer
-  apply simp
-  done
+  by (simp add: inc_def pred_def, transfer, simp)
 
 lemma Rep_Arity_inc[simp]: "Rep_Arity (inc\<cdot>a') = Suc (Rep_Arity a')"
-  apply (simp add: inc_def pred_def)
-  apply transfer
-  apply simp
-  done
+  by (simp add: inc_def pred_def, transfer, simp)
 
 instantiation Arity :: zero
 begin
@@ -118,18 +109,27 @@ end
 
 lemma one_is_inc_zero: "1 = inc\<cdot>0"
   by (simp add: inc_def, transfer, simp)
+
+lemma inc_not_0[simp]: "inc\<cdot>n = 0 \<longleftrightarrow> False"
+  by (simp add: inc_def pred_def, transfer, simp)
+ 
+lemma pred_0[simp]: "pred\<cdot>0 = 0"
+  by (simp add: inc_def pred_def, transfer, simp)
   
 lemma Arity_ind:  "P 0 \<Longrightarrow> (\<And> n. P n \<Longrightarrow> P (inc\<cdot>n)) \<Longrightarrow> P n"
   apply (simp add: inc_def)
   apply transfer
   by (rule nat.induct) 
-    
+ 
+lemma Arity_total:   
+  fixes x y :: Arity
+  shows "x \<sqsubseteq> y \<or> y \<sqsubseteq> x"
+by transfer auto
 
 instance Arity :: Finite_Join_cpo
 proof default
   fix x y :: Arity
-  have "x \<sqsubseteq> y \<or> y \<sqsubseteq> x" by transfer auto
-  thus "compatible x y" by (metis below_refl compatibleI)
+  show "compatible x y" by (metis Arity_total compatibleI)
 qed
 
 lemma Arity_zero_top[simp]: "(x :: Arity) \<sqsubseteq> 0"
