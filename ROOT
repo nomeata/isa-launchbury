@@ -53,6 +53,14 @@ session OnlyArity (AFP) in "Launchbury" = "HOLCF-Nominal2" +
     "NoCardinalityAnalysis"
     "CallArityCorrectEnd2End"
 
+session Arity_ICFP (AFP) in "Launchbury" = "HOLCF-Nominal2" +
+  options [document_variants = arity, document = pdf, document_graph, document_output = "output" ]
+  theories
+    "TrivialArityAnal"
+    "NoCardinalityAnalysis"
+    "CallArityCorrectEnd2End"
+    "ArityAnalysisCorrDenotational"
+
 session Nominal2013_1 in "Nominal2-Isabelle2013-1/Nominal" = HOL +
   theories
     "Nominal2"

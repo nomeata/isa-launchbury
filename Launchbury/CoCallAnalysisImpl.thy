@@ -1,5 +1,5 @@
 theory CoCallAnalysisImpl
-imports "Arity-Nominal" "Nominal-HOLCF" "Env-Nominal"  "Env-Set-Cpo" "Env-HOLCF" CoCallFix "/home/jojo/uni/info/isa-where-to-move/Where_To_Move"
+imports "Arity-Nominal" "Nominal-HOLCF" "Env-Nominal"  "Env-Set-Cpo" "Env-HOLCF" CoCallFix
 begin
 
 fun combined_restrict :: "var set \<Rightarrow> (AEnv \<times> CoCalls) \<Rightarrow> (AEnv \<times> CoCalls)"

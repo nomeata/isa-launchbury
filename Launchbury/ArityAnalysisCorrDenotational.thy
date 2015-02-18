@@ -307,7 +307,4 @@ corollary Arity_transformation_correct':
   using Arity_transformation_correct[where a = 0] by simp
 
 end
-
-
-
 end
