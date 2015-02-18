@@ -11,7 +11,7 @@ my $dir = shift @ARGV;
 my $session = shift @ARGV;
 
 my $root = read_file($tex);
-my @uses = ($root =~ /\\theory{([a-zA-Z0-9-]*)}/g);
+my @uses = ($root =~ /\\theory{([_a-zA-Z0-9-]*)}/g);
 
 printf "$tex refers to %d theories.\n", scalar @uses;
 my %index;
@@ -21,7 +21,7 @@ my @global_theories = qw!HOLCF Nominal2 ../Nominal2/Nominal2 ~~/src/HOL/Library/
 my %global;
 @global{@global_theories} = (0..$#global_theories);
 
-my @real_uses = (read_file($session) =~ /\\input{([a-zA-Z0-9-]*)\.tex}/g);
+my @real_uses = (read_file($session) =~ /\\input{([_a-zA-Z0-9-]*)\.tex}/g);
 
 my %seen;
 for my $base (@real_uses) {
@@ -30,7 +30,7 @@ for my $base (@real_uses) {
 	printf "%s is not mentioned in %s!\n", $base, $tex unless exists $index{$base};
 	$seen{$base}++;
 	my $thy = read_file(sprintf "%s/%s.thy", $dir, $base);
-	my ($imports) =  ($thy =~ /imports\s+((?:"?[.~\/a-zA-Z0-9-]+"?\s+)*?)begin/);
+	my ($imports) =  ($thy =~ /imports\s+((?:"?[.~\/_a-zA-Z0-9-]+"?\s+)*?)begin/);
 	printf "No imports found in %s\n", $base unless $imports;
 	next unless $imports;
 	my @imports =  ($imports =~ /"?([.~\/a-zA-Z0-9-]+)"?/g);

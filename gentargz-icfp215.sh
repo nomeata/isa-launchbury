@@ -22,6 +22,7 @@ tar czhf \
 	Launchbury/ArityAnalysisStack.thy \
 	Launchbury/ArityConsistent.thy \
 	Launchbury/ArityEtaExpand.thy \
+	Launchbury/ArityEtaExpandCorrect.thy \
 	Launchbury/ArityEtaExpansionSestoft.thy \
 	Launchbury/Arity-Nominal.thy \
 	Launchbury/ArityStack.thy \
