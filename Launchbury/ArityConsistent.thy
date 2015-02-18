@@ -1,5 +1,5 @@
 theory ArityConsistent
-imports  CardinalityAnalysisSpec ArityStack ArityAnalysisStack
+imports  ArityAnalysisSpec  ArityStack ArityAnalysisStack
 begin
 
 context CorrectArityAnalysisLet

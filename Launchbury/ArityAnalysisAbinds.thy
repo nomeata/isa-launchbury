@@ -5,7 +5,7 @@ begin
 context ArityAnalysis
 begin
 
-subsection {* Lifting arity analysis to recursive groups *}
+subsubsection {* Lifting arity analysis to recursive groups *}
 
 definition ABind :: "var \<Rightarrow> exp \<Rightarrow> (AEnv \<rightarrow> AEnv)"
   where "ABind v e = (\<Lambda> ae. fup\<cdot>(Aexp e)\<cdot>(ae v))"

@@ -142,7 +142,7 @@ lemma map_ran_append:
   "map_ran f (\<Gamma>@\<Delta>) = map_ran f \<Gamma> @ map_ran f \<Delta>"
   by (induction \<Gamma>)  auto
 
-subsection {* Syntax for map comprehensions *}
+subsubsection {* Syntax for map comprehensions *}
 
 definition mapCollect :: "('a \<Rightarrow> 'b \<Rightarrow> 'c) \<Rightarrow> ('a \<rightharpoonup> 'b) \<Rightarrow> 'c set"
   where "mapCollect f m = {f k v | k v . m k = Some v}"

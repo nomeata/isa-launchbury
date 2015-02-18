@@ -167,7 +167,7 @@ lemma fix_eq_fix:
   "f\<cdot>(fix\<cdot>g) \<sqsubseteq> fix\<cdot>g \<Longrightarrow> g\<cdot>(fix\<cdot>f) \<sqsubseteq> fix\<cdot>f \<Longrightarrow> fix\<cdot>f = fix\<cdot>g"
   by (metis fix_least_below below_antisym)
 
-subsection {* Additional transitivity rules *}
+subsubsection {* Additional transitivity rules *}
 
 text {*
 These collect side-conditions of the form @{term "cont f"}, so the usual way to discharge them

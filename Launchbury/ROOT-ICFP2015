@@ -22,6 +22,7 @@ session Call_Arity (AFP) = "Call_Arity_Base_Nominal2" +
   theories
     "TrivialArityAnal"
     "NoCardinalityAnalysis"
+    "ArityEtaExpandCorrect"
     "CallArityCorrectEnd2End"
     "ArityAnalysisCorrDenotational"
   document_files

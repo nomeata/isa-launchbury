@@ -295,7 +295,7 @@ lemma env_restr_below_split:
   "m f|` S \<sqsubseteq> m' \<Longrightarrow> m f|` (- S) \<sqsubseteq> m' \<Longrightarrow> m \<sqsubseteq> m'"
   by (metis ComplI fun_below_iff lookup_env_restr)
 
-subsection {* Singleton environments *}
+subsubsection {* Singleton environments *}
 
 definition esing :: "'a \<Rightarrow> 'b::{pcpo} \<rightarrow> ('a \<Rightarrow> 'b)"
   where "esing x = (\<Lambda> a. (\<lambda> y . (if x = y then a else \<bottom>)))"

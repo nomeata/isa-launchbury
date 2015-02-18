@@ -1,4 +1,4 @@
-\documentclass[11pt,a4paper,parskip=half]{scrbook}
+\documentclass[11pt,a4paper,parskip=half]{scrartcl}
 \usepackage{isabelle,isabellesym}
 
 % further packages required for unusual symbols (see also
@@ -72,21 +72,161 @@ Karlsruhe Institute for Technology\\
 \url{breitner@kit.edu}}
 \maketitle
 
+
+\begin{abstract}
+We formlize the Call Arity analysis \cite{tfp}, as implemented in GHC, and prove both functional correctness and, more interestingly, safety (i.e.\ the transformation does not increase allocation). A highlevel overview of the work can be found in \cite{icfp15}.
+
+We use Christian Urban's Nominal2 package \cite{nominal} to define our terms. The functional correctness is defined with regard to a standard denotational semantics, e.g.\ as found in \cite{launchbury}. The operational properties are shown with regard to a small-step semantics akin to Sestoft's mark 1 machine \cite{sestoft}.  We make use of Brian Huffman's HOLCF package for the domain-theoretical aspects of the development \cite{holcf}.
+
+\end{abstract}
+
 \tableofcontents
 
-\chapter*{Abstract}
+\newcommand{\theory}[1]{\subsection{#1}\label{sec_#1}\input{#1.tex}}
 
-We formlize the Call Arity\cite{tfp} analysis, as implemented in GHC, and prove both functional correctness (with regard to a standard denotational semantics) and, more interestingly, safety (i.e.\ the transformation does not increase allocation).
+%\let\OldInput\input
+%\renewcommand{\input}[1]{{
+%        \subsection{#1}
+%        \OldInput{#1}
+%}}
 
-%\newcommand{\theory}[1]{\subsection{#1}\label{sec_#1}\input{#1.tex}}
+%\OldInput{session.tex}
 
-\let\OldInput\input
-\renewcommand{\input}[1]{{
-        \chapter{#1}
-        \OldInput{#1}
-}}
 
-\OldInput{session.tex}
+\section{Various Utilities}
+
+\theory{Nominal-Utils}
+\theory{AList-Utils}
+\theory{AList-Utils-Nominal}
+\theory{HOLCF-Join}
+\theory{HOLCF-Join-Classes}
+\theory{Pointwise}
+\theory{HOLCF-Utils}
+\theory{Nominal-HOLCF}
+\theory{Env}
+\theory{Env-Nominal}
+\theory{ConstOn}
+\theory{Set-Cpo}
+\theory{Env-Set-Cpo}
+\theory{Env-HOLCF}
+\theory{AList-Utils-HOLCF}
+\theory{List-Interleavings}
+
+
+\section{Syntax}
+
+\theory{Vars}
+\theory{Terms}
+\theory{Substitution}
+\theory{AnalBinds}
+
+\section{Small-step Semantics}
+\theory{SestoftConf}
+\theory{Sestoft}
+\theory{SestoftGC}
+
+\section{Arity}
+\theory{Arity}
+\theory{AEnv}
+\theory{Arity-Nominal}
+\theory{ArityStack}
+
+\section{Eta-Expansion}
+
+\theory{EtaExpansion}
+\theory{EtaExpansionSestoft}
+\theory{TransformTools}
+\theory{EtaExpansionArity}
+\theory{ArityEtaExpansionSestoft}
+
+\section{Arity Analysis}
+
+\theory{ArityAnalysisSig}
+\theory{ArityAnalysisAbinds}
+\theory{ArityAnalysisSpec}
+\theory{TrivialArityAnal}
+\theory{ArityAnalysisStack}
+
+\theory{ArityAnalysisFix}
+\theory{ArityAnalysisFixProps}
+
+\section{Arity Transformation}
+
+\theory{AbstractTransform}
+\theory{ArityEtaExpand}
+
+
+\section{Arity Analysis Safety}
+\theory{ArityConsistent}
+\theory{ArityEtaExpandCorrect}
+
+\section{Cardinality Analysis}
+
+\theory{Cardinality-Domain}
+\theory{CardinalityAnalysisSig}
+\theory{CardinalityAnalysisSpec}
+
+\theory{NoCardinalityAnalysis}
+
+\theory{CardinalityEtaExpandCorrect}
+
+\section{Trace Trees}
+\theory{FTree}
+\theory{FTree-HOLCF}
+
+\section{Trace Tree Cardinality Analysis}
+\theory{FTreeAnalysisSig}
+\theory{CallFutureCardinality}
+\theory{FTreeAnalysisSpec}
+\theory{FTreeImplCardinality}
+\theory{FTreeImplCardinalityCorrect}
+
+
+\section{Co-Call Graphs}
+\theory{CoCallGraph}
+\theory{CoCallGraph-Nominal}
+
+\section{Co-Call Cardinality Analysis}
+
+\theory{CoCallAnalysisSig}
+\theory{CoCallAnalysisBinds}
+\theory{CoCallAritySig}
+\theory{CoCallAnalysisSpec}
+\theory{CoCallFix}
+
+\theory{CoCallGraph-FTree}
+\theory{CoCallImplFTree}
+\theory{CoCallImplFTreeCorrect}
+
+\section{CoCall Cardinality Implementation}
+\theory{CoCallAnalysisImpl}
+\theory{CoCallImplCorrect}
+
+\section{End-to-end Saftey Results and Example}
+\theory{CallArityEnd2End}
+\theory{CallArityCorrectEnd2End}
+
+\section{Denotational semantics domain}
+\theory{Value}
+\theory{Value-Nominal}
+
+\section{Denotational semantics}
+\theory{EvalHeap}
+\theory{HasESem}
+\theory{Iterative}
+\theory{HeapSemantics}
+\theory{AbstractDenotational}
+\theory{Abstract-Denotational-Props}
+\theory{Denotational}
+
+\section{Functional Correctness of the Arity Analysis}
+\theory{ArityAnalysisCorrDenotational}
+
+%%% Local Variables:
+%%% mode: l
+%%% TeX-master: "root"
+%%% End:
+
 
 \clearpage
 \bibliographystyle{amsalpha}

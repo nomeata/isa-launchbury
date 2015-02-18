@@ -2,7 +2,7 @@ theory FTree
 imports Main ConstOn "List-Interleavings"
 begin
 
-subsection {* Prefix-closed sets of lists *}
+subsubsection {* Prefix-closed sets of lists *}
 
 definition downset where
   "downset xss = (\<forall>x n. x \<in> xss \<longrightarrow> take n x \<in> xss)"
@@ -72,13 +72,13 @@ lemma downset_set_subset:
   "downset ({xs. set xs \<subseteq> S})"
 by (auto dest: in_set_butlastD)
 
-subsection {* The type of infinite labled trees *}
+subsubsection {* The type of infinite labled trees *}
 
 typedef 'a ftree = "{xss :: 'a list set . [] \<in> xss \<and> downset xss}" by auto
 
 setup_lifting type_definition_ftree
 
-subsection {* Deconstructors *}
+subsubsection {* Deconstructors *}
 
 lift_definition possible ::"'a ftree \<Rightarrow> 'a \<Rightarrow> bool"
   is "\<lambda> xss x. \<exists> xs. x#xs \<in> xss".
@@ -88,7 +88,7 @@ lift_definition nxt ::"'a ftree \<Rightarrow> 'a \<Rightarrow> 'a ftree"
   apply (auto simp add: downset_def)
   by (metis take_Suc_Cons)
 
-subsection {* Trees as set of paths *}
+subsubsection {* Trees as set of paths *}
 
 lift_definition paths :: "'a ftree \<Rightarrow> 'a list set" is "(\<lambda> x. x)".
 
@@ -166,7 +166,7 @@ proof(rule paths_inj, rule set_eqI)
   qed
 qed
 
-subsection {* The carrier of a tree *}
+subsubsection {* The carrier of a tree *}
 
 lift_definition carrier :: "'a ftree \<Rightarrow> 'a set" is "\<lambda> xss. \<Union>(set ` xss)".
 
@@ -186,7 +186,7 @@ lemma Union_paths_carrier: "(\<Union>x\<in>paths t. set x) = carrier t"
   by transfer auto
 
 
-subsection {* Repeatable trees *}
+subsubsection {* Repeatable trees *}
 
 definition repeatable where "repeatable t = (\<forall>x . possible t x \<longrightarrow> nxt t x = t)"
 
@@ -264,7 +264,7 @@ lift_definition many_among :: "'a set \<Rightarrow> 'a ftree" is "\<lambda> S. {
 lemma carrier_many_among[simp]: "carrier (many_among S) = S"
  by transfer (auto, metis List.set_insert bot.extremum insertCI insert_subset list.set(1))
 
-subsection {* Intersection of two trees *}
+subsubsection {* Intersection of two trees *}
 
 lift_definition intersect :: "'a ftree \<Rightarrow> 'a ftree \<Rightarrow> 'a ftree" (infixl "\<inter>\<inter>" 80)
   is "op \<inter>"
@@ -278,7 +278,7 @@ lemma carrier_intersect: "carrier (t \<inter>\<inter> t') \<subseteq> carrier t 
   by auto
   
 
-subsection {* Disjoint union of trees *}
+subsubsection {* Disjoint union of trees *}
 
 lift_definition either :: "'a ftree \<Rightarrow> 'a ftree \<Rightarrow> 'a ftree" (infixl "\<oplus>\<oplus>" 80) is "op \<union>"
   by (auto simp add: downset_def)
@@ -317,7 +317,7 @@ lift_definition Either :: "'a ftree set \<Rightarrow> 'a ftree"  is "\<lambda> S
 lemma paths_Either: "paths (Either ts) = insert [] (\<Union>(paths ` ts))"
   by transfer auto
 
-subsection {* Merging of trees *}
+subsubsection {* Merging of trees *}
 
 lift_definition both :: "'a ftree \<Rightarrow> 'a ftree \<Rightarrow> 'a ftree" (infixl "\<otimes>\<otimes>" 86)
   is "\<lambda> xss yss . \<Union> {xs \<otimes> ys | xs ys. xs \<in> xss \<and> ys \<in> yss}"
@@ -480,7 +480,7 @@ proof-
   show ?thesis by auto
 qed
 
-subsection {* Removing elements from a tree *}
+subsubsection {* Removing elements from a tree *}
 
 lift_definition without :: "'a \<Rightarrow> 'a ftree \<Rightarrow> 'a ftree" is "\<lambda> x xss. filter (\<lambda> x'. x' \<noteq> x) ` xss"
   apply (auto intro: downset_filter)
@@ -565,7 +565,7 @@ lemma intersect_many_among: "t \<inter>\<inter> many_among S = ftree_restr S t"
   apply auto
 *)
 
-subsection {* Multiple variables, each called at most once *}
+subsubsection {* Multiple variables, each called at most once *}
 
 lift_definition singles :: "'a set \<Rightarrow> 'a ftree" is "\<lambda> S. {xs. \<forall> x \<in> S. length (filter (\<lambda> x'. x' = x) xs) \<le> 1}"
   apply auto
@@ -634,7 +634,7 @@ qed
 
 
 
-subsection {* Substituting trees for every node *}
+subsubsection {* Substituting trees for every node *}
 
 definition f_nxt :: "('a \<Rightarrow> 'a ftree) \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> ('a \<Rightarrow> 'a ftree)"
   where "f_nxt f T x = (if x \<in> T then f(x:=empty) else f)"
