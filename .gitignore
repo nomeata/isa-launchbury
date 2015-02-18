@@ -1,0 +1,17 @@
+*~
+*.aux
+*.bbl
+*.blg
+*.log
+*.bak
+*.thm
+*.toc
+*.nav
+*.out
+*.snm
+*.vrb
+_darcs-backup
+
+Oberseminar/LaunchburyOberseminar.pdf
+VortragSpanien/LaunchburyMadrid.pdf
+
