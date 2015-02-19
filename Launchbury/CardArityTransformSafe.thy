@@ -80,7 +80,7 @@ begin
       by (auto simp add: edom_empty_iff_bot closed_a_consistent[OF assms])
   qed
 
-  lemma foo:
+  lemma card_arity_transform_safe:
     fixes c c'
     assumes "c \<Rightarrow>\<^sup>* c'" and "\<not> boring_step c'" and "heap_upds_ok_conf c" and "consistent (ae,ce,a,as,r) c"
     shows "\<exists>ae' ce' a' as' r'. consistent (ae',ce',a',as',r') c' \<and> conf_transform (ae,ce,a,as,r) c \<Rightarrow>\<^sub>G\<^sup>* conf_transform (ae',ce',a',as',r') c'"

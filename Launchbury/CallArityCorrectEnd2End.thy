@@ -13,7 +13,7 @@ lemma end2end:
   heap_upds_ok_conf c \<Longrightarrow>
   consistent (ae, ce, a, as, r) c \<Longrightarrow>
   \<exists>ae' ce' a' as' r'. consistent  (ae', ce', a', as', r') c' \<and> conf_transform  (ae, ce, a, as, r) c \<Rightarrow>\<^sub>G\<^sup>* conf_transform  (ae', ce', a', as', r') c'"
-  by (rule foo)
+  by (rule card_arity_transform_safe)
 
 lemma end2end_closed:
   assumes closed: "fv e = ({} :: var set)"

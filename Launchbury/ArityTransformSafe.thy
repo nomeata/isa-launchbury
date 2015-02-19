@@ -63,7 +63,7 @@ begin
     shows "consistent (\<bottom>, 0, []) ([], e, [])"
   by (auto simp add: edom_empty_iff_bot closed_a_consistent[OF assms])
 
-  lemma foo:
+  lemma arity_tranform_safe:
     fixes c c'
     assumes "c \<Rightarrow>\<^sup>* c'" and "\<not> boring_step c'" and "heap_upds_ok_conf c" and "consistent (ae,a,as) c"
     shows "\<exists>ae' a' as'. consistent (ae',a',as') c' \<and> a_transform (ae,a,as) c \<Rightarrow>\<^sup>* a_transform (ae',a',as') c'"
