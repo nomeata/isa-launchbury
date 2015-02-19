@@ -22,11 +22,11 @@ session Call_Arity (AFP) = "Call_Arity_Base_Nominal2" +
   theories
     "TrivialArityAnal"
     "NoCardinalityAnalysis"
-    "ArityEtaExpandCorrect"
+    "ArityTransformSafe"
     "CallArityEnd2EndSafe"
     "ArityAnalysisCorrDenotational"
   document_files
-    "root_arity.tex"
-    "root_arity.bib"
+    "root.tex"
+    "root.bib"
 
 

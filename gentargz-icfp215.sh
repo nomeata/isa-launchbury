@@ -3,6 +3,7 @@ tar czhf \
 	--transform 's,Launchbury/,isa-Call_Arity/,' \
 	--transform 's,^Nominal2-Devel,isa-Call_Arity/Nominal2,' \
 	--transform 's,-ICFP2015,,' \
+	--transform 's,_arity,,' \
 	Launchbury/ROOT-ICFP2015 \
 	\
 	Launchbury/Abstract-Denotational-Props.thy \
@@ -21,7 +22,6 @@ tar czhf \
 	Launchbury/ArityAnalysisSpec.thy \
 	Launchbury/ArityAnalysisStack.thy \
 	Launchbury/ArityConsistent.thy \
-	Launchbury/ArityEtaExpandCorrect.thy \
 	Launchbury/ArityEtaExpansionSafe.thy \
 	Launchbury/ArityEtaExpansion.thy \
 	Launchbury/Arity-Nominal.thy \
