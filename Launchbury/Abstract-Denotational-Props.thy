@@ -20,6 +20,18 @@ next
   case (Lam x e)
   show ?case by simp
 next
+  case (IfThenElse scrut e\<^sub>1 e\<^sub>2)
+  have [simp]: "(fv scrut \<inter> (fv scrut \<union> fv e\<^sub>1 \<union> fv e\<^sub>2)) = fv scrut" by auto
+  have [simp]: "(fv e\<^sub>1 \<inter> (fv scrut \<union> fv e\<^sub>1 \<union> fv e\<^sub>2)) = fv e\<^sub>1" by auto
+  have [simp]: "(fv e\<^sub>2 \<inter> (fv scrut \<union> fv e\<^sub>1 \<union> fv e\<^sub>2)) = fv e\<^sub>2" by auto
+  show ?case
+    apply simp
+    apply (subst (1 2) IfThenElse(1))
+    apply (subst (1 2) IfThenElse(2))
+    apply (subst (1 2) IfThenElse(3))
+    apply (simp)
+    done
+next
   case (Let as e)
 
   have "\<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>as\<rbrace>\<rho>\<^esub> = \<lbrakk>e\<rbrakk>\<^bsub>(\<lbrace>as\<rbrace>\<rho>) f|` (fv as \<union> fv e)\<^esub>"
@@ -125,6 +137,11 @@ case (Lam var exp x y \<rho>)
   hence "\<And> v. \<lbrakk>exp\<rbrakk>\<^bsub>\<rho>(var := v)\<^esub> = \<lbrakk>exp[x::=y]\<rbrakk>\<^bsub>\<rho>(var := v)\<^esub>"
     by (rule Lam)
   thus ?case using Lam(1,2) by simp
+next
+case IfThenElse
+  from IfThenElse(1)[OF IfThenElse(4)] IfThenElse(2)[OF IfThenElse(4)] IfThenElse(3)[OF IfThenElse(4)]
+  show ?case
+    by simp
 next
 case Nil thus ?case by auto
 next

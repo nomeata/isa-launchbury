@@ -175,8 +175,15 @@ next
   case (Bool b)
   show ?case by simp
 next
-  case (IfThenElse e e\<^sub>1 e\<^sub>2)
-  show ?case by simp
+  case (IfThenElse a scrut e\<^sub>1 e\<^sub>2)
+  from `eq\<rho> (Aexp (scrut ? e\<^sub>1 : e\<^sub>2)\<cdot>a) \<rho>1 \<rho>2`
+  have "eq\<rho> (Aexp scrut\<cdot>0 \<squnion> Aexp e\<^sub>1\<cdot>a \<squnion> Aexp e\<^sub>2\<cdot>a) \<rho>1 \<rho>2" by (rule eq\<rho>_mono[OF Aexp_IfThenElse])
+  hence "eq\<rho> (Aexp scrut\<cdot>0) \<rho>1 \<rho>2"
+  and   "eq\<rho> (Aexp e\<^sub>1\<cdot>a) \<rho>1 \<rho>2"
+  and   "eq\<rho> (Aexp e\<^sub>2\<cdot>a) \<rho>1 \<rho>2" by simp_all
+  from IfThenElse(1)[OF this(1)] IfThenElse(2)[OF this(2)] IfThenElse(3)[OF this(3)]
+  show ?case
+    by (cases "\<lbrakk> scrut \<rbrakk>\<^bsub>\<rho>2\<^esub>") auto
 next
   case (Let a \<Gamma> e)
 
@@ -243,7 +250,7 @@ next
   show ?case by simp
 next
   case (IfThenElse e e\<^sub>1 e\<^sub>2)
-  show ?case by simp
+  thus ?case by (cases "\<lbrakk> e\<^sub>1 \<rbrakk>\<^bsub>\<rho>\<^esub>") auto
 next
   case (Let a \<Gamma> e)
 
