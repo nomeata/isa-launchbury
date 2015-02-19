@@ -39,13 +39,13 @@ fun prognosis :: "AEnv \<Rightarrow> Arity \<Rightarrow> conf \<Rightarrow> var 
    where "prognosis ae a (\<Gamma>, e, S) = pathsCard (paths (FBinds \<Gamma>\<cdot>ae) (future_add (Texp e\<cdot>a) (Fstack S)))"
 end
 
-locale FutureAnalysisCorrect = FutureAnalysis +
+locale FutureAnalysisSafe = FutureAnalysis +
   assumes Texp_App: "Texp (App e x)\<cdot>a = may_call x ((Texp e)\<cdot>(inc\<cdot>a))"
   assumes Texp_Lam: "without y ` (Texp e \<cdot>(pred\<cdot>n)) = Texp (Lam [y]. e) \<cdot> n"
   assumes Texp_subst: "Texp (e[y::=x])\<cdot>a = may_call x (without y ` ((Texp e)\<cdot>a))"
 begin
 
-  sublocale CardinalityPrognosisCorrect prognosis
+  sublocale CardinalityPrognosisSafe prognosis
   proof
     fix \<Gamma> :: heap and ae ae' :: AEnv and u e S
     assume "ae f|` domA \<Gamma> = ae' f|` domA \<Gamma>"

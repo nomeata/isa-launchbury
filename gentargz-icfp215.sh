@@ -45,7 +45,7 @@ tar czhf \
 	Launchbury/CoCallGraph-Nominal.thy \
 	Launchbury/CoCallGraph.thy \
 	Launchbury/CoCallGraph-TTree.thy \
-	Launchbury/CoCallImplCorrect.thy \
+	Launchbury/CoCallImplSafe.thy \
 	Launchbury/CoCallImplTTreeSafe.thy \
 	Launchbury/CoCallImplTTree.thy \
 	Launchbury/ConstOn.thy \

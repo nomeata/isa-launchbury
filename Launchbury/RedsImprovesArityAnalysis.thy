@@ -6,7 +6,7 @@ fixrec inc_bot :: "Arity\<^sub>\<bottom> \<rightarrow> Arity\<^sub>\<bottom>" ("
   where "inc\<^sub>\<bottom>\<cdot>(up\<cdot>n)=up\<cdot>(inc\<cdot>n)"
 
 
-locale CorrectArityAnalysisAfix = CorrectArityAnalysis + 
+locale ArityAnalysisSafeAfix = ArityAnalysisSafe + 
   assumes Aexp_Let: "Afix as\<cdot>(Aexp e\<cdot>n) f|` (- domA as) \<sqsubseteq> Aexp (Let as e)\<cdot>n"
 
 begin

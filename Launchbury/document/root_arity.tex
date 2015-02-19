@@ -99,12 +99,12 @@ Configuration                                                 & \isacommand{type
 Semantics ($\Rightarrow$)                                     & \isacommand{inductive} \isa{step}                         & \seetheory{Sestoft} \\
 Arity                                                         & \isacommand{typedef} \isa{Arity}                          & \seetheory{Arity} \\
 Eta-expansion                                                 & \isacommand{lift-definition} \isa{Aeta-expand}            & \seetheory{ArityEtaExpansion} \\
-Lemma 1                                                       & \isacommand{theorem} \isa{Aeta-expand-correct}            & \seetheory{ArityEtaExpansionSafe} \\
+Lemma 1                                                       & \isacommand{theorem} \isa{Aeta-expand-safe}            & \seetheory{ArityEtaExpansionSafe} \\
 $\mathcal A_\alpha(\Gamma, e)$                                & \isacommand{locale} \isa{ArityAnalysisHeap}               & \seetheory{ArityAnalysisSig} \\
 $\mathsf T_\alpha(e)$                                         & \isacommand{sublocale} \isa{AbstractTransformBound}       & \seetheory{ArityTransform} \\
 $\mathcal A_\alpha(e)$                                        & \isacommand{locale} \isa{ArityAnalysis}                   & \seetheory{ArityAnalysisSig} \\
-Definition 2                                                  & \isacommand{locale} \isa{CorrectArityAnalysisLet}         & \seetheory{ArityAnalysisSpec} \\
-Definition 3                                                  & \isacommand{locale} \isa{CorrectArityAnalysisLetNoCard}   & \seetheory{ArityAnalysisSpec} \\
+Definition 2                                                  & \isacommand{locale} \isa{ArityAnalysisLetSafe}         & \seetheory{ArityAnalysisSpec} \\
+Definition 3                                                  & \isacommand{locale} \isa{ArityAnalysisLetSafeNoCard}   & \seetheory{ArityAnalysisSpec} \\
 Definition 4                                                  & \isacommand{inductive} \isa{a-consistent}                 & \seetheory{ArityConsistent} \\
 Definition 5                                                  & \isacommand{inductive} \isa{consistent}                   & \seetheory{ArityTransformSafe} \\
 Lemma 2                                                       & \isacommand{lemma} \isa{arity-transform-safe}             & \seetheory{ArityTransformSafe} \\
@@ -112,7 +112,7 @@ Lemma 2                                                       & \isacommand{lemm
 $\operatorname{Card}$                                         & \isacommand{type-synonym} \isa{two}                       & \seetheory{Cardinality-Domain} \\
 $\mathcal C_\alpha(\Gamma, e)$                                & \isacommand{locale} \isa{CardinalityHeap}                 & \seetheory{CardinalityAnalysisSig} \\
 $\mathcal C_{(\bar\alpha,\alpha,\dot\alpha)}((\Gamma, e, S))$ & \isacommand{locale} \isa{CardinalityPrognosis}            & \seetheory{CardinalityAnalysisSig} \\
-Definition 6                                                  & \isacommand{locale} \isa{CardinalityPrognosisCorrect}     & \seetheory{CardinalityAnalysisSpec} \\
+Definition 6                                                  & \isacommand{locale} \isa{CardinalityPrognosisSafe}     & \seetheory{CardinalityAnalysisSpec} \\
 Definition 7 ($\Rightarrow_\#$)                               & \isacommand{inductive} \isa{gc-step}                      & \seetheory{SestoftGC} \\
 Definition 8                                                  & \isacommand{inductive} \isa{consistent}                   & \seetheory{CardArityTransformSafe} \\
 Lemma 3                                                       & \isacommand{lemma} \isa{card-arity-transform-safe}        & \seetheory{CardArityTransformSafe} \\
@@ -121,13 +121,13 @@ Function $s$                                                  & \isacommand{lift
 $\mathcal T_\alpha(e)$                                        & \isacommand{locale} \isa{TTreeAnalysis}                   & \seetheory{TTreeAnalysisSig} \\
 $\mathcal T_\alpha(\Gamma,e)$                                 & \isacommand{locale} \isa{TTreeAnalysisCardinalityHeap}    & \seetheory{TTreeAnalysisSpec} \\
 Definition 9                                                  & \isacommand{locale} \isa{TTreeAnalysisCardinalityHeap}    & \seetheory{TTreeAnalysisSpec} \\
-Lemma 4                                                       & \isacommand{sublocale} \isa{CardinalityPrognosisCorrect}  & \seetheory{TTreeImplCardinalitySafe} \\
+Lemma 4                                                       & \isacommand{sublocale} \isa{CardinalityPrognosisSafe}  & \seetheory{TTreeImplCardinalitySafe} \\
 Co-Call graphs                                                & \isacommand{typedef} \isa{CoCalls}                        & \seetheory{CoCallGraph} \\
 Function $g$                                                  & \isacommand{lift-definition} \isa{ccApprox}               & \seetheory{CoCallGraph-TTree} \\
 Function $t$                                                  & \isacommand{lift-definition} \isa{ccTTree}                & \seetheory{CoCallGraph-TTree} \\
 $\mathcal G_\alpha(e)$                                        & \isacommand{locale} \isa{CoCallAnalysis}                  & \seetheory{CoCallAnalysisSig} \\
 $\mathcal G_\alpha(\Gamma, e)$                                & \isacommand{locale} \isa{CoCallAnalysisHeap}              & \seetheory{CoCallAnalysisSig} \\
-Definition 10                                                 & \isacommand{locale} \isa{CoCallArityCorrect}              & \seetheory{CoCallAnalysisSpec} \\
+Definition 10                                                 & \isacommand{locale} \isa{CoCallAritySafe}              & \seetheory{CoCallAnalysisSpec} \\
 Lemma 5                                                       & \isacommand{sublocale} \isa{TTreeAnalysisCardinalityHeap} & \seetheory{CoCallImplTTreeSafe} \\
 Call Arity & \isacommand{nominal-function} \isa{cCCexp}                & \seetheory{CoCallAnalysisImpl} \\
 Theorem 1                                                     & \isacommand{lemma} \isa{end2end-closed}                   & \seetheory{CallArityEnd2EndSafe} \\
@@ -256,7 +256,7 @@ Theorem 1                                                     & \isacommand{lemm
 
 \section{CoCall Cardinality Implementation}
 \theory{CoCallAnalysisImpl}
-\theory{CoCallImplCorrect}
+\theory{CoCallImplSafe}
 
 \section{End-to-end Saftey Results and Example}
 \theory{CallArityEnd2End}

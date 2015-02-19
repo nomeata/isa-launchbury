@@ -45,7 +45,7 @@ begin
 end
 
 
-context CoCallArityCorrect
+context CoCallAritySafe
 begin
 
 
@@ -57,7 +57,7 @@ by (auto simp add: Texp.AnalBinds_lookup Texp_def split: option.splits
 sublocale TTreeAnalysisCarrier Texp
   apply default unfolding Texp_simp carrier_ccTTree..
 
-sublocale TTreeAnalysisCorrect Texp
+sublocale TTreeAnalysisSafe Texp
 proof default
   fix x e a
 

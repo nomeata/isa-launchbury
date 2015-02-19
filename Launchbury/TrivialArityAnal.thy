@@ -24,7 +24,7 @@ interpretation ArityAnalysis Trivial_Aexp.
 interpretation EdomArityAnalysis Trivial_Aexp  by default simp
 
 
-interpretation CorrectArityAnalysis Trivial_Aexp
+interpretation ArityAnalysisSafe Trivial_Aexp
 proof default
 (*
   fix \<pi>
@@ -72,7 +72,7 @@ lemma Trivial_Abinds_below_fv: "ABinds \<Gamma>\<cdot>ae \<sqsubseteq> (\<lambda
   by (induction \<Gamma> rule:ABinds.induct)
      (auto simp add: join_below_iff intro!: below_trans[OF Trivial_fup_Aexp_below_fv] env_restr_mono2 elim: below_trans dest: set_mp[OF fv_delete_subset] simp del: fun_meet_simp)
 
-interpretation CorrectArityAnalysisLet Trivial_Aexp Trivial_Aheap
+interpretation ArityAnalysisLetSafe Trivial_Aexp Trivial_Aheap
 proof default
   fix \<pi>
   show "\<pi> \<bullet> Trivial_Aheap = Trivial_Aheap" by perm_simp rule  

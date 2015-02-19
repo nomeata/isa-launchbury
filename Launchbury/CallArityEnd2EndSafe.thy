@@ -1,10 +1,10 @@
 theory CallArityEnd2EndSafe
-imports CallArityEnd2End CardArityTransformSafe CoCallImplCorrect CoCallImplTTreeSafe TTreeImplCardinalitySafe
+imports CallArityEnd2End CardArityTransformSafe CoCallImplSafe CoCallImplTTreeSafe TTreeImplCardinalitySafe
 begin
 
 locale CallArityEnd2EndSafe
 begin
-sublocale CoCallImplCorrect.
+sublocale CoCallImplSafe.
 sublocale CallArityEnd2End.
 
 lemma end2end:

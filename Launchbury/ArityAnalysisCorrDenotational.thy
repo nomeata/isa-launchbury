@@ -2,7 +2,7 @@ theory ArityAnalysisCorrDenotational
 imports ArityAnalysisSpec Denotational ArityTransform
 begin
 
-context CorrectArityAnalysisLet
+context ArityAnalysisLetSafe
 begin
 
 abbreviation "t == transform"

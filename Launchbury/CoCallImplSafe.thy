@@ -1,8 +1,8 @@
-theory CoCallImplCorrect
+theory CoCallImplSafe
 imports CoCallAnalysisImpl CoCallAnalysisSpec ArityAnalysisFixProps
 begin
 
-locale CoCallImplCorrect
+locale CoCallImplSafe
 begin
 sublocale CoCallAnalysisImpl.
 
@@ -198,11 +198,11 @@ next
        by (auto simp add: env_restr_join simp del: fun_meet_simp)
 qed auto
    
-sublocale CorrectArityAnalysis Aexp
+sublocale ArityAnalysisSafe Aexp
   by default (simp_all add:Aexp_restr_subst)
 
 
-sublocale CorrectArityAnalysisLet Aexp Aheap
+sublocale ArityAnalysisLetSafe Aexp Aheap
 proof default
   fix \<Gamma> e a
   show "edom (Aheap \<Gamma> e\<cdot>a) \<subseteq> domA \<Gamma>"
@@ -316,7 +316,7 @@ lemma ccHeap_simp2:
   by (simp add: ccHeap_def ccHeap_nonrec_eq nonrec_def)
 
 
-sublocale CoCallArityCorrect CCexp Aexp ccHeap Aheap
+sublocale CoCallAritySafe CCexp Aexp ccHeap Aheap
 proof
   fix e a x
   show "CCexp e\<cdot>(inc\<cdot>a) \<squnion> ccProd {x} (insert x (fv e)) \<sqsubseteq> CCexp (App e x)\<cdot>a"

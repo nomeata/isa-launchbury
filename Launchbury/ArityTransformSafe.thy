@@ -2,7 +2,7 @@ theory ArityTransformSafe
 imports ArityTransform ArityConsistent ArityAnalysisSpec ArityEtaExpansionSafe AbstractTransform ConstOn
 begin
 
-locale CardinalityArityTransformation = CorrectArityAnalysisLetNoCard
+locale CardinalityArityTransformation = ArityAnalysisLetSafeNoCard
 begin
   sublocale AbstractTransformBoundSubst
     "\<lambda> a . inc\<cdot>a"
@@ -146,7 +146,7 @@ begin
       using `ae x = up \<cdot> u` `isVal (transform u e)`
       by (simp add: map_transform_Cons map_transform_delete  del: restr_delete)
     also(subst[rotated]) have "\<dots> \<Rightarrow>\<^sup>* a_transform (ae, u, as) ((x, e) # delete x \<Gamma>, e, S)"
-      by (simp add: restr_delete_twist) (rule Aeta_expand_correct[OF `Astack _ \<sqsubseteq> u`])
+      by (simp add: restr_delete_twist) (rule Aeta_expand_safe[OF `Astack _ \<sqsubseteq> u`])
     finally(rtranclp_trans)
     have "a_transform (ae, a, as) (\<Gamma>, Var x, S) \<Rightarrow>\<^sup>* a_transform (ae, u, as) ((x, e) # delete x \<Gamma>, e, S)".
     }

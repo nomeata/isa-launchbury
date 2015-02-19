@@ -2,7 +2,7 @@ theory CardArityTransformSafe
 imports ArityTransform CardinalityAnalysisSpec AbstractTransform Sestoft SestoftGC ArityEtaExpansionSafe ArityAnalysisStack  ArityConsistent
 begin
 
-context CardinalityPrognosisCorrect
+context CardinalityPrognosisSafe
 begin
   sublocale AbstractTransformBoundSubst
     "\<lambda> a . inc\<cdot>a"
@@ -185,7 +185,7 @@ begin
         done
       also
       have "\<dots> \<Rightarrow>\<^sub>G\<^sup>* add_dummies_conf (x # r) (delete x (map_transform Aeta_expand ae (map_transform ccTransform ae  (restrictA (- set r) \<Gamma>))), ccTransform u e, transform_alts as (restr_stack (- set r) S))"
-        by simp (intro  normal_trans Aeta_expand_correct **)
+        by simp (intro  normal_trans Aeta_expand_safe **)
       also(rtranclp_trans)
       have "\<dots> = conf_transform (env_delete x ae, env_delete x ce, u, as, x # r) (delete x \<Gamma>, e, Upd x # S)" 
         by (auto intro!: map_transform_cong simp add:  map_transform_delete[symmetric]  restr_delete_twist Compl_insert)
@@ -276,7 +276,7 @@ begin
       using `ae x = up \<cdot> u` `ce x = up\<cdot>c` `isVal (transform u e)`
       by (simp add: map_transform_Cons map_transform_delete restr_delete_twist del: restr_delete)
     also(subst[rotated]) have "\<dots> \<Rightarrow>\<^sub>G\<^sup>* conf_transform (ae, ce, u, as, r) ((x, e) # delete x \<Gamma>, e, S)"
-      by (simp add: restr_delete_twist) (rule normal_trans[OF Aeta_expand_correct[OF ** ]])
+      by (simp add: restr_delete_twist) (rule normal_trans[OF Aeta_expand_safe[OF ** ]])
     finally(rtranclp_trans)
     have "conf_transform (ae, ce, a, as, r) (\<Gamma>, Var x, S) \<Rightarrow>\<^sub>G\<^sup>* conf_transform (ae, ce, u, as, r) ((x, e) # delete x \<Gamma>, e, S)".
     }

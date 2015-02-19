@@ -2,7 +2,7 @@ theory EtaExpansionSafe
 imports EtaExpansion Sestoft
 begin
 
-theorem eta_expansion_correct:
+theorem eta_expansion_safe:
   assumes "set T \<subseteq> range Arg"
   shows "(\<Gamma>, eta_expand (length T) e, T@S) \<Rightarrow>\<^sup>* (\<Gamma>, e, T@S)"
 using assms
@@ -29,7 +29,7 @@ fun arg_prefix :: "stack \<Rightarrow> nat" where
 | "arg_prefix (Upd x # S) = 0"
 | "arg_prefix (Dummy x # S) = 0"
 
-theorem eta_expansion_correct':
+theorem eta_expansion_safe':
   assumes "n \<le> arg_prefix S"
   shows "(\<Gamma>, eta_expand n e, S) \<Rightarrow>\<^sup>* (\<Gamma>, e, S)"
 proof-
@@ -40,7 +40,7 @@ proof-
     apply (case_tac n, auto)+
     done
   hence "S = take n S @ drop n S" by (metis append_take_drop_id)
-  with eta_expansion_correct[OF `_ \<subseteq> _`] `length _ = _`
+  with eta_expansion_safe[OF `_ \<subseteq> _`] `length _ = _`
   show ?thesis by metis
 qed
 

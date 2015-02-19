@@ -2,7 +2,7 @@ theory ArityConsistent
 imports  ArityAnalysisSpec  ArityStack ArityAnalysisStack
 begin
 
-context CorrectArityAnalysisLet
+context ArityAnalysisLetSafe
 begin
 
 type_synonym astate = "(AEnv \<times> Arity \<times> Arity list)"

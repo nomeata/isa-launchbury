@@ -32,7 +32,7 @@ begin
   by (metis (poly_guards_query) contra_subsetD domA_from_set map_of_fv_subset map_of_is_SomeD option.sel)
 end
 
-context TTreeAnalysisCorrect
+context TTreeAnalysisSafe
 begin
 
   sublocale CardinalityPrognosisShape prognosis
@@ -227,7 +227,7 @@ begin
   
   sublocale CardinalityHeap cHeap.
  
-  sublocale CardinalityHeapCorrect cHeap Aheap
+  sublocale CardinalityHeapSafe cHeap Aheap
   proof
     fix x \<Gamma> e a
     assume "x \<in> thunks \<Gamma>"
@@ -345,7 +345,7 @@ begin
       by (simp add: cHeap_def del: fun_meet_simp) 
   qed
 
-  sublocale CardinalityPrognosisCorrect prognosis cHeap Aheap Aexp by default
+  sublocale CardinalityPrognosisSafe prognosis cHeap Aheap Aexp by default
 end
 
 

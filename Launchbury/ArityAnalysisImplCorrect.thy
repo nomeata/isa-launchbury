@@ -1,4 +1,4 @@
-theory ArityAnalysisImplCorrect
+theory ArityAnalysisImplSafe
 imports ArityAnalysisFixProps ArityAnalysisImpl
 begin
 
@@ -63,7 +63,7 @@ next
   then show ?case by (auto simp add: env_restr_join simp del: fun_meet_simp)
 qed auto
 
-interpretation CorrectArityAnalysis Aexp
+interpretation ArityAnalysisSafe Aexp
   by default (simp_all add:Aexp_restr_subst)
 (*
   fix \<pi>
@@ -84,7 +84,7 @@ lemma Aheap_eqvt'[eqvt]:
   apply rule
   done
 
-interpretation CorrectArityAnalysisLet Aexp Aheap
+interpretation ArityAnalysisLetSafe Aexp Aheap
 proof default
   fix \<pi> show "\<pi> \<bullet> Aheap = Aheap"
     by perm_simp rule
@@ -112,7 +112,7 @@ next
 qed
 
 
-interpretation CorrectArityAnalysisLetNoCard Aexp Aheap
+interpretation ArityAnalysisLetSafeNoCard Aexp Aheap
 proof default
   fix x \<Gamma> e a
   assume "x \<in> thunks \<Gamma>"

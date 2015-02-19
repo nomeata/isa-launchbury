@@ -2,7 +2,7 @@ theory NoCardinalityAnalysis
 imports CardinalityAnalysisSpec ArityAnalysisStack
 begin
 
-locale NoCardinalityAnalysis = CorrectArityAnalysisLet +
+locale NoCardinalityAnalysis = ArityAnalysisLetSafe +
   assumes Aheap_thunk: "x \<in> thunks \<Gamma> \<Longrightarrow> (Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
 begin
 
@@ -43,7 +43,7 @@ lemma cHeap_simp[simp]: "cHeap \<Gamma> e\<cdot>a = ae2ce (Aheap \<Gamma> e\<cdo
 
 sublocale CardinalityHeap cHeap.
 
-sublocale CardinalityHeapCorrect cHeap Aheap
+sublocale CardinalityHeapSafe cHeap Aheap
   apply default
   apply (erule Aheap_thunk)
   apply simp
@@ -167,7 +167,7 @@ sublocale CardinalityPrognosisEdom prognosis
   by default (auto dest: set_mp[OF Aexp_edom] set_mp[OF ap_fv_subset] set_mp[OF edom_AnalBinds]  set_mp[OF edom_AEstack])
 
 
-sublocale CardinalityPrognosisCorrect prognosis cHeap Aheap Aexp..
+sublocale CardinalityPrognosisSafe prognosis cHeap Aheap Aexp..
 end
 
 end

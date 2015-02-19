@@ -6,7 +6,7 @@ hide_const Multiset.single
 
 locale CoCallArityEdom = CoCallArity + EdomArityAnalysis
 
-locale CoCallArityCorrect = CoCallArity + CoCallAnalyisHeap + CorrectArityAnalysisLet +
+locale CoCallAritySafe = CoCallArity + CoCallAnalyisHeap + ArityAnalysisLetSafe +
   assumes ccExp_App: "ccExp e\<cdot>(inc\<cdot>a) \<squnion> ccProd {x} (insert x (fv e)) \<sqsubseteq> ccExp (App e x)\<cdot>a"
   assumes ccExp_Lam: "cc_restr (fv (Lam [y]. e)) (ccExp e\<cdot>(pred\<cdot>n)) \<sqsubseteq> ccExp (Lam [y]. e)\<cdot>n"
   assumes ccExp_subst: "x \<notin>  S \<Longrightarrow> y \<notin> S \<Longrightarrow> cc_restr S (ccExp e[y::=x]\<cdot>a) \<sqsubseteq> cc_restr S (ccExp e\<cdot>a)"

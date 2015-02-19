@@ -5,20 +5,20 @@ begin
 locale SubstArityAnalysis = EdomArityAnalysis + 
   assumes Aexp_subst_restr: "x \<notin> S \<Longrightarrow> y \<notin> S \<Longrightarrow> (Aexp e[x::=y] \<cdot> a) f|` S = (Aexp e\<cdot>a) f|` S"
 
-locale CorrectArityAnalysis = SubstArityAnalysis +
+locale ArityAnalysisSafe = SubstArityAnalysis +
   assumes Aexp_Var: "up \<cdot> n \<sqsubseteq> (Aexp (Var x)\<cdot>n) x"
   assumes Aexp_App: "Aexp e \<cdot>(inc\<cdot>n) \<squnion> esing x \<cdot> (up\<cdot>0) \<sqsubseteq>  Aexp (App e x) \<cdot> n"
   assumes Aexp_Lam: "env_delete y (Aexp e \<cdot>(pred\<cdot>n)) \<sqsubseteq> Aexp (Lam [y]. e) \<cdot> n"
   assumes Aexp_IfThenElse: "Aexp scrut\<cdot>0 \<squnion> Aexp e1\<cdot>a \<squnion> Aexp e2\<cdot>a \<sqsubseteq> Aexp (scrut ? e1 : e2)\<cdot>a"
 
-locale CorrectArityAnalysisHeap = CorrectArityAnalysis + ArityAnalysisHeapEqvt +
+locale ArityAnalysisHeapSafe = ArityAnalysisSafe + ArityAnalysisHeapEqvt +
   assumes edom_Aheap: "edom (Aheap \<Gamma> e\<cdot> a) \<subseteq> domA \<Gamma>"
   assumes Aheap_subst: "x \<notin> domA \<Gamma> \<Longrightarrow> y \<notin> domA \<Gamma> \<Longrightarrow> Aheap \<Gamma>[x::h=y] e[x ::=y]  = Aheap \<Gamma> e"
 
-locale CorrectArityAnalysisLet = CorrectArityAnalysisHeap +
+locale ArityAnalysisLetSafe = ArityAnalysisHeapSafe +
   assumes Aexp_Let: "ABinds \<Gamma>\<cdot>(Aheap \<Gamma> e\<cdot>a) \<squnion> Aexp e\<cdot>a \<sqsubseteq> Aheap \<Gamma> e\<cdot>a \<squnion> Aexp (Let \<Gamma> e)\<cdot>a"
 
-locale CorrectArityAnalysisLetNoCard = CorrectArityAnalysisLet +
+locale ArityAnalysisLetSafeNoCard = ArityAnalysisLetSafe +
   assumes Aheap_heap3: "x \<in> thunks \<Gamma> \<Longrightarrow> (Aheap \<Gamma> e\<cdot>a) x = up\<cdot>0"
 
 context SubstArityAnalysis
@@ -58,7 +58,7 @@ begin
     done
 end
 
-context CorrectArityAnalysis
+context ArityAnalysisSafe
 begin
 
 lemma Aexp_Var_singleton: "esing x \<cdot> (up\<cdot>n) \<sqsubseteq> Aexp (Var x) \<cdot> n"
@@ -69,7 +69,7 @@ lemma fup_Aexp_Var: "esing x \<cdot> n \<sqsubseteq> fup\<cdot>(Aexp (Var x))\<c
 end
 
 
-context CorrectArityAnalysisLet
+context ArityAnalysisLetSafe
 begin
   lemma Aheap_nonrec:
     assumes "nonrec \<Delta>"
