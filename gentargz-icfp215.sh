@@ -21,28 +21,30 @@ tar czhf \
 	Launchbury/ArityAnalysisSpec.thy \
 	Launchbury/ArityAnalysisStack.thy \
 	Launchbury/ArityConsistent.thy \
-	Launchbury/ArityTransform.thy \
-	Launchbury/ArityTransformSafe.thy \
+	Launchbury/ArityEtaExpandCorrect.thy \
 	Launchbury/ArityEtaExpansionSafe.thy \
+	Launchbury/ArityEtaExpansion.thy \
 	Launchbury/Arity-Nominal.thy \
 	Launchbury/ArityStack.thy \
 	Launchbury/Arity.thy \
+	Launchbury/ArityTransformSafe.thy \
+	Launchbury/ArityTransform.thy \
 	Launchbury/CallArityEnd2EndSafe.thy \
 	Launchbury/CallArityEnd2End.thy \
-	Launchbury/Cardinality-Domain-Lists.thy \
+	Launchbury/CardArityTransformSafe.thy \
 	Launchbury/CardinalityAnalysisSig.thy \
 	Launchbury/CardinalityAnalysisSpec.thy \
+	Launchbury/Cardinality-Domain-Lists.thy \
 	Launchbury/Cardinality-Domain.thy \
-	Launchbury/CardArityTransformSafe.thy \
 	Launchbury/CoCallAnalysisBinds.thy \
 	Launchbury/CoCallAnalysisImpl.thy \
 	Launchbury/CoCallAnalysisSig.thy \
 	Launchbury/CoCallAnalysisSpec.thy \
 	Launchbury/CoCallAritySig.thy \
 	Launchbury/CoCallFix.thy \
-	Launchbury/CoCallGraph-TTree.thy \
 	Launchbury/CoCallGraph-Nominal.thy \
 	Launchbury/CoCallGraph.thy \
+	Launchbury/CoCallGraph-TTree.thy \
 	Launchbury/CoCallImplCorrect.thy \
 	Launchbury/CoCallImplTTreeSafe.thy \
 	Launchbury/CoCallImplTTree.thy \
@@ -52,16 +54,9 @@ tar czhf \
 	Launchbury/Env-Nominal.thy \
 	Launchbury/Env-Set-Cpo.thy \
 	Launchbury/Env.thy \
-	Launchbury/ArityEtaExpansion.thy \
 	Launchbury/EtaExpansionSafe.thy \
 	Launchbury/EtaExpansion.thy \
 	Launchbury/EvalHeap.thy \
-	Launchbury/TTreeAnalysisSig.thy \
-	Launchbury/TTreeAnalysisSpec.thy \
-	Launchbury/TTree-HOLCF.thy \
-	Launchbury/TTreeImplCardinalitySafe.thy \
-	Launchbury/TTreeImplCardinality.thy \
-	Launchbury/TTree.thy \
 	Launchbury/HasESem.thy \
 	Launchbury/HeapSemantics.thy \
 	Launchbury/HOLCF-Join-Classes.thy \
@@ -81,6 +76,12 @@ tar czhf \
 	Launchbury/Terms.thy \
 	Launchbury/TransformTools.thy \
 	Launchbury/TrivialArityAnal.thy \
+	Launchbury/TTreeAnalysisSig.thy \
+	Launchbury/TTreeAnalysisSpec.thy \
+	Launchbury/TTree-HOLCF.thy \
+	Launchbury/TTreeImplCardinalitySafe.thy \
+	Launchbury/TTreeImplCardinality.thy \
+	Launchbury/TTree.thy \
 	Launchbury/Value-Nominal.thy \
 	Launchbury/Value.thy \
 	Launchbury/Vars.thy \
