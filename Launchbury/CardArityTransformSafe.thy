@@ -1,5 +1,5 @@
-theory CardinalityEtaExpandCorrect
-imports ArityEtaExpand CardinalityAnalysisSpec AbstractTransform Sestoft SestoftGC ArityEtaExpansionSestoft ArityAnalysisStack  ArityConsistent
+theory CardArityTransformSafe
+imports ArityTransform CardinalityAnalysisSpec AbstractTransform Sestoft SestoftGC ArityEtaExpansionSafe ArityAnalysisStack  ArityConsistent
 begin
 
 context CardinalityPrognosisCorrect

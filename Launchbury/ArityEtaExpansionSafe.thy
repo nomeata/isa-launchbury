@@ -1,5 +1,5 @@
-theory ArityEtaExpansionSestoft
-imports EtaExpansionSestoft ArityStack EtaExpansionArity
+theory ArityEtaExpansionSafe
+imports EtaExpansionSafe ArityStack ArityEtaExpansion
 begin
 
 lemma Aeta_expand_correct:

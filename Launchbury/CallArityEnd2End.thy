@@ -1,5 +1,5 @@
 theory CallArityEnd2End
-imports ArityEtaExpand CoCallAnalysisImpl
+imports ArityTransform CoCallAnalysisImpl
 begin
 
 locale CallArityEnd2End

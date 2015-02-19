@@ -1,5 +1,5 @@
-theory "FTree-HOLCF"
-imports FTree "HOLCF-Utils" "Set-Cpo" "HOLCF-Join-Classes"
+theory "TTree-HOLCF"
+imports TTree "HOLCF-Utils" "Set-Cpo" "HOLCF-Join-Classes"
 begin
 
 instantiation ftree :: (type) below
@@ -242,7 +242,7 @@ apply transfer
 apply auto
 apply (erule rev_image_eqI)
 
-lemma cont_ccFTree1:
+lemma cont_ccTTree1:
   "cont (\<lambda> S. ftree_restr S G)"
   (* Not true*)
   apply (rule set_ftree_contI)
@@ -252,12 +252,12 @@ lemma cont_ccFTree1:
   apply auto
   
 
-lemma cont_ccFTree2:
+lemma cont_ccTTree2:
   "cont (ftree_restr S)"
   by (rule ftree_contI2[where t = "\<lambda> xs.{filter (\<lambda> x'. x' \<in> S) xs}"])
      (transfer, auto)
 
-lemmas cont_ccFTree = cont_compose2[where c = ftree_restr, OF cont_ccFTree1 cont_ccFTree2, simp, cont2cont]
+lemmas cont_ccTTree = cont_compose2[where c = ftree_restr, OF cont_ccTTree1 cont_ccTTree2, simp, cont2cont]
 *)
 
 

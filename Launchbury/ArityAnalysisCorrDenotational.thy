@@ -1,5 +1,5 @@
 theory ArityAnalysisCorrDenotational
-imports ArityAnalysisSpec Denotational ArityEtaExpand
+imports ArityAnalysisSpec Denotational ArityTransform
 begin
 
 context CorrectArityAnalysisLet

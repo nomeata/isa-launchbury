@@ -1,10 +1,10 @@
-theory FTreeImplCardinality
-imports FTreeAnalysisSig CardinalityAnalysisSig CallFutureCardinality
+theory TTreeImplCardinality
+imports TTreeAnalysisSig CardinalityAnalysisSig "Cardinality-Domain-Lists"
 begin
 
 hide_const Multiset.single
 
-context FTreeAnalysis
+context TTreeAnalysis
 begin
 
 fun unstack :: "stack \<Rightarrow> exp \<Rightarrow> exp" where

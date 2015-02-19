@@ -1,4 +1,4 @@
-theory EtaExpansionSestoft
+theory EtaExpansionSafe
 imports EtaExpansion Sestoft
 begin
 

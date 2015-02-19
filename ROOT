@@ -35,8 +35,8 @@ session Arity (AFP) in "Launchbury" = "HOLCF-Nominal2" +
   theories
     "ArityAnalysisImplCorrect"
     "TrivialArityAnal"
-    "ArityEtaExpandCorrect"
-    "CardinalityEtaExpandCorrect"
+    "ArityTransformSafe"
+    "CardArityTransformSafe"
     "EtaExpansionSestoft"
     "DeadCodeRemovalCorrect"
     "DeadCodeRemoval2Correct"
@@ -58,7 +58,7 @@ session Arity_ICFP (AFP) in "Launchbury" = "HOLCF-Nominal2" +
   theories
     "TrivialArityAnal"
     "NoCardinalityAnalysis"
-    "ArityEtaExpandCorrect"
+    "ArityTransformSafe"
     "CallArityCorrectEnd2End"
     "ArityAnalysisCorrDenotational"
   document_files

@@ -1,5 +1,5 @@
-theory CoCallImplFTreeCorrect
-imports CoCallImplFTree CoCallAnalysisSpec FTreeAnalysisSpec CallFutureCardinality
+theory CoCallImplTTreeSafe
+imports CoCallImplTTree CoCallAnalysisSpec TTreeAnalysisSpec
 begin
 
 hide_const Multiset.single
@@ -39,7 +39,7 @@ qed
 context CoCallArityEdom
 begin
  lemma carrier_Fexp': "carrier (Fexp e\<cdot>a) \<subseteq> fv e"
-    unfolding Fexp_simp carrier_ccFTree
+    unfolding Fexp_simp carrier_ccTTree
     by (rule Aexp_edom)
 
 end
@@ -54,10 +54,10 @@ lemma carrier_AnalBinds_below:
 by (auto simp add: Fexp.AnalBinds_lookup Fexp_def split: option.splits 
          elim!: set_mp[OF edom_mono[OF monofun_cfun_fun[OF ABind_below_ABinds]]])
 
-sublocale FTreeAnalysisCarrier Fexp
-  apply default unfolding Fexp_simp carrier_ccFTree..
+sublocale TTreeAnalysisCarrier Fexp
+  apply default unfolding Fexp_simp carrier_ccTTree..
 
-sublocale FTreeAnalysisCorrect Fexp
+sublocale TTreeAnalysisCorrect Fexp
 proof default
   fix x e a
 
@@ -65,7 +65,7 @@ proof default
   have "{x} \<union> edom (Aexp e\<cdot>(inc\<cdot>a)) \<subseteq> edom (Aexp (App e x)\<cdot>a)" by auto
   moreover
   {
-  have "ccApprox (many_calls x \<otimes>\<otimes> ccFTree (edom (Aexp e\<cdot>(inc\<cdot>a))) (ccExp e\<cdot>(inc\<cdot>a))) 
+  have "ccApprox (many_calls x \<otimes>\<otimes> ccTTree (edom (Aexp e\<cdot>(inc\<cdot>a))) (ccExp e\<cdot>(inc\<cdot>a))) 
     = cc_restr (edom (Aexp e\<cdot>(inc\<cdot>a))) (ccExp e\<cdot>(inc\<cdot>a)) \<squnion> ccProd {x} (insert x (edom (Aexp e\<cdot>(inc\<cdot>a))))"
     by (simp add: ccApprox_both ccProd_insert2[where S' = "edom e" for e])
   also
@@ -78,38 +78,38 @@ proof default
   have "ccExp e\<cdot>(inc\<cdot>a) \<squnion> ccProd {x} (insert x (fv e)) \<sqsubseteq> ccExp (App e x)\<cdot>a" 
     by (rule ccExp_App)
   finally
-  have "ccApprox (many_calls x \<otimes>\<otimes> ccFTree (edom (Aexp e\<cdot>(inc\<cdot>a))) (ccExp e\<cdot>(inc\<cdot>a))) \<sqsubseteq> ccExp (App e x)\<cdot>a" by this simp_all
+  have "ccApprox (many_calls x \<otimes>\<otimes> ccTTree (edom (Aexp e\<cdot>(inc\<cdot>a))) (ccExp e\<cdot>(inc\<cdot>a))) \<sqsubseteq> ccExp (App e x)\<cdot>a" by this simp_all
   }
   ultimately
   show "many_calls x \<otimes>\<otimes> Fexp e\<cdot>(inc\<cdot>a) \<sqsubseteq> Fexp (App e x)\<cdot>a"
-    unfolding Fexp_simp by (auto intro!: below_ccFTreeI)
+    unfolding Fexp_simp by (auto intro!: below_ccTTreeI)
 next
   fix y e n
   show "without y (Fexp e\<cdot>(pred\<cdot>n)) \<sqsubseteq> Fexp (Lam [y]. e)\<cdot>n"
     unfolding Fexp_simp
     by (auto dest: set_mp[OF Aexp_edom]
-             intro!: below_ccFTreeI  below_trans[OF _ ccExp_Lam] cc_restr_mono1 set_mp[OF edom_mono[OF Aexp_Lam]])
+             intro!: below_ccTTreeI  below_trans[OF _ ccExp_Lam] cc_restr_mono1 set_mp[OF edom_mono[OF Aexp_Lam]])
 next
   fix e y x a
 
   from edom_mono[OF Aexp_subst]
   have *: "edom (Aexp e[y::=x]\<cdot>a) \<subseteq> insert x (edom (Aexp e\<cdot>a) - {y})" by simp
 
-  have "Fexp e[y::=x]\<cdot>a = ccFTree (edom (Aexp e[y::=x]\<cdot>a)) (ccExp e[y::=x]\<cdot>a)"
+  have "Fexp e[y::=x]\<cdot>a = ccTTree (edom (Aexp e[y::=x]\<cdot>a)) (ccExp e[y::=x]\<cdot>a)"
     unfolding Fexp_simp..
-  also have "\<dots> \<sqsubseteq> ccFTree (insert x (edom (Aexp e\<cdot>a) - {y})) (ccExp e[y::=x]\<cdot>a)"
-    by (rule ccFTree_mono1[OF *])
+  also have "\<dots> \<sqsubseteq> ccTTree (insert x (edom (Aexp e\<cdot>a) - {y})) (ccExp e[y::=x]\<cdot>a)"
+    by (rule ccTTree_mono1[OF *])
   also have "\<dots> \<sqsubseteq> many_calls x \<otimes>\<otimes> without x (\<dots>)"
     by (rule paths_many_calls_subset)
-  also have "without x (ccFTree (insert x (edom (Aexp e\<cdot>a) - {y})) (ccExp e[y::=x]\<cdot>a))
-    = ccFTree (edom (Aexp e\<cdot>a) - {y} - {x}) (ccExp e[y::=x]\<cdot>a)"
+  also have "without x (ccTTree (insert x (edom (Aexp e\<cdot>a) - {y})) (ccExp e[y::=x]\<cdot>a))
+    = ccTTree (edom (Aexp e\<cdot>a) - {y} - {x}) (ccExp e[y::=x]\<cdot>a)"
     by simp
-  also have "\<dots> \<sqsubseteq> ccFTree (edom (Aexp e\<cdot>a) - {y} - {x}) (ccExp e\<cdot>a)"
-    by (rule ccFTree_cong_below[OF ccExp_subst]) auto
-  also have "\<dots> = without y (ccFTree (edom (Aexp e\<cdot>a) - {x}) (ccExp e\<cdot>a))"
+  also have "\<dots> \<sqsubseteq> ccTTree (edom (Aexp e\<cdot>a) - {y} - {x}) (ccExp e\<cdot>a)"
+    by (rule ccTTree_cong_below[OF ccExp_subst]) auto
+  also have "\<dots> = without y (ccTTree (edom (Aexp e\<cdot>a) - {x}) (ccExp e\<cdot>a))"
     by simp (metis Diff_insert Diff_insert2)
-  also have "ccFTree (edom (Aexp e\<cdot>a) - {x}) (ccExp e\<cdot>a) \<sqsubseteq> ccFTree (edom (Aexp e\<cdot>a)) (ccExp e\<cdot>a)"
-    by (rule ccFTree_mono1) auto
+  also have "ccTTree (edom (Aexp e\<cdot>a) - {x}) (ccExp e\<cdot>a) \<sqsubseteq> ccTTree (edom (Aexp e\<cdot>a)) (ccExp e\<cdot>a)"
+    by (rule ccTTree_mono1) auto
   also have "\<dots> = Fexp e\<cdot>a"
     unfolding Fexp_simp..
   finally
@@ -121,17 +121,17 @@ next
   hence "v \<in> edom (Aexp (Var v)\<cdot>a)" by (auto simp add: edom_def)
   thus "single v \<sqsubseteq> Fexp (Var v)\<cdot>a"
     unfolding Fexp_simp
-    by (auto intro: below_ccFTreeI)
+    by (auto intro: below_ccTTreeI)
 next
   fix scrut e1 a e2
-  have "ccFTree (edom (Aexp e1\<cdot>a)) (ccExp e1\<cdot>a) \<oplus>\<oplus> ccFTree (edom (Aexp e2\<cdot>a)) (ccExp e2\<cdot>a)
-    \<sqsubseteq> ccFTree (edom (Aexp e1\<cdot>a) \<union> edom (Aexp e2\<cdot>a)) (ccExp e1\<cdot>a \<squnion> ccExp e2\<cdot>a)"
-      by (rule either_ccFTree)
+  have "ccTTree (edom (Aexp e1\<cdot>a)) (ccExp e1\<cdot>a) \<oplus>\<oplus> ccTTree (edom (Aexp e2\<cdot>a)) (ccExp e2\<cdot>a)
+    \<sqsubseteq> ccTTree (edom (Aexp e1\<cdot>a) \<union> edom (Aexp e2\<cdot>a)) (ccExp e1\<cdot>a \<squnion> ccExp e2\<cdot>a)"
+      by (rule either_ccTTree)
   note both_mono2'[OF this]
   also
-  have "ccFTree (edom (Aexp scrut\<cdot>0)) (ccExp scrut\<cdot>0) \<otimes>\<otimes> ccFTree (edom (Aexp e1\<cdot>a) \<union> edom (Aexp e2\<cdot>a)) (ccExp e1\<cdot>a \<squnion> ccExp e2\<cdot>a)
-    \<sqsubseteq> ccFTree (edom (Aexp scrut\<cdot>0) \<union> (edom (Aexp e1\<cdot>a) \<union> edom (Aexp e2\<cdot>a))) (ccExp scrut\<cdot>0 \<squnion> (ccExp e1\<cdot>a \<squnion> ccExp e2\<cdot>a) \<squnion> ccProd (edom (Aexp scrut\<cdot>0)) (edom (Aexp e1\<cdot>a) \<union> edom (Aexp e2\<cdot>a)))"
-    by (rule interleave_ccFTree)
+  have "ccTTree (edom (Aexp scrut\<cdot>0)) (ccExp scrut\<cdot>0) \<otimes>\<otimes> ccTTree (edom (Aexp e1\<cdot>a) \<union> edom (Aexp e2\<cdot>a)) (ccExp e1\<cdot>a \<squnion> ccExp e2\<cdot>a)
+    \<sqsubseteq> ccTTree (edom (Aexp scrut\<cdot>0) \<union> (edom (Aexp e1\<cdot>a) \<union> edom (Aexp e2\<cdot>a))) (ccExp scrut\<cdot>0 \<squnion> (ccExp e1\<cdot>a \<squnion> ccExp e2\<cdot>a) \<squnion> ccProd (edom (Aexp scrut\<cdot>0)) (edom (Aexp e1\<cdot>a) \<union> edom (Aexp e2\<cdot>a)))"
+    by (rule interleave_ccTTree)
   also
   have "edom (Aexp scrut\<cdot>0) \<union> (edom (Aexp e1\<cdot>a) \<union> edom (Aexp e2\<cdot>a)) = edom (Aexp scrut\<cdot>0 \<squnion> Aexp e1\<cdot>a \<squnion> Aexp e2\<cdot>a)" by auto
   also
@@ -145,26 +145,26 @@ next
   show "Fexp scrut\<cdot>0 \<otimes>\<otimes> (Fexp e1\<cdot>a \<oplus>\<oplus> Fexp e2\<cdot>a) \<sqsubseteq> Fexp (scrut ? e1 : e2)\<cdot>a"
     unfolding Fexp_simp
     by (auto simp add: ccApprox_both join_below_iff  below_trans[OF _ join_above2]
-             intro!: below_ccFTreeI below_trans[OF cc_restr_below_arg]
+             intro!: below_ccTTreeI below_trans[OF cc_restr_below_arg]
                      below_trans[OF _ ccExp_IfThenElse]  set_mp[OF edom_mono[OF Aexp_IfThenElse]])
 next
   fix e
   assume "isVal e"
   hence [simp]: "ccExp e\<cdot>0 = ccSquare (fv e)" by (rule ccExp_pap)
   thus "repeatable (Fexp e\<cdot>0)"
-    unfolding Fexp_simp by (auto intro: repeatable_ccFTree_ccSquare[OF Aexp_edom])
+    unfolding Fexp_simp by (auto intro: repeatable_ccTTree_ccSquare[OF Aexp_edom])
 qed
 
 definition Fheap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> var ftree"
-  where "Fheap \<Gamma> e = (\<Lambda> a. if nonrec \<Gamma> then ccFTree (edom (Aheap \<Gamma> e\<cdot>a)) (ccExp e\<cdot>a) else ftree_restr (edom (Aheap \<Gamma> e\<cdot>a)) anything)"
+  where "Fheap \<Gamma> e = (\<Lambda> a. if nonrec \<Gamma> then ccTTree (edom (Aheap \<Gamma> e\<cdot>a)) (ccExp e\<cdot>a) else ftree_restr (edom (Aheap \<Gamma> e\<cdot>a)) anything)"
 
-lemma Fheap_simp: "Fheap \<Gamma> e\<cdot>a = (if nonrec \<Gamma> then ccFTree (edom (Aheap \<Gamma> e\<cdot>a)) (ccExp e\<cdot>a) else ftree_restr (edom (Aheap \<Gamma> e\<cdot>a)) anything)"
+lemma Fheap_simp: "Fheap \<Gamma> e\<cdot>a = (if nonrec \<Gamma> then ccTTree (edom (Aheap \<Gamma> e\<cdot>a)) (ccExp e\<cdot>a) else ftree_restr (edom (Aheap \<Gamma> e\<cdot>a)) anything)"
   unfolding Fheap_def by simp
 
 lemma carrier_Fheap':"carrier (Fheap \<Gamma> e\<cdot>a) = edom (Aheap \<Gamma> e\<cdot>a)"
-    unfolding Fheap_simp carrier_ccFTree by simp
+    unfolding Fheap_simp carrier_ccTTree by simp
 
-sublocale FTreeAnalysisCardinalityHeap Fexp Aexp Aheap Fheap
+sublocale TTreeAnalysisCardinalityHeap Fexp Aexp Aheap Fheap
 proof default
   fix \<Gamma> e a
   show "carrier (Fheap \<Gamma> e\<cdot>a) = edom (Aheap \<Gamma> e\<cdot>a)"
@@ -227,7 +227,7 @@ next
   qed
 
   show "ftree_restr (- domA \<Delta>) (substitute (Fexp.AnalBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (thunks \<Delta>) (Fexp e\<cdot>a)) \<sqsubseteq> Fexp (Let \<Delta> e)\<cdot>a"
-  proof (rule below_trans[OF _ eq_imp_below[OF Fexp_simp[symmetric]]], rule below_ccFTreeI)
+  proof (rule below_trans[OF _ eq_imp_below[OF Fexp_simp[symmetric]]], rule below_ccTTreeI)
     have "carrier (ftree_restr (- domA \<Delta>) (substitute (Fexp.AnalBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (thunks \<Delta>) (Fexp e\<cdot>a)))
        = carrier (substitute (Fexp.AnalBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (thunks \<Delta>) (Fexp e\<cdot>a)) - domA \<Delta>" by auto
     also note carrier
@@ -279,7 +279,7 @@ next
           by (rule ccHeap_Extra_Edges)
         then
         show ?thesis using e'
-          by (simp add: Fexp.AnalBinds_lookup  Fexp_simp ccProd_comm  below_trans[OF ccProd_mono1[OF subset]])
+          by (simp add: Fexp.AnalBinds_lookup  Fexp_simp ccProd_comm  below_trans[OF ccProd_mono2[OF subset]])
       qed
     qed
     also have "\<dots> \<sqsubseteq> ccExp (Let \<Delta> e)\<cdot>a"
@@ -315,12 +315,12 @@ next
     have "ftree_restr (edom (Aheap \<Delta> e\<cdot>a)) (substitute (Fexp.AnalBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (thunks \<Delta>) (Fexp e\<cdot>a))
        = ftree_restr (edom (Aheap \<Delta> e\<cdot>a)) (Fexp e\<cdot>a)"
       by (rule nonrecE) (rule ftree_rest_substitute, auto simp add: carrier_Fexp fv_def fresh_def dest!: set_mp[OF edom_Aheap] set_mp[OF Aexp_edom])
-    also have "\<dots> = ccFTree (edom (Aexp e\<cdot>a) \<inter> edom (Aheap \<Delta> e\<cdot>a)) (ccExp e\<cdot>a)"
+    also have "\<dots> = ccTTree (edom (Aexp e\<cdot>a) \<inter> edom (Aheap \<Delta> e\<cdot>a)) (ccExp e\<cdot>a)"
       by (simp add: Fexp_simp)
-    also have "\<dots> \<sqsubseteq> ccFTree (edom (Aexp e\<cdot>a) \<inter> domA \<Delta>) (ccExp e\<cdot>a)"
-      by (rule ccFTree_mono1[OF Int_mono[OF order_refl edom_Aheap]])
-    also have "\<dots> \<sqsubseteq> ccFTree (edom (Aheap \<Delta> e\<cdot>a)) (ccExp e\<cdot>a)"
-      by (rule ccFTree_mono1[OF edom_mono[OF Aheap_nonrec[OF True], simplified]])
+    also have "\<dots> \<sqsubseteq> ccTTree (edom (Aexp e\<cdot>a) \<inter> domA \<Delta>) (ccExp e\<cdot>a)"
+      by (rule ccTTree_mono1[OF Int_mono[OF order_refl edom_Aheap]])
+    also have "\<dots> \<sqsubseteq> ccTTree (edom (Aheap \<Delta> e\<cdot>a)) (ccExp e\<cdot>a)"
+      by (rule ccTTree_mono1[OF edom_mono[OF Aheap_nonrec[OF True], simplified]])
     also have "\<dots> \<sqsubseteq> Fheap \<Delta> e\<cdot>a"
       by (simp add: Fheap_simp)
     finally
@@ -421,7 +421,7 @@ proof(rule ftree_belowI)
 
     from `t \<sqsubseteq> singles S`
     have "nxt t x \<sqsubseteq> singles S" 
-      by (metis "FTree-HOLCF.nxt_mono" below_trans nxt_singles_below_singles)
+      by (metis "TTree-HOLCF.nxt_mono" below_trans nxt_singles_below_singles)
     from this `carrier (f x) \<inter> S = {}`
     have "nxt t x \<otimes>\<otimes> f x \<sqsubseteq> singles S"
       by (rule both_below_singles1)

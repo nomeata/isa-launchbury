@@ -1,5 +1,5 @@
 theory CallArityCorrectEnd2End
-imports CallArityEnd2End CardinalityEtaExpandCorrect CoCallImplCorrect CoCallImplFTreeCorrect FTreeImplCardinalityCorrect
+imports CallArityEnd2End CardArityTransformSafe CoCallImplCorrect CoCallImplTTreeSafe TTreeImplCardinalitySafe
 begin
 
 locale CallArityCorrectEnd2End

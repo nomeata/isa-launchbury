@@ -1,8 +1,8 @@
-theory FTreeAnalysisSig
-imports Arity  "FTree-HOLCF"  AnalBinds
+theory TTreeAnalysisSig
+imports Arity  "TTree-HOLCF"  AnalBinds
 begin
 
-locale FTreeAnalysis =
+locale TTreeAnalysis =
  fixes Fexp :: "exp \<Rightarrow> Arity \<rightarrow> var ftree"
 begin
   sublocale Fexp!: ExpAnalysis Fexp.

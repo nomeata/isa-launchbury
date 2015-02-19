@@ -1,5 +1,5 @@
 theory FutureCardinality
-imports CallFutures CardinalityAnalysis CallFutureCardinality
+imports CallFutures CardinalityAnalysis Cardinality-Domain-Lists
 begin
 
 locale FutureAnalysis =

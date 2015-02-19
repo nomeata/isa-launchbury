@@ -1,4 +1,4 @@
-theory EtaExpansionArity
+theory ArityEtaExpansion
 imports EtaExpansion "Arity-Nominal" TransformTools
 begin
 

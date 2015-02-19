@@ -1,4 +1,4 @@
-theory FTree
+theory TTree
 imports Main ConstOn "List-Interleavings"
 begin
 
@@ -861,7 +861,7 @@ qed
 lemma substitute_only_empty_both: "const_on f (carrier t') empty \<Longrightarrow> substitute f T (t \<otimes>\<otimes> t') = substitute f T t \<otimes>\<otimes> t'"
 proof (intro paths_inj set_eqI)
   fix xs
-  assume "const_on f (carrier t') FTree.empty"
+  assume "const_on f (carrier t') TTree.empty"
   thus "(xs \<in> paths (substitute f T (t \<otimes>\<otimes> t'))) = (xs \<in> paths (substitute f T t \<otimes>\<otimes> t'))"
   proof (induction xs arbitrary: f t t')
   case Nil thus ?case by simp
@@ -920,12 +920,12 @@ next
   show ?case
   proof(cases "x' = x")
     case False
-    hence [simp]: "(f(x := FTree.empty)) x' = f x'" by simp
+    hence [simp]: "(f(x := TTree.empty)) x' = f x'" by simp
     have [simp]: "f_nxt f T x' x = f x" using False by (auto simp add: f_nxt_def)
     show ?thesis using Cons by (auto  simp add: repeatable_both_nxt repeatable_both_both_nxt   simp del: fun_upd_apply)
   next
     case True
-    hence [simp]: "(f(x := FTree.empty)) x = empty" by simp
+    hence [simp]: "(f(x := TTree.empty)) x = empty" by simp
     (*  have [simp]: "f_nxt f T x' x = f x" using False by (auto simp add: f_nxt_def) *)
 
     have *: "(f_nxt f T x) x = f x \<or> (f_nxt f T x) x = empty" by (simp add: f_nxt_def)
@@ -1042,7 +1042,7 @@ next
     by (auto simp add: f_nxt_def)
 
   from Cons.prems(2)
-  have "(\<And>x'. (x' \<in> T) = (x' \<in> T') \<or> f_nxt f T x x' = FTree.empty)"
+  have "(\<And>x'. (x' \<in> T) = (x' \<in> T') \<or> f_nxt f T x x' = TTree.empty)"
     by (auto simp add: f_nxt_eq_empty_iff)
   from Cons.prems(1) Cons.IH[OF _ this]
   show ?case
@@ -1286,7 +1286,7 @@ proof(rule paths_inj, rule set_eqI, rule iffI)
                     dest: set_mp[OF substitute_mono2[OF both_mono1[OF ftree_restr_nxt_subset]]])
     next
       case False
-      with `const_on f (- S) FTree.empty` have [simp]: "f x = empty" by auto
+      with `const_on f (- S) TTree.empty` have [simp]: "f x = empty" by auto
       hence [simp]: "f_nxt f T x = f" by (auto simp add: f_nxt_def)
       show ?thesis
       using * False
@@ -1341,7 +1341,7 @@ next
           by (auto simp add: f_nxt_def)
         moreover
         from less.prems(3)
-        have "const_on (f_nxt f T x) (- S) FTree.empty" by (force simp add: f_nxt_def)
+        have "const_on (f_nxt f T x) (- S) TTree.empty" by (force simp add: f_nxt_def)
         ultimately
         have "\<exists>ys''. ys' = [x'\<leftarrow>ys'' . x' \<in> S] \<and> substitute'' (f_nxt f T x) T xs''' ys''"
             by (rule less.hyps[rotated])

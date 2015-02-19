@@ -1,5 +1,5 @@
-theory FTreeImplCardinalityCorrect
-imports FTreeImplCardinality FTreeAnalysisSpec CardinalityAnalysisSpec CallFutureCardinality
+theory TTreeImplCardinalitySafe
+imports TTreeImplCardinality TTreeAnalysisSpec CardinalityAnalysisSpec
 begin
 
 hide_const Multiset.single
@@ -18,7 +18,7 @@ lemma pathsCards_none: "pathsCard (paths t) x = none \<Longrightarrow> x \<notin
 lemma const_on_edom_disj: "const_on f S empty \<longleftrightarrow> edom f \<inter> S = {}"
   by (auto simp add: empty_is_bottom edom_def)
 
-context FTreeAnalysisCarrier
+context TTreeAnalysisCarrier
 begin
   lemma carrier_Fstack: "carrier (Fstack as S) \<subseteq> fv S"
     by (induction S rule: Fstack.induct)
@@ -32,7 +32,7 @@ begin
   by (metis (poly_guards_query) contra_subsetD domA_from_set map_of_fv_subset map_of_is_SomeD option.sel)
 end
 
-context FTreeAnalysisCorrect
+context TTreeAnalysisCorrect
 begin
 
   sublocale CardinalityPrognosisShape prognosis
@@ -216,7 +216,7 @@ begin
 
 end
 
-context FTreeAnalysisCardinalityHeap
+context TTreeAnalysisCardinalityHeap
 begin
 
   definition cHeap where
@@ -273,8 +273,8 @@ begin
     have const_on2:  "const_on (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (carrier (Fstack as S)) empty"
       unfolding const_on_edom_disj using fresh_distinct_fv[OF `atom \` domA \<Delta> \<sharp>* S`]
       by (auto dest!: set_mp[OF carrier_FBinds] set_mp[OF carrier_Fstack] set_mp[OF Fexp.edom_AnalBinds] set_mp[OF ap_fv_subset ])
-    have  const_on3: "const_on (FBinds \<Gamma>\<cdot>ae) (- (- domA \<Delta>)) FTree.empty"
-      and const_on4: "const_on (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (domA \<Gamma>) FTree.empty"
+    have  const_on3: "const_on (FBinds \<Gamma>\<cdot>ae) (- (- domA \<Delta>)) TTree.empty"
+      and const_on4: "const_on (FBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (domA \<Gamma>) TTree.empty"
       unfolding const_on_edom_disj using fresh_distinct[OF `atom \` domA \<Delta> \<sharp>* \<Gamma>`]
       by (auto dest!:  set_mp[OF Fexp.edom_AnalBinds])
 

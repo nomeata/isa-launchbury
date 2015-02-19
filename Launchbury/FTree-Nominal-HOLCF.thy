@@ -1,5 +1,5 @@
-theory "FTree-Nominal-HOLCF"
-imports "FTree-HOLCF" "Nominal-Utils" "Nominal-HOLCF"
+theory "TTree-Nominal-HOLCF"
+imports "TTree-HOLCF" "Nominal-Utils" "Nominal-HOLCF"
 begin
 
 (* TODO: This ssems to be unused *)

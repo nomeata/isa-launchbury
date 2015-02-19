@@ -1,5 +1,5 @@
-theory "CoCallGraph-FTree"
-imports CoCallGraph "FTree-HOLCF"
+theory "CoCallGraph-TTree"
+imports CoCallGraph "TTree-HOLCF"
 begin
 
 lemma interleave_ccFromList:
@@ -88,7 +88,7 @@ lemma ccApprox_many_calls[simp]:
   by transfer' (rule CoCalls_eqI, auto)
 
 lemma ccApprox_single[simp]:
-  "ccApprox (FTree.single y) = \<bottom>"
+  "ccApprox (TTree.single y) = \<bottom>"
   by transfer' auto
 
 lemma ccApprox_either[simp]: "ccApprox (t \<oplus>\<oplus> t') = ccApprox t \<squnion> ccApprox t'"
@@ -545,12 +545,12 @@ lemma filter_valid_lists:
   "xs \<in> valid_lists S G \<Longrightarrow> filter P xs \<in> valid_lists {a \<in> S. P a} G"
 by (induction rule:valid_lists.induct) auto
 
-lift_definition ccFTree :: "var set \<Rightarrow> CoCalls \<Rightarrow> var ftree" is "\<lambda> S G. valid_lists S G" 
+lift_definition ccTTree :: "var set \<Rightarrow> CoCalls \<Rightarrow> var ftree" is "\<lambda> S G. valid_lists S G" 
   by (auto intro: valid_lists_downset_aux)
 
-lemma paths_ccFTree[simp]: "paths (ccFTree S G) = valid_lists S G" by transfer auto
+lemma paths_ccTTree[simp]: "paths (ccTTree S G) = valid_lists S G" by transfer auto
 
-lemma carrier_ccFTree[simp]: "carrier (ccFTree S G) = S"
+lemma carrier_ccTTree[simp]: "carrier (ccTTree S G) = S"
   apply transfer
   apply (auto dest: valid_lists_subset)
   apply (rule_tac x = "[x]" in bexI)
@@ -562,7 +562,7 @@ lemma valid_lists_ccFromList:
 by (induction rule:valid_lists.induct)
    (auto simp add: join_below_iff subset_ccNeighbors ccProd_below_cc_restr elim: set_mp[OF valid_lists_subset])
 
-lemma ccApprox_ccFTree[simp]: "ccApprox (ccFTree S G) = cc_restr S G"
+lemma ccApprox_ccTTree[simp]: "ccApprox (ccTTree S G) = cc_restr S G"
 proof (transfer' fixing: S G, rule below_antisym)
   show "lub (ccFromList ` valid_lists S G) \<sqsubseteq> cc_restr S G"
     apply (rule is_lub_thelub_ex)
@@ -585,9 +585,9 @@ next
   qed
 qed
 
-lemma below_ccFTreeI:
+lemma below_ccTTreeI:
   assumes "carrier t \<subseteq> S" and "ccApprox t \<sqsubseteq> G"
-  shows "t \<sqsubseteq> ccFTree S G"
+  shows "t \<sqsubseteq> ccTTree S G"
 unfolding paths_mono_iff[symmetric] below_set_def
 proof
   fix xs
@@ -631,18 +631,18 @@ proof
     show ?case..
   qed
     
-  thus "xs \<in> paths (ccFTree S G)" by (metis paths_ccFTree)
+  thus "xs \<in> paths (ccTTree S G)" by (metis paths_ccTTree)
 qed    
 
-lemma ccFTree_mono1:
-  "S \<subseteq> S' \<Longrightarrow> ccFTree S G \<sqsubseteq> ccFTree S' G"
-  by (rule below_ccFTreeI) (auto simp add:  cc_restr_below_arg)
+lemma ccTTree_mono1:
+  "S \<subseteq> S' \<Longrightarrow> ccTTree S G \<sqsubseteq> ccTTree S' G"
+  by (rule below_ccTTreeI) (auto simp add:  cc_restr_below_arg)
 
-lemma cont_ccFTree1:
-  "cont (\<lambda> S. ccFTree S G)"
+lemma cont_ccTTree1:
+  "cont (\<lambda> S. ccTTree S G)"
   apply (rule contI2)
   apply (rule monofunI)
-  apply (erule ccFTree_mono1[folded below_set_def])
+  apply (erule ccTTree_mono1[folded below_set_def])
   
   apply (rule ftree_belowI)
   apply (simp add: paths_Either lub_set lub_is_either)
@@ -650,8 +650,8 @@ lemma cont_ccFTree1:
   apply simp
   done
 
-lemma ccFTree_mono2:
-  "G \<sqsubseteq> G' \<Longrightarrow> ccFTree S G \<sqsubseteq> ccFTree S G'"
+lemma ccTTree_mono2:
+  "G \<sqsubseteq> G' \<Longrightarrow> ccTTree S G \<sqsubseteq> ccTTree S G'"
   apply (rule ftree_belowI)
   apply simp
   apply (induct_tac  rule:valid_lists.induct) apply assumption
@@ -660,16 +660,16 @@ lemma ccFTree_mono2:
   apply (erule (1) order_trans[OF _ ccNeighbors_mono])
   done
 
-lemma ccFTree_mono:
-  "S \<subseteq> S' \<Longrightarrow> G \<sqsubseteq> G' \<Longrightarrow> ccFTree S G \<sqsubseteq> ccFTree S' G'"
-  by (metis below_trans[OF ccFTree_mono1 ccFTree_mono2])
+lemma ccTTree_mono:
+  "S \<subseteq> S' \<Longrightarrow> G \<sqsubseteq> G' \<Longrightarrow> ccTTree S G \<sqsubseteq> ccTTree S' G'"
+  by (metis below_trans[OF ccTTree_mono1 ccTTree_mono2])
 
 
-lemma cont_ccFTree2:
-  "cont (ccFTree S)"
+lemma cont_ccTTree2:
+  "cont (ccTTree S)"
   apply (rule contI2)
   apply (rule monofunI)
-  apply (erule ccFTree_mono2)
+  apply (erule ccTTree_mono2)
 
   apply (rule ftree_belowI)
   apply (simp add: paths_Either lub_set lub_is_either)
@@ -677,11 +677,11 @@ lemma cont_ccFTree2:
   apply simp
   done
 
-lemmas cont_ccFTree = cont_compose2[where c = ccFTree, OF cont_ccFTree1 cont_ccFTree2, simp, cont2cont]
+lemmas cont_ccTTree = cont_compose2[where c = ccTTree, OF cont_ccTTree1 cont_ccTTree2, simp, cont2cont]
 
-lemma ccFTree_below_singleI:
+lemma ccTTree_below_singleI:
   assumes "S \<inter> S' = {}"
-  shows "ccFTree S G \<sqsubseteq> singles S'"
+  shows "ccTTree S G \<sqsubseteq> singles S'"
 proof-
   {
   fix xs x
@@ -694,30 +694,30 @@ proof-
 qed
 
 
-lemma ccFTree_cc_restr: "ccFTree S G = ccFTree S (cc_restr S G)"
+lemma ccTTree_cc_restr: "ccTTree S G = ccTTree S (cc_restr S G)"
   by transfer' (rule valid_lists_cc_restr)
 
-lemma ccFTree_cong_below: "cc_restr S G \<sqsubseteq> cc_restr S G' \<Longrightarrow> ccFTree S G \<sqsubseteq> ccFTree S G'"
-  by (metis ccFTree_mono2 ccFTree_cc_restr)
+lemma ccTTree_cong_below: "cc_restr S G \<sqsubseteq> cc_restr S G' \<Longrightarrow> ccTTree S G \<sqsubseteq> ccTTree S G'"
+  by (metis ccTTree_mono2 ccTTree_cc_restr)
   
-lemma ccFTree_cong: "cc_restr S G = cc_restr S G' \<Longrightarrow> ccFTree S G = ccFTree S G'"
-  by (metis ccFTree_cc_restr)
+lemma ccTTree_cong: "cc_restr S G = cc_restr S G' \<Longrightarrow> ccTTree S G = ccTTree S G'"
+  by (metis ccTTree_cc_restr)
 
-lemma either_ccFTree:
-  "ccFTree S G \<oplus>\<oplus> ccFTree S' G' \<sqsubseteq> ccFTree (S \<union> S') (G \<squnion> G')"
-  by (auto intro!: either_belowI ccFTree_mono)
+lemma either_ccTTree:
+  "ccTTree S G \<oplus>\<oplus> ccTTree S' G' \<sqsubseteq> ccTTree (S \<union> S') (G \<squnion> G')"
+  by (auto intro!: either_belowI ccTTree_mono)
  
 
-lemma interleave_ccFTree: 
-   "ccFTree S G \<otimes>\<otimes> ccFTree S' G' \<sqsubseteq> ccFTree (S \<union> S') (G \<squnion> G' \<squnion> ccProd S S')"
+lemma interleave_ccTTree: 
+   "ccTTree S G \<otimes>\<otimes> ccTTree S' G' \<sqsubseteq> ccTTree (S \<union> S') (G \<squnion> G' \<squnion> ccProd S S')"
    by transfer' (auto, erule (2) interleave_valid_list)
 
-lemma interleave_ccFTree': 
-   "ccFTree (S \<union> S') G \<sqsubseteq> ccFTree S G \<otimes>\<otimes> ccFTree S' G"
+lemma interleave_ccTTree': 
+   "ccTTree (S \<union> S') G \<sqsubseteq> ccTTree S G \<otimes>\<otimes> ccTTree S' G"
    by transfer' (auto dest!:  interleave_valid_list')
 
-lemma many_calls_ccFTree:
-  shows "many_calls x = ccFTree {x} (ccProd {x} {x})"
+lemma many_calls_ccTTree:
+  shows "many_calls x = ccTTree {x} (ccProd {x} {x})"
   apply(transfer')
   apply (auto intro: many_calls_valid_list)
   apply (induct_tac n)
@@ -750,15 +750,15 @@ next
   thus ?case using `P x` `filter P xs =xs` by simp
 qed
 
-lemma without_ccFTree[simp]:
-   "without x (ccFTree S G) = ccFTree (S - {x}) G"
+lemma without_ccTTree[simp]:
+   "without x (ccTTree S G) = ccTTree (S - {x}) G"
 by (transfer' fixing: x) (auto dest: filter_valid_lists'  filter_valid_lists[where P = "(\<lambda> x'. x'\<noteq> x)"]  simp add: set_diff_eq)
 
-lemma ftree_restr_ccFTree[simp]:
-   "ftree_restr S' (ccFTree S G) = ccFTree (S \<inter> S') G"
+lemma ftree_restr_ccTTree[simp]:
+   "ftree_restr S' (ccTTree S G) = ccTTree (S \<inter> S') G"
 by (transfer' fixing: S') (auto dest: filter_valid_lists'  filter_valid_lists[where P = "(\<lambda> x'. x' \<in> S')"]  simp add:Int_def)
 
-lemma repeatable_ccFTree_ccSquare: "S \<subseteq> S' \<Longrightarrow> repeatable (ccFTree S (ccSquare S'))"
+lemma repeatable_ccTTree_ccSquare: "S \<subseteq> S' \<Longrightarrow> repeatable (ccTTree S (ccSquare S'))"
    unfolding repeatable_def
    by transfer (auto simp add:ccNeighbors_ccSquare dest: set_mp[OF valid_lists_subset])
 

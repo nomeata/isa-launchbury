@@ -134,10 +134,10 @@ We use Christian Urban's Nominal2 package \cite{nominal} to define our terms. Th
 \section{Eta-Expansion}
 
 \theory{EtaExpansion}
-\theory{EtaExpansionSestoft}
+\theory{EtaExpansionSafe}
 \theory{TransformTools}
-\theory{EtaExpansionArity}
-\theory{ArityEtaExpansionSestoft}
+\theory{ArityEtaExpansion}
+\theory{ArityEtaExpansionSafe}
 
 \section{Arity Analysis}
 
@@ -153,12 +153,12 @@ We use Christian Urban's Nominal2 package \cite{nominal} to define our terms. Th
 \section{Arity Transformation}
 
 \theory{AbstractTransform}
-\theory{ArityEtaExpand}
+\theory{ArityTransform}
 
 
-\section{Arity Analysis Safety}
+\section{Arity Analysis Safety (without Cardinality)}
 \theory{ArityConsistent}
-\theory{ArityEtaExpandCorrect}
+\theory{ArityTransformSafe}
 
 \section{Cardinality Analysis}
 
@@ -168,18 +168,18 @@ We use Christian Urban's Nominal2 package \cite{nominal} to define our terms. Th
 
 \theory{NoCardinalityAnalysis}
 
-\theory{CardinalityEtaExpandCorrect}
+\theory{CardArityTransformSafe}
 
 \section{Trace Trees}
-\theory{FTree}
-\theory{FTree-HOLCF}
+\theory{TTree}
+\theory{TTree-HOLCF}
 
 \section{Trace Tree Cardinality Analysis}
-\theory{FTreeAnalysisSig}
-\theory{CallFutureCardinality}
-\theory{FTreeAnalysisSpec}
-\theory{FTreeImplCardinality}
-\theory{FTreeImplCardinalityCorrect}
+\theory{TTreeAnalysisSig}
+\theory{Cardinality-Domain-Lists}
+\theory{TTreeAnalysisSpec}
+\theory{TTreeImplCardinality}
+\theory{TTreeImplCardinalitySafe}
 
 
 \section{Co-Call Graphs}
@@ -194,9 +194,9 @@ We use Christian Urban's Nominal2 package \cite{nominal} to define our terms. Th
 \theory{CoCallAnalysisSpec}
 \theory{CoCallFix}
 
-\theory{CoCallGraph-FTree}
-\theory{CoCallImplFTree}
-\theory{CoCallImplFTreeCorrect}
+\theory{CoCallGraph-TTree}
+\theory{CoCallImplTTree}
+\theory{CoCallImplTTreeSafe}
 
 \section{CoCall Cardinality Implementation}
 \theory{CoCallAnalysisImpl}

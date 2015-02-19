@@ -1,5 +1,5 @@
-theory ArityEtaExpand
-imports ArityAnalysisSig AbstractTransform ArityEtaExpansionSestoft
+theory ArityTransform
+imports ArityAnalysisSig AbstractTransform ArityEtaExpansionSafe
 begin
 
 context ArityAnalysisHeapEqvt
