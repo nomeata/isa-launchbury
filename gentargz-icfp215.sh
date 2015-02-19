@@ -27,7 +27,7 @@ tar czhf \
 	Launchbury/Arity-Nominal.thy \
 	Launchbury/ArityStack.thy \
 	Launchbury/Arity.thy \
-	Launchbury/CallArityCorrectEnd2End.thy \
+	Launchbury/CallArityEnd2EndSafe.thy \
 	Launchbury/CallArityEnd2End.thy \
 	Launchbury/Cardinality-Domain-Lists.thy \
 	Launchbury/CardinalityAnalysisSig.thy \

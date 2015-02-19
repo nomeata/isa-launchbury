@@ -23,7 +23,7 @@ session Call_Arity (AFP) = "Call_Arity_Base_Nominal2" +
     "TrivialArityAnal"
     "NoCardinalityAnalysis"
     "ArityEtaExpandCorrect"
-    "CallArityCorrectEnd2End"
+    "CallArityEnd2EndSafe"
     "ArityAnalysisCorrDenotational"
   document_files
     "root_arity.tex"

@@ -1,8 +1,8 @@
-theory CallArityCorrectEnd2End
+theory CallArityEnd2EndSafe
 imports CallArityEnd2End CardArityTransformSafe CoCallImplCorrect CoCallImplTTreeSafe TTreeImplCardinalitySafe
 begin
 
-locale CallArityCorrectEnd2End
+locale CallArityEnd2EndSafe
 begin
 sublocale CoCallImplCorrect.
 sublocale CallArityEnd2End.

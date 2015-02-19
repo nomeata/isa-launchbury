@@ -43,7 +43,7 @@ session Arity (AFP) in "Launchbury" = "HOLCF-Nominal2" +
     "DeadCodeRemoval2CorrectSestoft"
     "RedsImprovesArityAnalysis"
     "NoCardinalityAnalysis"
-    "CallArityCorrectEnd2End"
+    "CallArityEnd2EndSafe"
     "ArityAnalysisCorrDenotational"
 
 session OnlyArity (AFP) in "Launchbury" = "HOLCF-Nominal2" +
@@ -51,7 +51,7 @@ session OnlyArity (AFP) in "Launchbury" = "HOLCF-Nominal2" +
   theories
     "TrivialArityAnal"
     "NoCardinalityAnalysis"
-    "CallArityCorrectEnd2End"
+    "CallArityEnd2EndSafe"
 
 session Arity_ICFP (AFP) in "Launchbury" = "HOLCF-Nominal2" +
   options [document_variants = arity, document = pdf, document_graph, document_output = "output" ]
@@ -59,7 +59,7 @@ session Arity_ICFP (AFP) in "Launchbury" = "HOLCF-Nominal2" +
     "TrivialArityAnal"
     "NoCardinalityAnalysis"
     "ArityTransformSafe"
-    "CallArityCorrectEnd2End"
+    "CallArityEnd2EndSafe"
     "ArityAnalysisCorrDenotational"
   document_files
     "root_arity.tex"
