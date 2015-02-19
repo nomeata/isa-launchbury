@@ -122,7 +122,7 @@ next
   from edom_mono[OF this]
   show ?case by (auto intro!: env_restr_mono2 dest: set_mp[OF edom_mono[OF ABinds_delete_below]])
 qed
-thm  edom_mono[OF Aexp_IfThenElse, no_vars]
+
 sublocale CardinalityPrognosisIfThenElse prognosis
 proof default
   case goal1

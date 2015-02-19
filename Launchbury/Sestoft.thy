@@ -38,8 +38,6 @@ qed
   
 text {* An induction rule that skips the annoying case of a lambda taken off the heap *}
 
-thm step.induct[no_vars]
-
 lemma step_invariant_induction[consumes 4, case_names app\<^sub>1 app\<^sub>2 thunk lamvar var\<^sub>2 let\<^sub>1 if\<^sub>1 if\<^sub>2 refl trans]:
   assumes "c \<Rightarrow>\<^sup>* c'"
   assumes "\<not> boring_step c'"

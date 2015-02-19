@@ -125,7 +125,6 @@ case (goal19 as body as' body')
     
     have "(\<forall> (x,e)\<in>set (\<pi> \<bullet> as). bool_free_sumC e) \<longleftrightarrow> - \<pi> \<bullet> (\<forall> (x,e)\<in>set (\<pi> \<bullet> as). bool_free_sumC e)"
       by (simp add: permute_pure unpermute_def)
-      thm unpermute_def
     also have "\<dots> = (\<forall> (x,e)\<in>set as. (- \<pi> \<bullet> bool_free_sumC) e)"
       by perm_simp (simp add: pemute_minus_self)
     also have "\<dots> = (\<forall> (x,e)\<in>set as. bool_free_sumC e)"

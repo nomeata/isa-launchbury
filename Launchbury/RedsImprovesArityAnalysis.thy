@@ -135,7 +135,6 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e' ae n)
     case (up n')
     note IH1 = env_restr_below_subset[OF subset2 Application(3)[OF prem3, where n = "inc\<^sub>\<bottom>\<cdot>n"], unfolded up inc_bot.simps fup2] 
     note IH2 = env_restr_below_subset[OF subset1 Application(5)[OF prem1, where n = n], unfolded up fup2]
-    find_theorems fup up
     have "Afix \<Theta>\<cdot>(Aexp z\<cdot>n' \<squnion> ae)  f|` ?S  \<sqsubseteq> Afix \<Delta>\<cdot>(Aexp e'[y::=x]\<cdot>n' \<squnion> ae)  f|` ?S" by (rule IH2)
     also have "\<dots> \<sqsubseteq> Afix \<Delta>\<cdot>(env_delete y (Aexp e'\<cdot>n') \<squnion>  esing x \<cdot> (up\<cdot>0) \<squnion> ae)  f|` ?S"
       by (intro monofun_cfun_arg monofun_cfun_fun env_restr_mono Aexp_subst join_mono below_refl)  

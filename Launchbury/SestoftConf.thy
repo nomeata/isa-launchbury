@@ -17,7 +17,6 @@ lemma Alts_eqvt[eqvt]: "\<pi> \<bullet> (Alts e1 e2) = Alts (\<pi> \<bullet> e1)
   and Dummy_eqvt[eqvt]: "\<pi> \<bullet> (Dummy v) = Dummy (\<pi> \<bullet> v)"
   by (auto simp add: permute_stack_elem_def split:stack_elem.split)
 
-find_theorems supp name:Pair
 lemma supp_Alts[simp]: "supp (Alts e1 e2) = supp e1 \<union> supp e2" unfolding supp_def by (auto simp add: Collect_imp_eq Collect_neg_eq)
 lemma supp_Arg[simp]: "supp (Arg v) = supp v"  unfolding supp_def by auto
 lemma supp_Upd[simp]: "supp (Upd v) = supp v"  unfolding supp_def by auto
@@ -174,8 +173,6 @@ lemma invariant_conj:
   "invariant rel I1 \<Longrightarrow> invariant rel I2 \<Longrightarrow> invariant rel (\<lambda> x. I1 x \<and> I2 x)"
 by (auto simp add: invariant.simps)
 
-
-thm rtranclp_induct[no_vars]
 
 lemma rtranclp_invariant_induct[consumes 3, case_names base step]:
   assumes "r\<^sup>*\<^sup>* a b"

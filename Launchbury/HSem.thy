@@ -859,13 +859,10 @@ subsubsection {* The heap semantics can also be defined inductively over the hea
       
     have closedR2: "closed_on ?R2"
       apply (rule closed_onI)
-      thm down_closed_fjc
-      thm F_pres_compat''
       apply (rule down_closed_fjc[OF F_pres_compat''[OF assms(1)]], assumption)
       apply (rule fmap_belowI)
       apply (frule fdom, auto)[1]
       apply (case_tac "xaa = x", simp_all)
-      find_theorems "ESem _ _ \<sqsubseteq> ESem _ _"
       done    
       
     have closedR3: "closed_on ?R3"

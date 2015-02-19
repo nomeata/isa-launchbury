@@ -123,7 +123,6 @@ case (goal19 \<Gamma> body \<Gamma>' body')
                        CoCallArityAnalysis.cccFix_choose (- \<pi> \<bullet> cCCexp_sumC) \<Gamma>\<cdot>((- \<pi> \<bullet> cCCexp_sumC) body\<cdot>n)"
         by (simp add: pemute_minus_self)
       also have "CoCallArityAnalysis.cccFix_choose (- \<pi> \<bullet> cCCexp_sumC) \<Gamma> = CoCallArityAnalysis.cccFix_choose cCCexp_sumC \<Gamma>"
-        thm cccFix_cong
         by (rule cccFix_choose_cong[OF eqvt_at_apply[OF goal19(1)] refl])
       also have "(- \<pi> \<bullet> cCCexp_sumC) body = cCCexp_sumC body"
         by (rule eqvt_at_apply[OF goal19(2)])

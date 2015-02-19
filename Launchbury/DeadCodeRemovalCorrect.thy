@@ -221,7 +221,6 @@ case (Let as \<Gamma> L body \<Delta> z \<Gamma>' let')
       from Let(1,2) True this
       have "atom ` domA as \<sharp>* (rdcH S \<Gamma>, remove_dead_code body, L)"
         by (auto simp add: fresh_star_def fresh_Pair  intro!: eqvt_fresh_cong1[OF remove_dead_code.eqvt])
-        find_theorems supp remove_dead_code
       hence "domA as \<inter> fv (rdcH S \<Gamma>, remove_dead_code body, L) = {}"
         by (auto simp add: fresh_star_def fv_def fresh_def)
       moreover

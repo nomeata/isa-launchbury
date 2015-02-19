@@ -419,7 +419,6 @@ lemma fmap_restr_fdom_cont'[simp, cont2cont]:
   apply (frule fmap_below_dom[OF cont2monofunE[OF `cont f`]])
   apply (frule fmap_below_dom[OF cont2monofunE[OF `cont g`]])
   apply simp
-  find_theorems fmap_restr lookup
   apply (subst lookup_fmap_restr_eq)
   apply (rule cont_if_fdom)
   apply (simp_all add: assms)

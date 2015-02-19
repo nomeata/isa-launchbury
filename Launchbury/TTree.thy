@@ -1196,7 +1196,6 @@ inductive_cases substitute''_NilE[elim]: "substitute'' f T xs []"  "substitute''
 inductive_cases substitute''_ConsE[elim]: "substitute'' f T (x#xs) ys"
 
 (*
-thm substitute''.induct[no_vars]
 lemma substitute''_thunk_induct[consumes 1, case_names Nil Val Thunk]:
   assumes "substitute'' f T xs ys"
   assumes "\<And> f T. P f T [] []"

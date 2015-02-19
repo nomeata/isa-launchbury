@@ -94,7 +94,6 @@ proof-
     using `atom z' \<sharp> _`
     by (auto simp add: Abs1_eq_iff fresh_Pair fresh_at_base)
 
-  find_theorems permute subst
   have [simp]: "(z' \<leftrightarrow> z) \<bullet> y = y" using `atom z \<sharp> _`  `atom z' \<sharp> _`
       by (simp add: flip_fresh_fresh fresh_Pair fresh_at_base)
 
