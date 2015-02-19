@@ -8,7 +8,7 @@ lemma interleave_ccFromList:
      (auto simp add: interleave_set ccProd_comm ccProd_insert2[where S' = "set xs" for xs]  ccProd_insert1[where S' = "set xs" for xs] )
 
 
-lift_definition ccApprox :: "var ftree \<Rightarrow> CoCalls"
+lift_definition ccApprox :: "var ttree \<Rightarrow> CoCalls"
   is "\<lambda> xss .  lub (ccFromList ` xss)".
 
 lemma ccApprox_paths: "ccApprox t = lub (ccFromList ` (paths t))" by transfer simp
@@ -45,12 +45,12 @@ lemma ccApprox_nxt_below:
   "ccApprox (nxt t x) \<sqsubseteq> ccApprox t"
 by (rule below_CoCallsI)(auto simp add: in_ccApprox paths_nxt_eq elim!:  bexI[rotated])
 
-lemma ccApprox_ftree_restr_nxt_below:
-  "ccApprox (ftree_restr S (nxt t x)) \<sqsubseteq> ccApprox (ftree_restr S t)"
+lemma ccApprox_ttree_restr_nxt_below:
+  "ccApprox (ttree_restr S (nxt t x)) \<sqsubseteq> ccApprox (ttree_restr S t)"
 by (rule below_CoCallsI)
    (auto simp add: in_ccApprox filter_paths_conv_free_restr[symmetric] paths_nxt_eq  elim!:  bexI[rotated])
 
-lemma ccApprox_ftree_restr[simp]: "ccApprox (ftree_restr S t) = cc_restr S (ccApprox t)"
+lemma ccApprox_ttree_restr[simp]: "ccApprox (ttree_restr S t) = cc_restr S (ccApprox t)"
   by (rule CoCalls_eqI) (auto simp add: in_ccApprox filter_paths_conv_free_restr[symmetric] )
 
 lemma ccApprox_both: "ccApprox (t \<otimes>\<otimes> t') = ccApprox t \<squnion> ccApprox t' \<squnion> ccProd (carrier t) (carrier t')"
@@ -99,12 +99,12 @@ lemma wild_recursion:
   assumes "\<And> x. x \<notin> S \<Longrightarrow> f x = empty"
   assumes "\<And> x. x \<in> S \<Longrightarrow> ccApprox (f x) \<sqsubseteq> G"
   assumes "\<And> x. x \<in> S \<Longrightarrow> ccProd (ccNeighbors x G) (carrier (f x)) \<sqsubseteq> G"
-  shows "ccApprox (ftree_restr (-S) (substitute f T t)) \<sqsubseteq> G"
+  shows "ccApprox (ttree_restr (-S) (substitute f T t)) \<sqsubseteq> G"
 proof(rule ccApprox_belowI)
   fix xs
   def seen \<equiv> "{} :: var set"
 
-  assume "xs \<in> paths (ftree_restr (- S) (substitute f T t))"
+  assume "xs \<in> paths (ttree_restr (- S) (substitute f T t))"
   then obtain xs' xs'' where "xs = [x\<leftarrow>xs' . x \<notin> S]" and "substitute'' f T xs'' xs'" and "xs'' \<in> paths t"
     by (auto simp add: filter_paths_conv_free_restr2[symmetric] substitute_substitute'')
  
@@ -173,7 +173,7 @@ proof(rule ccApprox_belowI)
       have "ccFromList [x\<leftarrow>ys . x \<notin> S] \<sqsubseteq> G \<and> ccProd ((insert x seen)) (set ys) \<sqsubseteq> G"
         apply -
         apply (rule Cons.IH[where seen = "insert x seen"])
-        apply (auto simp add: ccApprox_both join_below_iff ftree_restr_both interleave_ccFromList insert_Diff_if
+        apply (auto simp add: ccApprox_both join_below_iff ttree_restr_both interleave_ccFromList insert_Diff_if
                    simp add:  ccProd_insert2[where S' = "set xs" for xs]
                    simp add:  ccProd_insert1[where S' = "seen"])
         done
@@ -199,14 +199,14 @@ lemma wild_recursion_thunked:
   assumes "\<And> x. x \<notin> S \<Longrightarrow> f x = empty"
   assumes "\<And> x. x \<in> S \<Longrightarrow> ccApprox (f x) \<sqsubseteq> G"
   assumes "\<And> x. x \<in> S \<Longrightarrow> ccProd (ccNeighbors x G - {x} \<inter> T) (carrier (f x)) \<sqsubseteq> G"
-  shows "ccApprox (ftree_restr (-S) (substitute f T t)) \<sqsubseteq> G"
+  shows "ccApprox (ttree_restr (-S) (substitute f T t)) \<sqsubseteq> G"
 proof(rule ccApprox_belowI)
   fix xs
 
   def seen \<equiv> "{} :: var set"
   def seen_T \<equiv> "{} :: var set"
 
-  assume "xs \<in> paths (ftree_restr (- S) (substitute f T t))"
+  assume "xs \<in> paths (ttree_restr (- S) (substitute f T t))"
   then obtain xs' xs'' where "xs = [x\<leftarrow>xs' . x \<notin> S]" and "substitute'' f T xs'' xs'" and "xs'' \<in> paths t"
     by (auto simp add: filter_paths_conv_free_restr2[symmetric] substitute_substitute'')
  
@@ -327,7 +327,7 @@ proof(rule ccApprox_belowI)
         have "ccFromList [x\<leftarrow>ys . x \<notin> S] \<sqsubseteq> G \<and> ccProd ((insert x seen)) (set ys - seen_T) \<sqsubseteq> G"
           apply -
           apply (rule Cons.IH[where seen = "insert x seen" and seen_T = seen_T])
-          apply (auto simp add: `x \<notin> seen_T` Diff_eq ccApprox_both join_below_iff ftree_restr_both interleave_ccFromList insert_Diff_if
+          apply (auto simp add: `x \<notin> seen_T` Diff_eq ccApprox_both join_below_iff ttree_restr_both interleave_ccFromList insert_Diff_if
                      simp add:  ccProd_insert2[where S' = "set xs \<inter> - seen_T" for xs]
                      simp add:  ccProd_insert1[where S' = "seen"])
           done
@@ -545,7 +545,7 @@ lemma filter_valid_lists:
   "xs \<in> valid_lists S G \<Longrightarrow> filter P xs \<in> valid_lists {a \<in> S. P a} G"
 by (induction rule:valid_lists.induct) auto
 
-lift_definition ccTTree :: "var set \<Rightarrow> CoCalls \<Rightarrow> var ftree" is "\<lambda> S G. valid_lists S G" 
+lift_definition ccTTree :: "var set \<Rightarrow> CoCalls \<Rightarrow> var ttree" is "\<lambda> S G. valid_lists S G" 
   by (auto intro: valid_lists_downset_aux)
 
 lemma paths_ccTTree[simp]: "paths (ccTTree S G) = valid_lists S G" by transfer auto
@@ -644,7 +644,7 @@ lemma cont_ccTTree1:
   apply (rule monofunI)
   apply (erule ccTTree_mono1[folded below_set_def])
   
-  apply (rule ftree_belowI)
+  apply (rule ttree_belowI)
   apply (simp add: paths_Either lub_set lub_is_either)
   apply (drule (1) valid_lists_chain1[rotated])
   apply simp
@@ -652,7 +652,7 @@ lemma cont_ccTTree1:
 
 lemma ccTTree_mono2:
   "G \<sqsubseteq> G' \<Longrightarrow> ccTTree S G \<sqsubseteq> ccTTree S G'"
-  apply (rule ftree_belowI)
+  apply (rule ttree_belowI)
   apply simp
   apply (induct_tac  rule:valid_lists.induct) apply assumption
   apply simp
@@ -671,7 +671,7 @@ lemma cont_ccTTree2:
   apply (rule monofunI)
   apply (erule ccTTree_mono2)
 
-  apply (rule ftree_belowI)
+  apply (rule ttree_belowI)
   apply (simp add: paths_Either lub_set lub_is_either)
   apply (drule (1) valid_lists_chain2)
   apply simp
@@ -754,8 +754,8 @@ lemma without_ccTTree[simp]:
    "without x (ccTTree S G) = ccTTree (S - {x}) G"
 by (transfer' fixing: x) (auto dest: filter_valid_lists'  filter_valid_lists[where P = "(\<lambda> x'. x'\<noteq> x)"]  simp add: set_diff_eq)
 
-lemma ftree_restr_ccTTree[simp]:
-   "ftree_restr S' (ccTTree S G) = ccTTree (S \<inter> S') G"
+lemma ttree_restr_ccTTree[simp]:
+   "ttree_restr S' (ccTTree S G) = ccTTree (S \<inter> S') G"
 by (transfer' fixing: S') (auto dest: filter_valid_lists'  filter_valid_lists[where P = "(\<lambda> x'. x' \<in> S')"]  simp add:Int_def)
 
 lemma repeatable_ccTTree_ccSquare: "S \<subseteq> S' \<Longrightarrow> repeatable (ccTTree S (ccSquare S'))"

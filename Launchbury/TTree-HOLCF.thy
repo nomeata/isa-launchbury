@@ -2,9 +2,9 @@ theory "TTree-HOLCF"
 imports TTree "HOLCF-Utils" "Set-Cpo" "HOLCF-Join-Classes"
 begin
 
-instantiation ftree :: (type) below
+instantiation ttree :: (type) below
 begin
-  lift_definition below_ftree :: "'a ftree \<Rightarrow> 'a ftree \<Rightarrow> bool" is "op \<subseteq>".
+  lift_definition below_ttree :: "'a ttree \<Rightarrow> 'a ttree \<Rightarrow> bool" is "op \<subseteq>".
 instance..
 end
 
@@ -14,37 +14,37 @@ lemma paths_mono: "t \<sqsubseteq> t' \<Longrightarrow> paths t \<sqsubseteq> pa
 lemma paths_mono_iff: "paths t \<sqsubseteq> paths t' \<longleftrightarrow> t \<sqsubseteq> t'"
   by transfer (auto simp add: below_set_def)
 
-lemma ftree_belowI: "(\<And> xs. xs \<in> paths t \<Longrightarrow> xs \<in> paths t') \<Longrightarrow> t \<sqsubseteq> t'"
+lemma ttree_belowI: "(\<And> xs. xs \<in> paths t \<Longrightarrow> xs \<in> paths t') \<Longrightarrow> t \<sqsubseteq> t'"
   by transfer auto
 
 lemma paths_belowI: "(\<And> x xs. x#xs \<in> paths t \<Longrightarrow> x#xs \<in> paths t') \<Longrightarrow> t \<sqsubseteq> t'"
-  apply (rule ftree_belowI)
+  apply (rule ttree_belowI)
   apply (case_tac xs)
   apply auto
   done
 
-instance ftree :: (type) po
+instance ttree :: (type) po
  by default (transfer, simp)+
 
-lemma is_lub_ftree:
+lemma is_lub_ttree:
   "S <<| Either S"
   unfolding is_lub_def is_ub_def
   by transfer auto
 
 lemma lub_is_either: "lub S = Either S"
-  using is_lub_ftree by (rule lub_eqI)
+  using is_lub_ttree by (rule lub_eqI)
 
-instance ftree :: (type) cpo
-  by default (rule exI, rule is_lub_ftree)
+instance ttree :: (type) cpo
+  by default (rule exI, rule is_lub_ttree)
 
-lemma minimal_ftree[simp, intro!]: "empty \<sqsubseteq> S"
+lemma minimal_ttree[simp, intro!]: "empty \<sqsubseteq> S"
   by transfer simp
 
-instance ftree :: (type) pcpo
+instance ttree :: (type) pcpo
   by default (rule+)
 
 lemma empty_is_bottom: "empty = \<bottom>"
-  by (metis below_bottom_iff minimal_ftree)
+  by (metis below_bottom_iff minimal_ttree)
 
 lemma carrier_bottom[simp]: "carrier \<bottom> = {}"
   unfolding empty_is_bottom[symmetric] by simp
@@ -102,24 +102,24 @@ lemma substitute_mono2': "t \<sqsubseteq> t'\<Longrightarrow> substitute f T t \
 lemma substitute_above_arg: "t \<sqsubseteq> substitute f T t"
   using  substitute_contains_arg[folded below_set_def, unfolded paths_mono_iff].
 
-lemma ftree_contI:
+lemma ttree_contI:
   assumes  "\<And> S. f (Either S) = Either (f ` S)"
   shows "cont f"
 proof(rule contI)
-  fix Y :: "nat \<Rightarrow> 'a ftree"  
+  fix Y :: "nat \<Rightarrow> 'a ttree"  
   have "range (\<lambda>i. f (Y i)) = f ` range Y" by auto
   also have "Either \<dots> = f (Either (range Y))" unfolding assms(1)..
   also have "Either (range Y) = lub (range Y)" unfolding lub_is_either by simp
   finally 
-  show "range (\<lambda>i. f (Y i)) <<| f (\<Squnion> i. Y i)" by (metis is_lub_ftree)
+  show "range (\<lambda>i. f (Y i)) <<| f (\<Squnion> i. Y i)" by (metis is_lub_ttree)
 qed
 
-lemma ftree_contI2:
+lemma ttree_contI2:
   assumes  "\<And> x. paths (f x) = \<Union>(t ` paths x)"
   assumes "[] \<in> t []"
   shows "cont f"
 proof(rule contI)
-  fix Y :: "nat \<Rightarrow> 'a ftree"  
+  fix Y :: "nat \<Rightarrow> 'a ttree"  
   have "paths (Either (range (\<lambda>i. f (Y i)))) = insert [] (\<Union>x. paths (f (Y x)))"
     by (simp add: paths_Either)
   also have "\<dots> = insert [] (\<Union>x. \<Union>(t ` paths (Y x)))"
@@ -137,7 +137,7 @@ proof(rule contI)
     by (simp add: assms(1))
   also have "\<dots> = paths (f (lub (range Y)))" unfolding lub_is_either by simp
   finally
-  show "range (\<lambda>i. f (Y i)) <<| f (\<Squnion> i. Y i)" by (metis is_lub_ftree paths_inj)
+  show "range (\<lambda>i. f (Y i)) <<| f (\<Squnion> i. Y i)" by (metis is_lub_ttree paths_inj)
 qed
 
 
@@ -150,7 +150,7 @@ lemma cont_paths[THEN cont_compose, cont2cont, simp]:
   apply auto
   done
 
-lemma ftree_contI3:
+lemma ttree_contI3:
   assumes "cont (\<lambda> x. paths (f x))"
   shows "cont f"
   apply (rule contI2)
@@ -168,20 +168,20 @@ lemma ftree_contI3:
 
 lemma cont_substitute[THEN cont_compose, cont2cont, simp]:
   "cont (substitute f T)"
-  apply (rule ftree_contI2)
+  apply (rule ttree_contI2)
   apply (rule paths_substitute_substitute'')
   apply (auto intro: substitute''.intros)
   done
 
 lemma cont_both1:
   "cont (\<lambda> x. both x y)"
-  apply (rule ftree_contI2[where t = "\<lambda>xs . {zs . \<exists>ys\<in>paths y. zs \<in> xs \<otimes> ys}"])
+  apply (rule ttree_contI2[where t = "\<lambda>xs . {zs . \<exists>ys\<in>paths y. zs \<in> xs \<otimes> ys}"])
   apply (rule set_eqI)
   by (auto intro:  simp add: paths_both)
 
 lemma cont_both2:
   "cont (\<lambda> x. both y x)"
-  apply (rule ftree_contI2[where t = "\<lambda>ys . {zs . \<exists>xs\<in>paths y. zs \<in> xs \<otimes> ys}"])
+  apply (rule ttree_contI2[where t = "\<lambda>ys . {zs . \<exists>xs\<in>paths y. zs \<in> xs \<otimes> ys}"])
   apply (rule set_eqI)
   by (auto intro:  simp add: paths_both)
 
@@ -190,17 +190,17 @@ lemma cont_both[cont2cont,simp]: "cont f \<Longrightarrow> cont g \<Longrightarr
 
 lemma cont_intersect1:
   "cont (\<lambda> x. intersect x y)"
-  by (rule ftree_contI2[where t = "\<lambda>xs . (if xs \<in> paths y then {xs} else {})"]) auto
+  by (rule ttree_contI2[where t = "\<lambda>xs . (if xs \<in> paths y then {xs} else {})"]) auto
 
 lemma cont_intersect2:
   "cont (\<lambda> x. intersect y x)"
-  by (rule ftree_contI2[where t = "\<lambda>xs . (if xs \<in> paths y then {xs} else {})"]) auto
+  by (rule ttree_contI2[where t = "\<lambda>xs . (if xs \<in> paths y then {xs} else {})"]) auto
 
 lemma cont_intersect[cont2cont,simp]: "cont f \<Longrightarrow> cont g \<Longrightarrow> cont (\<lambda> x. f x \<inter>\<inter> g x)"
   by (rule cont_compose2[OF cont_intersect1 cont_intersect2])
 
 lemma cont_without[THEN cont_compose, cont2cont,simp]: "cont (without x)"
-  by (rule ftree_contI2[where t = "\<lambda> xs.{filter (\<lambda> x'. x' \<noteq> x) xs}"])
+  by (rule ttree_contI2[where t = "\<lambda> xs.{filter (\<lambda> x'. x' \<noteq> x) xs}"])
      (transfer, auto)
 
 lemma paths_many_calls_subset:
@@ -210,11 +210,11 @@ lemma paths_many_calls_subset:
 lemma single_below:
   "[x] \<in> paths t \<Longrightarrow> single x \<sqsubseteq> t" by transfer auto
 
-lemma cont_ftree_restr[THEN cont_compose, cont2cont,simp]: "cont (ftree_restr S)"
-  by (rule ftree_contI2[where t = "\<lambda> xs.{filter (\<lambda> x'. x' \<in> S) xs}"])
+lemma cont_ttree_restr[THEN cont_compose, cont2cont,simp]: "cont (ttree_restr S)"
+  by (rule ttree_contI2[where t = "\<lambda> xs.{filter (\<lambda> x'. x' \<in> S) xs}"])
      (transfer, auto)
 
-lemmas ftree_restr_mono = cont2monofunE[OF cont_ftree_restr[OF cont_id]]
+lemmas ttree_restr_mono = cont2monofunE[OF cont_ttree_restr[OF cont_id]]
 
 
 lemma range_filter[simp]: "range (filter P) = {xs. set xs \<subseteq> Collect P}"
@@ -225,9 +225,9 @@ lemma range_filter[simp]: "range (filter P) = {xs. set xs \<subseteq> Collect P}
   apply (auto simp add: filter_id_conv)
   done
 
-lemma ftree_restr_anything_cont[THEN cont_compose, simp, cont2cont]:
-  "cont (\<lambda> S. ftree_restr S anything)"
-  apply (rule ftree_contI3)
+lemma ttree_restr_anything_cont[THEN cont_compose, simp, cont2cont]:
+  "cont (\<lambda> S. ttree_restr S anything)"
+  apply (rule ttree_contI3)
   apply (rule set_contI)
   apply (auto simp add: filter_paths_conv_free_restr[symmetric] lub_set)
   apply (rule finite_subset_chain)
@@ -236,16 +236,16 @@ lemma ftree_restr_anything_cont[THEN cont_compose, simp, cont2cont]:
 
 (* Not true, it seems:
 
-lemma ftree_restr_mono1:
-  "S \<subseteq> S' \<Longrightarrow> ftree_restr S t \<sqsubseteq> ftree_restr S' t"
+lemma ttree_restr_mono1:
+  "S \<subseteq> S' \<Longrightarrow> ttree_restr S t \<sqsubseteq> ttree_restr S' t"
 apply transfer
 apply auto
 apply (erule rev_image_eqI)
 
 lemma cont_ccTTree1:
-  "cont (\<lambda> S. ftree_restr S G)"
+  "cont (\<lambda> S. ttree_restr S G)"
   (* Not true*)
-  apply (rule set_ftree_contI)
+  apply (rule set_ttree_contI)
   apply transfer'
   apply (auto simp add: filter_empty_conv)
   apply (erule_tac x = xb in ballE) 
@@ -253,39 +253,39 @@ lemma cont_ccTTree1:
   
 
 lemma cont_ccTTree2:
-  "cont (ftree_restr S)"
-  by (rule ftree_contI2[where t = "\<lambda> xs.{filter (\<lambda> x'. x' \<in> S) xs}"])
+  "cont (ttree_restr S)"
+  by (rule ttree_contI2[where t = "\<lambda> xs.{filter (\<lambda> x'. x' \<in> S) xs}"])
      (transfer, auto)
 
-lemmas cont_ccTTree = cont_compose2[where c = ftree_restr, OF cont_ccTTree1 cont_ccTTree2, simp, cont2cont]
+lemmas cont_ccTTree = cont_compose2[where c = ttree_restr, OF cont_ccTTree1 cont_ccTTree2, simp, cont2cont]
 *)
 
 
-instance ftree :: (type) Finite_Join_cpo
+instance ttree :: (type) Finite_Join_cpo
 proof default
-  fix x y :: "'a ftree"
+  fix x y :: "'a ttree"
   show "compatible x y"
     unfolding compatible_def
     apply (rule exI)
-    apply (rule is_lub_ftree)
+    apply (rule is_lub_ttree)
     done
 qed
 
-lemma ftree_join_is_either:
+lemma ttree_join_is_either:
    "t \<squnion> t' = t \<oplus>\<oplus> t'"
 proof-
   have "t \<oplus>\<oplus> t' = Either {t, t'}" by transfer auto
-  thus "t \<squnion> t' = t \<oplus>\<oplus> t'" by (metis lub_is_join is_lub_ftree)
+  thus "t \<squnion> t' = t \<oplus>\<oplus> t'" by (metis lub_is_join is_lub_ttree)
 qed  
 
-lemma ftree_join_transfer[transfer_rule]: "rel_fun (pcr_ftree op =) (rel_fun (pcr_ftree op =) (pcr_ftree op =)) op \<union> op \<squnion>"
+lemma ttree_join_transfer[transfer_rule]: "rel_fun (pcr_ttree op =) (rel_fun (pcr_ttree op =) (pcr_ttree op =)) op \<union> op \<squnion>"
 proof-
-  have "op \<squnion> = (op \<oplus>\<oplus> :: 'a ftree \<Rightarrow> 'a ftree \<Rightarrow> 'a ftree)" using ftree_join_is_either by blast
+  have "op \<squnion> = (op \<oplus>\<oplus> :: 'a ttree \<Rightarrow> 'a ttree \<Rightarrow> 'a ttree)" using ttree_join_is_either by blast
   thus ?thesis using either.transfer  by metis
 qed
 
-lemma ftree_restr_join[simp]:
-  "ftree_restr S (t \<squnion> t') = ftree_restr S t \<squnion> ftree_restr S t'"
+lemma ttree_restr_join[simp]:
+  "ttree_restr S (t \<squnion> t') = ttree_restr S t \<squnion> ttree_restr S t'"
   by transfer auto
 
 lemma nxt_singles_below_singles:

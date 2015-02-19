@@ -4,14 +4,14 @@ begin
 
 context CoCallArity
 begin
-  definition Fexp :: "exp \<Rightarrow> Arity \<rightarrow> var ftree"
-    where "Fexp e = (\<Lambda> a. ccTTree (edom (Aexp e \<cdot>a)) (ccExp e\<cdot>a))"
+  definition Texp :: "exp \<Rightarrow> Arity \<rightarrow> var ttree"
+    where "Texp e = (\<Lambda> a. ccTTree (edom (Aexp e \<cdot>a)) (ccExp e\<cdot>a))"
   
-  lemma Fexp_simp: "Fexp e\<cdot>a = ccTTree (edom (Aexp e \<cdot>a)) (ccExp e\<cdot>a)"
-    unfolding Fexp_def
+  lemma Texp_simp: "Texp e\<cdot>a = ccTTree (edom (Aexp e \<cdot>a)) (ccExp e\<cdot>a)"
+    unfolding Texp_def
     by simp
 
-  sublocale TTreeAnalysis Fexp.
+  sublocale TTreeAnalysis Texp.
 end
 
 

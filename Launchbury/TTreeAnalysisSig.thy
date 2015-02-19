@@ -3,10 +3,10 @@ imports Arity  "TTree-HOLCF"  AnalBinds
 begin
 
 locale TTreeAnalysis =
- fixes Fexp :: "exp \<Rightarrow> Arity \<rightarrow> var ftree"
+ fixes Texp :: "exp \<Rightarrow> Arity \<rightarrow> var ttree"
 begin
-  sublocale Fexp!: ExpAnalysis Fexp.
-  abbreviation "FBinds == Fexp.AnalBinds"
+  sublocale Texp!: ExpAnalysis Texp.
+  abbreviation "FBinds == Texp.AnalBinds"
 end
 
 end

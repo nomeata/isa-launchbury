@@ -14,9 +14,9 @@ fun unstack :: "stack \<Rightarrow> exp \<Rightarrow> exp" where
 | "unstack (Arg x # S) e = unstack S (App e x)"
 | "unstack (Dummy x # S) e = unstack S e"
 
-fun Fstack :: "Arity list \<Rightarrow> stack \<Rightarrow> var ftree"
+fun Fstack :: "Arity list \<Rightarrow> stack \<Rightarrow> var ttree"
   where "Fstack _ [] = \<bottom>"
-  | "Fstack (a#as) (Alts e1 e2 # S) = (Fexp e1\<cdot>a \<oplus>\<oplus> Fexp e2\<cdot>a) \<otimes>\<otimes> Fstack as S"
+  | "Fstack (a#as) (Alts e1 e2 # S) = (Texp e1\<cdot>a \<oplus>\<oplus> Texp e2\<cdot>a) \<otimes>\<otimes> Fstack as S"
   | "Fstack as (Arg x # S) = many_calls x \<otimes>\<otimes> Fstack as S"
   | "Fstack as (_ # S) = Fstack as S"
 
@@ -28,7 +28,7 @@ lemma carrier_Fstack[simp]: "carrier (Fstack S) = ap S"
 *)
 
 fun prognosis :: "AEnv \<Rightarrow> Arity list \<Rightarrow> Arity \<Rightarrow> conf \<Rightarrow> var \<Rightarrow> two"
-   where "prognosis ae as a (\<Gamma>, e, S) = pathsCard (paths (substitute (FBinds \<Gamma>\<cdot>ae) (thunks \<Gamma>) (Fexp e\<cdot>a \<otimes>\<otimes> Fstack as S)))"
+   where "prognosis ae as a (\<Gamma>, e, S) = pathsCard (paths (substitute (FBinds \<Gamma>\<cdot>ae) (thunks \<Gamma>) (Texp e\<cdot>a \<otimes>\<otimes> Fstack as S)))"
 end
 
 end
