@@ -76,15 +76,13 @@ Karlsruhe Institute for Technology\\
 
 
 \begin{abstract}
-We formlize the Call Arity analysis \cite{tfp}, as implemented in GHC, and prove both functional correctness and, more interestingly, safety (i.e.\ the transformation does not increase allocation). A highlevel overview of the work can be found in \cite{icfp15}, see Section~\ref{sec:table} for a mapping between that paper and this work.
+We formlize the Call Arity analysis \cite{tfp}, as implemented in GHC, and prove both functional correctness and, more interestingly, safety (i.e.\ the transformation does not increase allocation). A highlevel overview of the work can be found in \cite{icfp15}.
 
 We use Christian Urban's Nominal2 package \cite{nominal} to define our terms. The functional correctness is defined with regard to a standard denotational semantics, e.g.\ as found in \cite{launchbury}. The operational properties are shown with regard to a small-step semantics akin to Sestoft's mark 1 machine \cite{sestoft}.  We make use of Brian Huffman's HOLCF package for the domain-theoretical aspects of the development \cite{holcf}.
 
 \end{abstract}
 
-\tableofcontents
-
-\section{Artefact correspondence table}
+\section*{Artefact correspondence table}
 \label{sec:table}
 
 The following table connects the definitions and theorems from \cite{icfp15} with their corresponding Isabelle concept in this development. 
@@ -99,8 +97,9 @@ Syntax                                                        & \isacommand{nomi
 Stack                                                         & \isacommand{type-synonym} \isa{stack}                     & \seetheory{SestoftConf} \\
 Configuration                                                 & \isacommand{type-synonym} \isa{conf}                      & \seetheory{SestoftConf} \\
 Semantics ($\Rightarrow$)                                     & \isacommand{inductive} \isa{step}                         & \seetheory{Sestoft} \\
-Eta-expansion                                                 & \isacommand{lift-definition} \isa{Aeta-expand}            & \seetheory{ArityEtaExpansion} \\
 Arity                                                         & \isacommand{typedef} \isa{Arity}                          & \seetheory{Arity} \\
+Eta-expansion                                                 & \isacommand{lift-definition} \isa{Aeta-expand}            & \seetheory{ArityEtaExpansion} \\
+Lemma 1                                                       & \isacommand{theorem} \isa{Aeta-expand-correct}            & \seetheory{ArityEtaExpansionSafe} \\
 $\mathcal A_\alpha(\Gamma, e)$                                & \isacommand{locale} \isa{ArityAnalysisHeap}               & \seetheory{ArityAnalysisSig} \\
 $\mathsf T_\alpha(e)$                                         & \isacommand{sublocale} \isa{AbstractTransformBound}       & \seetheory{ArityTransform} \\
 $\mathcal A_\alpha(e)$                                        & \isacommand{locale} \isa{ArityAnalysis}                   & \seetheory{ArityAnalysisSig} \\
@@ -135,6 +134,10 @@ Theorem 1                                                     & \isacommand{lemm
 \end{longtable}
 \end{center}
 
+\bibliographystyle{amsalpha}
+\bibliography{root_arity}
+
+\tableofcontents
 \newcommand{\theory}[1]{\subsection{#1}\label{sec_#1}\input{#1.tex}}
 
 %\let\OldInput\input
@@ -279,10 +282,5 @@ Theorem 1                                                     & \isacommand{lemm
 %%% mode: l
 %%% TeX-master: "root"
 %%% End:
-
-
-\clearpage
-\bibliographystyle{amsalpha}
-\bibliography{root_arity}
 
 \end{document}
