@@ -1,6 +1,6 @@
 theory "Nominal-HOLCF"
 imports
-  "Nominal2" "Nominal-Utils" "HOLCF-Utils"
+  "Nominal-Utils" "HOLCF-Utils"
 begin
 
 subsubsection {* Type class of continuous permutations and variations thereof *}

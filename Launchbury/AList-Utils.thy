@@ -1,5 +1,5 @@
 theory "AList-Utils"
-imports Main "Library/AList"
+imports Main "~~/src/HOL/Library/AList"
 begin
 
 text {* We want to have @{text delete} and @{text update} back in the namespace. *}

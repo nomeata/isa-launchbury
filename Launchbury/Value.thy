@@ -1,5 +1,5 @@
 theory "Value"
-  imports HOLCF
+  imports "~~/src/HOL/HOLCF/HOLCF"
 begin
 
 subsubsection {* The semantic domain for values and environments *}

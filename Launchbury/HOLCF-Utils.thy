@@ -1,5 +1,5 @@
 theory "HOLCF-Utils"
-  imports HOLCF Pointwise
+  imports  "~~/src/HOL/HOLCF/HOLCF" Pointwise
 begin
 
 default_sort type
