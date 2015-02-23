@@ -10,7 +10,7 @@ session "Call_Arity_Base" = HOLCF +
     "~~/src/HOL/Library/LaTeXsugar"
     "~~/src/HOL/Library/Infinite_Set"
 
-session "Call_Arity_Base_Nominal2" in "Nominal2" = "Call_Arity_Base" +
+session "Call_Arity_Base_Nominal2" in "../Nominal2" = "Call_Arity_Base" +
   options [document = false]
   theories
     "Nominal2"
@@ -28,5 +28,6 @@ session Call_Arity (AFP) = "Call_Arity_Base_Nominal2" +
   document_files
     "root.tex"
     "root.bib"
+    "mathpartir.sty"
 
 

@@ -64,6 +64,7 @@ session Arity_ICFP (AFP) in "Launchbury" = "HOLCF-Nominal2" +
   document_files
     "root_arity.tex"
     "root_arity.bib"
+    "mathpartir.sty"
 
 session Nominal2013_1 in "Nominal2-Isabelle2013-1/Nominal" = HOL +
   theories

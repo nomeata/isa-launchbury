@@ -1,7 +1,7 @@
 tar czhf \
 	isa-Call_Arity.tar.gz \
-	--transform 's,Launchbury/,isa-Call_Arity/,' \
-	--transform 's,^Nominal2-Devel,isa-Call_Arity/Nominal2,' \
+	--transform 's,Launchbury/,Call_Arity/,' \
+	--transform 's,^Nominal2-Devel,Call_Arity/Nominal2,' \
 	--transform 's,-ICFP2015,,' \
 	--transform 's,_arity,,' \
 	Launchbury/ROOT-ICFP2015 \
@@ -88,6 +88,9 @@ tar czhf \
 	\
 	Launchbury/document/root_arity.tex \
 	Launchbury/document/root_arity.bib \
-	Nominal2-Devel/
+	Launchbury/document/mathpartir.sty
+
+
+# Nominal2-Devel/
 
 tar tzf isa-Call_Arity.tar.gz
