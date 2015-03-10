@@ -60,6 +60,7 @@ lemma env_restr_belowI2:
   by (rule fun_belowI)
      (simp add: assms env_restr_def)
 
+
 lemma env_restr_below_itself:
   shows "m f|` S \<sqsubseteq> m"
   apply (rule fun_belowI)

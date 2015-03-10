@@ -45,7 +45,7 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e')
     have "((\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` domA \<Gamma>) x  = ((\<lbrace>\<Delta>\<rbrace>\<rho>) f|` domA \<Gamma>) x" by simp
     with True show ?thesis by simp
   next
-    case False 
+    case False
     from False reds_avoids_live[OF Application.hyps(8)] 
     show ?thesis by (simp add: lookup_HSem_other)
   qed
@@ -135,6 +135,57 @@ case (Variable \<Gamma> x e L \<Delta> z)
     by (auto simp add: lookup_HSem_heap)
   finally
   show "\<lbrakk> Var x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>(x, z) # \<Delta>\<rbrace>\<rho>\<^esub>".
+next
+case (Bool b)
+  case 1
+  show ?case by simp
+  case 2
+  show ?case by simp
+next
+case (IfThenElse \<Gamma> scrut L \<Delta> b e\<^sub>1 e\<^sub>2 \<Theta> z)
+  have Gamma_subset: "domA \<Gamma> \<subseteq> domA \<Delta>"
+    by (rule reds_doesnt_forget[OF IfThenElse.hyps(1)])
+
+  let ?e = "if b then e\<^sub>1 else e\<^sub>2"
+
+  case 1
+  thm new_free_vars_on_heap[OF IfThenElse.hyps(1)]
+
+  hence prem1: "fv (\<Gamma>, scrut) - domA \<Gamma> \<subseteq> set L"
+    and prem2: "fv (\<Delta>, ?e) - domA \<Delta> \<subseteq> set L"
+    and "fv ?e \<subseteq> domA \<Gamma> \<union> set L"
+    using new_free_vars_on_heap[OF IfThenElse.hyps(1)] Gamma_subset by auto
+
+  have "\<lbrakk> (scrut ? e\<^sub>1 : e\<^sub>2) \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = B_project\<cdot>(\<lbrakk> scrut \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>)\<cdot>(\<lbrakk> e\<^sub>1 \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>)\<cdot>(\<lbrakk> e\<^sub>2 \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>)" by simp
+  also have "\<dots> = B_project\<cdot>(\<lbrakk> Bool b \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>)\<cdot>(\<lbrakk> e\<^sub>1 \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>)\<cdot>(\<lbrakk> e\<^sub>2 \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>)"
+    unfolding IfThenElse.hyps(2)[OF prem1]..
+  also have "\<dots> = \<lbrakk> ?e \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>" by simp
+  also have "\<dots> = \<lbrakk> ?e \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>"
+    proof(rule ESem_fresh_cong_subset[OF  `fv ?e \<subseteq> domA \<Gamma> \<union> set L` env_restr_eqI])
+      fix x
+      assume "x \<in> domA \<Gamma> \<union> set L"
+      thus "(\<lbrace>\<Gamma>\<rbrace>\<rho>) x = (\<lbrace>\<Delta>\<rbrace>\<rho>) x"
+      proof(cases "x \<in> domA \<Gamma>")
+        assume "x \<in> domA \<Gamma>"
+        from IfThenElse.hyps(3)[OF prem1]
+        have "((\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` domA \<Gamma>) x  = ((\<lbrace>\<Delta>\<rbrace>\<rho>) f|` domA \<Gamma>) x" by simp
+        with `x \<in> domA \<Gamma>` show ?thesis by simp
+      next
+        assume "x \<notin> domA \<Gamma>"
+        from this `x \<in> domA \<Gamma> \<union> set L` reds_avoids_live[OF IfThenElse.hyps(1)]
+        show ?thesis
+          by (simp add: lookup_HSem_other)
+      qed
+    qed
+  also have "\<dots> = \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Theta>\<rbrace>\<rho>\<^esub>"
+    unfolding IfThenElse.hyps(5)[OF prem2]..
+  finally
+  show ?case.
+  thm env_restr_eq_subset
+  show "(\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` domA \<Gamma> = (\<lbrace>\<Theta>\<rbrace>\<rho>) f|` domA \<Gamma>"
+    using IfThenElse.hyps(3)[OF prem1]
+          env_restr_eq_subset[OF Gamma_subset IfThenElse.hyps(6)[OF prem2]]
+    by (rule trans)
 next
 case (Let as \<Gamma> L body \<Delta> z)
   case 1

@@ -15,8 +15,6 @@ and redo the various lemmas in terms of that, so that afterwards, the type @{tex
 referenced.
 *}
 
-term If
-
 nominal_datatype exp =
   Var var
 | App exp var
@@ -503,6 +501,12 @@ nominal_function isLam :: "exp \<Rightarrow> bool" where
 nominal_termination (eqvt) by lexicographic_order
 
 lemma isLam_Lam: "isLam (Lam [x]. e)" by simp
+
+lemma isLam_obtain_fresh:
+  assumes "isLam z"
+  obtains y e'
+  where "z = (Lam [y]. e')" and "atom y \<sharp> (c::'a::fs)"
+using assms by (nominal_induct z avoiding: c rule:exp_strong_induct) auto
 
 nominal_function isVal :: "exp \<Rightarrow> bool" where
   "isVal (Var x) = False" |

@@ -133,6 +133,62 @@ case (Variable \<Gamma> x e L \<Delta> z)
   finally
   show "\<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> \<sqsubseteq> \<N>\<lbrakk> z \<rbrakk>\<^bsub>\<N>\<lbrace>(x, z) # \<Delta>\<rbrace>\<rho>\<^esub>"  by this (intro cont2cont)+
 next
+case (Bool b)
+  case 1
+  show ?case by simp
+  case 2
+  show ?case by simp
+next
+case (IfThenElse \<Gamma> scrut L \<Delta> b e\<^sub>1 e\<^sub>2 \<Theta> z)
+  have Gamma_subset: "domA \<Gamma> \<subseteq> domA \<Delta>"
+    by (rule reds_doesnt_forget[OF IfThenElse.hyps(1)])
+
+  let ?e = "if b then e\<^sub>1 else e\<^sub>2"
+
+  case 1
+  thm new_free_vars_on_heap[OF IfThenElse.hyps(1)]
+
+  hence prem1: "fv (\<Gamma>, scrut) - domA \<Gamma> \<subseteq> set L"
+    and prem2: "fv (\<Delta>, ?e) - domA \<Delta> \<subseteq> set L"
+    and "fv ?e \<subseteq> domA \<Gamma> \<union> set L"
+    using new_free_vars_on_heap[OF IfThenElse.hyps(1)] Gamma_subset by auto
+
+  {
+  fix r
+  have "(\<N>\<lbrakk> (scrut ? e\<^sub>1 : e\<^sub>2) \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>)\<cdot>r \<sqsubseteq> CB_project\<cdot>((\<N>\<lbrakk> scrut \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>)\<cdot>r)\<cdot>((\<N>\<lbrakk> e\<^sub>1 \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>)\<cdot>r)\<cdot>((\<N>\<lbrakk> e\<^sub>2 \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>)\<cdot>r)"
+    by (rule CESem_simps_no_tick)
+  also have "\<dots> \<sqsubseteq> CB_project\<cdot>((\<N>\<lbrakk> Bool b \<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>)\<cdot>r)\<cdot>((\<N>\<lbrakk> e\<^sub>1 \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>)\<cdot>r)\<cdot>((\<N>\<lbrakk> e\<^sub>2 \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>)\<cdot>r)"
+    by (intro monofun_cfun_fun monofun_cfun_arg  IfThenElse.hyps(2)[OF prem1])
+  also have "\<dots> = (\<N>\<lbrakk> ?e \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>)\<cdot>r" by (cases r) simp_all
+  also have "\<dots> \<sqsubseteq> (\<N>\<lbrakk> ?e \<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>)\<cdot>r"
+    proof(rule monofun_cfun_fun[OF ESem_fresh_cong_below_subset[OF  `fv ?e \<subseteq> domA \<Gamma> \<union> set L` Env.env_restr_belowI]])
+      fix x
+      assume "x \<in> domA \<Gamma> \<union> set L"
+      thus "(\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>) x \<sqsubseteq> (\<N>\<lbrace>\<Delta>\<rbrace>\<rho>) x"
+      proof(cases "x \<in> domA \<Gamma>")
+        assume "x \<in> domA \<Gamma>"
+        from IfThenElse.hyps(3)[OF prem1]
+        have "((\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` domA \<Gamma>) x \<sqsubseteq> ((\<N>\<lbrace>\<Delta>\<rbrace>\<rho>) f|` domA \<Gamma>) x" by (rule fun_belowD)
+        with `x \<in> domA \<Gamma>` show ?thesis by simp
+      next
+        assume "x \<notin> domA \<Gamma>"
+        from this `x \<in> domA \<Gamma> \<union> set L` reds_avoids_live[OF IfThenElse.hyps(1)]
+        show ?thesis
+          by (simp add: lookup_HSem_other)
+      qed
+    qed
+  also have "\<dots> \<sqsubseteq> (\<N>\<lbrakk> z \<rbrakk>\<^bsub>\<N>\<lbrace>\<Theta>\<rbrace>\<rho>\<^esub>)\<cdot>r"
+    by (intro monofun_cfun_fun monofun_cfun_arg IfThenElse.hyps(5)[OF prem2])
+  finally
+  have "(\<N>\<lbrakk> (scrut ? e\<^sub>1 : e\<^sub>2) \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>)\<cdot>r \<sqsubseteq> (\<N>\<lbrakk> z \<rbrakk>\<^bsub>\<N>\<lbrace>\<Theta>\<rbrace>\<rho>\<^esub>)\<cdot>r" by this (intro cont2cont)+
+  }
+  thus ?case  by (rule cfun_belowI)
+
+  show "(\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` (domA \<Gamma>) \<sqsubseteq> (\<N>\<lbrace>\<Theta>\<rbrace>\<rho>)  f|` (domA \<Gamma>)"
+    using IfThenElse.hyps(3)[OF prem1]
+          env_restr_below_subset[OF Gamma_subset IfThenElse.hyps(6)[OF prem2]]
+    by (rule below_trans)
+next
 case (Let as \<Gamma> L body \<Delta> z)
   case 1
   have *: "domA as \<inter> domA \<Gamma> = {}" by (metis Let.hyps(1) fresh_distinct)

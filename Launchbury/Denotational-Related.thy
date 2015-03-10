@@ -32,13 +32,26 @@ next
   hence App': "\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub> \<triangleleft>\<triangleright> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>C\<^sup>\<infinity>" by auto
   thus ?case
   proof (cases rule: slimilar_bot_cases)
-    case bot thus ?thesis by auto
-  next
     case (Fn f g)
     from `\<rho> \<triangleleft>\<triangleright>\<^sup>* \<sigma>`
     have "\<rho> v \<triangleleft>\<triangleright> (\<sigma> v)\<cdot>C\<^sup>\<infinity>"  by auto
     thus ?thesis using Fn App' by auto
-  qed
+  qed auto
+next
+  case (Bool b)
+  thus "\<lbrakk>Bool b\<rbrakk>\<^bsub>\<rho>\<^esub> \<triangleleft>\<triangleright> (\<N>\<lbrakk>Bool b\<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>C\<^sup>\<infinity>" by auto
+next
+  case (IfThenElse scrut e\<^sub>1 e\<^sub>2)
+  hence IfThenElse':
+    "\<lbrakk> scrut \<rbrakk>\<^bsub>\<rho>\<^esub> \<triangleleft>\<triangleright> (\<N>\<lbrakk> scrut \<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>C\<^sup>\<infinity>"
+    "\<lbrakk> e\<^sub>1 \<rbrakk>\<^bsub>\<rho>\<^esub> \<triangleleft>\<triangleright> (\<N>\<lbrakk> e\<^sub>1 \<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>C\<^sup>\<infinity>"
+    "\<lbrakk> e\<^sub>2 \<rbrakk>\<^bsub>\<rho>\<^esub> \<triangleleft>\<triangleright> (\<N>\<lbrakk> e\<^sub>2 \<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot>C\<^sup>\<infinity>" by auto
+  from IfThenElse'(1)
+  show ?case
+  proof (cases rule: slimilar_bot_cases)
+    case (bool b)
+    thus ?thesis using IfThenElse' by auto
+  qed auto
 next
   case (Let as e \<rho> \<sigma>)
   have "\<lbrace>as\<rbrace>\<rho> \<triangleleft>\<triangleright>\<^sup>* \<N>\<lbrace>as\<rbrace>\<sigma>"
@@ -54,7 +67,7 @@ next
   qed auto
   hence "\<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>as\<rbrace>\<rho>\<^esub> \<triangleleft>\<triangleright> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>as\<rbrace>\<sigma>\<^esub>)\<cdot>C\<^sup>\<infinity>" by (rule Let(2))
   thus ?case by simp
-qed auto
+qed
 
 corollary evalHeap_similar:
   "\<And>y z. y \<triangleleft>\<triangleright>\<^sup>* z \<Longrightarrow> \<^bold>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>y\<^esub> \<triangleleft>\<triangleright>\<^sup>* \<^bold>\<N>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>z\<^esub>"
