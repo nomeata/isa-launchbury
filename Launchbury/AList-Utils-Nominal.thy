@@ -109,7 +109,6 @@ lemma fresh_distinct_fv:
  using assms
  by (metis disjoint_iff_not_equal fresh_star_def fv_not_fresh image_eqI)
 
-
 subsubsection {* Pure codomains *}
 
 lemma domA_fv_pure:

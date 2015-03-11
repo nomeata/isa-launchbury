@@ -5,7 +5,7 @@ begin
 
 lemma lemma_2:
   assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
-  and "L = upds_list S"
+  and     "fv (\<Gamma>, e, S) \<subseteq> set L \<union> domA \<Gamma>"
   shows "(\<Gamma>, e, S) \<Rightarrow>\<^sup>* (\<Delta>, z, S)"
 using assms
 proof(induction arbitrary: S  rule:reds.induct)
@@ -13,12 +13,16 @@ proof(induction arbitrary: S  rule:reds.induct)
   show ?case..
 next
   case (Application y \<Gamma> e x L \<Delta> \<Theta> z e')
-  note `L = upds_list S`[simp]
+  from `fv (\<Gamma>, App e x, S) \<subseteq> set L \<union> domA \<Gamma>`
+  have prem1: "fv (\<Gamma>, e, Arg x # S) \<subseteq> set L \<union> domA \<Gamma>" by simp
   
+  from prem1 reds_pres_closed[OF `\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : Lam [y]. e'`] reds_doesnt_forget[OF `\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : Lam [y]. e'`]
+  have prem2: "fv (\<Delta>, e'[y::=x], S) \<subseteq> set L \<union> domA \<Delta>" by (auto simp add: fv_subst_eq)
+
   have "(\<Gamma>, App e x, S) \<Rightarrow> (\<Gamma>, e, Arg x # S)"..
-  also have "\<dots> \<Rightarrow>\<^sup>* (\<Delta>, Lam [y]. e', Arg x# S)" by (rule Application) simp
+  also have "\<dots> \<Rightarrow>\<^sup>* (\<Delta>, Lam [y]. e', Arg x# S)" by (rule Application.IH(1)[OF prem1])
   also have "\<dots> \<Rightarrow> (\<Delta>, e'[y ::= x], S)"..
-  also have "\<dots> \<Rightarrow>\<^sup>* (\<Theta>, z, S)" by (rule Application) simp
+  also have "\<dots> \<Rightarrow>\<^sup>* (\<Theta>, z, S)" by (rule Application.IH(2)[OF prem2])
   finally show ?case.
 next
 case (Variable \<Gamma> x e L \<Delta> z S)
@@ -27,11 +31,13 @@ case (Variable \<Gamma> x e L \<Delta> z S)
 
   have "x \<notin> domA \<Delta>" by (rule reds_avoids_live[OF Variable(2), where x = x]) simp_all
 
-  note `L = upds_list S`[simp]
+  from `fv (\<Gamma>, Var x, S) \<subseteq> set L \<union> domA \<Gamma>`
+  have prem: "fv (delete x \<Gamma>, e, Upd x # S) \<subseteq> set (x#L) \<union> domA (delete x \<Gamma>)"
+    by (auto dest: set_mp[OF fv_delete_subset] set_mp[OF map_of_Some_fv_subset[OF `map_of \<Gamma> x = Some e`]])
 
   from `map_of \<Gamma> x = Some e`
   have "(\<Gamma>, Var x, S) \<Rightarrow> (delete x \<Gamma>, e, Upd x # S)"..
-  also have "\<dots> \<Rightarrow>\<^sup>* (\<Delta>, z, Upd x # S)" by (rule Variable) simp
+  also have "\<dots> \<Rightarrow>\<^sup>* (\<Delta>, z, Upd x # S)" by (rule Variable.IH[OF prem])
   also have "\<dots> \<Rightarrow> ((x,z)#\<Delta>, z, S)" using `x \<notin> domA \<Delta>` `isVal z` by (rule var\<^sub>2)
   finally show ?case.
 next
@@ -42,22 +48,39 @@ case (IfThenElse \<Gamma> scrut L \<Delta> b e\<^sub>1 e\<^sub>2 \<Theta> z S)
   have "(\<Gamma>, scrut ? e\<^sub>1 : e\<^sub>2, S) \<Rightarrow> (\<Gamma>, scrut, Alts e\<^sub>1 e\<^sub>2 #S)"..
   also
   from IfThenElse.prems
-  have "L = upds_list (Alts e\<^sub>1 e\<^sub>2 # S)" by simp
+  have prem1: "fv (\<Gamma>, scrut, Alts e\<^sub>1 e\<^sub>2 #S) \<subseteq> set L \<union> domA \<Gamma>" by auto
   hence "(\<Gamma>, scrut, Alts e\<^sub>1 e\<^sub>2 #S) \<Rightarrow>\<^sup>* (\<Delta>, Bool b, Alts e\<^sub>1 e\<^sub>2 #S)"
-    by (rule IfThenElse.IH(1))
+    by (rule IfThenElse.IH)
   also
   have "(\<Delta>, Bool b, Alts e\<^sub>1 e\<^sub>2 #S) \<Rightarrow> (\<Delta>, if b then e\<^sub>1 else e\<^sub>2, S)"..
   also
-  from IfThenElse.prems
-  have "(\<Delta>, if b then e\<^sub>1 else e\<^sub>2, S) \<Rightarrow>\<^sup>* (\<Theta>, z, S)" by (rule IfThenElse.IH(2))
+  from prem1 reds_pres_closed[OF IfThenElse(1)] reds_doesnt_forget[OF IfThenElse(1)]
+  have prem2: "fv (\<Delta>, if b then e\<^sub>1 else e\<^sub>2, S) \<subseteq> set L \<union> domA \<Delta>"  by auto
+  hence "(\<Delta>, if b then e\<^sub>1 else e\<^sub>2, S) \<Rightarrow>\<^sup>* (\<Theta>, z, S)" by (rule IfThenElse.IH(2))
   finally
   show ?case.
 next
 case (Let as \<Gamma> L body \<Delta> z S)
-  from Let(1) Let(4)
-  have "atom ` domA as \<sharp>* \<Gamma>" and "atom ` domA as \<sharp>* S" sorry by (auto simp add: fresh_star_Pair)
-  hence "(\<Gamma>, Terms.Let as body, S) \<Rightarrow> (as@\<Gamma>, body, S)"..
-  also have "\<dots> \<Rightarrow>\<^sup>* (\<Delta>, z, S)" by (rule Let) fact
+  from Let(4)
+  have prem: "fv (as @ \<Gamma>, body, S) \<subseteq> set L \<union> domA (as @ \<Gamma>)" by auto
+
+  from Let(1) 
+  have "atom ` domA as \<sharp>* \<Gamma>" by (auto simp add: fresh_star_Pair)
+  moreover
+  from Let(1)
+  have "domA as \<inter> fv (\<Gamma>, L) = {}"
+    by (rule fresh_distinct_fv)
+  hence "domA as \<inter> (set L \<union> domA \<Gamma>) = {}"
+    by (auto dest: set_mp[OF domA_fv_subset])
+  with Let(4)
+  have "domA as \<inter> fv S = {}"
+    by auto
+  hence "atom ` domA as \<sharp>* S"
+    by (auto simp add: fresh_star_def fv_def fresh_def)
+  ultimately
+  have "(\<Gamma>, Terms.Let as body, S) \<Rightarrow> (as@\<Gamma>, body, S)"..
+  also have "\<dots> \<Rightarrow>\<^sup>* (\<Delta>, z, S)"
+    by (rule Let.IH[OF prem])
   finally show ?case.
 qed
 
@@ -223,7 +246,7 @@ proof(induction T arbitrary: \<Gamma> e S \<Delta> z rule: measure_induct_rule[w
       have "as @ \<Gamma> : e \<Down>\<^bsub>upds_list S\<^esub> \<Delta> : z" by (rule less)
       moreover
       from `atom \` domA as \<sharp>* \<Gamma>`  `atom \` domA as \<sharp>* S`
-      have "atom ` domA as \<sharp>* (\<Gamma>, upds_list S)" sorry (* by (auto simp add: fresh_star_Pair) *)
+      have "atom ` domA as \<sharp>* (\<Gamma>, upds_list S)" by (auto simp add: fresh_star_Pair)
       ultimately
       show ?thesis unfolding let\<^sub>1  by (rule reds.Let[rotated])
     qed
