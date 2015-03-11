@@ -309,9 +309,9 @@ next
     have prem: "((\<N>\<lbrakk> e' \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<down>CFn (\<N>\<lbrace>\<Gamma>\<rbrace>) x|\<^bsub>C\<^bsup>n\<^esup>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by (auto simp del: app_strict)
     hence "(\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>" by auto
     from Suc.IH[OF this]
-    obtain \<Delta> v where lhs': "\<Gamma> : e' \<Down>\<^bsub>x#S'\<^esub> \<Delta> : v" by blast 
+    obtain \<Delta> v where lhs': "\<Gamma> : e' \<Down>\<^bsub>S'\<^esub> \<Delta> : v" by blast 
 
-    have "fv (\<Gamma>, e') \<subseteq> set (x # S')" using S' by auto
+    have "fv (\<Gamma>, e') \<subseteq> set S'" using S' by auto
     from correctness_empty_env[OF lhs' this]
     have correct1: "\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub> \<sqsubseteq> \<N>\<lbrakk>v\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>" and correct2: "\<N>\<lbrace>\<Gamma>\<rbrace> \<sqsubseteq> \<N>\<lbrace>\<Delta>\<rbrace>" by auto
 
@@ -323,7 +323,7 @@ next
     then  obtain y e'' where n': "v = (Lam [y]. e'')" and "atom y \<sharp> (x, \<Delta>)"
       by (rule isLam_obtain_fresh)
     with lhs'
-    have lhs: "\<Gamma> : e' \<Down>\<^bsub>x # S'\<^esub> \<Delta> : Lam [y]. e''" by simp
+    have lhs: "\<Gamma> : e' \<Down>\<^bsub>S'\<^esub> \<Delta> : Lam [y]. e''" by simp
 
     from `atom y \<sharp> _` have "y \<notin> domA \<Delta>" by (metis (full_types) fresh_Pair domA_not_fresh)
     from `atom y \<sharp> _` have "y \<noteq> x" by (metis (full_types) fresh_Pair fresh_at_base(2))

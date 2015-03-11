@@ -20,7 +20,7 @@ where
     "\<Gamma> : (Lam [x]. e) \<Down>\<^bsub>L\<^esub> \<Gamma> : (Lam [x]. e)" 
  | Application: "\<lbrakk>
     atom y \<sharp> (\<Gamma>,e,x,L,\<Delta>,\<Theta>,z) ;
-    \<Gamma> : e \<Down>\<^bsub>x#L\<^esub> \<Delta> : (Lam [y]. e');
+    \<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : (Lam [y]. e');
     \<Delta> : e'[y ::= x] \<Down>\<^bsub>L\<^esub> \<Theta> : z
   \<rbrakk>  \<Longrightarrow>
     \<Gamma> : App e x \<Down>\<^bsub>L\<^esub> \<Theta> : z" 
@@ -59,14 +59,14 @@ lemma eval_test2:
   "y \<noteq> x \<Longrightarrow> n \<noteq> y \<Longrightarrow> n \<noteq> x \<Longrightarrow>[] : (Let [(x, Lam [y]. Var y)] (App (Var x) x)) \<Down>\<^bsub>[]\<^esub> [(x, Lam [y]. Var y)] : (Lam [y]. Var y)"
   by (auto intro!: Lambda Application Variable Let simp add: fresh_Pair fresh_at_base fresh_Cons fresh_Nil fresh_star_def pure_fresh)
 
-subsubsection {* Better introduction rule *}
+subsubsection {* Better introduction rules *}
 
 text {*
 This variant do not require freshness.
 *}
 
 lemma reds_ApplicationI:
-  assumes "\<Gamma> : e \<Down>\<^bsub>x # L\<^esub> \<Delta> : Lam [y]. e'"
+  assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : Lam [y]. e'"
   assumes "\<Delta> : e'[y::=x] \<Down>\<^bsub>L\<^esub> \<Theta> : z"
   shows "\<Gamma> : App e x \<Down>\<^bsub>L\<^esub> \<Theta> : z"
 proof-
@@ -108,6 +108,14 @@ lemma reds_SmartLet: "\<lbrakk>
     \<Gamma> : SmartLet as body \<Down>\<^bsub>L\<^esub> \<Delta> : z"
 unfolding SmartLet_def
 by (auto intro: reds.Let)
+
+text {*
+A single rule for values
+*}
+lemma reds_isValI:
+  "isVal z \<Longrightarrow> \<Gamma> : z \<Down>\<^bsub>L\<^esub> \<Gamma> : z"
+by (cases z rule:isVal.cases) (auto intro: reds.intros)
+
 
 subsubsection {* Properties of the semantics *}
 
@@ -291,6 +299,12 @@ lemma new_free_vars_on_heap:
   shows "fv (\<Delta>, z) - domA \<Delta> \<subseteq> fv (\<Gamma>, e) - domA \<Gamma>"
 using reds_fresh_fv[OF assms(1)] reds_doesnt_forget[OF assms(1)] by auto
 
+lemma reds_pres_closed:
+  assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
+  and     "fv (\<Gamma>, e) \<subseteq> set L \<union> domA \<Gamma>"
+  shows   "fv (\<Delta>, z) \<subseteq> set L \<union> domA \<Delta>"
+using new_free_vars_on_heap[OF assms(1)] assms(2) by auto
+
 text {*
 Reducing the set of variables to avoid is always possible.
 *} 
@@ -304,20 +318,9 @@ case (Lambda \<Gamma> x e L L')
     by (rule reds.Lambda)
 next
 case (Application y \<Gamma> e xa L \<Delta> \<Theta> z e' L')
+  from Application.hyps(10)[OF Application.prems] Application.hyps(12)[OF Application.prems]
   show ?case
-  proof(rule reds.Application)
-    show "atom y \<sharp> (\<Gamma>, e, xa, L', \<Delta>, \<Theta>, z)"
-      using Application
-      by (auto simp add: fresh_Pair)
-  
-    have "set (xa # L') \<subseteq> set (xa # L)"
-      using `set L' \<subseteq> set L` by auto
-    thus "\<Gamma> : e \<Down>\<^bsub>xa # L'\<^esub> \<Delta> : Lam [y]. e'"
-      by (rule Application.hyps(10))
-
-    show "\<Delta> : e'[y::=xa] \<Down>\<^bsub>L'\<^esub> \<Theta> : z "
-      by (rule Application.hyps(12)[OF Application.prems])
-  qed
+    by (rule reds_ApplicationI)
 next 
 case (Variable \<Gamma> xa e L \<Delta> z L')
   have "set (xa # L') \<subseteq> set (xa # L)"

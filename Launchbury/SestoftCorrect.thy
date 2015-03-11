@@ -5,7 +5,7 @@ begin
 
 lemma lemma_2:
   assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : z"
-  and "L = flattn S"
+  and "L = upds_list S"
   shows "(\<Gamma>, e, S) \<Rightarrow>\<^sup>* (\<Delta>, z, S)"
 using assms
 proof(induction arbitrary: S  rule:reds.induct)
@@ -13,7 +13,7 @@ proof(induction arbitrary: S  rule:reds.induct)
   show ?case..
 next
   case (Application y \<Gamma> e x L \<Delta> \<Theta> z e')
-  note `L = flattn S`[simp]
+  note `L = upds_list S`[simp]
   
   have "(\<Gamma>, App e x, S) \<Rightarrow> (\<Gamma>, e, Arg x # S)"..
   also have "\<dots> \<Rightarrow>\<^sup>* (\<Delta>, Lam [y]. e', Arg x# S)" by (rule Application) simp
@@ -22,18 +22,12 @@ next
   finally show ?case.
 next
 case (Variable \<Gamma> x e L \<Delta> z S)
-  have "isLam z"
-  proof-
-    from result_evaluated_fresh[OF Variable(2)]
-    obtain y e' where "z = Lam [y]. e'" by blast
-    thus ?thesis by simp
-  qed
+  from Variable(2)
+  have "isVal z" by (rule result_evaluated)
 
   have "x \<notin> domA \<Delta>" by (rule reds_avoids_live[OF Variable(2), where x = x]) simp_all
 
-  note `L = flattn S`[simp]
-
-  from `isLam z` have "isVal z" by (induction z rule:exp_induct) auto
+  note `L = upds_list S`[simp]
 
   from `map_of \<Gamma> x = Some e`
   have "(\<Gamma>, Var x, S) \<Rightarrow> (delete x \<Gamma>, e, Upd x # S)"..
@@ -41,9 +35,27 @@ case (Variable \<Gamma> x e L \<Delta> z S)
   also have "\<dots> \<Rightarrow> ((x,z)#\<Delta>, z, S)" using `x \<notin> domA \<Delta>` `isVal z` by (rule var\<^sub>2)
   finally show ?case.
 next
+case (Bool \<Gamma> b L S)
+  show ?case..
+next
+case (IfThenElse \<Gamma> scrut L \<Delta> b e\<^sub>1 e\<^sub>2 \<Theta> z S)
+  have "(\<Gamma>, scrut ? e\<^sub>1 : e\<^sub>2, S) \<Rightarrow> (\<Gamma>, scrut, Alts e\<^sub>1 e\<^sub>2 #S)"..
+  also
+  from IfThenElse.prems
+  have "L = upds_list (Alts e\<^sub>1 e\<^sub>2 # S)" by simp
+  hence "(\<Gamma>, scrut, Alts e\<^sub>1 e\<^sub>2 #S) \<Rightarrow>\<^sup>* (\<Delta>, Bool b, Alts e\<^sub>1 e\<^sub>2 #S)"
+    by (rule IfThenElse.IH(1))
+  also
+  have "(\<Delta>, Bool b, Alts e\<^sub>1 e\<^sub>2 #S) \<Rightarrow> (\<Delta>, if b then e\<^sub>1 else e\<^sub>2, S)"..
+  also
+  from IfThenElse.prems
+  have "(\<Delta>, if b then e\<^sub>1 else e\<^sub>2, S) \<Rightarrow>\<^sup>* (\<Theta>, z, S)" by (rule IfThenElse.IH(2))
+  finally
+  show ?case.
+next
 case (Let as \<Gamma> L body \<Delta> z S)
   from Let(1) Let(4)
-  have "atom ` domA as \<sharp>* \<Gamma>" and "atom ` domA as \<sharp>* S" by (auto simp add: fresh_star_Pair)
+  have "atom ` domA as \<sharp>* \<Gamma>" and "atom ` domA as \<sharp>* S" sorry by (auto simp add: fresh_star_Pair)
   hence "(\<Gamma>, Terms.Let as body, S) \<Rightarrow> (as@\<Gamma>, body, S)"..
   also have "\<dots> \<Rightarrow>\<^sup>* (\<Delta>, z, S)" by (rule Let) fact
   finally show ?case.
@@ -69,7 +81,7 @@ interpretation balance_trace step  stack
 
 abbreviation bal_syn ("_ \<Rightarrow>\<^sup>b\<^sup>*\<^bsub>_\<^esub> _" [50,50,50] 50) where "bal_syn \<equiv> bal"
 
-lemma lambda_stop:
+lemma isVal_stops:
   assumes "isVal e"
   assumes "(\<Gamma>, e, S) \<Rightarrow>\<^sup>b\<^sup>*\<^bsub>T\<^esub> (\<Delta>, z, S)"
   shows "T=[]"
@@ -82,114 +94,15 @@ lemma lambda_stop:
   apply (auto elim!: step.cases)
   done
 
-nominal_function bool_free :: "exp \<Rightarrow> bool" where
-    "bool_free (Lam [x]. e) \<longleftrightarrow> bool_free e"
-  | "bool_free (Var x) \<longleftrightarrow> True"
-  | "bool_free (App e x) \<longleftrightarrow> bool_free e"
-  | "bool_free (Terms.Let \<Gamma> e) \<longleftrightarrow> (\<forall> (x, e) \<in> set \<Gamma>. bool_free e) \<and> bool_free e"
-  | "bool_free (Bool b) \<longleftrightarrow> False"
-  | "bool_free (scrut ? e\<^sub>1 : e\<^sub>2) \<longleftrightarrow> False"
-proof-
-case goal1 thus ?case
-  unfolding bool_free_graph_aux_def eqvt_def 
-  apply rule
-  apply perm_simp
-  apply rule
-  done
-next
-case goal3 thus ?case
-  by (metis Terms.Let_def exp_assn.exhaust(1) heapToAssn_asToHeap)
-next
-case (goal4 x e x' e')
-  from goal4(5)
-  show ?case
-  proof (rule eqvt_lam_case)
-    fix \<pi> :: perm
-    assume "supp \<pi> \<sharp>* Lam [x]. e"
-      
-    have "bool_free_sumC (\<pi> \<bullet> e) = \<pi> \<bullet> bool_free_sumC e"
-        by (simp add: pemute_minus_self eqvt_at_apply'[OF goal4(1)])
-    also have "\<dots> = bool_free_sumC e" by (simp add: permute_pure)
-    finally show  "bool_free_sumC (\<pi> \<bullet> e) = bool_free_sumC e".
-  qed
-next
-case (goal19 as body as' body')
-  from goal19(9)
-  show ?case
-  proof (rule eqvt_let_case)
-    fix \<pi> :: perm
-  
-    from goal19(2,4) have eqvt_at1: "eqvt_at bool_free_sumC body" by auto
-
-    assume assm: "supp \<pi> \<sharp>* Let as body"
-    
-    have "(\<forall> (x,e)\<in>set (\<pi> \<bullet> as). bool_free_sumC e) \<longleftrightarrow> - \<pi> \<bullet> (\<forall> (x,e)\<in>set (\<pi> \<bullet> as). bool_free_sumC e)"
-      by (simp add: permute_pure unpermute_def)
-    also have "\<dots> = (\<forall> (x,e)\<in>set as. (- \<pi> \<bullet> bool_free_sumC) e)"
-      by perm_simp (simp add: pemute_minus_self)
-    also have "\<dots> = (\<forall> (x,e)\<in>set as. bool_free_sumC e)"
-      apply (rule ball_cong[OF refl])
-      apply (rule prod.case_cong[OF refl])
-      apply (rule eqvt_at_apply)
-      apply (metis goal19(1))
-      done
-    finally
-    have "(\<forall> (x,e)\<in>set (\<pi> \<bullet> as). bool_free_sumC e) \<longleftrightarrow> (\<forall> (x,e)\<in>set as. bool_free_sumC e)".
-    moreover
-    have "bool_free_sumC (\<pi> \<bullet> body) \<longleftrightarrow>  bool_free_sumC body" 
-      by (metis (full_types) True_eqvt eqvt_at1  eqvt_at_apply' eqvt_bound)
-    ultimately
-    show "((\<forall>a\<in>set (\<pi> \<bullet> as). case a of (x, x0) \<Rightarrow> bool_free_sumC x0) \<and> bool_free_sumC (\<pi> \<bullet> body)) =
-         ((\<forall>a\<in>set as. case a of (x, x0) \<Rightarrow> bool_free_sumC x0) \<and> bool_free_sumC body)" by simp
-  qed
-qed auto
-nominal_termination (eqvt) by lexicographic_order
-
-lemma bool_free_SmartLet[simp]:
-  "bool_free (SmartLet \<Gamma> e) \<longleftrightarrow> (\<forall> (x, e) \<in> set \<Gamma>. bool_free e) \<and> bool_free e"
-by (auto simp add: SmartLet_def)
-
  
 lemma Ball_subst[simp]:
   "(\<forall>p\<in>set (\<Gamma>[y::h=x]). f p) \<longleftrightarrow> (\<forall>p\<in>set \<Gamma>. case p of (z,e) \<Rightarrow> f (z, e[y::=x]))"
   by (induction \<Gamma>) auto
 
-lemma [simp]: "bool_free e[y::=x] \<longleftrightarrow> bool_free e"
-  by (nominal_induct e avoiding: x y rule: exp_strong_induct_set) (auto  simp add: fresh_star_Pair)
-
-inductive bool_free_stack :: "stack \<Rightarrow> bool" where
-  "bool_free_stack []"
-  | "bool_free_stack S \<Longrightarrow> bool_free_stack (Upd x # S)"
-  | "bool_free_stack S \<Longrightarrow> bool_free_stack (Arg x # S)"
-  | "bool_free_stack S \<Longrightarrow> bool_free_stack (Dummy x # S)"
-
-inductive_simps bool_free_stack_simps: "bool_free_stack []"  "bool_free_stack (s # S)"
-
-fun bool_free_conf :: "conf \<Rightarrow> bool" where
-  "bool_free_conf (\<Gamma>, e, S) \<longleftrightarrow> (\<forall> (x, e) \<in> set \<Gamma>. bool_free e) \<and> bool_free e \<and> bool_free_stack S"
-
-lemma step_bool_free:
-  "c1 \<Rightarrow> c2 \<Longrightarrow> bool_free_conf c1 \<Longrightarrow> bool_free_conf c2"
-  by (cases rule: step.cases) (auto simp add: bool_free_stack_simps dest!: set_mp[OF set_delete_subset] map_of_is_SomeD)
-  
-lemma step_star_bool_free:
-  assumes  "c \<Rightarrow>\<^sup>*\<^bsub>T\<^esub> c'"
-  assumes "bool_free_conf c"
-  shows "bool_free_conf c'"
-using assms by (induction) (auto dest: step_bool_free)
-
-lemma bal_star_bool_free:
-  assumes  "c \<Rightarrow>\<^sup>b\<^sup>*\<^bsub>T\<^esub> c'"
-  assumes "bool_free_conf c"
-  shows "bool_free_conf c'"
-using assms by (metis bal.simps step_star_bool_free)
-
-
 lemma lemma_3:
   assumes "(\<Gamma>, e, S) \<Rightarrow>\<^sup>b\<^sup>*\<^bsub>T\<^esub> (\<Delta>, z, S)"
-  assumes "bool_free_conf (\<Gamma>, e, S)"
-  assumes "isLam z"
-  shows "\<Gamma> : e \<Down>\<^bsub>flattn S\<^esub> \<Delta> : z"
+  assumes "isVal z"
+  shows "\<Gamma> : e \<Down>\<^bsub>upds_list S\<^esub> \<Delta> : z"
 using assms
 proof(induction T arbitrary: \<Gamma> e S \<Delta> z rule: measure_induct_rule[where f = length])
   case (less T \<Gamma> e S \<Delta> z)
@@ -200,13 +113,10 @@ proof(induction T arbitrary: \<Gamma> e S \<Delta> z rule: measure_induct_rule[w
   show ?case
   proof(cases)
   case trace_nil
-    from `isLam z` obtain y e' where "z = Lam [y]. e'" by (cases z rule:isLam.cases) auto
-    with trace_nil show ?thesis by (auto intro: reds.intros)
+    from `isVal z`  trace_nil show ?thesis by (auto intro: reds_isValI)
   next
   case (trace_cons conf' T')
     from `T = conf' # T'` and `\<forall> c'\<in>set T. S \<lesssim> stack c'` have "S \<lesssim> stack conf'" by auto
-
-    note step_bool_free[OF `(\<Gamma>, e, S) \<Rightarrow> conf'`  `bool_free_conf (\<Gamma>, _, S)`]
 
     from `(\<Gamma>, e, S) \<Rightarrow> conf'`
     show ?thesis
@@ -218,9 +128,6 @@ proof(induction T arbitrary: \<Gamma> e S \<Delta> z rule: measure_induct_rule[w
 
       from `T = _` `T' = _` have "length T\<^sub>1 < length T" and "length T\<^sub>2 < length T" by auto
 
-      note bal_star_bool_free[OF prem1 `bool_free_conf conf'`[unfolded app\<^sub>1]]
-      note step_bool_free[OF `c\<^sub>3 \<Rightarrow> c\<^sub>4` this]
-
       from prem1 have "stack c\<^sub>3 =  Arg x # S" by (auto dest:  bal_stackD)
       moreover
       from prem2 have "stack c\<^sub>4 = S" by (auto dest: bal_stackD)
@@ -231,11 +138,11 @@ proof(induction T arbitrary: \<Gamma> e S \<Delta> z rule: measure_induct_rule[w
         by (auto elim!: step.cases simp del: exp_assn.eq_iff)
 
       
-      from less(1)[OF `length T\<^sub>1 < length T` prem1[unfolded `c\<^sub>3 = _` `c\<^sub>4 = _`] `bool_free_conf conf'`[unfolded app\<^sub>1] isLam_Lam]
-      have "\<Gamma> : e \<Down>\<^bsub>x # (flattn S)\<^esub> \<Delta>' : Lam [y]. e'" by simp
+      from less(1)[OF `length T\<^sub>1 < length T` prem1[unfolded `c\<^sub>3 = _` `c\<^sub>4 = _`]]
+      have "\<Gamma> : e \<Down>\<^bsub>upds_list S\<^esub> \<Delta>' : Lam [y]. e'" by simp
       moreover
-      from less(1)[OF `length T\<^sub>2 < length T` prem2[unfolded `c\<^sub>3 = _` `c\<^sub>4 = _`]  `bool_free_conf c\<^sub>4`[unfolded `c\<^sub>4 = _`] `isLam z`]
-      have "\<Delta>' : e'[y::=x] \<Down>\<^bsub>flattn S\<^esub> \<Delta> : z" by simp
+      from less(1)[OF `length T\<^sub>2 < length T` prem2[unfolded `c\<^sub>3 = _` `c\<^sub>4 = _`] `isVal z`]
+      have "\<Delta>' : e'[y::=x] \<Down>\<^bsub>upds_list S\<^esub> \<Delta> : z" by simp
       ultimately
       show ?thesis unfolding app\<^sub>1
         by (rule reds_ApplicationI)
@@ -252,7 +159,6 @@ proof(induction T arbitrary: \<Gamma> e S \<Delta> z rule: measure_induct_rule[w
       
       from `T = _` `T' = _` have "length T\<^sub>1 < length T" and "length T\<^sub>2 < length T" by auto
 
-
       from prem1 have "stack c\<^sub>3 = Upd x # S" by (auto dest:  bal_stackD)
       moreover
       from prem2 have "stack c\<^sub>4 = S" by (auto dest: bal_stackD)
@@ -263,16 +169,45 @@ proof(induction T arbitrary: \<Gamma> e S \<Delta> z rule: measure_induct_rule[w
         by (auto elim!: step.cases simp del: exp_assn.eq_iff)
 
       from `isVal z'` and prem2[unfolded `c\<^sub>4 = _`]
-      have "T\<^sub>2 = []" by (rule lambda_stop)
+      have "T\<^sub>2 = []" by (rule isVal_stops)
       with prem2 `c\<^sub>4 = _`
       have "z' = z" and "\<Delta> = (x,z)#\<Delta>'" by auto
           
-      from less(1)[OF `length T\<^sub>1 < length T` prem1[unfolded `c\<^sub>3 = _` `c\<^sub>4 = _`  `z' = _`] `bool_free_conf conf'`[unfolded var\<^sub>1]  `isLam z`]
-      have "delete x \<Gamma> : e \<Down>\<^bsub>x # flattn S\<^esub> \<Delta>' : z" by simp
+      from less(1)[OF `length T\<^sub>1 < length T` prem1[unfolded `c\<^sub>3 = _` `c\<^sub>4 = _`  `z' = _`]  `isVal z`]
+      have "delete x \<Gamma> : e \<Down>\<^bsub>x # upds_list S\<^esub> \<Delta>' : z" by simp
       with `map_of _ _ = _`
       show ?thesis unfolding var\<^sub>1(1) `\<Delta> = _` by rule
     next
     case (var\<^sub>2 x S')
+      from `conf' = _` `S = _ # S'` `S \<lesssim> stack conf'`
+      have False by (auto simp add: extends_def)
+      thus ?thesis..
+    next
+    case (if\<^sub>1 scrut  e\<^sub>1 e\<^sub>2)
+      obtain T\<^sub>1 c\<^sub>3 c\<^sub>4 T\<^sub>2
+      where "T' = T\<^sub>1 @ c\<^sub>4 # T\<^sub>2" and prem1: "(\<Gamma>, scrut, Alts e\<^sub>1 e\<^sub>2 # S) \<Rightarrow>\<^sup>b\<^sup>*\<^bsub>T\<^sub>1\<^esub> c\<^sub>3" and "c\<^sub>3 \<Rightarrow> c\<^sub>4" and prem2: "c\<^sub>4 \<Rightarrow>\<^sup>b\<^sup>*\<^bsub>T\<^sub>2\<^esub> (\<Delta>, z, S)"
+        by (rule bal_consE[OF  `bal _ T _`[unfolded if\<^sub>1 trace_cons]])  (simp, rule)
+
+      from `T = _` `T' = _` have "length T\<^sub>1 < length T" and "length T\<^sub>2 < length T" by auto
+
+      from prem1 have "stack c\<^sub>3 = Alts e\<^sub>1 e\<^sub>2 # S" by (auto dest:  bal_stackD)
+      moreover
+      from prem2 have "stack c\<^sub>4 = S" by (auto dest: bal_stackD)
+      moreover
+      note `c\<^sub>3 \<Rightarrow> c\<^sub>4`
+      ultimately
+      obtain \<Delta>' b where "c\<^sub>3 = (\<Delta>', Bool b, Alts e\<^sub>1 e\<^sub>2 # S)" and "c\<^sub>4 = (\<Delta>', (if b then e\<^sub>1 else e\<^sub>2), S)"
+        by (auto elim!: step.cases simp del: exp_assn.eq_iff)
+
+      from less(1)[OF `length T\<^sub>1 < length T` prem1[unfolded `c\<^sub>3 = _` `c\<^sub>4 = _` ] isVal_Bool]
+      have "\<Gamma> : scrut \<Down>\<^bsub>upds_list S\<^esub> \<Delta>' : Bool b" by simp
+      moreover
+      from less(1)[OF `length T\<^sub>2 < length T` prem2[unfolded `c\<^sub>4 = _`] `isVal z`]
+      have "\<Delta>' : (if b then e\<^sub>1 else e\<^sub>2) \<Down>\<^bsub>upds_list S\<^esub> \<Delta> : z".
+      ultimately
+      show ?thesis unfolding if\<^sub>1 by (rule reds.IfThenElse)
+   next
+    case (if\<^sub>2 b e1 e2 S')
       from `conf' = _` `S = _ # S'` `S \<lesssim> stack conf'`
       have False by (auto simp add: extends_def)
       thus ?thesis..
@@ -283,26 +218,14 @@ proof(induction T arbitrary: \<Gamma> e S \<Delta> z rule: measure_induct_rule[w
       have "(as @ \<Gamma>, e, S) \<Rightarrow>\<^sup>b\<^sup>*\<^bsub>T'\<^esub> (\<Delta>, z, S)" 
         using trace_cons `conf' = _`  `\<forall> c'\<in>set T. S \<lesssim> stack c'` by fastforce
       moreover
-      note `bool_free_conf conf'`[unfolded let\<^sub>1]
-      moreover
-      note `isLam z`
+      note `isVal z`
       ultimately
-      have "as @ \<Gamma> : e \<Down>\<^bsub>flattn S\<^esub> \<Delta> : z" by (rule less)
+      have "as @ \<Gamma> : e \<Down>\<^bsub>upds_list S\<^esub> \<Delta> : z" by (rule less)
       moreover
       from `atom \` domA as \<sharp>* \<Gamma>`  `atom \` domA as \<sharp>* S`
-      have "atom ` domA as \<sharp>* (\<Gamma>, flattn S)" by (auto simp add: fresh_star_Pair)
+      have "atom ` domA as \<sharp>* (\<Gamma>, upds_list S)" sorry (* by (auto simp add: fresh_star_Pair) *)
       ultimately
       show ?thesis unfolding let\<^sub>1  by (rule reds.Let[rotated])
-    next
-    case (if\<^sub>1)
-      with `bool_free_conf (\<Gamma>, e, S)`
-      have False by simp
-      thus ?thesis..
-   next
-    case (if\<^sub>2)
-      with `bool_free_conf (\<Gamma>, e, S)`
-      have False by simp
-      thus ?thesis..
     qed
   qed
 qed
