@@ -16,21 +16,30 @@ session "HOLCF-Nominal2" in "Nominal2-Devel" = "HOLCF+Library" +
     "Eqvt"
 
 session Launchbury (AFP) in "Launchbury" = "HOLCF-Nominal2" +
-  options [document = pdf, document_graph, document_output = "output"]
-  theories
-    "Everything"
-
-session LaunchburyAdequacy (AFP) in "Launchbury" = "HOLCF-Nominal2" +
-  options [document_variants = adequacy, document = pdf, document_graph, document_output = "output" ]
+  options [document_output = output, document = pdf, document_graph]
   theories
     "EverythingAdequacy"
+  document_files
+    "map.tex"
+    "mathpartir.sty"
+    "root.bib"
+    "root.tex"
 
-session LaunchburyComplete (AFP) in "Launchbury" = "HOLCF-Nominal2" +
-  options [document_variants = newstuff, document = pdf, document_graph, document_output = "output", quick_and_dirty]
+session Call_Arity (AFP) in "Call_Arity" = "Launchbury" +
+  options [document_output = output, document = pdf, timeout = 600]
   theories
-    "NewStuff"
+    "TrivialArityAnal"
+    "NoCardinalityAnalysis"
+    "ArityTransformSafe"
+    "CallArityEnd2EndSafe"
+    "ArityAnalysisCorrDenotational"
+  document_files
+    "root.tex"
+    "root.bib"
+    "mathpartir.sty"
 
-session Arity (AFP) in "Launchbury" = "HOLCF-Nominal2" +
+
+session Arity (AFP) in "Call_Arity" = "HOLCF-Nominal2" +
   options [document_variants = arity, document = pdf, document_graph, document_output = "output" ]
   theories
     "ArityAnalysisImplCorrect"
@@ -45,50 +54,3 @@ session Arity (AFP) in "Launchbury" = "HOLCF-Nominal2" +
     "NoCardinalityAnalysis"
     "CallArityEnd2EndSafe"
     "ArityAnalysisCorrDenotational"
-
-session OnlyArity (AFP) in "Launchbury" = "HOLCF-Nominal2" +
-  options [document_variants = arity, document = pdf, document_graph, document_output = "output" ]
-  theories
-    "TrivialArityAnal"
-    "NoCardinalityAnalysis"
-    "CallArityEnd2EndSafe"
-
-session Arity_ICFP (AFP) in "Launchbury" = "HOLCF-Nominal2" +
-  options [document_variants = arity, document = pdf, document_graph, document_output = "output" ]
-  theories
-    "TrivialArityAnal"
-    "NoCardinalityAnalysis"
-    "ArityTransformSafe"
-    "CallArityEnd2EndSafe"
-    "ArityAnalysisCorrDenotational"
-  document_files
-    "root_arity.tex"
-    "root_arity.bib"
-    "mathpartir.sty"
-
-session Nominal2013_1 in "Nominal2-Isabelle2013-1/Nominal" = HOL +
-  theories
-    "Nominal2"
-
-session Nominal2013_1_Orig in "Nominal2-Isabelle2013-1.orig/Nominal" = HOL +
-  theories
-    "Nominal2"
-
-session Nominal_Deve in "Nominal-Devel" = HOL +
-  theories
-    "Nominal2"
-
-session LocaleBug = Nominal2013_1 +
-  options [quick_and_dirty]
-  theories
-    "LocaleBug"
-
-session LocaleBug_Orig = Nominal2013_1_Orig +
-  options [quick_and_dirty]
-  theories
-    "LocaleBug"
-
-session LocaleBug_Devel = Nominal2013_1_Orig +
-  options [quick_and_dirty]
-  theories
-    "LocaleBug"
