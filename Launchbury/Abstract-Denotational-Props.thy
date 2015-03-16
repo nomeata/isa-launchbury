@@ -9,8 +9,8 @@ subsubsection {* The semantics ignores fresh variables *}
 
 lemma ESem_considers_fv': "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho> f|` (fv e)\<^esub>"
 proof (induct e arbitrary: \<rho> rule:exp_induct)
-  case (Var b x)
-  show ?case by (cases b) simp_all
+  case Var
+  show ?case by simp
 next
   have [simp]: "\<And> S x. S \<inter> insert x S = S" by auto
   case App
@@ -95,8 +95,7 @@ lemma ESem_subst_same: "\<rho> x = \<rho> y \<Longrightarrow>  \<lbrakk> e \<rbr
   and 
   "\<rho> x = \<rho> y  \<Longrightarrow>  (\<^bold>\<lbrakk> as \<^bold>\<rbrakk>\<^bsub>\<rho>\<^esub>) = \<^bold>\<lbrakk> as[x::h=y] \<^bold>\<rbrakk>\<^bsub>\<rho>\<^esub>"
 proof (nominal_induct e and as avoiding: x y arbitrary: \<rho> and \<rho> rule:exp_heap_strong_induct)
-case (Var b var x y)
-  thus ?case by (cases b) auto
+case Var thus ?case by auto
 next
 case App
   from App(1)[OF App(2)] App(2)
