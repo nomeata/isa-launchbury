@@ -78,7 +78,11 @@ Karlsruhe Institute for Technology\\
 \begin{abstract}
 We formalize the Call Arity analysis \cite{tfp}, as implemented in GHC, and prove both functional correctness and, more interestingly, safety (i.e.\ the transformation does not increase allocation). A highlevel overview of the work can be found in \cite{icfp15}.
 
-We use Christian Urban's Nominal2 package \cite{nominal} to define our terms. The functional correctness is defined with regard to a standard denotational semantics, e.g.\ as found in \cite{launchbury}. The operational properties are shown with regard to a small-step semantics akin to Sestoft's mark 1 machine \cite{sestoft}.  We make use of Brian Huffman's HOLCF package for the domain-theoretical aspects of the development \cite{holcf}.
+We use syntax and the denotational semantics from an earlier work \cite{breitner2013}, where we formalized Launchbury's natural semantics for lazy evaluation \cite{launchbury}. 
+The functional correctness of Call Arity is proved with regard to that denotational semantics.
+The operational properties are shown with regard to a small-step semantics akin to Sestoft's mark 1 machine \cite{sestoft}, which we prove to be equivalent to Launchbury's semantics.
+
+We use Christian Urban's Nominal2 package \cite{nominal} to define our terms and make use of Brian Huffman's HOLCF package for the domain-theoretical aspects of the development \cite{holcf}.
 
 \end{abstract}
 
@@ -93,7 +97,7 @@ The following table connects the definitions and theorems from \cite{icfp15} wit
 \begin{longtable}[h]{lll}
 \textsf{Concept} & \textsf{corresponds to} & \textsf{in theory} \\
 \midrule
-Syntax                                                        & \isacommand{nominal-datatype} \isa{expr}                  & \seetheory{Terms} \\
+Syntax                                                        & \isacommand{nominal-datatype} \isa{expr}                  & Terms in \cite{breitner2013} \\
 Stack                                                         & \isacommand{type-synonym} \isa{stack}                     & \seetheory{SestoftConf} \\
 Configuration                                                 & \isacommand{type-synonym} \isa{conf}                      & \seetheory{SestoftConf} \\
 Semantics ($\Rightarrow$)                                     & \isacommand{inductive} \isa{step}                         & \seetheory{Sestoft} \\
