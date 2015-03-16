@@ -1,5 +1,5 @@
 session Arity (AFP) in "Call_Arity" = "HOLCF-Nominal2" +
-  options [document_variants = arity, document = pdf, document_graph, document_output = "output" ]
+  options [document_variants = arity, document = pdf, document_output = "output" ]
   theories
     "ArityAnalysisImplCorrect"
     "TrivialArityAnal"
