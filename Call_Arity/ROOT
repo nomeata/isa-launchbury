@@ -3,6 +3,7 @@ chapter AFP
 session Call_Arity (AFP) = "Launchbury" +
   options [timeout = 600]
   theories
+    "SestoftCorrect"
     "TrivialArityAnal"
     "NoCardinalityAnalysis"
     "ArityTransformSafe"
