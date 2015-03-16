@@ -17,11 +17,9 @@ printf "$tex refers to %d theories.\n", scalar @uses;
 my %index;
 @index{@uses} = (0..$#uses);
 
-my @global_theories = qw!HOLCF Nominal2 ../Nominal2/Nominal2 ~~/src/HOL/Library/AList Library/AList Lifting Main!;
-my %global;
-@global{@global_theories} = (0..$#global_theories);
-
 my @real_uses = (read_file($session) =~ /\\input{([_a-zA-Z0-9-]*)\.tex}/g);
+my %real_uses;
+@real_uses{@uses} = (0..$#uses);
 
 my %seen;
 for my $base (@real_uses) {
@@ -37,7 +35,7 @@ for my $base (@real_uses) {
 	printf "0 imports found in %s\n", $base unless @imports;
 	# printf "%s has %d imports: %s\n", $base, scalar @imports, (join ", ", @imports);
 	for my $import (@imports) {
-		next if exists $global{$import};
+		next unless exists $real_uses{$import};
 		printf "%s, imported by %s, is not mentioned in %s!\n", $import, $base, $tex unless exists $index{$import};
 		printf "%s, imported by %s, is too late in the document!\n", $import, $base unless $index{$import} < $index{$base};
 	}
