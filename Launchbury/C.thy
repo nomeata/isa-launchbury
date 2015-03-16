@@ -1,5 +1,5 @@
 theory C
-imports HOLCF "Mono-Nat-Fun"
+imports "~~/src/HOL/HOLCF/HOLCF" "Mono-Nat-Fun"
 begin
 
 default_sort cpo

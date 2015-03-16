@@ -1,5 +1,5 @@
 theory "Mono-Nat-Fun"
-imports "Library/Infinite_Set"
+imports "~~/src/HOL/Library/Infinite_Set"
 begin
 
 text {*
