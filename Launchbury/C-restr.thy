@@ -177,13 +177,6 @@ lemma C_restr_C_case[simp]:
   apply simp
   done
 
-lemma C_restr_eq_Cpred: 
-  assumes "x|\<^bsub>r\<^esub> = y|\<^bsub>r\<^esub>"
-  shows "x|\<^bsub>Cpred\<cdot>r\<^esub> = y|\<^bsub>Cpred\<cdot>r\<^esub>"
-  apply (rule cfun_eqI) 
-  apply simp
-  by (metis C_restr_eqD[OF assms] Cpred_below meet_below2 meet_comm)
-
 lemma C_restr_bot_demand:
   assumes "C\<cdot>r \<sqsubseteq> demand f"
   shows "f|\<^bsub>r\<^esub> = \<bottom>"
@@ -234,17 +227,5 @@ lemma env_C_restr_cong:
   "(\<And> x r'. r' \<sqsubseteq> r \<Longrightarrow> f x \<cdot> r' = g x \<cdot> r') \<Longrightarrow> f|\<^sup>\<circ>\<^bsub>r\<^esub> = g|\<^sup>\<circ>\<^bsub>r\<^esub>"
   unfolding env_C_restr_def
   by (rule ext) (auto intro: C_restr_cong)
-
-lemma env_restr_eq_Cpred: 
-  assumes "\<rho>1|\<^sup>\<circ>\<^bsub>r\<^esub> = \<rho>2|\<^sup>\<circ>\<^bsub>r\<^esub>"
-  shows "\<rho>1|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub> = \<rho>2|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>"
-proof(rule ext)
-next
-  fix x
-  from assms
-  have "(\<rho>1|\<^sup>\<circ>\<^bsub>r\<^esub>) x = (\<rho>2|\<^sup>\<circ>\<^bsub>r\<^esub>) x" by simp
-  thus "(\<rho>1|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>) x = (\<rho>2|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>) x"
-    by (auto intro: C_restr_eq_Cpred)
-qed
 
 end

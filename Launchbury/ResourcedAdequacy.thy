@@ -15,21 +15,21 @@ The semantics of an expression, given only @{term r} resources, will only use va
 environment with less resources.
 *}
 
-lemma restr_can_restrict_env: "(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>)|\<^bsub>r\<^esub> = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)|\<^bsub>r\<^esub>"
+lemma restr_can_restrict_env: "(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>)|\<^bsub>C\<cdot>r\<^esub> = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)|\<^bsub>C\<cdot>r\<^esub>"
 proof(induction e arbitrary: \<rho> r rule: exp_induct)
   case (Var x)
   show ?case
   proof(rule C_restr_cong)
     fix r'
-    assume "r' \<sqsubseteq> r"
+    assume "r' \<sqsubseteq> C\<cdot>r"
     {
       fix r''
-      assume "r' = C\<cdot>r''" with `r' \<sqsubseteq> r`
-      have "(Cpred\<cdot>r \<sqinter> r'') = r''"
-        by (metis Cpred.simps below_refl is_meetI monofun_cfun_arg)
-      hence "\<rho> x\<cdot>r'' = (\<rho> x|\<^bsub>Cpred\<cdot>r\<^esub>)\<cdot>r''" by simp
+      assume "r' = C\<cdot>r''" with `r' \<sqsubseteq> C\<cdot>r`
+      have "(r \<sqinter> r'') = r''"
+        by (metis C.inverts below_antisym below_refl meet_above_iff)
+      hence "\<rho> x\<cdot>r'' = (\<rho> x|\<^bsub>r\<^esub>)\<cdot>r''" by simp
     }
-    thus "(\<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r' = (\<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)\<cdot>r'"
+    thus "(\<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r' = (\<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>r'"
       unfolding CESem_simps
       by -(rule C_case_cong, simp)
   qed
@@ -38,20 +38,20 @@ next
   show ?case
   proof(rule C_restr_cong)
     fix r'
-    assume "r' \<sqsubseteq> r"
+    assume "r' \<sqsubseteq> C\<cdot>r"
     {
       fix r''
       fix v
       assume "r' = C\<cdot>r''"
-      with `r' \<sqsubseteq> r`
-      have "r'' \<sqsubseteq> r" by (metis  below_C below_trans)
+      with `r' \<sqsubseteq> C\<cdot>r`
+      have "r'' \<sqsubseteq> C\<cdot>r" by (metis below_C below_trans)
 
-      have "\<rho>(x := v)|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub> = (\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>)(x := v)|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>"
+      have "\<rho>(x := v)|\<^sup>\<circ>\<^bsub>r\<^esub> = (\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>)(x := v)|\<^sup>\<circ>\<^bsub>r\<^esub>"
         by simp
-      hence "(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x := v)\<^esub>)|\<^bsub>r''\<^esub> = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>(\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>)(x := v)\<^esub>)|\<^bsub>r''\<^esub>"
-        by  (subst (1 2) C_restr_eq_lower[OF Lam  `r'' \<sqsubseteq> r` ]) simp
+      hence "(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x := v)\<^esub>)|\<^bsub>r''\<^esub> = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>(\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>)(x := v)\<^esub>)|\<^bsub>r''\<^esub>"
+        by  (subst (1 2) C_restr_eq_lower[OF Lam  `r'' \<sqsubseteq> C\<cdot>r` ]) simp
     }
-    thus "(\<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r' = (\<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)\<cdot>r'"
+    thus "(\<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r' = (\<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>r'"
       unfolding CESem_simps
       by -(rule C_case_cong, simp)
   qed
@@ -60,20 +60,20 @@ next
   show ?case
   proof (rule C_restr_cong)
     fix r'
-    assume "r' \<sqsubseteq> r"
+    assume "r' \<sqsubseteq> C\<cdot>r"
     {
       fix r''
-      assume "r' = C\<cdot>r''" with `r' \<sqsubseteq> r`
-      have ** : "(Cpred\<cdot>r \<sqinter> r'') = r''"
-        by (metis Cpred.simps below_refl is_meetI monofun_cfun_arg)
+      assume "r' = C\<cdot>r''" with `r' \<sqsubseteq> C\<cdot>r`
+      have ** : "(r \<sqinter> r'') = r''"
+        by (metis C.inverts below_antisym below_refl meet_above_iff)
 
-      have "r'' \<sqsubseteq> r" by (metis `r' = C\<cdot>r''` `r' \<sqsubseteq> r` below_C below_trans)
-      hence *: "(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r'' = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)\<cdot>r''"
+      have "r'' \<sqsubseteq> C\<cdot>r" by (metis `r' = C\<cdot>r''` `r' \<sqsubseteq> C\<cdot>r` below_C below_trans)
+      hence *: "(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r'' = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>r''"
         by (rule C_restr_eqD[OF App])
 
       note * **
     }
-    thus "(\<N>\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r' = (\<N>\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)\<cdot>r'"
+    thus "(\<N>\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r' = (\<N>\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>r'"
       unfolding CESem_simps
       by -(rule C_case_cong, simp)
   qed
@@ -85,24 +85,24 @@ next
   show ?case
   proof (rule C_restr_cong)
     fix r'
-    assume "r' \<sqsubseteq> r"
+    assume "r' \<sqsubseteq> C\<cdot>r"
     {
       fix r''
-      assume "r' = C\<cdot>r''" with `r' \<sqsubseteq> r`
-      have ** : "(Cpred\<cdot>r \<sqinter> r'') = r''"
-        by (metis Cpred.simps below_refl is_meetI monofun_cfun_arg)
+      assume "r' = C\<cdot>r''" with `r' \<sqsubseteq> C\<cdot>r`
+      have ** : "(r \<sqinter> r'') = r''"
+        by (metis C.inverts below_antisym below_refl meet_above_iff)
 
-      have "r'' \<sqsubseteq> r" by (metis `r' = C\<cdot>r''` `r' \<sqsubseteq> r` below_C below_trans)
-      have eq1: "(\<N>\<lbrakk> scrut \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r'' = (\<N>\<lbrakk> scrut \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)\<cdot>r''"
-        using `r'' \<sqsubseteq> r` by (rule C_restr_eqD[OF IfThenElse(1)])
-      have eq2: "(\<N>\<lbrakk> e\<^sub>1 \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r'' = (\<N>\<lbrakk> e\<^sub>1 \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)\<cdot>r''"
-        using `r'' \<sqsubseteq> r` by (rule C_restr_eqD[OF IfThenElse(2)])
-      have eq3: "(\<N>\<lbrakk> e\<^sub>2 \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r'' = (\<N>\<lbrakk> e\<^sub>2 \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)\<cdot>r''"
-        using `r'' \<sqsubseteq> r` by (rule C_restr_eqD[OF IfThenElse(3)])
+      have "r'' \<sqsubseteq> C\<cdot>r" by (metis `r' = C\<cdot>r''` `r' \<sqsubseteq> C\<cdot>r` below_C below_trans)
+      have eq1: "(\<N>\<lbrakk> scrut \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r'' = (\<N>\<lbrakk> scrut \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>r''"
+        using `r'' \<sqsubseteq> C\<cdot>r` by (rule C_restr_eqD[OF IfThenElse(1)])
+      have eq2: "(\<N>\<lbrakk> e\<^sub>1 \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r'' = (\<N>\<lbrakk> e\<^sub>1 \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>r''"
+        using `r'' \<sqsubseteq> C\<cdot>r` by (rule C_restr_eqD[OF IfThenElse(2)])
+      have eq3: "(\<N>\<lbrakk> e\<^sub>2 \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r'' = (\<N>\<lbrakk> e\<^sub>2 \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>r''"
+        using `r'' \<sqsubseteq> C\<cdot>r` by (rule C_restr_eqD[OF IfThenElse(3)])
 
       note eq1 eq2 eq3 **
     }
-    thus "(\<N>\<lbrakk> (scrut ? e\<^sub>1 : e\<^sub>2) \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r' = (\<N>\<lbrakk> (scrut ? e\<^sub>1 : e\<^sub>2) \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)\<cdot>r'"
+    thus "(\<N>\<lbrakk> (scrut ? e\<^sub>1 : e\<^sub>2) \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r' = (\<N>\<lbrakk> (scrut ? e\<^sub>1 : e\<^sub>2) \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>r'"
       unfolding CESem_simps
       by -(rule C_case_cong, simp)
   qed
@@ -114,22 +114,22 @@ next
   proof(rule has_ESem.parallel_HSem_ind)
     fix \<rho>\<^sub>1 \<rho>\<^sub>2 :: CEnv and r :: C
     assume "\<rho>\<^sub>1|\<^sup>\<circ>\<^bsub>r\<^esub> = \<rho>\<^sub>2|\<^sup>\<circ>\<^bsub>r\<^esub>"
-    hence "\<rho>\<^sub>1|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub> = \<rho>\<^sub>2|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>" by (metis env_restr_eq_Cpred)
 
     show " (\<rho> ++\<^bsub>domA as\<^esub> \<^bold>\<N>\<lbrakk> as \<^bold>\<rbrakk>\<^bsub>\<rho>\<^sub>1\<^esub>)|\<^sup>\<circ>\<^bsub>r\<^esub> = (\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub> ++\<^bsub>domA as\<^esub> \<^bold>\<N>\<lbrakk> as \<^bold>\<rbrakk>\<^bsub>\<rho>\<^sub>2\<^esub>)|\<^sup>\<circ>\<^bsub>r\<^esub>"
     proof(rule env_C_restr_cong)
       fix x and r'
       assume "r' \<sqsubseteq> r"
+      hence "r' \<sqsubseteq> C\<cdot>r" by (metis below_C below_trans)
 
       show "(\<rho> ++\<^bsub>domA as\<^esub> \<^bold>\<N>\<lbrakk> as \<^bold>\<rbrakk>\<^bsub>\<rho>\<^sub>1\<^esub>) x\<cdot>r' = (\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub> ++\<^bsub>domA as\<^esub> \<^bold>\<N>\<lbrakk> as \<^bold>\<rbrakk>\<^bsub>\<rho>\<^sub>2\<^esub>) x\<cdot>r'"
       proof(cases "x \<in> domA as")
         case True
-        have "(\<N>\<lbrakk> the (map_of as x) \<rbrakk>\<^bsub>\<rho>\<^sub>1\<^esub>)\<cdot>r' = (\<N>\<lbrakk> the (map_of as x) \<rbrakk>\<^bsub>\<rho>\<^sub>1|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)\<cdot>r'"
-          by (rule C_restr_eqD[OF Let(1)[OF True] `r' \<sqsubseteq> r`])
-        also have "\<dots> = (\<N>\<lbrakk> the (map_of as x) \<rbrakk>\<^bsub>\<rho>\<^sub>2|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)\<cdot>r'"
-          unfolding `\<rho>\<^sub>1|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub> = \<rho>\<^sub>2|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>`..
+        have "(\<N>\<lbrakk> the (map_of as x) \<rbrakk>\<^bsub>\<rho>\<^sub>1\<^esub>)\<cdot>r' = (\<N>\<lbrakk> the (map_of as x) \<rbrakk>\<^bsub>\<rho>\<^sub>1|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>r'"
+         by (rule C_restr_eqD[OF Let(1)[OF True] `r' \<sqsubseteq> C\<cdot>r`])
+        also have "\<dots> = (\<N>\<lbrakk> the (map_of as x) \<rbrakk>\<^bsub>\<rho>\<^sub>2|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>r'"
+          unfolding `\<rho>\<^sub>1|\<^sup>\<circ>\<^bsub>r\<^esub> = \<rho>\<^sub>2|\<^sup>\<circ>\<^bsub>r\<^esub>`..
         also have "\<dots>   = (\<N>\<lbrakk> the (map_of as x) \<rbrakk>\<^bsub>\<rho>\<^sub>2\<^esub>)\<cdot>r'"
-          by (rule C_restr_eqD[OF Let(1)[OF True] `r' \<sqsubseteq> r`, symmetric])
+          by (rule C_restr_eqD[OF Let(1)[OF True] `r' \<sqsubseteq> C\<cdot>r`, symmetric])
         finally
         show ?thesis using True by (simp add: lookupEvalHeap)
       next
@@ -143,28 +143,28 @@ next
   show ?case
   proof (rule C_restr_cong)
     fix r'
-    assume "r' \<sqsubseteq> r"
+    assume "r' \<sqsubseteq> C\<cdot>r"
     {
       fix r''
-      assume "r' = C\<cdot>r''" with `r' \<sqsubseteq> r`
-      have ** : "(Cpred\<cdot>r \<sqinter> r'') = r''"
-        by (metis Cpred.simps below_refl is_meetI monofun_cfun_arg)
+      assume "r' = C\<cdot>r''" with `r' \<sqsubseteq> C\<cdot>r`
+      have ** : "(r \<sqinter> r'') = r''"
+        by (metis C.inverts below_antisym below_refl meet_above_iff)
 
-      have "r'' \<sqsubseteq> r" by (metis `r' = C\<cdot>r''` `r' \<sqsubseteq> r` below_C below_trans)
+      have "r'' \<sqsubseteq> C\<cdot>r" by (metis `r' = C\<cdot>r''` `r' \<sqsubseteq> C\<cdot>r` below_C below_trans)
 
-      have "(\<N>\<lbrace>as\<rbrace>\<rho>)|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub> = (\<N>\<lbrace>as\<rbrace>(\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>))|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>"
+      have "(\<N>\<lbrace>as\<rbrace>\<rho>)|\<^sup>\<circ>\<^bsub>r\<^esub> = (\<N>\<lbrace>as\<rbrace>(\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>))|\<^sup>\<circ>\<^bsub>r\<^esub>"
         by (rule restr_can_restrict_env_heap)
-      hence "(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<N>\<lbrace>as\<rbrace>\<rho>\<^esub>)\<cdot>r'' = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<N>\<lbrace>as\<rbrace>\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)\<cdot>r''"
-        by (subst (1 2)  C_restr_eqD[OF Let(2) `r'' \<sqsubseteq> r`]) simp
+      hence "(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<N>\<lbrace>as\<rbrace>\<rho>\<^esub>)\<cdot>r'' = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<N>\<lbrace>as\<rbrace>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>r''"
+        by (subst (1 2) C_restr_eqD[OF Let(2) `r'' \<sqsubseteq> C\<cdot>r`]) simp
     }
-    thus " (\<N>\<lbrakk> Let as e \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r' = (\<N>\<lbrakk> Let as e \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)\<cdot>r'"
+    thus " (\<N>\<lbrakk> Let as e \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r' = (\<N>\<lbrakk> Let as e \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>r'"
       unfolding CESem_simps
       by -(rule C_case_cong, simp)
   qed
 qed
 
 lemma can_restrict_env:
-  "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)\<cdot>r"
+  "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>(C\<cdot>r) = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>(C\<cdot>r)"
   by (rule C_restr_eqD[OF restr_can_restrict_env below_refl])
 
 text {*
@@ -177,11 +177,11 @@ lemma add_BH:
   assumes  "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>"
   shows "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>"
 proof-
-  def r \<equiv> "demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)"
-  have "r \<noteq> \<bottom>" unfolding r_def by (rule demand_not_0)
+  obtain r where r: "C\<cdot>r = demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)"
+    using demand_not_0 sorry
 
   from  assms(2)
-  have "r \<sqsubseteq> C\<^bsup>n\<^esup>" unfolding r_def not_bot_demand by simp
+  have "C\<cdot>r \<sqsubseteq> C\<^bsup>n\<^esup>" unfolding r not_bot_demand by simp
 
   from assms(1)
   have [simp]: "the (map_of \<Gamma> x) = e" by (metis option.sel)
@@ -191,27 +191,27 @@ proof-
 
   def ub \<equiv> "\<N>\<lbrace>\<Gamma>\<rbrace>" -- "An upper bound for the induction"
 
-  have heaps: "(\<N>\<lbrace>\<Gamma>\<rbrace>)|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub> \<sqsubseteq> \<N>\<lbrace>delete x \<Gamma>\<rbrace>" and "\<N>\<lbrace>\<Gamma>\<rbrace> \<sqsubseteq> ub"
+  have heaps: "(\<N>\<lbrace>\<Gamma>\<rbrace>)|\<^sup>\<circ>\<^bsub>r\<^esub> \<sqsubseteq> \<N>\<lbrace>delete x \<Gamma>\<rbrace>" and "\<N>\<lbrace>\<Gamma>\<rbrace> \<sqsubseteq> ub"
   proof (induction rule: HSem_bot_ind) 
     fix \<rho>'
-    assume "\<rho>'|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub> \<sqsubseteq> \<N>\<lbrace>delete x \<Gamma>\<rbrace>"
+    assume "\<rho>'|\<^sup>\<circ>\<^bsub>r\<^esub> \<sqsubseteq> \<N>\<lbrace>delete x \<Gamma>\<rbrace>"
     assume "\<rho>' \<sqsubseteq> ub"
 
-    show "(\<^bold>\<N>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>\<rho>'\<^esub>)|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub> \<sqsubseteq> \<N>\<lbrace>delete x \<Gamma>\<rbrace>"
+    show "(\<^bold>\<N>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>\<rho>'\<^esub>)|\<^sup>\<circ>\<^bsub>r\<^esub> \<sqsubseteq> \<N>\<lbrace>delete x \<Gamma>\<rbrace>"
     proof (rule fun_belowI)
       fix y
-      show "((\<^bold>\<N>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>\<rho>'\<^esub>)|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>) y \<sqsubseteq> (\<N>\<lbrace>delete x \<Gamma>\<rbrace>) y"
+      show "((\<^bold>\<N>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>\<rho>'\<^esub>)|\<^sup>\<circ>\<^bsub>r\<^esub>) y \<sqsubseteq> (\<N>\<lbrace>delete x \<Gamma>\<rbrace>) y"
       proof (cases "y = x")
         case True
-        have "((\<^bold>\<N>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>\<rho>'\<^esub>)|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>) x = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)|\<^bsub>Cpred\<cdot>r\<^esub>"
+        have "((\<^bold>\<N>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>\<rho>'\<^esub>)|\<^sup>\<circ>\<^bsub>r\<^esub>) x = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>'\<^esub>)|\<^bsub>r\<^esub>"
           by (simp add: lookupEvalHeap)
-        also have "\<dots> \<sqsubseteq> (\<N>\<lbrakk> e \<rbrakk>\<^bsub>ub\<^esub>)|\<^bsub>Cpred\<cdot>r\<^esub>"
+        also have "\<dots> \<sqsubseteq> (\<N>\<lbrakk> e \<rbrakk>\<^bsub>ub\<^esub>)|\<^bsub>r\<^esub>"
           using `\<rho>' \<sqsubseteq> ub` by (intro monofun_cfun_arg)
-        also have "\<dots> = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)|\<^bsub>Cpred\<cdot>(demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>))\<^esub>"
-          unfolding ub_def r_def..
+        also have "\<dots> = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)|\<^bsub>r\<^esub>"
+          unfolding ub_def..
         also have "\<dots> = \<bottom>"
-          by (rule C_restr_bot_demand) (simp add:  demand_not_0)
-        also have "\<dots> =  (\<N>\<lbrace>delete x \<Gamma>\<rbrace>) x"
+          using r by (rule  C_restr_bot_demand[OF eq_imp_below])
+        also have "\<dots> = (\<N>\<lbrace>delete x \<Gamma>\<rbrace>) x"
           by (simp add: lookup_HSem_other)
         finally
         show ?thesis unfolding True.
@@ -220,13 +220,11 @@ proof-
         show ?thesis
         proof (cases "y \<in> domA \<Gamma>")
           case True
-          have "(\<N>\<lbrakk> the (map_of \<Gamma> y) \<rbrakk>\<^bsub>\<rho>'\<^esub>)|\<^bsub>Cpred\<cdot>r\<^esub> = (\<N>\<lbrakk> the (map_of \<Gamma> y) \<rbrakk>\<^bsub>\<rho>'|\<^sup>\<circ>\<^bsub>Cpred\<cdot>(Cpred\<cdot>r)\<^esub>\<^esub>)|\<^bsub>Cpred\<cdot>r\<^esub>"
-            by (rule restr_can_restrict_env)
-          also have "\<dots> \<sqsubseteq> \<N>\<lbrakk> the (map_of \<Gamma> y) \<rbrakk>\<^bsub>\<rho>'|\<^sup>\<circ>\<^bsub>Cpred\<cdot>(Cpred\<cdot>r)\<^esub>\<^esub>"
+          have "(\<N>\<lbrakk> the (map_of \<Gamma> y) \<rbrakk>\<^bsub>\<rho>'\<^esub>)|\<^bsub>r\<^esub> = (\<N>\<lbrakk> the (map_of \<Gamma> y) \<rbrakk>\<^bsub>\<rho>'|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)|\<^bsub>r\<^esub>"
+            by (rule C_restr_eq_lower[OF restr_can_restrict_env below_C])
+          also have "\<dots> \<sqsubseteq> \<N>\<lbrakk> the (map_of \<Gamma> y) \<rbrakk>\<^bsub>\<rho>'|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>"
             by (rule C_restr_below)
-          also have "\<rho>'|\<^sup>\<circ>\<^bsub>Cpred\<cdot>(Cpred\<cdot>r)\<^esub> \<sqsubseteq> \<rho>'|\<^sup>\<circ>\<^bsub>(Cpred\<cdot>r)\<^esub>"
-            by (intro monofun_cfun_arg monofun_cfun_fun Cpred_below)
-          also note `\<dots> \<sqsubseteq> \<N>\<lbrace>delete x \<Gamma>\<rbrace>`
+          also note `\<rho>'|\<^sup>\<circ>\<^bsub>r\<^esub> \<sqsubseteq> \<N>\<lbrace>delete x \<Gamma>\<rbrace>`
           finally
           show ?thesis
             using `y \<in> domA \<Gamma>` `y \<noteq> x`
@@ -248,18 +246,18 @@ proof-
   qed simp_all
 
   from assms(2)
-  have "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>r \<noteq> \<bottom>"
-    unfolding r_def
+  have "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>(C\<cdot>r) \<noteq> \<bottom>"
+    unfolding r
     by (rule demand_suffices[OF infinite_resources_suffice])
   also
-  have "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>r = (\<N>\<lbrakk>e\<rbrakk>\<^bsub>(\<N>\<lbrace>\<Gamma>\<rbrace>)|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)\<cdot>r"
+  have "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>(C\<cdot>r) = (\<N>\<lbrakk>e\<rbrakk>\<^bsub>(\<N>\<lbrace>\<Gamma>\<rbrace>)|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>(C\<cdot>r)"
     by (rule can_restrict_env)
   also
-  have "\<dots> \<sqsubseteq> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)\<cdot>r"
+  have "\<dots> \<sqsubseteq> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)\<cdot>(C\<cdot>r)"
     by (intro monofun_cfun_arg monofun_cfun_fun heaps )
   also
   have "\<dots> \<sqsubseteq> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
-    using `r \<sqsubseteq> C\<^bsup>n\<^esup>` by (rule monofun_cfun_arg)
+    using `C\<cdot>r \<sqsubseteq> C\<^bsup>n\<^esup>` by (rule monofun_cfun_arg)
   finally
   show ?thesis by this (intro cont2cont)+
 qed
