@@ -11,16 +11,16 @@ instance C :: pcpo_pt
   by default (simp add: pure_permute_id)
 
 
-instantiation CValue' :: pure
+instantiation CValue :: pure
 begin
-  definition "p \<bullet> (v::CValue') = v"
+  definition "p \<bullet> (v::CValue) = v"
 instance
   apply default
-  apply (auto simp add: permute_CValue'_def)
+  apply (auto simp add: permute_CValue_def)
   done
 end
 
-instance CValue' :: pcpo_pt
+instance CValue :: pcpo_pt
   by default (simp add: pure_permute_id)
 
 end

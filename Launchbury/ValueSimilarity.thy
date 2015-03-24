@@ -4,7 +4,7 @@ begin
 
 text {*
 This theory formalizes Section 3 of \cite{functionspaces}. Their domain $D$ is our type @{typ Value},
-their domain $E$ is our type @{typ CValue} and $A$ corresponds to @{typ CValue'}.
+their domain $E$ is our type @{typ "(C \<rightarrow> CValue)"} and $A$ corresponds to @{typ CValue}.
 
 In our case, the construction of the domains was taken care of by the Nominal package
 (\cite{nominal}), so where \cite{functionspaces} refers to elements of the domain approximations
@@ -27,8 +27,8 @@ To have our presentation closer to \cite{functionspaces}, we introduce some nota
 *}
 
 notation Value_take ("\<psi>\<^sup>D\<^bsub>_\<^esub>")
-notation CValue_take ("\<psi>\<^sup>E\<^bsub>_\<^esub>")
-notation CValue'_take ("\<psi>\<^sup>A\<^bsub>_\<^esub>")
+notation C_to_CValue_take ("\<psi>\<^sup>E\<^bsub>_\<^esub>")
+notation CValue_take ("\<psi>\<^sup>A\<^bsub>_\<^esub>")
 
 subsubsection {* A note about section 2.3 *}
 
@@ -86,7 +86,7 @@ lemma value_CValue_cases:
   b\<^sub>1 b\<^sub>2 where "x = B\<cdot>(Discr b\<^sub>1)" "y = CB\<cdot>(Discr b\<^sub>2)" |
   f b\<^sub>2 where "x = Fn\<cdot>f" "y = CB\<cdot>(Discr b\<^sub>2)" |
   b\<^sub>2 where "x = \<bottom>" "y = CB\<cdot>(Discr b\<^sub>2)"
-  by (metis CValue'.exhaust Discr_undiscr Value.exhaust)
+  by (metis CValue.exhaust Discr_undiscr Value.exhaust)
 
 lemma Value_CValue_take_induct:
   assumes "adm (split P)"
@@ -94,11 +94,11 @@ lemma Value_CValue_take_induct:
   shows "P x y"
 proof-
   have "split P (\<Squnion>n. (\<psi>\<^sup>D\<^bsub>n\<^esub>\<cdot>x, \<psi>\<^sup>E\<^bsub>n\<^esub>\<cdot>y))"
-    by (rule admD[OF `adm (split P)` ch2ch_Pair[OF ch2ch_Rep_cfunL[OF Value.chain_take] ch2ch_Rep_cfunL[OF CValue_chain_take]]])
+    by (rule admD[OF `adm (split P)` ch2ch_Pair[OF ch2ch_Rep_cfunL[OF Value.chain_take] ch2ch_Rep_cfunL[OF C_to_CValue_chain_take]]])
        (simp add: assms(2))
   hence "split P (x,y)"
-    by (simp add: lub_Pair[OF ch2ch_Rep_cfunL[OF Value.chain_take] ch2ch_Rep_cfunL[OF CValue_chain_take]]
-                  Value.reach CValue_reach)
+    by (simp add: lub_Pair[OF ch2ch_Rep_cfunL[OF Value.chain_take] ch2ch_Rep_cfunL[OF C_to_CValue_chain_take]]
+                  Value.reach C_to_CValue_reach)
   thus ?thesis by simp
 qed
 
@@ -106,7 +106,7 @@ subsubsection {* Restricted similarity is defined recursively *}
 
 text {* The base case *}
 
-inductive similar'_base :: "Value \<Rightarrow> CValue' \<Rightarrow> bool" where
+inductive similar'_base :: "Value \<Rightarrow> CValue \<Rightarrow> bool" where
   bot_similar'_base[simp,intro]: "similar'_base \<bottom> \<bottom>"
 
 inductive_cases [elim!]:
@@ -114,7 +114,7 @@ inductive_cases [elim!]:
 
 text {* The inductive case *}
 
-inductive similar'_step :: "(Value \<Rightarrow> CValue' \<Rightarrow> bool) \<Rightarrow> Value \<Rightarrow> CValue' \<Rightarrow> bool" for s where
+inductive similar'_step :: "(Value \<Rightarrow> CValue \<Rightarrow> bool) \<Rightarrow> Value \<Rightarrow> CValue \<Rightarrow> bool" for s where
   bot_similar'_step[intro!]: "similar'_step s \<bottom> \<bottom>" |
   bool_similar'_step[intro]: "similar'_step s (B\<cdot>b) (CB\<cdot>b)" |
   Fun_similar'_step[intro]: "(\<And> x y . s x (y\<cdot>C\<^sup>\<infinity>) \<Longrightarrow> s (f\<cdot>x) (g\<cdot>y\<cdot>C\<^sup>\<infinity>)) \<Longrightarrow> similar'_step s (Fn\<cdot>f) (CFn\<cdot>g)"
@@ -195,16 +195,16 @@ A generalisation of the above, doing multiple steps at once.
 
 lemma similar'_up_le: "n \<le> m \<Longrightarrow> \<psi>\<^sup>D\<^bsub>n\<^esub>\<cdot>d \<triangleleft>\<triangleright>\<^bsub>n\<^esub> \<psi>\<^sup>A\<^bsub>n\<^esub>\<cdot>e \<Longrightarrow> \<psi>\<^sup>D\<^bsub>n\<^esub>\<cdot>d \<triangleleft>\<triangleright>\<^bsub>m\<^esub> \<psi>\<^sup>A\<^bsub>n\<^esub>\<cdot>e"
   by (induction rule: dec_induct )
-     (auto dest: similar'_up simp add: Value.take_take CValue'.take_take min_absorb2)
+     (auto dest: similar'_up simp add: Value.take_take CValue.take_take min_absorb2)
 
 lemma similar'_down_le: "n \<le> m \<Longrightarrow> \<psi>\<^sup>D\<^bsub>m\<^esub>\<cdot>d \<triangleleft>\<triangleright>\<^bsub>m\<^esub> \<psi>\<^sup>A\<^bsub>m\<^esub>\<cdot>e \<Longrightarrow> \<psi>\<^sup>D\<^bsub>n\<^esub>\<cdot>d \<triangleleft>\<triangleright>\<^bsub>n\<^esub> \<psi>\<^sup>A\<^bsub>n\<^esub>\<cdot>e"
   by (induction rule: inc_induct )
-     (auto dest: similar'_down simp add: Value.take_take CValue'.take_take min_absorb1)
+     (auto dest: similar'_down simp add: Value.take_take CValue.take_take min_absorb1)
 
 lemma similar'_take: "d \<triangleleft>\<triangleright>\<^bsub>n\<^esub> e \<Longrightarrow> \<psi>\<^sup>D\<^bsub>n\<^esub>\<cdot>d \<triangleleft>\<triangleright>\<^bsub>n\<^esub> \<psi>\<^sup>A\<^bsub>n\<^esub>\<cdot>e"
   apply (drule similar'_up)
   apply (drule similar'_down)
-  apply (simp add: Value.take_take CValue'.take_take)
+  apply (simp add: Value.take_take CValue.take_take)
   done
 
 subsubsection {* Admissibility *}
@@ -265,7 +265,7 @@ proof (rule admI)
       by simp
     have "chain Y''"
       apply (rule chainI)
-      apply (rule iffD1[OF CValue'.inverts(1)])
+      apply (rule iffD1[OF CValue.inverts(1)])
       apply (subst (1 2) Y''[symmetric])
       apply (rule snd_monofun)
       apply (rule *)
@@ -308,10 +308,10 @@ lemma similar'_admI: "cont f \<Longrightarrow> cont g \<Longrightarrow> adm (\<l
 subsubsection {* The real similarity relation *}
 
 text {*
-This is the goal of the theory: A relation between @{typ Value} and @{typ CValue'}.
+This is the goal of the theory: A relation between @{typ Value} and @{typ CValue}.
 *}
 
-definition similar :: "Value \<Rightarrow> CValue' \<Rightarrow> bool" (infix "\<triangleleft>\<triangleright>" 50) where
+definition similar :: "Value \<Rightarrow> CValue \<Rightarrow> bool" (infix "\<triangleleft>\<triangleright>" 50) where
   "x \<triangleleft>\<triangleright> y \<longleftrightarrow> (\<forall>n. \<psi>\<^sup>D\<^bsub>n\<^esub>\<cdot>x \<triangleleft>\<triangleright>\<^bsub>n\<^esub> \<psi>\<^sup>A\<^bsub>n\<^esub>\<cdot>y)"
 
 lemma similarI:
@@ -367,7 +367,7 @@ proof(rule similarI)
   ultimately
   show "\<psi>\<^sup>D\<^bsub>m\<^esub>\<cdot>(\<psi>\<^sup>D\<^bsub>n\<^esub>\<cdot>x) \<triangleleft>\<triangleright>\<^bsub>m\<^esub> \<psi>\<^sup>A\<^bsub>m\<^esub>\<cdot>(\<psi>\<^sup>A\<^bsub>n\<^esub>\<cdot>y)"
     by (auto elim: similar'_up_le similar'_down_le dest: similar'_take
-        simp add: min_absorb2 min_absorb1 Value.take_take CValue'.take_take)
+        simp add: min_absorb2 min_absorb1 Value.take_take CValue.take_take)
 qed
 
 lemma bot_or_not_bot:
@@ -384,7 +384,7 @@ lemma slimilar_bot_cases[consumes 1, case_names bot bool Fn]:
   b where "x = B\<cdot>(Discr b)" "y = CB\<cdot>(Discr b)" |
   f g where "x = Fn\<cdot>f" "y = CFn \<cdot> g"
 using assms
-by (metis CValue'.exhaust Value.exhaust bool_or_not_bool bot_or_not_bot discr.exhaust)
+by (metis CValue.exhaust Value.exhaust bool_or_not_bool bot_or_not_bot discr.exhaust)
 
 lemma similar_adm: "adm (\<lambda>x. fst x \<triangleleft>\<triangleright> snd x)"
   unfolding similar_def
@@ -436,7 +436,7 @@ proof
           have "\<psi>\<^sup>D\<^bsub>max m n\<^esub>\<cdot>(f\<cdot>(\<psi>\<^sup>D\<^bsub>max m n\<^esub>\<cdot>(\<psi>\<^sup>D\<^bsub>m\<^esub>\<cdot>a))) \<triangleleft>\<triangleright>\<^bsub>max m n\<^esub> \<psi>\<^sup>A\<^bsub>max m n\<^esub>\<cdot>(g\<cdot>(\<psi>\<^sup>E\<^bsub>max m n\<^esub>\<cdot>(\<psi>\<^sup>E\<^bsub>m\<^esub>\<cdot>b))\<cdot>C\<^sup>\<infinity>)"
             by auto
           hence " \<psi>\<^sup>D\<^bsub>max m n\<^esub>\<cdot>(f\<cdot>(\<psi>\<^sup>D\<^bsub>m\<^esub>\<cdot>a)) \<triangleleft>\<triangleright>\<^bsub>max m n\<^esub> \<psi>\<^sup>A\<^bsub>max m n\<^esub>\<cdot>(g\<cdot>(\<psi>\<^sup>E\<^bsub>m\<^esub>\<cdot>b)\<cdot>C\<^sup>\<infinity>)"
-            by (simp add: Value.take_take cfun_map_map CValue'.take_take ID_def eta_cfun min_absorb2 min_absorb1)
+            by (simp add: Value.take_take cfun_map_map CValue.take_take ID_def eta_cfun min_absorb2 min_absorb1)
           thus "\<psi>\<^sup>D\<^bsub>n\<^esub>\<cdot>(f\<cdot>(\<psi>\<^sup>D\<^bsub>m\<^esub>\<cdot>a)) \<triangleleft>\<triangleright>\<^bsub>n\<^esub> \<psi>\<^sup>A\<^bsub>n\<^esub>\<cdot>(g\<cdot>(\<psi>\<^sup>E\<^bsub>m\<^esub>\<cdot>b)\<cdot>C\<^sup>\<infinity>)"
             by (rule similar'_down_le[rotated]) auto
         qed
@@ -497,7 +497,7 @@ by (metis assms similar_FnD)
 
 subsubsection {* The similarity relation lifted pointwise to functions. *}
 
-abbreviation fun_similar :: "('a::type \<Rightarrow> Value) \<Rightarrow> ('a \<Rightarrow> CValue) \<Rightarrow> bool"  (infix "\<triangleleft>\<triangleright>\<^sup>*" 50) where
+abbreviation fun_similar :: "('a::type \<Rightarrow> Value) \<Rightarrow> ('a \<Rightarrow> (C \<rightarrow> CValue)) \<Rightarrow> bool"  (infix "\<triangleleft>\<triangleright>\<^sup>*" 50) where
   "fun_similar \<equiv> pointwise (\<lambda>x y. x \<triangleleft>\<triangleright> y\<cdot>C\<^sup>\<infinity>)"
 
 lemma fun_similar_fmap_bottom[simp]: "\<bottom> \<triangleleft>\<triangleright>\<^sup>* \<bottom>"

@@ -114,7 +114,7 @@ case (Variable \<Gamma> x e L \<Delta> z)
        and "(\<lbrace>?\<Gamma>\<rbrace>\<sigma>) f|` domA ?\<Gamma> = (\<lbrace>\<Delta>\<rbrace>\<sigma>') f|` domA ?\<Gamma>".
     thus ?case
       using subset
-      by (auto intro!: ext simp add: lookup_override_on_eq  lookup_env_restr_eq dest: env_restr_eqD )
+      by (fastforce simp add: lookup_override_on_eq  lookup_env_restr_eq dest: env_restr_eqD )
   qed
   also have "\<dots> = (\<mu> \<rho>'. (\<rho> ++\<^bsub>domA \<Delta>\<^esub> (\<lbrace>\<Delta>\<rbrace>\<rho>'))( x := \<lbrakk> z \<rbrakk>\<^bsub>\<rho>'\<^esub>)) f|` (-?new)"
     by (rule arg_cong[OF iterative_HSem'[symmetric], OF `x \<notin> domA \<Delta>`])
