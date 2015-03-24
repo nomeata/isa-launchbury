@@ -44,15 +44,12 @@ next
       fix v
       assume "r' = C\<cdot>r''"
       with `r' \<sqsubseteq> r`
-      have [simp]: "r'' \<sqinter> Cpred\<cdot>r = r''"
-        by (metis C.inverts C_Cpred_id below_refl is_meetI meet_above_iff meet_bot2)
+      have "r'' \<sqsubseteq> r" by (metis  below_C below_trans)
 
-      have "r'' \<sqsubseteq> r" by (metis `r' = C\<cdot>r''` `r' \<sqsubseteq> r` below_C below_trans)
-      hence "(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x := v|\<^bsub>r''\<^esub>)\<^esub>)|\<^bsub>r''\<^esub> = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>(\<rho>(x := v|\<^bsub>r''\<^esub>))|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)|\<^bsub>r''\<^esub>"
-        by (rule C_restr_eq_lower[OF Lam])
-      also have "(\<rho>(x := v|\<^bsub>r''\<^esub>))|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub> = (\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>)(x := v|\<^bsub>r''\<^esub>)"  by simp
-      finally
-      have "(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x := v|\<^bsub>r''\<^esub>)\<^esub>)|\<^bsub>r''\<^esub> = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>(\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>)(x := v|\<^bsub>r''\<^esub>)\<^esub>)|\<^bsub>r''\<^esub>".
+      have "\<rho>(x := v)|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub> = (\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>)(x := v)|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>"
+        by simp
+      hence "(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x := v)\<^esub>)|\<^bsub>r''\<^esub> = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>(\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>)(x := v)\<^esub>)|\<^bsub>r''\<^esub>"
+        by  (subst (1 2) C_restr_eq_lower[OF Lam  `r'' \<sqsubseteq> r` ]) simp
     }
     thus "(\<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r' = (\<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>Cpred\<cdot>r\<^esub>\<^esub>)\<cdot>r'"
       unfolding CESem_simps
