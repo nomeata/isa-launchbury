@@ -19,148 +19,114 @@ lemma restr_can_restrict_env: "(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>)
 proof(induction e arbitrary: \<rho> r rule: exp_induct)
   case (Var x)
   show ?case
-  proof(rule C_restr_cong)
+  proof (rule C_restr_C_cong)
     fix r'
-    assume "r' \<sqsubseteq> C\<cdot>r"
-    {
-      fix r''
-      assume "r' = C\<cdot>r''" with `r' \<sqsubseteq> C\<cdot>r`
-      have "(r \<sqinter> r'') = r''"
-        by (metis C.inverts below_antisym below_refl meet_above_iff)
-      hence "\<rho> x\<cdot>r'' = (\<rho> x|\<^bsub>r\<^esub>)\<cdot>r''" by simp
-    }
-    thus "(\<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r' = (\<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>r'"
-      unfolding CESem_simps
-      by -(rule C_case_cong, simp)
-  qed
+    assume "r' \<sqsubseteq> r"
+    have "(\<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>(C\<cdot>r') = \<rho> x\<cdot>r'" by simp
+    also have "\<dots> = ((\<rho> x)|\<^bsub>r\<^esub>)\<cdot>r'" using `r' \<sqsubseteq> r` by simp
+    also have "\<dots> =  (\<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>(C\<cdot>r')" by simp
+    finally show "(\<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>(C\<cdot>r') = (\<N>\<lbrakk> Var x \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>(C\<cdot>r')".
+  qed simp
 next
   case (Lam x e)
   show ?case
-  proof(rule C_restr_cong)
+  proof(rule C_restr_C_cong)
     fix r'
-    assume "r' \<sqsubseteq> C\<cdot>r"
+    assume "r' \<sqsubseteq> r"
+    hence "r' \<sqsubseteq> C\<cdot>r" by (metis below_C below_trans)
     {
-      fix r''
       fix v
-      assume "r' = C\<cdot>r''"
-      with `r' \<sqsubseteq> C\<cdot>r`
-      have "r'' \<sqsubseteq> C\<cdot>r" by (metis below_C below_trans)
-
       have "\<rho>(x := v)|\<^sup>\<circ>\<^bsub>r\<^esub> = (\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>)(x := v)|\<^sup>\<circ>\<^bsub>r\<^esub>"
         by simp
-      hence "(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x := v)\<^esub>)|\<^bsub>r''\<^esub> = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>(\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>)(x := v)\<^esub>)|\<^bsub>r''\<^esub>"
-        by  (subst (1 2) C_restr_eq_lower[OF Lam  `r'' \<sqsubseteq> C\<cdot>r` ]) simp
+      hence "(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x := v)\<^esub>)|\<^bsub>r'\<^esub> = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>(\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>)(x := v)\<^esub>)|\<^bsub>r'\<^esub>"
+        by  (subst (1 2) C_restr_eq_lower[OF Lam `r' \<sqsubseteq> C\<cdot>r` ]) simp
     }
-    thus "(\<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r' = (\<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>r'"
-      unfolding CESem_simps
-      by -(rule C_case_cong, simp)
-  qed
+    thus "(\<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>(C\<cdot>r') = (\<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>(C\<cdot>r')"
+      by simp
+  qed simp
 next
   case (App e x)
   show ?case
-  proof (rule C_restr_cong)
+  proof (rule C_restr_C_cong)
     fix r'
-    assume "r' \<sqsubseteq> C\<cdot>r"
-    {
-      fix r''
-      assume "r' = C\<cdot>r''" with `r' \<sqsubseteq> C\<cdot>r`
-      have ** : "(r \<sqinter> r'') = r''"
-        by (metis C.inverts below_antisym below_refl meet_above_iff)
-
-      have "r'' \<sqsubseteq> C\<cdot>r" by (metis `r' = C\<cdot>r''` `r' \<sqsubseteq> C\<cdot>r` below_C below_trans)
-      hence *: "(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r'' = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>r''"
+    assume "r' \<sqsubseteq> r"
+    hence "r' \<sqsubseteq> C\<cdot>r" by (metis below_C below_trans)
+    hence "(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r' = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>r'"
         by (rule C_restr_eqD[OF App])
-
-      note * **
-    }
-    thus "(\<N>\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r' = (\<N>\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>r'"
-      unfolding CESem_simps
-      by -(rule C_case_cong, simp)
-  qed
+    thus "(\<N>\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>(C\<cdot>r') = (\<N>\<lbrakk> App e x \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>(C\<cdot>r')"
+      using `r' \<sqsubseteq> r` by simp
+  qed simp
 next
   case (Bool b)
   show ?case by simp
 next
   case (IfThenElse scrut e\<^sub>1 e\<^sub>2)
   show ?case
-  proof (rule C_restr_cong)
+  proof (rule C_restr_C_cong)
     fix r'
-    assume "r' \<sqsubseteq> C\<cdot>r"
-    {
-      fix r''
-      assume "r' = C\<cdot>r''" with `r' \<sqsubseteq> C\<cdot>r`
-      have ** : "(r \<sqinter> r'') = r''"
-        by (metis C.inverts below_antisym below_refl meet_above_iff)
+    assume "r' \<sqsubseteq> r"
+    hence "r' \<sqsubseteq> C\<cdot>r" by (metis below_C below_trans)
 
-      have "r'' \<sqsubseteq> C\<cdot>r" by (metis `r' = C\<cdot>r''` `r' \<sqsubseteq> C\<cdot>r` below_C below_trans)
-      have eq1: "(\<N>\<lbrakk> scrut \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r'' = (\<N>\<lbrakk> scrut \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>r''"
-        using `r'' \<sqsubseteq> C\<cdot>r` by (rule C_restr_eqD[OF IfThenElse(1)])
-      have eq2: "(\<N>\<lbrakk> e\<^sub>1 \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r'' = (\<N>\<lbrakk> e\<^sub>1 \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>r''"
-        using `r'' \<sqsubseteq> C\<cdot>r` by (rule C_restr_eqD[OF IfThenElse(2)])
-      have eq3: "(\<N>\<lbrakk> e\<^sub>2 \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r'' = (\<N>\<lbrakk> e\<^sub>2 \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>r''"
-        using `r'' \<sqsubseteq> C\<cdot>r` by (rule C_restr_eqD[OF IfThenElse(3)])
-
-      note eq1 eq2 eq3 **
-    }
-    thus "(\<N>\<lbrakk> (scrut ? e\<^sub>1 : e\<^sub>2) \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r' = (\<N>\<lbrakk> (scrut ? e\<^sub>1 : e\<^sub>2) \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>r'"
-      unfolding CESem_simps
-      by -(rule C_case_cong, simp)
-  qed
+    have "(\<N>\<lbrakk> scrut \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r' = (\<N>\<lbrakk> scrut \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>r'"
+      using `r' \<sqsubseteq> C\<cdot>r` by (rule C_restr_eqD[OF IfThenElse(1)])
+    moreover
+    have "(\<N>\<lbrakk> e\<^sub>1 \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r' = (\<N>\<lbrakk> e\<^sub>1 \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>r'"
+      using `r' \<sqsubseteq> C\<cdot>r` by (rule C_restr_eqD[OF IfThenElse(2)])
+    moreover
+    have "(\<N>\<lbrakk> e\<^sub>2 \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r' = (\<N>\<lbrakk> e\<^sub>2 \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>r'"
+      using `r' \<sqsubseteq> C\<cdot>r` by (rule C_restr_eqD[OF IfThenElse(3)])
+    ultimately
+    show "(\<N>\<lbrakk> (scrut ? e\<^sub>1 : e\<^sub>2) \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>(C\<cdot>r') = (\<N>\<lbrakk> (scrut ? e\<^sub>1 : e\<^sub>2) \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>(C\<cdot>r')"
+      using `r' \<sqsubseteq> r` by simp
+  qed simp
 next
-  case (Let as e)
+  case (Let \<Gamma> e)
 
   txt {* The lemma, lifted to heaps *}
-  have restr_can_restrict_env_heap : "\<And> r. (\<N>\<lbrace>as\<rbrace>\<rho>)|\<^sup>\<circ>\<^bsub>r\<^esub> = (\<N>\<lbrace>as\<rbrace>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>)|\<^sup>\<circ>\<^bsub>r\<^esub>"
+  have restr_can_restrict_env_heap : "\<And> r. (\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>)|\<^sup>\<circ>\<^bsub>r\<^esub> = (\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>)|\<^sup>\<circ>\<^bsub>r\<^esub>"
   proof(rule has_ESem.parallel_HSem_ind)
     fix \<rho>\<^sub>1 \<rho>\<^sub>2 :: CEnv and r :: C
     assume "\<rho>\<^sub>1|\<^sup>\<circ>\<^bsub>r\<^esub> = \<rho>\<^sub>2|\<^sup>\<circ>\<^bsub>r\<^esub>"
 
-    show " (\<rho> ++\<^bsub>domA as\<^esub> \<^bold>\<N>\<lbrakk> as \<^bold>\<rbrakk>\<^bsub>\<rho>\<^sub>1\<^esub>)|\<^sup>\<circ>\<^bsub>r\<^esub> = (\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub> ++\<^bsub>domA as\<^esub> \<^bold>\<N>\<lbrakk> as \<^bold>\<rbrakk>\<^bsub>\<rho>\<^sub>2\<^esub>)|\<^sup>\<circ>\<^bsub>r\<^esub>"
+    show " (\<rho> ++\<^bsub>domA \<Gamma>\<^esub> \<^bold>\<N>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>\<rho>\<^sub>1\<^esub>)|\<^sup>\<circ>\<^bsub>r\<^esub> = (\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub> ++\<^bsub>domA \<Gamma>\<^esub> \<^bold>\<N>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>\<rho>\<^sub>2\<^esub>)|\<^sup>\<circ>\<^bsub>r\<^esub>"
     proof(rule env_C_restr_cong)
       fix x and r'
       assume "r' \<sqsubseteq> r"
       hence "r' \<sqsubseteq> C\<cdot>r" by (metis below_C below_trans)
 
-      show "(\<rho> ++\<^bsub>domA as\<^esub> \<^bold>\<N>\<lbrakk> as \<^bold>\<rbrakk>\<^bsub>\<rho>\<^sub>1\<^esub>) x\<cdot>r' = (\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub> ++\<^bsub>domA as\<^esub> \<^bold>\<N>\<lbrakk> as \<^bold>\<rbrakk>\<^bsub>\<rho>\<^sub>2\<^esub>) x\<cdot>r'"
-      proof(cases "x \<in> domA as")
+      show "(\<rho> ++\<^bsub>domA \<Gamma>\<^esub> \<^bold>\<N>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>\<rho>\<^sub>1\<^esub>) x\<cdot>r' = (\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub> ++\<^bsub>domA \<Gamma>\<^esub> \<^bold>\<N>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>\<rho>\<^sub>2\<^esub>) x\<cdot>r'"
+      proof(cases "x \<in> domA \<Gamma>")
         case True
-        have "(\<N>\<lbrakk> the (map_of as x) \<rbrakk>\<^bsub>\<rho>\<^sub>1\<^esub>)\<cdot>r' = (\<N>\<lbrakk> the (map_of as x) \<rbrakk>\<^bsub>\<rho>\<^sub>1|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>r'"
+        have "(\<N>\<lbrakk> the (map_of \<Gamma> x) \<rbrakk>\<^bsub>\<rho>\<^sub>1\<^esub>)\<cdot>r' = (\<N>\<lbrakk> the (map_of \<Gamma> x) \<rbrakk>\<^bsub>\<rho>\<^sub>1|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>r'"
          by (rule C_restr_eqD[OF Let(1)[OF True] `r' \<sqsubseteq> C\<cdot>r`])
-        also have "\<dots> = (\<N>\<lbrakk> the (map_of as x) \<rbrakk>\<^bsub>\<rho>\<^sub>2|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>r'"
+        also have "\<dots> = (\<N>\<lbrakk> the (map_of \<Gamma> x) \<rbrakk>\<^bsub>\<rho>\<^sub>2|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>r'"
           unfolding `\<rho>\<^sub>1|\<^sup>\<circ>\<^bsub>r\<^esub> = \<rho>\<^sub>2|\<^sup>\<circ>\<^bsub>r\<^esub>`..
-        also have "\<dots>   = (\<N>\<lbrakk> the (map_of as x) \<rbrakk>\<^bsub>\<rho>\<^sub>2\<^esub>)\<cdot>r'"
+        also have "\<dots>   = (\<N>\<lbrakk> the (map_of \<Gamma> x) \<rbrakk>\<^bsub>\<rho>\<^sub>2\<^esub>)\<cdot>r'"
           by (rule C_restr_eqD[OF Let(1)[OF True] `r' \<sqsubseteq> C\<cdot>r`, symmetric])
         finally
         show ?thesis using True by (simp add: lookupEvalHeap)
       next
         case False
-        from `r' \<sqsubseteq> r` have "(r \<sqinter> r') = r'" by (metis below_refl is_meetI)
-        thus ?thesis using False by simp
+        with `r' \<sqsubseteq> r`
+        show ?thesis by simp
       qed
     qed
   qed simp_all
 
   show ?case
-  proof (rule C_restr_cong)
+  proof (rule C_restr_C_cong)
     fix r'
-    assume "r' \<sqsubseteq> C\<cdot>r"
-    {
-      fix r''
-      assume "r' = C\<cdot>r''" with `r' \<sqsubseteq> C\<cdot>r`
-      have ** : "(r \<sqinter> r'') = r''"
-        by (metis C.inverts below_antisym below_refl meet_above_iff)
+    assume "r' \<sqsubseteq> r"
+    hence "r' \<sqsubseteq> C\<cdot>r" by (metis below_C below_trans)
 
-      have "r'' \<sqsubseteq> C\<cdot>r" by (metis `r' = C\<cdot>r''` `r' \<sqsubseteq> C\<cdot>r` below_C below_trans)
+    have "(\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>)|\<^sup>\<circ>\<^bsub>r\<^esub> = (\<N>\<lbrace>\<Gamma>\<rbrace>(\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>))|\<^sup>\<circ>\<^bsub>r\<^esub>"
+      by (rule restr_can_restrict_env_heap)
+    hence "(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>)\<cdot>r' = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>r'"
+      by (subst (1 2) C_restr_eqD[OF Let(2) `r' \<sqsubseteq> C\<cdot>r`]) simp
 
-      have "(\<N>\<lbrace>as\<rbrace>\<rho>)|\<^sup>\<circ>\<^bsub>r\<^esub> = (\<N>\<lbrace>as\<rbrace>(\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>))|\<^sup>\<circ>\<^bsub>r\<^esub>"
-        by (rule restr_can_restrict_env_heap)
-      hence "(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<N>\<lbrace>as\<rbrace>\<rho>\<^esub>)\<cdot>r'' = (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<N>\<lbrace>as\<rbrace>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>r''"
-        by (subst (1 2) C_restr_eqD[OF Let(2) `r'' \<sqsubseteq> C\<cdot>r`]) simp
-    }
-    thus " (\<N>\<lbrakk> Let as e \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r' = (\<N>\<lbrakk> Let as e \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>r'"
-      unfolding CESem_simps
-      by -(rule C_case_cong, simp)
-  qed
+    thus "(\<N>\<lbrakk> Let \<Gamma> e \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>(C\<cdot>r') = (\<N>\<lbrakk> Let \<Gamma> e \<rbrakk>\<^bsub>\<rho>|\<^sup>\<circ>\<^bsub>r\<^esub>\<^esub>)\<cdot>(C\<cdot>r')"
+      using `r' \<sqsubseteq> r` by simp
+  qed simp
 qed
 
 lemma can_restrict_env:
@@ -174,14 +140,14 @@ still terminates. This is the crucial trick to handle black-holing in the resour
 
 lemma add_BH:
   assumes "map_of \<Gamma> x = Some e"
-  assumes  "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>"
-  shows "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>"
+  assumes  "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>r' \<noteq> \<bottom>"
+  shows "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)\<cdot>r' \<noteq> \<bottom>"
 proof-
   obtain r where r: "C\<cdot>r = demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)"
     using demand_not_0 by (cases "demand (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)") auto
 
   from  assms(2)
-  have "C\<cdot>r \<sqsubseteq> C\<^bsup>n\<^esup>" unfolding r not_bot_demand by simp
+  have "C\<cdot>r \<sqsubseteq> r'" unfolding r not_bot_demand by simp
 
   from assms(1)
   have [simp]: "the (map_of \<Gamma> x) = e" by (metis option.sel)
@@ -256,8 +222,8 @@ proof-
   have "\<dots> \<sqsubseteq> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)\<cdot>(C\<cdot>r)"
     by (intro monofun_cfun_arg monofun_cfun_fun heaps )
   also
-  have "\<dots> \<sqsubseteq> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup>"
-    using `C\<cdot>r \<sqsubseteq> C\<^bsup>n\<^esup>` by (rule monofun_cfun_arg)
+  have "\<dots> \<sqsubseteq> (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)\<cdot>r'"
+    using `C\<cdot>r \<sqsubseteq> r'` by (rule monofun_cfun_arg)
   finally
   show ?thesis by this (intro cont2cont)+
 qed

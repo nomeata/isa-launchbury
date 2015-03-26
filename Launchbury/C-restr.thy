@@ -168,6 +168,11 @@ lemma C_restr_cong:
   apply (intro below_antisym C_restr_below_cong )
   by (metis below_refl)+
 
+lemma C_restr_C_cong:
+  "(\<And> r'. r' \<sqsubseteq> r \<Longrightarrow> f \<cdot> (C\<cdot>r') = g \<cdot> (C\<cdot>r')) \<Longrightarrow> f\<cdot>\<bottom>=g\<cdot>\<bottom> \<Longrightarrow> f|\<^bsub>C\<cdot>r\<^esub> = g|\<^bsub>C\<cdot>r\<^esub>"
+  apply (rule C_restr_cong)
+  by (case_tac r', auto)
+
 lemma C_restr_C_case[simp]:
   "(C_case\<cdot>f)|\<^bsub>C\<cdot>r\<^esub> = C_case\<cdot>(f|\<^bsub>r\<^esub>)"
   apply (rule cfun_eqI)
