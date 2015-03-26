@@ -178,7 +178,7 @@ lemma add_BH:
   shows "(\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>delete x \<Gamma>\<rbrace>\<^esub>)\<cdot>C\<^bsup>n\<^esup> \<noteq> \<bottom>"
 proof-
   obtain r where r: "C\<cdot>r = demand (\<N>\<lbrakk>e\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)"
-    using demand_not_0 sorry
+    using demand_not_0 by (cases "demand (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)") auto
 
   from  assms(2)
   have "C\<cdot>r \<sqsubseteq> C\<^bsup>n\<^esup>" unfolding r not_bot_demand by simp
