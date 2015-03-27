@@ -275,7 +275,7 @@ next
 
     have "fv (\<Gamma>, e') \<subseteq> set S'" using S' by auto
     from correctness_empty_env[OF lhs' this]
-    have correct1: "\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub> \<sqsubseteq> \<N>\<lbrakk>v\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>" and correct2: "\<N>\<lbrace>\<Gamma>\<rbrace> \<sqsubseteq> \<N>\<lbrace>\<Delta>\<rbrace>" by auto
+    have correct1: "\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub> \<sqsubseteq> \<N>\<lbrakk>v\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>" and "\<N>\<lbrace>\<Gamma>\<rbrace> \<sqsubseteq> \<N>\<lbrace>\<Delta>\<rbrace>" by auto
 
     from prem
     have "((\<N>\<lbrakk> v \<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>r \<down>CFn (\<N>\<lbrace>\<Gamma>\<rbrace>) x|\<^bsub>r\<^esub>)\<cdot>r \<noteq> \<bottom>"
@@ -290,9 +290,8 @@ next
     from `atom y \<sharp> _` have "y \<notin> domA \<Delta>" by (metis (full_types) fresh_Pair domA_not_fresh)
     from `atom y \<sharp> _` have "y \<noteq> x" by (metis (full_types) fresh_Pair fresh_at_base(2))
    
-    have "((\<N>\<lbrakk> e' \<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>r \<down>CFn (\<N>\<lbrace>\<Gamma>\<rbrace>) x|\<^bsub>r\<^esub>)\<cdot>r \<noteq> \<bottom>" using prem.
+    have "((\<N>\<lbrakk> v \<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>r \<down>CFn (\<N>\<lbrace>\<Gamma>\<rbrace>) x|\<^bsub>r\<^esub>)\<cdot>r \<noteq> \<bottom>" by fact
     also have "(\<N>\<lbrace>\<Gamma>\<rbrace>) x|\<^bsub>r\<^esub> \<sqsubseteq> (\<N>\<lbrace>\<Gamma>\<rbrace>) x" by (rule C_restr_below)
-    also note `\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub> \<sqsubseteq> \<N>\<lbrakk>v\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>`
     also note `v = _`
     also note `(\<N>\<lbrace>\<Gamma>\<rbrace>) \<sqsubseteq> (\<N>\<lbrace>\<Delta>\<rbrace>)`
     also have "(\<N>\<lbrakk> Lam [y]. e'' \<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>r \<sqsubseteq> CFn\<cdot>(\<Lambda> v. \<N>\<lbrakk>e''\<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>)(y := v)\<^esub>)"
@@ -305,7 +304,7 @@ next
     have "\<dots> \<noteq> \<bottom>" by this (intro cont2cont cont_fun)+
     then
     obtain \<Theta> v' where rhs: "\<Delta> : e''[y::=x] \<Down>\<^bsub>S'\<^esub> \<Theta> : v'" using step.IH by blast
-    
+
     have "\<Gamma> : App e' x \<Down>\<^bsub>S'\<^esub> \<Theta> : v'"
       by (rule reds_ApplicationI[OF lhs rhs])
     hence "\<Gamma> : App e' x \<Down>\<^bsub>S\<^esub> \<Theta> : v'"
@@ -362,18 +361,18 @@ next
       apply (rule reds_smaller_L) using S' by auto
     thus ?thesis unfolding IfThenElse by blast
   next
-  case (Let as e')
+  case (Let \<Delta> e')
     from step.prems[unfolded Let(2)]
-    have prem: "(\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>as\<rbrace>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>r \<noteq> \<bottom>" 
+    have prem: "(\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<N>\<lbrace>\<Gamma>\<rbrace>\<^esub>)\<cdot>r \<noteq> \<bottom>" 
       by (simp  del: app_strict)
     also
-      have "atom ` domA as \<sharp>* \<Gamma>" using Let(1) by (simp add: fresh_star_Pair)
-      hence "\<N>\<lbrace>as\<rbrace>\<N>\<lbrace>\<Gamma>\<rbrace> = \<N>\<lbrace>as @ \<Gamma>\<rbrace>" by (rule HSem_merge)
+      have "atom ` domA \<Delta> \<sharp>* \<Gamma>" using Let(1) by (simp add: fresh_star_Pair)
+      hence "\<N>\<lbrace>\<Delta>\<rbrace>\<N>\<lbrace>\<Gamma>\<rbrace> = \<N>\<lbrace>\<Delta> @ \<Gamma>\<rbrace>" by (rule HSem_merge)
     finally 
-    have "(\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>as @ \<Gamma>\<rbrace>\<^esub>)\<cdot>r \<noteq> \<bottom>".
+    have "(\<N>\<lbrakk>e'\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta> @ \<Gamma>\<rbrace>\<^esub>)\<cdot>r \<noteq> \<bottom>".
     then
-    obtain \<Delta> v where "as @ \<Gamma> : e' \<Down>\<^bsub>S\<^esub> \<Delta> : v" using step.IH by blast
-    hence "\<Gamma> : Let as e' \<Down>\<^bsub>S\<^esub> \<Delta> : v"
+    obtain \<Theta> v where "\<Delta> @ \<Gamma> : e' \<Down>\<^bsub>S\<^esub> \<Theta> : v" using step.IH by blast
+    hence "\<Gamma> : Let \<Delta> e' \<Down>\<^bsub>S\<^esub> \<Theta> : v"
       by (rule reds.Let[OF Let(1)])
     thus ?thesis using Let by auto
   qed
