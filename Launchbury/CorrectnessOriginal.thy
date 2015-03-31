@@ -19,8 +19,6 @@ case Lambda
   case 2 show ?case..
 next
 case (Application y \<Gamma> e x L \<Delta> \<Theta> z e')
-  hence "y \<noteq> x" by (simp_all add: fresh_at_base)
-
   have Gamma_subset: "domA \<Gamma> \<subseteq> domA \<Delta>"
     by (rule reds_doesnt_forget[OF Application.hyps(8)])
 
@@ -59,7 +57,7 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e')
   also have "\<dots> = \<lbrakk> e' \<rbrakk>\<^bsub>(\<lbrace>\<Delta>\<rbrace>\<rho>)(y := (\<lbrace>\<Delta>\<rbrace>\<rho>) x)\<^esub>"
     by simp
   also have "\<dots> = \<lbrakk> e'[y ::= x] \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>"
-    by (rule arg_cong[OF ESem_subst[OF `y \<noteq> x`]])
+    unfolding ESem_subst..
   also have "\<dots> = \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Theta>\<rbrace>\<rho>\<^esub>"
     by (rule Application.hyps(12)[OF prem2])
   finally

@@ -282,24 +282,19 @@ next
       by (rule not_bot_below_trans)(intro correct1 monofun_cfun_fun  monofun_cfun_arg)
     with result_evaluated[OF lhs']
     have "isLam v" by (cases r, auto, cases v rule: isVal.cases, auto)
-    then  obtain y e'' where n': "v = (Lam [y]. e'')" and "atom y \<sharp> (x, \<Delta>)"
-      by (rule isLam_obtain_fresh)
+    then obtain y e'' where n': "v = (Lam [y]. e'')" by (rule isLam_obtain_fresh)
     with lhs'
     have lhs: "\<Gamma> : e' \<Down>\<^bsub>S'\<^esub> \<Delta> : Lam [y]. e''" by simp
 
-    from `atom y \<sharp> _` have "y \<notin> domA \<Delta>" by (metis (full_types) fresh_Pair domA_not_fresh)
-    from `atom y \<sharp> _` have "y \<noteq> x" by (metis (full_types) fresh_Pair fresh_at_base(2))
-   
     have "((\<N>\<lbrakk> v \<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>r \<down>CFn (\<N>\<lbrace>\<Gamma>\<rbrace>) x|\<^bsub>r\<^esub>)\<cdot>r \<noteq> \<bottom>" by fact
     also have "(\<N>\<lbrace>\<Gamma>\<rbrace>) x|\<^bsub>r\<^esub> \<sqsubseteq> (\<N>\<lbrace>\<Gamma>\<rbrace>) x" by (rule C_restr_below)
     also note `v = _`
     also note `(\<N>\<lbrace>\<Gamma>\<rbrace>) \<sqsubseteq> (\<N>\<lbrace>\<Delta>\<rbrace>)`
     also have "(\<N>\<lbrakk> Lam [y]. e'' \<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>r \<sqsubseteq> CFn\<cdot>(\<Lambda> v. \<N>\<lbrakk>e''\<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>)(y := v)\<^esub>)"
       by (rule CELam_no_restr)
-    also have "(\<dots> \<down>CFn (\<N>\<lbrace>\<Delta>\<rbrace>) x)\<cdot>r = (\<N>\<lbrakk>e''\<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>)(y := ((\<N>\<lbrace>\<Delta>\<rbrace>) x))\<^esub>)\<cdot>r"
-      using `y \<notin> domA \<Delta>` by simp
+    also have "(\<dots> \<down>CFn (\<N>\<lbrace>\<Delta>\<rbrace>) x)\<cdot>r = (\<N>\<lbrakk>e''\<rbrakk>\<^bsub>(\<N>\<lbrace>\<Delta>\<rbrace>)(y := ((\<N>\<lbrace>\<Delta>\<rbrace>) x))\<^esub>)\<cdot>r" by simp
     also have "\<dots> = (\<N>\<lbrakk>e''[y::=x]\<rbrakk>\<^bsub>\<N>\<lbrace>\<Delta>\<rbrace>\<^esub>)\<cdot>r"
-      unfolding ESem_subst[OF `y \<noteq> x`]..
+      unfolding ESem_subst..
     finally
     have "\<dots> \<noteq> \<bottom>" by this (intro cont2cont cont_fun)+
     then
