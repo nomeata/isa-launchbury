@@ -208,7 +208,7 @@ Launchbury gives this language meaning by a natural semantics, specified with th
 v &\in \sVal &&\Coloneqq \sLam x e
 \end{alignat*}
 
-A heap is a partial function from variables to expressions; the same type can be used for he list of bindings in a \keyword{let}. The domain of an heap $\Gamma$, written $\dom\Gamma$, is the set of variables bound in the heap.
+A heap is a partial function from variables to expressions; the same type is used for the list of bindings in a \keyword{let}. The domain of an heap $\Gamma$, written $\dom\Gamma$, is the set of variables bound in the heap.
 
 A value is an expression in weak head normal form. A judgment of the form $\sred \Gamma e L \Delta v$ means that the expression $e$ with the heap $\Gamma$ reduces to $v$, while modifying the heap to $\Delta$.
 
@@ -289,14 +289,14 @@ TODO
 
 The main correctness theorem for the natural semantics is
 \begin{theorem}[Correctness]
-If $\sred \Gamma e L \Delta v$, then $\dsem{e}{\esem{\Gamma}} = \dsem{v}{\esem{\Delta}}$.
+If $\sred \Gamma e L \Delta v$ holds and is closed, then $\dsem{e}{\esem{\Gamma}} = \dsem{v}{\esem{\Delta}}$.
 \label{thm:main}
 \end{theorem}
 
 In order to prove this by rule induction, we have to generalize this to
 
 \begin{theorem}[Correctness, generalized]
-If $\sred \Gamma e \Delta v$ holds and is closed, then for all environments $\rho \in \sEnv$ we have $\dsem{e}{\esem{\Gamma}{\rho}} = \dsem{v}{\esem{\Delta}{\rho}}$ and $\esem\Gamma\rho|_{\dom\Gamma} = \esem\Delta\rho|_{\dom\Gamma}$.%
+If $\sred \Gamma e L \Delta v$ holds and is closed, then for all environments $\rho \in \sEnv$ we have $\dsem{e}{\esem{\Gamma}{\rho}} = \dsem{v}{\esem{\Delta}{\rho}}$ and $(\esem\Gamma\rho)|_{\dom\Gamma} = (\esem\Delta\rho)|_{\dom\Gamma}$.%
 \label{thm:thm2}
 \end{theorem}
 
@@ -316,17 +316,17 @@ This case is trivial.
 By the induction hypothesis we know
 $\dsem{e}{\esem{\Gamma}\rho} = \dsem{\sLam y {e'}}{\esem{\Delta}\rho}$ and $\esem{\Gamma}\rho  \eqon{\dom\Gamma} \esem{\Delta}\rho$ as well as $\dsem{e'[x/y]}{\esem{\Delta}\rho} = \dsem{v}{\esem{\Theta}\rho}$ and $\esem{\Delta}\rho \eqon{\dom\Delta} \esem{\Theta}\rho$.
 
-We have $\dsem{x}{\esem{\Gamma}{\rho}} = \dsem{x}{\esem{\Delta}{\rho}}$: If $x\in \dom \Gamma$, this follows from the induction hypothesis. Otherwise, we know $x\in L$, as the judgement is closed, and the new names bound in $\Delta$ avoid $L$, so we have $\rho\, x$ on boths sides.
+We have $\esem{\Gamma}{\rho}~x = \esem{\Delta}{\rho}~x$: If $x\in \dom \Gamma$, this follows from the induction hypothesis. Otherwise, we know $x\in L$, as the judgement is closed, and the new names bound in $\Delta$ avoid $L$, so we have $\rho\, x$ on boths sides.
 
-While the second part follows from $\dom\Gamma \subseteq \dom\Delta$, the first part is a simple calculation:
+While the second part follows from the corresponding inductive hypotheses and $\dom\Gamma \subseteq \dom\Delta$, the first part is a simple calculation:
 \begin{align*}
 \dsem{\sApp{e}{x}}{\esem{\Gamma}\rho} &= \sFnProj{\dsem{e}{\esem{\Gamma}\rho}}{\dsem{x}{\esem{\Gamma}{\rho}}}\\
 \aexpl{by the denotation of application} \\
-&= \sFnProj{\dsem{\sLam y {e'}}{\esem{\Delta}\rho}}{\dsem{x}{\esem{\Gamma}{\rho}}}\\
+&= \sFnProj{\dsem{\sLam y {e'}}{\esem{\Delta}\rho}}{\esem{\Gamma}{\rho}~x}\\
 \aexpl{by the induction hypothesis} \\
-&= \sFnProj{\dsem{\sLam y {e'}}{\esem{\Delta}\rho}}{\dsem{x}{\esem{\Delta}{\rho}}}\\
+&= \sFnProj{\dsem{\sLam y {e'}}{\esem{\Delta}\rho}}{{\esem{\Delta}{\rho}}~x}\\
 \aexpl{see above} \\
-&= \dsem{e'}{(\esem{\Delta}\rho)(y \mapsto \dsem{x}{\esem{\Delta}{\rho}})}\\
+&= \dsem{e'}{(\esem{\Delta}\rho)(y \mapsto {\esem{\Delta}{\rho}}~x)}\\
 \aexpl{by the denotation of lambda abstraction} \\
 &= \dsem{e'[x/y]}{\esem{\Delta}\rho}\\
 \aexpl{by \myref{Lemma}{lem:subst}} \\
@@ -394,30 +394,31 @@ TODO
 \begin{itemize}
 \item Different generalization
 \item Closedness
-\item Error with $\sqsupset$
+\item Error with $\sqcup$
 \end{itemize}
 
 \section{Adequacy}
 
-A correctness theorem for a natural semantics is not worth much on its own. Imagine a mistake in side condition of the \sRule{Let} rule accidentially prevents any judgement to be derived for programs with a \keyword{let} -- the correctness theorem would still hold.
+A correctness theorem for a natural semantics is not worth much on its own. Imagine a mistake in side condition of the \sRule{Let} rule that accidentially prevents any judgement to be derived for programs with a \keyword{let} -- the correctness theorem would still hold.
 
 So we want to ensure that all programs that have a meaning, in our case according to the denotational semantics, also have a derivation:
 
 \begin{theorem}[Adequacy]
-For all $e$, $\Gamma$ and $L$  if $\dsem{e}{\esem{\Gamma}} \ne \bot$, then there exists $\Delta$ and $v$ so that $\sred \Gamma e L \Delta v$.
+For all $e$, $\Gamma$ and $L$, if $\dsem{e}{\esem{\Gamma}} \ne \bot$, then there exists $\Delta$ and $v$ so that $\sred \Gamma e L \Delta v$.
 \label{thm:adequacy}
 \end{theorem}
 
-The proof uses a modified denotational semantics that keeps track of the number of steps required to determine the non-bottomness of $e$.
+The proof uses a modified denotational semantics that keeps track of the number of steps required to determine the non-bottomness of $e$, which we will now introduce, prove adequate and show its relationship to the standard denotational semantics.
 
 \subsection{The resourced denotational semantics}
 
-The domain used to count the resources is a solution to the equation $\sC = \sC_\bot$. The lifting is done by the injection function $C \colon \sC \to \sC$, so the elements are $\bot$, $C~\bot$, $C~(C~\bot)$, $\ldots$ and $C^\infty$. We use $r$ for variables ranging over $\sC$.
+The domain used to count the resources is a solution to the equation $\sC = \sC_\bot$. The lifting is done by the injection function $C \colon \sC \to \sC$, so the elements are $\bot \sqsubset C~\bot \sqsubset C~(C~\bot) \sqsubset \cdots \sqsubset C^\infty$ – this is isomorphic to the extended naturals. We use $r$ for variables ranging over $\sC$.
+
 
 The resourced semantics $\dsemr{e}{\rho}~r$ now takes an additional argument $r \in \sC$ which indicates the number of steps the semantics is still allowed to perform: Every rescursive call in the definition of $\dsemr{e}{\rho}~r$ peels of one application of $C$ until none are left.
 
 The intuition is that if we pass in an infinite number of resources, the two semantics coincide: \[
-\forall x.\, \rho~x = \rho'~x~C^\infty \implies \dsem{e}{\rho} = \dsemr{e}{\rho'}~C^\infty,
+\forall x.\, \rho~x = \sigma~x~C^\infty \implies \dsem{e}{\rho} = \dsemr{e}{\sigma}~C^\infty,
 \]
 as Launchbury puts it. While the intuition is true, it cannot be stated that naively: Because the semantics of an expression is now a function taking a $\sC$, this needs to be reflected in the domain equation, so we obtain a different domain, as observed by S{\'a}nchez-Gil {\em et~al.} \shortcite{functionspaces}:
 \[
@@ -428,28 +429,28 @@ The lifting and the projection functions are hence
 \sCFn \_ &\colon (\sC \to \sCValue) \to (\sC \to \sCValue) \to \sCValue \\
 \sCFnProj{\_}{\_} &\colon \sCValue \to (\sC\to\sCValue) \to (\sC \to \sCValue).
 \end{align*}
-
+We use $\sigma$ for variables ranging over resourced envrionments, $\sigma \in \sVar \to (\sC \to \sCValue)$.
 
 
 The definition of the resourced semantics resembles the definition of the standard semantics, with some resource bookkeeping added:
 \begin{align*}
-\dsemr{e}\rho~ \bot &\coloneqq \bot\\
-\dsemr{\sLam x e}\rho ~ (C~r) &\coloneqq \sCFn{\lambda v. \Crestr{\dsemr e {\rho \sqcup \{x \mapsto v\}}} r}\\
-\dsemr{\sApp e  x}\rho ~ (C~r) &\coloneqq (\sCFnProj {(\dsemr e \rho~r)}{\Crestr{(\rho~x)} r})~r\\
-\dsemr{x}\rho ~ (C~r) &\coloneqq \rho~x~r\\
-\dsemr{\sLet{\Delta}e}\rho ~ (C~r) &\coloneqq \dsemr e {\esem{\Delta}\rho}~r
+\dsemr{e}\sigma~ \bot &\coloneqq \bot\\
+\dsemr{\sLam x e}\sigma ~ (C~r) &\coloneqq \sCFn{\lambda v. \Crestr{\dsemr e {\sigma \sqcup \{x \mapsto v\}}} r}\\
+\dsemr{\sApp e  x}\sigma ~ (C~r) &\coloneqq (\sCFnProj {(\dsemr e \sigma~r)}{\Crestr{(\sigma~x)} r})~r\\
+\dsemr{x}\sigma ~ (C~r) &\coloneqq \sigma~x~r\\
+\dsemr{\sLet{\Delta}e}\sigma ~ (C~r) &\coloneqq \dsemr e {\esem{\Delta}\sigma}~r
 \end{align*}
 where $\Crestr{f}{r}$ restricts a function $f$ with domain $C$ to take at most $r$ resources: $\Crestr f r \coloneqq (\lambda r'.\, f ~(r \sqcap r'))$.
 
 The semantics of the heap is defined as before:
 \begin{align*}
-\esemr{\Gamma}\rho &\coloneqq (\mu \rho'.\, \rho \upd{\dom \Gamma} \dsemr{\Gamma}{\rho'}).
+\esemr{\Gamma}\sigma &\coloneqq (\mu \sigma'.\, \sigma \upd{\dom \Gamma} \dsemr{\Gamma}{\sigma'}).
 \end{align*}
 
 Given the similarity between this semantics and the standard semantics, it is not surprising that an analogous correctness lemma holds:
 
 \begin{lemma}[Correctness, resourced]
-If $\sred \Gamma e \Delta v$ holds and is closed, then for all environments $\rho$ we have $\dsemr{e}{\esem{\Gamma}{\rho}} \sqsubseteq \dsemr{v}{\esem{\Delta}{\rho}}$ and $\esemr\Gamma\rho|_{\dom\Gamma} \sqsubseteq \esemr\Delta\rho|_{\dom\Gamma}$.%
+If $\sred \Gamma e \Delta v$ holds and is closed, then for all environments $\sigma$ we have $\dsemr{e}{\esem{\Gamma}{\sigma}} \sqsubseteq \dsemr{v}{\esem{\Delta}{\sigma}}$ and $(\esemr\Gamma\sigma)|_{\dom\Gamma} \sqsubseteq (\esemr\Delta\sigma)|_{\dom\Gamma}$.%
 \label{lem:resourced_correctness}
 \end{lemma}
 
@@ -463,7 +464,7 @@ The major difficulty in proving computational adequacy was the the blackholing b
 
 But obviously, the variable is still mentioned in the current configuration, and simply removing the binding will change the denotation of the configuration in unwanted ways: There is no hope of proving $\dsemr{e}{\esemr{x\mapsto e, \Gamma}} = \dsemr{e}{\esemr{\Gamma}}$.
 
-But we can prove a weaker statement, which reflects the idea of ``not using $x$ during its own evaluation'':
+But we can prove a weaker statement, which reflects the idea of ``not using $x$ during its own evaluation'' more closely:
 
 \begin{lemma}[Denotational blackholing]
 \label{lem:denblackhole}
@@ -472,61 +473,60 @@ But we can prove a weaker statement, which reflects the idea of ``not using $x$ 
 \]
 \end{lemma}
 
-This is a consequence of the following lemma, which states that evaluating an expression using finite resources, the values of type $\sC \to \sCValue$ will always be passed fewer resources:
-
+This is a consequence of the following lemma, which states that during the evaluation of an expression using finite resources, the only fewer resources will be passed to the members of the environment (which are of type $\sC \to \sCValue$):
 
 \begin{lemma}
-\label{lem:denrestr}
 \[
-\Crestr{\dsemr{e}\rho}{C~r} = \Crestr{\dsemr{e}{(\Crestr{\rho}{r})}}{C~r}
+\label{lem:denrestr}
+\Crestr{\dsemr{e}\sigma}{C~r} = \Crestr{\dsemr{e}{(\Crestr{\sigma}{r})}}{C~r}
 \]
 \end{lemma}
 \begin{proof}
 by induction on the expression $e$.
 
 
-In order to show $\Crestr{\dsemr{e}\rho}{C~r} = \Crestr{\dsemr{e}{(\Crestr{\rho}{r})}}{C~r}$ it suffices to show $\dsemr{e}\rho~(C~r') = \dsemr{e}{(\Crestr{\rho}{r})}~(C~r)$ for an arbitrary $r'\sqsubseteq r$.
+In order to show $\Crestr{\dsemr{e}\sigma}{C~r} = \Crestr{\dsemr{e}{(\Crestr{\sigma}{r})}}{C~r}$ it suffices to show $\dsemr{e}\sigma~(C~r') = \dsemr{e}{(\Crestr{\sigma}{r})}~(C~r)$ for an arbitrary $r'\sqsubseteq r$.
 
 The critical case is the one for variables, where $e = x$. We have
 \begin{conteq}[oneline]
-\dsemr{x}\rho~(C~r')
+\dsemr{x}\sigma~(C~r')
 \\
-= \rho~x~r' \\
-= (\Crestr{\rho~x}{r})~r' & as $r'\sqsubseteq r$ \\
-= \dsemr{x}{(\Crestr{\rho}{r})}~(C~r')
+= \sigma~x~r' \\
+= (\Crestr{\sigma~x}{r})~r' & as $r'\sqsubseteq r$ \\
+= \dsemr{x}{(\Crestr{\sigma}{r})}~(C~r')
 \end{conteq}
 as $r'\sqsubseteq r$.
 
-In the other cases, the result follows from the fact that nested expressions are evaluated with $r'$ resources or, in the case of lambda abstraction, nested inside a $\Crestr \strut {r'}$ restriction operator.
+In the other cases, the result follows from the fact that nested expressions are evaluated with $r'$ resources or, in the case of lambda abstraction, wrapped inside a $\Crestr \strut {r'}$ restriction operator.
 
-For the case of \keyword{let}, a related lemma for heaps needs to be proven by parallel fixed-point induction, namely $\forall r.\, \Crestr{(\esemr{\Gamma}\rho)}r = \Crestr{(\esemr{\Gamma}{(\Crestr\rho r)})}r$.
+For the case of \keyword{let}, a related lemma for heaps needs to be proven by parallel fixed-point induction, namely $\forall r.\, \Crestr{(\esemr{\Gamma}\sigma)}r = \Crestr{(\esemr{\Gamma}{(\Crestr\sigma r)})}r$.
 \end{proof}
 
 Equipped with this lemma, we can begin the
 
 \begin{proof}[of \myref{Lemma}{lem:denblackhole}]
-Let $r'$ be the smallest resource such that $\dsemr{e}{\esemr{x\mapsto e, \Gamma}} (C~r') \ne \bot $. Such an $r'$ exists by the assumption, and $C~r' \sqsubseteq r$, and is, by the continuity of the semantics, not $C^\infty$. In particular, $\dsemr{e}{\esemr{x\mapsto e, \Gamma}} r' = \bot$.
+Let $r'$ be the least resource such that $\dsemr{e}{\esemr{x\mapsto e, \Gamma}} (C~r') \ne \bot $. Such an $r'$ exists by the assumption, and $C~r' \sqsubseteq r$, and is, by the continuity of the semantics, not $C^\infty$. In particular, $\dsemr{e}{\esemr{x\mapsto e, \Gamma}} r' = \bot$.
 
 We first show
 \begin{equation}
 \Crestr{\esemr{x\mapsto e, \Gamma}}{r'} \sqsubseteq \esemr{\Gamma} \tag{$\ast$}
 \end{equation}
-by bounded fixed-point induction. So given an arbitrary $\rho \sqsubseteq \esemr{x\mapsto e, \Gamma}$, we may assume $\Crestr{\rho}{r'} \sqsubseteq \esemr{\Gamma}$ and have to prove $\Crestr{\dsemr{x\mapsto e, \Gamma}{\rho}}{r'} \sqsubseteq \esemr{\Gamma}$, which we do point-wise:
+by bounded fixed-point induction. So given an arbitrary $\sigma \sqsubseteq \esemr{x\mapsto e, \Gamma}$, we may assume $\Crestr{\sigma}{r'} \sqsubseteq \esemr{\Gamma}$ and have to prove $\Crestr{\dsemr{x\mapsto e, \Gamma}{\sigma}}{r'} \sqsubseteq \esemr{\Gamma}$, which we do point-wise:
 
 For $y\mapsto e'\in\Gamma$, this follows from
 \begin{conteq}
-\Crestr{\dsemr{x\mapsto e, \Gamma}{\rho}}{r'}~y \\
-= \Crestr{\dsemr{e'}{\rho}}{r'} \\
-= \Crestr{\dsemr{e'}{\Crestr{\rho}{r'}}}{r'} & by \myref{Lemma}{lem:denrestr} \\
-\sqsubseteq \dsemr{e'}{\Crestr{\rho}{r'}} \\
+\Crestr{\dsemr{x\mapsto e, \Gamma}{\sigma}}{r'}~y \\
+= \Crestr{\dsemr{e'}{\sigma}}{r'}  \\
+= \Crestr{\dsemr{e'}{\Crestr{\sigma}{r'}}}{r'} & by \myref{Lemma}{lem:denrestr} \\
+\sqsubseteq \dsemr{e'}{\Crestr{\sigma}{r'}} \\
 \sqsubseteq \dsemr{e'}{\esemr{\Gamma}} & by the induction hypothesis  \\
-= \esemr{\Gamma}~y
+= \esemr{\Gamma}~y & by \myref{Lemma}{lem:esem_this}
 \end{conteq}
 while for $x$, this follows from
 \begin{conteq}
-\Crestr{\dsemr{x\mapsto e, \Gamma}{\rho}}{r'}~x \\
-= \Crestr{\dsemr{e}{\rho}}{r'}\\
-= \Crestr{\dsemr{e}{\esemr{x\mapsto e, \Gamma}}}{r'} & using $\rho \sqsubseteq \esemr{x\mapsto e, \Gamma}$ \\
+\Crestr{\dsemr{x\mapsto e, \Gamma}{\sigma}}{r'}~x \\
+= \Crestr{\dsemr{e}{\sigma}}{r'} \\
+\sqsubseteq \Crestr{\dsemr{e}{\esemr{x\mapsto e, \Gamma}}}{r'} & using $\sigma \sqsubseteq \esemr{x\mapsto e, \Gamma}$ \\
 = \bot & by the choice of $r'$ \\
 = \esemr{\Gamma}~x & as $x \notin \dom\Gamma$.
 \end{conteq}
@@ -568,10 +568,11 @@ Assume that $\fv{\Gamma, e'} \subseteq L$. We do not lose generality here, as de
 From the assumption we know that
 $\sCFnProj {(\dsemr {e'} {\esemr{\Gamma}}~r}{\Crestr{({\esemr{\Gamma}}~x)}{r}})~r \ne \bot$. In particular $(\dsemr {e'} {\esemr{\Gamma}}~r)\ne \bot$, so by the induction hypothesis we have $\Delta$, $y$ and $e''$ with $\sred{\Gamma}{e'}L\Delta {\sLam y {e''}}$, the first hypothesis of \sRule{App}.
 
-This judgement is closed by our extra assumption, so we use \myref{Lemma}{lem:resourced_correctness} to ensure that $\dsemr{e'}{\esemr{\Gamma}} \sqsubseteq \dsemr{v}{\esemr{\Delta}}$ and $\esemr{\Gamma} \sqsubseteq \esemr{\Delta}$. We can insert that into the inequality above to calculate
+This judgement is closed by our extra assumption, so we use \myref{Lemma}{lem:resourced_correctness} to ensure that $\dsemr{e'}{\esemr{\Gamma}} \sqsubseteq \dsemr{\sLam y {e''}}{\esemr{\Delta}}$ and $\esemr{\Gamma} \sqsubseteq \esemr{\Delta}$. We can insert that into the inequality above to calculate
 \begin{conteq}
 \bot \\
-\sqsubset   (\sCFnProj {\dsemr {\sLam y {e''}} {\esemr{\Delta}}~r                               }{\Crestr{({\esemr{\Delta}}~x)}{r}})~r \\
+\sqsubset \sCFnProj {(\dsemr {e'} {\esemr{\Gamma}}~r}{\Crestr{({\esemr{\Gamma}}~x)}{r}})~r \\
+\sqsubseteq (\sCFnProj {\dsemr {\sLam y {e''}} {\esemr{\Delta}}~r                               }{\Crestr{({\esemr{\Delta}}~x)}{r}})~r \\
 \sqsubseteq (\sCFnProj {\dsemr {\sLam y {e''}} {\esemr{\Delta}}~r                               }{\esemr{\Delta}~x})~r \\
 \sqsubseteq (\sCFnProj {\sCFn{\lambda v.\, \dsemr {e''} {\esemr{\Delta} \sqcup \{y \mapsto v\}}}}{\esemr{\Delta}~x})~r \\
 = \dsemr {e''} {\esemr{\Delta} \sqcup \{y \mapsto (\esemr{\Delta}~x)\}}~r \\
@@ -588,9 +589,9 @@ We have
 \bot \\
 \sqsubset \dsemr{\sLet \Delta {e'}}{\esemr{\Gamma}}~r \\
 \sqsubseteq \dsemr{e'}{\esemr{\Delta}{\esemr{\Gamma}}} \\
-= \dsemr{e'}{\esemr{\Delta,\Gamma}} & by Lemma TODO
+= \dsemr{e'}{\esemr{\Delta,\Gamma}} & by \myref{Lemma}{lem:esem-merge}
 \end{conteq}
-so we have $\Theta$ and $v$ with $\sred{\Delta,\Gamma}{e'}L\Theta v$ and hence, by rule \sRule{Let}, $\sred{\Gamma}{\sLet \Delta {e'}}L\Theta v$, as desired.
+so we have $\Theta$ and $v$ with $\sred{\Delta,\Gamma}{e'}L\Theta v$ and hence$\sred{\Gamma}{\sLet \Delta {e'}}L\Theta v$ by rule \sRule{Let}, as desired.
 \end{proof}
 
 
@@ -602,7 +603,7 @@ so we have $\Theta$ and $v$ with $\sred{\Delta,\Gamma}{e'}L\Theta v$ and hence, 
 \]
 and
 \[
-(\forall x,y., x \dsim y~C^\infty \implies f~ x \dsim g~y~C^\infty)
+(\forall x\,y.\, x \dsim y~C^\infty \implies f~ x \dsim g~y~C^\infty)
 \iff \sFn f \dsim \sCFn g.
 \]
 
@@ -624,7 +625,7 @@ For all environments $\rho \in \sEnv$ and $\sigma \in \sVar \to (\sC \to \sValue
 \end{lemma}
 
 \begin{proof}
-Intuitively, the proof is obvious: As we are only concerned with infinite resources, all the resource counting added in the denotational semantics become moot and the semantics are obviously related. A more rigorous proof can be found in \cite{functionspaces} our our formal verification.
+Intuitively, the proof is obvious: As we are only concerned with infinite resources, all the resource counting added in the denotational semantics become moot and the semantics are obviously related. A more rigorous proof can be found in \cite{functionspaces} and in our formal verification.
 \end{proof}
 
 \begin{corollary}
@@ -642,7 +643,7 @@ With this in place, we can give the
 \begin{proof}[of \myref{Theorem}{thm:adequacy}]
 By \myref{Corollary}{lem:denrelheap} we have $\esem{\Gamma}\dsimheap \esemr{\Gamma}$, and with \myref{Lemma}{lem:denrel} this implies $\dsem{e}{\esem{\Gamma}} \dsim \dsemr{e}{\esemr{\Gamma}}~C^\infty$.
 
-With our assumption, $\dsem{e}{\esem{\Gamma}} \ne \bot$ and the definition of $\dsim$ this ensures that $\dsemr{e}{\esem{\Gamma}}~C^\infty \ne \bot$, and we can apply \myref{Lemma}{lem:resad}, as desired.
+With our assumption $\dsem{e}{\esem{\Gamma}} \ne \bot$ and the definition of $\dsim$ this ensures that $\dsemr{e}{\esem{\Gamma}}~C^\infty \ne \bot$, and we can apply \myref{Lemma}{lem:resad}, as desired.
 \end{proof}
 
 
@@ -730,10 +731,10 @@ by unrolling the fixed point once.
 
 In the case for variables in the correctness proof, we need the following alternative, iterative definition of the heap semantics:
 
-\begin{lemma}[Interative definition of the heap semantics]
+\begin{lemma}[Iterative definition of the heap semantics]
 \[
 \esem{x \mapsto e, \Gamma}\rho =
-\mu \rho'.\,  (\rho \upd{\dom\Gamma} {\esem{\Gamma}{\rho'}})[x \mapsto \dsem{e}{\esem{\Gamma}\rho'}].
+\mu \rho'.\,  \big((\rho \upd{\dom\Gamma} {\esem{\Gamma}{\rho'}})[x \mapsto \dsem{e}{\esem{\Gamma}\rho'}]\big).
 \label{lem:iter}
 \]
 \end{lemma}
@@ -799,7 +800,7 @@ We want to relate substitution of variables in terms with adding indirections on
 \begin{lemma}[Semantics of substitution]
 \[
 \label{lem:subst}
-\dsem{e}{\rho (y \mapsto \dsem{x}\rho)} = \dsem{ e[x/y]}{\rho}.
+\dsem{e}{\rho (y \mapsto \rho~x)} = \dsem{ e[x/y]}{\rho}.
 \]
 \end{lemma}
 
@@ -807,8 +808,7 @@ We want to relate substitution of variables in terms with adding indirections on
 
 We first show $\forall\rho.\, \rho\,x = \rho\,y \implies \esem{e}\rho = \esem{e[x/y]}\rho$ by induction on $e$, using parallel fixed-point induction in the case for \keyword{let}. This allows us to calculate
 \begin{conteq}
-\dsem{e}{\rho (y \mapsto \dsem{x}\rho)} \\
-= \dsem{e}{\rho (y \mapsto \rho\,x)} \\
+\dsem{e}{\rho (y \mapsto \rho\,x)} \\
 = \dsem{e[x/y]}{\rho (y \mapsto \rho\,x)} & as $\rho (y \mapsto \rho\,x)\,x=\rho (y \mapsto \rho\,x)\,y$ \\
 =  \dsem{e[x/y]}{\rho} & as $y\notin \fv{e[x/y]}$.
 \end{conteq}
