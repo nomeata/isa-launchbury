@@ -212,11 +212,11 @@ A heap is a partial function from variables to expressions; the same type is use
 
 A value is an expression in weak head normal form. A judgment of the form $\sred \Gamma e L \Delta v$ means that the expression $e$ with the heap $\Gamma$ reduces to $v$, while modifying the heap to $\Delta$.
 
-The set $L$ was not present in Launchbury's rules, but added by Sestoft \shortcite{sestoft} to keep track of variables that must be avoided when choosing new names in the \sRule{Let} rule, but would otherwise not be present in the judgement any more.
+The set $L$ was not present in Launchbury's rules, but added by Sestoft \shortcite{sestoft} to keep track of variables that must be avoided when choosing new names in the \sRule{Let} rule, but would otherwise not be present in the judgment any more.
 
-We consider a judgement $\sred \Gamma L \Delta v$ to be \emph{closed} if $\fv{\Gamma, e} \subseteq \dom \Gamma \cup L$. Note that this property is preserved, as $\fv{\Delta, v} \subseteq \dom \Delta \cup L$ holds for closed judgements as well.
+We consider a judgment $\sred \Gamma L \Delta v$ to be \emph{closed} if $\fv{\Gamma, e} \subseteq \dom \Gamma \cup L$. Note that this property is preserved, as $\fv{\Delta, v} \subseteq \dom \Delta \cup L$ holds for closed judgments as well.
 
-The evaluation does not drop bindings: $\sred \Gamma L \Delta v$ implies $\dom \Gamma \subseteq \dom \Delta$.
+The evaluation does not drop bindings: $\sred \Gamma e L \Delta v$ implies $\dom \Gamma \subseteq \dom \Delta$.
 
 \subsection{Denotational semantics}
 
@@ -277,13 +277,33 @@ We sometimes write $\esem{\Gamma}$ instead of $\esem{\Gamma}{\bot}$. In an expre
 
 \subsection{Discussions of modifications}
 
-TODO
-\begin{itemize}
-\item Naming, renaming, $L$.
-\item Closed judgements vs. $A$-good and promising judgements.
-\item $\sqcup$ vs $\upd \_$
-\end{itemize}
+It is rare that a formal system developed with pen and on paper can be formalized to the letter, partly because of vagueness (what, exacltly, is a ``completely'' fresh variable?), partly because of formalization convenience, and partly because the stated facts -- even if morally correct -- are wrong when read scrupulously. We discuss any such divergence from Launchbury's work here.
 
+\subsubsection{Naming}
+
+Getting the naming issues right is one of the major issues when formalizing anything involving bound variables. In Launchbury's work, the names are manifestly part of the syntax, i.e.\ $\sLam x x \ne \sLam y y$, and his rules involve explicit renaming of bound variables to fresh ones in the rule \sRule{Var}. His definition of freshness is a global one, so the validity of a derivation using \sRule{Var} depends on everything around it. This is morally what we want, but very unpractical.
+
+Sestoft \shortcite{sestoft} noticed this problem and fixes it by adding a set $L$ of variables to the judgment, so that every variable to be avoided lives somewhere in $\Gamma$, $e$, or $L$. Instead of renaming all bound variables in the rule \sRule{Var}, he chooses fresh names for the new heap bindings in the \sRule{Let}.
+
+We build on that, but go one step further and and completely avoid bound names in the expressions, i.e.\ $\sLam x x = \sLam y y$. We still have them in the syntax, of course, but these are just representatives of the same equivalency class. Nominal logic \cite{nominal}, which is implemented in Isabelle, forms the formal foundation for this. So in our rule \sRule{Let} we do not have to rename the variables, but simply may assume that the variables used in the representation of the \keyword{let}-expression are fresh.
+
+The names of bindings on the heap are not abstracted away in that manner; this follows \cite{nameless}.
+
+\subsubsection{Closed judgments}
+
+Launchbury deliberately allows non-closed configurations in his derivations, i.e.\ configurations with free variables in the terms that have no corresponding binding on the heap. This is a necessity, as rule \sRule{Var} models blackholing by removing a binding from the heap during its evaluation.
+
+With the addition of the set of variables to avoid, which will always mention such varibles, the question needs to be revisited. And indeed, Sestoft defines the notion of \emph{$L$-good}, where all free variables are either bound on the heap, or contained in $L$. He shows that this property is preserved by the operational semantics and subsequently works only with $L$-good configurations. We follow this example with our definition of \emph{closed} judgements. Threading the closedness requirement through an proof by rule induction is a typical chore contributing to the overhead of a machine-checked formalization.
+
+\subsubsection{Join vs. update}
+
+Launchbury defines his denotational semantics using a binary operation $\sqcup$ on environments. He does not define it explicitly, but the statements in section 5.2.1 leave no doubt that he indeed intended this operation to denote the least upper bound of its arguments, as one would expect. Unfortunately, with this definition, his Theorem 2 (which corresponds to our \myref{Theorem}{thm:thm2}) is false. A counter example is $e = x$, $v = (\sLam{a}{\sLet{b = b}b})$, $\Gamma = \Delta = (x \mapsto v)$ and $\rho = (x \mapsto \sFn{\lambda \_. \sFn{\lambda x.x}})$ with the crucial property that $\rho$ contains compatible, but better information for a variable also bound in $\Gamma$. The mistake in his correctness proof is in the step $(\esem{x \mapsto v, \Delta}\rho)\,x = \dsem{v}{\esem{x \mapsto v, \Delta}\rho}$ in the case for \sRule{Var}.
+
+Intuitively, such rough $\rho$ are not relevant, and indeed they do not occur in the proof of the main \myref{Theorem}{thm:main}. Nevertheless, this issue needs to be fixed before attempting a formal proof. One possible fix is to replace $\sqcup$ by a right-sided update operation that just throws away information from the left argument for those variables bound on the right. We use the syntax $\rho \upd S \rho'$ for this operation, and by using that the proof goes through in full rigor.
+
+It is slightly annoying having to specify the set $S$ in this operation explicitly, as it is usually clear ``from the context'', as it is morally the domain of the object on the right. But as environments, i.e. total functions from $\sVar \to \sValue$, do not distinguish between variables not mentioned at all and variables mentioned, but with a denotation of $\bot$, this information is not easily exploitable in a formal setting.
+
+For the same reason we replace Launchbury’s ordering $\le$ on environments by the more explicit equality between restricted environments in the formulation of \myref{Theorem}{thm:thm2}.
 
 \section{Correctness}
 
@@ -307,7 +327,7 @@ The required technical lemmas about the denotational semantics are compiled in a
 For clarity, we write $\rho \eqon{S} \rho'$ for $\rho|_S = \rho'|_S$.
 
 \begin{proof}
-by induction on the derivation of $\sred \Gamma e L \Delta v$. Note that in such a derivation, all occuring judgements are closed.
+by induction on the derivation of $\sred \Gamma e L \Delta v$. Note that in such a derivation, all occuring judgments are closed.
 
 \case{\sRule{Lam}}
 This case is trivial.
@@ -316,7 +336,7 @@ This case is trivial.
 By the induction hypothesis we know
 $\dsem{e}{\esem{\Gamma}\rho} = \dsem{\sLam y {e'}}{\esem{\Delta}\rho}$ and $\esem{\Gamma}\rho  \eqon{\dom\Gamma} \esem{\Delta}\rho$ as well as $\dsem{e'[x/y]}{\esem{\Delta}\rho} = \dsem{v}{\esem{\Theta}\rho}$ and $\esem{\Delta}\rho \eqon{\dom\Delta} \esem{\Theta}\rho$.
 
-We have $\esem{\Gamma}{\rho}~x = \esem{\Delta}{\rho}~x$: If $x\in \dom \Gamma$, this follows from the induction hypothesis. Otherwise, we know $x\in L$, as the judgement is closed, and the new names bound in $\Delta$ avoid $L$, so we have $\rho\, x$ on boths sides.
+We have $\esem{\Gamma}{\rho}~x = \esem{\Delta}{\rho}~x$: If $x\in \dom \Gamma$, this follows from the induction hypothesis. Otherwise, we know $x\in L$, as the judgment is closed, and the new names bound in $\Delta$ avoid $L$, so we have $\rho\, x$ on boths sides.
 
 While the second part follows from the corresponding inductive hypotheses and $\dom\Gamma \subseteq \dom\Delta$, the first part is a simple calculation:
 \begin{align*}
@@ -399,7 +419,7 @@ TODO
 
 \section{Adequacy}
 
-A correctness theorem for a natural semantics is not worth much on its own. Imagine a mistake in side condition of the \sRule{Let} rule that accidentially prevents any judgement to be derived for programs with a \keyword{let} -- the correctness theorem would still hold.
+A correctness theorem for a natural semantics is not worth much on its own. Imagine a mistake in side condition of the \sRule{Let} rule that accidentially prevents any judgment to be derived for programs with a \keyword{let} -- the correctness theorem would still hold.
 
 So we want to ensure that all programs that have a meaning, in our case according to the denotational semantics, also have a derivation:
 
@@ -568,7 +588,7 @@ Assume that $\fv{\Gamma, e'} \subseteq L$. We do not lose generality here, as de
 From the assumption we know that
 $\sCFnProj {(\dsemr {e'} {\esemr{\Gamma}}~r}{\Crestr{({\esemr{\Gamma}}~x)}{r}})~r \ne \bot$. In particular $(\dsemr {e'} {\esemr{\Gamma}}~r)\ne \bot$, so by the induction hypothesis we have $\Delta$, $y$ and $e''$ with $\sred{\Gamma}{e'}L\Delta {\sLam y {e''}}$, the first hypothesis of \sRule{App}.
 
-This judgement is closed by our extra assumption, so we use \myref{Lemma}{lem:resourced_correctness} to ensure that $\dsemr{e'}{\esemr{\Gamma}} \sqsubseteq \dsemr{\sLam y {e''}}{\esemr{\Delta}}$ and $\esemr{\Gamma} \sqsubseteq \esemr{\Delta}$. We can insert that into the inequality above to calculate
+This judgment is closed by our extra assumption, so we use \myref{Lemma}{lem:resourced_correctness} to ensure that $\dsemr{e'}{\esemr{\Gamma}} \sqsubseteq \dsemr{\sLam y {e''}}{\esemr{\Delta}}$ and $\esemr{\Gamma} \sqsubseteq \esemr{\Delta}$. We can insert that into the inequality above to calculate
 \begin{conteq}
 \bot \\
 \sqsubset \sCFnProj {(\dsemr {e'} {\esemr{\Gamma}}~r}{\Crestr{({\esemr{\Gamma}}~x)}{r}})~r \\
