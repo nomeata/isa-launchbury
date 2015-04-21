@@ -198,10 +198,10 @@ Note that the term on the right hand side of an application has to be a variable
 \sRule{Let}
 \end{mathpar}
 \caption{Launchbury natural semantics, as revised by Sestoft}
-\label{fig:natsem}
+\label{fig_natsem}
 \end{figure}
 
-Launchbury gives this language meaning by a natural semantics, specified with the rules in Figure \ref{fig:natsem}, which obey the following naming convention for heaps and values:
+Launchbury gives this language meaning by a natural semantics, specified with the rules in Figure \ref{fig_natsem}, which obey the following naming convention for heaps and values:
 \begin{alignat*}{2}
 \Gamma, \Delta, \Theta &\in \sHeap &&= \sVar \pfun \sExp
 \displaybreak[1]\\
@@ -276,6 +276,7 @@ We sometimes write $\esem{\Gamma}$ instead of $\esem{\Gamma}{\bot}$. In an expre
 
 
 \subsection{Discussions of modifications}
+\label{sec_modifications1}
 
 It is rare that a formal system developed with pen and on paper can be formalized to the letter, partly because of vagueness (what, exacltly, is a ``completely'' fresh variable?), partly because of formalization convenience, and partly because the stated facts -- even if morally correct -- are wrong when read scrupulously. We discuss any such divergence from Launchbury's work here.
 
@@ -285,7 +286,7 @@ Getting the naming issues right is one of the major issues when formalizing anyt
 
 Sestoft \shortcite{sestoft} noticed this problem and fixes it by adding a set $L$ of variables to the judgment, so that every variable to be avoided lives somewhere in $\Gamma$, $e$, or $L$. Instead of renaming all bound variables in the rule \sRule{Var}, he chooses fresh names for the new heap bindings in the \sRule{Let}.
 
-We build on that, but go one step further and and completely avoid bound names in the expressions, i.e.\ $\sLam x x = \sLam y y$. We still have them in the syntax, of course, but these are just representatives of the same equivalency class. Nominal logic \cite{nominal}, which is implemented in Isabelle, forms the formal foundation for this. So in our rule \sRule{Let} we do not have to rename the variables, but simply may assume that the variables used in the representation of the \keyword{let}-expression are fresh.
+We build on that, but go one step further and and completely avoid bound names in the expressions, i.e.\ $\sLam x x = \sLam y y$. We still have them in the syntax, of course, but these are just representatives of the same equivalency class. Nominal logic \cite{nominal}, which is implemented in Isabelle, forms the formal foundation for this. So in our rule \sRule{Let} we do not have to rename the variables, but simply may assume that the variables used in the representation of the \keyword{let}-expression are sufficiently fresh.
 
 The names of bindings on the heap are not abstracted away in that manner; this follows \cite{nameless}.
 
@@ -293,31 +294,31 @@ The names of bindings on the heap are not abstracted away in that manner; this f
 
 Launchbury deliberately allows non-closed configurations in his derivations, i.e.\ configurations with free variables in the terms that have no corresponding binding on the heap. This is a necessity, as rule \sRule{Var} models blackholing by removing a binding from the heap during its evaluation.
 
-With the addition of the set of variables to avoid, which will always mention such varibles, the question needs to be revisited. And indeed, Sestoft defines the notion of \emph{$L$-good}, where all free variables are either bound on the heap, or contained in $L$. He shows that this property is preserved by the operational semantics and subsequently works only with $L$-good configurations. We follow this example with our definition of \emph{closed} judgements. Threading the closedness requirement through an proof by rule induction is a typical chore contributing to the overhead of a machine-checked formalization.
+With the addition of the set of variables to avoid, which will always contain such varibles, the question can be revisited. And indeed, Sestoft defines the notion of \emph{$L$-good configurations}, where all free variables are either bound on the heap, or contained in $L$. He shows that this property is preserved by the operational semantics and subsequently considers only $L$-good configurations. We follow this example with our definition of \emph{closed} judgements. Threading the closedness requirement through an proof by rule induction is a typical chore contributing to the overhead of a machine-checked formalization.
 
 \subsubsection{Join vs. update}
 
-Launchbury defines his denotational semantics using a binary operation $\sqcup$ on environments. He does not define it explicitly, but the statements in section 5.2.1 leave no doubt that he indeed intended this operation to denote the least upper bound of its arguments, as one would expect. Unfortunately, with this definition, his Theorem 2 (which corresponds to our \myref{Theorem}{thm:thm2}) is false. A counter example is $e = x$, $v = (\sLam{a}{\sLet{b = b}b})$, $\Gamma = \Delta = (x \mapsto v)$ and $\rho = (x \mapsto \sFn{\lambda \_. \sFn{\lambda x.x}})$ with the crucial property that $\rho$ contains compatible, but better information for a variable also bound in $\Gamma$. The mistake in his correctness proof is in the step $(\esem{x \mapsto v, \Delta}\rho)\,x = \dsem{v}{\esem{x \mapsto v, \Delta}\rho}$ in the case for \sRule{Var}.
+Launchbury specifies his denotational semantics using a binary operation $\sqcup$ on environments. He does not define it explicitly, but the statements in his Section 5.2.1 leave no doubt that he indeed intended this operation to denote the least upper bound of its arguments, as one would expect. Unfortunately, with this definition, his Theorem 2 (which corresponds to our \myref{Theorem}{thm_thm2}) is false. A counter example is $e = x$, $v = (\sLam{a}{\sLet{b = b}b})$, $\Gamma = \Delta = (x \mapsto v)$ and $\rho = (x \mapsto \sFn{\lambda \_. \sFn{\lambda x.x}})$ with the crucial property that $\rho$ contains compatible, but better information for a variable also bound in $\Gamma$. The mistake in his correctness proof is in the step $(\esem{x \mapsto v, \Delta}\rho)\,x = \dsem{v}{\esem{x \mapsto v, \Delta}\rho}$ in the case for \sRule{Var}, which should be $(\esem{x \mapsto v, \Delta}\rho)\,x = \dsem{v}{\esem{x \mapsto v, \Delta}\rho} \sqcup \rho\,x$.
 
-Intuitively, such rough $\rho$ are not relevant, and indeed they do not occur in the proof of the main \myref{Theorem}{thm:main}. Nevertheless, this issue needs to be fixed before attempting a formal proof. One possible fix is to replace $\sqcup$ by a right-sided update operation that just throws away information from the left argument for those variables bound on the right. We use the syntax $\rho \upd S \rho'$ for this operation, and by using that the proof goes through in full rigor.
+Intuitively, such rogue $\rho$ are not relevant, and indeed they do not occur in the proof of the main \myref{Theorem}{thm_main}. Nevertheless, this issue needs to be fixed before attempting a formal proof. One possible fix is to replace $\sqcup$ by a right-sided update operation that just throws away information from the left argument for those variables bound on the right. We use the syntax $\rho \upd S \rho'$ for this operation, and by using that the proof goes through in full rigor.
 
-It is slightly annoying having to specify the set $S$ in this operation explicitly, as it is usually clear ``from the context'', as it is morally the domain of the object on the right. But as environments, i.e. total functions from $\sVar \to \sValue$, do not distinguish between variables not mentioned at all and variables mentioned, but with a denotation of $\bot$, this information is not easily exploitable in a formal setting.
+It is slightly annoying having to specify the set $S$ in this operation explicitly, as it is usually clear ``from the context': Morally, it is the set of variables that the object on the right talks about. But as environments, i.e. total functions from $\sVar \to \sValue$, do not distinguish between variables not mentioned at all and variables mentioned, but bound to $\bot$, this information is not easily exploitable in a formal setting.
 
-For the same reason we replace Launchbury’s ordering $\le$ on environments by the more explicit equality between restricted environments in the formulation of \myref{Theorem}{thm:thm2}.
+For the same reason we replace Launchbury’s ordering $\le$ on environments by the more explicit equality between restricted environments in the formulation of \myref{Theorem}{thm_thm2}.
 
 \section{Correctness}
 
 The main correctness theorem for the natural semantics is
 \begin{theorem}[Correctness]
 If $\sred \Gamma e L \Delta v$ holds and is closed, then $\dsem{e}{\esem{\Gamma}} = \dsem{v}{\esem{\Delta}}$.
-\label{thm:main}
+\label{thm_main}
 \end{theorem}
 
 In order to prove this by rule induction, we have to generalize this to
 
 \begin{theorem}[Correctness, generalized]
 If $\sred \Gamma e L \Delta v$ holds and is closed, then for all environments $\rho \in \sEnv$ we have $\dsem{e}{\esem{\Gamma}{\rho}} = \dsem{v}{\esem{\Delta}{\rho}}$ and $(\esem\Gamma\rho)|_{\dom\Gamma} = (\esem\Delta\rho)|_{\dom\Gamma}$.%
-\label{thm:thm2}
+\label{thm_thm2}
 \end{theorem}
 
 Our proof follows Launchbury's steps, but differs in some details.
@@ -349,7 +350,7 @@ While the second part follows from the corresponding inductive hypotheses and $\
 &= \dsem{e'}{(\esem{\Delta}\rho)(y \mapsto {\esem{\Delta}{\rho}}~x)}\\
 \aexpl{by the denotation of lambda abstraction} \\
 &= \dsem{e'[x/y]}{\esem{\Delta}\rho}\\
-\aexpl{by \myref{Lemma}{lem:subst}} \\
+\aexpl{by \myref{Lemma}{lem_subst}} \\
 &= \dsem{v}{\esem{\Theta}\rho}\\
 \aexpl{by the induction hypothesis}
 \end{align*}
@@ -361,7 +362,7 @@ We begin with the second part:
 \begin{align*}
 \esem{x \mapsto e,\Gamma}{\rho}
 &= \mu \rho'.\,(\rho \upd{\dom\Gamma} \esem{\Gamma}{\rho'})[x \mapsto \dsem{e}{\esem{\Gamma}\rho'}] \\
-\aexpl{by Lemma \ref{lem:iter}} \\
+\aexpl{by Lemma \ref{lem_iter}} \\
 &= \mu \rho'.\,(\rho \upd{\dom\Gamma} \esem{\Gamma}{\rho'})[x \mapsto \dsem{z}{\esem{\Delta}\rho'}] \\
 %\aexpl{by the induction hypothesis, invoked for $\rho'$!} \\
 \aexpl{\parbox{\widthof{by the induction hypothesis. Note that}}{\raggedright by the induction hypothesis. Note that we invoke it for $\rho'$ with $\rho' \ne \rho$!}} \\
@@ -369,7 +370,7 @@ We begin with the second part:
 \mu \rho'.\,(\rho \upd{\dom\Delta} \esem{\Delta}{\rho'})[x \mapsto \dsem{z}{\esem{\Delta}\rho'}] \\
 \aexpl{by the induction hypothesis; see below} \\
 &= \esem{x \mapsto v, \Delta}{\rho}\\
-\aexpl{by Lemma \ref{lem:iter}}
+\aexpl{by Lemma \ref{lem_iter}}
 \end{align*}
 
 The second but last step is quite technically, as we need to push the $|_{\dom{(x \mapsto e,\Gamma})}$ inside the fixed-point operator. This goes through by parallel fixed-point induction if we first generalize it to $|_{\sVar \setminus \dom\Delta \mathop\cup \dom{(x \mapsto e,\Gamma)}}$, the complement of the new variables added to the heap during evaluation of $x$.
@@ -383,7 +384,7 @@ The first part now follows from the second part:
 &= (\esem{x \mapsto v, \Delta}\rho)\,x &
 \aexpl{by the first part and $x\in\dom(x \mapsto e,\Gamma)$} \\
 &= \dsem{v}{\esem{x \mapsto v, \Delta}\rho}
-& \aexpl{by the \myref{Lemma}{lem:esem_this}.}
+& \aexpl{by the \myref{Lemma}{lem_esem_this}.}
 \end{align*}
 
 \case{\sRule{Let}}
@@ -394,7 +395,7 @@ For the first part we have
 &= \dsem{e}{\esem{\Delta}{\esem{\Gamma}\rho}} &
 \aexpl{by the denotation of let-expressions} \\
 &= \dsem{e}{\esem{\Gamma, \Delta}{\rho}} &
-\aexpl{by Lemma \ref{lem:esem-merge}} \\
+\aexpl{by Lemma \ref{lem_esem-merge}} \\
 &= \dsem{v}{\esem{\Theta}{\rho}} &
 \aexpl{by the induction hypothesis}
 \intertext{and for the second part we have}
@@ -402,20 +403,21 @@ For the first part we have
 &\eqon{\dom\Gamma} \esem{\Delta}{\esem{\Gamma}\rho} &
 \aexpl{because $\dom\Delta$ are fresh} \\
 &= \esem{\Gamma, \Delta}\rho &
-\aexpl{by Lemma \ref{lem:esem-merge}} \\
+\aexpl{by Lemma \ref{lem_esem-merge}} \\
 &\eqon{\dom{(\Gamma,\Delta)}} \esem{\Theta}\rho. &
 \aexpl{by the induction hypothesis.}
 \end{align*}
 \end{proof}
 
 \subsection{Discussions of modifications}
+\label{sec_modifications2}
 
-TODO
-\begin{itemize}
-\item Different generalization
-\item Closedness
-\item Error with $\sqcup$
-\end{itemize}
+Our main \myref{Theorem}{thm_main} and the generalization in \myref{Theorem}{thm_thm2} differ from Launchbury's corresponding Theorem 2. The additional requirement that the judgements are closed is discussed in Section \ref{sec_modifications1}.
+
+Furthermore, the second part of the \myref{Theorem}{thm_thm2} is phrased differently. Launchbury states  $\esem\Gamma\rho \le \esem\Delta\rho$ where $\rho \le \rho'$ is defined as $(\forall x.\, \rho\,x \ne \bot \implies \rho x = \rho' x)$, i.e. $\rho'$ agrees with $\rho$ on all variables that have a meaning in $\rho$.
+
+The issue with this definition is that there are two reasons why $\esem\Gamma\rho\,x=\bot$ can hold: Either $x \notin \dom\Gamma$, or $x \in \dom\Gamma$, but bound to a diverging value. Only the first case is intended here, and actually $\le$ is used as if only that case can happen, e.g.\ in the case for \sRule{Var} in the correctness proof. We therefore avoid the problematic $\le$ relation and explicitly show  $\esem\Gamma\rho \eqon{\dom\Gamma}  \esem\Delta\rho$.
+
 
 \section{Adequacy}
 
@@ -425,7 +427,7 @@ So we want to ensure that all programs that have a meaning, in our case accordin
 
 \begin{theorem}[Adequacy]
 For all $e$, $\Gamma$ and $L$, if $\dsem{e}{\esem{\Gamma}} \ne \bot$, then there exists $\Delta$ and $v$ so that $\sred \Gamma e L \Delta v$.
-\label{thm:adequacy}
+\label{thm_adequacy}
 \end{theorem}
 
 The proof uses a modified denotational semantics that keeps track of the number of steps required to determine the non-bottomness of $e$, which we will now introduce, prove adequate and show its relationship to the standard denotational semantics.
@@ -471,14 +473,15 @@ Given the similarity between this semantics and the standard semantics, it is no
 
 \begin{lemma}[Correctness, resourced]
 If $\sred \Gamma e \Delta v$ holds and is closed, then for all environments $\sigma$ we have $\dsemr{e}{\esem{\Gamma}{\sigma}} \sqsubseteq \dsemr{v}{\esem{\Delta}{\sigma}}$ and $(\esemr\Gamma\sigma)|_{\dom\Gamma} \sqsubseteq (\esemr\Delta\sigma)|_{\dom\Gamma}$.%
-\label{lem:resourced_correctness}
+\label{lem_resourced_correctness}
 \end{lemma}
 
 \begin{proof}
-Analogously to the proof of \autoref{thm:thm2}.
+Analogously to the proof of \autoref{thm_thm2}.
 \end{proof}
 
 \subsection{Denotational black holes}
+\label{sec_denblackhole}
 
 The major difficulty in proving computational adequacy was the the blackholing behaviour of the operational semantics: During the evaluation of a variable $x$ the corresponding binding is removed from the heap. Operationally, this is desirable: If the variable is called again during its own evaluation, we have an infinite loop.
 
@@ -487,7 +490,7 @@ But obviously, the variable is still mentioned in the current configuration, and
 But we can prove a weaker statement, which reflects the idea of ``not using $x$ during its own evaluation'' more closely:
 
 \begin{lemma}[Denotational blackholing]
-\label{lem:denblackhole}
+\label{lem_denblackhole}
 \[
 \dsemr{e}{\esemr{x\mapsto e, \Gamma}} r \ne \bot \implies \dsemr{e}{\esemr{\Gamma}} r \ne \bot
 \]
@@ -497,7 +500,7 @@ This is a consequence of the following lemma, which states that during the evalu
 
 \begin{lemma}
 \[
-\label{lem:denrestr}
+\label{lem_denrestr}
 \Crestr{\dsemr{e}\sigma}{C~r} = \Crestr{\dsemr{e}{(\Crestr{\sigma}{r})}}{C~r}
 \]
 \end{lemma}
@@ -524,7 +527,7 @@ For the case of \keyword{let}, a related lemma for heaps needs to be proven by p
 
 Equipped with this lemma, we can begin the
 
-\begin{proof}[of \myref{Lemma}{lem:denblackhole}]
+\begin{proof}[of \myref{Lemma}{lem_denblackhole}]
 Let $r'$ be the least resource such that $\dsemr{e}{\esemr{x\mapsto e, \Gamma}} (C~r') \ne \bot $. Such an $r'$ exists by the assumption, and $C~r' \sqsubseteq r$, and is, by the continuity of the semantics, not $C^\infty$. In particular, $\dsemr{e}{\esemr{x\mapsto e, \Gamma}} r' = \bot$.
 
 We first show
@@ -537,10 +540,10 @@ For $y\mapsto e'\in\Gamma$, this follows from
 \begin{conteq}
 \Crestr{\dsemr{x\mapsto e, \Gamma}{\sigma}}{r'}~y \\
 = \Crestr{\dsemr{e'}{\sigma}}{r'}  \\
-= \Crestr{\dsemr{e'}{\Crestr{\sigma}{r'}}}{r'} & by \myref{Lemma}{lem:denrestr} \\
+= \Crestr{\dsemr{e'}{\Crestr{\sigma}{r'}}}{r'} & by \myref{Lemma}{lem_denrestr} \\
 \sqsubseteq \dsemr{e'}{\Crestr{\sigma}{r'}} \\
 \sqsubseteq \dsemr{e'}{\esemr{\Gamma}} & by the induction hypothesis  \\
-= \esemr{\Gamma}~y & by \myref{Lemma}{lem:esem_this}
+= \esemr{\Gamma}~y & by \myref{Lemma}{lem_esem_this}
 \end{conteq}
 while for $x$, this follows from
 \begin{conteq}
@@ -555,7 +558,7 @@ while for $x$, this follows from
 \begin{conteq}
 \bot \\
 \sqsubset \dsemr{e}{\esemr{x\mapsto e, \Gamma}} (C~r') & by the choice of $r'$ \\
-= \dsemr{e}{\Crestr{\esemr{x\mapsto e, \Gamma}}{r'}} (C~r') & by \myref{Lemma}{lem:denrestr} \\
+= \dsemr{e}{\Crestr{\esemr{x\mapsto e, \Gamma}}{r'}} (C~r') & by \myref{Lemma}{lem_denrestr} \\
 \sqsubseteq \dsemr{e}{\esemr{\Gamma}} (C~r')  & by $(\ast)$  \\
 \sqsubseteq \dsemr{e}{\esemr{\Gamma}} r & as $C~r'\sqsubseteq r$
 \end{conteq}
@@ -566,29 +569,29 @@ while for $x$, this follows from
 With the necessary tools in place to handle blackholing, we can do the adequacy proof for the resourced semantics:
 
 \begin{lemma}[Resourced semantics adequacy]
+\label{lem_resad}
 For all $e$, $\Gamma$ and $L$,  if $\dsemr{e}{\esem{\Gamma}}~r \ne \bot$, then there exists $\Delta$ and $v$ so that $\sred \Gamma e L \Delta v$.
-\label{lem:resad}
 \end{lemma}
 
 \begin{proof}
 Because the semantics is continuous, it suffices to show this for $r = C^n~\bot$, and perform induction on this $n$, with arbitrary $e$, $\Gamma$ and $L$.
 
-The case $r=\bot$ is vacuously true, as $\dsemr{e}{\esem{\Gamma}}~\bot = \bot$.
+The case $r=C^0~\bot = \bot$ is vacuously true, as $\dsemr{e}{\esem{\Gamma}}~\bot = \bot$.
 
 For the inductive case assume that the lemma holds for $r$, and that $\dsemr{e}{\esem{\Gamma}}~(C~r) \ne \bot$. We proceed by case analysis on the expression $e$.
 
 \case{$e = x$.}
 From the assumption we know that $\Gamma = x\mapsto e',\Gamma'$ for some $e'$ and $\Gamma'$, as otherwise the denotation would be bottom, and furthermore that $\dsemr{e'}{\esemr{x\mapsto e',\Gamma'}}~r \ne\bot$
 
-With \myref{Lemma}{lem:denblackhole} this implies $\dsemr{e'}{\esemr{\Gamma'}}~r \ne\bot$, so we can apply the induction hypothesis and obtain $\Delta$ and $v$ with $\sred {\Gamma'} {e'} {L\cup\{x\}} \Delta v$. This implies $\sred {x\mapsto e',\Gamma'} {x} {L} \Delta v$ by rule \sRule{Var}, as desired.
+With \myref{Lemma}{lem_denblackhole} this implies $\dsemr{e'}{\esemr{\Gamma'}}~r \ne\bot$, so we can apply the induction hypothesis and obtain $\Delta$ and $v$ with $\sred {\Gamma'} {e'} {L\cup\{x\}} \Delta v$. This implies $\sred {x\mapsto e',\Gamma'} {x} {L} \Delta v$ by rule \sRule{Var}, as desired.
 
 \case{$e = e'~x$.}
-Assume that $\fv{\Gamma, e'} \subseteq L$. We do not lose generality here, as derivations are always possible with a smaller set of variables to avoid.
+Assume that $\fv{\Gamma, e'} \subseteq L$. We do not lose generality here: If we can show a derivation in the natural semantics with a larger set of variables to avoid than required, then the same derivation is also valid with the required set $L$.
 
 From the assumption we know that
 $\sCFnProj {(\dsemr {e'} {\esemr{\Gamma}}~r}{\Crestr{({\esemr{\Gamma}}~x)}{r}})~r \ne \bot$. In particular $(\dsemr {e'} {\esemr{\Gamma}}~r)\ne \bot$, so by the induction hypothesis we have $\Delta$, $y$ and $e''$ with $\sred{\Gamma}{e'}L\Delta {\sLam y {e''}}$, the first hypothesis of \sRule{App}.
 
-This judgment is closed by our extra assumption, so we use \myref{Lemma}{lem:resourced_correctness} to ensure that $\dsemr{e'}{\esemr{\Gamma}} \sqsubseteq \dsemr{\sLam y {e''}}{\esemr{\Delta}}$ and $\esemr{\Gamma} \sqsubseteq \esemr{\Delta}$. We can insert that into the inequality above to calculate
+This judgment is closed by our extra assumption, so we use \myref{Lemma}{lem_resourced_correctness} to ensure that $\dsemr{e'}{\esemr{\Gamma}} \sqsubseteq \dsemr{\sLam y {e''}}{\esemr{\Delta}}$ and $\esemr{\Gamma} \sqsubseteq \esemr{\Delta}$. We can insert that into the inequality above to calculate
 \begin{conteq}
 \bot \\
 \sqsubset \sCFnProj {(\dsemr {e'} {\esemr{\Gamma}}~r}{\Crestr{({\esemr{\Gamma}}~x)}{r}})~r \\
@@ -596,7 +599,7 @@ This judgment is closed by our extra assumption, so we use \myref{Lemma}{lem:res
 \sqsubseteq (\sCFnProj {\dsemr {\sLam y {e''}} {\esemr{\Delta}}~r                               }{\esemr{\Delta}~x})~r \\
 \sqsubseteq (\sCFnProj {\sCFn{\lambda v.\, \dsemr {e''} {\esemr{\Delta} \sqcup \{y \mapsto v\}}}}{\esemr{\Delta}~x})~r \\
 = \dsemr {e''} {\esemr{\Delta} \sqcup \{y \mapsto (\esemr{\Delta}~x)\}}~r \\
-= \dsemr {e''[x/y]} {\esemr{\Delta} }~r  & by \myref{Lemma}{lem:subst}
+= \dsemr {e''[x/y]} {\esemr{\Delta} }~r  & by \myref{Lemma}{lem_subst}
 \end{conteq}
 which, using the induction hypothesis again, provides us with $\Theta$ and $v$ so that the second hypothesis of \sRule{App}, $\sred{\Delta}{e''[x/y]}L\Theta v$, holds, concluding this case.
 
@@ -609,7 +612,7 @@ We have
 \bot \\
 \sqsubset \dsemr{\sLet \Delta {e'}}{\esemr{\Gamma}}~r \\
 \sqsubseteq \dsemr{e'}{\esemr{\Delta}{\esemr{\Gamma}}} \\
-= \dsemr{e'}{\esemr{\Delta,\Gamma}} & by \myref{Lemma}{lem:esem-merge}
+= \dsemr{e'}{\esemr{\Delta,\Gamma}} & by \myref{Lemma}{lem_esem-merge}
 \end{conteq}
 so we have $\Theta$ and $v$ with $\sred{\Delta,\Gamma}{e'}L\Theta v$ and hence$\sred{\Gamma}{\sLet \Delta {e'}}L\Theta v$ by rule \sRule{Let}, as desired.
 \end{proof}
@@ -617,7 +620,7 @@ so we have $\Theta$ and $v$ with $\sred{\Delta,\Gamma}{e'}L\Theta v$ and hence$\
 
 \subsection{Relating the denotational semantics}
 
-\myref{Lemma}{lem:resad} is almost what we want, but it talks about the resourced denotational semantics. In order to obtain that result for the standard denotational semantics, we need to relate these two semantics. We cannot simply equate them, as they have different denotational domains $\sValue$ and $\sC\to\sCValue$. So we are looking for an relation $\dsim$ between $\sValue$ and $\sCValue$, that expresses the intuition that they behave the same, if given infinite resources. In particular, it is specified by the two equations
+\myref{Lemma}{lem_resad} is almost what we want, but it talks about the resourced denotational semantics. In order to obtain that result for the standard denotational semantics, we need to relate these two semantics. We cannot simply equate them, as they have different denotational domains $\sValue$ and $\sC\to\sCValue$. So we are looking for a relation $\dsim$ between $\sValue$ and $\sCValue$ that expresses the intuition that they behave the same, if the latter is given infinite resources. In particular, it is specified by the two equations
 \[
 \bot \dsim \bot
 \]
@@ -637,7 +640,7 @@ We lift this relation to envrionments $\rho \in \sEnv$ and resourced envrionment
 This allows us to state precisely how the two denotational semantics are related:
 
 \begin{lemma}[The denotational semantics are related]
-\label{lem:denrel}
+\label{lem_denrel}
 For all environments $\rho \in \sEnv$ and $\sigma \in \sVar \to (\sC \to \sValue)$ with $\rho \dsimheap \sigma$, we have
 \[
 \dsem e \rho \dsim \dsemr e \sigma~{C^\infty}.
@@ -645,46 +648,99 @@ For all environments $\rho \in \sEnv$ and $\sigma \in \sVar \to (\sC \to \sValue
 \end{lemma}
 
 \begin{proof}
-Intuitively, the proof is obvious: As we are only concerned with infinite resources, all the resource counting added in the denotational semantics become moot and the semantics are obviously related. A more rigorous proof can be found in \cite{functionspaces} and in our formal verification.
+Intuitively, the proof is obvious: As we are only concerned with infinite resources, all the resource counting added to the denotational semantics becomes moot and the semantics are obviously related. A more rigorous proof can be found in \cite{functionspaces} and in our formal verification.
 \end{proof}
 
 \begin{corollary}
 For all heaps $\Gamma$, we have $\esem{\Gamma}\dsimheap \esemr{\Gamma}$.
-\label{lem:denrelheap}
+\label{lem_denrelheap}
 \end{corollary}
 
 \begin{proof}
-by parallel fixed-point induction and \myref{Lemma}{lem:denrel}.
+by parallel fixed-point induction and \myref{Lemma}{lem_denrel}.
 \end{proof}
 
 \subsection{Concluding the adequacy}
 
 With this in place, we can give the
-\begin{proof}[of \myref{Theorem}{thm:adequacy}]
-By \myref{Corollary}{lem:denrelheap} we have $\esem{\Gamma}\dsimheap \esemr{\Gamma}$, and with \myref{Lemma}{lem:denrel} this implies $\dsem{e}{\esem{\Gamma}} \dsim \dsemr{e}{\esemr{\Gamma}}~C^\infty$.
+\begin{proof}[of \myref{Theorem}{thm_adequacy}]
+By \myref{Corollary}{lem_denrelheap} we have $\esem{\Gamma}\dsimheap \esemr{\Gamma}$, and with \myref{Lemma}{lem_denrel} this implies $\dsem{e}{\esem{\Gamma}} \dsim \dsemr{e}{\esemr{\Gamma}}~C^\infty$.
 
-With our assumption $\dsem{e}{\esem{\Gamma}} \ne \bot$ and the definition of $\dsim$ this ensures that $\dsemr{e}{\esem{\Gamma}}~C^\infty \ne \bot$, and we can apply \myref{Lemma}{lem:resad}, as desired.
+With our assumption $\dsem{e}{\esem{\Gamma}} \ne \bot$ and the definition of $\dsim$ this ensures that $\dsemr{e}{\esem{\Gamma}}~C^\infty \ne \bot$, and we can apply \myref{Lemma}{lem_resad}, as desired.
 \end{proof}
 
 
 \subsection{Discussions of modifications}
+\label{sec_modifications3}
 
-\begin{itemize}
-\item Launchbury’s intermediate semantics, and why we do not need it
-\end{itemize}
+Our adequacy proof diverges quite a bit from Launchbury's. As this new proof constitutes a major part of this paper's contribution, we discuss the differences in greater detail.
+
+\begin{figure}
+\begin{mathpar}
+\inferrule
+{\sred{\Gamma}e L{\Delta}{\sLam y e'}\\ \sred{y\mapsto x, \Delta}{e'}L{\Theta}{v}}
+{\sred\Gamma{\sApp e x}L\Theta v}
+\sRule{App'}
+\and
+\inferrule
+{\sred{x\mapsto e, \Gamma} e L \Delta v}
+{\sred{x\mapsto e, \Gamma} x L \Delta v}
+\sRule{Var'}
+\end{mathpar}
+\caption{Launchbury alternative natural semantics}
+\label{fig_natsem}
+\end{figure}
+
+Launchbury performs the adequacy proof by introducing an alternative natural semantics (ANS) that is closer to the denotational semantics than the original natural semantics (NS). He replaces the rules \sRule{App} and \sRule{Var} by the two rules given in \myref{Figure}{fig_ans}. There are three differences to be spotted:
+\begin{enumerate}
+\item In the rule for applications, instead of substituting the argument $x$ for the parameter $y$, the variable $y$ is added to the heap, bound to $x$, adding an \emph{indirection}.
+\item In in the rule for variables, no update is performend: Even after $x$ has been evaluated to the value $v$, the binding $x$ on the heap is not modified at all.
+\item Also in the rule for variables, no black-holing is performed: The binding for $x$ stays on the heap during its evaluation.
+\end{enumerate}
+
+Without much ado, Launchbury states that the original natural semantics and the alternative natural semantics are equivalent, which is intuitively obvoius. Unfortunately, it turned out that a rigorous proof of this fact is highly non-trivial, as the actual structure of the heaps during evaluation differs a lot: The modification to the application rule causes many indirections, which need to be taken care of. Furthermore, the lack of updates in the variable rules causes possibly complex, allocating expressions to be evaluated many times, each time adding further copies of already existing expressions to the heap. On the other side, the updates in the original semantics further obscure the relationship between the heaps in the original and the alternative semantics. On top of all that add the technical difficulty that is due to naming issues: Variables that are fresh in one derivation might not be fresh in the other, and explicit renamings need to be carried along.
+
+S{\'a}nchez-Gil {\em et~al.} have attempted to perform this proof. They broke it down into individual steps, going from the original semantics to one with only the variable rule changes (called No-update natural semantics, NNS), and from there to the ANS. So far, they have performed the second step, the equivalence between NNS and ANS, in a pen-and-paper proof (\shortcite{indirections}), while relation between NS and NNS has yet resited a proper proof.
+
+Considering these difficulties, we attempt to go a different path, and bridge the differences not on the side of the natural semantics, but on the denotational side, which turned out to work well:
+
+\begin{enumerate}
+\item The denotational semantics for lambda expressions involves a change to the environment ($\dsem{\sLam x e}\rho \coloneqq \sFn{\lambda v. \dsem e {\rho \sqcup \{x \mapsto v\}}}$), while the natural semantics uses substitution into the expression: $e[x/y]$.
+
+This difference is easily bridged on the denotational side by a standard substitution \myref{Lemma}{lem_subst}, which is needed anyways for the correctness proof. See the last line of the application case in the proof of \myref{Lemma}{lem_resad} for this step.
+
+\item The removal of updates had surprisingly no effect on the adequacy proof: The main chore of the adequacy proof is to produce evidence for the \emph{assumptions} of the corresponding natural semantics inference rule, which is then, in the last step, applied to produce the desired judgment. The removal of updates only changes the \emph{conclusion} of the rule, so the adequacy proof is unchanged.
+
+Of course updates are not completely irrelevant, and they do affect the adequacy proof indirectly. The adequacy proof uses a correctness theorem for the resourced natural semantics, and there the removal of updates from the semantics would make a noticable difference.
+
+\item Finally, and most trickily, there is the issue of blackholing. We explain our solution in \myref{Section}{sec_denblackhole}, which works due to a small modification to the resourced denotational semantics.
+
+Our proof relies on the property that when we calculate the semantics of $\dsemr{e}\sigma\,r$, we never pass more than $r$ resources to the values bound in $\sigma$ (\myref{Lemma}{lem_denrestr}). This concurs with our intuition about resources.
+
+In the original definition of the resurced semantics, this lemma does not hold: The equation for lambda expression ignores the resources passed to it and returns a function involving the semantics of the body:
+\[
+\dsemr{\sLam x e}\sigma ~ (C~r) = \sCFn{\lambda v. \dsemr e {\sigma \sqcup \{x \mapsto v\}}}
+\]
+With that definition, $\dsemr{\sLam x y}\sigma~(C~\bot) = \sCFn{\sigma~y}$, which depends on $\sigma~y~r$ for all $r$, contradicting \myref{Lemma}{lem_denrestr}.
+
+Therefore we restrict the function wrapped in $\sCFn \_$ to cap any resources passed to it at $r$. Analogously we adjust the equation for applications to cap any resources passed to the value of the argument in the enrivonment, $\sigma~x$.
+
+These modifications do not affect the proof relating the two denotational semantics (\myref{Lemma}{lem_denrel}), as there we always pass infinite resources, and $|_{C^\infty}$ is the identity function.
+
+\end{enumerate}
 
 \section{Related work}
 
 A large number of developments on formal semantics of functional programming languages in the last two decades build on Launchbury’s work. Many of them implicitly or explicitly rely on the correctness proof as spelled out by Launchbury:
 
-Van Eekelen \& de~Mol \shortcite{mixed} add strictness annotations to the syntax and semantics of Launchbury’s work. They state the correctness as in `Theorem' \ref{thm:false}, without spotting the issue.
+Van Eekelen \& de~Mol \shortcite{mixed} add strictness annotations to the syntax and semantics of Launchbury’s work. They state the correctness as in `Theorem' \ref{thm_false}, without spotting the issue.
 
 
-Nakata \& Hasegawa \shortcite{nakata} define a small-step semantics for call-by-need and relate it to a Launchbury-derived big-step semantics. They state the correctness with respect to the denotational semantics and reproduce the `Theorem' \ref{thm:false} in the flawed form, in their extended version.
+Nakata \& Hasegawa \shortcite{nakata} define a small-step semantics for call-by-need and relate it to a Launchbury-derived big-step semantics. They state the correctness with respect to the denotational semantics and reproduce the `Theorem' \ref{thm_false} in the flawed form, in their extended version.
 
-S{\'a}nchez-Gil {\em et~al.} \shortcite{distributed} extend Launchbury's semantics with distributed evaluation.  In their modified natural semantics the heap retains the expression under evaluation with a special flag, marking them as blocked. Furthermore, the expression under evaluation has a name. Thus the non-distributed subset of their semantics is very similar to our stacked semantics and their correctness statement corresponds to Theorem \ref{thm:thm2}.
+S{\'a}nchez-Gil {\em et~al.} \shortcite{distributed} extend Launchbury's semantics with distributed evaluation.  In their modified natural semantics the heap retains the expression under evaluation with a special flag, marking them as blocked. Furthermore, the expression under evaluation has a name. Thus the non-distributed subset of their semantics is very similar to our stacked semantics and their correctness statement corresponds to Theorem \ref{thm_thm2}.
 
-An interesting case is the work by Baker-Finch {\em et~al.} on parallel call-by-need: While an earlier report \shortcite{parallel-tr} uses Launchbury’s definitions unmodified and states the flawed `Theorem' \ref{thm:false}, the following publication at ICFP \shortcite{parallel} uses an update-based denotational semantics, unfortunately without motivating that change.
+An interesting case is the work by Baker-Finch {\em et~al.} on parallel call-by-need: While an earlier report \shortcite{parallel-tr} uses Launchbury’s definitions unmodified and states the flawed `Theorem' \ref{thm_false}, the following publication at ICFP \shortcite{parallel} uses an update-based denotational semantics, unfortunately without motivating that change.
 
 Similarly, Nakata  \shortcite{nakata_blackhole}, who modifies the denotational semantics to distinguish direct cycles from looping recursion, uses update-based semantics without further explanation. 
 
@@ -694,18 +750,18 @@ S{\'a}nchez-Gil {\em et~al.} identified a step in his adequacy proof relating th
 
 \section{Discussion}
 
-Although we have found a flaw in the proof and the formulation of the correctness theorem in Launchbury’s semantics, the essential correctness result (as formulated in Theorem~\ref{thm:main}) stills holds. In that sense our work, especially with the computer-verified proofs in \cite{afp}, actually strengthens the foundations of formal work in that field.
+Although we have found a flaw in the proof and the formulation of the correctness theorem in Launchbury’s semantics, the essential correctness result (as formulated in Theorem~\ref{thm_main}) stills holds. In that sense our work, especially with the computer-verified proofs in \cite{afp}, actually strengthens the foundations of formal work in that field.
 
 We have provided two ways to fix the problem: One by adding a stack to the operational semantics, and one by changing the denotation of heaps. Both variants have precursors in the literature: The extended heaps of \cite{distributed} resemble the heap-stack-pairs of our semantics, while Baker-Finch {\em et~al.} \shortcite{parallel} and Nakata \shortcite{nakata_blackhole} use right-sided updates in their denotational heap semantics.
 
 Adding the stack to the judgments of the natural semantics, although it does not affect the evaluation of expressions at all, seems to make the semantics more suitable for formal proofs than the original semantics:
 \begin{compactitem}
 \item Launchbury’s global notion of “fresh variable” is hard to work with, as noted and fixed before by adding to the judgments an explicit list of variable names to avoid \cite{sestoft}. As the stack in our semantics already contains these names, this additional step is not required.
-\item While proving Theorem \ref{thm:stackedcorrectness}, the environment $\rho$ does not have to be all-quantified in the inductive step. This simplified the proof a bit and avoids the pitfall that the original proof fell into.
+\item While proving Theorem \ref{thm_stackedcorrectness}, the environment $\rho$ does not have to be all-quantified in the inductive step. This simplified the proof a bit and avoids the pitfall that the original proof fell into.
 \end{compactitem}
 The similarity with the extended heaps in \cite{distributed} further supports the usefulness of the stacked semantics.
 
-We had to spend slightly more pages on the properties of the original denotational semantics (Appendix~\ref{sec:denprops}) than of the update-based denotational semantics (Appendix~\ref{updsemanticsprops}). This is partly due to more details in the proofs in the former section, partly because $+$ behaves nicer than $\sqcup$ (e.g.\ it is defined everywhere). This is orthogonal to the usefulness of the stack-based natural semantics, which could be proven correct with regard to the updates-based denotational semantics as well.
+We had to spend slightly more pages on the properties of the original denotational semantics (Appendix~\ref{sec_denprops}) than of the update-based denotational semantics (Appendix~\ref{updsemanticsprops}). This is partly due to more details in the proofs in the former section, partly because $+$ behaves nicer than $\sqcup$ (e.g.\ it is defined everywhere). This is orthogonal to the usefulness of the stack-based natural semantics, which could be proven correct with regard to the updates-based denotational semantics as well.
 
 Unless one has to stick with $\sqcup$, e.g. to stay compatible with previous work using this definition, little stands in the way of using the update-based denotational semantics to model the denotation of heaps.
 
@@ -735,8 +791,8 @@ These hold for both the standard denotational semantics and the resourced denota
 
 \begin{lemma}[Applying the heap semantics]
 \[
-\label{lem:esem_this}
-\label{lem:esem_other}
+\label{lem_esem_this}
+\label{lem_esem_other}
 (\esem{\Gamma}\rho)\,x =
 \begin{cases}
 \dsem{e}{\esem{\Gamma}\rho}, & \text{if } (x\mapsto e)\in \Gamma \\
@@ -755,7 +811,7 @@ In the case for variables in the correctness proof, we need the following altern
 \[
 \esem{x \mapsto e, \Gamma}\rho =
 \mu \rho'.\,  \big((\rho \upd{\dom\Gamma} {\esem{\Gamma}{\rho'}})[x \mapsto \dsem{e}{\esem{\Gamma}\rho'}]\big).
-\label{lem:iter}
+\label{lem_iter}
 \]
 \end{lemma}
 
@@ -765,7 +821,7 @@ A corresponding lemma can be found in Launchbury \shortcite{launchbury}, but wit
 \newcommand{\domxG}{\dom{(x\mapsto e,\Gamma)}}
 Let $L = (\lambda \rho'.\, \rho \upd{\domxG} \dsem{x\mapsto e, \Gamma}{\rho'})$ be the functorial of the fixed point on the left hand side, $R$~be the functorial on the right hand side.
 
-By Lemma \ref{lem:esem_this}, we have
+By Lemma \ref{lem_esem_this}, we have
 \begin{compactenum}[(1)]
 \item $(\mu L)\, y = \dsem{e'}{\mu L}$ for $y\mapsto e'\in\dom\Gamma$,
 \item $(\mu L)\, x = \dsem{e}{\mu L}$,
@@ -777,7 +833,7 @@ Similarly, by unrolling the fixed points, we have
 \item[(5)] $(\mu R)\, x = \dsem{e}{\esem{\Gamma}{(\mu R)}}$,
 \item[(6)] $(\mu R)\, y = \rho\, y$ for $y \notin \domxG$,
 \end{compactenum}
-and also for $\rho' \in \sEnv$ (in particular for $\rho' = (\mu L)$, $(\mu R)$), again using Lemma \ref{lem:esem_this},
+and also for $\rho' \in \sEnv$ (in particular for $\rho' = (\mu L)$, $(\mu R)$), again using Lemma \ref{lem_esem_this},
 \begin{compactenum}[(1)]
 \item[(7)] $(\esem{\Gamma}{\rho'})\,y = \dsem{e}{\esem{\Gamma}{\rho'}}$ for $y \mapsto e' \in \dom\Gamma$,
 \item[(8)] $(\esem{\Gamma}{\rho'})\,y = \rho'\, y$ for $y \notin \dom\Gamma$.
@@ -819,7 +875,7 @@ We want to relate substitution of variables in terms with adding indirections on
 
 \begin{lemma}[Semantics of substitution]
 \[
-\label{lem:subst}
+\label{lem_subst}
 \dsem{e}{\rho (y \mapsto \rho~x)} = \dsem{ e[x/y]}{\rho}.
 \]
 \end{lemma}
@@ -837,7 +893,7 @@ We first show $\forall\rho.\, \rho\,x = \rho\,y \implies \esem{e}\rho = \esem{e[
 The final lemma required for the correctness proof shows that the denotation of set of bindings with only fresh variables can be merged with the heap it was defined over:
 
 \begin{lemma}
-\label{lem:esem-merge}
+\label{lem_esem-merge}
 If $\dom \Gamma$ is fresh with regard to $\Delta$ and $\rho$, then
 \[
 \esem{\Gamma}{\esem{\Delta}\rho} = \esem{\Gamma, \Delta}\rho.
@@ -855,7 +911,7 @@ We use the antisymmetry of $\sqsubseteq$, and the leastness of least fixed point
 \begin{compactitem}[$\sqsubseteq$:]
 \item[$\sqsubseteq$:] We need to show that $\esem{\Delta}\rho \upd{\dom\Gamma} \dsem\Gamma{\esem{\Delta,\Gamma}\rho} = \esem{\Delta,\Gamma}\rho$, which we verify pointwise.
 \begin{compactitem}
-\item For $x \in \dom\Gamma$, this follows directly from \myref{Lemma}{lem:esem_this}.
+\item For $x \in \dom\Gamma$, this follows directly from \myref{Lemma}{lem_esem_this}.
 \item For $x\notin \dom\Gamma$, this follows as the variables bound in $\Gamma$ are fresh, so the bindings in $\esem{\Delta}\rho$ keep their semantics.
 \end{compactitem}
 
@@ -871,7 +927,7 @@ We use the antisymmetry of $\sqsubseteq$, and the leastness of least fixed point
 &= (\esem\Delta\rho)\, x\\
 \aexpl{by unrolling the fixed point} \\
 &= (\dsem{\Gamma}{\esem\Delta\rho})\, x\\
-\aexpl{because $x\notin \dom\Gamma$ and \myref{Lemma}{lem:esem_this}.}
+\aexpl{because $x\notin \dom\Gamma$ and \myref{Lemma}{lem_esem_this}.}
 \end{align*}
 \item For $x\notin \dom \Gamma \cup \dom \Delta$, we have $\rho\, x$ on both sides.
 \end{compactitem}
