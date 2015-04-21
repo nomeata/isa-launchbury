@@ -119,7 +119,7 @@ proves his semantics correct with respect to a denotational semantics, and outli
 
 Previous attempts to rigorize the adequacy proof, which involves an intermediate natural semantics and an intermediate resourced denotational semantics, have failed. We devised a new, direct proof that skips the intermediate natural semantics. It is the first rigorous adequacy proof of Launchbury’s semantics.
 
-We have modelled our semantics in the interactive theorem prover Isabelle and machine-checked our proofs to obtain a maximum level of rigor. This was used in a machine-checked correctness proof of a compiler transformation.
+We have modeled our semantics in the interactive theorem prover Isabelle and machine-checked our proofs to obtain a maximum level of rigor. This was used in a machine-checked correctness proof of a compiler transformation.
 \end{abstract}
 
 % \tableofcontents
@@ -128,14 +128,14 @@ We have modelled our semantics in the interactive theorem prover Isabelle and ma
 
 The Natural Semantics for Lazy Evaluation created by Launchbury \shortcite{launchbury} has turned out to be a popular and successful base for theoretical treatment of lazy evaluation, especially as the basis of semantic extensions \cite{nakata, nakata_blackhole, distributed, mixed, parallel}. Therefore, its correctness and adequacy is important in this field of research. The original paper defines a standard denotational semantics to prove the natural semantics correct and adequate against.
 
-Launchbury presents its correctness proof in sufficient detail, and it endures formal verification with only samll changes and clarifications (Sec.~TODO).
+Launchbury presents its correctness proof in sufficient detail, and it endures formal verification with only small changes and clarifications (Sec.~TODO).
 
 The adequacy proof in \cite{launchbury} is only an outline, though. It establishes the computational adequacy by two intermediate semantics:
 \begin{compactitem}
 \item A modified natural semantics with slightly different rules for variable lookup and function application that is more similar to how the denotational semantic works, and
 \item a resourced denotational semantics, i.e.~one that keeps track of the number of steps required to evaluate an expression.
 \end{compactitem}
-The equivalence between the natural semantics and the alternative naural semantics was not proven by Launchbury. Although quite intuitive, a rigorous proof is yet to be found. S{\'a}nchez-Gil {\em et~al.} have attempted to perform this proof and obtained an equivalency proof for just the change to the application rule \shortcite{indirections}; the other half is still pending.
+The equivalence between the natural semantics and the alternative natural semantics was not proven by Launchbury. Although quite intuitive, a rigorous proof is yet to be found. S{\'a}nchez-Gil {\em et~al.} have attempted to perform this proof and obtained an equivalency proof for just the change to the application rule \shortcite{indirections}; the other half is still pending.
 
 Having seen the difficulty of performing these proof steps on the side of the natural semantics, we departed from the outline provided by Launchbury and skipped the alternative natural semantics altogether. With a small, but important modification to the resourced denotational semantics, the proof was possible.
 
@@ -251,7 +251,7 @@ The semantics of expressions and heaps are mutually recursive. The meaning of a 
 \dsem{\sLet{\Delta}e}\rho &\coloneqq \dsem e {\esem{\Delta}\rho.}
 \end{align*}
 
-We can map this over a heap to obtain an envionment:
+We can map this over a heap to obtain an environment:
 \begin{align*}
 \dsem{\xen}\rho \coloneqq [x_1 \mapsto \dsem{e_1}{\rho}, \ldots, x_n \mapsto \dsem{e_n}{\rho}]
 \end{align*}
@@ -278,7 +278,7 @@ We sometimes write $\esem{\Gamma}$ instead of $\esem{\Gamma}{\bot}$. In an expre
 \subsection{Discussions of modifications}
 \label{sec_modifications1}
 
-It is rare that a formal system developed with pen and on paper can be formalized to the letter, partly because of vagueness (what, exacltly, is a ``completely'' fresh variable?), partly because of formalization convenience, and partly because the stated facts -- even if morally correct -- are wrong when read scrupulously. We discuss any such divergence from Launchbury's work here.
+It is rare that a formal system developed with pen and on paper can be formalized to the letter, partly because of vagueness (what, exactly, is a ``completely'' fresh variable?), partly because of formalization convenience, and partly because the stated facts -- even if morally correct -- are wrong when read scrupulously. We discuss any such divergence from Launchbury's work here.
 
 \subsubsection{Naming}
 
@@ -294,7 +294,7 @@ The names of bindings on the heap are not abstracted away in that manner; this f
 
 Launchbury deliberately allows non-closed configurations in his derivations, i.e.\ configurations with free variables in the terms that have no corresponding binding on the heap. This is a necessity, as rule \sRule{Var} models blackholing by removing a binding from the heap during its evaluation.
 
-With the addition of the set of variables to avoid, which will always contain such varibles, the question can be revisited. And indeed, Sestoft defines the notion of \emph{$L$-good configurations}, where all free variables are either bound on the heap, or contained in $L$. He shows that this property is preserved by the operational semantics and subsequently considers only $L$-good configurations. We follow this example with our definition of \emph{closed} judgements. Threading the closedness requirement through an proof by rule induction is a typical chore contributing to the overhead of a machine-checked formalization.
+With the addition of the set of variables to avoid, which will always contain such variables, the question can be revisited. And indeed, Sestoft defines the notion of \emph{$L$-good configurations}, where all free variables are either bound on the heap, or contained in $L$. He shows that this property is preserved by the operational semantics and subsequently considers only $L$-good configurations. We follow this example with our definition of \emph{closed} judgments. Threading the closedness requirement through an proof by rule induction is a typical chore contributing to the overhead of a machine-checked formalization.
 
 \subsubsection{Join vs. update}
 
@@ -328,7 +328,7 @@ The required technical lemmas about the denotational semantics are compiled in a
 For clarity, we write $\rho \eqon{S} \rho'$ for $\rho|_S = \rho'|_S$.
 
 \begin{proof}
-by induction on the derivation of $\sred \Gamma e L \Delta v$. Note that in such a derivation, all occuring judgments are closed.
+by induction on the derivation of $\sred \Gamma e L \Delta v$. Note that in such a derivation, all occurring judgments are closed.
 
 \case{\sRule{Lam}}
 This case is trivial.
@@ -337,7 +337,7 @@ This case is trivial.
 By the induction hypothesis we know
 $\dsem{e}{\esem{\Gamma}\rho} = \dsem{\sLam y {e'}}{\esem{\Delta}\rho}$ and $\esem{\Gamma}\rho  \eqon{\dom\Gamma} \esem{\Delta}\rho$ as well as $\dsem{e'[x/y]}{\esem{\Delta}\rho} = \dsem{v}{\esem{\Theta}\rho}$ and $\esem{\Delta}\rho \eqon{\dom\Delta} \esem{\Theta}\rho$.
 
-We have $\esem{\Gamma}{\rho}~x = \esem{\Delta}{\rho}~x$: If $x\in \dom \Gamma$, this follows from the induction hypothesis. Otherwise, we know $x\in L$, as the judgment is closed, and the new names bound in $\Delta$ avoid $L$, so we have $\rho\, x$ on boths sides.
+We have $\esem{\Gamma}{\rho}~x = \esem{\Delta}{\rho}~x$: If $x\in \dom \Gamma$, this follows from the induction hypothesis. Otherwise, we know $x\in L$, as the judgment is closed, and the new names bound in $\Delta$ avoid $L$, so we have $\rho\, x$ on both sides.
 
 While the second part follows from the corresponding inductive hypotheses and $\dom\Gamma \subseteq \dom\Delta$, the first part is a simple calculation:
 \begin{align*}
@@ -412,7 +412,7 @@ For the first part we have
 \subsection{Discussions of modifications}
 \label{sec_modifications2}
 
-Our main \myref{Theorem}{thm_main} and the generalization in \myref{Theorem}{thm_thm2} differ from Launchbury's corresponding Theorem 2. The additional requirement that the judgements are closed is discussed in Section \ref{sec_modifications1}.
+Our main \myref{Theorem}{thm_main} and the generalization in \myref{Theorem}{thm_thm2} differ from Launchbury's corresponding Theorem 2. The additional requirement that the judgments are closed is discussed in Section \ref{sec_modifications1}.
 
 Furthermore, the second part of the \myref{Theorem}{thm_thm2} is phrased differently. Launchbury states  $\esem\Gamma\rho \le \esem\Delta\rho$ where $\rho \le \rho'$ is defined as $(\forall x.\, \rho\,x \ne \bot \implies \rho x = \rho' x)$, i.e. $\rho'$ agrees with $\rho$ on all variables that have a meaning in $\rho$.
 
@@ -421,7 +421,7 @@ The issue with this definition is that there are two reasons why $\esem\Gamma\rh
 
 \section{Adequacy}
 
-A correctness theorem for a natural semantics is not worth much on its own. Imagine a mistake in side condition of the \sRule{Let} rule that accidentially prevents any judgment to be derived for programs with a \keyword{let} -- the correctness theorem would still hold.
+A correctness theorem for a natural semantics is not worth much on its own. Imagine a mistake in side condition of the \sRule{Let} rule that accidentally prevents any judgment to be derived for programs with a \keyword{let} -- the correctness theorem would still hold.
 
 So we want to ensure that all programs that have a meaning, in our case according to the denotational semantics, also have a derivation:
 
@@ -437,7 +437,7 @@ The proof uses a modified denotational semantics that keeps track of the number 
 The domain used to count the resources is a solution to the equation $\sC = \sC_\bot$. The lifting is done by the injection function $C \colon \sC \to \sC$, so the elements are $\bot \sqsubset C~\bot \sqsubset C~(C~\bot) \sqsubset \cdots \sqsubset C^\infty$ – this is isomorphic to the extended naturals. We use $r$ for variables ranging over $\sC$.
 
 
-The resourced semantics $\dsemr{e}{\rho}~r$ now takes an additional argument $r \in \sC$ which indicates the number of steps the semantics is still allowed to perform: Every rescursive call in the definition of $\dsemr{e}{\rho}~r$ peels of one application of $C$ until none are left.
+The resourced semantics $\dsemr{e}{\rho}~r$ now takes an additional argument $r \in \sC$ which indicates the number of steps the semantics is still allowed to perform: Every recursive call in the definition of $\dsemr{e}{\rho}~r$ peels of one application of $C$ until none are left.
 
 The intuition is that if we pass in an infinite number of resources, the two semantics coincide: \[
 \forall x.\, \rho~x = \sigma~x~C^\infty \implies \dsem{e}{\rho} = \dsemr{e}{\sigma}~C^\infty,
@@ -451,7 +451,7 @@ The lifting and the projection functions are hence
 \sCFn \_ &\colon (\sC \to \sCValue) \to (\sC \to \sCValue) \to \sCValue \\
 \sCFnProj{\_}{\_} &\colon \sCValue \to (\sC\to\sCValue) \to (\sC \to \sCValue).
 \end{align*}
-We use $\sigma$ for variables ranging over resourced envrionments, $\sigma \in \sVar \to (\sC \to \sCValue)$.
+We use $\sigma$ for variables ranging over resourced environments, $\sigma \in \sVar \to (\sC \to \sCValue)$.
 
 
 The definition of the resourced semantics resembles the definition of the standard semantics, with some resource bookkeeping added:
@@ -483,7 +483,7 @@ Analogously to the proof of \autoref{thm_thm2}.
 \subsection{Denotational black holes}
 \label{sec_denblackhole}
 
-The major difficulty in proving computational adequacy was the the blackholing behaviour of the operational semantics: During the evaluation of a variable $x$ the corresponding binding is removed from the heap. Operationally, this is desirable: If the variable is called again during its own evaluation, we have an infinite loop.
+The major difficulty in proving computational adequacy was the the blackholing behavior of the operational semantics: During the evaluation of a variable $x$ the corresponding binding is removed from the heap. Operationally, this is desirable: If the variable is called again during its own evaluation, we have an infinite loop.
 
 But obviously, the variable is still mentioned in the current configuration, and simply removing the binding will change the denotation of the configuration in unwanted ways: There is no hope of proving $\dsemr{e}{\esemr{x\mapsto e, \Gamma}} = \dsemr{e}{\esemr{\Gamma}}$.
 
@@ -632,7 +632,7 @@ and
 
 Unfortunately, this is not admissible as an inductive definition, as it is self-referential in a non-monotone way, so the construction of this relation is non-trivial. This was observed and performed by S{\'a}nchez-Gil {\em et~al.} \shortcite{functionspaces}, and we have subsequently implemented this construction in Isabelle.
 
-We lift this relation to envrionments $\rho \in \sEnv$ and resourced envrionments $\sigma \in \sVar \to (\sC \to \sValue)$ by
+We lift this relation to environments $\rho \in \sEnv$ and resourced environments $\sigma \in \sVar \to (\sC \to \sValue)$ by
 \[
 \rho \dsimheap \sigma \iff \forall x.\, \rho~x \dsim \sigma~x~C^\infty.
 \]
@@ -694,13 +694,13 @@ Our adequacy proof diverges quite a bit from Launchbury's. As this new proof con
 Launchbury performs the adequacy proof by introducing an alternative natural semantics (ANS) that is closer to the denotational semantics than the original natural semantics (NS). He replaces the rules \sRule{App} and \sRule{Var} by the two rules given in \myref{Figure}{fig_ans}. There are three differences to be spotted:
 \begin{enumerate}
 \item In the rule for applications, instead of substituting the argument $x$ for the parameter $y$, the variable $y$ is added to the heap, bound to $x$, adding an \emph{indirection}.
-\item In in the rule for variables, no update is performend: Even after $x$ has been evaluated to the value $v$, the binding $x$ on the heap is not modified at all.
+\item In in the rule for variables, no update is performed: Even after $x$ has been evaluated to the value $v$, the binding $x$ on the heap is not modified at all.
 \item Also in the rule for variables, no black-holing is performed: The binding for $x$ stays on the heap during its evaluation.
 \end{enumerate}
 
-Without much ado, Launchbury states that the original natural semantics and the alternative natural semantics are equivalent, which is intuitively obvoius. Unfortunately, it turned out that a rigorous proof of this fact is highly non-trivial, as the actual structure of the heaps during evaluation differs a lot: The modification to the application rule causes many indirections, which need to be taken care of. Furthermore, the lack of updates in the variable rules causes possibly complex, allocating expressions to be evaluated many times, each time adding further copies of already existing expressions to the heap. On the other side, the updates in the original semantics further obscure the relationship between the heaps in the original and the alternative semantics. On top of all that add the technical difficulty that is due to naming issues: Variables that are fresh in one derivation might not be fresh in the other, and explicit renamings need to be carried along.
+Without much ado, Launchbury states that the original natural semantics and the alternative natural semantics are equivalent, which is intuitively obvious. Unfortunately, it turned out that a rigorous proof of this fact is highly non-trivial, as the actual structure of the heaps during evaluation differs a lot: The modification to the application rule causes many indirections, which need to be taken care of. Furthermore, the lack of updates in the variable rules causes possibly complex, allocating expressions to be evaluated many times, each time adding further copies of already existing expressions to the heap. On the other side, the updates in the original semantics further obscure the relationship between the heaps in the original and the alternative semantics. On top of all that add the technical difficulty that is due to naming issues: Variables that are fresh in one derivation might not be fresh in the other, and explicit renamings need to be carried along.
 
-S{\'a}nchez-Gil {\em et~al.} have attempted to perform this proof. They broke it down into individual steps, going from the original semantics to one with only the variable rule changes (called No-update natural semantics, NNS), and from there to the ANS. So far, they have performed the second step, the equivalence between NNS and ANS, in a pen-and-paper proof (\shortcite{indirections}), while relation between NS and NNS has yet resited a proper proof.
+S{\'a}nchez-Gil {\em et~al.} have attempted to perform this proof. They broke it down into individual steps, going from the original semantics to one with only the variable rule changes (called No-update natural semantics, NNS), and from there to the ANS. So far, they have performed the second step, the equivalence between NNS and ANS, in a pen-and-paper proof (\shortcite{indirections}), while relation between NS and NNS has yet resisted a proper proof.
 
 Considering these difficulties, we attempt to go a different path, and bridge the differences not on the side of the natural semantics, but on the denotational side, which turned out to work well:
 
@@ -711,19 +711,19 @@ This difference is easily bridged on the denotational side by a standard substit
 
 \item The removal of updates had surprisingly no effect on the adequacy proof: The main chore of the adequacy proof is to produce evidence for the \emph{assumptions} of the corresponding natural semantics inference rule, which is then, in the last step, applied to produce the desired judgment. The removal of updates only changes the \emph{conclusion} of the rule, so the adequacy proof is unchanged.
 
-Of course updates are not completely irrelevant, and they do affect the adequacy proof indirectly. The adequacy proof uses a correctness theorem for the resourced natural semantics, and there the removal of updates from the semantics would make a noticable difference.
+Of course updates are not completely irrelevant, and they do affect the adequacy proof indirectly. The adequacy proof uses a correctness theorem for the resourced natural semantics, and there the removal of updates from the semantics would make a noticeable difference.
 
 \item Finally, and most trickily, there is the issue of blackholing. We explain our solution in \myref{Section}{sec_denblackhole}, which works due to a small modification to the resourced denotational semantics.
 
 Our proof relies on the property that when we calculate the semantics of $\dsemr{e}\sigma\,r$, we never pass more than $r$ resources to the values bound in $\sigma$ (\myref{Lemma}{lem_denrestr}). This concurs with our intuition about resources.
 
-In the original definition of the resurced semantics, this lemma does not hold: The equation for lambda expression ignores the resources passed to it and returns a function involving the semantics of the body:
+In the original definition of the resourced semantics, this lemma does not hold: The equation for lambda expression ignores the resources passed to it and returns a function involving the semantics of the body:
 \[
 \dsemr{\sLam x e}\sigma ~ (C~r) = \sCFn{\lambda v. \dsemr e {\sigma \sqcup \{x \mapsto v\}}}
 \]
 With that definition, $\dsemr{\sLam x y}\sigma~(C~\bot) = \sCFn{\sigma~y}$, which depends on $\sigma~y~r$ for all $r$, contradicting \myref{Lemma}{lem_denrestr}.
 
-Therefore we restrict the function wrapped in $\sCFn \_$ to cap any resources passed to it at $r$. Analogously we adjust the equation for applications to cap any resources passed to the value of the argument in the enrivonment, $\sigma~x$.
+Therefore we restrict the function wrapped in $\sCFn \_$ to cap any resources passed to it at $r$. Analogously we adjust the equation for applications to cap any resources passed to the value of the argument in the environment, $\sigma~x$.
 
 These modifications do not affect the proof relating the two denotational semantics (\myref{Lemma}{lem_denrel}), as there we always pass infinite resources, and $|_{C^\infty}$ is the identity function.
 
