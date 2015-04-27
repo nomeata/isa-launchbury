@@ -1,14 +1,16 @@
-personal_ws-1.1 en 79 
+personal_ws-1.1 en 85 
 endequation
 denblackhole
 al
 esem
 subst
+Haskell
 lem
 Bruijn
 de
-ur
+Arity
 NNS
+ur
 LaTeX
 xe
 ICFP
@@ -17,6 +19,7 @@ subexpression
 Andreas
 denotational
 naturalnames
+provers
 blackholing
 amsalpha
 Stiftung
@@ -41,15 +44,16 @@ unordered
 monotonicity
 zz
 leastness
+Sestoft's
 nchez
 dom
-prover
 rigorizing
+prover
 abramsky
 ufv
 HOL
-CValue
 closedness
+CValue
 Lochbihler
 nakata
 JOACHIM
@@ -58,6 +62,7 @@ functorial
 jfp
 equivariance
 nonumberbreak
+Eisenberg's
 pre
 compositionality
 launchbury
@@ -74,6 +79,7 @@ CFn
 untyped
 Env
 Mol
+GHC
 Eekelen
 functionspaces
 antisymmetry
