@@ -139,7 +139,7 @@ The equivalence between the natural semantics and the alternative natural semant
 
 Having seen the difficulty of performing these proof steps on the side of the natural semantics, we departed from the outline provided by Launchbury and skipped the alternative natural semantics altogether. With a small, but important modification to the resourced denotational semantics, the proof was possible.
 
-We have implemented and mechanically verified all definitions, propositions and proofs using the theorem prover Isabelle/HOL \cite{afp}. This way we can be confident that there are not holes left in the proof that would have to be filled by later generations. Furthermore it provides a tool that can be used in further work: In \cite{callartiy-icfp}, we use the denotational semantics to show the functional correctness of a compiler transformation, while we use the operational semantics to prove that the transformation does not degrade the program’s performance (measured in allocations).
+We have implemented and mechanically verified all definitions, propositions and proofs using the theorem prover Isabelle/HOL \cite{afp}. This way we can be confident that there are not holes left in the proof that would have to be filled by later generations. Furthermore it provides a tool that can be used in further work: In \cite{arity-afp}, we use the denotational semantics to show the functional correctness of a compiler transformation, while we use the operational semantics to prove that the transformation does not degrade the program’s performance (measured in allocations).
 
 %Therefore, we take the liberty to concentrate on the important steps and tricky calculations of the proofs here. In particular, we will not explicate the treatment of names, we implicitly expect heaps to be distinctly named and we do not show that partial operations like $\sqcup$ are defined where used. For all gory details, we refer the interested reader to the Isabelle proof document, which not only contains the full proofs, but also has the LaTeX code of the theorems automatically generated from the proved statements.
 
@@ -700,7 +700,7 @@ Launchbury performs the adequacy proof by introducing an alternative natural sem
 
 Without much ado, Launchbury states that the original natural semantics and the alternative natural semantics are equivalent, which is intuitively obvious. Unfortunately, it turned out that a rigorous proof of this fact is highly non-trivial, as the actual structure of the heaps during evaluation differs a lot: The modification to the application rule causes many indirections, which need to be taken care of. Furthermore, the lack of updates in the variable rules causes possibly complex, allocating expressions to be evaluated many times, each time adding further copies of already existing expressions to the heap. On the other side, the updates in the original semantics further obscure the relationship between the heaps in the original and the alternative semantics. On top of all that add the technical difficulty that is due to naming issues: Variables that are fresh in one derivation might not be fresh in the other, and explicit renamings need to be carried along.
 
-S{\'a}nchez-Gil {\em et~al.} have attempted to perform this proof. They broke it down into individual steps, going from the original semantics to one with only the variable rule changes (called No-update natural semantics, NNS), and from there to the ANS. So far, they have performed the second step, the equivalence between NNS and ANS, in a pen-and-paper proof (\shortcite{indirections}), while relation between NS and NNS has yet resisted a proper proof.
+S{\'a}nchez-Gil {\em et~al.} have attempted to perform this proof. They broke it down into individual steps, going from the original semantics to one with only the variable rule changes (called No-update natural semantics, NNS), and from there to the ANS. So far, they have performed the second step, the equivalence between NNS and ANS, in a pen-and-paper proof \shortcite{indirections}, while relation between NS and NNS has yet resisted a proper proof.
 
 Considering these difficulties, we attempt to go a different path, and bridge the differences not on the side of the natural semantics, but on the denotational side, which turned out to work well:
 
@@ -731,45 +731,54 @@ These modifications do not affect the proof relating the two denotational semant
 
 \section{Related work}
 
-A large number of developments on formal semantics of functional programming languages in the last two decades build on Launchbury’s work. Many of them implicitly or explicitly rely on the correctness proof as spelled out by Launchbury:
+A large number of developments on formal semantics of functional programming languages in the last two decades build on Launchbury’s work; here is a short selection:
+Van Eekelen \& de~Mol \shortcite{mixed} add strictness annotations to the syntax and semantics of Launchbury’s work.
+%They state the correctness as in `Theorem' \ref{thm_false}, without spotting the issue.
+Nakata \& Hasegawa \shortcite{nakata} define a small-step semantics for call-by-need and relate it to a Launchbury-derived big-step semantics. Nakata \shortcite{nakata_blackhole} modifies the denotational semantics to distinguish direct cycles from looping recursion.
+%They state the correctness with respect to the denotational semantics and reproduce the `Theorem' \ref{thm_false} in the flawed form, in their extended version.
+S{\'a}nchez-Gil {\em et~al.} \shortcite{distributed} extend Launchbury's semantics with distributed evaluation.
+Baker-Finch {\em et~al.} \shortcite{parallel} create a semantics for parallel call-by-need based on Launchbury’s.
 
-Van Eekelen \& de~Mol \shortcite{mixed} add strictness annotations to the syntax and semantics of Launchbury’s work. They state the correctness as in `Theorem' \ref{thm_false}, without spotting the issue.
+While many of them implicitly or explicitly rely on the correctness and adequacy proof as spelled out by Launchbury, some stick with the original definition of the heap semantics using $\sqcup$, for which the proofs do not got through, while others use right-sided updates, without further explanation. The work by Baker-Finch {\em et~al.} is particularly interesting, as they switched from the original to the fixed definition between an earlier tech report \shortcite{parallel-tr} and the later ICFP publication \shortcite{parallel}, unfortunately without motivating that change. Nakata also changes this detail between the two cited works.
 
+Such disagreement about the precise definition of the semantics is annoying, as it creates avoidable incompatibilities between the results obtained by these works. We hope that our fully rigorous treatment will resolve this confusion and allows future work to standardize on the ``right'' definition.
 
-Nakata \& Hasegawa \shortcite{nakata} define a small-step semantics for call-by-need and relate it to a Launchbury-derived big-step semantics. They state the correctness with respect to the denotational semantics and reproduce the `Theorem' \ref{thm_false} in the flawed form, in their extended version.
+Furthermore, none of these works discuss the holes in Launchbury’s adequacy proof, even those that explicitly state the adequacy of their extended semantics. Our adequacy proof is better suited for such extensions, as it is rigorous and furthermore avoids the intermediate natural semantics.
 
-S{\'a}nchez-Gil {\em et~al.} \shortcite{distributed} extend Launchbury's semantics with distributed evaluation.  In their modified natural semantics the heap retains the expression under evaluation with a special flag, marking them as blocked. Furthermore, the expression under evaluation has a name. Thus the non-distributed subset of their semantics is very similar to our stacked semantics and their correctness statement corresponds to Theorem \ref{thm_thm2}.
-
-An interesting case is the work by Baker-Finch {\em et~al.} on parallel call-by-need: While an earlier report \shortcite{parallel-tr} uses Launchbury’s definitions unmodified and states the flawed `Theorem' \ref{thm_false}, the following publication at ICFP \shortcite{parallel} uses an update-based denotational semantics, unfortunately without motivating that change.
-
-Similarly, Nakata  \shortcite{nakata_blackhole}, who modifies the denotational semantics to distinguish direct cycles from looping recursion, uses update-based semantics without further explanation. 
+\smallskip
 
 This list is just a small collection of many more Launchbury-like semantics. Often the relation to a denotational semantics is not stated, but nevertheless they are standing on the foundations laid by Launchbury. Therefore it is not surprising that others have worked on formally fortifying these foundations as well:
 
-S{\'a}nchez-Gil {\em et~al.} identified a step in his adequacy proof relating the standard and the resourced denotational semantics that is not as trivial as it seemed at first and worked out a detailed pen-and-paper proof \shortcite{functionspaces}. They also plan to prove the equivalency between Launchbury’s natural semantics and a variant thereof, which was used by Launchbury in his adequacy proof, in the theorem prover Coq. As one step in that direction, they address the naming issues and suggest a mixed representation, using de Bruijn indices for locally bound variables and names for free variables \shortcite{nameless}. This corresponds to our treatment of names in the formal development, using the Nominal logic machinery \cite{nominal} locally but not for names bound in heaps.
+In particular S{\'a}nchez-Gil {\em et~al.} worked towards rigorously proving Launchbury's semantics correct and adequate. They noted that the relation between the standard and the resourced denotational semantics is not as trivial as it seemed at first, and and worked out a detailed pen-and-paper proof \shortcite{functionspaces}. We have formalized this, fixing mistakes in the proof, and build on their result here (\myref{Lemma}{lem_denrel}).
 
-\section{Discussion}
+They also bridged half the gap between Launchbury's natural and alternative natural semantics \cite{indirections}, and plan to bridge the other half. We avoided these very tedious proofs by bridging the difference on the denotational side (\myref{Section}{sec_modifications3}).
 
-Although we have found a flaw in the proof and the formulation of the correctness theorem in Launchbury’s semantics, the essential correctness result (as formulated in Theorem~\ref{thm_main}) stills holds. In that sense our work, especially with the computer-verified proofs in \cite{afp}, actually strengthens the foundations of formal work in that field.
+As a step towards a mechanization of their work in Coq, they address the naming issues and suggest a mixed representation, using de Bruijn indices for locally bound variables and names for free variables \shortcite{nameless}. This corresponds to our treatment of names in the formal development, using the Nominal logic machinery \cite{nominal} locally but not for names bound in heaps.
 
-We have provided two ways to fix the problem: One by adding a stack to the operational semantics, and one by changing the denotation of heaps. Both variants have precursors in the literature: The extended heaps of \cite{distributed} resemble the heap-stack-pairs of our semantics, while Baker-Finch {\em et~al.} \shortcite{parallel} and Nakata \shortcite{nakata_blackhole} use right-sided updates in their denotational heap semantics.
+\smallskip
 
-Adding the stack to the judgments of the natural semantics, although it does not affect the evaluation of expressions at all, seems to make the semantics more suitable for formal proofs than the original semantics:
-\begin{compactitem}
-\item Launchbury’s global notion of “fresh variable” is hard to work with, as noted and fixed before by adding to the judgments an explicit list of variable names to avoid \cite{sestoft}. As the stack in our semantics already contains these names, this additional step is not required.
-\item While proving Theorem \ref{thm_stackedcorrectness}, the environment $\rho$ does not have to be all-quantified in the inductive step. This simplified the proof a bit and avoids the pitfall that the original proof fell into.
-\end{compactitem}
-The similarity with the extended heaps in \cite{distributed} further supports the usefulness of the stacked semantics.
+Having an implementation of the present work in Isabelle does not give us great assurance about the correctness of our work, but additional is a tool to formalize further work. We have used these semantics to proof that the compiler analysis and transformation ``Call Arity'' \cite{tfp}, which is implemented in the Haskell compiler GHC, is semantics-preserving and does not degrade performance \cite{arity-afp}. We measure performance on a sufficiently abstract level by counting allocations on the heap, for which Launchbury’s semantics provides just the right level of detail.
 
-We had to spend slightly more pages on the properties of the original denotational semantics (Appendix~\ref{sec_denprops}) than of the update-based denotational semantics (Appendix~\ref{updsemanticsprops}). This is partly due to more details in the proofs in the former section, partly because $+$ behaves nicer than $\sqcup$ (e.g.\ it is defined everywhere). This is orthogonal to the usefulness of the stack-based natural semantics, which could be proven correct with regard to the updates-based denotational semantics as well.
 
-Unless one has to stick with $\sqcup$, e.g. to stay compatible with previous work using this definition, little stands in the way of using the update-based denotational semantics to model the denotation of heaps.
+\section{Conclusion and Future Work}
 
-\section{Future work}
+\begin{quote}
+Was beweisbar ist, soll in der Wissenschaft nicht ohne Beweis geglaubt werden.\footnote{
+What is provable in science, is not to be believed without proof.}
+\end{quote}
+\begin{qtsource}
+--- Richard Dedekind, \textit{Was sind und was sollen Zahlen}, 1888
+\end{qtsource}
 
-Proving correctness is of course only half the battle: The adequacy of Launchbury’s semantics is not yet formally proven. The original paper itself outlines the steps of a proof, and some of these steps have since then been spelled out in greater detail \cite{functionspaces}, and the same authors are currently working on the equivalency of Launchbury’s original and modified natural semantics. We plan to build on these results to eventually have a machine-checked proof of the adequacy of Launchbury’s semantics.
+In computer science we are in the happy situation that we can use the tools of logic and mathematics to describe our artifacts, and hence to give proofs of our claims, and indeed, we often do. But we are also in the unfortunate situation that our models become large and complex, so our proofs becomes large and complex, without necessarily becoming harder or more interesting. So classical pen-and-paper proofs are likely to be incomplete or erroneous, without anyone noticing.
 
-We hope that by proving the correctness and adequacy in a theorem prover, we not “just” reinforce our theoretical foundations but also create a practical (for a theoretician’s understanding of practical) tool that can be used to experiment with the many various ways that this semantics can be extended and modified.
+We can help ourselfs here by letting our computers check the proofs. This is what we have done: We took an established formalism and with the help of the theorem prover Isabelle, weeded out all mistakes, filled all the holes and clarified a lot of technical details.
+
+Such mechanization is a thankless task: With todays theorem provers, it is still very laborous, and at the end one usually finds that everything is allright, and even though there were no complete proofs before, the results still hold. Nevertheless, we should invest the effort to fortify at least our foundations this way. We deem Launchbury’s semantics important enough to warrant this effort.
+
+\smallskip
+
+We used our formalization to prove a compiler transformation correct, but the formalization gap between Launchbury’s or Sestoft’s core calculus, and the full Core language used by GHC is rather large. It would be very useful to have GHC Core formalized, possibly building on Eisenberg’s specification \shortcite{core}, allowing for much more use of formal methods in the development of the Haskell compiler.
 
 %\section*{Acknowledgments}
 
