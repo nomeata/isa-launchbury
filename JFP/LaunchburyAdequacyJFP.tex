@@ -137,7 +137,7 @@ His adequacy proof is only a rough outline, though. It suggests to establish the
 \end{compactitem}
 The equivalence between the natural semantics and the alternative natural semantics was not proven by Launchbury. Although quite intuitive, a rigorous proof is yet to be found. S{\'a}nchez-Gil {\em et~al.} have attempted to perform this proof and obtained an equivalency proof for just the change to the application rule \shortcite{indirections}; the other half is still pending.
 
-Having seen the difficulty of performing these proof steps on the side of the natural semantics, we departed from the outline provided by Launchbury and skipped the alternative natural semantics altogether. With a small, but important modification to the resourced denotational semantics, the proof was possible.
+Having seen the difficulty of performing these proof steps on the side of the natural semantics, we departed from the outline provided by Launchbury and skipped the alternative natural semantics altogether. With a small, but important modification to the resourced denotational semantics, which ensures that while evaluating an expression with finite resources, values on the heap are used with fewer resources, the proof was possible.
 
 We have implemented and mechanically verified all definitions, propositions and proofs using the theorem prover Isabelle/HOL \cite{afp}. This way we can be confident that there are no holes left in the proof that would again have to be filled by later generations. Furthermore it provides a tool that can be used in further work: In \cite{arity-afp}, we use the denotational semantics to show the functional correctness of a compiler transformation, while we use the operational semantics to prove that the transformation does not degrade the program’s performance (measured by the number of heap allocations).
 
@@ -149,7 +149,7 @@ Our contributions are:
 \item We analyze the alternative natural semantics used in his adequacy proof outline and show how to handle the differences on the denotational sides (\myref{Sec.}{sec_denblackhole}).
 \item This way, we can provide a new and more direct proof of adequacy (\myref{Sec.}{sec_resourced_adequacy}).
 \item We provide an Isabelle implementation of the various definitions and a machine-checked proof.
-\item We identify and discuss all adjustments to original definitions that we found to be required or helpful when rigorizing this work (Sec. \ref{sec_modifications1}, \ref{sec_modifications2} and \ref{sec_modifications3}).
+\item We identify and discuss all adjustments to original definitions that we found to be required or helpful when rigorizing this work (Sec. \ref{sec_modifications1}, \ref{sec_modifications2} and \ref{sec_modifications3}), and discuss.
 \end{compactitem}
 
 \section{Launchbury's semantics}
@@ -167,7 +167,9 @@ e &\in
 \sLet {\xeng} e
 \end{alignat*}
 
-We equate alpha-equivalent lambda abstractions and \keyword{let} bindings, i.e.\ $\sLam x x = \sLam y y$ and $\fv{\sLam x {\sApp y x}} = \{y\}$, where $\fv e$ denotes the set of free variables of $e$. The theoretical foundation used is Nominal logic \cite{nominal}. This does impose a few well-formedness side conditions, such as equivariance of definition over expressions. We skip them in this presentation, and do so with good conscience, as they have been covered in the machine-checked proof.
+The set of free variables of an expression $e$ is denoted by $\fv e$; we overload this notation and use $\text{fv}$ with arguments of other types that may contain variable names.
+
+We equate alpha-equivalent lambda abstractions and \keyword{let} bindings, i.e.\ $\sLam x x = \sLam y y$ and $\fv{\sLam x {\sApp y x}} = \{y\}$. The theoretical foundation used is Nominal logic \cite{nominal}. This does impose a few well-formedness side conditions, such as equivariance of definition over expressions. We skip them in this presentation, and do so with good conscience, as they have been covered in the machine-checked proof.
 
 Note that the term on the right hand side of an application has to be a variable. A general lambda term of the form $\sApp{e_1}{e_2}$ would have to be pre-processed to $\sLet{x = e_1}{\sApp{e_1}x}$ before it can be handled by this semantics.
 
@@ -208,7 +210,7 @@ Launchbury gives this language meaning by a natural semantics, specified with th
 v &\in \sVal &&\Coloneqq \sLam x e
 \end{alignat*}
 
-A heap is a partial function from variables to expressions; the same type is used for the list of bindings in a \keyword{let}. The domain of an heap $\Gamma$, written $\dom\Gamma$, is the set of variables bound in the heap.
+A heap is a partial function from variables to expressions; the same type is used for the list of bindings in a \keyword{let}. The domain of a heap $\Gamma$, written $\dom\Gamma$, is the set of variables bound in the heap. Heaps are not alpha-equated, so $\dom\Gamma \subseteq \fv \Gamma$. We write $x \mapsto e$ for the singleton heap and use commas to combine heaps with distinct domain.
 
 A value is an expression in weak head normal form. Here, the only values are lambda abstractions. A judgment of the form $\sred \Gamma e L \Delta v$ means that the expression $e$ with the heap $\Gamma$ reduces to $v$, while modifying the heap to $\Delta$.
 
@@ -330,9 +332,27 @@ With the addition of the set of variables to avoid, which will always contain su
 
 \subsubsection{Join vs. update}
 
-Launchbury specifies his denotational semantics using a binary operation $\sqcup$ on environments. He does not define it explicitly, but the statements in his Section 5.2.1 leave no doubt that he indeed intended this operation to denote the least upper bound of its arguments, as one would expect. Unfortunately, with this definition, his Theorem 2 (which corresponds to our \myref{Theorem}{thm_thm2}) is false. A counter example is $e = x$, $v = (\sLam{a}{\sLet{b = b}b})$, $\Gamma = \Delta = (x \mapsto v)$ and $\rho = (x \mapsto \sFn{\lambda \_. \sFn{\lambda x.x}})$ with the crucial property that $\rho$ contains compatible, but better information for a variable also bound in $\Gamma$. The mistake in his correctness proof is in the step $(\esem{x \mapsto v, \Delta}\rho)\,x = \dsem{v}{\esem{x \mapsto v, \Delta}\rho}$ in the case for \sRule{Var}, which should be $(\esem{x \mapsto v, \Delta}\rho)\,x = \dsem{v}{\esem{x \mapsto v, \Delta}\rho} \sqcup \rho\,x$.
+Launchbury specifies his denotational semantics using a binary operation $\sqcup$ on environments. He does not define it explicitly, but the statements in his Section 5.2.1 leave no doubt that he indeed intended this operation to denote the least upper bound of its arguments, as one would expect. Unfortunately, with this definition, his Theorem 2 (which corresponds to our \myref{Theorem}{thm_thm2}) is false.
 
-Intuitively, such rogue $\rho$ are not relevant, and indeed they do not occur in the proof of the main \myref{Theorem}{thm_main}. Nevertheless, this issue needs to be fixed before attempting a formal proof. One possible fix is to replace $\sqcup$ by a right-sided update operation that just throws away information from the left argument for those variables bound on the right. We use the syntax $\rho \upd S \rho'$ for this operation, and by using that the proof goes through in full rigor.
+A counter example is $e = x$, $v = (\sLam{a}{\sLet{b = b}b})$, $\Gamma = \Delta = (x \mapsto v)$ and $\rho = (x \mapsto \sFn{\lambda \_. \sFn{\lambda x.x}})$. Note that the denotation of $v$ is $\sFn{\lambda \_. \bot}$ in every environment. We have $\sred\Gamma e{\{\}}\Delta v$, so according to the theorem, $\dsem{e}{\esem{\Gamma}{\rho}} = \dsem{v}{\esem{\Delta}{\rho}}$ should hold, but
+\begin{conteq}
+\dsem{e}{\esem\Gamma\rho} \\
+= \big(\esem \Gamma\rho\big)\,x \\
+= \rho\,x \sqcup \dsem{v}{\esem{\Gamma}\rho} \\
+= \sFn{\lambda \_. \sFn{\lambda x.x}} \sqcup \sFn{\lambda \_. \bot} \\
+= \sFn{\lambda \_. \sFn{\lambda x.x} \sqcup \bot} \\
+= \sFn{\lambda \_. \sFn{\lambda x.x}} \\
+\ne \sFn{\lambda \_. \bot} \\
+= \dsem{v}{\esem{\Delta}{\rho}}.
+\end{conteq}
+
+
+
+The crucial property of the counter-example is that $\rho$ contains compatible, but better information for a variable also bound in $\Gamma$.
+%
+The mistake in his correctness proof is in the step $(\esem{x \mapsto v, \Delta}\rho)\,x = \dsem{v}{\esem{x \mapsto v, \Delta}\rho}$ in the case for \sRule{Var}, which should be $(\esem{x \mapsto v, \Delta}\rho)\,x = \dsem{v}{\esem{x \mapsto v, \Delta}\rho} \sqcup \rho\,x$.
+
+Intuitively, such rogue $\rho$ are not relevant for a proof of the main \myref{Theorem}{thm_main}. Nevertheless, this issue needs to be fixed before attempting a formal proof. One possible fix is to replace $\sqcup$ by a right-sided update operation that just throws away information from the left argument for those variables bound on the right. We use the syntax $\rho \upd S \rho'$ for this operation, and by using that the proof goes through in full rigor.
 
 It is slightly annoying having to specify the set $S$ in this operation explicitly, as it is usually clear ``from the context': Morally, it is the set of variables that the object on the right talks about. But as environments, i.e. total functions from $\sVar \to \sValue$, do not distinguish between variables not mentioned at all and variables mentioned, but bound to $\bot$, this information is not easily exploitable in a formal setting.
 
@@ -442,7 +462,7 @@ For the first part we have
 \end{align*}
 \end{proof}
 
-In the case for \sRule{Var}, we switched from the simulatenous definition of the heap semantics to an iterative one, in order to be able to make use of the induction hypothesis: \nopagebreak
+In the case for \sRule{Var}, we switched from the usual, simultaneous definition of the heap semantics to an iterative one, in order to be able to make use of the induction hypothesis: \nopagebreak
 
 \begin{lemma}[Iterative definition of the heap semantics]
 \[
@@ -555,7 +575,7 @@ We use the antisymmetry of $\sqsubseteq$, and the leastness of least fixed point
 
 Our main \myref{Theorem}{thm_main} and the generalization in \myref{Theorem}{thm_thm2} differ from Launchbury's corresponding Theorem 2. The additional requirement that the judgments are closed is discussed in Section \ref{sec_modifications1}.
 
-Furthermore, the second part of the \myref{Theorem}{thm_thm2} is phrased differently. Launchbury states  $\esem\Gamma\rho \le \esem\Delta\rho$ where $\rho \le \rho'$ is defined as $(\forall x.\, \rho\,x \ne \bot \implies \rho x = \rho' x)$, i.e. $\rho'$ agrees with $\rho$ on all variables that have a meaning in $\rho$.
+Furthermore, the second part of \myref{Theorem}{thm_thm2} is phrased differently. Launchbury states  $\esem\Gamma\rho \le \esem\Delta\rho$ where $\rho \le \rho'$ is defined as $(\forall x.\, \rho\,x \ne \bot \implies \rho x = \rho' x)$, i.e. $\rho'$ agrees with $\rho$ on all variables that have a meaning in $\rho$.
 
 The issue with this definition is that there are two reasons why $\esem\Gamma\rho\,x=\bot$ can hold: Either $x \notin \dom\Gamma$, or $x \in \dom\Gamma$, but bound to a diverging value. Only the first case is intended here, and actually $\le$ is used as if only that case can happen, e.g.\ in the treatment of \sRule{Var} in the correctness proof. We therefore avoid the problematic $\le$ relation and explicitly show  $\esem\Gamma\rho \eqon{\dom\Gamma}  \esem\Delta\rho$.
 
@@ -615,7 +635,7 @@ Given the similarity between this semantics and the standard semantics, it is no
 The correctness lemma needs some adjustments, as a more evaluated expression requires fewer resources. We therefore obtain an inequality:
 
 \begin{lemma}[Correctness, resourced]
-If $\sred \Gamma e \Delta v$ holds and is closed, then for all environments $\sigma$ we have $\dsemr{e}{\esem{\Gamma}{\sigma}} \sqsubseteq \dsemr{v}{\esem{\Delta}{\sigma}}$ and $(\esemr\Gamma\sigma)|_{\dom\Gamma} \sqsubseteq (\esemr\Delta\sigma)|_{\dom\Gamma}$.%
+If $\sred \Gamma e L \Delta v$ holds and is closed, then for all environments $\sigma$ we have $\dsemr{e}{\esem{\Gamma}{\sigma}} \sqsubseteq \dsemr{v}{\esem{\Delta}{\sigma}}$ and $(\esemr\Gamma\sigma)|_{\dom\Gamma} \sqsubseteq (\esemr\Delta\sigma)|_{\dom\Gamma}$.%
 \label{lem_resourced_correctness}
 \end{lemma}
 
@@ -838,7 +858,7 @@ Our adequacy proof diverges quite a bit from Launchbury's. As this new proof con
 Launchbury performs the adequacy proof by introducing an alternative natural semantics (ANS) that is closer to the denotational semantics than the original natural semantics (NS). He replaces the rules \sRule{App} and \sRule{Var} with the two rules given in \myref{Figure}{fig_ans}. There are three differences to be spotted:
 \begin{enumerate}
 \item In the rule for applications, instead of substituting the argument $x$ for the parameter $y$, the variable $y$ is added to the heap, bound to $x$, adding an \emph{indirection}.
-\item In in the rule for variables, no update is performed: Even after $x$ has been evaluated to the value $v$, the binding $x$ on the heap is not modified at all.
+\item In the rule for variables, no update is performed: Even after $x$ has been evaluated to the value $v$, the binding $x$ on the heap is not modified at all.
 \item Also in the rule for variables, no black-holing is performed: The binding for $x$ stays on the heap during its evaluation.
 \end{enumerate}
 
