@@ -1,0 +1,24 @@
+Dear Editor,
+
+this manuscript has evolved out of the rejected manuscript JFP-2013-0020.
+
+In comparison to that, it contains the first formally verified adequacy proof
+for Launchbury's semantics, which is the main contribution of the manuscript.
+The discussion of the formal mistake in Launchbury's paper is deemphasized (but
+still included), and no alternative natural semantics is proposed. All in all
+we believe the differences are large enough to consider this to be a new
+manuscript.
+
+One reviewer of JFP-2013-0020 was worried about the relationship between the
+journal manuscript and the Isabelle formalization hosted at the Archive of
+Formal Proofs, and whether the publication there diminishes the contribution of
+this manuscript. I argue it does not: The AFP referees evaluate the Isabelle
+code, e.g. that there are no unfinished lemmas left, but usually not what the
+code is used for, i.e. whether the proved theorems are worthwhile. Furthermore,
+the Isabelle theories there are usually uncommented, and one contribution of
+the accompanying “human readable” publication is the digestion and explanation
+of the formal development for the non-Isabelle-speaking reader. It is analogue
+to having an implementation of a system published somewhere where the code is
+being reviewed, but still having a “proper” paper describing the system.
+
+Thanks, Joachim Breitner
