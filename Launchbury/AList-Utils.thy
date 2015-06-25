@@ -1,13 +1,16 @@
 theory "AList-Utils"
 imports Main "~~/src/HOL/Library/AList"
 begin
-
+declare implies_True_equals [simp] False_implies_equals[simp]
 text {* We want to have @{text delete} and @{text update} back in the namespace. *}
 
 abbreviation delete where "delete \<equiv> AList.delete"
 abbreviation update where "update \<equiv> AList.update"
 abbreviation restrictA where "restrictA \<equiv> AList.restrict"
 abbreviation clearjunk where "clearjunk \<equiv> AList.clearjunk"
+
+lemmas restrict_eq = AList.restrict_eq
+  and delete_eq = AList.delete_eq
 
 lemma restrictA_append: "restrictA S (a@b) = restrictA S a @ restrictA S b"
   unfolding restrict_eq by (rule filter_append)
