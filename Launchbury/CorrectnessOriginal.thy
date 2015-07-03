@@ -46,13 +46,14 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e')
     show ?thesis by (auto simp add: lookup_HSem_other)
   qed
 
+  text_raw {* % nice proof start *}
   have "\<lbrakk> App e x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = (\<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>) \<down>Fn (\<lbrace>\<Gamma>\<rbrace>\<rho>) x"
     by simp
   also have "\<dots> = (\<lbrakk> Lam [y]. e' \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>) \<down>Fn (\<lbrace>\<Gamma>\<rbrace>\<rho>) x"
     using Application.hyps(9)[OF prem1] by simp
   also have "\<dots> = (\<lbrakk> Lam [y]. e' \<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>) \<down>Fn (\<lbrace>\<Delta>\<rbrace>\<rho>) x"
     unfolding *..
-  also have "\<dots> = (Fn \<cdot> (\<Lambda> v. \<lbrakk> e' \<rbrakk>\<^bsub>(\<lbrace>\<Delta>\<rbrace>\<rho>)(y := v)\<^esub>)) \<down>Fn (\<lbrace>\<Delta>\<rbrace>\<rho>) x"
+  also have "\<dots> = (Fn\<cdot>(\<Lambda> v. \<lbrakk> e' \<rbrakk>\<^bsub>(\<lbrace>\<Delta>\<rbrace>\<rho>)(y := v)\<^esub>)) \<down>Fn (\<lbrace>\<Delta>\<rbrace>\<rho>) x"
     by simp
   also have "\<dots> = \<lbrakk> e' \<rbrakk>\<^bsub>(\<lbrace>\<Delta>\<rbrace>\<rho>)(y := (\<lbrace>\<Delta>\<rbrace>\<rho>) x)\<^esub>"
     by simp
@@ -61,7 +62,8 @@ case (Application y \<Gamma> e x L \<Delta> \<Theta> z e')
   also have "\<dots> = \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Theta>\<rbrace>\<rho>\<^esub>"
     by (rule Application.hyps(12)[OF prem2])
   finally
-  show ?case.
+  show "\<lbrakk> App e x \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk> z \<rbrakk>\<^bsub>\<lbrace>\<Theta>\<rbrace>\<rho>\<^esub>".
+  text_raw {* % nice proof end *}
   
   show "(\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` domA \<Gamma> = (\<lbrace>\<Theta>\<rbrace>\<rho>) f|` domA \<Gamma>"
     using Application.hyps(10)[OF prem1]
