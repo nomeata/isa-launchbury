@@ -44,8 +44,8 @@ lemma counter_example:
   shows "False"
 proof-
   def n == "1::nat"
-  def d == "Fn\<cdot>(\<Lambda> e. (e \<down>Fn \<bottom>) \<down>Fn \<bottom>)"
-  def d' == "Fn\<cdot>(\<Lambda> _. Fn\<cdot>(\<Lambda> _. Fn\<cdot>(\<Lambda> _. \<bottom>)))"
+  def d == "Fn\<cdot>(\<Lambda> e. (e \<down>Fn \<bottom>))"
+  def d' == "Fn\<cdot>(\<Lambda> _. Fn\<cdot>(\<Lambda> _. \<bottom>))"
   have "Fn\<cdot>(\<Lambda> _. \<bottom>) = \<psi>\<^sup>D\<^bsub>n\<^esub>\<cdot>(d \<down>Fn d')"
     by (simp add: d_def d'_def n_def cfun_map_def)
   also
@@ -65,8 +65,8 @@ lemma counter_example2:
   shows "False"
 proof-
   def n == "1::nat"
-  def e == "CFn\<cdot>(\<Lambda> e r. ((e\<cdot>r \<down>CFn \<bottom>)\<cdot>r \<down>CFn \<bottom>)\<cdot>r)"
-  def a == "\<Lambda> _ . CFn\<cdot>(\<Lambda> _ _. CFn\<cdot>(\<Lambda> _ _. CFn\<cdot>(\<Lambda> _ _. \<bottom>))) :: C \<rightarrow> CValue"
+  def e == "CFn\<cdot>(\<Lambda> e r. (e\<cdot>r \<down>CFn \<bottom>)\<cdot>r)"
+  def a == "\<Lambda> _ . CFn\<cdot>(\<Lambda> _ _. CFn\<cdot>(\<Lambda> _ _. \<bottom>)) :: C \<rightarrow> CValue"
   fix c :: C
   have "CFn\<cdot>(\<Lambda> _ _. \<bottom>) = \<psi>\<^sup>E\<^bsub>n\<^esub>\<cdot>((e \<down>CFn a)\<cdot>c)"
     by (simp add: e_def a_def n_def cfun_map_def)
