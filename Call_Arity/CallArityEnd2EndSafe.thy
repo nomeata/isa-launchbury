@@ -19,7 +19,10 @@ lemma end2end_closed:
   assumes closed: "fv e = ({} :: var set)"
   assumes "([], e, []) \<Rightarrow>\<^sup>* (\<Gamma>,v,[])"
   assumes "isVal v"
-  shows "\<exists> \<Gamma>' v' r. card (domA \<Gamma>) = card (domA \<Gamma>') \<and> isVal v' \<and> ([], transform 0 e, []) \<Rightarrow>\<^sup>* (\<Gamma>',v',[])"
+  obtains \<Gamma>' and v'
+  where "([], transform 0 e, []) \<Rightarrow>\<^sup>* (\<Gamma>',v',[])"
+    and "card (domA \<Gamma>') \<le> card (domA \<Gamma>)"
+    and "isVal v'"
 proof-
   note assms(2)
   moreover
@@ -65,9 +68,9 @@ proof-
   also have "card (domA (restrictA (- set r) \<Gamma>')) + card (set r \<inter> domA \<Gamma>') = card (domA \<Gamma>')"
     by (subst card_Un_disjoint[symmetric]) (auto intro: arg_cong[where f = card])
   finally
-  have "card (domA \<Gamma>) = card (domA \<Gamma>')".
+  have "card (domA \<Gamma>') \<le> card (domA \<Gamma>)" by simp
   with `([], transform 0 e, []) \<Rightarrow>\<^sup>* (\<Gamma>', ?v, [])`  `isVal ?v`
-  show ?thesis by blast
+  show thesis using that by blast
 qed
 
 lemma fresh_var_eqE[elim_format]: "fresh_var e = x \<Longrightarrow> x \<notin>  fv e"
