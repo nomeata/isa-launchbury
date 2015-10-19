@@ -15,8 +15,7 @@ definition HSem :: "('var \<times> 'exp) list \<Rightarrow> ('var \<Rightarrow> 
 
 abbreviation HSem_syn ("\<lbrace> _ \<rbrace>_"  [0,60] 60) where "\<lbrace>\<Gamma>\<rbrace>\<rho> \<equiv> HSem \<Gamma> \<cdot> \<rho>"
 
-lemma HSem_def':
-    "\<lbrace>\<Gamma>\<rbrace>\<rho> = (\<mu> \<rho>'. \<rho> ++\<^bsub>domA \<Gamma>\<^esub> \<^bold>\<lbrakk>\<Gamma>\<^bold>\<rbrakk>\<^bsub>\<rho>'\<^esub>)"
+lemma HSem_def': "\<lbrace>\<Gamma>\<rbrace>\<rho> = (\<mu> \<rho>'. \<rho> ++\<^bsub>domA \<Gamma>\<^esub> \<^bold>\<lbrakk>\<Gamma>\<^bold>\<rbrakk>\<^bsub>\<rho>'\<^esub>)"
   unfolding HSem_def by simp
 
 subsubsection {* Induction and other lemmas about @{term HSem} *}

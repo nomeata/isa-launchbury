@@ -61,7 +61,8 @@ subsubsection {* Restriction *}
 definition env_restr :: "'a set \<Rightarrow> ('a \<Rightarrow> 'b::pcpo) \<Rightarrow> ('a \<Rightarrow> 'b)"
   where "env_restr S m = (\<lambda> x. if x \<in> S then m x else \<bottom>)"
 
-abbreviation env_restr_rev  (infixl "f|`"  110) where "env_restr_rev m S \<equiv> env_restr S m"
+abbreviation env_restr_rev  (infixl "f|`"  110)
+  where "env_restr_rev m S \<equiv> env_restr S m"
 
 notation (latex output) env_restr_rev ("_|\<^bsub>_\<^esub>")
 

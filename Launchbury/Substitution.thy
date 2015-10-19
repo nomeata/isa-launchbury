@@ -13,14 +13,15 @@ nominal_function  (default "case_sum (\<lambda>x. Inl undefined) (\<lambda>x. In
 and
   subst_heap :: "heap \<Rightarrow> var \<Rightarrow> var \<Rightarrow> heap" ("_[_::h=_]" [1000,100,100] 1000)
 where
-  "(Var x)[y ::= z] = Var (x[y ::v= z])"
- |"(App e v)[y ::= z] = App (e[y ::= z]) (v[y ::v= z])"
- |"atom ` domA as \<sharp>* (y,z) \<Longrightarrow> (Let as body)[y ::= z] = Let (as[y ::h= z]) (body[y ::= z])" 
- |"atom x \<sharp> (y,z) \<Longrightarrow> (Lam [x].e)[y ::= z] = Lam [x].(e[y::=z])"
- |"(Bool b)[y ::= z] = Bool b"
- |"(scrut ? e1 : e2)[y ::= z] = (scrut[y ::= z] ? e1[y ::= z] : e2[y ::= z])"
- |"[][y ::h= z] = []"
- |"((v,e)# as)[y ::h= z] = (v, e[y ::= z])# (as[y ::h= z])"
+   "(Var x)[y ::= z] = Var (x[y ::v= z])"
+ | "(App e v)[y ::= z] = App (e[y ::= z]) (v[y ::v= z])"
+ | "atom ` domA as \<sharp>* (y,z) \<Longrightarrow>
+     (Let as body)[y ::= z] = Let (as[y ::h= z]) (body[y ::= z])" 
+ | "atom x \<sharp> (y,z) \<Longrightarrow> (Lam [x].e)[y ::= z] = Lam [x].(e[y::=z])"
+ | "(Bool b)[y ::= z] = Bool b"
+ | "(scrut ? e1 : e2)[y ::= z] = (scrut[y ::= z] ? e1[y ::= z] : e2[y ::= z])"
+ | "[][y ::h= z] = []"
+ | "((v,e)# as)[y ::h= z] = (v, e[y ::= z])# (as[y ::h= z])"
 proof-
 
 have eqvt_at_subst: "\<And> e y z . eqvt_at subst_subst_heap_sumC (Inl (e, y, z)) \<Longrightarrow> eqvt_at (\<lambda>(a, b, c). subst a b c) (e, y, z)"

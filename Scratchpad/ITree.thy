@@ -2,11 +2,10 @@ theory ITree
 imports "HOLCF"
 begin
 
-default_sort countable
-
 domain ('a::countable) tree' = Node (lazy next' :: "'a discr \<rightarrow> 'a tree'")
-
 type_synonym 'a tree = "'a discr \<rightarrow> 'a tree'"
+
+default_sort countable
 
 definition mkt :: "('a \<Rightarrow> 'a tree') \<Rightarrow> 'a tree'"
   where "mkt f = Node\<cdot>(\<Lambda> x. f (undiscr x))"
@@ -58,7 +57,7 @@ lemmas paths_cases[consumes 1, cases set: paths] = paths_aux.cases[to_set]
 lemmas paths_simpss = paths_aux.simps[to_set]
 
 lemma "replicate n x \<in> paths (many x)"
- by(induction n) (auto intro: paths_intros )
+ by(induction n) (auto intro: paths_intros)
 
 lemma "p \<in> paths (many x) \<Longrightarrow> (\<forall> x' \<in> set p. x' = x)"
   by (induction "many x" p arbitrary: x rule: paths_induct)
@@ -82,46 +81,7 @@ lemma or'_bot: "f \<noteq> \<bottom> \<Longrightarrow> or'\<cdot>\<bottom>\<cdot
   apply (simp add: mkt_def)
   apply (rule cfun_belowI)
   apply simp
+
+  oops
   
-  
-
-  apply (subst or'.simps)
-  apply (simp del: or'.simps)
-
-
-(*
-primcorec lor :: "'a ltree \<Rightarrow> 'a ltree \<Rightarrow> 'a ltree"
-  where "lnext (lor t1 t2) = (\<lambda> x. op_option lor (lnext t1 x) (lnext t2 x))"
-*)
-primcorec lor :: "'a ltree \<Rightarrow> 'a ltree \<Rightarrow> 'a ltree"
-  where "lnext (lor t1 t2) = (\<lambda> x.
-           case (lnext t1 x) of Some t1' \<Rightarrow> (case lnext t2 x of Some t2' \<Rightarrow> Some (lor t1' t2') | None \<Rightarrow> Some t1')
-                              | None     \<Rightarrow> lnext t2 x)"
-
-lemma lor_simp:  "lnext (lor t1 t2) x =  op_option lor (lnext t1 x) (lnext t2 x)"
-  by (cases "lnext t1 x", case_tac [!] "lnext t2 x") auto
-
-
-primcorec land_aux :: "'a ltree \<Rightarrow> 'a ltree \<Rightarrow> 'a ltree"
-      and land :: "'a ltree \<Rightarrow> 'a ltree \<Rightarrow> 'a ltree"
-  where "(land_aux t1 t2) = Node (\<lambda> x. case (lnext t1 x) of Some t1' \<Rightarrow> Some (land t1' t2) | None \<Rightarrow> None)"
-       |"(land t1 t2) = lor (land_aux t1 t2) (land_aux t2 t1)"
-
-
-(*
-primcorec land :: "'a ltree \<Rightarrow> 'a ltree \<Rightarrow> 'a ltree"
-   where "(land t1 t2) = lor (Node (\<lambda> x. case (lnext t1 x) of Some t1' \<Rightarrow> Some (land t1' t2) | None \<Rightarrow> None)) (Node (\<lambda> x. case (lnext t1 x) of Some t1' \<Rightarrow> Some (land t1' t2) | None \<Rightarrow> None))"
-*)
-
-primcorec land :: "'a ltree \<Rightarrow> 'a ltree \<Rightarrow> 'a ltree"
-   where "lnext (land t1 t2) = (\<lambda> x.
-      case (lnext t1 x) of Some t1' \<Rightarrow> (case lnext t2 x of Some t2' \<Rightarrow> Some (lor (land t1' t2) (land t1 t2')) | None \<Rightarrow> Some (land t1' t2))
-                         | None     \<Rightarrow> (case lnext t2 x of Some t2' \<Rightarrow> Some (land t1 t2')                     | None \<Rightarrow> None))"
-
-primcorec land :: "'a ltree \<Rightarrow> 'a ltree \<Rightarrow> 'a ltree"
-   where "lnext (land t1 t2) = map_option (\<lambda> (x,y). (land x y, land x y)) o (\<lambda> x.
-      case (lnext t1 x) of Some t1' \<Rightarrow> (case lnext t2 x of Some t2' \<Rightarrow> Some (lor t1' t1, lor t2 t2') | None \<Rightarrow> Some (t1', t2))
-                         | None     \<Rightarrow> (case lnext t2 x of Some t2' \<Rightarrow> Some (t1, t2')                | None \<Rightarrow> None))"
-
-
 end
