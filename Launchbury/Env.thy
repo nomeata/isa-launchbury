@@ -11,7 +11,8 @@ related definitions.
 
 subsubsection {* The domain of a pcpo-valued function *}
 
-definition edom :: "('key \<Rightarrow> 'value::pcpo) \<Rightarrow> 'key set" where "edom m = {x. m x \<noteq> \<bottom>}"
+definition edom :: "('key \<Rightarrow> 'value::pcpo) \<Rightarrow> 'key set"
+  where "edom m = {x. m x \<noteq> \<bottom>}"
 
 lemma bot_edom[simp]: "edom \<bottom> = {}" by (simp add: edom_def)
 

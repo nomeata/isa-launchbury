@@ -4,7 +4,8 @@ begin
 
 subsubsection {* Conversion from heaps to environments *} 
 
-fun evalHeap :: "('var \<times> 'exp) list \<Rightarrow> ('exp \<Rightarrow> 'value::{pure,pcpo}) \<Rightarrow> 'var \<Rightarrow> 'value"
+fun
+  evalHeap :: "('var \<times> 'exp) list \<Rightarrow> ('exp \<Rightarrow> 'value::{pure,pcpo}) \<Rightarrow> 'var \<Rightarrow> 'value"
 where
   "evalHeap [] _ = \<bottom>"
 | "evalHeap ((x,e)#h) eval = (evalHeap h eval) (x := eval e)"

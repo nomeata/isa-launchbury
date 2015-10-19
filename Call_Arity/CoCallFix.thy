@@ -38,7 +38,8 @@ sublocale CoCallAnalysis CCexp.
 definition CCfix :: "heap \<Rightarrow> (AEnv \<times> CoCalls) \<rightarrow> CoCalls"
   where "CCfix \<Gamma> = (\<Lambda> aeG. (\<mu> G'. ccBindsExtra \<Gamma>\<cdot>(fst aeG , G') \<squnion> snd aeG))"
 
-lemma CCfix_eq: "CCfix \<Gamma>\<cdot>(ae,G) = (\<mu> G'. ccBindsExtra \<Gamma>\<cdot>(ae, G') \<squnion> G)"
+lemma CCfix_eq:
+  "CCfix \<Gamma>\<cdot>(ae,G) = (\<mu> G'. ccBindsExtra \<Gamma>\<cdot>(ae, G') \<squnion> G)"
   unfolding CCfix_def
   by simp
 

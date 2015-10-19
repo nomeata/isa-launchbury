@@ -5,8 +5,10 @@ begin
 locale ArityAnalysis =
   fixes Aexp :: "exp \<Rightarrow> Arity \<rightarrow> AEnv"
 begin
-  abbreviation Aexp_syn ("\<A>\<^bsub>_\<^esub>") where "\<A>\<^bsub>a\<^esub> e \<equiv> Aexp e\<cdot>a"
-  abbreviation Aexp_bot_syn ("\<A>\<^sup>\<bottom>\<^bsub>_\<^esub>") where "\<A>\<^sup>\<bottom>\<^bsub>a\<^esub> e \<equiv> fup\<cdot>(Aexp e)\<cdot>a"
+  abbreviation Aexp_syn ("\<A>\<^bsub>_\<^esub>")where "\<A>\<^bsub>a\<^esub> e \<equiv> Aexp e\<cdot>a"
+  abbreviation Aexp_bot_syn ("\<A>\<^sup>\<bottom>\<^bsub>_\<^esub>")
+    where "\<A>\<^sup>\<bottom>\<^bsub>a\<^esub> e \<equiv> fup\<cdot>(Aexp e)\<cdot>a"
+
 end
 
 locale ArityAnalysisHeap =

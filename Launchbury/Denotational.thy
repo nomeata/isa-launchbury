@@ -8,7 +8,8 @@ This is the actual denotational semantics as found in \cite{launchbury}.
 
 interpretation semantic_domain Fn Fn_project B B_project "(\<Lambda> x. x)".
 
-abbreviation ESem_syn'' :: "exp \<Rightarrow> (var => Value) \<Rightarrow> Value" ("\<lbrakk> _ \<rbrakk>\<^bsub>_\<^esub>"  [60,60] 60)
+abbreviation
+  ESem_syn'' :: "exp \<Rightarrow> (var => Value) \<Rightarrow> Value" ("\<lbrakk> _ \<rbrakk>\<^bsub>_\<^esub>"  [60,60] 60)
   where "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> \<equiv> ESem e \<cdot> \<rho>"
 
 abbreviation EvalHeapSem_syn''  ("\<^bold>\<lbrakk> _ \<^bold>\<rbrakk>\<^bsub>_\<^esub>"  [0,0] 110)  where "\<^bold>\<lbrakk>\<Gamma>\<^bold>\<rbrakk>\<^bsub>\<rho>\<^esub> \<equiv> evalHeap \<Gamma> (\<lambda> e. \<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)"

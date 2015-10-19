@@ -4,8 +4,9 @@ begin
 
 text {* Defining a substitution function on terms turned out to be slightly tricky. *}
 
-fun subst_var :: "var \<Rightarrow> var \<Rightarrow> var \<Rightarrow> var" ("_[_::v=_]" [1000,100,100] 1000)
-  where "x[y ::v= z] = (if x = y then z else x)"
+fun
+  subst_var :: "var \<Rightarrow> var \<Rightarrow> var \<Rightarrow> var" ("_[_::v=_]" [1000,100,100] 1000)
+where "x[y ::v= z] = (if x = y then z else x)"
 
 nominal_function  (default "case_sum (\<lambda>x. Inl undefined) (\<lambda>x. Inr undefined)",
                   invariant "\<lambda> a r . (\<forall> as y z . ((a = Inr (as, y, z) \<and> atom ` domA as \<sharp>* (y, z)) \<longrightarrow> map (\<lambda>x . atom (fst x))  (Sum_Type.projr r) = map (\<lambda>x . atom (fst x)) as))")
