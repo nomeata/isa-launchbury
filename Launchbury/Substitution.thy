@@ -197,18 +197,11 @@ by(induct e y z and as y z rule:subst_subst_heap.induct)
   (auto simp add:fresh_at_base fresh_star_Pair fresh_star_insert fresh_Nil fresh_Cons pure_fresh)
 
 lemma
- subst_pres_fresh: "x \<sharp> e \<Longrightarrow> x \<sharp> z \<Longrightarrow> x \<sharp> e[y ::= z]"
+ subst_pres_fresh: "atom x \<sharp> e \<or> x = y \<Longrightarrow> atom x \<sharp> z \<Longrightarrow> atom x \<sharp> e[y ::= z]"
 and
- "x \<sharp> \<Gamma> \<Longrightarrow> x \<sharp> z \<Longrightarrow> x \<notin> atom ` domA \<Gamma> \<Longrightarrow> x \<sharp> (\<Gamma>[y ::h= z])"
+ "atom x \<sharp> \<Gamma> \<or> x = y \<Longrightarrow> atom x \<sharp> z \<Longrightarrow> x \<notin> domA \<Gamma> \<Longrightarrow> atom x \<sharp> (\<Gamma>[y ::h= z])"
 by(induct e y z and \<Gamma> y z rule:subst_subst_heap.induct)
-  (auto simp add:fresh_star_Pair exp_assn.bn_defs fresh_Cons)
-
-lemma subst_pres_fresh2:
-  "x \<sharp> y \<Longrightarrow> x \<sharp> z \<Longrightarrow> x \<sharp> e[y ::= z] \<longleftrightarrow> x \<sharp> e"
-and
- "x \<sharp> y \<Longrightarrow> x \<sharp> z \<Longrightarrow> x \<notin> atom ` domA \<Gamma> \<Longrightarrow> x \<sharp> (\<Gamma>[y ::h= z]) \<longleftrightarrow> x \<sharp> \<Gamma>"
-by (induct e y z and \<Gamma> y z rule:subst_subst_heap.induct)
-   (auto simp add:fresh_star_Pair exp_assn.bn_defs fresh_Cons fresh_Pair)
+  (auto simp add:fresh_star_Pair exp_assn.bn_defs fresh_Cons fresh_Nil pure_fresh)
 
 lemma subst_fresh_noop: "atom x \<sharp> e \<Longrightarrow> e[x ::= y] = e"
   and subst_heap_fresh_noop: "atom x \<sharp> \<Gamma> \<Longrightarrow>  \<Gamma>[x ::h= y] = \<Gamma>"

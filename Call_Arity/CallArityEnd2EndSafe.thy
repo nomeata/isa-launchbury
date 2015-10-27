@@ -7,6 +7,8 @@ begin
 sublocale CoCallImplSafe.
 sublocale CallArityEnd2End.
 
+abbreviation transform_syn' ("\<T>\<^bsub>_\<^esub>") where "\<T>\<^bsub>a\<^esub> \<equiv> transform a"
+
 lemma end2end:
   "c \<Rightarrow>\<^sup>* c' \<Longrightarrow>
   \<not> boring_step c' \<Longrightarrow>
@@ -20,7 +22,7 @@ lemma end2end_closed:
   assumes "([], e, []) \<Rightarrow>\<^sup>* (\<Gamma>,v,[])"
   assumes "isVal v"
   obtains \<Gamma>' and v'
-  where "([], transform 0 e, []) \<Rightarrow>\<^sup>* (\<Gamma>',v',[])"
+  where "([], \<T>\<^bsub>0\<^esub> e, []) \<Rightarrow>\<^sup>* (\<Gamma>',v',[])"
     and "card (domA \<Gamma>') \<le> card (domA \<Gamma>)"
     and "isVal v'"
 proof-

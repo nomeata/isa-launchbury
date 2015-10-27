@@ -66,6 +66,9 @@ lemma domA_clearjunk[simp]: "domA (clearjunk \<Gamma>) = domA \<Gamma>"
 lemma the_map_option_domA[simp]: "x \<in> domA \<Gamma> \<Longrightarrow> the (map_option f (map_of \<Gamma> x)) = f (the (map_of \<Gamma> x))"
   by (induction \<Gamma>) auto
 
+lemma map_of_domAD: "map_of \<Gamma> x = Some e \<Longrightarrow> x \<in> domA \<Gamma>"
+  using dom_map_of_conv_domA by fastforce
+
 lemma restrictA_noop: "domA \<Gamma> \<subseteq> S \<Longrightarrow> restrictA S \<Gamma> = \<Gamma>"
   unfolding restrict_eq by (induction \<Gamma>) auto
 

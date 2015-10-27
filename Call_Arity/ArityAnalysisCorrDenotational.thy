@@ -5,7 +5,7 @@ begin
 context ArityAnalysisLetSafe
 begin
 
-abbreviation "t == transform"
+(* abbreviation transform_syn'' ("\<T>\<^bsub>_\<^esub>") where "\<T>\<^bsub>a\<^esub> \<equiv> transform a" *)
 
 definition ext_eq where "ext_eq v1 v2 \<longleftrightarrow> (\<forall> v. v1 \<down>Fn v = v2  \<down>Fn v)"
 
@@ -232,7 +232,7 @@ lemma eq_Aeta_expand: "eq a (\<lbrakk> Aeta_expand a e \<rbrakk>\<^bsub>\<rho>\<
   apply (fastforce simp add: eq_inc_simp elim: eq_trans)
   done
 
-lemma Arity_transformation_correct: "eq a (\<lbrakk> transform a e \<rbrakk>\<^bsub>\<rho>\<^esub>) (\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)"
+lemma Arity_transformation_correct: "eq a (\<lbrakk> \<T>\<^bsub>a\<^esub> e \<rbrakk>\<^bsub>\<rho>\<^esub>) (\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>)"
 proof(induction a e arbitrary: \<rho> rule: transform.induct[case_names App Lam Var Let Bool IfThenElse])
   case Var
   show ?case by simp
@@ -260,24 +260,24 @@ next
     using Let(2) by simp
   also have "eq a \<dots> (\<lbrakk> e \<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub>)"
   proof (rule Aexp_correct)
-    have "eq\<rho> (Aheap \<Gamma> e\<cdot>a \<squnion> Aexp (Let \<Gamma> e)\<cdot>a) (\<lbrace>map_transform Aeta_expand (Aheap \<Gamma> e\<cdot>a) (map_transform t (Aheap \<Gamma> e\<cdot>a) \<Gamma>)\<rbrace>\<rho>) (\<lbrace>\<Gamma>\<rbrace>\<rho>)"
+    have "eq\<rho> (Aheap \<Gamma> e\<cdot>a \<squnion> Aexp (Let \<Gamma> e)\<cdot>a) (\<lbrace>map_transform Aeta_expand (Aheap \<Gamma> e\<cdot>a) (map_transform transform (Aheap \<Gamma> e\<cdot>a) \<Gamma>)\<rbrace>\<rho>) (\<lbrace>\<Gamma>\<rbrace>\<rho>)"
     proof(induction rule: parallel_HSem_ind[case_names adm bottom step])
       case adm thus ?case by (intro eq\<rho>_adm cont2cont)
     next
       case bottom show ?case by simp
     next
       case (step \<rho>1 \<rho>2)
-      have "eq\<rho> (Aheap \<Gamma> e\<cdot>a \<squnion> Aexp (Let \<Gamma> e)\<cdot>a) (\<^bold>\<lbrakk> map_transform Aeta_expand (Aheap \<Gamma> e\<cdot>a) (map_transform t (Aheap \<Gamma> e\<cdot>a) \<Gamma>) \<^bold>\<rbrakk>\<^bsub>\<rho>1\<^esub>) (\<^bold>\<lbrakk>\<Gamma>\<^bold>\<rbrakk>\<^bsub>\<rho>2\<^esub>)"
+      have "eq\<rho> (Aheap \<Gamma> e\<cdot>a \<squnion> Aexp (Let \<Gamma> e)\<cdot>a) (\<^bold>\<lbrakk> map_transform Aeta_expand (Aheap \<Gamma> e\<cdot>a) (map_transform transform (Aheap \<Gamma> e\<cdot>a) \<Gamma>) \<^bold>\<rbrakk>\<^bsub>\<rho>1\<^esub>) (\<^bold>\<lbrakk>\<Gamma>\<^bold>\<rbrakk>\<^bsub>\<rho>2\<^esub>)"
       proof(rule eq\<rho>I)
         fix x a'
         assume ass: "(Aheap \<Gamma> e\<cdot>a \<squnion> Aexp (Let \<Gamma> e)\<cdot>a) x = up\<cdot>a'"
-        show "eq a' ((\<^bold>\<lbrakk> map_transform Aeta_expand (Aheap \<Gamma> e\<cdot>a) (map_transform t (Aheap \<Gamma> e\<cdot>a) \<Gamma>) \<^bold>\<rbrakk>\<^bsub>\<rho>1\<^esub>) x) ((\<^bold>\<lbrakk>\<Gamma>\<^bold>\<rbrakk>\<^bsub>\<rho>2\<^esub>) x)"
+        show "eq a' ((\<^bold>\<lbrakk> map_transform Aeta_expand (Aheap \<Gamma> e\<cdot>a) (map_transform transform (Aheap \<Gamma> e\<cdot>a) \<Gamma>) \<^bold>\<rbrakk>\<^bsub>\<rho>1\<^esub>) x) ((\<^bold>\<lbrakk>\<Gamma>\<^bold>\<rbrakk>\<^bsub>\<rho>2\<^esub>) x)"
         proof(cases "x \<in> domA \<Gamma>")
           case True[simp]
           then obtain e' where [simp]: "map_of \<Gamma> x = Some e'" by (metis domA_map_of_Some_the)
           from ass have ass': "(Aheap \<Gamma> e\<cdot>a) x = up\<cdot>a'" by simp
 
-          have "(\<^bold>\<lbrakk> map_transform Aeta_expand (Aheap \<Gamma> e\<cdot>a) (map_transform t (Aheap \<Gamma> e\<cdot>a) \<Gamma>) \<^bold>\<rbrakk>\<^bsub>\<rho>1\<^esub>) x =
+          have "(\<^bold>\<lbrakk> map_transform Aeta_expand (Aheap \<Gamma> e\<cdot>a) (map_transform transform (Aheap \<Gamma> e\<cdot>a) \<Gamma>) \<^bold>\<rbrakk>\<^bsub>\<rho>1\<^esub>) x =
             \<lbrakk>Aeta_expand a' (transform a' e')\<rbrakk>\<^bsub>\<rho>1\<^esub>"
            by (simp add: lookupEvalHeap' map_of_map_transform ass')
           also have "eq a' \<dots> (\<lbrakk>transform a' e'\<rbrakk>\<^bsub>\<rho>1\<^esub>)"
@@ -301,7 +301,7 @@ next
       thus ?case
         by (simp add: env_restr_useless  order_trans[OF  edom_evalHeap_subset] del: fun_meet_simp eq\<rho>_join)
     qed
-    thus "eq\<rho> (Aexp e\<cdot>a) (\<lbrace>map_transform Aeta_expand (Aheap \<Gamma> e\<cdot>a) (map_transform t (Aheap \<Gamma> e\<cdot>a) \<Gamma>)\<rbrace>\<rho>) (\<lbrace>\<Gamma>\<rbrace>\<rho>)" 
+    thus "eq\<rho> (Aexp e\<cdot>a) (\<lbrace>map_transform Aeta_expand (Aheap \<Gamma> e\<cdot>a) (map_transform transform (Aheap \<Gamma> e\<cdot>a) \<Gamma>)\<rbrace>\<rho>) (\<lbrace>\<Gamma>\<rbrace>\<rho>)" 
         by (rule eq\<rho>_mono[OF Aexp_body_below_Aheap])
   qed
   also have "\<dots> = \<lbrakk> Let \<Gamma> e \<rbrakk>\<^bsub>\<rho>\<^esub>"
@@ -310,7 +310,7 @@ next
 qed
 
 corollary Arity_transformation_correct':
-  "\<lbrakk> transform 0 e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>"
+  "\<lbrakk> \<T>\<^bsub>0\<^esub> e \<rbrakk>\<^bsub>\<rho>\<^esub> = \<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>"
   using Arity_transformation_correct[where a = 0] by simp
 
 end

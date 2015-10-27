@@ -2,7 +2,9 @@ theory CValue
 imports C
 begin
 
-domain CValue = CFn (lazy "(C \<rightarrow> CValue) \<rightarrow> (C \<rightarrow> CValue)") | CB (lazy "bool discr")
+domain CValue
+  = CFn (lazy "(C \<rightarrow> CValue) \<rightarrow> (C \<rightarrow> CValue)")
+  | CB (lazy "bool discr")
 
 fixrec CFn_project :: "CValue \<rightarrow> (C \<rightarrow> CValue) \<rightarrow> (C \<rightarrow> CValue)"
  where "CFn_project\<cdot>(CFn\<cdot>f)\<cdot>v = f \<cdot> v"
