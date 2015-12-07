@@ -5,11 +5,7 @@ begin
 context ArityAnalysisLetSafe
 begin
 
-(* abbreviation transform_syn'' ("\<T>\<^bsub>_\<^esub>") where "\<T>\<^bsub>a\<^esub> \<equiv> transform a" *)
-
-definition ext_eq where "ext_eq v1 v2 \<longleftrightarrow> (\<forall> v. v1 \<down>Fn v = v2  \<down>Fn v)"
-
-inductive eq :: "Arity \<Rightarrow> Value \<Rightarrow> Value \<Rightarrow> bool"where
+inductive eq :: "Arity \<Rightarrow> Value \<Rightarrow> Value \<Rightarrow> bool" where
    "eq 0 v v"
  |  "(\<And> v. eq n (v1 \<down>Fn v) (v2 \<down>Fn v)) \<Longrightarrow> eq (inc\<cdot>n) v1 v2"
 
@@ -162,14 +158,14 @@ next
   from `eq\<rho> (Aexp (App e x)\<cdot>a) \<rho>1 \<rho>2` 
   have "eq\<rho> (Aexp e\<cdot>(inc\<cdot>a) \<squnion> esing x\<cdot>(up\<cdot>0)) \<rho>1 \<rho>2" by (rule eq\<rho>_mono[OF Aexp_App])
   hence "eq\<rho> (Aexp e\<cdot>(inc\<cdot>a)) \<rho>1 \<rho>2" and "\<rho>1 x = \<rho>2 x" by simp_all
-  with App(1)[OF this(1)]
+  from App(1)[OF this(1)] this(2)
   show ?case by (auto elim: eq.cases)
 next
   case (Lam a x e)
   from  `eq\<rho> (Aexp (Lam [x]. e)\<cdot>a) \<rho>1 \<rho>2`
   have "eq\<rho> (env_delete x (Aexp e\<cdot>(pred\<cdot>a))) \<rho>1 \<rho>2" by (rule eq\<rho>_mono[OF Aexp_Lam])
   hence "\<And> v. eq\<rho> (Aexp e\<cdot>(pred\<cdot>a)) (\<rho>1(x := v)) (\<rho>2(x := v))"  by (auto intro!: eq\<rho>I elim!: eq\<rho>E)
-  with Lam(1)[OF this]
+  from Lam(1)[OF this]
   show ?case by (auto intro: eq_FnI simp del: fun_upd_apply)
 next
   case (Bool b)
@@ -199,7 +195,7 @@ next
       fix x a'
       assume ass: "(Aheap \<Gamma> e\<cdot>a \<squnion> Aexp (Let \<Gamma> e)\<cdot>a) x = up\<cdot>a'"
       show "eq a' ((\<rho>1 ++\<^bsub>domA \<Gamma>\<^esub> \<^bold>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>\<rho>1'\<^esub>) x) ((\<rho>2 ++\<^bsub>domA \<Gamma>\<^esub> \<^bold>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>\<rho>2'\<^esub>) x)"
-      proof(cases "x\<in> domA \<Gamma>")
+      proof(cases "x \<in> domA \<Gamma>")
         case True[simp]
         then obtain e' where [simp]: "map_of \<Gamma> x = Some e'" by (metis domA_map_of_Some_the)
         have "(Aheap \<Gamma> e\<cdot>a) x = up\<cdot>a'" using ass by simp
@@ -249,8 +245,8 @@ next
   case (Bool b)
   show ?case by simp
 next
-  case (IfThenElse e e\<^sub>1 e\<^sub>2)
-  thus ?case by (cases "\<lbrakk> e\<^sub>1 \<rbrakk>\<^bsub>\<rho>\<^esub>") auto
+  case (IfThenElse a e e\<^sub>1 e\<^sub>2)
+  thus ?case by (cases "\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub>") auto
 next
   case (Let a \<Gamma> e)
 

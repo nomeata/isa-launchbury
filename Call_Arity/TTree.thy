@@ -279,7 +279,8 @@ lemma carrier_intersect: "carrier (t \<inter>\<inter> t') \<subseteq> carrier t 
 
 subsubsection {* Disjoint union of trees *}
 
-lift_definition either :: "'a ttree \<Rightarrow> 'a ttree \<Rightarrow> 'a ttree" (infixl "\<oplus>\<oplus>" 80) is "op \<union>"
+lift_definition either :: "'a ttree \<Rightarrow> 'a ttree \<Rightarrow> 'a ttree" (infixl "\<oplus>\<oplus>" 80)
+  is "op \<union>"
   by (auto simp add: downset_def)
   
 lemma either_empty1[simp]: "empty \<oplus>\<oplus> t = t"

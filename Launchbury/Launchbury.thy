@@ -29,10 +29,10 @@ where
   \<rbrakk> \<Longrightarrow>
     \<Gamma> : Var x \<Down>\<^bsub>L\<^esub> (x, z) # \<Delta> : z"
  | Let: "\<lbrakk>
-    atom ` domA as \<sharp>* (\<Gamma>, L);
-    as @ \<Gamma> : body \<Down>\<^bsub>L\<^esub> \<Delta> : z
+    atom ` domA \<Delta> \<sharp>* (\<Gamma>, L);
+    \<Delta> @ \<Gamma> : body \<Down>\<^bsub>L\<^esub> \<Theta> : z
   \<rbrakk> \<Longrightarrow>
-    \<Gamma> : Let as body \<Down>\<^bsub>L\<^esub> \<Delta> : z"
+    \<Gamma> : Let \<Delta> body \<Down>\<^bsub>L\<^esub> \<Theta> : z"
  | Bool:
     "\<Gamma> : Bool b \<Down>\<^bsub>L\<^esub> \<Gamma> : Bool b"
  | IfThenElse: "\<lbrakk>
@@ -102,10 +102,10 @@ proof-
 qed
 
 lemma reds_SmartLet: "\<lbrakk>
-    atom ` domA as \<sharp>* (\<Gamma>, L);
-    as @ \<Gamma> : body \<Down>\<^bsub>L\<^esub> \<Delta> : z
+    atom ` domA \<Delta> \<sharp>* (\<Gamma>, L);
+    \<Delta> @ \<Gamma> : body \<Down>\<^bsub>L\<^esub> \<Theta> : z
   \<rbrakk> \<Longrightarrow>
-    \<Gamma> : SmartLet as body \<Down>\<^bsub>L\<^esub> \<Delta> : z"
+    \<Gamma> : SmartLet \<Delta> body \<Down>\<^bsub>L\<^esub> \<Theta> : z"
 unfolding SmartLet_def
 by (auto intro: reds.Let)
 
@@ -206,14 +206,14 @@ case (IfThenElse \<Gamma> scrut L \<Delta> b e\<^sub>1 e\<^sub>2 \<Theta> z)
   qed
 next
 
-case (Let as \<Gamma> L body \<Delta> z)
+case (Let \<Delta> \<Gamma> L body \<Theta> z)
   show ?case
-  proof (cases "x \<in> domA as")
+  proof (cases "x \<in> domA \<Delta>")
     case False
-      hence "atom x \<sharp> as" using Let.prems by(auto simp add: fresh_Pair)      
+      hence "atom x \<sharp> \<Delta>" using Let.prems by(auto simp add: fresh_Pair)      
       show ?thesis
         apply(rule Let.hyps(3))
-        using Let.prems `atom x \<sharp> as` False
+        using Let.prems `atom x \<sharp> \<Delta>` False
         by (auto simp add: fresh_Pair fresh_append)
   next
     case True
@@ -273,8 +273,8 @@ next
 case (IfThenElse \<Gamma> scrut L \<Delta> b e\<^sub>1 e\<^sub>2 \<Theta> z L')
   thus ?case by (metis  reds.IfThenElse)
 next
-case (Let as \<Gamma>  L body \<Delta> z L')
-  have "atom ` domA as \<sharp>* (\<Gamma>, L')"
+case (Let \<Delta> \<Gamma>  L body \<Theta> z L')
+  have "atom ` domA \<Delta> \<sharp>* (\<Gamma>, L')"
     using Let(1-3) Let.prems
     by (auto simp add: fresh_star_Pair  fresh_star_set_subset)
   thus ?case
