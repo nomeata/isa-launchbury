@@ -1,5 +1,5 @@
 theory CoCallAnalysisSig
-imports "../Launchbury/Terms" Arity CoCallGraph
+imports "Terms" Arity CoCallGraph
 begin
 
 locale CoCallAnalysis =

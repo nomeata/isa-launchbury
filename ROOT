@@ -1,5 +1,5 @@
 session DissFiles = "HOLCF-Nominal2" +
-  options [document = pdf, document_output = "/home/jojo/uni/diss/isa-thy-output"]
+  options [document_variants = empty, document = pdf, document_output = "/home/jojo/uni/diss/isa-thy-output"]
   theories
     "Launchbury/EverythingAdequacy"
     "Call_Arity/SestoftCorrect"
@@ -8,14 +8,14 @@ session DissFiles = "HOLCF-Nominal2" +
     "Call_Arity/ArityTransformSafe"
     "Call_Arity/CallArityEnd2EndSafe"
     "Call_Arity/ArityAnalysisCorrDenotational"
-  document_files "root.tex"
+  document_files "root_empty.tex"
 
 session DissExtraFiles = "HOLCF-Nominal2" +
-  options [document = pdf, document_output = "/home/jojo/uni/diss/isa-thy-output"]
+  options [document_variants = empty, document = pdf, document_output = "/home/jojo/uni/diss/isa-thy-output"]
   theories
     "Scratchpad/ITree"
     "Scratchpad/LTree"
-  document_files "root.tex"
+  document_files "root_empty.tex"
 
 
 session Arity (AFP) in "Call_Arity" = "HOLCF-Nominal2" +

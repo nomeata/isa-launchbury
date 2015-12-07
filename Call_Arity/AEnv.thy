@@ -1,5 +1,5 @@
 theory AEnv
-imports "Arity" "../Launchbury/Vars" "../Launchbury/Env"
+imports "Arity" "Vars" "Env"
 begin
 
 (* TODO: This could mostly be a Env-Nominal module *)
