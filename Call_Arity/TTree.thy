@@ -479,7 +479,8 @@ qed
 
 subsubsection {* Removing elements from a tree *}
 
-lift_definition without :: "'a \<Rightarrow> 'a ttree \<Rightarrow> 'a ttree" is "\<lambda> x xss. filter (\<lambda> x'. x' \<noteq> x) ` xss"
+lift_definition without :: "'a \<Rightarrow> 'a ttree \<Rightarrow> 'a ttree"
+  is "\<lambda> x xss. filter (\<lambda> x'. x' \<noteq> x) ` xss"
   by (auto intro: downset_filter)(metis filter.simps(1) imageI)
 
 lemma paths_withoutI:
