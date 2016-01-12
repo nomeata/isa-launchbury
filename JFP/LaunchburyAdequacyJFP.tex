@@ -195,7 +195,7 @@ Note that the term on the right hand side of an application has to be a variable
 \sRule{Var}
 \and
 \inferrule
-{\dom\Delta \cap \fv{\Gamma,e,L} = \{\}\\   \sred{\Gamma,\Delta} e L \Theta v}
+{\dom\Delta \cap \fv{\Gamma,L} = \{\}\\   \sred{\Gamma,\Delta} e L \Theta v}
 {\sred{\Gamma}{\sLet{\Delta}e} L \Theta v}
 \sRule{Let}
 \end{mathpar}
