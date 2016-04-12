@@ -11,7 +11,8 @@ This is the main correctness theorem, Theorem 2 from \cite{launchbury}.
 theorem correctness:
   assumes "\<Gamma> : e \<Down>\<^bsub>L\<^esub> \<Delta> : v"
   and     "fv (\<Gamma>, e) \<subseteq> set L \<union> domA \<Gamma>"
-  shows   "\<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk>v\<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>" and "(\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` domA \<Gamma> = (\<lbrace>\<Delta>\<rbrace>\<rho>) f|` domA \<Gamma>"
+  shows   "\<lbrakk>e\<rbrakk>\<^bsub>\<lbrace>\<Gamma>\<rbrace>\<rho>\<^esub> = \<lbrakk>v\<rbrakk>\<^bsub>\<lbrace>\<Delta>\<rbrace>\<rho>\<^esub>"
+  and     "(\<lbrace>\<Gamma>\<rbrace>\<rho>) f|` domA \<Gamma> = (\<lbrace>\<Delta>\<rbrace>\<rho>) f|` domA \<Gamma>"
   using assms
 proof(nominal_induct arbitrary: \<rho> rule:reds.strong_induct)
 case Lambda

@@ -17,14 +17,12 @@ lemma end2end:
   \<exists>ae' ce' a' as' r'. consistent  (ae', ce', a', as', r') c' \<and> conf_transform  (ae, ce, a, as, r) c \<Rightarrow>\<^sub>G\<^sup>* conf_transform  (ae', ce', a', as', r') c'"
   by (rule card_arity_transform_safe)
 
-lemma end2end_closed:
+theorem end2end_closed:
   assumes closed: "fv e = ({} :: var set)"
-  assumes "([], e, []) \<Rightarrow>\<^sup>* (\<Gamma>,v,[])"
-  assumes "isVal v"
+  assumes "([], e, []) \<Rightarrow>\<^sup>* (\<Gamma>,v,[])" and "isVal v"
   obtains \<Gamma>' and v'
-  where "([], \<T>\<^bsub>0\<^esub> e, []) \<Rightarrow>\<^sup>* (\<Gamma>',v',[])"
+  where "([], \<T>\<^bsub>0\<^esub> e, []) \<Rightarrow>\<^sup>* (\<Gamma>',v',[])" and "isVal v'"
     and "card (domA \<Gamma>') \<le> card (domA \<Gamma>)"
-    and "isVal v'"
 proof-
   note assms(2)
   moreover
