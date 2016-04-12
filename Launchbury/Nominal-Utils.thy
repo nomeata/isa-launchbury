@@ -383,7 +383,7 @@ lemma inj_atom: "inj atom" by (metis atom_eq_iff injI)
 
 lemmas image_Int[OF inj_atom, simp]
 
-lemma eqvt_uncurry: "eqvt f \<Longrightarrow> eqvt (split f)"
+lemma eqvt_uncurry: "eqvt f \<Longrightarrow> eqvt (case_prod f)"
   unfolding eqvt_def
   by perm_simp simp
 
@@ -392,7 +392,7 @@ lemma supp_fun_app_eqvt2:
   shows "supp (f x y) \<subseteq> supp x \<union> supp y"
 proof-
   from supp_fun_app_eqvt[OF eqvt_uncurry [OF a]]
-  have "supp (split f (x,y)) \<subseteq> supp (x,y)".
+  have "supp (case_prod f (x,y)) \<subseteq> supp (x,y)".
   thus ?thesis by (simp add: supp_Pair)
 qed
 
@@ -401,7 +401,7 @@ lemma supp_fun_app_eqvt3:
   shows "supp (f x y z) \<subseteq> supp x \<union> supp y \<union> supp z"
 proof-
   from supp_fun_app_eqvt2[OF eqvt_uncurry [OF a]]
-  have "supp (split f (x,y) z) \<subseteq> supp (x,y) \<union> supp z".
+  have "supp (case_prod f (x,y) z) \<subseteq> supp (x,y) \<union> supp z".
   thus ?thesis by (simp add: supp_Pair)
 qed
 
