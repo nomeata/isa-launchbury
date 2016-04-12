@@ -21,7 +21,7 @@ lemma combined_restrict_cont:
   "cont (\<lambda>x. combined_restrict S x)"
 proof-
   have "cont (\<lambda>(env, G). combined_restrict S (env, G))" by simp
-  thus ?thesis by (metis split_eta)
+  then show ?thesis by (simp only: case_prod_eta) 
 qed
 lemmas cont_compose[OF combined_restrict_cont, cont2cont, simp]
 
@@ -77,19 +77,20 @@ where
 | "cCCexp (Bool b) =     \<bottom>"
 | "cCCexp (scrut ? e1 : e2) = (\<Lambda> n. (fst (cCCexp scrut\<cdot>0) \<squnion> fst (cCCexp e1\<cdot>n) \<squnion> fst (cCCexp e2\<cdot>n),
      snd (cCCexp scrut\<cdot>0) \<squnion> (snd (cCCexp e1\<cdot>n) \<squnion> snd (cCCexp e2\<cdot>n)) \<squnion> ccProd (edom (fst (cCCexp scrut\<cdot>0))) (edom (fst (cCCexp e1\<cdot>n)) \<union> edom (fst (cCCexp e2\<cdot>n)))))"
-proof-
-case goal1
-    show ?case
+proof goal_cases
+  case 1
+  show ?case
     unfolding eqvt_def cCCexp_graph_aux_def
     apply rule
     apply (perm_simp)
     apply (simp add: Abs_cfun_eqvt)
     done
 next
-case goal3 thus ?case by (metis Terms.exp_strong_exhaust)
+  case 3
+  thus ?case by (metis Terms.exp_strong_exhaust)
 next
-case (goal10 x e x' e')
-  from goal10(9)
+  case prems: (10 x e x' e')
+  from prems(9)
   show ?case
   proof(rule eqvt_lam_case)
     fix \<pi> :: perm
@@ -100,7 +101,7 @@ case (goal10 x e x' e')
        = combined_restrict (fv (Lam [x]. e)) (- \<pi> \<bullet> (fst (cCCexp_sumC (\<pi> \<bullet> e)\<cdot>(pred\<cdot>n)), predCC (fv (Lam [x]. e)) (\<Lambda> a. snd(cCCexp_sumC (\<pi> \<bullet> e)\<cdot>a))\<cdot>n))"
       by (rule combined_restrict_perm[symmetric, OF *]) simp
     also have "\<dots> = combined_restrict (fv (Lam [x]. e)) (fst (cCCexp_sumC e\<cdot>(pred\<cdot>n)), predCC (- \<pi> \<bullet> fv (Lam [x]. e)) (\<Lambda> a. snd(cCCexp_sumC e\<cdot>a))\<cdot>n)"
-      by (perm_simp, simp add: eqvt_at_apply[OF goal10(1)] pemute_minus_self Abs_cfun_eqvt)
+      by (perm_simp, simp add: eqvt_at_apply[OF prems(1)] pemute_minus_self Abs_cfun_eqvt)
     also have "- \<pi> \<bullet> fv (Lam [x]. e) = (fv (Lam [x]. e) :: var set)" by (rule perm_supp_eq[OF *])
     also note calculation
     }
@@ -108,8 +109,8 @@ case (goal10 x e x' e')
         = (\<Lambda> n. combined_restrict (fv (Lam [x]. e)) (fst (cCCexp_sumC e\<cdot>(pred\<cdot>n)), predCC (fv (Lam [x]. e)) (\<Lambda> a. snd(cCCexp_sumC e\<cdot>a))\<cdot>n))" by simp
   qed
 next
-case (goal19 \<Gamma> body \<Gamma>' body')
-  from goal19(9)
+  case prems: (19 \<Gamma> body \<Gamma>' body')
+  from prems(9)
   show ?case
   proof (rule eqvt_let_case)
     fix \<pi> :: perm
@@ -123,9 +124,9 @@ case (goal19 \<Gamma> body \<Gamma>' body')
                        CoCallArityAnalysis.cccFix_choose (- \<pi> \<bullet> cCCexp_sumC) \<Gamma>\<cdot>((- \<pi> \<bullet> cCCexp_sumC) body\<cdot>n)"
         by (simp add: pemute_minus_self)
       also have "CoCallArityAnalysis.cccFix_choose (- \<pi> \<bullet> cCCexp_sumC) \<Gamma> = CoCallArityAnalysis.cccFix_choose cCCexp_sumC \<Gamma>"
-        by (rule cccFix_choose_cong[OF eqvt_at_apply[OF goal19(1)] refl])
+        by (rule cccFix_choose_cong[OF eqvt_at_apply[OF prems(1)] refl])
       also have "(- \<pi> \<bullet> cCCexp_sumC) body = cCCexp_sumC body"
-        by (rule eqvt_at_apply[OF goal19(2)])
+        by (rule eqvt_at_apply[OF prems(2)])
       also note calculation
     }
     thus "(\<Lambda> n. combined_restrict (fv (Terms.Let \<Gamma> body)) (CoCallArityAnalysis.cccFix_choose cCCexp_sumC (\<pi> \<bullet> \<Gamma>)\<cdot>(cCCexp_sumC (\<pi> \<bullet> body)\<cdot>n))) =
@@ -210,7 +211,7 @@ by (cases n) (auto dest: set_mp[OF ccField_CCexp])
 lemma cc_restr_fup_ccExp_useless[simp]: "cc_restr (fv e) (fup\<cdot>(CCexp e)\<cdot>n) = fup\<cdot>(CCexp e)\<cdot>n"
   by (rule cc_restr_noop[OF ccField_fup_CCexp])
 
-sublocale EdomArityAnalysis Aexp by default (rule Aexp_edom')
+sublocale EdomArityAnalysis Aexp by standard (rule Aexp_edom')
 
 lemma CCexp_simps[simp]:
   "\<G>\<^bsub>a\<^esub>(Var x) = \<bottom>"
@@ -235,7 +236,7 @@ by (auto simp add: CCexp_pre_simps Diff_eq cc_restr_cc_restr[symmetric] predCC_e
      )
 
 definition Aheap where
-  "Aheap \<Gamma> e = (\<Lambda> a. if nonrec \<Gamma> then (split Aheap_nonrec (hd \<Gamma>))\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a) else  (Afix \<Gamma> \<cdot> (Aexp e\<cdot>a \<squnion> (\<lambda>_.up\<cdot>0) f|` thunks \<Gamma>)) f|` domA \<Gamma>)"
+  "Aheap \<Gamma> e = (\<Lambda> a. if nonrec \<Gamma> then (case_prod Aheap_nonrec (hd \<Gamma>))\<cdot>(Aexp e\<cdot>a, CCexp e\<cdot>a) else  (Afix \<Gamma> \<cdot> (Aexp e\<cdot>a \<squnion> (\<lambda>_.up\<cdot>0) f|` thunks \<Gamma>)) f|` domA \<Gamma>)"
 
 lemma Aheap_simp1[simp]:
   "\<not> nonrec \<Gamma> \<Longrightarrow> Aheap \<Gamma> e \<cdot>a = (Afix \<Gamma> \<cdot> (Aexp e\<cdot>a \<squnion> (\<lambda>_.up\<cdot>0) f|` thunks \<Gamma>)) f|` domA \<Gamma>"

@@ -196,16 +196,16 @@ next
       assume ass: "(Aheap \<Gamma> e\<cdot>a \<squnion> Aexp (Let \<Gamma> e)\<cdot>a) x = up\<cdot>a'"
       show "eq a' ((\<rho>1 ++\<^bsub>domA \<Gamma>\<^esub> \<^bold>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>\<rho>1'\<^esub>) x) ((\<rho>2 ++\<^bsub>domA \<Gamma>\<^esub> \<^bold>\<lbrakk> \<Gamma> \<^bold>\<rbrakk>\<^bsub>\<rho>2'\<^esub>) x)"
       proof(cases "x \<in> domA \<Gamma>")
-        case True[simp]
+        case [simp]: True
         then obtain e' where [simp]: "map_of \<Gamma> x = Some e'" by (metis domA_map_of_Some_the)
         have "(Aheap \<Gamma> e\<cdot>a) x = up\<cdot>a'" using ass by simp
         hence "Aexp e'\<cdot>a' \<sqsubseteq> Aheap \<Gamma> e\<cdot>a \<squnion> Aexp (Let \<Gamma> e)\<cdot>a" using `map_of _ _ = _` by (rule Aexp_heap_below_Aheap)
         hence "eq\<rho> (Aexp e'\<cdot>a') \<rho>1' \<rho>2'" using step(1) by (rule eq\<rho>_mono)
         hence "eq a' (\<lbrakk> e' \<rbrakk>\<^bsub>\<rho>1'\<^esub>) (\<lbrakk> e' \<rbrakk>\<^bsub>\<rho>2'\<^esub>)"
-          by (rule Let(1)[OF map_of_is_SomeD[OF `map_of _ _ = _`]])
+          by (rule Let(1)[OF map_of_SomeD[OF `map_of _ _ = _`]])
         thus ?thesis by (simp add: lookupEvalHeap')
       next
-        case False[simp]
+        case [simp]: False
         with edom_Aheap have "x \<notin> edom (Aheap \<Gamma> e\<cdot>a)" by blast
         hence "(Aexp (Let \<Gamma> e)\<cdot>a) x = up\<cdot>a'" using ass by (simp add: edomIff)
         with `eq\<rho> (Aexp (Let \<Gamma> e)\<cdot>a) \<rho>1 \<rho>2`
@@ -269,7 +269,7 @@ next
         assume ass: "(Aheap \<Gamma> e\<cdot>a \<squnion> Aexp (Let \<Gamma> e)\<cdot>a) x = up\<cdot>a'"
         show "eq a' ((\<^bold>\<lbrakk> map_transform Aeta_expand (Aheap \<Gamma> e\<cdot>a) (map_transform transform (Aheap \<Gamma> e\<cdot>a) \<Gamma>) \<^bold>\<rbrakk>\<^bsub>\<rho>1\<^esub>) x) ((\<^bold>\<lbrakk>\<Gamma>\<^bold>\<rbrakk>\<^bsub>\<rho>2\<^esub>) x)"
         proof(cases "x \<in> domA \<Gamma>")
-          case True[simp]
+          case [simp]: True
           then obtain e' where [simp]: "map_of \<Gamma> x = Some e'" by (metis domA_map_of_Some_the)
           from ass have ass': "(Aheap \<Gamma> e\<cdot>a) x = up\<cdot>a'" by simp
 
@@ -279,7 +279,7 @@ next
           also have "eq a' \<dots> (\<lbrakk>transform a' e'\<rbrakk>\<^bsub>\<rho>1\<^esub>)"
             by (rule eq_Aeta_expand)
           also have "eq a' \<dots> (\<lbrakk>e'\<rbrakk>\<^bsub>\<rho>1\<^esub>)"
-            by (rule Let(1)[OF map_of_is_SomeD[OF `map_of _ _ = _`]])
+            by (rule Let(1)[OF map_of_SomeD[OF `map_of _ _ = _`]])
           also have "eq a' \<dots> (\<lbrakk>e'\<rbrakk>\<^bsub>\<rho>2\<^esub>)"
           proof (rule Aexp_correct)
             from ass' `map_of _ _ = _`

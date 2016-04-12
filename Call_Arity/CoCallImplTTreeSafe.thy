@@ -54,10 +54,13 @@ by (auto simp add: Texp.AnalBinds_lookup Texp_def split: option.splits
          elim!: set_mp[OF edom_mono[OF monofun_cfun_fun[OF ABind_below_ABinds]]])
 
 sublocale TTreeAnalysisCarrier Texp
-  apply default unfolding Texp_simp carrier_ccTTree..
+  apply standard
+  unfolding Texp_simp carrier_ccTTree
+  apply standard
+  done
 
 sublocale TTreeAnalysisSafe Texp
-proof default
+proof
   fix x e a
 
   from edom_mono[OF Aexp_App]
@@ -164,7 +167,7 @@ lemma carrier_Fheap':"carrier (Theap \<Gamma> e\<cdot>a) = edom (Aheap \<Gamma> 
     unfolding Theap_simp carrier_ccTTree by simp
 
 sublocale TTreeAnalysisCardinalityHeap Texp Aexp Aheap Theap
-proof default
+proof
   fix \<Gamma> e a
   show "carrier (Theap \<Gamma> e\<cdot>a) = edom (Aheap \<Gamma> e\<cdot>a)"
     by (rule carrier_Fheap')
@@ -308,7 +311,7 @@ next
       by (simp add: Theap_simp False)
     finally show ?thesis.
   next
-    case True[simp]
+    case [simp]: True
 
     from True
     have "ttree_restr (edom (Aheap \<Delta> e\<cdot>a)) (substitute (Texp.AnalBinds \<Delta>\<cdot>(Aheap \<Delta> e\<cdot>a)) (thunks \<Delta>) (Texp e\<cdot>a))

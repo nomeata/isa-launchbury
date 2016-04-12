@@ -13,7 +13,7 @@ begin
     "\<lambda> _. 0"
     "Aeta_expand"
     "snd"
-  apply default
+  apply standard
   apply (simp add: Aheap_subst)
   apply (rule subst_Aeta_expand)
   done
@@ -24,7 +24,7 @@ begin
     by (induction rule: transform.induct)
        (auto simp add: exp_assn.supp Let_supp dest!: set_mp[OF supp_map_transform] set_mp[OF supp_map_transform_step] )
   interpretation supp_bounded_transform transform
-    by default (auto simp add: fresh_def supp_transform) 
+    by standard (auto simp add: fresh_def supp_transform) 
 
   type_synonym tstate = "(AEnv \<times> (var \<Rightarrow> two) \<times> Arity \<times> Arity list \<times> var list)"
 
@@ -285,7 +285,7 @@ begin
   case (var\<^sub>2 \<Gamma> x e S)
     show ?case
     proof(cases "x \<in> set r")
-      case False[simp]
+      case [simp]: False
 
       from var\<^sub>2
       have "a_consistent (ae, a, as) (restrictA (- set r) \<Gamma>, e, Upd x # restr_stack (-set r) S)" by auto

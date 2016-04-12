@@ -46,7 +46,7 @@ next
   from Let(3)
   have "\<not> nonrec (\<Gamma>[y::h=x])"  by (simp add: nonrec_subst)
 
-  case 1[simp]
+  case [simp]: 1
   have "cc_restr (S \<union> domA \<Gamma>) (CCfix \<Gamma>[y::h=x]\<cdot>(Afix \<Gamma>[y::h=x]\<cdot>(Aexp e[y::=x]\<cdot>a \<squnion> (\<lambda>_. up\<cdot>0) f|` thunks \<Gamma>), CCexp e[y::=x]\<cdot>a)) =
         cc_restr (S \<union> domA \<Gamma>) (CCfix \<Gamma>\<cdot>        (Afix \<Gamma>\<cdot>        (Aexp e\<cdot>       a \<squnion> (\<lambda>_. up\<cdot>0) f|` thunks \<Gamma>), CCexp e\<cdot>       a))"
     apply (subst CCfix_restr_subst')
@@ -69,7 +69,7 @@ next
   thus ?case using Let(1,2) `\<not> nonrec \<Gamma>` `\<not> nonrec (\<Gamma>[y::h=x])`
     by (auto simp add: fresh_star_Pair  elim: cc_restr_eq_subset[rotated] )
 
-  case 2[simp]
+  case [simp]: 2
   have "Afix \<Gamma>[y::h=x]\<cdot>(Aexp e[y::=x]\<cdot>a \<squnion> (\<lambda>_. up\<cdot>0) f|` (thunks \<Gamma>)) f|` (S \<union> domA \<Gamma>) = Afix \<Gamma>\<cdot>(Aexp e\<cdot>a \<squnion> (\<lambda>_. up\<cdot>0) f|` (thunks \<Gamma>)) f|` (S \<union> domA \<Gamma>)"
     apply (subst Afix_restr_subst')
       apply (erule Let(5))
@@ -98,7 +98,7 @@ next
 
   note `x' \<notin> fv e`[simp] `y \<noteq> x'` [simp]`x \<noteq> x'`  [simp]
 
-  case 1[simp]
+  case [simp]: 1
 
   have "\<And> a. cc_restr {x'} (CCexp exp[y::=x]\<cdot>a) = cc_restr {x'} (CCexp exp\<cdot>a)"
    by (rule Let_nonrec(6)) auto
@@ -162,7 +162,7 @@ next
     by (simp add: env_restr_join env_delete_env_restr_swap[symmetric] ABind_nonrec_eq)
 next
   case (IfThenElse scrut e1 e2)
-  case 2[simp]
+  case [simp]: 2
     from IfThenElse
     show "cc_restr S (CCexp (scrut ? e1 : e2)[y::=x]\<cdot>a) = cc_restr S (CCexp (scrut ? e1 : e2)\<cdot>a)"
       by (auto simp del: edom_env env_restr_empty env_restr_empty_iff simp  add: edom_env[symmetric])
@@ -173,11 +173,11 @@ next
 qed auto
    
 sublocale ArityAnalysisSafe Aexp
-  by default (simp_all add:Aexp_restr_subst)
+  by standard (simp_all add:Aexp_restr_subst)
 
 
 sublocale ArityAnalysisLetSafe Aexp Aheap
-proof default
+proof
   fix \<Gamma> e a
   show "edom (Aheap \<Gamma> e\<cdot>a) \<subseteq> domA \<Gamma>"
     by (cases "nonrec \<Gamma>")
@@ -191,7 +191,7 @@ next
 
   show "Aheap \<Gamma>[x::h=y] e[x::=y] = Aheap \<Gamma> e"
   proof(cases "nonrec \<Gamma>")
-    case False[simp]
+    case [simp]: False
 
     from assms
     have "atom ` domA \<Gamma> \<sharp>* x" and "atom ` domA \<Gamma> \<sharp>* y"
@@ -279,7 +279,7 @@ lemma ccHeap_rec_eq:
 unfolding ccHeap_rec_def by simp
 
 definition ccHeap :: "heap \<Rightarrow> exp \<Rightarrow> Arity \<rightarrow> CoCalls"
-  where "ccHeap \<Gamma>  = (if nonrec \<Gamma> then split ccHeap_nonrec (hd \<Gamma>) else ccHeap_rec \<Gamma>)"
+  where "ccHeap \<Gamma>  = (if nonrec \<Gamma> then case_prod ccHeap_nonrec (hd \<Gamma>) else ccHeap_rec \<Gamma>)"
 
 lemma ccHeap_simp1:
   "\<not> nonrec \<Gamma> \<Longrightarrow> ccHeap \<Gamma> e\<cdot>a = CCfix \<Gamma>\<cdot>(Afix \<Gamma>\<cdot>(Aexp e\<cdot>a \<squnion> (\<lambda>_.up\<cdot>0) f|` (thunks \<Gamma>)), CCexp e\<cdot>a)"
@@ -380,7 +380,7 @@ next
 
   show "ccProd (fv e') (ccNeighbors x (ccHeap \<Delta> e\<cdot>a) - {x} \<inter> thunks \<Delta>) \<sqsubseteq> ccHeap \<Delta> e\<cdot>a" 
   proof (cases "nonrec \<Delta>")
-    case False[simp]
+    case [simp]: False
 
     have "ccProd (fv e') (ccNeighbors x (ccHeap \<Delta> e\<cdot>a) - {x} \<inter> thunks \<Delta>) \<sqsubseteq> ccProd (fv e') (ccNeighbors x (ccHeap \<Delta> e\<cdot>a))"
       by (rule ccProd_mono2) auto

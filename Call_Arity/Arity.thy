@@ -13,7 +13,7 @@ begin
 lift_definition less_eq_Arity :: "Arity \<Rightarrow> Arity \<Rightarrow> bool" is "\<lambda> x y . x \<le> y".
 lift_definition less_Arity :: "Arity \<Rightarrow> Arity \<Rightarrow> bool" is "\<lambda> x y . x < y".
 instance
-  apply default
+  apply standard
   apply (transfer, fastforce)+
   done
 end
@@ -24,13 +24,13 @@ begin
 lift_definition below_Arity :: "Arity \<Rightarrow> Arity \<Rightarrow> bool" is "\<lambda> x y . y \<le> x".
 
 instance
-apply default
+apply standard
 apply ((transfer, auto)+)
 done
 end
 
 instance Arity :: chfin
-proof default
+proof
   fix S  :: "nat \<Rightarrow> Arity"
   assume "chain S"
   have "LeastM Rep_Arity (\<lambda>x. x \<in> range S) \<in> range S"
@@ -51,7 +51,7 @@ proof default
   thus "\<exists>n. max_in_chain n S"..
 qed
 
-instance Arity :: cpo by default
+instance Arity :: cpo ..
 
 lift_definition inc_Arity :: "Arity \<Rightarrow> Arity" is Suc.
 lift_definition pred_Arity :: "Arity \<Rightarrow> Arity" is "(\<lambda> x . x - 1)".
@@ -122,7 +122,7 @@ lemma Arity_total:
 by transfer auto
 
 instance Arity :: Finite_Join_cpo
-proof default
+proof
   fix x y :: Arity
   show "compatible x y" by (metis Arity_total compatibleI)
 qed
