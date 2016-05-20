@@ -1,32 +1,8 @@
 \documentclass[11pt,a4paper,parskip=half]{scrartcl}
 \usepackage{isabelle,isabellesym}
-
-% further packages required for unusual symbols (see also
-% isabellesym.sty), use only when needed
-
 \usepackage{amssymb}
-  %for \<leadsto>, \<box>, \<diamond>, \<sqsupset>, \<mho>, \<Join>,
-  %\<lhd>, \<lesssim>, \<greatersim>, \<lessapprox>, \<greaterapprox>,
-  %\<triangleq>, \<yen>, \<lozenge>
-
-%\usepackage[greek,english]{babel}
-  %option greek for \<euro>
-  %option english (default language) for \<guillemotleft>, \<guillemotright>
-
 \usepackage[only,bigsqcap]{stmaryrd}
-  %for \<Sqinter>
 
-%\usepackage{eufrak}
-  %for \<AA> ... \<ZZ>, \<aa> ... \<zz> (also included in amssymb)
-
-%\usepackagetcomp}
-  %for \<onequarter>, \<onehalf>, \<threequarters>, \<degree>, \<cent>,
-  %\<currency>
-
-% for uniform font size
-%\renewcommand{\isastyle}{\isastyleminor}
-
-% From src/HOL/HOLCF/document/root
 \newcommand{\isasymnotsqsubseteq}{\isamath{\not\sqsubseteq}}
 
 \usepackage{amsmath}
@@ -34,7 +10,7 @@
 \usepackage{graphicx}
 \usepackage{tikz}
 \usepackage[T1]{fontenc}
-\usepackage[utf8x]{inputenc}
+\usepackage[utf8]{inputenc}
 \usepackage{mathpartir}
 \usepackage{calc}
 \usepackage{booktabs}
@@ -57,6 +33,9 @@
 \def\it{\normalfont\itshape}
 \def\rm{\normalfont}
 
+% Instead of using utf8x
+\DeclareUnicodeCharacter{B2}{\ensuremath{^2}}
+
 % from http://tex.stackexchange.com/a/12931
 \begingroup
   \catcode`\_=\active
@@ -76,7 +55,7 @@ Karlsruhe Institute for Technology\\
 
 
 \begin{abstract}
-We formalize the Call Arity analysis \cite{tfp}, as implemented in GHC, and prove both functional correctness and, more interestingly, safety (i.e.\ the transformation does not increase allocation). A highlevel overview of the work can be found in \cite{call-arity-preprint}.
+We formalize the Call Arity analysis \cite{tfp}, as implemented in GHC, and prove both functional correctness and, more interestingly, safety (i.e.\ the transformation does not increase allocation). A highlevel overview of the work can be found in \cite{call-arity-haskell15}.
 
 We use syntax and the denotational semantics from an earlier work \cite{breitner2013}, where we formalized Launchbury's natural semantics for lazy evaluation \cite{launchbury}. 
 The functional correctness of Call Arity is proved with regard to that denotational semantics.
@@ -89,7 +68,7 @@ We use Christian Urban's Nominal2 package \cite{nominal} to define our terms and
 \section*{Artifact correspondence table}
 \label{sec:table}
 
-The following table connects the definitions and theorems from \cite{call-arity-preprint} with their corresponding Isabelle concept in this development.
+The following table connects the definitions and theorems from \cite{call-arity-haskell15} with their corresponding Isabelle concept in this development.
 
 \newcommand{\seetheory}[1]{\hyperref[sec_#1]{#1}}
 
