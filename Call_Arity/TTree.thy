@@ -1190,6 +1190,7 @@ inductive substitute'' :: "('a \<Rightarrow> 'a ttree) \<Rightarrow> 'a set \<Ri
   | substitute''_Cons:
     "zs \<in> paths (f x) \<Longrightarrow> xs' \<in> interleave xs zs \<Longrightarrow> substitute'' (f_nxt f T x) T xs' ys
        \<Longrightarrow> substitute'' f T (x#xs) (x#ys)"
+
 inductive_cases substitute''_NilE[elim]: "substitute'' f T xs []"  "substitute'' f T [] xs"
 inductive_cases substitute''_ConsE[elim]: "substitute'' f T (x#xs) ys"
 
