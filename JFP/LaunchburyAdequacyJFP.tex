@@ -173,7 +173,7 @@ The set of free variables of an expression $e$ is denoted by $\fv e$; we overloa
 
 We equate alpha-equivalent lambda abstractions and \keyword{let} bindings, i.e.\ $\sLam x x = \sLam y y$ and $\fv{\sLam x {\sApp y x}} = \{y\}$. The theoretical foundation used is Nominal logic \cite{nominal}. This does impose a few well-formedness side conditions, such as equivariance of definition over expressions. We skip them in this presentation, and do so with good conscience, as they have been covered in the machine-checked proof.
 
-Note that the term on the right hand side of an application has to be a variable. A general lambda term of the form $\sApp{e_1}{e_2}$ would have to be pre-processed to $\sLet{x = e_1}{\sApp{e_1}x}$ before it can be handled by this semantics.
+Note that the term on the right hand side of an application has to be a variable. A general lambda term of the form $\sApp{e_1}{e_2}$ would have to be pre-processed to $\sLet{x = e_2}{\sApp{e_1}x}$ before it can be handled by this semantics.
 
 
 
@@ -418,17 +418,17 @@ We begin with the second part:
 \esem{x \mapsto e,\Gamma}{\rho}
 &= \mu \rho'.\,(\rho \upd{\dom\Gamma} \esem{\Gamma}{\rho'})[x \mapsto \dsem{e}{\esem{\Gamma}\rho'}] \\
 \aexpl{by Lemma \ref{lem_iter}} \\
-&= \mu \rho'.\,(\rho \upd{\dom\Gamma} \esem{\Gamma}{\rho'})[x \mapsto \dsem{z}{\esem{\Delta}\rho'}] \\
+&= \mu \rho'.\,(\rho \upd{\dom\Gamma} \esem{\Gamma}{\rho'})[x \mapsto \dsem{v}{\esem{\Delta}\rho'}] \\
 %\aexpl{by the induction hypothesis, invoked for $\rho'$!} \\
 \aexpl{\parbox{\widthof{by the induction hypothesis. Note that}}{\raggedright by the induction hypothesis. Note that we invoke it for $\rho'$ with $\rho' \ne \rho$!}} \\
 &\eqon{\dom{(x \mapsto e,\Gamma})}
-\mu \rho'.\,(\rho \upd{\dom\Delta} \esem{\Delta}{\rho'})[x \mapsto \dsem{z}{\esem{\Delta}\rho'}] \\
+\mu \rho'.\,(\rho \upd{\dom\Delta} \esem{\Delta}{\rho'})[x \mapsto \dsem{v}{\esem{\Delta}\rho'}] \\
 \aexpl{by the induction hypothesis; see below} \\
 &= \esem{x \mapsto v, \Delta}{\rho}\\
 \aexpl{by Lemma \ref{lem_iter}}
 \end{align*}
 
-The second but last step is quite technically, as we need to push the $|_{\dom{(x \mapsto e,\Gamma})}$ inside the fixed-point operator. This goes through by parallel fixed-point induction if we first generalize it to $|_{\sVar \setminus \dom\Delta \mathop\cup \dom{(x \mapsto e,\Gamma)}}$, the restriction to the complement of the new variables added to the heap during evaluation of $x$.
+The second but last step is quite technical, as we need to push the $|_{\dom{(x \mapsto e,\Gamma})}$ inside the fixed-point operator. This goes through by parallel fixed-point induction if we first generalize it to $|_{\sVar \setminus \dom\Delta \mathop\cup \dom{(x \mapsto e,\Gamma)}}$, the restriction to the complement of the new variables added to the heap during evaluation of $x$.
 
 The first part now follows from the second part:
 \begin{align*}
