@@ -1,8 +1,8 @@
 theory "AList-Utils"
-imports Main "~~/src/HOL/Library/AList"
+imports Main "HOL-Library.AList"
 begin
 declare implies_True_equals [simp] False_implies_equals[simp]
-text {* We want to have @{text delete} and @{text update} back in the namespace. *}
+text \<open>We want to have \<open>delete\<close> and \<open>update\<close> back in the namespace.\<close>
 
 abbreviation delete where "delete \<equiv> AList.delete"
 abbreviation update where "update \<equiv> AList.update"
@@ -18,7 +18,7 @@ lemma restrictA_append: "restrictA S (a@b) = restrictA S a @ restrictA S b"
 lemma length_restrictA_le: "length (restrictA S a) \<le> length a"
   by (metis length_filter_le restrict_eq)
 
-subsubsection {* The domain of an associative list *}
+subsubsection \<open>The domain of an associative list\<close>
 
 definition domA
   where "domA h = fst ` set h"
@@ -76,7 +76,7 @@ lemma restrictA_cong:
   "(\<And>x. x \<in> domA m1 \<Longrightarrow> x \<in> V \<longleftrightarrow> x \<in> V') \<Longrightarrow> m1 = m2 \<Longrightarrow> restrictA V m1 = restrictA V' m2"
   unfolding restrict_eq by (induction m1 arbitrary: m2) auto
 
-subsubsection {* Other lemmas about associative lists *}
+subsubsection \<open>Other lemmas about associative lists\<close>
 
 lemma delete_set_none: "(map_of l)(x := None) = map_of (delete x l)"
 proof (induct l)
@@ -107,14 +107,6 @@ lemma map_add_domA[simp]:
     apply (metis dom_map_of_conv_domA map_add_dom_app_simps(1))
     apply (metis dom_map_of_conv_domA map_add_dom_app_simps(3))
     done
-
-
-lemma map_of_empty_iff1[simp]: "map_of \<Gamma> = empty \<longleftrightarrow> \<Gamma> = []"
-  by (cases "\<Gamma>") auto
-
-lemma map_of_empty_iff2[simp]: "empty = map_of \<Gamma> \<longleftrightarrow> \<Gamma> = []"
-  apply (subst eq_commute)
-  by (rule map_of_empty_iff1)
 
 lemma set_delete_subset: "set (delete k al) \<subseteq> set al"
   by (auto simp add: delete_eq)
@@ -148,7 +140,7 @@ lemma map_ran_append:
   "map_ran f (\<Gamma>@\<Delta>) = map_ran f \<Gamma> @ map_ran f \<Delta>"
   by (induction \<Gamma>)  auto
 
-subsubsection {* Syntax for map comprehensions *}
+subsubsection \<open>Syntax for map comprehensions\<close>
 
 definition mapCollect :: "('a \<Rightarrow> 'b \<Rightarrow> 'c) \<Rightarrow> ('a \<rightharpoonup> 'b) \<Rightarrow> 'c set"
   where "mapCollect f m = {f k v | k v . m k = Some v}"
@@ -158,11 +150,11 @@ syntax
 translations
   "{e | k\<mapsto>v \<in> m}" == "CONST mapCollect (\<lambda>k v. e) m"
 
-lemma mapCollect_empty[simp]: "{f k v | k \<mapsto> v \<in> empty} = {}"
+lemma mapCollect_empty[simp]: "{f k v | k \<mapsto> v \<in> Map.empty} = {}"
   unfolding mapCollect_def by simp
 
 lemma mapCollect_const[simp]:
-  "m \<noteq> empty \<Longrightarrow> {e | k\<mapsto>v\<in>m} = {e}"
+  "m \<noteq> Map.empty \<Longrightarrow> {e | k\<mapsto>v\<in>m} = {e}"
   unfolding mapCollect_def by auto
 
 lemma mapCollect_cong[fundef_cong]:

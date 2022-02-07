@@ -11,14 +11,14 @@ interpretation semantic_domain
   "\<Lambda> scrut v1 v2 r. CB_project\<cdot>(scrut\<cdot>r)\<cdot>(v1\<cdot>r)\<cdot>(v2\<cdot>r)"
   "C_case".
 
-abbreviation ESem_syn'' ("\<N>\<lbrakk> _ \<rbrakk>\<^bsub>_\<^esub>"  [60,60] 60) where "\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>\<^esub> \<equiv> ESem e \<cdot> \<rho>"
-abbreviation EvalHeapSem_syn''  ("\<^bold>\<N>\<lbrakk> _ \<^bold>\<rbrakk>\<^bsub>_\<^esub>"  [0,0] 110)  where "\<^bold>\<N>\<lbrakk>\<Gamma>\<^bold>\<rbrakk>\<^bsub>\<rho>\<^esub> \<equiv> evalHeap \<Gamma> (\<lambda> e. \<N>\<lbrakk>e\<rbrakk>\<^bsub>\<rho>\<^esub>)"
-abbreviation HSem_syn' ("\<N>\<lbrace>_\<rbrace>_"  [60,60] 60) where "\<N>\<lbrace>\<Gamma>\<rbrace>\<rho> \<equiv> HSem \<Gamma> \<cdot> \<rho>"
-abbreviation HSem_bot ("\<N>\<lbrace>_\<rbrace>"  [60] 60) where "\<N>\<lbrace>\<Gamma>\<rbrace> \<equiv> \<N>\<lbrace>\<Gamma>\<rbrace>\<bottom>"
+notation ESem_syn ("\<N>\<lbrakk> _ \<rbrakk>\<^bsub>_\<^esub>"  [60,60] 60)
+notation EvalHeapSem_syn  ("\<^bold>\<N>\<lbrakk> _ \<^bold>\<rbrakk>\<^bsub>_\<^esub>"  [0,0] 110)
+notation HSem_syn ("\<N>\<lbrace>_\<rbrace>_"  [60,60] 60)
+notation AHSem_bot ("\<N>\<lbrace>_\<rbrace>"  [60] 60)
 
-text {*
+text \<open>
 Here we re-state the simplification rules, cleaned up by beta-reducing the locale parameters.
-*}
+\<close>
 
 lemma CESem_simps:
   "\<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub>  = (\<Lambda> (C\<cdot>r). CFn\<cdot>(\<Lambda> v. (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x := v)\<^esub>)|\<^bsub>r\<^esub>))"
@@ -35,9 +35,9 @@ lemma CESem_bot[simp]:"(\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<sigma>\<^esub>)\<cdot
 lemma CHSem_bot[simp]:"((\<N>\<lbrace> \<Gamma> \<rbrace>) x)\<cdot>\<bottom> = \<bottom>"
   by (cases "x \<in> domA \<Gamma>") (auto simp add: lookup_HSem_heap lookup_HSem_other)
 
-text {*
+text \<open>
 Sometimes we do not care much about the resource usage and just want a simpler formula.
-*}
+\<close>
 
 lemma CESem_simps_no_tick:
   "(\<N>\<lbrakk> Lam [x]. e \<rbrakk>\<^bsub>\<rho>\<^esub>)\<cdot>r \<sqsubseteq> CFn\<cdot>(\<Lambda> v. (\<N>\<lbrakk> e \<rbrakk>\<^bsub>\<rho>(x := v)\<^esub>)|\<^bsub>r\<^esub>)"
